@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_window_focused="false" android:state_enabled="true" android:drawable="@drawable/holo_textfield_default_holo_light" />
+    <item android:state_window_focused="false" android:state_enabled="false" android:drawable="@drawable/holo_textfield_disabled_holo_light" />
+    <item android:state_enabled="true" android:state_focused="true" android:drawable="@drawable/holo_textfield_activated_holo_light" />
+    <item android:state_enabled="true" android:state_activated="true" android:drawable="@drawable/holo_textfield_focused_holo_light" />
+    <item android:state_enabled="true" android:drawable="@drawable/holo_textfield_default_holo_light" />
+    <item android:state_focused="true" android:drawable="@drawable/holo_textfield_disabled_focused_holo_light" />
+    <item android:drawable="@drawable/holo_textfield_disabled_holo_light" />
+</selector>

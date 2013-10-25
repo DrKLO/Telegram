@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             android:layout_width="100dp"
+             android:layout_height="100dp">
+    <org.telegram.ui.Views.BackupImageView
+        android:id="@+id/media_photo_image"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:scaleType="centerCrop"/>
+</FrameLayout>

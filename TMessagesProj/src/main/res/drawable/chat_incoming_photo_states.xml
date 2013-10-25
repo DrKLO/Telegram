@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true" android:drawable="@drawable/msg_in_photo_selected" />
+    <item android:state_checked="true" android:drawable="@drawable/msg_in_photo_selected" />
+    <item android:state_pressed="true" android:drawable="@drawable/msg_in_photo_selected" />
+    <item android:drawable="@drawable/msg_in_photo" />
+</selector>

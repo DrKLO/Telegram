@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<FrameLayout
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <org.telegram.ui.Views.PZSImageView
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:id="@+id/page_image"/>
+
+    <TextView android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:layout_gravity="center"
+        android:textSize="26dp"
+        android:textColor="#ffffff"
+        android:background="#99000000"
+        android:padding="8dp"
+        android:clickable="true"
+        android:visibility="gone"
+        android:id="@+id/action_button"/>
+
+    <org.telegram.ui.Views.FrameLayoutFixed android:layout_height="44dp"
+        android:layout_width="wrap_content"
+        android:background="#99000000"
+        android:layout_gravity="center"
+        android:id="@+id/action_progress_parent"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:layout_width="176dp"
+            android:layout_height="wrap_content"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:progress="50"
+            android:layout_marginLeft="12dp"
+            android:layout_marginRight="12dp"
+            android:layout_gravity="center"
+            android:id="@+id/action_progress"
+            android:max="100"/>
+
+    </org.telegram.ui.Views.FrameLayoutFixed>
+
+</FrameLayout>
+

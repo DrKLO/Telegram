@@ -1,0 +1,34 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/messages_list_menu_search"
+          android:icon="@drawable/ic_ab_search"
+          android:title="@string/Search"
+          android:showAsAction="always|collapseActionView"
+          android:actionViewClass="com.actionbarsherlock.widget.SearchView"/>
+
+    <item android:id="@+id/messages_list_menu_new_messages"
+          android:icon="@drawable/ic_ab_compose"
+          android:title="@string/NewMessages"
+          android:showAsAction="always"/>
+
+    <item android:id="@+id/chat_menu_attach"
+        android:icon="@drawable/ic_ab_other"
+        android:showAsAction="always">
+
+        <menu>
+            <item android:id="@+id/messages_list_menu_new_chat"
+                android:title="@string/NewGroup"/>
+
+            <item android:id="@+id/messages_list_menu_new_secret_chat"
+                android:title="@string/NewSecretChat"/>
+
+            <item android:id="@+id/messages_list_menu_contacts"
+                android:title="@string/Contacts"/>
+
+            <item android:id="@+id/messages_list_menu_settings"
+                android:title="@string/Settings"/>
+        </menu>
+
+    </item>
+
+
+</menu>

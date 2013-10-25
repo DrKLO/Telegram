@@ -1,0 +1,49 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:0.5.+'
+    }
+}
+apply plugin: 'android'
+
+repositories {
+    mavenCentral()
+}
+
+task nativeLibsToJar(
+    type: Zip,
+    description: 'create a jar archive of the native libs') {
+    destinationDir file("$buildDir/native-libs")
+    baseName 'native-libs'
+    extension 'jar'
+    from fileTree(dir: 'libs', include: '**/*.so')
+    into 'lib/'
+}
+
+tasks.withType(Compile) {
+    options.encoding = "UTF-8"
+}
+
+tasks.withType(Compile) {
+    compileTask -> compileTask.dependsOn(nativeLibsToJar)
+}
+
+dependencies {
+    compile 'com.actionbarsherlock:actionbarsherlock:4.4.0@aar'
+    compile 'com.google.android.gms:play-services:3.1.+'
+    compile 'net.hockeyapp.android:HockeySDK:3.0.0'
+    compile 'com.android.support:support-v4:18.0.+'
+    compile fileTree(dir: "$buildDir/native-libs", include: '*.jar')
+}
+
+android {
+    compileSdkVersion 18
+    buildToolsVersion "17.0.0"
+
+    defaultConfig {
+        minSdkVersion 8
+        targetSdkVersion 18
+    }
+}

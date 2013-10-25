@@ -1,0 +1,5 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/done_menu_item"
+          android:showAsAction="always"
+          android:actionLayout="@layout/group_create_done_layout"/>
+</menu>

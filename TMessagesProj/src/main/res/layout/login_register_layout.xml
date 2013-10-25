@@ -1,0 +1,72 @@
+<ScrollView android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:fillViewport="true"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp">
+
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/RegisterText"
+            android:id="@+id/login_register_info"
+            android:layout_marginTop="8dp"
+            android:textColor="#000000"
+            android:textSize="19dp"/>
+
+    <EditText
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/login_first_name_field"
+            android:maxLines="1"
+            android:textSize="20dp"
+            android:imeOptions="actionNext|flagNoExtractUi"
+            android:layout_alignTop="@+id/login_avatar_button"
+            android:layout_toRightOf="@+id/login_avatar_button"
+            android:layout_marginLeft="12dp"
+            android:layout_marginTop="14dp"
+            android:hint="@string/FirstName"
+            android:lines="1"
+            android:singleLine="true"
+            android:capitalize="words"/>
+
+    <EditText
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/login_last_name_field"
+            android:maxLines="1"
+            android:textSize="20dp"
+            android:imeOptions="actionNext|flagNoExtractUi"
+            android:layout_alignBottom="@+id/login_avatar_button"
+            android:layout_marginLeft="12dp"
+            android:layout_toRightOf="@+id/login_avatar_button"
+            android:hint="@string/LastName"
+            android:lines="1"
+            android:singleLine="true"
+            android:capitalize="words"/>
+
+    <FrameLayout android:layout_width="108dp" android:layout_height="108dp"
+        android:layout_marginTop="20dp"
+        android:layout_below="@+id/login_register_info"
+        android:id="@+id/login_avatar_button">
+
+        <org.telegram.ui.Views.BackupImageView
+            android:id="@+id/settings_avatar_image"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:src="@drawable/user_placeholder"/>
+
+        <ImageButton android:id="@+id/settings_change_avatar_button"
+            android:background="@drawable/photo_spinner"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"/>
+    </FrameLayout>
+
+
+</RelativeLayout>
+
+</ScrollView>

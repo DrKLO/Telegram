@@ -1,0 +1,7 @@
+<animation-list xmlns:android="http://schemas.android.com/apk/res/android" android:oneshot="false">
+    <item android:drawable="@drawable/typing_dot_chat_frame0" android:duration="120" />
+    <item android:drawable="@drawable/typing_dot_chat_frame1" android:duration="120" />
+    <item android:drawable="@drawable/typing_dot_chat_frame2" android:duration="120" />
+    <item android:drawable="@drawable/typing_dot_chat_frame3" android:duration="120" />
+    <item android:drawable="@drawable/typing_dot_chat_frame0" android:duration="120" />
+</animation-list>

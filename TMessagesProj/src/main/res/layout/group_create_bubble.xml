@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="41dp"
+        android:paddingRight="9dp"
+        android:paddingTop="9dp"
+        xmlns:android="http://schemas.android.com/apk/res/android">
+
+<TextView android:layout_width="wrap_content"
+          android:layout_height="31dp"
+          android:background="@drawable/chat_create_bubble_states"
+          android:textSize="16dp"
+          android:paddingRight="8dp"
+          android:paddingLeft="8dp"
+          android:gravity="center"
+          android:textColor="@color/chat_create_bubble_text_states"
+          android:id="@+id/bubble_text_view"/>
+</FrameLayout>
+

@@ -1,0 +1,7 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/messages_list_menu_search"
+          android:icon="@drawable/ic_ab_search"
+          android:title="@string/Search"
+          android:showAsAction="always|collapseActionView"
+          android:actionViewClass="com.actionbarsherlock.widget.SearchView"/>
+</menu>

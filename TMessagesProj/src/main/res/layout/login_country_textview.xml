@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<TextView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:id="@+id/login_coutry_textview"
+        android:textSize="20dp"
+        android:textIsSelectable="false"
+        android:textColor="#000000"
+        android:height="30dp"
+        android:paddingLeft="12dp"
+        android:paddingRight="12dp"
+        android:maxLines="1"/>

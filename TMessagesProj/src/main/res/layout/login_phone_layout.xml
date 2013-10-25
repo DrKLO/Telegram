@@ -1,0 +1,65 @@
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/StartText"
+            android:id="@+id/login_confirm_text"
+            android:layout_marginTop="8dp"
+            android:textColor="#000000"
+            android:textSize="19dp"
+            android:layout_marginRight="16dp"
+            android:layout_marginLeft="16dp"/>
+
+        <Spinner
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/login_country_spinner"
+            android:layout_marginTop="10dp"
+            android:layout_marginLeft="39dp"
+            android:layout_marginRight="39dp"/>
+
+        <FrameLayout android:layout_width="fill_parent"
+                     android:layout_height="wrap_content"
+                     android:paddingLeft="39dp"
+                     android:paddingRight="39dp"
+                     android:layout_marginTop="20dp"
+                     android:layout_gravity="top|left">
+
+            <EditText
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/login_county_code_field"
+                    android:width="80dp"
+                    android:editable="true"
+                    android:inputType="phone"
+                    android:maxLength="5"
+                    android:maxLines="1"
+                    android:textSize="20dp"
+                    android:gravity="center_horizontal"
+                    android:imeOptions="actionNext|flagNoExtractUi"/>
+
+            <EditText
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/login_phone_field"
+                    android:layout_marginLeft="80dp"
+                    android:inputType="phone"
+                    android:maxLines="1"
+                    android:textSize="20dp"
+                    android:imeOptions="actionNext|flagNoExtractUi"
+                    android:layout_gravity="top|left"/>
+
+        </FrameLayout>
+
+    </LinearLayout>
+</ScrollView>

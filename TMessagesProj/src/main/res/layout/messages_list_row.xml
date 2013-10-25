@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="80dp"
+              android:padding="8dp"
+              android:layout_gravity="top">
+
+    <org.telegram.ui.Views.BackupImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_marginRight="10dp"
+            android:id="@+id/messages_list_row_avatar"
+            android:contentDescription=""/>
+
+    <LinearLayout android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/messages_list_row_name_layout"
+            android:orientation="horizontal"
+            android:layout_marginLeft="74dp"
+            android:layout_gravity="top">
+
+        <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:id="@+id/messages_list_row_name"
+                android:textSize="18dp"
+                android:layout_marginRight="3dp"
+                android:ellipsize="end"
+                android:layout_weight="1"
+                android:singleLine="false"
+                android:scrollHorizontally="true"
+                android:gravity="left"
+                android:maxLines="1"/>
+
+        <FrameLayout android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginRight="2dp"
+            android:layout_gravity="top">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/msg_clock"
+                android:id="@+id/messages_list_row_clock"
+                android:visibility="gone"/>
+
+            <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/dialogs_check"
+                    android:id="@+id/messages_list_row_check"
+                    android:visibility="gone"/>
+
+            <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/dialogs_halfcheck"
+                    android:paddingLeft="5dp"
+                    android:id="@+id/messages_list_row_check_half"
+                    android:visibility="gone"/>
+
+        </FrameLayout>
+
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/messages_list_row_time"
+                android:textSize="14dp"
+                android:paddingTop="3dp"
+                android:textColor="#006fc8"
+                android:lines="1"/>
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="fill_parent"
+                  android:layout_height="40dp"
+                  android:orientation="horizontal"
+                  android:layout_marginTop="24dp"
+                  android:layout_marginLeft="74dp"
+                  android:layout_gravity="top">
+
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/messages_list_row_message"
+                android:textSize="15dp"
+                android:lines="2"
+                android:ellipsize="end"
+                android:textColor="#808080"
+                android:gravity="left"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/messages_list_row_typing"
+                android:textSize="15dp"
+                android:lines="2"
+                android:ellipsize="end"
+                android:textColor="#006fc8"
+                android:gravity="left"/>
+        </FrameLayout>
+
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/messages_list_row_badge"
+                android:textSize="16dp"
+                android:gravity="center"
+                android:lines="1"
+                android:layout_gravity="center"
+                android:textColor="#ffffff"
+                android:paddingLeft="5dp"
+                android:paddingRight="5dp"
+                android:background="@drawable/dialogs_badge"
+                android:visibility="gone"
+                android:layout_marginLeft="8dp"/>
+
+    <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/dialogs_warning"
+            android:layout_marginLeft="8dp"
+            android:layout_gravity="center"
+            android:visibility="gone"
+            android:id="@+id/messages_list_row_error"/>
+
+    </LinearLayout>
+</FrameLayout>

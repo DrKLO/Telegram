@@ -1,0 +1,65 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout android:layout_height="match_parent"
+                  android:layout_width="match_parent"
+                  android:weightSum="100"
+                  android:orientation="vertical"
+                  android:background="#ffffff">
+
+        <FrameLayout android:layout_gravity="top"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="44">
+
+            <ImageView android:layout_width="wrap_content"
+                android:layout_gravity="center"
+                android:layout_height="wrap_content"
+                android:id="@+id/icon_image1"
+                android:src="@drawable/icon0"/>
+
+            <ImageView android:layout_width="wrap_content"
+                android:layout_gravity="center"
+                android:layout_height="wrap_content"
+                android:id="@+id/icon_image2"/>
+
+        </FrameLayout>
+
+        <FrameLayout android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="56"
+            android:background="#ffffff"/>
+
+    </LinearLayout>
+
+    <android.support.v4.view.ViewPager android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:id="@+id/intro_view_pager"/>
+
+    <FrameLayout android:layout_height="3dp"
+        android:layout_width="fill_parent"
+        android:layout_marginRight="24dp"
+        android:layout_marginLeft="24dp"
+        android:background="#ebebeb"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="82dp"
+        android:id="@+id/parent_slinding_view"/>
+
+    <FrameLayout android:layout_height="3dp"
+        android:layout_width="30dp"
+        android:background="#bfbfbf"
+        android:id="@+id/sliding_view"
+        android:layout_marginBottom="82dp"
+        android:layout_gravity="bottom"/>
+
+    <TextView android:layout_width="fill_parent"
+        android:layout_height="84dp"
+        android:text="@string/StartMessaging"
+        android:layout_gravity="bottom"
+        android:textSize="22dp"
+        android:textColor="@color/blue_text_color_states"
+        android:gravity="center"
+        android:id="@+id/start_messaging_button"/>
+
+</FrameLayout>

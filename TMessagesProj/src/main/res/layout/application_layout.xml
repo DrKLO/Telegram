@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_gravity="top"
+    android:background="#ffffff">
+
+    <FrameLayout
+        android:id="@+id/container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="top"/>
+
+    <View android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="@drawable/header_shadow"
+        android:id="@+id/shadow"
+        android:layout_gravity="top"/>
+</FrameLayout>
