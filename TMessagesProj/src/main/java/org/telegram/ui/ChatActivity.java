@@ -2165,14 +2165,14 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     Intent pickIntent = new Intent();
                     pickIntent.setType("video/*");
                     pickIntent.setAction(Intent.ACTION_GET_CONTENT);
-                    pickIntent.putExtra(MediaStore.EXTRA_SIZE_LIMIT, 1024 * 1024 * 100);
+                    pickIntent.putExtra(MediaStore.EXTRA_SIZE_LIMIT, 1024 * 1024 * 1000);
                     Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
                     File video = Utilities.generateVideoPath();
                     if (video != null) {
                         if(android.os.Build.VERSION.SDK_INT > 10) {
                             takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(video));
                         }
-                        takeVideoIntent.putExtra(MediaStore.EXTRA_SIZE_LIMIT, 1024 * 1024 * 100);
+                        takeVideoIntent.putExtra(MediaStore.EXTRA_SIZE_LIMIT, 1024 * 1024 * 1000);
                         currentPicturePath = video.getAbsolutePath();
                     }
                     Intent chooserIntent = Intent.createChooser(pickIntent, "");

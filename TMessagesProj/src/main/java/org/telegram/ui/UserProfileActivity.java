@@ -198,7 +198,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         ((ApplicationActivity)parentActivity).presentFragment(fragment, "key_" + dialog_id, false);
                     } else if (i == 4 && dialog_id != 0 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
-                        builder.setTitle(getStringEntry(R.string.TextSize));
+                        builder.setTitle(getStringEntry(R.string.MessageLifetime));
                         builder.setItems(new CharSequence[]{
                                 getStringEntry(R.string.ShortMessageLifetimeForever),
                                 getStringEntry(R.string.ShortMessageLifetime2s),

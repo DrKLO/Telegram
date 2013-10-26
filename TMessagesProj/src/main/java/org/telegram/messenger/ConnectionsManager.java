@@ -141,7 +141,6 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     void setTimeDifference(int diff) {
         boolean store = Math.abs(diff - timeDifference) > 25;
         timeDifference = diff;
-        //_timeOffsetFromUTC = _timeDifference + (int)[[NSTimeZone localTimeZone] secondsFromGMT];
         if (store) {
             saveSession();
         }
@@ -596,18 +595,6 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     datacenter.connection.datacenterId = datacenter.datacenterId;
                 }
                 datacenter.connection.connect();
-                /*if (it == currentDatacenterId) {
-                 boolean isConnecting = datacenter.connection.channelToken != 0;
-                 if (isConnecting) {
-                 _isWaitingForFirstData = true;
-                 }
-
-                 if (_isConnecting != isConnecting)
-                 {
-                 _isConnecting = isConnecting;
-                 [self dispatchConnectingState];
-                 }
-                 }*/
             }
         }
         for (int it : downloadTransportsToResume) {
@@ -1092,7 +1079,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         }
 
         for (int num : unauthorizedDatacenterIds) {
-            if (num != currentDatacenterId && num != movingToDatacenterId && UserConfig.clientUserId != 0/* && unavailableDatacenterIds.get(num) == null*/) {
+            if (num != currentDatacenterId && num != movingToDatacenterId && UserConfig.clientUserId != 0) {
                 boolean notFound = true;
                 for (Action actor : actionQueue) {
                     if (actor instanceof ExportAuthorizationAction) {
@@ -1205,7 +1192,6 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
             currentSize += protoMessage.bytes;
 
-            // || currentMessages.size() == 5
             if (currentSize >= 3 * 1024 || a == messagesToSend.size() - 1) {
                 ArrayList<Integer> quickAckId = new ArrayList<Integer>();
                 byte[] transportData = createConnectionData(currentMessages, sessionId, quickAckId, connection);
@@ -1450,8 +1436,9 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
                 saveSession();
 
-                //if (sessionId == datacenter.authSessionId && [datacenter.datacenterId isEqualToValue:currentDatacenterId])
-                //    [TGTelegraphInstance stateUpdateRequired];
+                if (sessionId == datacenter.authSessionId && datacenter.datacenterId == currentDatacenterId && UserConfig.clientActivated) {
+                    MessagesController.Instance.getDifference();
+                }
                 arr.add(newSession.unique_id);
             }
         } else if (message instanceof TLRPC.TL_msg_container) {
@@ -1894,20 +1881,6 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
     @Override
     public void tcpConnectionConnected(TcpConnection connection) {
-        /*int requestClass = [transport transportRequestClass];
-        if ([transport datacenter].datacenterId == _currentDatacenterId && requestClass & TGRequestClassGeneric)
-        {
-            if (_isConnecting)
-            {
-                _isConnecting = false;
-                _isWaitingForFirstData = true;
-                [self dispatchConnectingState];
-            }
-
-            if (!_isReady)
-                return;
-        }*/
-
         Datacenter datacenter = datacenterWithId(connection.datacenterId);
         if (datacenter.authKey != null) {
             processRequestQueue(connection.transportRequestClass, connection.datacenterId);

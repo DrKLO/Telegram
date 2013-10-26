@@ -19,10 +19,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
 
 public class FileUploadOperation {
-    private final int uploadChunkSize = 1024 * 32;
+    private int uploadChunkSize = 1024 * 32;
     private String uploadingFilePath;
     public int state = 0;
-    private byte[] readBuffer = new byte[uploadChunkSize];
+    private byte[] readBuffer;
     public FileUploadOperationDelegate delegate;
     private long requestToken = 0;
     private int currentPartNum = 0;
@@ -103,6 +103,9 @@ public class FileUploadOperation {
                 File cacheFile = new File(uploadingFilePath);
                 stream = new FileInputStream(cacheFile);
                 totalFileSize = cacheFile.length();
+
+                uploadChunkSize = (int)Math.max(32, Math.ceil(totalFileSize / (1024.0f * 3000))) * 1024;
+                readBuffer = new byte[uploadChunkSize];
             }
             int readed = stream.read(readBuffer);
             int toAdd = 0;

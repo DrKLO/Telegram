@@ -104,9 +104,6 @@ public class TcpConnection extends PyroClientAdapter {
     }
 
     public void suspendConnection(boolean task) {
-        if (ConnectionsManager.DEBUG_VERSION) {
-            Log.d("tmessages", "suspend connnection " + this);
-        }
         if (task) {
             selector.scheduleTask(new Runnable() {
                 @Override
@@ -117,6 +114,9 @@ public class TcpConnection extends PyroClientAdapter {
                     }
                     if (connectionState == TcpConnectionState.TcpConnectionStageIdle || connectionState == TcpConnectionState.TcpConnectionStageSuspended) {
                         return;
+                    }
+                    if (ConnectionsManager.DEBUG_VERSION) {
+                        Log.d("tmessages", "suspend connnection " + this);
                     }
                     connectionState = TcpConnectionState.TcpConnectionStageSuspended;
                     if (client != null) {
@@ -130,8 +130,11 @@ public class TcpConnection extends PyroClientAdapter {
                 reconnectTimer.cancel();
                 reconnectTimer = null;
             }
-            if (connectionState == TcpConnectionState.TcpConnectionStageIdle) {
+            if (connectionState == TcpConnectionState.TcpConnectionStageIdle || connectionState == TcpConnectionState.TcpConnectionStageSuspended) {
                 return;
+            }
+            if (ConnectionsManager.DEBUG_VERSION) {
+                Log.d("tmessages", "suspend connnection " + this);
             }
             connectionState = TcpConnectionState.TcpConnectionStageSuspended;
             if (client != null) {

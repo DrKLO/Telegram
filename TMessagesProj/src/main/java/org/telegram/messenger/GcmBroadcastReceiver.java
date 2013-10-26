@@ -25,7 +25,6 @@ import android.util.Log;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 
 import org.json.JSONObject;
-import org.telegram.TL.TLRPC;
 import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.LaunchActivity;
 
@@ -118,8 +117,6 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
 
         int chat_id = 0;
         int user_id = 0;
-        TLRPC.User user = null;
-        TLRPC.Chat chat = null;
         String custom = extras.getString("custom");
         try {
             if (custom != null) {
@@ -171,7 +168,6 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
         }
 
         boolean needVibrate;
-        boolean needPreview = true;
         String choosenSoundPath = null;
 
         if (chat_id != 0) {
@@ -192,6 +188,8 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
             } else if (chatSound != null) {
                 choosenSoundPath = chatSound;
             }
+        } else {
+            choosenSoundPath = globalSound;
         }
 
         intent.setAction("com.tmessages.openchat" + Math.random() + Integer.MAX_VALUE);
@@ -205,11 +203,9 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
                 .setStyle(new NotificationCompat.BigTextStyle()
                         .bigText(msg))
                 .setContentText(msg)
-                .setAutoCancel(true);
+                .setAutoCancel(true)
+                .setTicker(msg);
 
-        if (needPreview) {
-            mBuilder.setTicker(msg);
-        }
         if (needVibrate) {
             mBuilder.setVibrate(new long[]{0, 100, 0, 100});
         }

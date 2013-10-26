@@ -402,18 +402,6 @@ public class Emoji {
 		if(bmps[info.page] == null) {
             loadPageAsync(info.page);
         }
-		/*drawables.add(new WeakReference<EmojiDrawable>(ed));
-		try {
-            for (int a = 0; a < drawables.size(); a++) {
-                WeakReference<EmojiDrawable> it = drawables.get(a);
-                if (it.get() == null) {
-                    drawables.remove(a);
-                    a--;
-                }
-            }
-		} catch(Throwable x) {
-            x.printStackTrace();
-        }*/
 		return ed;
 	}
 	
@@ -507,7 +495,8 @@ public class Emoji {
             s = Spannable.Factory.getInstance().newSpannable(cs);
         }
         long buf = 0;
-        for (int i = 0; i < cs.length(); i++){
+        int emojiCount = 0;
+        for (int i = 0; i < cs.length(); i++) {
             char c = cs.charAt(i);
             if (c == 0xD83C || c == 0xD83D || (buf != 0 && (buf & 0xFFFFFFFF00000000L) == 0 && (c >= 0xDDE6 && c <= 0xDDFA))) {
                 buf <<= 16;
@@ -518,6 +507,7 @@ public class Emoji {
                 Drawable d = Emoji.getEmojiDrawable(buf);
                 if (d != null){
                     EmojiSpan span = new EmojiSpan(d, DynamicDrawableSpan.ALIGN_BOTTOM);
+                    emojiCount++;
                     if (c>= 0xDDE6 && c <= 0xDDFA) {
                         s.setSpan(span, i - 3, i + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     } else {
@@ -535,6 +525,7 @@ public class Emoji {
                         Drawable d = Emoji.getEmojiDrawable(buf);
                         if(d != null) {
                             EmojiSpan span = new EmojiSpan(d, DynamicDrawableSpan.ALIGN_BOTTOM);
+                            emojiCount++;
                             s.setSpan(span, i - 1, i + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         }
                         buf = 0;
@@ -544,8 +535,12 @@ public class Emoji {
                 Drawable d = Emoji.getEmojiDrawable(c);
                 if(d != null){
                     EmojiSpan span = new EmojiSpan(d, DynamicDrawableSpan.ALIGN_BOTTOM);
+                    emojiCount++;
                     s.setSpan(span, i, i + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
+            }
+            if (emojiCount >= 50) {
+                break;
             }
         }
         return s;

@@ -11,11 +11,15 @@ package org.telegram.messenger;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.AlertDialog;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.ContentProviderOperation;
 import android.content.ContentProviderResult;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.database.Cursor;
@@ -27,6 +31,8 @@ import android.os.Build;
 import android.os.Vibrator;
 import android.provider.BaseColumns;
 import android.provider.ContactsContract;
+import android.provider.Settings;
+import android.support.v4.app.NotificationCompat;
 import android.text.Html;
 import android.util.Log;
 import android.util.SparseArray;
@@ -38,6 +44,7 @@ import org.telegram.TL.TLObject;
 import org.telegram.TL.TLRPC;
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.ApplicationLoader;
+import org.telegram.ui.LaunchActivity;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -4100,61 +4107,182 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             return;
         }
 
-        boolean inAppSounds = preferences.getBoolean("EnableInAppSounds", true);
-        boolean inAppVibrate = preferences.getBoolean("EnableInAppVibrate", true);
-        boolean inAppPreview = preferences.getBoolean("EnableInAppPreview", true);
+        if (ApplicationLoader.lastPauseTime == 0) {
+            boolean inAppSounds = preferences.getBoolean("EnableInAppSounds", true);
+            boolean inAppVibrate = preferences.getBoolean("EnableInAppVibrate", true);
+            boolean inAppPreview = preferences.getBoolean("EnableInAppPreview", true);
 
-        if ((inAppSounds || inAppVibrate || inAppPreview) && ApplicationLoader.lastPauseTime == 0) {
-            long dialog_id = messageObject.messageOwner.dialog_id;
-            int user_id = messageObject.messageOwner.from_id;
-            int chat_id = 0;
-            if (dialog_id == 0) {
-                if (messageObject.messageOwner.to_id.chat_id != 0) {
-                    dialog_id = -messageObject.messageOwner.to_id.chat_id;
-                    chat_id = messageObject.messageOwner.to_id.chat_id;
-                } else if (messageObject.messageOwner.to_id.user_id != 0) {
-                    if (messageObject.messageOwner.to_id.user_id == UserConfig.clientUserId) {
-                        dialog_id = messageObject.messageOwner.from_id;
-                    } else {
-                        dialog_id = messageObject.messageOwner.to_id.user_id;
+            if (inAppSounds || inAppVibrate || inAppPreview) {
+                long dialog_id = messageObject.messageOwner.dialog_id;
+                int user_id = messageObject.messageOwner.from_id;
+                int chat_id = 0;
+                if (dialog_id == 0) {
+                    if (messageObject.messageOwner.to_id.chat_id != 0) {
+                        dialog_id = -messageObject.messageOwner.to_id.chat_id;
+                        chat_id = messageObject.messageOwner.to_id.chat_id;
+                    } else if (messageObject.messageOwner.to_id.user_id != 0) {
+                        if (messageObject.messageOwner.to_id.user_id == UserConfig.clientUserId) {
+                            dialog_id = messageObject.messageOwner.from_id;
+                        } else {
+                            dialog_id = messageObject.messageOwner.to_id.user_id;
+                        }
+                    }
+                } else {
+                    TLRPC.EncryptedChat chat = encryptedChats.get((int)(dialog_id >> 32));
+                    if (chat == null) {
+                        return;
                     }
                 }
-            } else {
-                TLRPC.EncryptedChat chat = encryptedChats.get((int)(dialog_id >> 32));
-                if (chat == null) {
+                if (dialog_id == 0) {
                     return;
                 }
+                TLRPC.User user = users.get(user_id);
+                if (user == null) {
+                    return;
+                }
+                TLRPC.Chat chat;
+                if (chat_id != 0) {
+                    chat = chats.get(chat_id);
+                    if (chat == null) {
+                        return;
+                    }
+                }
+                String key = "notify_" + dialog_id;
+                boolean value = preferences.getBoolean(key, true);
+                if (!value) {
+                    return;
+                }
+
+                if (inAppPreview) {
+                    NotificationCenter.Instance.postNotificationName(701, messageObject);
+                }
+                if (inAppVibrate) {
+                    Vibrator v = (Vibrator)Utilities.applicationContext.getSystemService(Context.VIBRATOR_SERVICE);
+                    v.vibrate(100);
+                }
+                if (inAppSounds) {
+                    playNotificationSound();
+                }
             }
+        } else {
+            long dialog_id = messageObject.messageOwner.dialog_id;
+            int chat_id = messageObject.messageOwner.to_id.chat_id;
+            int user_id = messageObject.messageOwner.to_id.user_id;
             if (dialog_id == 0) {
-                return;
+                if (chat_id != 0) {
+                    dialog_id = -chat_id;
+                } else if (user_id != 0) {
+                    dialog_id = user_id;
+                }
             }
-            TLRPC.User user = users.get(user_id);
-            if (user == null) {
-                return;
+            if ((int)dialog_id != 0) {
+                return; //temporary disable notifications for normal chats
             }
-            TLRPC.Chat chat;
-            if (chat_id != 0) {
-                chat = chats.get(chat_id);
-                if (chat == null) {
+
+            if (dialog_id != 0) {
+                String key = "notify_" + dialog_id;
+                boolean value = preferences.getBoolean(key, true);
+                if (!value) {
                     return;
                 }
             }
-            String key = "notify_" + dialog_id;
-            boolean value = preferences.getBoolean(key, true);
-            if (!value) {
+
+            boolean groupEnabled = preferences.getBoolean("EnableGroup", true);
+            if (chat_id != 0 && !globalEnabled) {
                 return;
             }
 
-            if (inAppPreview) {
-                NotificationCenter.Instance.postNotificationName(701, messageObject);
+            boolean globalVibrate = preferences.getBoolean("EnableVibrateAll", true);
+            boolean groupVibrate = preferences.getBoolean("EnableVibrateGroup", true);
+
+            String defaultPath = null;
+            Uri defaultUri = Settings.System.DEFAULT_NOTIFICATION_URI;
+            if (defaultUri != null) {
+                defaultPath = defaultUri.getPath();
             }
-            if (inAppVibrate) {
-                Vibrator v = (Vibrator)Utilities.applicationContext.getSystemService(Context.VIBRATOR_SERVICE);
-                v.vibrate(100);
+
+            String globalSound = preferences.getString("GlobalSoundPath", defaultPath);
+            String chatSound = preferences.getString("GroupSoundPath", defaultPath);
+            String userSoundPath = null;
+            String chatSoundPath = null;
+
+            NotificationManager mNotificationManager = (NotificationManager)Utilities.applicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
+            Intent intent = new Intent(Utilities.applicationContext, LaunchActivity.class);
+            String msg;
+
+            if ((int)dialog_id != 0) {
+                if (chat_id != 0) {
+                    intent.putExtra("chatId", chat_id);
+                }
+                if (user_id != 0) {
+                    intent.putExtra("userId", user_id);
+                }
+                msg = messageObject.messageOwner.message;
+            } else {
+                msg = Utilities.applicationContext.getString(R.string.YouHaveNewMessage);
             }
-            if (inAppSounds) {
-                playNotificationSound();
+
+            boolean needVibrate = false;
+
+            if (user_id != 0) {
+                userSoundPath = preferences.getString("sound_path_" + user_id, null);
+                needVibrate = globalVibrate;
             }
+            if (chat_id != 0) {
+                chatSoundPath = preferences.getString("sound_chat_path_" + chat_id, null);
+                needVibrate = groupVibrate;
+            }
+
+            String choosenSoundPath = null;
+
+            if (user_id != 0) {
+                if (userSoundPath != null) {
+                    choosenSoundPath = userSoundPath;
+                } else if (globalSound != null) {
+                    choosenSoundPath = globalSound;
+                }
+            } else if (chat_id != 0) {
+                if (chatSoundPath != null) {
+                    choosenSoundPath = chatSoundPath;
+                } else if (chatSound != null) {
+                    choosenSoundPath = chatSound;
+                }
+            } else {
+                choosenSoundPath = globalSound;
+            }
+
+            intent.setAction("com.tmessages.openchat" + Math.random() + Integer.MAX_VALUE);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            PendingIntent contentIntent = PendingIntent.getActivity(Utilities.applicationContext, 0, intent, PendingIntent.FLAG_ONE_SHOT);
+
+            NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(Utilities.applicationContext)
+                    .setContentTitle(Utilities.applicationContext.getString(R.string.AppName))
+                    .setSmallIcon(R.drawable.notification)
+                    .setStyle(new NotificationCompat.BigTextStyle()
+                            .bigText(msg))
+                    .setContentText(msg)
+                    .setAutoCancel(true)
+                    .setTicker(msg);
+
+            if (needVibrate) {
+                mBuilder.setVibrate(new long[]{0, 100, 0, 100});
+            }
+            if (choosenSoundPath != null && !choosenSoundPath.equals("NoSound")) {
+                if (choosenSoundPath.equals(defaultPath)) {
+                    mBuilder.setSound(defaultUri);
+                } else {
+                    mBuilder.setSound(Uri.parse(choosenSoundPath));
+                }
+            }
+
+            mBuilder.setContentIntent(contentIntent);
+            mNotificationManager.cancel(1);
+            Notification notification = mBuilder.build();
+            notification.ledARGB = 0xff00ff00;
+            notification.ledOnMS = 1000;
+            notification.ledOffMS = 1000;
+            notification.flags |= Notification.FLAG_SHOW_LIGHTS;
+            mNotificationManager.notify(1, notification);
         }
     }
 
