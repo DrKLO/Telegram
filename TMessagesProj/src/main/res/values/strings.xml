@@ -89,6 +89,7 @@
     <string name="MessageLifetime1h">1 hour</string>
     <string name="MessageLifetime1d">1 day</string>
     <string name="MessageLifetime1w">1 week</string>
+    <string name="YouHaveNewMessage">You have a new message</string>
 
     <!--contacts view-->
     <string name="SearchContactHint">Search contacts</string>

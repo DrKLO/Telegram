@@ -73,7 +73,7 @@ public class SettingsChangeNameActivity extends BaseFragment {
                     int rotation = display.getRotation();
                     int height;
                     int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
-                    float density = Utilities.applicationContext.getResources().getDisplayMetrics().density;
+                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
                     if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
                         height = currentActionBarHeight;
                     } else {
@@ -130,7 +130,7 @@ public class SettingsChangeNameActivity extends BaseFragment {
 
         fixLayout();
 
-        SharedPreferences preferences = Utilities.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
         boolean animations = preferences.getBoolean("view_animations", true);
         if (!animations) {
             firstNameField.requestFocus();
@@ -226,7 +226,7 @@ public class SettingsChangeNameActivity extends BaseFragment {
             user.first_name = req.first_name;
             user.last_name = req.last_name;
         }
-        UserConfig.saveConfig();
+        UserConfig.saveConfig(true);
         NotificationCenter.Instance.postNotificationName(MessagesController.updateInterfaces, MessagesController.UPDATE_MASK_ALL);
         ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override

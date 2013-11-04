@@ -150,7 +150,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
-                File configFile = new File(Utilities.applicationContext.getFilesDir(), "config.dat");
+                File configFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "config.dat");
                 if (configFile.exists()) {
                     try {
                         SerializedData data = new SerializedData(configFile);
@@ -235,7 +235,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     data.writeInt32(0);
                 }
                 try {
-                    File configFile = new File(Utilities.applicationContext.getFilesDir(), "config.dat");
+                    File configFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "config.dat");
                     if (!configFile.exists()) {
                         configFile.createNewFile();
                     }
@@ -491,7 +491,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     public static boolean isNetworkOnline() {
         boolean status = false;
         try {
-            ConnectivityManager cm = (ConnectivityManager)Utilities.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+            ConnectivityManager cm = (ConnectivityManager)ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo netInfo = cm.getNetworkInfo(0);
             if (netInfo != null && netInfo.getState() == NetworkInfo.State.CONNECTED) {
                 status = true;

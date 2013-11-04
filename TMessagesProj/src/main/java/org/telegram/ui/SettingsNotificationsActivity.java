@@ -65,7 +65,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                     if (i == 1 || i == 6) {
-                        SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
                         boolean enabled = false;
                         if (i == 1) {
@@ -96,7 +96,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         }
                         ConnectionsManager.Instance.performRpc(req, null, null, true, RPCRequest.RPCRequestClassGeneric);
                     } else if (i == 2 || i == 7) {
-                        SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
                         boolean enabledAll = true;
                         boolean enabled = true;
@@ -130,7 +130,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         }
                         ConnectionsManager.Instance.performRpc(req, null, null, true, RPCRequest.RPCRequestClassGeneric);
                     } else if (i == 3 || i == 8) {
-                        SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
                         boolean enabled;
                         if (i == 3) {
@@ -143,7 +143,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         editor.commit();
                         listView.invalidateViews();
                     } else if (i == 4 || i == 9) {
-                        SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
                         tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
                         tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false);
@@ -196,7 +196,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                                             return;
                                         }
                                         reseting = false;
-                                        SharedPreferences preferences = inflaterActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                                         SharedPreferences.Editor editor = preferences.edit();
                                         editor.clear();
                                         editor.commit();
@@ -208,21 +208,21 @@ public class SettingsNotificationsActivity extends BaseFragment {
                             }
                         }, null, true, RPCRequest.RPCRequestClassGeneric);
                     } else if (i == 11) {
-                        SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
                         boolean enabled = preferences.getBoolean("EnableInAppSounds", true);
                         editor.putBoolean("EnableInAppSounds", !enabled);
                         editor.commit();
                         listView.invalidateViews();
                     } else if (i == 12) {
-                        SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
                         boolean enabled = preferences.getBoolean("EnableInAppVibrate", true);
                         editor.putBoolean("EnableInAppVibrate", !enabled);
                         editor.commit();
                         listView.invalidateViews();
                     } else if (i == 13) {
-                        SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
                         boolean enabled = preferences.getBoolean("EnableInAppPreview", true);
                         editor.putBoolean("EnableInAppPreview", !enabled);
@@ -260,7 +260,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                 }
             }
 
-            SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             SharedPreferences.Editor editor = preferences.edit();
 
             if (requestCode == 4) {
@@ -342,7 +342,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     int rotation = display.getRotation();
                     int height;
                     int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
-                    float density = Utilities.applicationContext.getResources().getDisplayMetrics().density;
+                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
                     if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
                         height = currentActionBarHeight;
                     } else {
@@ -387,7 +387,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(int i) {
-            SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             boolean enabledAll = preferences.getBoolean("EnableAll", true);
             return !(i != 1 && !enabledAll && i != 13) && (i > 0 && i < 5 || i > 5 && i < 10 || i > 10 && i < 14 || i == 15);
         }
@@ -439,7 +439,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                 View divider = view.findViewById(R.id.settings_row_divider);
 
                 ImageView checkButton = (ImageView)view.findViewById(R.id.settings_row_check_button);
-                SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                 boolean enabled = false;
                 boolean enabledAll = preferences.getBoolean("EnableAll", true);
 
@@ -506,7 +506,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                 TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
                 TextView textViewDetail = (TextView)view.findViewById(R.id.settings_row_text_detail);
                 View divider = view.findViewById(R.id.settings_row_divider);
-                SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                 boolean enabledAll = preferences.getBoolean("EnableAll", true);
                 if (i == 4 || i == 9) {
                     if (i == 4) {

@@ -183,7 +183,7 @@ public class ScreenSlidePageFragmentPhone extends SlideFragment implements Adapt
             }
         });
 
-        ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(Utilities.applicationContext, R.layout.login_country_textview, countriesArray);
+        ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(ApplicationLoader.applicationContext, R.layout.login_country_textview, countriesArray);
         dataAdapter.setDropDownViewResource(R.layout.login_country_dropdown);
         countrySpinner.setAdapter(dataAdapter);
 
@@ -205,7 +205,7 @@ public class ScreenSlidePageFragmentPhone extends SlideFragment implements Adapt
             String country = "RU";
 
             try {
-                TelephonyManager telephonyManager = (TelephonyManager)Utilities.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+                TelephonyManager telephonyManager = (TelephonyManager)ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
                 if (telephonyManager != null) {
                     country = telephonyManager.getSimCountryIso().toUpperCase();
                 }
@@ -215,7 +215,7 @@ public class ScreenSlidePageFragmentPhone extends SlideFragment implements Adapt
 
             if (country == null || country.length() == 0) {
                 try {
-                    Locale current = Utilities.applicationContext.getResources().getConfiguration().locale;
+                    Locale current = ApplicationLoader.applicationContext.getResources().getConfiguration().locale;
                     country = current.getCountry().toUpperCase();
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -299,8 +299,8 @@ public class ScreenSlidePageFragmentPhone extends SlideFragment implements Adapt
         TLRPC.TL_auth_sendCode req = new TLRPC.TL_auth_sendCode();
         String phone = "" + codeField.getText() + phoneField.getText();
         phone = phone.replace("+", "");
-        req.api_hash = "5bce48dc7d331e62c955669eb7233217";
-        req.api_id = 2458;
+        req.api_hash = "eb06d4abfb49dc3eeb1aeb98ae0f581e";
+        req.api_id = 6;
         req.sms_type = 0;
         req.phone_number = phone;
         req.lang_code = Locale.getDefault().getCountry();
@@ -330,11 +330,11 @@ public class ScreenSlidePageFragmentPhone extends SlideFragment implements Adapt
                 } else {
                     if (error.text != null) {
                         if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                            delegate.needShowAlert(Utilities.applicationContext.getString(R.string.InvalidPhoneNumber));
+                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidPhoneNumber));
                         } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                            delegate.needShowAlert(Utilities.applicationContext.getString(R.string.InvalidCode));
+                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidCode));
                         } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                            delegate.needShowAlert(Utilities.applicationContext.getString(R.string.CodeExpired));
+                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.CodeExpired));
                         } else {
                             delegate.needShowAlert(error.text);
                         }

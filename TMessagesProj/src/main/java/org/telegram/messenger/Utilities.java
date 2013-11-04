@@ -18,6 +18,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.text.Html;
 import android.text.SpannableStringBuilder;
+import android.text.format.DateFormat;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
@@ -25,6 +26,7 @@ import android.view.inputmethod.InputMethodManager;
 
 import org.telegram.TL.TLClassStore;
 import org.telegram.TL.TLObject;
+import org.telegram.ui.ApplicationLoader;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -50,7 +52,6 @@ import java.util.zip.GZIPInputStream;
 import javax.crypto.Cipher;
 
 public class Utilities {
-    public static Context applicationContext;
     public static Handler applicationHandler;
     private final static Integer lock = 1;
 
@@ -77,10 +78,10 @@ public class Utilities {
     public static File getCacheDir() {
         if (externalCacheNotAvailableState == 1 || externalCacheNotAvailableState == 0 && Environment.getExternalStorageState().startsWith(Environment.MEDIA_MOUNTED)) {
             externalCacheNotAvailableState = 1;
-            return applicationContext.getExternalCacheDir();
+            return ApplicationLoader.applicationContext.getExternalCacheDir();
         }
         externalCacheNotAvailableState = 2;
-        return applicationContext.getCacheDir();
+        return ApplicationLoader.applicationContext.getCacheDir();
     }
 
     public static TPFactorizedValue getFactorizedValue(long what) {
@@ -230,7 +231,7 @@ public class Utilities {
         synchronized (cache) {
             if (!cache.containsKey(assetPath)) {
                 try {
-                    Typeface t = Typeface.createFromAsset(applicationContext.getAssets(),
+                    Typeface t = Typeface.createFromAsset(ApplicationLoader.applicationContext.getAssets(),
                             assetPath);
                     cache.put(assetPath, t);
                 } catch (Exception e) {
@@ -304,11 +305,19 @@ public class Utilities {
         formatterYearMax = FastDateFormat.getInstance("dd.MM.yyyy", locale);
         chatDate = FastDateFormat.getInstance("d MMMM", locale);
         chatFullDate = FastDateFormat.getInstance("d MMMM yyyy", locale);
-        if (lang != null && lang.toLowerCase().equals("ar")) {
-            formatterDay = FastDateFormat.getInstance("h:mm a", locale);
+        if (lang != null) {
+            if (DateFormat.is24HourFormat(ApplicationLoader.applicationContext)) {
+                formatterDay = FastDateFormat.getInstance("HH:mm", locale);
+            } else {
+                if (lang.toLowerCase().equals("ar")) {
+                    formatterDay = FastDateFormat.getInstance("h:mm a", locale);
+                } else {
+                    formatterDay = FastDateFormat.getInstance("h:mm a", Locale.US);
+                }
+            }
         } else {
-            formatterDay = FastDateFormat.getInstance("h:mm a", Locale.US);}
-
+            formatterDay = FastDateFormat.getInstance("h:mm a", Locale.US);
+        }
     }
 
     public static String formatDateChat(long date) {
@@ -335,7 +344,7 @@ public class Utilities {
         if (dateDay == day && year == dateYear) {
             return formatterDay.format(new Date(date * 1000));
         } else if (dateDay + 1 == day && year == dateYear) {
-            return applicationContext.getResources().getString(R.string.Yesterday);
+            return ApplicationLoader.applicationContext.getResources().getString(R.string.Yesterday);
         } else if (year == dateYear) {
             return formatterMonth.format(new Date(date * 1000));
         } else {
@@ -352,13 +361,13 @@ public class Utilities {
         int dateYear = rightNow.get(Calendar.YEAR);
 
         if (dateDay == day && year == dateYear) {
-            return String.format("%s %s", applicationContext.getResources().getString(R.string.TodayAt), formatterDay.format(new Date(date * 1000)));
+            return String.format("%s %s", ApplicationLoader.applicationContext.getResources().getString(R.string.TodayAt), formatterDay.format(new Date(date * 1000)));
         } else if (dateDay + 1 == day && year == dateYear) {
-            return String.format("%s %s", applicationContext.getResources().getString(R.string.YesterdayAt), formatterDay.format(new Date(date * 1000)));
+            return String.format("%s %s", ApplicationLoader.applicationContext.getResources().getString(R.string.YesterdayAt), formatterDay.format(new Date(date * 1000)));
         } else if (year == dateYear) {
-            return String.format("%s %s %s", formatterMonth.format(new Date(date * 1000)), applicationContext.getResources().getString(R.string.OtherAt), formatterDay.format(new Date(date * 1000)));
+            return String.format("%s %s %s", formatterMonth.format(new Date(date * 1000)), ApplicationLoader.applicationContext.getResources().getString(R.string.OtherAt), formatterDay.format(new Date(date * 1000)));
         } else {
-            return String.format("%s %s %s", formatterYear.format(new Date(date * 1000)), applicationContext.getResources().getString(R.string.OtherAt), formatterDay.format(new Date(date * 1000)));
+            return String.format("%s %s %s", formatterYear.format(new Date(date * 1000)), ApplicationLoader.applicationContext.getResources().getString(R.string.OtherAt), formatterDay.format(new Date(date * 1000)));
         }
     }
 
@@ -401,7 +410,7 @@ public class Utilities {
     public static void RunOnUIThread(Runnable runnable) {
         synchronized (lock) {
             if (applicationHandler == null) {
-                applicationHandler = new Handler(applicationContext.getMainLooper());
+                applicationHandler = new Handler(ApplicationLoader.applicationContext.getMainLooper());
             }
             applicationHandler.post(runnable);
         }
@@ -419,18 +428,25 @@ public class Utilities {
             R.drawable.user_placeholder_orange};
 
     public static int[] arrGroupsAvatars = {
-            R.drawable.group_placeholder_red,
             R.drawable.group_placeholder_green,
-            R.drawable.group_placeholder_yellow,
+            R.drawable.group_placeholder_red,
             R.drawable.group_placeholder_blue,
-            R.drawable.group_placeholder_purple,
-            R.drawable.group_placeholder_pink,
-            R.drawable.group_placeholder_cyan,
-            R.drawable.group_placeholder_orange};
+            R.drawable.group_placeholder_yellow};
 
     public static int getColorIndex(int id) {
+        int[] arr;
+        if (id >= 0) {
+            arr = arrUsersAvatars;
+        } else {
+            arr = arrGroupsAvatars;
+        }
         try {
-            String str = String.format(Locale.US, "%d%d", id, UserConfig.clientUserId);
+            String str;
+            if (id >= 0) {
+                str = String.format(Locale.US, "%d%d", id, UserConfig.clientUserId);
+            } else {
+                str = String.format(Locale.US, "%d", id);
+            }
             if (str.length() > 15) {
                 str = str.substring(0, 15);
             }
@@ -440,11 +456,11 @@ public class Utilities {
             if (b < 0) {
                 b += 256;
             }
-            return Math.abs(b) % arrColors.length;
+            return Math.abs(b) % arr.length;
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return id % arrColors.length;
+        return id % arr.length;
     }
 
     public static int getColorForId(int id) {
@@ -462,7 +478,7 @@ public class Utilities {
     }
 
     public static int getGroupAvatarForId(int id) {
-        return arrGroupsAvatars[getColorIndex(id)];
+        return arrGroupsAvatars[getColorIndex(-id)];
     }
 
     public static String MD5(String md5) {
@@ -488,7 +504,7 @@ public class Utilities {
         File f = new File(fromPath);
         Uri contentUri = Uri.fromFile(f);
         mediaScanIntent.setData(contentUri);
-        applicationContext.sendBroadcast(mediaScanIntent);
+        ApplicationLoader.applicationContext.sendBroadcast(mediaScanIntent);
     }
 
     public static void addMediaToGallery(Uri uri) {
@@ -497,13 +513,13 @@ public class Utilities {
         }
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
         mediaScanIntent.setData(uri);
-        applicationContext.sendBroadcast(mediaScanIntent);
+        ApplicationLoader.applicationContext.sendBroadcast(mediaScanIntent);
     }
 
     private static File getAlbumDir() {
         File storageDir = null;
         if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
-            storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), applicationContext.getResources().getString(R.string.AppName));
+            storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), ApplicationLoader.applicationContext.getResources().getString(R.string.AppName));
             if (storageDir != null) {
                 if (! storageDir.mkdirs()) {
                     if (! storageDir.exists()){
@@ -578,7 +594,7 @@ public class Utilities {
             /*
 
             String fileName = "VID" + id + ".mp4";
-            return new File(Utilities.applicationContext.getCacheDir(), fileName);
+            return new File(ApplicationLoader.applicationContext.getCacheDir(), fileName);
              */
         } catch (Exception e) {
             e.printStackTrace();

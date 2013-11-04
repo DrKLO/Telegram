@@ -228,7 +228,6 @@
 31;NL;Netherlands
 30;GR;Greece
 27;ZA;South Africa
-21;DZ;Algeria
 20;EG;Egypt
 7;KZ;Kazakhstan
 7;RU;Russia

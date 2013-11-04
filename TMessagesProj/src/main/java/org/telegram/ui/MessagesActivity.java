@@ -92,6 +92,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.Instance.addObserver(this, MessagesController.reloadSearchResults);
         NotificationCenter.Instance.addObserver(this, MessagesController.userPrintUpdateAll);
         NotificationCenter.Instance.addObserver(this, MessagesController.encryptedChatUpdated);
+        NotificationCenter.Instance.addObserver(this, MessagesController.contactsDidLoaded);
         NotificationCenter.Instance.addObserver(this, 1234);
         if (getArguments() != null) {
             onlySelect = getArguments().getBoolean("onlySelect", false);
@@ -109,6 +110,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.Instance.removeObserver(this, MessagesController.reloadSearchResults);
         NotificationCenter.Instance.removeObserver(this, MessagesController.userPrintUpdateAll);
         NotificationCenter.Instance.removeObserver(this, MessagesController.encryptedChatUpdated);
+        NotificationCenter.Instance.removeObserver(this, MessagesController.contactsDidLoaded);
         NotificationCenter.Instance.removeObserver(this, 1234);
         delegate = null;
     }
@@ -328,7 +330,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 view = (ImageView)parentActivity.findViewById(com.actionbarsherlock.R.id.abs__home);
             }
             if (view != null) {
-                view.setPadding((int)(Utilities.applicationContext.getResources().getDisplayMetrics().density * 6), 0, (int)(Utilities.applicationContext.getResources().getDisplayMetrics().density * 6), 0);
+                view.setPadding((int)(ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density * 6), 0, (int)(ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density * 6), 0);
             }
             actionBar.setHomeButtonEnabled(false);
             actionBar.setDisplayShowTitleEnabled(true);
@@ -420,6 +422,10 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             if (messagesListView != null) {
                 updateVisibleRows();
             }
+        } else if (id == MessagesController.contactsDidLoaded) {
+            if (messagesListView != null) {
+                updateVisibleRows();
+            }
         }
     }
 
@@ -453,7 +459,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     WindowManager manager = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
                     Display display = manager.getDefaultDisplay();
                     int rotation = display.getRotation();
-                    density = Utilities.applicationContext.getResources().getDisplayMetrics().density;
+                    density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
 
                     int height;
                     int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
@@ -1043,8 +1049,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 nameTextView.setText(chat.title);
                 nameTextView.setTextColor(0xff000000);
             } else if (user != null) {
-                if (user.id != 333000 && !MessagesController.Instance.contactsByPhones.containsKey(user.phone)) {
-                    if (MessagesController.Instance.contactsByPhones.isEmpty() && MessagesController.Instance.loadingContacts) {
+                if (user.id != 333000 && MessagesController.Instance.contactsDict.get(user.id) == null) {
+                    if (MessagesController.Instance.contactsDict.size() == 0 && MessagesController.Instance.loadingContacts) {
                         nameTextView.setTextColor(0xff000000);
                         nameTextView.setText(Utilities.formatName(user.first_name, user.last_name));
                     } else {

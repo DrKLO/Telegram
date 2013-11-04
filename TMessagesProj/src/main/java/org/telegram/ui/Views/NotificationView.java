@@ -29,6 +29,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
+import org.telegram.ui.ApplicationLoader;
 
 import java.util.Locale;
 import java.util.Timer;
@@ -119,11 +120,11 @@ public class NotificationView extends LinearLayout {
             }
         });
 
-        notificationParentView = new FrameLayout(Utilities.applicationContext);
+        notificationParentView = new FrameLayout(getContext());
         notificationParentView.addView(this);
         notificationParentView.setFocusable(false);
         setFocusable(false);
-        WindowManager wm = (WindowManager)Utilities.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+        final WindowManager wm = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
         notificationLayoutParams = new WindowManager.LayoutParams();
         notificationLayoutParams.height = 90;
         notificationLayoutParams.format = PixelFormat.TRANSLUCENT;
@@ -131,11 +132,11 @@ public class NotificationView extends LinearLayout {
         notificationLayoutParams.gravity = Gravity.CLIP_HORIZONTAL | Gravity.TOP;
         notificationLayoutParams.type = WindowManager.LayoutParams.TYPE_SYSTEM_ERROR;
         notificationLayoutParams.flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS | WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-        notificationLayoutParams.y = -300;
         isVisible = false;
         wm.addView(notificationParentView, notificationLayoutParams);
+        notificationParentView.setVisibility(View.INVISIBLE);
 
-        animHide = AnimationUtils.loadAnimation(Utilities.applicationContext, R.anim.slide_up);
+        animHide = AnimationUtils.loadAnimation(ApplicationLoader.applicationContext, R.anim.slide_up);
         animHide.setAnimationListener(new Animation.AnimationListener() {
             public void onAnimationStart(Animation animation) {
                 onScreen = false;
@@ -147,14 +148,13 @@ public class NotificationView extends LinearLayout {
 
             public void onAnimationEnd(Animation animation) {
                 setVisibility(GONE);
-                WindowManager wm = (WindowManager)Utilities.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+                WindowManager wm = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
                 isVisible = false;
-                notificationLayoutParams.y = -300;
-                wm.updateViewLayout(notificationParentView, notificationLayoutParams);
+                notificationParentView.setVisibility(View.INVISIBLE);
             }
         });
 
-        animShow = AnimationUtils.loadAnimation(Utilities.applicationContext, R.anim.slide_down);
+        animShow = AnimationUtils.loadAnimation(ApplicationLoader.applicationContext, R.anim.slide_down);
         animShow.setAnimationListener(new Animation.AnimationListener() {
             public void onAnimationStart(Animation animation) {
                 setVisibility(VISIBLE);
@@ -237,10 +237,9 @@ public class NotificationView extends LinearLayout {
         }
 
         if (!onScreen) {
-            WindowManager wm = (WindowManager)Utilities.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+            WindowManager wm = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
             isVisible = true;
-            notificationLayoutParams.y = 0;
-            wm.updateViewLayout(notificationParentView, notificationLayoutParams);
+            notificationParentView.setVisibility(View.VISIBLE);
             startAnimation(animShow);
         }
     }
@@ -261,10 +260,9 @@ public class NotificationView extends LinearLayout {
                 onScreen = false;
                 setVisibility(GONE);
                 if (notificationParentView != null && notificationParentView.getParent() != null) {
-                    WindowManager wm = (WindowManager)Utilities.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+                    WindowManager wm = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
                     isVisible = false;
-                    notificationLayoutParams.y = -300;
-                    wm.updateViewLayout(notificationParentView, notificationLayoutParams);
+                    notificationParentView.setVisibility(View.INVISIBLE);
                 }
             }
         }
@@ -276,7 +274,7 @@ public class NotificationView extends LinearLayout {
                 notificationParentView.removeView(this);
                 try {
                     if (notificationParentView.getParent() != null) {
-                        WindowManager wm = (WindowManager)Utilities.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+                        WindowManager wm = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
                         wm.removeViewImmediate(notificationParentView);
                     }
                 } catch (Exception e) {
@@ -322,7 +320,7 @@ public class NotificationView extends LinearLayout {
         if (notificationParentView != null) {
             notificationLayoutParams.height = height + (int)(2 * density);
             if (notificationParentView.getParent() != null) {
-                WindowManager wm = (WindowManager) Utilities.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+                WindowManager wm = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
                 wm.updateViewLayout(notificationParentView, notificationLayoutParams);
             }
         }

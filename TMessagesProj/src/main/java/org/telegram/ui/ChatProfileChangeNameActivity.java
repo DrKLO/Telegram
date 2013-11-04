@@ -111,7 +111,7 @@ public class ChatProfileChangeNameActivity extends BaseFragment {
                     int rotation = display.getRotation();
                     int height;
                     int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
-                    float density = Utilities.applicationContext.getResources().getDisplayMetrics().density;
+                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
                     if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
                         height = currentActionBarHeight;
                     } else {
@@ -173,7 +173,7 @@ public class ChatProfileChangeNameActivity extends BaseFragment {
         }
         ((ApplicationActivity)parentActivity).updateActionBar();
         fixLayout();
-        SharedPreferences preferences = Utilities.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
         boolean animations = preferences.getBoolean("view_animations", true);
         if (!animations) {
             firstNameField.requestFocus();

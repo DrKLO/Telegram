@@ -16,6 +16,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.ApplicationLoader;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -42,57 +43,57 @@ public class MessageObject {
                     fromUser = MessagesController.Instance.users.get(message.from_id);
                 }
                 if (message.action instanceof TLRPC.TL_messageActionChatCreate) {
-                    messageText = Utilities.applicationContext.getResources().getString(R.string.ActionCreateGroup).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                    messageText = ApplicationLoader.applicationContext.getResources().getString(R.string.ActionCreateGroup).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
                 } else if (message.action instanceof TLRPC.TL_messageActionChatDeleteUser) {
                     if (message.action.user_id == message.from_id) {
-                        messageText = Utilities.applicationContext.getResources().getString(R.string.ActionLeftUser).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                        messageText = ApplicationLoader.applicationContext.getResources().getString(R.string.ActionLeftUser).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
                     } else {
                         TLRPC.User who = users.get(message.action.user_id);
-                        String str = Utilities.applicationContext.getResources().getString(R.string.ActionKickUser);
+                        String str = ApplicationLoader.applicationContext.getResources().getString(R.string.ActionKickUser);
                         messageText = str.replace("un2", Utilities.formatName(who.first_name, who.last_name)).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionChatAddUser) {
                     TLRPC.User whoUser = users.get(message.action.user_id);
-                    String str = Utilities.applicationContext.getResources().getString(R.string.ActionAddUser);
+                    String str = ApplicationLoader.applicationContext.getResources().getString(R.string.ActionAddUser);
                     messageText = str.replace("un2", Utilities.formatName(whoUser.first_name, whoUser.last_name)).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
                 } else if (message.action instanceof TLRPC.TL_messageActionChatEditPhoto) {
                     photoThumbs = new ArrayList<PhotoObject>();
                     for (TLRPC.PhotoSize size : message.action.photo.sizes) {
                         photoThumbs.add(new PhotoObject(size));
                     }
-                    messageText = Utilities.applicationContext.getResources().getString(R.string.ActionChangedPhoto).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                    messageText = ApplicationLoader.applicationContext.getResources().getString(R.string.ActionChangedPhoto).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
                 } else if (message.action instanceof TLRPC.TL_messageActionChatEditTitle) {
-                    messageText = Utilities.applicationContext.getResources().getString(R.string.ActionChangedTitle).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name)).replace("un2", message.action.title);
+                    messageText = ApplicationLoader.applicationContext.getResources().getString(R.string.ActionChangedTitle).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name)).replace("un2", message.action.title);
                 } else if (message.action instanceof TLRPC.TL_messageActionChatDeletePhoto) {
-                    messageText = Utilities.applicationContext.getResources().getString(R.string.ActionRemovedPhoto).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                    messageText = ApplicationLoader.applicationContext.getResources().getString(R.string.ActionRemovedPhoto).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
                 } else if (message.action instanceof TLRPC.TL_messageActionTTLChange) {
                     if (message.action.ttl != 0) {
                         String timeString;
                         if (message.action.ttl == 2) {
-                            timeString = Utilities.applicationContext.getResources().getString(R.string.MessageLifetime2s);
+                            timeString = ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetime2s);
                         } else if (message.action.ttl == 5) {
-                            timeString = Utilities.applicationContext.getResources().getString(R.string.MessageLifetime5s);
+                            timeString = ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetime5s);
                         } else if (message.action.ttl == 60) {
-                            timeString = Utilities.applicationContext.getResources().getString(R.string.MessageLifetime1m);
+                            timeString = ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetime1m);
                         } else if (message.action.ttl == 60 * 60) {
-                            timeString = Utilities.applicationContext.getResources().getString(R.string.MessageLifetime1h);
+                            timeString = ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetime1h);
                         } else if (message.action.ttl == 60 * 60 * 24) {
-                            timeString = Utilities.applicationContext.getResources().getString(R.string.MessageLifetime1d);
+                            timeString = ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetime1d);
                         } else if (message.action.ttl == 60 * 60 * 24 * 7) {
-                            timeString = Utilities.applicationContext.getResources().getString(R.string.MessageLifetime1w);
+                            timeString = ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetime1w);
                         } else {
                             timeString = String.format("%d", message.action.ttl);
                         }
                         if (message.from_id == UserConfig.clientUserId) {
-                            messageText = String.format(Utilities.applicationContext.getResources().getString(R.string.MessageLifetimeChangedOutgoing), timeString);
+                            messageText = String.format(ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetimeChangedOutgoing), timeString);
                         } else {
-                            messageText = String.format(Utilities.applicationContext.getResources().getString(R.string.MessageLifetimeChanged), fromUser.first_name, timeString);
+                            messageText = String.format(ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetimeChanged), fromUser.first_name, timeString);
                         }
                     } else {
                         if (message.from_id == UserConfig.clientUserId) {
-                            messageText = String.format(Utilities.applicationContext.getResources().getString(R.string.MessageLifetimeRemoved), Utilities.applicationContext.getResources().getString(R.string.FromYou));
+                            messageText = String.format(ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetimeRemoved), ApplicationLoader.applicationContext.getResources().getString(R.string.FromYou));
                         } else {
-                            messageText = String.format(Utilities.applicationContext.getResources().getString(R.string.MessageLifetimeRemoved), fromUser.first_name);
+                            messageText = String.format(ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetimeRemoved), fromUser.first_name);
                         }
                     }
                 }
@@ -107,7 +108,7 @@ public class MessageObject {
                         imagePreview = obj.image;
                     }
                 }
-                messageText = Utilities.applicationContext.getResources().getString(R.string.AttachPhoto);
+                messageText = ApplicationLoader.applicationContext.getResources().getString(R.string.AttachPhoto);
             } else if (message.media instanceof TLRPC.TL_messageMediaVideo) {
                 photoThumbs = new ArrayList<PhotoObject>();
                 PhotoObject obj = new PhotoObject(message.media.video.thumb);
@@ -115,11 +116,11 @@ public class MessageObject {
                 if (imagePreview == null && obj.image != null) {
                     imagePreview = obj.image;
                 }
-                messageText = Utilities.applicationContext.getResources().getString(R.string.AttachVideo);
+                messageText = ApplicationLoader.applicationContext.getResources().getString(R.string.AttachVideo);
             } else if (message.media instanceof TLRPC.TL_messageMediaGeo) {
-                messageText = Utilities.applicationContext.getResources().getString(R.string.AttachLocation);
+                messageText = ApplicationLoader.applicationContext.getResources().getString(R.string.AttachLocation);
             } else if (message.media instanceof TLRPC.TL_messageMediaContact) {
-                messageText = Utilities.applicationContext.getResources().getString(R.string.AttachContact);
+                messageText = ApplicationLoader.applicationContext.getResources().getString(R.string.AttachContact);
             }
         } else {
             messageText = message.message;

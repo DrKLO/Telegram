@@ -18,6 +18,7 @@ import android.view.View;
 import android.widget.ImageView;
 
 import org.telegram.TL.TLRPC;
+import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Views.BackupImageView;
 
 import java.io.ByteArrayOutputStream;
@@ -247,7 +248,7 @@ public class FileLoader {
     public FileLoader() {
         int maxMemory = (int)Runtime.getRuntime().maxMemory();
         int cacheSize = maxMemory / 10;
-        density = Utilities.applicationContext.getResources().getDisplayMetrics().density;
+        density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
         if (Build.VERSION.SDK_INT < 11) {
             runtimeHack = new VMRuntimeHack();
             cacheSize = 1024 * 1024 * 3;

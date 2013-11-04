@@ -27,6 +27,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import org.telegram.ui.ApplicationLoader;
+
 public class Emoji {
 	private static final int[] ROW_SIZES = {27, 29, 33, 34, 34};
 	private static HashMap<Long, DrawableInfo> rects = new HashMap<Long, DrawableInfo>();
@@ -287,7 +289,7 @@ public class Emoji {
                     0x00000000D83DDD34L, 0x00000000D83DDD35L, 0x00000000D83DDD3BL, 0x00000000D83DDD36L, 0x00000000D83DDD37L, 0x00000000D83DDD38L, 0x00000000D83DDD39L}};
 	
 	static {
-		imgSize = Math.min(scale(30), Utilities.applicationContext.getResources().getDisplayMetrics().density < 1.5f ? 28 : 56);
+		imgSize = Math.min(scale(30), ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density < 1.5f ? 28 : 56);
 		drawImgSize = scale(20);
 		bigImgSize = scale(30);
 		if(Math.abs(imgSize - bigImgSize) < 5) {
@@ -306,7 +308,7 @@ public class Emoji {
 	}
 
     public static int scale(float value) {
-        return (int)(Utilities.applicationContext.getResources().getDisplayMetrics().density * value);
+        return (int)(ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density * value);
     }
 
 	private static Bitmap loadPage(final int page){
@@ -317,13 +319,13 @@ public class Emoji {
 			opts.inPreferredConfig = Bitmap.Config.ARGB_8888;
 
 			opts.inDither = false;
-			if (Utilities.applicationContext.getResources().getDisplayMetrics().density < 1.5f) {
+			if (ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density < 1.5f) {
 				opts.inSampleSize = 2;
             }
 
 			int iw, ih;
 
-            InputStream is = Utilities.applicationContext.getAssets().open("emojisprite_" + page + ".png");
+            InputStream is = ApplicationLoader.applicationContext.getAssets().open("emojisprite_" + page + ".png");
             Bitmap color = BitmapFactory.decodeStream(is, null, opts);
             is.close();
 
@@ -559,8 +561,8 @@ public class Emoji {
 
             int sz = super.getSize(paint, text, start, end, fm);
 
-            int offset = (int)(8 * Utilities.applicationContext.getResources().getDisplayMetrics().density);
-            int w = (int)(20 * Utilities.applicationContext.getResources().getDisplayMetrics().density / 2);
+            int offset = (int)(8 * ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density);
+            int w = (int)(20 * ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density / 2);
             fm.top = -w - offset;
             fm.bottom = w - offset;
             fm.ascent = -w - offset;
@@ -586,7 +588,7 @@ public class Emoji {
 
             int sz = super.getSize(paint, text, start, end, fm);
 
-            int offset = (int)(6 * Utilities.applicationContext.getResources().getDisplayMetrics().density);
+            int offset = (int)(6 * ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density);
             int w = (fm.bottom - fm.top) / 2;
             fm.top = -w - offset;
             fm.bottom = w - offset;

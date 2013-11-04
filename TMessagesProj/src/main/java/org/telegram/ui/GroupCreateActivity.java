@@ -161,7 +161,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                 } else {
                                     doneTextView.setText(getStringEntry(R.string.Done) + " (" + selectedContacts.size() + ")");
                                 }
-                                countTextView.setText(selectedContacts.size() + "/100");
+                                countTextView.setText(selectedContacts.size() + "/200");
                                 listView.invalidateViews();
                             } else {
                                 search = true;
@@ -219,7 +219,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         userSelectEditText.setSelection(text.length());
                         ignoreChange = false;
                     } else {
-                        if (selectedContacts.size() == 100) {
+                        if (selectedContacts.size() == 200) {
                             return;
                         }
                         ignoreChange = true;
@@ -232,7 +232,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     } else {
                         doneTextView.setText(getStringEntry(R.string.Done) + " (" + selectedContacts.size() + ")");
                     }
-                    countTextView.setText(selectedContacts.size() + "/100");
+                    countTextView.setText(selectedContacts.size() + "/200");
                     if (searching || searchWas) {
                         searching = false;
                         searchWas = false;
@@ -280,7 +280,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     int rotation = display.getRotation();
                     int height;
                     int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
-                    float density = Utilities.applicationContext.getResources().getDisplayMetrics().density;
+                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
                     if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
                         height = currentActionBarHeight;
                     } else {

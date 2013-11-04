@@ -76,7 +76,6 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
             }
         }
         setContentView(R.layout.application_layout);
-        notificationView = (NotificationView) getLayoutInflater().inflate(R.layout.notification_layout, null);
         shadowView = findViewById(R.id.shadow);
         NotificationCenter.Instance.addObserver(this, 1234);
         NotificationCenter.Instance.addObserver(this, 658);
@@ -342,6 +341,9 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
     @Override
     protected void onResume() {
         super.onResume();
+        if (notificationView == null && getLayoutInflater() != null) {
+            notificationView = (NotificationView) getLayoutInflater().inflate(R.layout.notification_layout, null);
+        }
         fixLayout();
         checkForCrashes();
         checkForUpdates();
@@ -389,7 +391,7 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
                     WindowManager manager = (WindowManager) getSystemService(WINDOW_SERVICE);
                     Display display = manager.getDefaultDisplay();
                     int rotation = display.getRotation();
-                    float density = Utilities.applicationContext.getResources().getDisplayMetrics().density;
+                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
 
                     int height;
                     int currentActionBarHeight = getSupportActionBar().getHeight();
@@ -575,7 +577,7 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
             ApplicationLoader.fragmentsStack.remove(ApplicationLoader.fragmentsStack.size() - 1);
             current.onFragmentDestroy();
         }
-        SharedPreferences preferences = Utilities.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
         boolean animations = preferences.getBoolean("view_animations", true);
         if (animations) {
             if (bySwipe) {
@@ -614,7 +616,7 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
         BaseFragment prev = ApplicationLoader.fragmentsStack.get(ApplicationLoader.fragmentsStack.size() - 2);
         FragmentManager fm = getSupportFragmentManager();
         FragmentTransaction fTrans = fm.beginTransaction();
-        SharedPreferences preferences = Utilities.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
         boolean animations = preferences.getBoolean("view_animations", true);
         if (animations) {
             if (bySwipe) {

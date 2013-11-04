@@ -39,6 +39,7 @@ import android.util.SparseArray;
 
 import com.actionbarsherlock.app.SherlockFragmentActivity;
 
+import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.TL.TLClassStore;
 import org.telegram.TL.TLObject;
 import org.telegram.TL.TLRPC;
@@ -197,7 +198,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
         try {
             soundPool = new SoundPool(1, AudioManager.STREAM_NOTIFICATION, 0);
-            sound = soundPool.load(Utilities.applicationContext, R.raw.sound_a, 1);
+            sound = soundPool.load(ApplicationLoader.applicationContext, R.raw.sound_a, 1);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -364,7 +365,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     public void checkAppAccount() {
-        AccountManager am = AccountManager.get(Utilities.applicationContext);
+        AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
         Account[] accounts = am.getAccountsByType("org.telegram.messenger.account");
         boolean recreateAccount = false;
         if (UserConfig.currentUser != null) {
@@ -460,7 +461,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 req.peer = new TLRPC.TL_inputPeerChat();
                 req.peer.chat_id = -lower_part;
             } else {
-                TLRPC.User user = MessagesController.Instance.users.get(uid);
+                TLRPC.User user = users.get(lower_part);
                 if (user instanceof TLRPC.TL_userForeign || user instanceof TLRPC.TL_userRequest) {
                     req.peer = new TLRPC.TL_inputPeerForeign();
                     req.peer.access_hash = user.access_hash;
@@ -518,7 +519,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 req.peer = new TLRPC.TL_inputPeerChat();
                 req.peer.chat_id = -lower_part;
             } else {
-                TLRPC.User user = MessagesController.Instance.users.get(uid);
+                TLRPC.User user = users.get(lower_part);
                 if (user instanceof TLRPC.TL_userForeign || user instanceof TLRPC.TL_userRequest) {
                     req.peer = new TLRPC.TL_inputPeerForeign();
                     req.peer.access_hash = user.access_hash;
@@ -562,7 +563,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 final HashMap<String, ArrayList<Contact>> sectionsDict = new HashMap<String, ArrayList<Contact>>();
                 final ArrayList<String> sortedSectionsArray = new ArrayList<String>();
 
-                ContentResolver cr = Utilities.applicationContext.getContentResolver();
+                ContentResolver cr = ApplicationLoader.applicationContext.getContentResolver();
 
                 String[] projectioPhones = {
                         ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
@@ -594,23 +595,20 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                 contactsMap.put(id, contact);
                                 contact.id = id;
                             }
-                            number = number.replace(" ", "").replace("(", "").replace(")", "").replace("-", "").replace("+", "");
-                            if (number.startsWith("8")) {
-                                number = "7" + number.substring(1);
-                            }
+
                             contact.phones.add(number);
                             if (type == ContactsContract.CommonDataKinds.Phone.TYPE_CUSTOM) {
                                 contact.phoneTypes.add(pCur.getString(3));
                             } else if (type == ContactsContract.CommonDataKinds.Phone.TYPE_HOME) {
-                                contact.phoneTypes.add(Utilities.applicationContext.getString(R.string.PhoneHome));
+                                contact.phoneTypes.add(ApplicationLoader.applicationContext.getString(R.string.PhoneHome));
                             } else if (type == ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE) {
-                                contact.phoneTypes.add(Utilities.applicationContext.getString(R.string.PhoneMobile));
+                                contact.phoneTypes.add(ApplicationLoader.applicationContext.getString(R.string.PhoneMobile));
                             } else if (type == ContactsContract.CommonDataKinds.Phone.TYPE_WORK) {
-                                contact.phoneTypes.add(Utilities.applicationContext.getString(R.string.PhoneWork));
+                                contact.phoneTypes.add(ApplicationLoader.applicationContext.getString(R.string.PhoneWork));
                             } else if (type == ContactsContract.CommonDataKinds.Phone.TYPE_MAIN) {
-                                contact.phoneTypes.add(Utilities.applicationContext.getString(R.string.PhoneMain));
+                                contact.phoneTypes.add(ApplicationLoader.applicationContext.getString(R.string.PhoneMain));
                             } else {
-                                contact.phoneTypes.add(Utilities.applicationContext.getString(R.string.PhoneOther));
+                                contact.phoneTypes.add(ApplicationLoader.applicationContext.getString(R.string.PhoneOther));
                             }
                         }
                     }
@@ -676,7 +674,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         imp.client_id = id;
                         imp.first_name = value.first_name;
                         imp.last_name = value.last_name;
-                        imp.phone = value.phones.get(a);
+                        imp.phone = PhoneFormat.stripExceptNumbers(value.phones.get(a));
                         toImport.add(imp);
                         String str = imp.client_id + imp.first_name + imp.last_name + imp.phone;
                         if (mdEnc != null) {
@@ -747,7 +745,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
                 if (!toImport.isEmpty() && !UserConfig.importHash.equals(importHash)) {
                     UserConfig.importHash = importHash;
-                    UserConfig.saveConfig();
+                    UserConfig.saveConfig(false);
                     importContacts(toImport);
                 } else {
                     loadContacts(true);
@@ -774,7 +772,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 try {
                     Uri rawContactUri = ContactsContract.RawContacts.CONTENT_URI.buildUpon().appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_NAME, currentAccount.name).appendQueryParameter(
                             ContactsContract.RawContacts.ACCOUNT_TYPE, currentAccount.type).build();
-                    Cursor c1 = Utilities.applicationContext.getContentResolver().query(rawContactUri, new String[]{BaseColumns._ID, ContactsContract.RawContacts.SYNC2}, null, null, null);
+                    Cursor c1 = ApplicationLoader.applicationContext.getContentResolver().query(rawContactUri, new String[]{BaseColumns._ID, ContactsContract.RawContacts.SYNC2}, null, null, null);
                     HashMap<Integer, Long> bookContacts = new HashMap<Integer, Long>();
                     if (c1 != null) {
                         while (c1.moveToNext()) {
@@ -832,7 +830,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         builder.withValue(ContactsContract.Data.DATA4, user.id);
         query.add(builder.build());
         try {
-            ContentProviderResult[] result = Utilities.applicationContext.getContentResolver().applyBatch(ContactsContract.AUTHORITY, query);
+            ContentProviderResult[] result = ApplicationLoader.applicationContext.getContentResolver().applyBatch(ContactsContract.AUTHORITY, query);
             return Long.parseLong(result[0].uri.getLastPathSegment());
         } catch (Exception e) {
             e.printStackTrace();
@@ -894,7 +892,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     req.peer = new TLRPC.TL_inputPeerChat();
                     req.peer.chat_id = -lower_part;
                 } else {
-                    TLRPC.User user = MessagesController.Instance.users.get(did);
+                    TLRPC.User user = users.get(lower_part);
                     if (user instanceof TLRPC.TL_userForeign || user instanceof TLRPC.TL_userRequest) {
                         req.peer = new TLRPC.TL_inputPeerForeign();
                         req.peer.access_hash = user.access_hash;
@@ -911,11 +909,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             if (res.offset > 0) {
                                 deleteDialog(did, res.offset, onlyHistory);
                             }
-                            if (UserConfig.lastSeqValue + 1 == res.seq) {
-                                UserConfig.lastSeqValue = res.seq;
-                                UserConfig.lastPtsValue = res.pts;
-                                UserConfig.saveConfig();
-                            } else if (UserConfig.lastSeqValue != res.seq) {
+                            if (MessagesStorage.lastSeqValue + 1 == res.seq) {
+                                MessagesStorage.lastSeqValue = res.seq;
+                                MessagesStorage.lastPtsValue = res.pts;
+                                MessagesStorage.Instance.saveDiffParams(MessagesStorage.lastSeqValue, MessagesStorage.lastPtsValue, MessagesStorage.lastDateValue, MessagesStorage.lastQtsValue);
+                            } else if (MessagesStorage.lastSeqValue != res.seq) {
                                 getDifference();
                             }
                         }
@@ -1057,13 +1055,13 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         ArrayList<Long> keys = new ArrayList<Long>(printingUsers.keySet());
         for (Long key : keys) {
             if (key > 0) {
-                newPrintingStrings.put(key, Html.fromHtml(String.format("<font color='#006fc8'>%s</font>", Utilities.applicationContext.getString(R.string.Typing))));
+                newPrintingStrings.put(key, Html.fromHtml(String.format("<font color='#006fc8'>%s</font>", ApplicationLoader.applicationContext.getString(R.string.Typing))));
             } else {
                 ArrayList<PrintingUser> arr = printingUsers.get(key);
                 int count = 0;
                 String label = "";
                 for (PrintingUser pu : arr) {
-                    TLRPC.User user = MessagesController.Instance.users.get(pu.userId);
+                    TLRPC.User user = users.get(pu.userId);
                     if (user != null) {
                         if (label.length() != 0) {
                             label += ", ";
@@ -1078,12 +1076,12 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 if (label.length() != 0) {
                     if (count > 1) {
                         if (arr.size() > 2) {
-                            newPrintingStrings.put(key, Html.fromHtml(String.format("<font color='#006fc8'>%s %s %s</font>", label, String.format(Utilities.applicationContext.getString(R.string.AndMoreTyping), arr.size() - 2), Utilities.applicationContext.getString(R.string.AreTyping))));
+                            newPrintingStrings.put(key, Html.fromHtml(String.format("<font color='#006fc8'>%s %s %s</font>", label, String.format(ApplicationLoader.applicationContext.getString(R.string.AndMoreTyping), arr.size() - 2), ApplicationLoader.applicationContext.getString(R.string.AreTyping))));
                         } else {
-                            newPrintingStrings.put(key, Html.fromHtml(String.format("<font color='#006fc8'>%s %s</font>", label, Utilities.applicationContext.getString(R.string.AreTyping))));
+                            newPrintingStrings.put(key, Html.fromHtml(String.format("<font color='#006fc8'>%s %s</font>", label, ApplicationLoader.applicationContext.getString(R.string.AreTyping))));
                         }
                     } else {
-                        newPrintingStrings.put(key, Html.fromHtml(String.format("<font color='#006fc8'>%s %s</font>", label, Utilities.applicationContext.getString(R.string.IsTyping))));
+                        newPrintingStrings.put(key, Html.fromHtml(String.format("<font color='#006fc8'>%s %s</font>", label, ApplicationLoader.applicationContext.getString(R.string.IsTyping))));
                     }
                 }
             }
@@ -1127,7 +1125,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         ids += aContactsArr.user_id;
                     }
                     UserConfig.contactsHash = Utilities.MD5(ids);
-                    UserConfig.saveConfig();
+                    UserConfig.saveConfig(false);
                     if (from == 2) {
                         loadContacts(false);
                     }
@@ -1414,7 +1412,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     public void run() {
                         for (TLRPC.User u : messagesRes.users) {
                             if (isCache) {
-                                users.putIfAbsent(u.id, u);
+                                if (u.id == UserConfig.clientUserId || u.id == 333000) {
+                                    users.put(u.id, u);
+                                } else {
+                                    users.putIfAbsent(u.id, u);
+                                }
                             } else {
                                 users.put(u.id, u);
                                 if (u.id == UserConfig.clientUserId) {
@@ -1568,7 +1570,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         public void run() {
                             for (TLRPC.User u : dialogsRes.users) {
                                 if (isCache) {
-                                    users.putIfAbsent(u.id, u);
+                                    if (u.id == UserConfig.clientUserId || u.id == 333000) {
+                                        users.put(u.id, u);
+                                    } else {
+                                        users.putIfAbsent(u.id, u);
+                                    }
                                 } else {
                                     users.put(u.id, u);
                                     if (u.id == UserConfig.clientUserId) {
@@ -1632,7 +1638,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     public void run() {
                         for (TLRPC.User u : dialogsRes.users) {
                             if (isCache) {
-                                users.putIfAbsent(u.id, u);
+                                if (u.id == UserConfig.clientUserId || u.id == 333000) {
+                                    users.put(u.id, u);
+                                } else {
+                                    users.putIfAbsent(u.id, u);
+                                }
                             } else {
                                 users.put(u.id, u);
                                 if (u.id == UserConfig.clientUserId) {
@@ -1737,7 +1747,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         if (sizes.isEmpty()) {
             return null;
         } else {
-            UserConfig.saveConfig();
+            UserConfig.saveConfig(false);
             TLRPC.TL_photo photo = new TLRPC.TL_photo();
             photo.user_id = UserConfig.clientUserId;
             photo.date = ConnectionsManager.Instance.getCurrentTime();
@@ -1784,11 +1794,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             markDialogAsRead(dialog_id, 0, res.offset, max_date, was);
                         }
 
-                        if (UserConfig.lastSeqValue + 1 == res.seq) {
-                            UserConfig.lastSeqValue = res.seq;
-                            UserConfig.lastPtsValue = res.pts;
-                            UserConfig.saveConfig();
-                        } else if (UserConfig.lastSeqValue != res.seq) {
+                        if (MessagesStorage.lastSeqValue + 1 == res.seq) {
+                            MessagesStorage.lastSeqValue = res.seq;
+                            MessagesStorage.lastPtsValue = res.pts;
+                            MessagesStorage.Instance.saveDiffParams(MessagesStorage.lastSeqValue, MessagesStorage.lastPtsValue, MessagesStorage.lastDateValue, MessagesStorage.lastQtsValue);
+                        } else if (MessagesStorage.lastSeqValue != res.seq) {
                             getDifference();
                         }
                     }
@@ -1914,7 +1924,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         newMsg.out = true;
         newMsg.date = ConnectionsManager.Instance.getCurrentTime();
         newMsg.random_id = getNextRandomId();
-        UserConfig.saveConfig();
+        UserConfig.saveConfig(false);
         final MessageObject newMsgObj = new MessageObject(newMsg, users);
         newMsgObj.messageOwner.send_state = MESSAGE_SEND_STATE_SENDING;
 
@@ -2048,7 +2058,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         newMsg.out = true;
         newMsg.date = ConnectionsManager.Instance.getCurrentTime();
         newMsg.random_id = getNextRandomId();
-        UserConfig.saveConfig();
+        UserConfig.saveConfig(false);
         final MessageObject newMsgObj = new MessageObject(newMsg, null);
         newMsgObj.messageOwner.send_state = MESSAGE_SEND_STATE_SENDING;
 
@@ -2284,6 +2294,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     private void performSendEncryptedRequest(final TLRPC.DecryptedMessage req, final MessageObject newMsgObj, final TLRPC.EncryptedChat chat, final TLRPC.InputEncryptedFile encryptedFile) {
+        if (req == null) {
+            return;
+        }
         //TLRPC.decryptedMessageLayer messageLayer = new TLRPC.decryptedMessageLayer();
         //messageLayer.layer = 8;
         //messageLayer.message = req;
@@ -2377,11 +2390,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     if (response instanceof TLRPC.TL_messages_sentMessage) {
                         TLRPC.TL_messages_sentMessage res = (TLRPC.TL_messages_sentMessage)response;
                         newMsgObj.messageOwner.id = res.id;
-                        if(UserConfig.lastSeqValue + 1 == res.seq) {
-                            UserConfig.lastSeqValue = res.seq;
-                            UserConfig.lastDateValue = res.date;
-                            UserConfig.lastPtsValue = res.pts;
-                            UserConfig.saveConfig();
+                        if(MessagesStorage.lastSeqValue + 1 == res.seq) {
+                            MessagesStorage.lastSeqValue = res.seq;
+                            MessagesStorage.lastDateValue = res.date;
+                            MessagesStorage.lastPtsValue = res.pts;
+                            MessagesStorage.Instance.saveDiffParams(MessagesStorage.lastSeqValue, MessagesStorage.lastPtsValue, MessagesStorage.lastDateValue, MessagesStorage.lastQtsValue);
                         } else {
                             getDifference();
                         }
@@ -2390,11 +2403,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         sendedMessages.add(res.message);
                         newMsgObj.messageOwner.id = res.message.id;
                         processSendedMessage(newMsgObj.messageOwner, res.message, null, null);
-                        if(UserConfig.lastSeqValue + 1 == res.seq) {
-                            UserConfig.lastSeqValue = res.seq;
-                            UserConfig.lastPtsValue = res.pts;
-                            UserConfig.lastDateValue = res.message.date;
-                            UserConfig.saveConfig();
+                        if(MessagesStorage.lastSeqValue + 1 == res.seq) {
+                            MessagesStorage.lastSeqValue = res.seq;
+                            MessagesStorage.lastPtsValue = res.pts;
+                            MessagesStorage.lastDateValue = res.message.date;
+                            MessagesStorage.Instance.saveDiffParams(MessagesStorage.lastSeqValue, MessagesStorage.lastPtsValue, MessagesStorage.lastDateValue, MessagesStorage.lastQtsValue);
                         } else {
                             getDifference();
                         }
@@ -2406,10 +2419,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             sendedMessages.add(message);
                             processSendedMessage(newMsgObj.messageOwner, message, null, null);
                         }
-                        if(UserConfig.lastSeqValue + 1 == res.seq) {
-                            UserConfig.lastSeqValue = res.seq;
-                            UserConfig.lastPtsValue = res.pts;
-                            UserConfig.saveConfig();
+                        if(MessagesStorage.lastSeqValue + 1 == res.seq) {
+                            MessagesStorage.lastSeqValue = res.seq;
+                            MessagesStorage.lastPtsValue = res.pts;
+                            MessagesStorage.Instance.saveDiffParams(MessagesStorage.lastSeqValue, MessagesStorage.lastPtsValue, MessagesStorage.lastDateValue, MessagesStorage.lastQtsValue);
                         } else {
                             getDifference();
                         }
@@ -2524,7 +2537,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 newContactBook.phones = new ArrayList<String>();
                 newContactBook.phones.add(user.phone);
                 newContactBook.phoneTypes = new ArrayList<String>();
-                newContactBook.phoneTypes.add(Utilities.applicationContext.getString(R.string.PhoneMobile));
+                newContactBook.phoneTypes.add(ApplicationLoader.applicationContext.getString(R.string.PhoneMobile));
                 contactsMapBook.put((int)bookId, newContactBook);
 
                 String contactsImportHash = "";
@@ -2715,7 +2728,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
                 UserConfig.contactsHash = Utilities.MD5(ids);
                 UserConfig.importHash = importHash;
-                UserConfig.saveConfig();
+                UserConfig.saveConfig(false);
 
                 MessagesStorage.Instance.putContacts(contactsArr, true);
                 ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
@@ -2816,7 +2829,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         TLRPC.TL_messages_createChat req = new TLRPC.TL_messages_createChat();
         req.title = title;
         for (Integer uid : selectedContacts) {
-            TLRPC.User user = MessagesController.Instance.users.get(uid);
+            TLRPC.User user = users.get(uid);
             TLRPC.InputUser inputUser;
             if (user instanceof TLRPC.TL_userForeign || user instanceof TLRPC.TL_userRequest) {
                 inputUser = new TLRPC.TL_inputUserForeign();
@@ -2845,11 +2858,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 final ArrayList<TLRPC.Message> messages = new ArrayList<TLRPC.Message>();
                 messages.add(res.message);
                 MessagesStorage.Instance.putMessages(messages, true, true);
-                if (UserConfig.lastSeqValue + 1 == res.seq) {
-                    UserConfig.lastSeqValue = res.seq;
-                    UserConfig.lastPtsValue = res.pts;
-                    UserConfig.saveConfig();
-                } else if (UserConfig.lastSeqValue != res.seq) {
+                if (MessagesStorage.lastSeqValue + 1 == res.seq) {
+                    MessagesStorage.lastSeqValue = res.seq;
+                    MessagesStorage.lastPtsValue = res.pts;
+                    MessagesStorage.Instance.saveDiffParams(MessagesStorage.lastSeqValue, MessagesStorage.lastPtsValue, MessagesStorage.lastDateValue, MessagesStorage.lastQtsValue);
+                } else if (MessagesStorage.lastSeqValue != res.seq) {
                     getDifference();
                 }
                 Utilities.RunOnUIThread(new Runnable() {
@@ -2883,7 +2896,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         TLRPC.TL_messages_addChatUser req = new TLRPC.TL_messages_addChatUser();
         req.chat_id = chat_id;
         req.fwd_limit = 50;
-        TLRPC.User user = MessagesController.Instance.users.get(user_id);
+        TLRPC.User user = users.get(user_id);
         if (user instanceof TLRPC.TL_userForeign || user instanceof TLRPC.TL_userRequest) {
             req.user_id = new TLRPC.TL_inputUserForeign();
             req.user_id.user_id = user.id;
@@ -2904,11 +2917,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 final ArrayList<TLRPC.Message> messages = new ArrayList<TLRPC.Message>();
                 messages.add(res.message);
                 MessagesStorage.Instance.putMessages(messages, true, true);
-                if (UserConfig.lastSeqValue + 1 == res.seq) {
-                    UserConfig.lastSeqValue = res.seq;
-                    UserConfig.lastPtsValue = res.pts;
-                    UserConfig.saveConfig();
-                } else if (UserConfig.lastSeqValue != res.seq) {
+                if (MessagesStorage.lastSeqValue + 1 == res.seq) {
+                    MessagesStorage.lastSeqValue = res.seq;
+                    MessagesStorage.lastPtsValue = res.pts;
+                    MessagesStorage.Instance.saveDiffParams(MessagesStorage.lastSeqValue, MessagesStorage.lastPtsValue, MessagesStorage.lastDateValue, MessagesStorage.lastQtsValue);
+                } else if (MessagesStorage.lastSeqValue != res.seq) {
                     getDifference();
                 }
 
@@ -2954,7 +2967,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     public void deleteUserFromChat(int chat_id, final int user_id, final TLRPC.ChatParticipants info) {
         TLRPC.TL_messages_deleteChatUser req = new TLRPC.TL_messages_deleteChatUser();
         req.chat_id = chat_id;
-        TLRPC.User user = MessagesController.Instance.users.get(user_id);
+        TLRPC.User user = users.get(user_id);
         if (user instanceof TLRPC.TL_userForeign || user instanceof TLRPC.TL_userRequest) {
             req.user_id = new TLRPC.TL_inputUserForeign();
             req.user_id.user_id = user.id;
@@ -2978,11 +2991,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     messages.add(res.message);
                     MessagesStorage.Instance.putMessages(messages, true, true);
                 }
-                if (UserConfig.lastSeqValue + 1 == res.seq) {
-                    UserConfig.lastSeqValue = res.seq;
-                    UserConfig.lastPtsValue = res.pts;
-                    UserConfig.saveConfig();
-                } else if (UserConfig.lastSeqValue != res.seq) {
+                if (MessagesStorage.lastSeqValue + 1 == res.seq) {
+                    MessagesStorage.lastSeqValue = res.seq;
+                    MessagesStorage.lastPtsValue = res.pts;
+                    MessagesStorage.Instance.saveDiffParams(MessagesStorage.lastSeqValue, MessagesStorage.lastPtsValue, MessagesStorage.lastDateValue, MessagesStorage.lastQtsValue);
+                } else if (MessagesStorage.lastSeqValue != res.seq) {
                     getDifference();
                 }
 
@@ -3042,11 +3055,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 final ArrayList<TLRPC.Message> messages = new ArrayList<TLRPC.Message>();
                 messages.add(res.message);
                 MessagesStorage.Instance.putMessages(messages, true, true);
-                if (UserConfig.lastSeqValue + 1 == res.seq) {
-                    UserConfig.lastSeqValue = res.seq;
-                    UserConfig.lastPtsValue = res.pts;
-                    UserConfig.saveConfig();
-                } else if (UserConfig.lastSeqValue != res.seq) {
+                if (MessagesStorage.lastSeqValue + 1 == res.seq) {
+                    MessagesStorage.lastSeqValue = res.seq;
+                    MessagesStorage.lastPtsValue = res.pts;
+                    MessagesStorage.Instance.saveDiffParams(MessagesStorage.lastSeqValue, MessagesStorage.lastPtsValue, MessagesStorage.lastDateValue, MessagesStorage.lastQtsValue);
+                } else if (MessagesStorage.lastSeqValue != res.seq) {
                     getDifference();
                 }
 
@@ -3095,11 +3108,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 final ArrayList<TLRPC.Message> messages = new ArrayList<TLRPC.Message>();
                 messages.add(res.message);
                 MessagesStorage.Instance.putMessages(messages, true, true);
-                if (UserConfig.lastSeqValue + 1 == res.seq) {
-                    UserConfig.lastSeqValue = res.seq;
-                    UserConfig.lastPtsValue = res.pts;
-                    UserConfig.saveConfig();
-                } else if (UserConfig.lastSeqValue != res.seq) {
+                if (MessagesStorage.lastSeqValue + 1 == res.seq) {
+                    MessagesStorage.lastSeqValue = res.seq;
+                    MessagesStorage.lastPtsValue = res.pts;
+                    MessagesStorage.Instance.saveDiffParams(MessagesStorage.lastSeqValue, MessagesStorage.lastPtsValue, MessagesStorage.lastDateValue, MessagesStorage.lastQtsValue);
+                } else if (MessagesStorage.lastSeqValue != res.seq) {
                     getDifference();
                 }
 
@@ -3168,7 +3181,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 req.device_model = "Android unknown";
             }
             req.system_version = "SDK " + Build.VERSION.SDK_INT;
-            PackageInfo pInfo = Utilities.applicationContext.getPackageManager().getPackageInfo(Utilities.applicationContext.getPackageName(), 0);
+            PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
             req.app_version = pInfo.versionName;
             if (req.app_version == null) {
                 req.app_version = "App version unknown";
@@ -3186,7 +3199,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         Log.e("tmessages", "registered for push");
                         UserConfig.registeredForPush = true;
                         UserConfig.pushString = regid;
-                        UserConfig.saveConfig();
+                        UserConfig.saveConfig(false);
                     }
                     Utilities.RunOnUIThread(new Runnable() {
                         @Override
@@ -3211,11 +3224,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 updatingState = false;
                 if (error == null) {
                     TLRPC.TL_updates_state res = (TLRPC.TL_updates_state)response;
-                    UserConfig.lastDateValue = res.date;
-                    UserConfig.lastPtsValue = res.pts;
-                    UserConfig.lastSeqValue = res.seq;
-                    UserConfig.lastQtsValue = res.qts;
-                    UserConfig.saveConfig();
+                    MessagesStorage.lastDateValue = res.date;
+                    MessagesStorage.lastPtsValue = res.pts;
+                    MessagesStorage.lastSeqValue = res.seq;
+                    MessagesStorage.lastQtsValue = res.qts;
+                    MessagesStorage.Instance.saveDiffParams(MessagesStorage.lastSeqValue, MessagesStorage.lastPtsValue, MessagesStorage.lastDateValue, MessagesStorage.lastQtsValue);
                 } else {
                     loadCurrentState();
                 }
@@ -3225,7 +3238,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
     public void getDifference() {
         registerForPush(UserConfig.pushString);
-        if (UserConfig.lastDateValue == 0) {
+        if (MessagesStorage.lastDateValue == 0) {
             loadCurrentState();
             return;
         }
@@ -3238,9 +3251,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
         gettingDifference = true;
         TLRPC.TL_updates_getDifference req = new TLRPC.TL_updates_getDifference();
-        req.pts = UserConfig.lastPtsValue;
-        req.date = UserConfig.lastDateValue;
-        req.qts = UserConfig.lastQtsValue;
+        req.pts = MessagesStorage.lastPtsValue;
+        req.date = MessagesStorage.lastDateValue;
+        req.qts = MessagesStorage.lastQtsValue;
         if (ConnectionsManager.Instance.connectionState == 0) {
             ConnectionsManager.Instance.connectionState = 3;
             final int stateCopy = ConnectionsManager.Instance.connectionState;
@@ -3373,10 +3386,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                     }
 
                                     if (res instanceof TLRPC.TL_updates_difference) {
-                                        UserConfig.lastSeqValue = res.state.seq;
-                                        UserConfig.lastDateValue = res.state.date;
-                                        UserConfig.lastPtsValue = res.state.pts;
-                                        UserConfig.lastQtsValue = res.state.qts;
+                                        MessagesStorage.lastSeqValue = res.state.seq;
+                                        MessagesStorage.lastDateValue = res.state.date;
+                                        MessagesStorage.lastPtsValue = res.state.pts;
+                                        MessagesStorage.lastQtsValue = res.state.qts;
                                         ConnectionsManager.Instance.connectionState = 0;
                                         final int stateCopy = ConnectionsManager.Instance.connectionState;
                                         Utilities.RunOnUIThread(new Runnable() {
@@ -3386,14 +3399,14 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                             }
                                         });
                                     } else if (res instanceof TLRPC.TL_updates_differenceSlice) {
-                                        UserConfig.lastSeqValue = res.intermediate_state.seq;
-                                        UserConfig.lastDateValue = res.intermediate_state.date;
-                                        UserConfig.lastPtsValue = res.intermediate_state.pts;
-                                        UserConfig.lastQtsValue = res.intermediate_state.qts;
+                                        MessagesStorage.lastSeqValue = res.intermediate_state.seq;
+                                        MessagesStorage.lastDateValue = res.intermediate_state.date;
+                                        MessagesStorage.lastPtsValue = res.intermediate_state.pts;
+                                        MessagesStorage.lastQtsValue = res.intermediate_state.qts;
                                         getDifference();
                                     } else if (res instanceof TLRPC.TL_updates_differenceEmpty) {
-                                        UserConfig.lastSeqValue = res.seq;
-                                        UserConfig.lastDateValue = res.date;
+                                        MessagesStorage.lastSeqValue = res.seq;
+                                        MessagesStorage.lastDateValue = res.date;
                                         ConnectionsManager.Instance.connectionState = 0;
                                         final int stateCopy = ConnectionsManager.Instance.connectionState;
                                         Utilities.RunOnUIThread(new Runnable() {
@@ -3403,14 +3416,14 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                             }
                                         });
                                     }
-                                    UserConfig.saveConfig();
+                                    MessagesStorage.Instance.saveDiffParams(MessagesStorage.lastSeqValue, MessagesStorage.lastPtsValue, MessagesStorage.lastDateValue, MessagesStorage.lastQtsValue);
                                 }
                             });
                         }
                     });
 
                     if (ConnectionsManager.DEBUG_VERSION) {
-                        Log.e("tmessages", "received defference with date = " + UserConfig.lastDateValue + " pts = " + UserConfig.lastPtsValue + " seq = " + UserConfig.lastSeqValue);
+                        Log.e("tmessages", "received defference with date = " + MessagesStorage.lastDateValue + " pts = " + MessagesStorage.lastPtsValue + " seq = " + MessagesStorage.lastSeqValue);
                         Log.e("tmessages", "messages = " + res.new_messages.size() + " users = " + res.users.size() + " chats = " + res.chats.size() + " other updates = " + res.other_updates.size());
                     }
                 } else {
@@ -3429,7 +3442,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             arr.add(updates.update);
             processUpdateArray(arr, null, null);
         } else if (updates instanceof TLRPC.TL_updateShortChatMessage) {
-            if (UserConfig.lastSeqValue + 1 == updates.seq && chats.get(updates.chat_id) != null && users.get(updates.from_id) != null) {
+            if (MessagesStorage.lastSeqValue + 1 == updates.seq && chats.get(updates.chat_id) != null && users.get(updates.from_id) != null) {
                 TLRPC.TL_message message = new TLRPC.TL_message();
                 message.from_id = updates.from_id;
                 message.id = updates.id;
@@ -3439,8 +3452,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 message.date = updates.date;
                 message.unread = true;
                 message.media = new TLRPC.TL_messageMediaEmpty();
-                UserConfig.lastSeqValue = updates.seq;
-                UserConfig.lastPtsValue = updates.pts;
+                MessagesStorage.lastSeqValue = updates.seq;
+                MessagesStorage.lastPtsValue = updates.pts;
                 final MessageObject obj = new MessageObject(message, null);
                 final ArrayList<MessageObject> objArr = new ArrayList<MessageObject>();
                 objArr.add(obj);
@@ -3477,7 +3490,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 needGetDiff = true;
             }
         } else if (updates instanceof TLRPC.TL_updateShortMessage) {
-            if (UserConfig.lastSeqValue + 1 == updates.seq && users.get(updates.from_id) != null) {
+            if (MessagesStorage.lastSeqValue + 1 == updates.seq && users.get(updates.from_id) != null) {
                 TLRPC.TL_message message = new TLRPC.TL_message();
                 message.from_id = updates.from_id;
                 message.id = updates.id;
@@ -3487,9 +3500,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 message.date = updates.date;
                 message.unread = true;
                 message.media = new TLRPC.TL_messageMediaEmpty();
-                UserConfig.lastSeqValue = updates.seq;
-                UserConfig.lastPtsValue = updates.pts;
-                UserConfig.lastDateValue = updates.date;
+                MessagesStorage.lastSeqValue = updates.seq;
+                MessagesStorage.lastPtsValue = updates.pts;
+                MessagesStorage.lastDateValue = updates.date;
                 final MessageObject obj = new MessageObject(message, null);
                 final ArrayList<MessageObject> objArr = new ArrayList<MessageObject>();
                 objArr.add(obj);
@@ -3526,18 +3539,18 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 needGetDiff = true;
             }
         } else if (updates instanceof TLRPC.TL_updatesCombined) {
-            if (UserConfig.lastSeqValue + 1 == updates.seq_start || updates.seq_start == 0 || UserConfig.lastSeqValue == updates.seq_start) {
+            if (MessagesStorage.lastSeqValue + 1 == updates.seq_start || updates.seq_start == 0 || MessagesStorage.lastSeqValue == updates.seq_start) {
                 MessagesStorage.Instance.putUsersAndChats(updates.users, updates.chats, true, true);
-                int lastPtsValue = UserConfig.lastPtsValue;
-                int lastQtsValue = UserConfig.lastQtsValue;
+                int lastPtsValue = MessagesStorage.lastPtsValue;
+                int lastQtsValue = MessagesStorage.lastQtsValue;
                 if (!processUpdateArray(updates.updates, updates.users, updates.chats)) {
-                    UserConfig.lastPtsValue = lastPtsValue;
-                    UserConfig.lastQtsValue = lastQtsValue;
+                    MessagesStorage.lastPtsValue = lastPtsValue;
+                    MessagesStorage.lastQtsValue = lastQtsValue;
                     needGetDiff = true;
                 } else {
-                    UserConfig.lastDateValue = updates.date;
-                    UserConfig.lastSeqValue = updates.seq;
-                    if (UserConfig.lastQtsValue != lastQtsValue) {
+                    MessagesStorage.lastDateValue = updates.date;
+                    MessagesStorage.lastSeqValue = updates.seq;
+                    if (MessagesStorage.lastQtsValue != lastQtsValue) {
                         needReceivedQueue = true;
                     }
                 }
@@ -3545,18 +3558,18 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 needGetDiff = true;
             }
         } else if (updates instanceof TLRPC.TL_updates) {
-            if (UserConfig.lastSeqValue + 1 == updates.seq || updates.seq == 0 || updates.seq == UserConfig.lastSeqValue) {
+            if (MessagesStorage.lastSeqValue + 1 == updates.seq || updates.seq == 0 || updates.seq == MessagesStorage.lastSeqValue) {
                 MessagesStorage.Instance.putUsersAndChats(updates.users, updates.chats, true, true);
-                int lastPtsValue = UserConfig.lastPtsValue;
-                int lastQtsValue = UserConfig.lastQtsValue;
+                int lastPtsValue = MessagesStorage.lastPtsValue;
+                int lastQtsValue = MessagesStorage.lastQtsValue;
                 if (!processUpdateArray(updates.updates, updates.users, updates.chats)) {
                     needGetDiff = true;
-                    UserConfig.lastPtsValue = lastPtsValue;
-                    UserConfig.lastQtsValue = lastQtsValue;
+                    MessagesStorage.lastPtsValue = lastPtsValue;
+                    MessagesStorage.lastQtsValue = lastQtsValue;
                 } else {
-                    UserConfig.lastDateValue = updates.date;
-                    UserConfig.lastSeqValue = updates.seq;
-                    if (UserConfig.lastQtsValue != lastQtsValue) {
+                    MessagesStorage.lastDateValue = updates.date;
+                    MessagesStorage.lastSeqValue = updates.seq;
+                    if (MessagesStorage.lastQtsValue != lastQtsValue) {
                         needReceivedQueue = true;
                     }
                 }
@@ -3571,7 +3584,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
         if (needReceivedQueue) {
             TLRPC.TL_messages_receivedQueue req = new TLRPC.TL_messages_receivedQueue();
-            req.max_qts = UserConfig.lastQtsValue;
+            req.max_qts = MessagesStorage.lastQtsValue;
             ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
                 @Override
                 public void run(TLObject response, TLRPC.TL_error error) {
@@ -3579,7 +3592,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
             }, null, true, RPCRequest.RPCRequestClassGeneric);
         }
-        UserConfig.saveConfig();
+        MessagesStorage.Instance.saveDiffParams(MessagesStorage.lastSeqValue, MessagesStorage.lastPtsValue, MessagesStorage.lastDateValue, MessagesStorage.lastQtsValue);
     }
 
     public boolean processUpdateArray(ArrayList<TLRPC.Update> updates, final ArrayList<TLRPC.User> usersArr, final ArrayList<TLRPC.Chat> chatsArr) {
@@ -3653,7 +3666,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     messages.put(uid, arr);
                 }
                 arr.add(obj);
-                UserConfig.lastPtsValue = update.pts;
+                MessagesStorage.lastPtsValue = update.pts;
                 if (upd.message.from_id != UserConfig.clientUserId && upd.message.to_id != null) {
                     if (uid != openned_dialog_id) {
                         lastMessage = obj;
@@ -3663,12 +3676,12 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 //can't be here
             } else if (update instanceof TLRPC.TL_updateReadMessages) {
                 markAsReadMessages.addAll(update.messages);
-                UserConfig.lastPtsValue = update.pts;
+                MessagesStorage.lastPtsValue = update.pts;
             } else if (update instanceof TLRPC.TL_updateDeleteMessages) {
                 deletedMessages.addAll(update.messages);
-                UserConfig.lastPtsValue = update.pts;
+                MessagesStorage.lastPtsValue = update.pts;
             } else if (update instanceof TLRPC.TL_updateRestoreMessages) {
-                UserConfig.lastPtsValue = update.pts;
+                MessagesStorage.lastPtsValue = update.pts;
             } else if (update instanceof TLRPC.TL_updateUserTyping || update instanceof TLRPC.TL_updateChatUserTyping) {
                 if (update.user_id != UserConfig.clientUserId) {
                     long uid = -update.chat_id;
@@ -3727,7 +3740,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             } else if (update instanceof TLRPC.TL_updateNewGeoChatMessage) {
                 //TODO
             } else if (update instanceof TLRPC.TL_updateNewEncryptedMessage) {
-                UserConfig.lastQtsValue = update.qts;
+                MessagesStorage.lastQtsValue = update.qts;
                 TLRPC.Message message = decryptMessage(((TLRPC.TL_updateNewEncryptedMessage)update).message);
                 if (message != null) {
                     int cid = ((TLRPC.TL_updateNewEncryptedMessage)update).message.chat_id;
@@ -3852,7 +3865,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         }
                     });
                     MessagesStorage.Instance.putEncryptedChat(newChat, user, dialog);
-                    MessagesController.Instance.acceptSecretChat(newChat);
+                    acceptSecretChat(newChat);
                 } else if (newChat instanceof TLRPC.TL_encryptedChat) {
                     if (existingChat != null && existingChat instanceof TLRPC.TL_encryptedChatWaiting && (existingChat.auth_key == null || existingChat.auth_key.length == 1)) {
                         newChat.a_or_b = existingChat.a_or_b;
@@ -4101,7 +4114,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     private void showInAppNotification(MessageObject messageObject) {
-        SharedPreferences preferences = Utilities.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
         boolean globalEnabled = preferences.getBoolean("EnableAll", true);
         if (!globalEnabled) {
             return;
@@ -4157,7 +4170,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     NotificationCenter.Instance.postNotificationName(701, messageObject);
                 }
                 if (inAppVibrate) {
-                    Vibrator v = (Vibrator)Utilities.applicationContext.getSystemService(Context.VIBRATOR_SERVICE);
+                    Vibrator v = (Vibrator)ApplicationLoader.applicationContext.getSystemService(Context.VIBRATOR_SERVICE);
                     v.vibrate(100);
                 }
                 if (inAppSounds) {
@@ -4206,8 +4219,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             String userSoundPath = null;
             String chatSoundPath = null;
 
-            NotificationManager mNotificationManager = (NotificationManager)Utilities.applicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
-            Intent intent = new Intent(Utilities.applicationContext, LaunchActivity.class);
+            NotificationManager mNotificationManager = (NotificationManager)ApplicationLoader.applicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
+            Intent intent = new Intent(ApplicationLoader.applicationContext, LaunchActivity.class);
             String msg;
 
             if ((int)dialog_id != 0) {
@@ -4219,7 +4232,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
                 msg = messageObject.messageOwner.message;
             } else {
-                msg = Utilities.applicationContext.getString(R.string.YouHaveNewMessage);
+                msg = ApplicationLoader.applicationContext.getString(R.string.YouHaveNewMessage);
             }
 
             boolean needVibrate = false;
@@ -4253,10 +4266,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
             intent.setAction("com.tmessages.openchat" + Math.random() + Integer.MAX_VALUE);
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            PendingIntent contentIntent = PendingIntent.getActivity(Utilities.applicationContext, 0, intent, PendingIntent.FLAG_ONE_SHOT);
+            PendingIntent contentIntent = PendingIntent.getActivity(ApplicationLoader.applicationContext, 0, intent, PendingIntent.FLAG_ONE_SHOT);
 
-            NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(Utilities.applicationContext)
-                    .setContentTitle(Utilities.applicationContext.getString(R.string.AppName))
+            NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(ApplicationLoader.applicationContext)
+                    .setContentTitle(ApplicationLoader.applicationContext.getString(R.string.AppName))
                     .setSmallIcon(R.drawable.notification)
                     .setStyle(new NotificationCompat.BigTextStyle()
                             .bigText(msg))
@@ -4486,7 +4499,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
     public void processAcceptedSecretChat(final TLRPC.EncryptedChat encryptedChat) {
         BigInteger i_authKey = new BigInteger(1, encryptedChat.g_a_or_b);
-        i_authKey = i_authKey.modPow(new BigInteger(1, encryptedChat.a_or_b), new BigInteger(1, UserConfig.secretPBytes));
+        i_authKey = i_authKey.modPow(new BigInteger(1, encryptedChat.a_or_b), new BigInteger(1, MessagesStorage.secretPBytes));
 
         byte[] authKey = i_authKey.toByteArray();
         if (authKey.length > 256) {
@@ -4553,25 +4566,25 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         acceptingChats.put(encryptedChat.id, encryptedChat);
         TLRPC.TL_messages_getDhConfig req = new TLRPC.TL_messages_getDhConfig();
         req.random_length = 256;
-        req.version = UserConfig.lastSecretVersion;
+        req.version = MessagesStorage.lastSecretVersion;
         ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
                 if (error == null) {
                     TLRPC.messages_DhConfig res = (TLRPC.messages_DhConfig)response;
                     if (response instanceof TLRPC.TL_messages_dhConfig) {
-                        UserConfig.secretPBytes = res.p;
-                        UserConfig.secretG = res.g;
-                        UserConfig.lastSecretVersion = res.version;
-                        UserConfig.saveConfig();
+                        MessagesStorage.secretPBytes = res.p;
+                        MessagesStorage.secretG = res.g;
+                        MessagesStorage.lastSecretVersion = res.version;
+                        MessagesStorage.Instance.saveSecretParams(MessagesStorage.lastSecretVersion, MessagesStorage.secretG, MessagesStorage.secretPBytes);
                     }
                     byte[] salt = new byte[256];
                     for (int a = 0; a < 256; a++) {
                         salt[a] = (byte)((byte)(random.nextDouble() * 255) ^ res.random[a]);
                     }
                     encryptedChat.a_or_b = salt;
-                    BigInteger i_g_b = BigInteger.valueOf(UserConfig.secretG);
-                    i_g_b = i_g_b.modPow(new BigInteger(1, salt), new BigInteger(1, UserConfig.secretPBytes));
+                    BigInteger i_g_b = BigInteger.valueOf(MessagesStorage.secretG);
+                    i_g_b = i_g_b.modPow(new BigInteger(1, salt), new BigInteger(1, MessagesStorage.secretPBytes));
                     byte[] g_b = i_g_b.toByteArray();
                     if (g_b.length > 256) {
                         byte[] correctedAuth = new byte[256];
@@ -4580,7 +4593,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     }
 
                     BigInteger i_authKey = new BigInteger(1, encryptedChat.g_a);
-                    i_authKey = i_authKey.modPow(new BigInteger(1, salt), new BigInteger(1, UserConfig.secretPBytes));
+                    i_authKey = i_authKey.modPow(new BigInteger(1, salt), new BigInteger(1, MessagesStorage.secretPBytes));
 
                     byte[] authKey = i_authKey.toByteArray();
                     if (authKey.length > 256) {
@@ -4643,24 +4656,24 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         progressDialog.show();
         TLRPC.TL_messages_getDhConfig req = new TLRPC.TL_messages_getDhConfig();
         req.random_length = 256;
-        req.version = UserConfig.lastSecretVersion;
+        req.version = MessagesStorage.lastSecretVersion;
         ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
                 if (error == null) {
                     TLRPC.messages_DhConfig res = (TLRPC.messages_DhConfig)response;
                     if (response instanceof TLRPC.TL_messages_dhConfig) {
-                        UserConfig.secretPBytes = res.p;
-                        UserConfig.secretG = res.g;
-                        UserConfig.lastSecretVersion = res.version;
-                        UserConfig.saveConfig();
+                        MessagesStorage.secretPBytes = res.p;
+                        MessagesStorage.secretG = res.g;
+                        MessagesStorage.lastSecretVersion = res.version;
+                        MessagesStorage.Instance.saveSecretParams(MessagesStorage.lastSecretVersion, MessagesStorage.secretG, MessagesStorage.secretPBytes);
                     }
                     final byte[] salt = new byte[256];
                     for (int a = 0; a < 256; a++) {
                         salt[a] = (byte)((byte)(random.nextDouble() * 255) ^ res.random[a]);
                     }
-                    BigInteger i_g_a = BigInteger.valueOf(UserConfig.secretG);
-                    i_g_a = i_g_a.modPow(new BigInteger(1, salt), new BigInteger(1, UserConfig.secretPBytes));
+                    BigInteger i_g_a = BigInteger.valueOf(MessagesStorage.secretG);
+                    i_g_a = i_g_a.modPow(new BigInteger(1, salt), new BigInteger(1, MessagesStorage.secretPBytes));
                     byte[] g_a = i_g_a.toByteArray();
                     if (g_a.length > 256) {
                         byte[] correctedAuth = new byte[256];
@@ -4668,7 +4681,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         g_a = correctedAuth;
                     }
 
-                    final TLRPC.User user = MessagesController.Instance.users.get(user_id);
+                    final TLRPC.User user = users.get(user_id);
                     TLRPC.InputUser inputUser;
                     if (user instanceof TLRPC.TL_userForeign || user instanceof TLRPC.TL_userRequest) {
                         inputUser = new TLRPC.TL_inputUserForeign();
@@ -4735,7 +4748,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                             AlertDialog.Builder builder = new AlertDialog.Builder(context);
                                             builder.setTitle(context.getString(R.string.AppName));
                                             builder.setMessage(String.format(context.getString(R.string.CreateEncryptedChatOutdatedError), user.first_name, user.first_name));
-                                            builder.setPositiveButton(Utilities.applicationContext.getString(R.string.OK), null);
+                                            builder.setPositiveButton(ApplicationLoader.applicationContext.getString(R.string.OK), null);
                                             builder.show().setCanceledOnTouchOutside(true);
                                         }
                                     }

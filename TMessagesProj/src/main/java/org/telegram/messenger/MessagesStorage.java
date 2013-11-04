@@ -17,6 +17,7 @@ import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.TL.TLClassStore;
 import org.telegram.TL.TLObject;
 import org.telegram.TL.TLRPC;
+import org.telegram.ui.ApplicationLoader;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -28,6 +29,13 @@ public class MessagesStorage {
     public DispatchQueue storageQueue = new DispatchQueue("storageQueue");
     private SQLiteDatabase database;
     private File cacheFile;
+    public static int lastDateValue = 0;
+    public static int lastPtsValue = 0;
+    public static int lastQtsValue = 0;
+    public static int lastSeqValue = 0;
+    public static int lastSecretVersion = 0;
+    public static byte[] secretPBytes = null;
+    public static int secretG = 0;
 
     public static final int wallpapersDidLoaded = 171;
     public static MessagesStorage Instance = new MessagesStorage();
@@ -38,7 +46,7 @@ public class MessagesStorage {
     }
 
     public void openDatabase() {
-        cacheFile = new File(Utilities.applicationContext.getFilesDir(), "cache4.db");
+        cacheFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "cache4.db");
         boolean createTable = false;
         //cacheFile.delete();
         if (!cacheFile.exists()) {
@@ -60,6 +68,8 @@ public class MessagesStorage {
                 database.executeFast("CREATE TABLE wallpapers(uid INTEGER PRIMARY KEY, data BLOB)").stepThis().dispose();
                 database.executeFast("CREATE TABLE randoms(random_id INTEGER PRIMARY KEY, mid INTEGER)").stepThis().dispose();
                 database.executeFast("CREATE TABLE enc_tasks(date INTEGER, data BLOB)").stepThis().dispose();
+                database.executeFast("CREATE TABLE params(id INTEGER PRIMARY KEY, seq INTEGER, pts INTEGER, date INTEGER, qts INTEGER, lsv INTEGER, sg INTEGER, pbytes BLOB)").stepThis().dispose();
+                database.executeFast("INSERT INTO params VALUES(1, 0, 0, 0, 0, 0, 0, NULL)").stepThis().dispose();
 
                 database.executeFast("CREATE INDEX IF NOT EXISTS date_idx_dialogs ON dialogs(date);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS date_idx_enc_tasks ON enc_tasks(date);").stepThis().dispose();
@@ -69,6 +79,41 @@ public class MessagesStorage {
                 database.executeFast("CREATE INDEX IF NOT EXISTS uid_mid_idx_media ON media(uid, mid);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS ttl_idx_messages ON messages(ttl);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS read_state_out_idx_messages ON messages(read_state, out);").stepThis().dispose();
+            } else {
+                SQLiteCursor cursor = database.queryFinalized("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='params'");
+                boolean create = false;
+                if (cursor.next()) {
+                    int count = cursor.intValue(0);
+                    if (count == 0) {
+                        create = true;
+                    }
+                } else {
+                    create = true;
+                }
+                cursor.dispose();
+                if (create) {
+                    database.executeFast("CREATE TABLE params(id INTEGER PRIMARY KEY, seq INTEGER, pts INTEGER, date INTEGER, qts INTEGER, lsv INTEGER, sg INTEGER, pbytes BLOB)").stepThis().dispose();
+                    database.executeFast("INSERT INTO params VALUES(1, 0, 0, 0, 0, 0, 0, NULL)").stepThis().dispose();
+                } else {
+                    cursor = database.queryFinalized("SELECT seq, pts, date, qts, lsv, sg, pbytes FROM params WHERE id = 1");
+                    if (cursor.next()) {
+                        lastSeqValue = cursor.intValue(0);
+                        lastPtsValue = cursor.intValue(1);
+                        lastDateValue = cursor.intValue(2);
+                        lastQtsValue = cursor.intValue(3);
+                        lastSecretVersion = cursor.intValue(4);
+                        secretG = cursor.intValue(5);
+                        if (cursor.isNull(6)) {
+                            secretPBytes = null;
+                        } else {
+                            secretPBytes = cursor.byteArrayValue(6);
+                            if (secretPBytes != null && secretPBytes.length == 1) {
+                                secretPBytes = null;
+                            }
+                        }
+                    }
+                    cursor.dispose();
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -79,6 +124,13 @@ public class MessagesStorage {
         storageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
+                lastDateValue = 0;
+                lastSeqValue = 0;
+                lastPtsValue = 0;
+                lastQtsValue = 0;
+                lastSecretVersion = 0;
+                secretPBytes = null;
+                secretG = 0;
                 if (database != null) {
                     database.close();
                     database = null;
@@ -88,15 +140,15 @@ public class MessagesStorage {
                     cacheFile = null;
                 }
                 try {
-                    File old = new File(Utilities.applicationContext.getFilesDir(), "cache.db");
+                    File old = new File(ApplicationLoader.applicationContext.getFilesDir(), "cache.db");
                     if (old.exists()) {
                         old.delete();
                     }
-                    old = new File(Utilities.applicationContext.getFilesDir(), "cache2.db");
+                    old = new File(ApplicationLoader.applicationContext.getFilesDir(), "cache2.db");
                     if (old.exists()) {
                         old.delete();
                     }
-                    old = new File(Utilities.applicationContext.getFilesDir(), "cache3.db");
+                    old = new File(ApplicationLoader.applicationContext.getFilesDir(), "cache3.db");
                     if (old.exists()) {
                         old.delete();
                     }
@@ -104,6 +156,47 @@ public class MessagesStorage {
                     e.printStackTrace();
                 }
                 openDatabase();
+            }
+        });
+    }
+
+    public void saveSecretParams(final int lsv, final int sg, final byte[] pbytes) {
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    SQLitePreparedStatement state = database.executeFast("UPDATE params SET lsv = ?, sg = ?, pbytes = ? WHERE id = 1");
+                    state.bindInteger(1, lsv);
+                    state.bindInteger(2, sg);
+                    if (pbytes != null) {
+                        state.bindByteArray(3, pbytes);
+                    } else {
+                        state.bindByteArray(3, new byte[1]);
+                    }
+                    state.step();
+                    state.dispose();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    public void saveDiffParams(final int seq, final int pts, final int date, final int qts) {
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    SQLitePreparedStatement state = database.executeFast("UPDATE params SET seq = ?, pts = ?, date = ?, qts = ? WHERE id = 1");
+                    state.bindInteger(1, seq);
+                    state.bindInteger(2, pts);
+                    state.bindInteger(3, date);
+                    state.bindInteger(4, qts);
+                    state.step();
+                    state.dispose();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         });
     }

@@ -119,7 +119,7 @@ public class ScreenSlidePageFragmentSms extends SlideFragment implements Notific
         registered = params.get("registered");
 
         String number = PhoneFormat.Instance.format(phone);
-        confirmTextView.setText(Html.fromHtml(String.format(Utilities.applicationContext.getResources().getString(R.string.SentSmsCode) + " <b>%s</b>", number)));
+        confirmTextView.setText(Html.fromHtml(String.format(ApplicationLoader.applicationContext.getResources().getString(R.string.SentSmsCode) + " <b>%s</b>", number)));
 
         Utilities.showKeyboard(codeField);
         codeField.requestFocus();
@@ -129,7 +129,7 @@ public class ScreenSlidePageFragmentSms extends SlideFragment implements Notific
             timeTimer.cancel();
             timeTimer = null;
         }
-        timeText.setText(String.format("%s 1:00", Utilities.applicationContext.getResources().getString(R.string.CallText)));
+        timeText.setText(String.format("%s 1:00", ApplicationLoader.applicationContext.getResources().getString(R.string.CallText)));
         lastCurrentTime = System.currentTimeMillis();
         timeTimer = new Timer();
         timeTimer.schedule(new TimerTask() {
@@ -145,9 +145,9 @@ public class ScreenSlidePageFragmentSms extends SlideFragment implements Notific
                         if (time >= 1000) {
                             int minutes = time / 1000 / 60;
                             int seconds = time / 1000 - minutes * 60;
-                            timeText.setText(String.format("%s %d:%02d", Utilities.applicationContext.getResources().getString(R.string.CallText), minutes, seconds));
+                            timeText.setText(String.format("%s %d:%02d", ApplicationLoader.applicationContext.getResources().getString(R.string.CallText), minutes, seconds));
                         } else {
-                            timeText.setText(Utilities.applicationContext.getResources().getString(R.string.Calling));
+                            timeText.setText(ApplicationLoader.applicationContext.getResources().getString(R.string.Calling));
                             if (timeTimer != null) {
                                 timeTimer.cancel();
                                 timeTimer = null;
@@ -201,7 +201,7 @@ public class ScreenSlidePageFragmentSms extends SlideFragment implements Notific
                             UserConfig.currentUser = res.user;
                             UserConfig.clientActivated = true;
                             UserConfig.clientUserId = res.user.id;
-                            UserConfig.saveConfig();
+                            UserConfig.saveConfig(true);
                             ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
                             users.add(UserConfig.currentUser);
                             MessagesStorage.Instance.putUsersAndChats(users, null, true, true);
@@ -229,11 +229,11 @@ public class ScreenSlidePageFragmentSms extends SlideFragment implements Notific
                         });
                     } else {
                         if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                            delegate.needShowAlert(Utilities.applicationContext.getString(R.string.InvalidPhoneNumber));
+                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidPhoneNumber));
                         } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                            delegate.needShowAlert(Utilities.applicationContext.getString(R.string.InvalidCode));
+                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidCode));
                         } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                            delegate.needShowAlert(Utilities.applicationContext.getString(R.string.CodeExpired));
+                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.CodeExpired));
                         } else {
                             delegate.needShowAlert(error.text);
                         }

@@ -399,7 +399,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     int rotation = display.getRotation();
                     int height;
                     int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
-                    float density = Utilities.applicationContext.getResources().getDisplayMetrics().density;
+                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
                     if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
                         height = currentActionBarHeight;
                     } else {
@@ -415,7 +415,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     if (dialog_id != 0) {
                         TextView title = (TextView)parentActivity.findViewById(R.id.abs__action_bar_title);
                         if (title == null) {
-                            final int subtitleId = Utilities.applicationContext.getResources().getIdentifier("action_bar_title", "id", "android");
+                            final int subtitleId = ApplicationLoader.applicationContext.getResources().getIdentifier("action_bar_title", "id", "android");
                             title = (TextView)parentActivity.findViewById(subtitleId);
                         }
                         if (title != null) {

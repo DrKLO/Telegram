@@ -118,10 +118,15 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
             } else if (requestCode == 1) {
                 Uri imageUri = data.getData();
                 Cursor cursor = null;
-                if (parentFragment != null) {
-                    cursor = parentFragment.getSherlockActivity().getContentResolver().query(imageUri, new String[]{android.provider.MediaStore.Images.ImageColumns.DATA}, null, null, null);
-                } else if (parentActivity != null) {
-                    cursor = parentActivity.getContentResolver().query(imageUri, new String[]{android.provider.MediaStore.Images.ImageColumns.DATA}, null, null, null);
+                try {
+                    if (parentFragment != null) {
+                        cursor = parentFragment.getSherlockActivity().getContentResolver().query(imageUri, new String[]{android.provider.MediaStore.Images.ImageColumns.DATA}, null, null, null);
+                    } else if (parentActivity != null) {
+                        cursor = parentActivity.getContentResolver().query(imageUri, new String[]{android.provider.MediaStore.Images.ImageColumns.DATA}, null, null, null);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return;
                 }
                 if (cursor == null) {
                     return;
@@ -149,7 +154,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
                     delegate.didUploadedPhoto(null, smallPhoto, bigPhoto);
                 }
             } else {
-                UserConfig.saveConfig();
+                UserConfig.saveConfig(false);
                 uploadingAvatar = Utilities.getCacheDir() + "/" + bigPhoto.location.volume_id + "_" + bigPhoto.location.local_id + ".jpg";
                 NotificationCenter.Instance.addObserver(AvatarUpdater.this, FileLoader.FileDidUpload);
                 NotificationCenter.Instance.addObserver(AvatarUpdater.this, FileLoader.FileDidFailUpload);

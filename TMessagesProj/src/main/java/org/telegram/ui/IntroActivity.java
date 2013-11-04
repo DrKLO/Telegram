@@ -261,7 +261,7 @@ public class IntroActivity extends SherlockFragmentActivity {
                 WindowManager manager = (WindowManager)getSystemService(Context.WINDOW_SERVICE);
                 Display display = manager.getDefaultDisplay();
                 int rotation = display.getRotation();
-                density = Utilities.applicationContext.getResources().getDisplayMetrics().density;
+                density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
 
                 FrameLayout.LayoutParams params = (FrameLayout.LayoutParams)parentSlidingView.getLayoutParams();
                 FrameLayout.LayoutParams buttonParams = (FrameLayout.LayoutParams)startMessagingButton.getLayoutParams();

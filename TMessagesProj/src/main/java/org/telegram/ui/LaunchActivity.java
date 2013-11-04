@@ -54,10 +54,12 @@ public class LaunchActivity extends PausableActivity {
                                     cursor.close();
                                 }
                             }
-                            if (path.startsWith("file:")) {
-                                path = path.replace("file://", "");
+                            if (path != null) {
+                                if (path.startsWith("file:")) {
+                                    path = path.replace("file://", "");
+                                }
+                                NotificationCenter.Instance.addToMemCache(533, path);
                             }
-                            NotificationCenter.Instance.addToMemCache(533, path);
                         } else if (intent.getType().startsWith("video/")) {
                             String path = intent.getParcelableExtra(Intent.EXTRA_STREAM).toString();
                             if (path.startsWith("content:")) {
@@ -68,10 +70,12 @@ public class LaunchActivity extends PausableActivity {
                                     cursor.close();
                                 }
                             }
-                            if (path.startsWith("file:")) {
-                                path = path.replace("file://", "");
+                            if (path != null) {
+                                if (path.startsWith("file:")) {
+                                    path = path.replace("file://", "");
+                                }
+                                NotificationCenter.Instance.addToMemCache(534, path);
                             }
-                            NotificationCenter.Instance.addToMemCache(534, path);
                         } else if (intent.getType().equals("text/plain")) {
                             String text = intent.getStringExtra(Intent.EXTRA_TEXT);
                             if (text.length() != 0) {

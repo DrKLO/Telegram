@@ -73,7 +73,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
         NotificationCenter.Instance.addObserver(this, FileLoader.FileLoadProgressChanged);
         NotificationCenter.Instance.addObserver(this, MessagesStorage.wallpapersDidLoaded);
 
-        SharedPreferences preferences = Utilities.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
         selectedBackground = preferences.getInt("selectedBackground", 1000001);
         selectedColor = preferences.getInt("selectedColor", 0);
         MessagesStorage.Instance.getWallpapers();
@@ -94,7 +94,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
         if (fragmentView == null) {
             fragmentView = inflater.inflate(R.layout.settings_wallpapers_layout, container, false);
             listAdapter = new ListAdapter(parentActivity);
-            density = Utilities.applicationContext.getResources().getDisplayMetrics().density;
+            density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
 
             progressBar = (ProgressBar)fragmentView.findViewById(R.id.action_progress);
             backgroundImage = (ImageView)fragmentView.findViewById(R.id.background_image);
@@ -154,7 +154,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                         TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, (int) (320 * density), (int) (480 * density));
                         String fileName = size.location.volume_id + "_" + size.location.local_id + ".jpg";
                         File f = new File(Utilities.getCacheDir(), fileName);
-                        File toFile = new File(Utilities.applicationContext.getFilesDir(), "wallpaper.jpg");
+                        File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
                         try {
                             done = Utilities.copyFile(f, toFile);
                         } catch (Exception e) {
@@ -166,7 +166,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                     }
 
                     if (done) {
-                        SharedPreferences preferences = Utilities.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
                         editor.putInt("selectedBackground", selectedBackground);
                         editor.putInt("selectedColor", selectedColor);
@@ -195,7 +195,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 Utilities.addMediaToGallery(currentPicturePath);
                 try {
                     Bitmap bitmap = FileLoader.loadBitmap(currentPicturePath, (int)(320 * density), (int)(480 * density));
-                    File toFile = new File(Utilities.applicationContext.getFilesDir(), "wallpaper.jpg");
+                    File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
                     FileOutputStream stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
                     selectedBackground = -1;
@@ -218,7 +218,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
 
                 try {
                     Bitmap bitmap = FileLoader.loadBitmap(imageFilePath, (int)(320 * density), (int)(480 * density));
-                    File toFile = new File(Utilities.applicationContext.getFilesDir(), "wallpaper.jpg");
+                    File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
                     FileOutputStream stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
                     selectedBackground = -1;
@@ -269,7 +269,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 backgroundImage.setBackgroundColor(0);
                 selectedColor = 0;
             } else if (selectedBackground == -1) {
-                File toFile = new File(Utilities.applicationContext.getFilesDir(), "wallpaper.jpg");
+                File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
                 if (toFile.exists()) {
                     backgroundImage.setImageURI(Uri.fromFile(toFile));
                 } else {

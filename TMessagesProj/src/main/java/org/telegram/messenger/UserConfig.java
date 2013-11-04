@@ -8,8 +8,12 @@
 
 package org.telegram.messenger;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
 import org.telegram.TL.TLClassStore;
 import org.telegram.TL.TLRPC;
+import org.telegram.ui.ApplicationLoader;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -18,17 +22,10 @@ public class UserConfig {
     public static TLRPC.User currentUser;
     public static int clientUserId = 0;
     public static boolean clientActivated = false;
-    public static int lastDateValue = 0;
-    public static int lastPtsValue = 0;
-    public static int lastQtsValue = 0;
-    public static int lastSeqValue = 0;
     public static boolean registeredForPush = false;
     public static String pushString = "";
     public static int lastSendMessageId = -1;
     public static int lastLocalId = -1;
-    public static int lastSecretVersion = 0;
-    public static byte[] secretPBytes = null;
-    public static int secretG = 0;
     public static String contactsHash = "";
     public static String importHash = "";
     private final static Integer sync = 1;
@@ -43,64 +40,58 @@ public class UserConfig {
         return id;
     }
 
-    public static void saveConfig() {
+    public static void saveConfig(boolean withFile) {
         synchronized (sync) {
             SerializedData data = new SerializedData();
             if (currentUser != null) {
-                data.writeInt32(1);
+                data.writeInt32(2);
                 currentUser.serializeToStream(data);
                 clientUserId = currentUser.id;
                 clientActivated = true;
-                data.writeInt32(lastDateValue);
-                data.writeInt32(lastPtsValue);
-                data.writeInt32(lastSeqValue);
-                data.writeBool(registeredForPush);
-                data.writeString(pushString);
-                data.writeInt32(lastSendMessageId);
-                data.writeInt32(lastLocalId);
-                data.writeString(contactsHash);
-                data.writeString(importHash);
-                data.writeBool(saveIncomingPhotos);
-                data.writeInt32(lastQtsValue);
-                data.writeInt32(lastSecretVersion);
-                if (secretPBytes != null) {
-                    data.writeInt32(1);
-                    data.writeByteArray(secretPBytes);
-                } else {
-                    data.writeInt32(0);
-                }
-                data.writeInt32(secretG);
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = preferences.edit();
+                editor.putBoolean("registeredForPush", registeredForPush);
+                editor.putString("pushString", pushString);
+                editor.putInt("lastSendMessageId", lastSendMessageId);
+                editor.putInt("lastLocalId", lastLocalId);
+                editor.putString("contactsHash", contactsHash);
+                editor.putString("importHash", importHash);
+                editor.putBoolean("saveIncomingPhotos", saveIncomingPhotos);
+                editor.commit();
             } else {
                 data.writeInt32(0);
             }
-            try {
-                File configFile = new File(Utilities.applicationContext.getFilesDir(), "user.dat");
-                if (!configFile.exists()) {
-                    configFile.createNewFile();
+            if (withFile) {
+                try {
+                    File configFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "user.dat");
+                    if (!configFile.exists()) {
+                        configFile.createNewFile();
+                    }
+                    FileOutputStream stream = new FileOutputStream(configFile);
+                    stream.write(data.toByteArray());
+                    stream.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-                FileOutputStream stream = new FileOutputStream(configFile);
-                stream.write(data.toByteArray());
-                stream.close();
-            } catch (Exception e) {
-                e.printStackTrace();
             }
         }
     }
 
     public static void loadConfig() {
         synchronized (sync) {
-            File configFile = new File(Utilities.applicationContext.getFilesDir(), "user.dat");
+            File configFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "user.dat");
             if (configFile.exists()) {
                 try {
                     SerializedData data = new SerializedData(configFile);
-                    if (data.readInt32() != 0) {
+                    int ver = data.readInt32();
+                    if (ver == 1) {
                         int constructor = data.readInt32();
                         currentUser = (TLRPC.TL_userSelf)TLClassStore.Instance().TLdeserialize(data, constructor);
                         clientUserId = currentUser.id;
                         clientActivated = true;
-                        lastDateValue = data.readInt32();
-                        lastPtsValue = data.readInt32();
-                        lastSeqValue = data.readInt32();
+                        MessagesStorage.lastDateValue = data.readInt32();
+                        MessagesStorage.lastPtsValue = data.readInt32();
+                        MessagesStorage.lastSeqValue = data.readInt32();
                         registeredForPush = data.readBool();
                         pushString = data.readString();
                         lastSendMessageId = data.readInt32();
@@ -115,13 +106,27 @@ public class UserConfig {
                                 currentUser.status.expires = currentUser.status.was_online;
                             }
                         }
-                        lastQtsValue = data.readInt32();
-                        lastSecretVersion = data.readInt32();
+                        MessagesStorage.lastQtsValue = data.readInt32();
+                        MessagesStorage.lastSecretVersion = data.readInt32();
                         int val = data.readInt32();
                         if (val == 1) {
-                            secretPBytes = data.readByteArray();
+                            MessagesStorage.secretPBytes = data.readByteArray();
                         }
-                        secretG = data.readInt32();
+                        MessagesStorage.secretG = data.readInt32();
+                    } else if (ver == 2) {
+                        int constructor = data.readInt32();
+                        currentUser = (TLRPC.TL_userSelf)TLClassStore.Instance().TLdeserialize(data, constructor);
+                        clientUserId = currentUser.id;
+                        clientActivated = true;
+
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
+                        registeredForPush = preferences.getBoolean("registeredForPush", false);
+                        pushString = preferences.getString("pushString", "");
+                        lastSendMessageId = preferences.getInt("lastSendMessageId", -1);
+                        lastLocalId = preferences.getInt("lastLocalId", -1);
+                        contactsHash = preferences.getString("contactsHash", "");
+                        importHash = preferences.getString("importHash", "");
+                        saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -134,15 +139,12 @@ public class UserConfig {
         clientUserId = 0;
         clientActivated = false;
         currentUser = null;
-        lastDateValue = 0;
-        lastSeqValue = 0;
-        lastPtsValue = 0;
         registeredForPush = false;
         contactsHash = "";
         lastLocalId = -1;
         importHash = "";
         lastSendMessageId = -1;
         saveIncomingPhotos = false;
-        saveConfig();
+        saveConfig(true);
     }
 }

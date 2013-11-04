@@ -34,6 +34,8 @@ import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuInflater;
 import com.actionbarsherlock.view.MenuItem;
 import com.actionbarsherlock.widget.SearchView;
+
+import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.MessagesController;
@@ -231,7 +233,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 if (usePhone == null) {
                                     usePhone = phone;
                                 }
-                                TLRPC.TL_contact cLocal = MessagesController.Instance.contactsByPhones.get(phone);
+                                String cleanPhone = PhoneFormat.stripExceptNumbers(usePhone);
+                                TLRPC.TL_contact cLocal = MessagesController.Instance.contactsByPhones.get(cleanPhone);
                                 if (cLocal != null) {
                                     if (cLocal.user_id == UserConfig.clientUserId) {
                                         return;
@@ -257,7 +260,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 @Override
                                 public void onClick(DialogInterface dialogInterface, int i) {
                                     try {
-                                        String number = "+" + arg1;
+                                        String number = arg1;
                                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromParts("sms", number, null));
                                         intent.putExtra("sms_body", getStringEntry(R.string.InviteText));
                                         startActivity(intent);
@@ -347,7 +350,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     int rotation = display.getRotation();
                     int height;
                     int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
-                    float density = Utilities.applicationContext.getResources().getDisplayMetrics().density;
+                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
                     if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
                         height = currentActionBarHeight;
                     } else {
@@ -529,7 +532,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 if (s.length() != 0) {
                     searchWas = true;
                     if (listView != null) {
-                        float density = Utilities.applicationContext.getResources().getDisplayMetrics().density;
+                        float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
                         listView.setPadding((int)(density * 16), listView.getPaddingTop(), (int)(density * 16), listView.getPaddingBottom());
                         listView.setAdapter(searchListViewAdapter);
                         if(android.os.Build.VERSION.SDK_INT >= 11) {
@@ -562,7 +565,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 searchWas = false;
                 ViewGroup group = (ViewGroup)listView.getParent();
                 listView.setAdapter(listViewAdapter);
-                float density = Utilities.applicationContext.getResources().getDisplayMetrics().density;
+                float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
                 if (!isRTL) {
                     listView.setPadding((int)(density * 16), listView.getPaddingTop(), (int)(density * 30), listView.getPaddingBottom());
                 } else {

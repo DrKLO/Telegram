@@ -227,7 +227,7 @@ public class LocationActivity extends BaseFragment implements LocationListener, 
             bottomView = fragmentView.findViewById(R.id.location_bottom_view);
             sendButton = (TextView)fragmentView.findViewById(R.id.location_send_button);
 
-            getFragmentManager().beginTransaction().replace(R.id.map_view, mapFragment).commit();
+            getChildFragmentManager().beginTransaction().replace(R.id.map_view, mapFragment).commit();
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
             if (parent != null) {
@@ -305,14 +305,13 @@ public class LocationActivity extends BaseFragment implements LocationListener, 
 
             if (isGPSEnabled || isNetworkEnabled) {
                 if (isGPSEnabled) {
-                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000 * 3 * 1, 0, this);
+                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000 * 3 * 1, 1, this);
                     if (locationManager != null) {
                         location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                     }
                 }
                 if (location == null && isNetworkEnabled) {
-                    long MIN_DISTANCE_CHANGE_FOR_UPDATES = 10;
-                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000 * 3 * 1, 0, this);
+                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000 * 3 * 1, 1, this);
                     if (locationManager != null) {
                         location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
                     }
@@ -341,9 +340,9 @@ public class LocationActivity extends BaseFragment implements LocationListener, 
             if (userLocation != null && distanceTextView != null) {
                 float distance = location.distanceTo(userLocation);
                 if (distance < 1000) {
-                    distanceTextView.setText(String.format("%d %s", (int)(distance), Utilities.applicationContext.getString(R.string.MetersAway)));
+                    distanceTextView.setText(String.format("%d %s", (int)(distance), ApplicationLoader.applicationContext.getString(R.string.MetersAway)));
                 } else {
-                    distanceTextView.setText(String.format("%.2f %s", distance / 1000.0f, Utilities.applicationContext.getString(R.string.KMetersAway)));
+                    distanceTextView.setText(String.format("%.2f %s", distance / 1000.0f, ApplicationLoader.applicationContext.getString(R.string.KMetersAway)));
                 }
             }
         } else {
@@ -365,8 +364,13 @@ public class LocationActivity extends BaseFragment implements LocationListener, 
     }
 
     @Override
-    public void onLocationChanged(Location location) {
-        positionMarker(location);
+    public void onLocationChanged(final Location location) {
+        Utilities.RunOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                positionMarker(location);
+            }
+        });
     }
 
     @Override

@@ -281,7 +281,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         NotificationCenter.Instance.addObserver(this, 997);
         loading = true;
         MessagesController.Instance.loadMessages(dialog_id, 0, 30, 0, true, 0, classGuid);
-        SharedPreferences preferences = Utilities.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
         fontSize = preferences.getInt("fons_size", 16);
         return true;
     }
@@ -360,7 +360,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
             ImageView backgroundImage = (ImageView) fragmentView.findViewById(R.id.background_image);
 
-                SharedPreferences preferences = Utilities.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                 int selectedBackground = preferences.getInt("selectedBackground", 1000001);
                 int selectedColor = preferences.getInt("selectedColor", 0);
                 if (selectedColor != 0) {
@@ -371,7 +371,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     if (selectedBackground == 1000001) {
                         backgroundImage.setImageResource(R.drawable.background_hd);
                     } else {
-                        File toFile = new File(Utilities.applicationContext.getFilesDir(), "wallpaper.jpg");
+                        File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
                         if (toFile.exists()) {
                             if (ApplicationLoader.cachedWallpaper != null) {
                                 backgroundImage.setImageBitmap(ApplicationLoader.cachedWallpaper);
@@ -419,11 +419,11 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 }
 
             if (isCustomTheme) {
-                centerProgress.setIndeterminateDrawable(Utilities.applicationContext.getResources().getDrawable(R.drawable.loading_custom_animation));
+                centerProgress.setIndeterminateDrawable(ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.loading_custom_animation));
                 emptyView.setBackgroundResource(R.drawable.day_box_custom);
             } else {
                 emptyView.setBackgroundResource(R.drawable.day_box);
-                centerProgress.setIndeterminateDrawable(Utilities.applicationContext.getResources().getDrawable(R.drawable.loading_animation));
+                centerProgress.setIndeterminateDrawable(ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.loading_animation));
             }
             emptyView.setPadding((int)(10 * displayDensity), (int)(26 * displayDensity), (int)(10 * displayDensity), 0);
 
@@ -681,7 +681,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 Utilities.hideKeyboard(parentActivity.getCurrentFocus());
             }
         }
-        parentActivity.invalidateOptionsMenu();
+        if (parentActivity != null) {
+            parentActivity.invalidateOptionsMenu();
+        }
     }
 
     private void addToLoadingFile(String path, ProgressBar bar) {
@@ -833,15 +835,13 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         }
 
         if (currentChat != null) {
-            currentChat = MessagesController.Instance.chats.get(currentChat.id);
             actionBar.setTitle(Html.fromHtml("<font color='#006fc8'>" + currentChat.title + "</font>"));
             if (title != null) {
                 title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
                 title.setCompoundDrawablePadding(0);
             }
         } else if (currentUser != null) {
-            currentUser = MessagesController.Instance.users.get(currentUser.id);
-            if (currentUser.id != 333000 && !MessagesController.Instance.contactsByPhones.containsKey(currentUser.phone)) {
+            if (currentUser.id != 333000 && MessagesController.Instance.contactsDict.get(currentUser.id) == null) {
                 if (currentUser.phone != null && currentUser.phone.length() != 0) {
                     actionBar.setTitle(Html.fromHtml("<font color='#006fc8'>" + PhoneFormat.Instance.format("+" + currentUser.phone) + "</font>"));
                 } else {
@@ -1044,12 +1044,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             return;
         }
         Bitmap thumb = ThumbnailUtils.createVideoThumbnail(videoPath, MediaStore.Video.Thumbnails.MINI_KIND);
-        TLRPC.PhotoSize size;
-        if (currentEncryptedChat == null) {
-            size = FileLoader.scaleAndSaveImage(thumb, 320, 320, 87, false);
-        } else {
-            size = FileLoader.scaleAndSaveImage(thumb, 90, 90, 55, true);
-        }
+        TLRPC.PhotoSize size = FileLoader.scaleAndSaveImage(thumb, 90, 90, 55, currentEncryptedChat != null);
         if (size == null) {
             return;
         }
@@ -1064,7 +1059,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             video.size = (int)temp.length();
         }
         UserConfig.lastLocalId--;
-        UserConfig.saveConfig();
+        UserConfig.saveConfig(false);
 
         MediaPlayer mp = MediaPlayer.create(parentActivity, Uri.fromFile(new File(videoPath)));
         video.duration = (int)Math.ceil(mp.getDuration() / 1000.0f);
@@ -1293,7 +1288,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 }
             }
         } else if (id == MessagesController.closeChats) {
-            if (messsageEditText.isFocused()) {
+            if (messsageEditText != null && messsageEditText.isFocused()) {
                 Utilities.hideKeyboard(messsageEditText);
             }
             removeSelfFromStack();
@@ -1481,7 +1476,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         if (currentUser == null) {
             topPanel.setVisibility(View.GONE);
         } else {
-            if (currentUser.phone != null && currentUser.phone.length() != 0 && MessagesController.Instance.contactsByPhones.get(currentUser.phone) != null) {
+            if (currentUser.phone != null && currentUser.phone.length() != 0 && MessagesController.Instance.contactsDict.get(currentUser.id) != null) {
                 topPanel.setVisibility(View.GONE);
             } else {
                 topPanel.setVisibility(View.VISIBLE);
@@ -1657,7 +1652,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         ((ApplicationActivity)parentActivity).showActionBar();
         ((ApplicationActivity)parentActivity).updateActionBar();
         fixLayout();
-        SharedPreferences preferences = Utilities.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
         String lastMessageText = preferences.getString("dialog_" + dialog_id, null);
         if (lastMessageText != null) {
             SharedPreferences.Editor editor = preferences.edit();
@@ -1708,7 +1703,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         MessagesController.Instance.openned_dialog_id = 0;
 
         if (messsageEditText != null && messsageEditText.length() != 0) {
-            SharedPreferences preferences = Utilities.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             SharedPreferences.Editor editor = preferences.edit();
             editor.putString("dialog_" + dialog_id, messsageEditText.getText().toString());
             editor.commit();
@@ -1725,12 +1720,12 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         chatListView.getViewTreeObserver().removeOnPreDrawListener(this);
                         return false;
                     }
-                    WindowManager manager = (WindowManager) Utilities.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
+                    WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
                     Display display = manager.getDefaultDisplay();
                     int rotation = display.getRotation();
                     int height;
                     int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
-                    float density = Utilities.applicationContext.getResources().getDisplayMetrics().density;
+                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
                     if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
                         height = currentActionBarHeight;
                     } else {
@@ -2198,7 +2193,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
     public boolean isGoogleMapsInstalled() {
         try {
-            ApplicationInfo info = Utilities.applicationContext.getPackageManager().getApplicationInfo("com.google.android.apps.maps", 0 );
+            ApplicationInfo info = ApplicationLoader.applicationContext.getPackageManager().getApplicationInfo("com.google.android.apps.maps", 0 );
             return true;
         } catch(PackageManager.NameNotFoundException e) {
             AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
@@ -2216,9 +2211,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 }
             });
             builder.setNegativeButton(R.string.Cancel, null);
-            AlertDialog dialog = builder.create();
-            dialog.setCanceledOnTouchOutside(true);
-            dialog.show();
+            visibleDialog = builder.create();
+            visibleDialog.setCanceledOnTouchOutside(true);
+            visibleDialog.show();
             return false;
         }
     }
@@ -2417,9 +2412,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         ProgressBar progressBar = (ProgressBar)view.findViewById(R.id.progress);
                         progressBar.setIndeterminate(true);
                         if (isCustomTheme) {
-                            progressBar.setIndeterminateDrawable(Utilities.applicationContext.getResources().getDrawable(R.drawable.loading_custom_animation));
+                            progressBar.setIndeterminateDrawable(ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.loading_custom_animation));
                         } else {
-                            progressBar.setIndeterminateDrawable(Utilities.applicationContext.getResources().getDrawable(R.drawable.loading_animation));
+                            progressBar.setIndeterminateDrawable(ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.loading_animation));
                         }
                     }
                     return view;
@@ -2755,7 +2750,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     }
                     int placeHolderId = Utilities.getUserAvatarForId(contactUser.id);
                     contactAvatar.setImage(photo, "50_50", placeHolderId);
-                    if (contactUser.id != UserConfig.clientUserId && !MessagesController.Instance.contactsByPhones.containsKey(contactUser.phone)) {
+                    if (contactUser.id != UserConfig.clientUserId && MessagesController.Instance.contactsDict.get(contactUser.id) == null) {
                         addContactView.setVisibility(View.VISIBLE);
                     } else {
                         addContactView.setVisibility(View.GONE);
@@ -3234,6 +3229,19 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
             if (forwardedUserText != null) {
                 forwardedUserText.setTypeface(typeface);
+                forwardedUserText.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        TLRPC.User fwdUser = MessagesController.Instance.users.get(message.messageOwner.fwd_from_id);
+                        if (fwdUser != null && fwdUser.id != UserConfig.clientUserId) {
+                            UserProfileActivity fragment = new UserProfileActivity();
+                            Bundle args = new Bundle();
+                            args.putInt("user_id", fwdUser.id);
+                            fragment.setArguments(args);
+                            ((ApplicationActivity)parentActivity).presentFragment(fragment, "user_" + fwdUser.id, false);
+                        }
+                    }
+                });
             }
             if (videoTimeText != null) {
                 videoTimeText.setTypeface(typeface);

@@ -89,6 +89,7 @@
     <string name="MessageLifetime1h">ساعة</string>
     <string name="MessageLifetime1d">يوم</string>
     <string name="MessageLifetime1w">أسبوع</string>
+    <string name="YouHaveNewMessage">لديك رسالة جديدة</string>
     
     <!--contacts view-->
     <string name="SearchContactHint">إبحث عن جهات الاتصال</string>

@@ -24,7 +24,7 @@
 
 package org.telegram.PhoneFormat;
 
-import org.telegram.messenger.Utilities;
+import org.telegram.ui.ApplicationLoader;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -78,7 +78,7 @@ public class PhoneFormat {
 
     public void init(String countryCode) {
         try {
-            InputStream stream = Utilities.applicationContext.getAssets().open("PhoneFormats.dat");
+            InputStream stream = ApplicationLoader.applicationContext.getAssets().open("PhoneFormats.dat");
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             byte[] buf = new byte[1024];
             int len;

@@ -179,7 +179,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
             localPagerAdapter = new LocalPagerAdapter(imagesArr, imagesByIds);
         }
 
-        float density = Utilities.applicationContext.getResources().getDisplayMetrics().density;
+        float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
 
         mViewPager.setPageMargin((int)(20 * density));
         mViewPager.setOffscreenPageLimit(1);

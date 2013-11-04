@@ -17,8 +17,8 @@ import android.view.animation.AnimationUtils;
 import com.actionbarsherlock.app.SherlockFragment;
 import com.actionbarsherlock.app.SherlockFragmentActivity;
 import org.telegram.messenger.ConnectionsManager;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.ApplicationActivity;
+import org.telegram.ui.ApplicationLoader;
 
 public class BaseFragment extends SherlockFragment {
     public int animationType = 0;
@@ -90,10 +90,11 @@ public class BaseFragment extends SherlockFragment {
     public void onFragmentDestroy() {
         ConnectionsManager.Instance.cancelRpcsForClassGuid(classGuid);
         removeParentOnDestroy = true;
+        isFinish = true;
     }
 
     public String getStringEntry(int res) {
-        return Utilities.applicationContext.getString(res);
+        return ApplicationLoader.applicationContext.getString(res);
     }
 
     public void onAnimationStart() {

@@ -225,7 +225,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                             ((ApplicationActivity)parentActivity).presentFragment(fragment, "user_" + user_id, false);
                         } else {
                             if (size + 7 == i) {
-                                if (info.participants.size() < 100) {
+                                if (info.participants.size() < 200) {
                                     openAddMenu();
                                 } else {
                                     kickUser(null);
@@ -375,7 +375,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     int rotation = display.getRotation();
                     int height;
                     int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
-                    float density = Utilities.applicationContext.getResources().getDisplayMetrics().density;
+                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
                     if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
                         height = currentActionBarHeight;
                     } else {
@@ -539,7 +539,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
             int count = 6;
             if (info != null && !(info instanceof TLRPC.TL_chatParticipantsForbidden)) {
                 count += info.participants.size() + 2;
-                if (info.participants.size() < 100) {
+                if (info.participants.size() < 200) {
                     count++;
                 }
             }
@@ -673,7 +673,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
                 View divider = view.findViewById(R.id.settings_row_divider);
                 if (i == 2) {
-                    SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     String key = "notify_" + (-chat_id);
                     boolean value = preferences.getBoolean(key, true);
                     ImageView checkButton = (ImageView)view.findViewById(R.id.settings_row_check_button);
@@ -696,7 +696,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 detailTextView.setTypeface(typeface);
                 View divider = view.findViewById(R.id.settings_row_divider);
                 if (i == 3) {
-                    SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     String name = preferences.getString("sound_chat_" + chat_id, getStringEntry(R.string.Default));
                     if (name.equals("NoSound")) {
                         detailTextView.setText(getStringEntry(R.string.NoSound));
@@ -836,7 +836,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     return 4;
                 } else {
                     if (size + 7 == i) {
-                        if (info != null && info.participants.size() < 100) {
+                        if (info != null && info.participants.size() < 200) {
                             return 5;
                         } else {
                             return 6;

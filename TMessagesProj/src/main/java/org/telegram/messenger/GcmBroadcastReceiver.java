@@ -198,7 +198,7 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
         PendingIntent contentIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_ONE_SHOT);
 
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context)
-                .setContentTitle(Utilities.applicationContext.getString(R.string.AppName))
+                .setContentTitle(ApplicationLoader.applicationContext.getString(R.string.AppName))
                 .setSmallIcon(R.drawable.notification)
                 .setStyle(new NotificationCompat.BigTextStyle()
                         .bigText(msg))

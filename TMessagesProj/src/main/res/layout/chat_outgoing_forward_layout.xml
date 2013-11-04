@@ -43,7 +43,7 @@
                 android:linksClickable="false"
                 android:layout_marginTop="34dp"
                 android:layout_marginBottom="8dp"
-                android:autoLink="web"
+                android:autoLink="web|email"
                 android:descendantFocusability="afterDescendants"
                 android:layout_gravity="top"
                 android:textColor="#000000"/>

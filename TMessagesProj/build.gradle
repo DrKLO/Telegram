@@ -32,18 +32,18 @@ tasks.withType(Compile) {
 
 dependencies {
     compile 'com.actionbarsherlock:actionbarsherlock:4.4.0@aar'
-    compile 'com.google.android.gms:play-services:3.1.+'
-    compile 'net.hockeyapp.android:HockeySDK:3.0.0'
-    compile 'com.android.support:support-v4:18.0.+'
+    compile 'com.google.android.gms:play-services:4.0.+'
+    compile 'net.hockeyapp.android:HockeySDK:3.0.1'
+    compile 'com.android.support:support-v4:19.0.+'
     compile fileTree(dir: "$buildDir/native-libs", include: '*.jar')
 }
 
 android {
-    compileSdkVersion 18
-    buildToolsVersion "17.0.0"
+    compileSdkVersion 19
+    buildToolsVersion "19.0.0"
 
     defaultConfig {
         minSdkVersion 8
-        targetSdkVersion 18
+        targetSdkVersion 19
     }
 }

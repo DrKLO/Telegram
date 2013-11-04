@@ -47,6 +47,7 @@ public class ApplicationLoader extends Application {
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     public static long lastPauseTime;
     public static Bitmap cachedWallpaper = null;
+    public static Context applicationContext;
 
     public static ApplicationLoader Instance = null;
 
@@ -60,18 +61,19 @@ public class ApplicationLoader extends Application {
         java.lang.System.setProperty("java.net.preferIPv4Stack", "true");
         java.lang.System.setProperty("java.net.preferIPv6Addresses", "false");
 
-        Utilities.applicationContext = getApplicationContext();
+        applicationContext = getApplicationContext();
+        Utilities.getTypeface("fonts/rlight.ttf");
         UserConfig.loadConfig();
         SharedPreferences preferences = getSharedPreferences("Notifications", MODE_PRIVATE);
         if (UserConfig.currentUser != null) {
             int value = preferences.getInt("version", 0);
             if (value != 15) {
                 UserConfig.contactsHash = "";
-                UserConfig.lastDateValue = 0;
-                UserConfig.lastPtsValue = 0;
-                UserConfig.lastSeqValue = 0;
-                UserConfig.lastQtsValue = 0;
-                UserConfig.saveConfig();
+                MessagesStorage.lastDateValue = 0;
+                MessagesStorage.lastPtsValue = 0;
+                MessagesStorage.lastSeqValue = 0;
+                MessagesStorage.lastQtsValue = 0;
+                UserConfig.saveConfig(false);
                 MessagesStorage.Instance.cleanUp();
                 ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
                 users.add(UserConfig.currentUser);
@@ -80,6 +82,8 @@ public class ApplicationLoader extends Application {
                 SharedPreferences.Editor editor = preferences.edit();
                 editor.putInt("version", 15);
                 editor.commit();
+            } else {
+                MessagesStorage init = MessagesStorage.Instance;
             }
             MessagesController.Instance.users.put(UserConfig.clientUserId, UserConfig.currentUser);
         } else {
@@ -102,7 +106,7 @@ public class ApplicationLoader extends Application {
 
         if (checkPlayServices()) {
             gcm = GoogleCloudMessaging.getInstance(this);
-            regid = getRegistrationId(Utilities.applicationContext);
+            regid = getRegistrationId(applicationContext);
 
             if (regid.length() == 0) {
                 registerInBackground();
@@ -171,11 +175,11 @@ public class ApplicationLoader extends Application {
                 String msg;
                 try {
                     if (gcm == null) {
-                        gcm = GoogleCloudMessaging.getInstance(Utilities.applicationContext);
+                        gcm = GoogleCloudMessaging.getInstance(applicationContext);
                     }
                     regid = gcm.register(SENDER_ID);
                     sendRegistrationIdToBackend(true);
-                    storeRegistrationId(Utilities.applicationContext, regid);
+                    storeRegistrationId(applicationContext, regid);
                     return true;
                 } catch (IOException ex) {
                     ex.printStackTrace();
@@ -191,7 +195,7 @@ public class ApplicationLoader extends Application {
             public void run() {
                 UserConfig.pushString = regid;
                 UserConfig.registeredForPush = !isNew;
-                UserConfig.saveConfig();
+                UserConfig.saveConfig(false);
                 MessagesController.Instance.registerForPush(regid);
             }
         });

@@ -196,7 +196,7 @@ public class ScreenSlidePageFragmentRegister extends SlideFragment {
                             UserConfig.currentUser = user;
                             UserConfig.clientActivated = true;
                             UserConfig.clientUserId = user.id;
-                            UserConfig.saveConfig();
+                            UserConfig.saveConfig(true);
                             ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
                             users.add(user);
                             MessagesStorage.Instance.putUsersAndChats(users, null, true, true);
@@ -208,15 +208,15 @@ public class ScreenSlidePageFragmentRegister extends SlideFragment {
                     });
                 } else {
                     if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                        delegate.needShowAlert(Utilities.applicationContext.getString(R.string.InvalidPhoneNumber));
+                        delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidPhoneNumber));
                     } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                        delegate.needShowAlert(Utilities.applicationContext.getString(R.string.InvalidCode));
+                        delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidCode));
                     } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                        delegate.needShowAlert(Utilities.applicationContext.getString(R.string.CodeExpired));
+                        delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.CodeExpired));
                     } else if (error.text.contains("FIRSTNAME_INVALID")) {
-                        delegate.needShowAlert(Utilities.applicationContext.getString(R.string.FirstName));
+                        delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.FirstName));
                     } else if (error.text.contains("LASTNAME_INVALID")) {
-                        delegate.needShowAlert(Utilities.applicationContext.getString(R.string.LastName));
+                        delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.LastName));
                     } else {
                         delegate.needShowAlert(error.text);
                     }

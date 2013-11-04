@@ -140,7 +140,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         builder.setItems(new CharSequence[]{String.format("%d", 16), String.format("%d", 17), String.format("%d", 18), String.format("%d", 19), String.format("%d", 20)}, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                SharedPreferences preferences = Utilities.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                                 SharedPreferences.Editor editor = preferences.edit();
                                 editor.putInt("fons_size", 16 + which);
                                 editor.commit();
@@ -152,7 +152,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         builder.setNegativeButton(getStringEntry(R.string.Cancel), null);
                         builder.show().setCanceledOnTouchOutside(true);
                     } else if (i == enableAnimationsRow) {
-                        SharedPreferences preferences = Utilities.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         boolean animations = preferences.getBoolean("view_animations", true);
                         SharedPreferences.Editor editor = preferences.edit();
                         editor.putBoolean("view_animations", !animations);
@@ -270,7 +270,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     int rotation = display.getRotation();
                     int height;
                     int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
-                    float density = Utilities.applicationContext.getResources().getDisplayMetrics().density;
+                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
                     if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
                         height = currentActionBarHeight;
                     } else {
@@ -504,7 +504,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     divider.setVisibility(View.VISIBLE);
 
                     ImageView checkButton = (ImageView)view.findViewById(R.id.settings_row_check_button);
-                    SharedPreferences preferences = Utilities.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     boolean animations = preferences.getBoolean("view_animations", true);
                     if (animations) {
                         checkButton.setImageResource(R.drawable.btn_check_on);
@@ -559,10 +559,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 detailTextView.setTypeface(typeface);
                 View divider = view.findViewById(R.id.settings_row_divider);
                 if (i == textSizeRow) {
-                    SharedPreferences preferences = Utilities.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     int size = preferences.getInt("fons_size", 16);
                     detailTextView.setText(String.format("%d", size));
-                    textView.setText(Utilities.applicationContext.getString(R.string.TextSize));
+                    textView.setText(ApplicationLoader.applicationContext.getString(R.string.TextSize));
                     divider.setVisibility(View.VISIBLE);
                 }
             }

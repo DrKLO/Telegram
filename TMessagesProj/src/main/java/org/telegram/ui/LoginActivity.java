@@ -76,7 +76,7 @@ public class LoginActivity extends SherlockFragmentActivity implements NonSwipea
                     AlertDialog.Builder builder = new AlertDialog.Builder(activity);
                     builder.setTitle(LoginActivity.this.getString(R.string.AppName));
                     builder.setMessage(message);
-                    builder.setPositiveButton(Utilities.applicationContext.getString(R.string.OK), null);
+                    builder.setPositiveButton(ApplicationLoader.applicationContext.getString(R.string.OK), null);
                     builder.show().setCanceledOnTouchOutside(true);
                 }
             }
@@ -160,7 +160,7 @@ public class LoginActivity extends SherlockFragmentActivity implements NonSwipea
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.login_layout);
-        Utilities.applicationContext = this.getApplicationContext();
+        ApplicationLoader.applicationContext = this.getApplicationContext();
         ConnectionsManager inst = ConnectionsManager.Instance;
 
         Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
