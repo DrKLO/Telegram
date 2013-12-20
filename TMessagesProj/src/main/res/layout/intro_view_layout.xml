@@ -1,39 +1,28 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:orientation="vertical"
-    android:weightSum="100">
+    android:layout_height="fill_parent">
 
-    <FrameLayout android:layout_gravity="top"
+    <TextView android:layout_height="wrap_content"
         android:layout_width="fill_parent"
-        android:layout_height="0dp"
-        android:layout_weight="40"/>
+        android:id="@+id/header_text"
+        android:textSize="26dp"
+        android:gravity="center"
+        android:layout_gravity="top|left"
+        android:layout_marginLeft="18dp"
+        android:layout_marginRight="16dp"
+        android:textColor="#ff000000"
+        android:layout_marginTop="224dp"/>
 
-    <FrameLayout android:layout_width="fill_parent"
-        android:layout_height="0dp"
-        android:layout_weight="60">
+    <TextView android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
+        android:id="@+id/message_text"
+        android:textSize="15dp"
+        android:gravity="center"
+        android:layout_gravity="top|left"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        android:layout_marginTop="266dp"
+        android:textColor="#808080"/>
 
-        <TextView android:layout_height="wrap_content"
-            android:layout_width="fill_parent"
-            android:id="@+id/header_text"
-            android:textSize="40dp"
-            android:gravity="center"
-            android:layout_gravity="top|left"
-            android:layout_marginLeft="18dp"
-            android:layout_marginRight="16dp"
-            android:textColor="#ff000000"/>
-
-        <TextView android:layout_height="wrap_content"
-            android:layout_width="fill_parent"
-            android:id="@+id/message_text"
-            android:textSize="18dp"
-            android:gravity="center"
-            android:layout_gravity="top|left"
-            android:layout_marginLeft="16dp"
-            android:layout_marginRight="16dp"
-            android:layout_marginTop="62dp"
-            android:textColor="#ff000000"/>
-
-    </FrameLayout>
-
-</LinearLayout>
+</FrameLayout>

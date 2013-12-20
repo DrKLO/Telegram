@@ -9,12 +9,13 @@
     android:paddingTop="1dp"
     android:layout_gravity="top">
 
-    <org.telegram.ui.Views.FrameLayoutFixed android:layout_width="wrap_content"
-                 android:layout_height="wrap_content"
-                 android:layout_marginLeft="9dp"
-                 android:id="@+id/chat_bubble_layout"
-                 android:layout_gravity="top"
-                 android:addStatesFromChildren="true">
+    <org.telegram.ui.Views.FrameLayoutFixed
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="9dp"
+        android:id="@+id/chat_bubble_layout"
+        android:layout_gravity="top"
+        android:addStatesFromChildren="true">
 
         <org.telegram.ui.Views.BackupImageView
             android:layout_height="wrap_content"
@@ -26,60 +27,72 @@
             android:minWidth="100dp"
             android:id="@+id/chat_photo_image"/>
 
-        <TextView android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:text="4:53"
-                  android:textColor="#ffffff"
-                  android:drawableLeft="@drawable/ic_video"
-                  android:drawablePadding="4dp"
-                  android:textSize="15dp"
-                  android:id="@+id/chat_video_time"
-                  android:layout_marginLeft="8dp"
-                  android:layout_marginTop="8dp"
-            android:paddingLeft="4dp"
-            android:paddingRight="4dp"
-            android:paddingBottom="1dp"
-            android:paddingTop="1dp"
-            android:layout_gravity="top"/>
-
-        <FrameLayout android:layout_height="wrap_content"
+        <LinearLayout
             android:layout_width="wrap_content"
-            android:layout_gravity="bottom|right"
-            android:paddingLeft="4dp"
-            android:paddingRight="4dp"
-            android:paddingBottom="1dp"
-            android:paddingTop="1dp"
-            android:layout_marginRight="8dp"
-            android:layout_marginBottom="8dp">
+            android:layout_height="16dp"
+            android:paddingLeft="3dp"
+            android:paddingRight="3dp"
+            android:layout_marginLeft="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_gravity="top"
+            android:background="@drawable/phototime"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-            <TextView android:layout_height="wrap_content"
+            <ImageView
+                android:layout_height="wrap_content"
                 android:layout_width="wrap_content"
-                android:textColor="#55000000"
-                android:textSize="12dp"
-                android:textStyle="italic"
-                android:paddingTop="1dp"
-                android:id="@+id/chat_time_text_shadow"/>
+                android:src="@drawable/ic_video"/>
 
-            <TextView android:layout_height="wrap_content"
+            <TextView
+                android:layout_height="wrap_content"
                 android:layout_width="wrap_content"
                 android:textColor="#ffffff"
                 android:textSize="12dp"
-                android:textStyle="italic"
-                android:id="@+id/chat_time_text"
-                android:shadowRadius="5"
-                android:shadowColor="#77000000"/>
-        </FrameLayout>
+                android:layout_marginLeft="4dp"
+                android:gravity="center_vertical"
+                android:layout_gravity="center_vertical"
+                android:layout_marginBottom="1dp"
+                android:id="@+id/chat_video_time"/>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="16dp"
+            android:id="@+id/chat_time_layout"
+            android:paddingLeft="3dp"
+            android:paddingRight="3dp"
+            android:paddingBottom="1dp"
+            android:paddingTop="1dp"
+            android:layout_marginRight="8dp"
+            android:layout_marginBottom="8dp"
+            android:layout_gravity="right|bottom"
+            android:background="@drawable/phototime">
+
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:textColor="#ffffff"
+                android:textSize="12dp"
+                android:layout_gravity="bottom"
+                android:layout_marginBottom="1dp"
+                android:id="@+id/chat_time_text"/>
+
+        </LinearLayout>
 
     </org.telegram.ui.Views.FrameLayoutFixed>
 
-    <TextView android:layout_width="wrap_content"
+    <TextView
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/ViewVideo"
-        android:textColor="#7f385266"
-        android:paddingLeft="14dp"
-        android:paddingRight="14dp"
+        android:textColor="#54759e"
+        android:background="@drawable/chat_incoming_media_states"
+        android:paddingLeft="12dp"
+        android:paddingRight="12dp"
         android:id="@+id/chat_view_action_button"
-        android:textSize="12dp"
+        android:textSize="14dp"
         android:layout_gravity="center"
         android:descendantFocusability="blocksDescendants"
         android:clickable="true"
@@ -95,12 +108,14 @@
         android:id="@+id/chat_view_action_layout"
         android:visibility="gone">
 
-        <ImageView android:layout_width="30dp"
+        <ImageView
+            android:layout_width="30dp"
             android:layout_height="30dp"
             android:scaleType="centerInside"
             android:layout_marginRight="4dp"
             android:layout_gravity="right|center"
             android:id="@+id/chat_view_action_cancel_button"
+            android:src="@drawable/ic_msg_btn_cross_custom"
             android:clickable="true"/>
 
         <ProgressBar
@@ -113,5 +128,7 @@
             android:layout_gravity="center|left"
             android:id="@+id/chat_view_action_progress"
             android:max="100"/>
+
     </org.telegram.ui.Views.FrameLayoutFixed>
+
 </LinearLayout>

@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -13,10 +13,12 @@ import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.NinePatchDrawable;
+import android.os.Build;
 import android.widget.ImageView;
 
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
 
 public class BackupImageView extends ImageView {
@@ -24,6 +26,13 @@ public class BackupImageView extends ImageView {
     public String currentPath;
     private boolean isPlaceholder;
     private boolean ignoreLayout = true;
+
+    TLRPC.FileLocation last_path;
+    String last_httpUrl;
+    String last_filter;
+    int last_placeholder;
+    Bitmap last_placeholderBitmap;
+    int last_size;
 
     public BackupImageView(android.content.Context context) {
         super(context);
@@ -38,22 +47,38 @@ public class BackupImageView extends ImageView {
     }
 
     public void setImage(TLRPC.FileLocation path, String filter, int placeholder) {
-        setImage(path, null, filter, placeholder, null);
+        setImage(path, null, filter, placeholder, null, 0);
     }
 
     public void setImage(TLRPC.FileLocation path, String filter, Bitmap placeholderBitmap) {
-        setImage(path, null, filter, 0, placeholderBitmap);
+        setImage(path, null, filter, 0, placeholderBitmap, 0);
+    }
+
+    public void setImage(TLRPC.FileLocation path, String filter, int placeholder, int size) {
+        setImage(path, null, filter, placeholder, null, size);
+    }
+
+    public void setImage(TLRPC.FileLocation path, String filter, Bitmap placeholderBitmap, int size) {
+        setImage(path, null, filter, 0, placeholderBitmap, size);
     }
 
     public void setImage(String path, String filter, int placeholder) {
-        setImage(null, path, filter, placeholder, null);
+        setImage(null, path, filter, placeholder, null, 0);
     }
 
-    public void setImage(TLRPC.FileLocation path, String httpUrl, String filter, int placeholder, Bitmap placeholderBitmap) {
+    public void setImage(TLRPC.FileLocation path, String httpUrl, String filter, int placeholder, Bitmap placeholderBitmap, int size) {
         if ((path == null && httpUrl == null) || (path != null && !(path instanceof TLRPC.TL_fileLocation) && !(path instanceof TLRPC.TL_fileEncryptedLocation))) {
             recycleBitmap(null);
             currentPath = null;
             isPlaceholder = true;
+
+            last_path = null;
+            last_httpUrl = null;
+            last_filter = null;
+            last_placeholder = 0;
+            last_size = 0;
+            last_placeholderBitmap = null;
+
             FileLoader.Instance.cancelLoadingForImageView(this);
             if (placeholder != 0) {
                 setImageResourceMy(placeholder);
@@ -83,6 +108,12 @@ public class BackupImageView extends ImageView {
             img = FileLoader.Instance.getImageFromMemory(path, httpUrl, this, filter, true);
         }
         currentPath = key;
+        last_path = path;
+        last_httpUrl = httpUrl;
+        last_filter = filter;
+        last_placeholder = placeholder;
+        last_placeholderBitmap = placeholderBitmap;
+        last_size = size;
         if (img == null) {
             isPlaceholder = true;
             if (placeholder != 0) {
@@ -90,7 +121,7 @@ public class BackupImageView extends ImageView {
             } else if (placeholderBitmap != null) {
                 setImageBitmapMy(placeholderBitmap);
             }
-            FileLoader.Instance.loadImage(path, httpUrl, this, filter, true);
+            FileLoader.Instance.loadImage(path, httpUrl, this, filter, true, size);
         } else {
             setImageBitmap(img, currentPath);
         }
@@ -131,14 +162,13 @@ public class BackupImageView extends ImageView {
                         }
                         if (canDelete) {
                             setImageBitmap(null);
-                            bitmap.recycle();
+                            if (Build.VERSION.SDK_INT < 11) {
+                                bitmap.recycle();
+                            }
                         }
                     } else {
                         setImageBitmap(null);
                     }
-                } else {
-                    //Log.e("tmeesages", "recycle bitmap placeholder");
-                    //bitmap.recycle();
                 }
             }
         } else if (drawable instanceof NinePatchDrawable) {
@@ -151,7 +181,10 @@ public class BackupImageView extends ImageView {
         try {
             super.onDraw(canvas);
         } catch (Exception e) {
-            e.printStackTrace();
+            FileLoader.Instance.removeImage(currentPath);
+            currentPath = null;
+            setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_placeholderBitmap, last_size);
+            FileLog.e("tmessages", e);
         }
     }
 
@@ -176,6 +209,12 @@ public class BackupImageView extends ImageView {
             recycleBitmap(null);
         }
         currentPath = null;
+        last_path = null;
+        last_httpUrl = null;
+        last_filter = null;
+        last_placeholder = 0;
+        last_size = 0;
+        last_placeholderBitmap = null;
         if (ignoreLayout) {
             makeRequest = false;
         }
@@ -201,6 +240,12 @@ public class BackupImageView extends ImageView {
             recycleBitmap(null);
         }
         currentPath = null;
+        last_path = null;
+        last_httpUrl = null;
+        last_filter = null;
+        last_placeholder = 0;
+        last_size = 0;
+        last_placeholderBitmap = null;
         if (ignoreLayout) {
             makeRequest = false;
         }

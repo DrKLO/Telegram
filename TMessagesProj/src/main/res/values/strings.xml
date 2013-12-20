@@ -4,7 +4,9 @@
 
     <!--signin view-->
     <string name="YourPhone">Your phone</string>
-    <string name="StartText">Please confirm your country code and enter your phone number.</string>
+    <string name="StartText">Please confirm your country code\nand enter your phone number.</string>
+    <string name="ChooseCountry">Choose a country</string>
+    <string name="WrongCountry">Wrong country code</string>
 
     <!--code enter view-->
     <string name="YourCode">Your code</string>
@@ -12,12 +14,15 @@
     <string name="CallText">We will call you in</string>
     <string name="Calling">Calling you...</string>
     <string name="Code">Code</string>
+    <string name="WrongNumber">Wrong number?</string>
 
     <!--signup view-->
     <string name="YourName">Your name</string>
-    <string name="RegisterText">Set up your name and picture</string>
-    <string name="FirstName">First name</string>
-    <string name="LastName">Last name</string>
+    <string name="RegisterText">Set up your first and last name</string>
+    <!--<string name="RegisterText">Set up your name and picture</string>-->
+    <string name="FirstName">First name (required)</string>
+    <string name="LastName">Last name (optional)</string>
+    <string name="CancelRegistration">Cancel registration</string>
 
     <!--chats view-->
     <string name="Chats">Chats</string>
@@ -25,12 +30,11 @@
     <string name="NewMessages">New messages</string>
     <string name="Settings">Settings</string>
     <string name="Contacts">Contacts</string>
-    <string name="SearchMsgHint">Search chats</string>
     <string name="NewGroup">New Group</string>
     <string name="Yesterday">yesterday</string>
     <string name="NoResult">No results</string>
     <string name="NoChats">No chats yet...</string>
-    <string name="NoChatsHelp">Start messaging by pressing the\npencil button in the top right corner\nor go to the Contacts section.</string>
+    <string name="NoChatsHelp">Start messaging by pressing the\ncompose button in the top right corner\nor go to the Contacts section.</string>
     <string name="WaitingForNetwork">Waiting for network...</string>
     <string name="Connecting">Connecting...</string>
     <string name="Updating">Updating...</string>
@@ -56,16 +60,16 @@
     <string name="ChatLocation">Location</string>
     <string name="ChatVideo">Video</string>
     <string name="NoMessages">No messages here yet...</string>
-    <string name="ViewPhoto">VIEW PHOTO</string>
-    <string name="ViewLocation">VIEW LOCATION</string>
-    <string name="ViewVideo">PLAY VIDEO</string>
+    <string name="ViewPhoto">View Photo</string>
+    <string name="ViewLocation">View Location</string>
+    <string name="ViewVideo">Play Video</string>
     <string name="ForwardedMessage">Forwarded message</string>
     <string name="From">From</string>
     <string name="NoRecent">No recent</string>
     <string name="Members">members</string>
     <string name="Message">Message</string>
     <string name="TypeMessage">Type message</string>
-    <string name="DOWNLOAD">DOWNLOAD</string>
+    <string name="DOWNLOAD">Download</string>
     <string name="Selected">Selected:</string>
     <string name="ShareMyContactInfo">SHARE MY CONTACT INFO</string>
     <string name="AddToContacts">ADD TO CONTACTS</string>
@@ -76,6 +80,11 @@
     <string name="EncryptedDescription2">Leave no trace on our servers</string>
     <string name="EncryptedDescription3">Have a self-destruct timer</string>
     <string name="EncryptedDescription4">Do not allow forwarding</string>
+    <string name="OneNewMessage">%1$d new message</string>
+    <string name="FewNewMessages">%1$d new messages</string>
+    <string name="YouWereKicked">You were kicked from this group</string>
+    <string name="YouLeft">You left this group</string>
+    <string name="DeleteThisGroup">Delete this Group</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Secret chat requested</string>
@@ -90,9 +99,30 @@
     <string name="MessageLifetime1d">1 day</string>
     <string name="MessageLifetime1w">1 week</string>
     <string name="YouHaveNewMessage">You have a new message</string>
+    <string name="NotificationMessageText">%1$s: %2$s</string>
+    <string name="NotificationMessageNoText">%1$s sent you a message</string>
+    <string name="NotificationMessagePhoto">%1$s sent you a photo</string>
+    <string name="NotificationMessageVideo">%1$s sent you a video</string>
+    <string name="NotificationMessageContact">%1$s shared a contact with you</string>
+    <string name="NotificationMessageMap">%1$s sent you a map</string>
+    <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
+    <string name="NotificationMessageGroupNoText">%1$s sent a message to the group %2$s</string>
+    <string name="NotificationMessageGroupPhoto">%1$s sent a photo to the group %2$s</string>
+    <string name="NotificationMessageGroupVideo">%1$s sent a video to the group %2$s</string>
+    <string name="NotificationMessageGroupContact">%1$s shared a contact in the group %2$s</string>
+    <string name="NotificationMessageGroupMap">%1$s sent a map to the group %2$s</string>
+    <string name="NotificationInvitedToGroup">%1$s invited you to the group %2$s</string>
+    <string name="NotificationEditedGroupName">%1$s edited the group\'s %2$s name</string>
+    <string name="NotificationEditedGroupPhoto">%1$s edited the group\'s %2$s photo</string>
+    <string name="NotificationGroupAddMember">%1$s invited %3$s to the group %2$s</string>
+    <string name="NotificationGroupKickMember">%1$s kicked %3$s from the group %2$s</string>
+    <string name="NotificationGroupKickYou">%1$s kicked you from the group %2$s</string>
+    <string name="NotificationGroupLeftMember">%1$s has left the group %2$s</string>
+    <string name="NotificationContactJoined">%1$s joined the Telegram!</string>
+    <string name="NotificationUnrecognizedDevice">New login from unrecognized device %1$s, location: %2$s</string>
+    <string name="NotificationContactNewPhoto">%1$s updated profile photo</string>
 
     <!--contacts view-->
-    <string name="SearchContactHint">Search contacts</string>
     <string name="SelectContact">Select Contact</string>
     <string name="NoContacts">No contacts yet</string>
     <string name="InviteText">Hey, let\'s switch to Telegram: http://telegram.org/dl2</string>
@@ -183,6 +213,7 @@
 
     <!--media view-->
     <string name="NoMedia">No shared media yet</string>
+    <string name="CancelDownload">Cancel Download</string>
 
     <!--map view-->
     <string name="MyLocation">My location</string>
@@ -228,6 +259,7 @@
     <string name="ActionChangedPhoto">un1 changed group photo</string>
     <string name="ActionChangedTitle">un1 changed group name to un2</string>
     <string name="ActionCreateGroup">un1 created the group</string>
+    <string name="UnsuppotedMedia">This message is not supported on your version of Telegram.</string>
     <string name="AttachPhoto">Photo</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Location</string>
@@ -237,6 +269,7 @@
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Invalid phone number</string>
     <string name="CodeExpired">Code expired, please login again</string>
+    <string name="FloodWait">Too many attempts, please try again later</string>
     <string name="InvalidCode">Invalid code</string>
     <string name="InvalidFirstName">Invalid first name</string>
     <string name="InvalidLastName">Invalid last name</string>
@@ -253,15 +286,17 @@
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Fast</string>
     <string name="Page3Title">Free</string>
-    <string name="Page4Title">Powerful</string>
-    <string name="Page5Title">Secure</string>
+    <string name="Page4Title">Secure</string>
+    <string name="Page5Title">Powerful</string>
     <string name="Page6Title">Cloud-Based</string>
-    <string name="Page1Message">Welcome<![CDATA[<br/>]]>to a new era of messaging.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> delivers messages faster<![CDATA[<br/>]]>than any other application.</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is free forever.<![CDATA[<br/>]]>No ads. No subscription fees.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> has no limits on the size<![CDATA[<br/>]]>of your media and chats.</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> keeps your messages safe<![CDATA[<br/>]]>from hacker attacks.</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lets you access your<![CDATA[<br/>]]>messages from multiple devices.</string>
+    <string name="Page7Title">Private</string>
+    <string name="Page1Message">Welcome to the era of fast and secure messaging</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> delivers messages faster than<![CDATA[<br/>]]>any other application</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is free forever. No ads.<![CDATA[<br/>]]>No subscription fees</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> keeps your messages safe<![CDATA[<br/>]]>from hacker attacks</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> has no limits on the size of<![CDATA[<br/>]]>your media and chats</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lets you access your messages<![CDATA[<br/>]]>from multiple devices</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> messages are heavily encrypted<![CDATA[<br/>]]>and can self-destruct</string>
     <string name="StartMessaging">Start Messaging</string>
 
     <!--Don't change this! Not for localization!-->

@@ -5,17 +5,19 @@
     android:id="@+id/container_view"
     android:orientation="vertical">
 
-    <FrameLayout android:layout_width="fill_parent"
+    <FrameLayout
+        android:layout_width="fill_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:background="#ffffff">
 
-        <org.telegram.ui.Views.BackupImageView android:layout_height="48dp"
+        <org.telegram.ui.Views.BackupImageView
+            android:layout_height="48dp"
             android:layout_width="48dp"
-            android:id="@+id/avatar_image"
-            android:src="@drawable/group_placeholder_blue"/>
+            android:id="@+id/avatar_image"/>
 
-        <FrameLayout android:layout_width="fill_parent"
+        <FrameLayout
+            android:layout_width="fill_parent"
             android:layout_height="fill_parent"
             android:layout_marginLeft="56dp"
             android:orientation="vertical"
@@ -23,7 +25,8 @@
             android:layout_gravity="top|left"
             android:id="@+id/text_layout">
 
-            <TextView android:layout_height="wrap_content"
+            <TextView
+                android:layout_height="wrap_content"
                 android:layout_width="wrap_content"
                 android:gravity="left|center"
                 android:textSize="15dp"
@@ -33,7 +36,8 @@
                 android:ellipsize="end"
                 android:singleLine="true"/>
 
-            <TextView android:layout_height="wrap_content"
+            <TextView
+                android:layout_height="wrap_content"
                 android:layout_width="wrap_content"
                 android:gravity="left|center"
                 android:textColor="#000000"
@@ -45,7 +49,8 @@
 
         </FrameLayout>
 
-        <ImageView android:layout_height="40dp"
+        <ImageView
+            android:layout_height="40dp"
             android:layout_width="40dp"
             android:layout_gravity="right|center"
             android:src="@drawable/ic_profile_cross"
@@ -53,11 +58,5 @@
             android:id="@+id/close_button"/>
 
     </FrameLayout>
-
-    <View android:layout_width="match_parent"
-        android:layout_height="2dp"
-        android:background="@drawable/header_shadow"
-        android:id="@+id/shadow"
-        android:layout_gravity="bottom"/>
 
 </org.telegram.ui.Views.NotificationView>

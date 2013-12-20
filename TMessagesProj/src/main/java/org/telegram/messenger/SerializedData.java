@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -7,8 +7,6 @@
  */
 
 package org.telegram.messenger;
-
-import android.util.Log;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -27,6 +25,11 @@ public class SerializedData {
 
     public SerializedData() {
         outbuf = new ByteArrayOutputStream();
+        out = new DataOutputStream(outbuf);
+    }
+
+    public SerializedData(int size) {
+        outbuf = new ByteArrayOutputStream(size);
         out = new DataOutputStream(outbuf);
     }
 
@@ -57,7 +60,7 @@ public class SerializedData {
                 out.write(x >> (i * 8));
             }
         } catch(IOException gfdsgd) {
-            Log.e("tmessages", "write int32 error");
+            FileLog.e("tmessages", "write int32 error");
         }
     }
 
@@ -71,7 +74,7 @@ public class SerializedData {
                 out.write((int)(x >> (i * 8)));
             }
         } catch(IOException gfdsgd) {
-            Log.e("tmessages", "write int64 error");
+            FileLog.e("tmessages", "write int64 error");
         }
     }
 
@@ -82,7 +85,7 @@ public class SerializedData {
         } else if (consructor == 0xbc799737) {
             return false;
         }
-        Log.e("tmessages", "Not bool value!");
+        FileLog.e("tmessages", "Not bool value!");
         return false;
     }
 
@@ -94,28 +97,48 @@ public class SerializedData {
         }
     }
 
-    public int readInt32(){
+    public int readInt32() {
+        return readInt32(null);
+    }
+
+    public int readInt32(boolean[] error) {
         try {
             int i = 0;
             for(int j = 0; j < 4; j++){
                 i |= (in.read() << (j * 8));
             }
+            if (error != null) {
+                error[0] = false;
+            }
             return i;
         } catch(IOException x) {
-            Log.e("tmessages", "read int32 error");
+            if (error != null) {
+                error[0] = true;
+            }
+            FileLog.e("tmessages", "read int32 error");
         }
         return 0;
     }
 
-    public long readInt64(){
+    public long readInt64() {
+        return readInt64(null);
+    }
+
+    public long readInt64(boolean[] error) {
         try {
             long i = 0;
             for(int j = 0; j < 8; j++){
                 i |= ((long)in.read() << (j * 8));
             }
+            if (error != null) {
+                error[0] = false;
+            }
             return i;
         } catch(IOException x) {
-            Log.e("tmessages", "read int64 error");
+            if (error != null) {
+                error[0] = true;
+            }
+            FileLog.e("tmessages", "read int64 error");
         }
         return 0;
     }
@@ -124,7 +147,7 @@ public class SerializedData {
         try {
             out.write(b);
         } catch(Exception x) {
-            Log.e("tmessages", "write raw error");
+            FileLog.e("tmessages", "write raw error");
         }
     }
 
@@ -132,7 +155,7 @@ public class SerializedData {
         try {
             out.write(b, offset, count);
         } catch(Exception x) {
-            Log.e("tmessages", "write raw error");
+            FileLog.e("tmessages", "write raw error");
         }
     }
 
@@ -140,7 +163,7 @@ public class SerializedData {
         try {
             out.writeByte((byte)i);
         } catch (Exception e) {
-            Log.e("tmessages", "write byte error");
+            FileLog.e("tmessages", "write byte error");
         }
     }
 
@@ -148,7 +171,7 @@ public class SerializedData {
         try {
             out.writeByte(b);
         } catch (Exception e) {
-            Log.e("tmessages", "write byte error");
+            FileLog.e("tmessages", "write byte error");
         }
     }
 
@@ -156,7 +179,7 @@ public class SerializedData {
         try {
             in.read(b);
         } catch(Exception x) {
-            Log.e("tmessages", "read raw error");
+            FileLog.e("tmessages", "read raw error");
         }
     }
 
@@ -183,7 +206,7 @@ public class SerializedData {
             }
             return new String(b, "UTF-8");
         } catch(Exception x) {
-            Log.e("tmessages", "read string error");
+            FileLog.e("tmessages", "read string error");
         }
         return null;
     }
@@ -205,7 +228,7 @@ public class SerializedData {
             }
             return b;
         } catch(Exception x) {
-            Log.e("tmessages", "read byte array error");
+            FileLog.e("tmessages", "read byte array error");
         }
         return null;
     }
@@ -226,8 +249,8 @@ public class SerializedData {
                 out.write(0);
                 i++;
             }
-        }catch(Exception x) {
-            Log.e("tmessages", "write byte array error");
+        } catch(Exception x) {
+            FileLog.e("tmessages", "write byte array error");
         }
     }
 
@@ -235,7 +258,7 @@ public class SerializedData {
         try {
             writeByteArray(s.getBytes("UTF-8"));
         } catch(Exception x) {
-            Log.e("tmessages", "write string error");
+            FileLog.e("tmessages", "write string error");
         }
     }
 
@@ -256,15 +279,15 @@ public class SerializedData {
                 i++;
             }
         } catch(Exception x) {
-            Log.e("tmessages", "write byte array error");
+            FileLog.e("tmessages", "write byte array error");
         }
     }
 
-    public double readDouble(){
+    public double readDouble() {
         try {
             return Double.longBitsToDouble(readInt64());
         } catch(Exception x) {
-            Log.e("tmessages", "read double error");
+            FileLog.e("tmessages", "read double error");
         }
         return 0;
     }
@@ -273,7 +296,7 @@ public class SerializedData {
         try {
             writeInt64(Double.doubleToRawLongBits(d));
         } catch(Exception x) {
-            Log.e("tmessages", "write double error");
+            FileLog.e("tmessages", "write double error");
         }
     }
 

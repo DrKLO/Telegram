@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -8,12 +8,13 @@
 
 package org.telegram.messenger;
 
+import android.app.ActivityManager;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
 import android.os.Build;
-import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 
@@ -37,16 +38,16 @@ public class FileLoader {
     public LruCache memCache;
 
     private String ignoreRemoval = null;
-    private HashMap<String, CacheImage> imageLoading;
+    private ConcurrentHashMap<String, CacheImage> imageLoading;
     private HashMap<Integer, CacheImage> imageLoadingByKeys;
     private Queue<FileLoadOperation> operationsQueue;
     private Queue<FileLoadOperation> runningOperation;
     private final int maxConcurentLoadingOpertaionsCount = 2;
     private Queue<FileUploadOperation> uploadOperationQueue;
-    private HashMap<String, FileUploadOperation> uploadOperationPaths;
+    private ConcurrentHashMap<String, FileUploadOperation> uploadOperationPaths;
     private int currentUploadOperationsCount = 0;
     private Queue<FileLoadOperation> loadOperationQueue;
-    private HashMap<String, FileLoadOperation> loadOperationPaths;
+    private ConcurrentHashMap<String, FileLoadOperation> loadOperationPaths;
     private int currentLoadOperationsCount = 0;
     public static long lastCacheOutTime = 0;
     public ConcurrentHashMap<String, Float> fileProgresses = new ConcurrentHashMap<String, Float>();
@@ -109,20 +110,19 @@ public class FileLoader {
                 trackFree = cl.getMethod("trackExternalFree", new Class[] {long.class});
                 success = true;
             } catch (ClassNotFoundException e) {
-                e.printStackTrace();
+                FileLog.e("tmessages", e);
             } catch (SecurityException e) {
-                e.printStackTrace();
+                FileLog.e("tmessages", e);
             } catch (NoSuchMethodException e) {
-                e.printStackTrace();
+                FileLog.e("tmessages", e);
             } catch (IllegalArgumentException e) {
-                e.printStackTrace();
+                FileLog.e("tmessages", e);
             } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                FileLog.e("tmessages", e);
             } catch (InvocationTargetException e) {
-                e.printStackTrace();
+                FileLog.e("tmessages", e);
             }
             if (!success) {
-                Log.i("tmessages", "VMRuntime hack does not work!");
                 runtime = null;
                 trackAllocation = null;
                 trackFree = null;
@@ -216,6 +216,11 @@ public class FileLoader {
         return false;
     }
 
+    public void removeImage(String key) {
+        BitmapUseCounts.remove(key);
+        memCache.remove(key);
+    }
+
     /*class BitmapWorkerTask extends AsyncTask<Integer, Void, Bitmap> {
         private CacheImage cacheImage;
         private Bitmap bitmap;
@@ -246,8 +251,8 @@ public class FileLoader {
     }*/
 
     public FileLoader() {
-        int maxMemory = (int)Runtime.getRuntime().maxMemory();
-        int cacheSize = maxMemory / 10;
+        int cacheSize = Math.min(15, ((ActivityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACTIVITY_SERVICE)).getMemoryClass() / 7) * 1024 * 1024;
+
         density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
         if (Build.VERSION.SDK_INT < 11) {
             runtimeHack = new VMRuntimeHack();
@@ -272,17 +277,21 @@ public class FileLoader {
                     if (runtimeHack != null) {
                         runtimeHack.trackAlloc(oldBitmap.getRowBytes() * oldBitmap.getHeight());
                     }
-                    oldBitmap.recycle();
+                    if (Build.VERSION.SDK_INT < 11) {
+                        if (!oldBitmap.isRecycled()) {
+                            oldBitmap.recycle();
+                        }
+                    }
                 }
             }
         };
-        imageLoading = new HashMap<String, CacheImage>();
+        imageLoading = new ConcurrentHashMap<String, CacheImage>();
         imageLoadingByKeys = new HashMap<Integer, CacheImage>();
         operationsQueue = new LinkedList<FileLoadOperation>();
         runningOperation = new LinkedList<FileLoadOperation>();
         uploadOperationQueue = new LinkedList<FileUploadOperation>();
-        uploadOperationPaths = new HashMap<String, FileUploadOperation>();
-        loadOperationPaths = new HashMap<String, FileLoadOperation>();
+        uploadOperationPaths = new ConcurrentHashMap<String, FileUploadOperation>();
+        loadOperationPaths = new ConcurrentHashMap<String, FileLoadOperation>();
         loadOperationQueue = new LinkedList<FileLoadOperation>();
     }
 
@@ -311,8 +320,9 @@ public class FileLoader {
                 uploadOperationPaths.put(location, operation);
                 operation.delegate = new FileUploadOperation.FileUploadOperationDelegate() {
                     @Override
-                    public void didFinishUploadingFile(FileUploadOperation operation, final TLRPC.TL_inputFile inputFile, final TLRPC.TL_inputEncryptedFileUploaded inputEncryptedFile) {
+                    public void didFinishUploadingFile(FileUploadOperation operation, final TLRPC.InputFile inputFile, final TLRPC.InputEncryptedFile inputEncryptedFile) {
                         NotificationCenter.Instance.postNotificationName(FileDidUpload, location, inputFile, inputEncryptedFile);
+                        fileProgresses.remove(location);
                         Utilities.fileUploadQueue.postRunnable(new Runnable() {
                             @Override
                             public void run() {
@@ -400,6 +410,10 @@ public class FileLoader {
         });
     }
 
+    public boolean isLoadingFile(String fileName) {
+        return loadOperationPaths.containsKey(fileName);
+    }
+
     public void loadFile(final TLRPC.Video video, final TLRPC.PhotoSize photo) {
         Utilities.fileUploadQueue.postRunnable(new Runnable() {
             @Override
@@ -454,6 +468,7 @@ public class FileLoader {
                                 }
                             }
                         });
+                        fileProgresses.remove(arg1);
                     }
 
                     @Override
@@ -628,14 +643,18 @@ public class FileLoader {
     }
 
     public void loadImage(final String url, final View imageView, final String filter, final boolean cancel) {
-        loadImage(null, url, imageView, filter, cancel);
+        loadImage(null, url, imageView, filter, cancel, 0);
     }
 
     public void loadImage(final TLRPC.FileLocation url, final View imageView, final String filter, final boolean cancel) {
-        loadImage(url, null, imageView, filter, cancel);
+        loadImage(url, null, imageView, filter, cancel, 0);
     }
 
-    public void loadImage(final TLRPC.FileLocation url, final String httpUrl, final View imageView, final String filter, final boolean cancel) {
+    public void loadImage(final TLRPC.FileLocation url, final View imageView, final String filter, final boolean cancel, final int size) {
+        loadImage(url, null, imageView, filter, cancel, size);
+    }
+
+    public void loadImage(final TLRPC.FileLocation url, final String httpUrl, final View imageView, final String filter, final boolean cancel, final int size) {
         if ((url == null && httpUrl == null) || imageView == null || (url != null && !(url instanceof TLRPC.TL_fileLocation) && !(url instanceof TLRPC.TL_fileEncryptedLocation))) {
             return;
         }
@@ -700,20 +719,32 @@ public class FileLoader {
                     } else {
                         loadOperation = new FileLoadOperation(url);
                     }
+                    loadOperation.totalBytesCount = size;
                     loadOperation.filter = filter;
                     loadOperation.delegate = new FileLoadOperation.FileLoadOperationDelegate() {
                         @Override
                         public void didFinishLoadingFile(final FileLoadOperation operation) {
                             enqueueImageProcessingOperationWithImage(operation.image, filter, arg2, img);
+                            if (operation.totalBytesCount != 0) {
+                                final String arg1 = operation.location.volume_id + "_" + operation.location.local_id + ".jpg";
+                                fileProgresses.remove(arg1);
+                                Utilities.RunOnUIThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        NotificationCenter.Instance.postNotificationName(FileLoadProgressChanged, arg1, 1.0f);
+                                    }
+                                });
+                                Utilities.RunOnUIThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        NotificationCenter.Instance.postNotificationName(FileDidLoaded, arg1);
+                                    }
+                                });
+                            }
                         }
 
                         @Override
                         public void didFailedLoadingFile(final FileLoadOperation operation) {
-                            if (url != null) {
-                                if (url.volume_id != 0 && url.local_id != 0) {
-                                    fileProgresses.remove(url.volume_id + "_" + url.local_id + ".jpg");
-                                }
-                            }
                             Utilities.imageLoadQueue.postRunnable(new Runnable() {
                                 @Override
                                 public void run() {
@@ -731,13 +762,36 @@ public class FileLoader {
                                     img.callAndClear(null);
                                 }
                             });
+                            if (operation.totalBytesCount != 0) {
+                                final String arg1 = operation.location.volume_id + "_" + operation.location.local_id + ".jpg";
+                                fileProgresses.remove(arg1);
+                                if (operation.state != 2) {
+                                    Utilities.RunOnUIThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            NotificationCenter.Instance.postNotificationName(FileDidFailedLoad, arg1);
+                                        }
+                                    });
+                                }
+                            }
                         }
 
                         @Override
-                        public void didChangedLoadProgress(FileLoadOperation operation, float progress) {
-                            if (url != null) {
-                                if (url.volume_id != 0 && url.local_id != 0) {
-                                    fileProgresses.put(url.volume_id + "_" + url.local_id + ".jpg", progress);
+                        public void didChangedLoadProgress(FileLoadOperation operation, final float progress) {
+                            if (operation.totalBytesCount != 0) {
+                                final String arg1 = operation.location.volume_id + "_" + operation.location.local_id + ".jpg";
+                                if (operation.state != 2) {
+                                    fileProgresses.put(arg1, progress);
+                                }
+                                long currentTime = System.currentTimeMillis();
+                                if (lastProgressUpdateTime == 0 || lastProgressUpdateTime < currentTime - 50) {
+                                    lastProgressUpdateTime = currentTime;
+                                    Utilities.RunOnUIThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            NotificationCenter.Instance.postNotificationName(FileLoadProgressChanged, arg1, progress);
+                                        }
+                                    });
                                 }
                             }
                         }
@@ -842,31 +896,7 @@ public class FileLoader {
             }
         });
     }
-        /*AsyncTask
-        NSBlockOperation *processingOperation = [NSBlockOperation blockOperationWithBlock:^(void) {
-        if (countCores() == 1)
-        [NSThread sleepForTimeInterval:0.1];
-        UIImage *filterImage = [UIImage decodedImageWithImage:image andFilter:filter];
-        if (!filterImage)
-            filterImage = image;
-        dispatch_async(dispatch_get_main_queue(), ^{
-        if (filterImage) {
-            if (![memCache objectForKey:key]) {
-                [memCache setObject:filterImage forKey:key];
-                [memArray addObject:key];
-            }
-        }
-        for (UIView *view in img.imageViewArray) {
-            NSNumber *num = objc_getAssociatedObject(view, &VIEW_CACHE_KEY);
-            [imageLoadingByKeys removeObjectForKey:num];
-        }
-        [img callAndClear:filterImage];
-        [imageLoading removeObjectForKey:key];
-        });
-        }];
-        [imageProcessingQueue addOperation:processingOperation];
 
-*/
     public static Bitmap loadBitmap(String path, float maxWidth, float maxHeight) {
         BitmapFactory.Options bmOptions = new BitmapFactory.Options();
         bmOptions.inJustDecodeBounds = true;
@@ -898,7 +928,7 @@ public class FileLoader {
                     break;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            FileLog.e("tmessages", e);
         }
 
         Bitmap b;
@@ -908,7 +938,7 @@ public class FileLoader {
                 b = Bitmap.createBitmap(b, 0, 0, b.getWidth(), b.getHeight(), matrix, true);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            FileLog.e("tmessages", e);
             FileLoader.Instance.memCache.evictAll();
             b = BitmapFactory.decodeFile(path, bmOptions);
             if (b != null && matrix != null) {
@@ -959,8 +989,10 @@ public class FileLoader {
                 size.bytes = stream.toByteArray();
                 size.size = size.bytes.length;
             }
-            if (scaledBitmap != bitmap) {
-                scaledBitmap.recycle();
+            if (Build.VERSION.SDK_INT < 11) {
+                if (scaledBitmap != bitmap) {
+                    scaledBitmap.recycle();
+                }
             }
             return size;
         } catch (Exception e) {

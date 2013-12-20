@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -8,24 +8,32 @@
 
 package org.telegram.messenger;
 
-import android.util.Log;
+import android.content.Context;
+import android.content.SharedPreferences;
 
 import org.telegram.TL.TLRPC;
+import org.telegram.ui.ApplicationLoader;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 
 public class Datacenter {
+    private final int DATA_VERSION = 2;
+
     public int datacenterId;
-    public String address;
-    public int port;
+    public ArrayList<String> addresses = new ArrayList<String>();
+    public HashMap<String, Integer> ports = new HashMap<String, Integer>();
+    public int[] defaultPorts = new int[] {-1, 80, -1, 88, -1, 443, -1, 80, -1, 443, -1};
     public boolean authorized;
     public long authSessionId;
     public long authDownloadSessionId;
     public long authUploadSessionId;
     public byte[] authKey;
     public byte[] authKeyId;
+    private volatile int currentPortNum = 0;
+    private volatile int currentAddressNum = 0;
 
     public TcpConnection connection;
     public TcpConnection downloadConnection;
@@ -37,39 +45,148 @@ public class Datacenter {
         authServerSaltSet = new ArrayList<ServerSalt>();
     }
 
-    public Datacenter(SerializedData data) {
-        datacenterId = data.readInt32();
-        address = data.readString();
-        port = data.readInt32();
-        if (port == 25) {
-            port = 443;
-        }
-        int len = data.readInt32();
-        if (len != 0) {
-            authKey = data.readData(len);
-        }
-        len = data.readInt32();
-        if (len != 0) {
-            authKeyId = data.readData(len);
-        }
-        authorized = data.readInt32() != 0;
-        len = data.readInt32();
-        for (int a = 0; a < len; a++) {
-            ServerSalt salt = new ServerSalt();
-            salt.validSince = data.readInt32();
-            salt.validUntil = data.readInt32();
-            salt.value = data.readInt64();
-            if (authServerSaltSet == null) {
-                authServerSaltSet = new ArrayList<ServerSalt>();
+    public Datacenter(SerializedData data, int version) {
+        if (version == 0) {
+            datacenterId = data.readInt32();
+            String address = data.readString();
+            addresses.add(address);
+            int port = data.readInt32();
+            ports.put(address, port);
+            int len = data.readInt32();
+            if (len != 0) {
+                authKey = data.readData(len);
             }
-            authServerSaltSet.add(salt);
+            len = data.readInt32();
+            if (len != 0) {
+                authKeyId = data.readData(len);
+            }
+            authorized = data.readInt32() != 0;
+            len = data.readInt32();
+            for (int a = 0; a < len; a++) {
+                ServerSalt salt = new ServerSalt();
+                salt.validSince = data.readInt32();
+                salt.validUntil = data.readInt32();
+                salt.value = data.readInt64();
+                if (authServerSaltSet == null) {
+                    authServerSaltSet = new ArrayList<ServerSalt>();
+                }
+                authServerSaltSet.add(salt);
+            }
+        } else if (version == 1) {
+            int currentVersion = data.readInt32();
+            if (currentVersion == 2) {
+                datacenterId = data.readInt32();
+                int len = data.readInt32();
+                for (int a = 0; a < len; a++) {
+                    String address = data.readString();
+                    addresses.add(address);
+                    ports.put(address, data.readInt32());
+                }
+
+                len = data.readInt32();
+                if (len != 0) {
+                    authKey = data.readData(len);
+                }
+                len = data.readInt32();
+                if (len != 0) {
+                    authKeyId = data.readData(len);
+                }
+                authorized = data.readInt32() != 0;
+                len = data.readInt32();
+                for (int a = 0; a < len; a++) {
+                    ServerSalt salt = new ServerSalt();
+                    salt.validSince = data.readInt32();
+                    salt.validUntil = data.readInt32();
+                    salt.value = data.readInt64();
+                    if (authServerSaltSet == null) {
+                        authServerSaltSet = new ArrayList<ServerSalt>();
+                    }
+                    authServerSaltSet.add(salt);
+                }
+            }
+        }
+        readCurrentAddressAndPortNum();
+    }
+
+    public String getCurrentAddress() {
+        if (addresses.isEmpty()) {
+            return null;
+        }
+        if (currentAddressNum >= addresses.size()) {
+            currentAddressNum = 0;
+        }
+        return addresses.get(currentAddressNum);
+    }
+
+    public int getCurrentPort() {
+        if (ports.isEmpty()) {
+            return 443;
+        }
+
+        if (currentPortNum >= defaultPorts.length) {
+            currentPortNum = 0;
+        }
+        int port = defaultPorts[currentPortNum];
+        if (port == -1) {
+            String address = getCurrentAddress();
+            return ports.get(address);
+        }
+        return port;
+    }
+
+    public void addAddressAndPort(String address, int port) {
+        if (addresses.contains(address)) {
+            return;
+        }
+        addresses.add(address);
+        ports.put(address, port);
+    }
+
+    public void nextAddressOrPort() {
+        if (currentPortNum + 1 < defaultPorts.length) {
+            currentPortNum++;
+        } else {
+            if (currentAddressNum + 1 < addresses.size()) {
+                currentAddressNum++;
+            } else {
+                currentAddressNum = 0;
+            }
+            currentPortNum = 0;
         }
     }
 
+    public void storeCurrentAddressAndPortNum() {
+        Utilities.stageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("dataconfig", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = preferences.edit();
+                editor.putInt("dc" + datacenterId + "port", currentPortNum);
+                editor.putInt("dc" + datacenterId + "address", currentAddressNum);
+                editor.commit();
+            }
+        });
+    }
+
+    private void readCurrentAddressAndPortNum() {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("dataconfig", Context.MODE_PRIVATE);
+        currentPortNum = preferences.getInt("dc" + datacenterId + "port", 0);
+        currentAddressNum = preferences.getInt("dc" + datacenterId + "address", 0);
+    }
+
+    public void replaceAddressesAndPorts(ArrayList<String> newAddresses, HashMap<String, Integer> newPorts) {
+        addresses = newAddresses;
+        ports = newPorts;
+    }
+
     public void SerializeToStream(SerializedData stream) {
+        stream.writeInt32(DATA_VERSION);
         stream.writeInt32(datacenterId);
-        stream.writeString(address);
-        stream.writeInt32(port);
+        stream.writeInt32(addresses.size());
+        for (String address : addresses) {
+            stream.writeString(address);
+            stream.writeInt32(ports.get(address));
+        }
         if (authKey != null) {
             stream.writeInt32(authKey.length);
             stream.writeRaw(authKey);
@@ -129,10 +246,8 @@ public class Datacenter {
             }
         }
 
-        if (ConnectionsManager.DEBUG_VERSION) {
-            if (result == 0) {
-                Log.e("tmessages", "Valid salt not found", null);
-            }
+        if (result == 0) {
+            FileLog.e("tmessages", "Valid salt not found");
         }
 
         return result;

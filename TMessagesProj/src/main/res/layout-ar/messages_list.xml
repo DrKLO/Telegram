@@ -1,7 +1,6 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:windowSoftInputMode="adjustResize">
+                android:layout_height="match_parent">
 
     <ListView
         android:layout_width="fill_parent"
@@ -12,7 +11,6 @@
         android:layout_alignParentBottom="true"
         android:clipToPadding="false"
         android:fadingEdge="none"
-        android:paddingTop="48dp"
         android:fadingEdgeLength="0dp"
         android:verticalScrollbarPosition="left"/>
 
@@ -34,16 +32,11 @@
         android:gravity="center"
         android:visibility="gone">
 
-        <ImageView android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:src="@drawable/no_chats_placeholder"/>
-
         <TextView android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:textColor="#959595"
             android:text="@string/NoChats"
             android:textSize="24dp"
-            android:paddingTop="20dp"
             android:id="@+id/list_empty_view_text1"/>
 
         <TextView android:layout_width="wrap_content"
@@ -53,6 +46,7 @@
             android:gravity="center"
             android:textSize="15dp"
             android:paddingTop="6dp"
+            android:lineSpacingExtra="2dp"
             android:id="@+id/list_empty_view_text2"/>
 
     </LinearLayout>

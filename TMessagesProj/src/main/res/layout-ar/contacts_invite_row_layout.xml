@@ -28,7 +28,7 @@
         android:textColor="#006fc8"
         android:layout_gravity="center_vertical|right"/>
 
-    <View android:background="#dadada"
+    <View android:background="@color/divider"
         android:layout_width="fill_parent"
         android:layout_height="1px"
         android:layout_gravity="bottom"

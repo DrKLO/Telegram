@@ -13,7 +13,6 @@
         <org.telegram.ui.Views.BackupImageView android:layout_height="48dp"
             android:layout_width="48dp"
             android:id="@+id/avatar_image"
-            android:src="@drawable/group_placeholder_blue"
             android:layout_gravity="right|top"/>
 
         <FrameLayout android:layout_width="fill_parent"
@@ -56,11 +55,5 @@
             android:id="@+id/close_button"/>
 
     </FrameLayout>
-
-    <View android:layout_width="match_parent"
-        android:layout_height="2dp"
-        android:background="@drawable/header_shadow"
-        android:id="@+id/shadow"
-        android:layout_gravity="bottom"/>
 
 </org.telegram.ui.Views.NotificationView>

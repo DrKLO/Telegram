@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -16,6 +16,7 @@ import android.net.Uri;
 import android.os.Bundle;
 
 import org.telegram.TL.TLRPC;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -104,7 +105,7 @@ public class LaunchActivity extends PausableActivity {
             NotificationManager mNotificationManager = (NotificationManager)this.getSystemService(Context.NOTIFICATION_SERVICE);
             mNotificationManager.cancel(1);
         } catch (Exception e) {
-            e.printStackTrace();
+            FileLog.e("tmessages", e);
         }
     }
 

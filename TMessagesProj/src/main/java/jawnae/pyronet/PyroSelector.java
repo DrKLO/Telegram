@@ -19,7 +19,6 @@
 package jawnae.pyronet;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
@@ -27,13 +26,10 @@ import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-
-import jawnae.pyronet.events.PyroSelectorListener;
 
 public class PyroSelector {
     public static boolean DO_NOT_CHECK_NETWORK_THREAD = true;
@@ -46,14 +42,7 @@ public class PyroSelector {
 
     final ByteBuffer networkBuffer;
 
-    final PyroSelectorListener listener;
-
     public PyroSelector() {
-        this(null);
-    }
-
-    public PyroSelector(PyroSelectorListener listener) {
-        this.listener = listener;
         this.networkBuffer = ByteBuffer.allocateDirect(BUFFER_SIZE);
 
         try {
@@ -111,28 +100,6 @@ public class PyroSelector {
         }
     }
 
-    public PyroServer listen(InetSocketAddress end, int backlog)
-            throws IOException {
-        try {
-            return new PyroServer(this, nioSelector, end, backlog);
-        } catch (IOException exc) {
-            if (this.listener == null)
-                throw exc;
-
-            this.listener.serverBindFailed(exc);
-            return null;
-        }
-    }
-
-    public PyroServer listen(InetSocketAddress end) throws IOException {
-        return this.listen(end, 50);
-    }
-
-    public PyroServer listen(int port) throws IOException {
-        return this.listen(new InetSocketAddress(InetAddress.getLocalHost(),
-                port));
-    }
-
     public PyroClient connect(InetSocketAddress host) throws IOException {
         return this.connect(host, null);
     }
@@ -142,11 +109,7 @@ public class PyroSelector {
         try {
             return new PyroClient(this, bind, host);
         } catch (IOException exc) {
-            if (this.listener == null)
-                throw exc;
-
-            this.listener.clientBindFailed(exc);
-            return null;
+            throw exc;
         }
     }
 
@@ -173,16 +136,10 @@ public class PyroSelector {
             if (task == null)
                 break;
 
-            if (this.listener != null)
-                this.listener.executingTask(task);
-
             try {
                 task.run();
             } catch (Throwable cause) {
-                if (this.listener != null)
-                    this.listener.taskCrashed(task, cause);
-                else
-                    cause.printStackTrace();
+                cause.printStackTrace();
             }
         }
     }
@@ -192,15 +149,9 @@ public class PyroSelector {
         try {
             selected = nioSelector.select(timeout);
         } catch (IOException exc) {
-            if (this.listener != null)
-                this.listener.selectFailure(exc);
-            else
-                exc.printStackTrace();
+            exc.printStackTrace();
             return;
         }
-
-        if (this.listener != null)
-            this.listener.selectedKeys(selected);
     }
 
     private final void handleSelectedKeys(long now) {
@@ -210,17 +161,8 @@ public class PyroSelector {
             SelectionKey key = keys.next();
             keys.remove();
 
-            if (key.channel() instanceof ServerSocketChannel) {
-                PyroServer server = (PyroServer) key.attachment();
-                if (this.listener != null)
-                    this.listener.serverSelected(server);
-                server.onInterestOp();
-            }
-
             if (key.channel() instanceof SocketChannel) {
                 PyroClient client = (PyroClient) key.attachment();
-                if (this.listener != null)
-                    this.listener.clientSelected(client, key.readyOps());
                 client.onInterestOp(now);
             }
         }

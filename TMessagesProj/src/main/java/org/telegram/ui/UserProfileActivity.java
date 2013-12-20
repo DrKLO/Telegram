@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -20,14 +20,14 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.text.Html;
-import android.view.Display;
+import android.support.v7.app.ActionBar;
 import android.view.LayoutInflater;
-import android.view.Surface;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
-import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageButton;
@@ -35,13 +35,11 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.actionbarsherlock.app.ActionBar;
-import com.actionbarsherlock.view.Menu;
-
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.TL.TLObject;
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
@@ -53,8 +51,6 @@ import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.IdenticonView;
 import org.telegram.ui.Views.OnSwipeTouchListener;
 
-import java.util.Locale;
-
 public class UserProfileActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate {
     private ListView listView;
     private ListAdapter listAdapter;
@@ -64,7 +60,6 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     private boolean creatingChat = false;
     private long dialog_id;
     private TLRPC.EncryptedChat currentEncryptedChat;
-    private boolean isRTL;
 
     @Override
     public boolean onFragmentCreate() {
@@ -103,16 +98,27 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         if (fragmentView == null) {
             fragmentView = inflater.inflate(R.layout.user_profile_layout, container, false);
             listAdapter = new ListAdapter(parentActivity);
-            Locale locale = Locale.getDefault();
-            String lang = locale.getLanguage();
-            isRTL = lang != null && lang.toLowerCase().equals("ar");
+
+            View startSecretButton = fragmentView.findViewById(R.id.start_secret_button);
+            startSecretButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    creatingChat = true;
+                    MessagesController.Instance.startSecretChat(parentActivity, user_id);
+                }
+            });
+            if (dialog_id == 0) {
+                startSecretButton.setVisibility(View.VISIBLE);
+            } else {
+                startSecretButton.setVisibility(View.GONE);
+            }
 
             listView = (ListView)fragmentView.findViewById(R.id.listView);
             listView.setAdapter(listAdapter);
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    if (i == 5 && dialog_id == 0 ||
+                    if (i == 4 && dialog_id == 0 ||
                             dialog_id != 0 && (i == 6 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat  ||
                                     i == 4 && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat))) {
                         SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
@@ -127,55 +133,37 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         editor.putBoolean(key, !value);
                         editor.commit();
                         listView.invalidateViews();
-
-                        TLRPC.TL_account_updateNotifySettings req = new TLRPC.TL_account_updateNotifySettings();
-                        req.settings = new TLRPC.TL_inputPeerNotifySettings();
-                        req.settings.sound = "";
-                        req.peer = new TLRPC.TL_inputNotifyPeer();
-                        TLRPC.User user = MessagesController.Instance.users.get(user_id);
-                        if (user instanceof TLRPC.TL_userForeign || user instanceof TLRPC.TL_userRequest) {
-                            ((TLRPC.TL_inputNotifyPeer)req.peer).peer = new TLRPC.TL_inputPeerForeign();
-                            ((TLRPC.TL_inputNotifyPeer)req.peer).peer.user_id = user.id;
-                            ((TLRPC.TL_inputNotifyPeer)req.peer).peer.access_hash = user.access_hash;
-                        } else {
-                            ((TLRPC.TL_inputNotifyPeer)req.peer).peer = new TLRPC.TL_inputPeerContact();
-                            ((TLRPC.TL_inputNotifyPeer)req.peer).peer.user_id = user.id;
-                        }
-                        req.settings.show_previews = true;
-                        req.settings.events_mask = 1;
-                        if (value) {
-                            req.settings.mute_until = (int)(System.currentTimeMillis() / 1000) + 10 * 365 * 24 * 60 * 60;
-                        } else {
-                            req.settings.mute_until = 0;
-                        }
-                        ConnectionsManager.Instance.performRpc(req, null, null, true, RPCRequest.RPCRequestClassGeneric);
-                    } else if (i == 6 && dialog_id == 0 ||
+                    } else if (i == 5 && dialog_id == 0 ||
                             dialog_id != 0 && (i == 7 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat ||
                                     i == 5 && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat))) {
-                        Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
-                        tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
-                        tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false);
-                        SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                        Uri currentSound = null;
+                        try {
+                            Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
+                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
+                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false);
+                            SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                            Uri currentSound = null;
 
-                        String defaultPath = null;
-                        Uri defaultUri = Settings.System.DEFAULT_NOTIFICATION_URI;
-                        if (defaultUri != null) {
-                            defaultPath = defaultUri.getPath();
-                        }
-
-                        String path = preferences.getString("sound_path_" + user_id, defaultPath);
-                        if (path != null && !path.equals("NoSound")) {
-                            if (path.equals(defaultPath)) {
-                                currentSound = defaultUri;
-                            } else {
-                                currentSound = Uri.parse(path);
+                            String defaultPath = null;
+                            Uri defaultUri = Settings.System.DEFAULT_NOTIFICATION_URI;
+                            if (defaultUri != null) {
+                                defaultPath = defaultUri.getPath();
                             }
-                        }
 
-                        tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentSound);
-                        startActivityForResult(tmpIntent, 0);
-                    } else if (i == 8 && dialog_id == 0 ||
+                            String path = preferences.getString("sound_path_" + user_id, defaultPath);
+                            if (path != null && !path.equals("NoSound")) {
+                                if (path.equals(defaultPath)) {
+                                    currentSound = defaultUri;
+                                } else {
+                                    currentSound = Uri.parse(path);
+                                }
+                            }
+
+                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentSound);
+                            startActivityForResult(tmpIntent, 0);
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
+                    } else if (i == 7 && dialog_id == 0 ||
                             dialog_id != 0 && (i == 9 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat ||
                                     i == 7 && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat))) {
                         MediaActivity fragment = new MediaActivity();
@@ -187,9 +175,6 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         }
                         fragment.setArguments(bundle);
                         ((ApplicationActivity)parentActivity).presentFragment(fragment, "media_user_" + user_id, false);
-                    } else if (i == 3 && dialog_id == 0) {
-                        creatingChat = true;
-                        MessagesController.Instance.startSecretChat(parentActivity, user_id);
                     } else if (i == 5 && dialog_id != 0 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat) {
                         IdenticonActivity fragment = new IdenticonActivity();
                         Bundle bundle = new Bundle();
@@ -265,15 +250,18 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == Activity.RESULT_OK) {
+            if (data == null) {
+                return;
+            }
             Uri ringtone = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);
             String name = null;
             if (ringtone != null) {
-                Ringtone rng = RingtoneManager.getRingtone(parentActivity, ringtone);
-                name = rng.getTitle(parentActivity);
+                Ringtone rng = RingtoneManager.getRingtone(ApplicationLoader.applicationContext, ringtone);
+                name = rng.getTitle(ApplicationLoader.applicationContext);
                 rng.stop();
             }
 
-            SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             SharedPreferences.Editor editor = preferences.edit();
 
             if (requestCode == 0) {
@@ -298,7 +286,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             }
         } else if (id == MessagesController.contactsDidLoaded) {
             if (parentActivity != null) {
-                parentActivity.invalidateOptionsMenu();
+                parentActivity.supportInvalidateOptionsMenu();
             }
         } else if (id == MessagesController.mediaCountDidLoaded) {
             long uid = (Long)args[0];
@@ -316,7 +304,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 Bundle bundle = new Bundle();
                 bundle.putInt("enc_id", encryptedChat.id);
                 fragment.setArguments(bundle);
-                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat_enc_" + id, true, false);
+                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
             }
         } else if (id == MessagesController.encryptedChatUpdated) {
             TLRPC.EncryptedChat chat = (TLRPC.EncryptedChat)args[0];
@@ -343,19 +331,19 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         actionBar.setDisplayShowCustomEnabled(false);
         actionBar.setCustomView(null);
         if (dialog_id != 0) {
-            actionBar.setTitle(Html.fromHtml("<font color='#006fc8'>" + getStringEntry(R.string.SecretTitle) + "</font>"));
+            actionBar.setTitle(getStringEntry(R.string.SecretTitle));
         } else {
-            actionBar.setTitle(Html.fromHtml("<font color='#006fc8'>" + getStringEntry(R.string.ContactInfo) + "</font>"));
+            actionBar.setTitle(getStringEntry(R.string.ContactInfo));
         }
 
-        TextView title = (TextView)parentActivity.findViewById(R.id.abs__action_bar_title);
+        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
         if (title == null) {
             final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
             title = (TextView)parentActivity.findViewById(subtitleId);
         }
         if (title != null) {
             if (dialog_id != 0) {
-                title.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock_blue, 0, 0, 0);
+                title.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock_white, 0, 0, 0);
                 title.setCompoundDrawablePadding((int)(4 * getResources().getDisplayMetrics().density));
             } else {
                 title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
@@ -370,7 +358,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         if (isFinish) {
             return;
         }
-        if (getSherlockActivity() == null) {
+        if (getActivity() == null) {
             return;
         }
         if (!firstStart && listAdapter != null) {
@@ -394,36 +382,18 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
                 @Override
                 public boolean onPreDraw() {
-                    WindowManager manager = (WindowManager)parentActivity.getSystemService(Activity.WINDOW_SERVICE);
-                    Display display = manager.getDefaultDisplay();
-                    int rotation = display.getRotation();
-                    int height;
-                    int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
-                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
-                    if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
-                        height = currentActionBarHeight;
-                    } else {
-                        height = (int)(48.0f * density);
-                        if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                            height = (int)(40.0f * density);
-                        }
-                    }
-                    listView.setPadding(listView.getPaddingLeft(), height, listView.getPaddingRight(), listView.getPaddingBottom());
-
                     listView.getViewTreeObserver().removeOnPreDrawListener(this);
-
                     if (dialog_id != 0) {
-                        TextView title = (TextView)parentActivity.findViewById(R.id.abs__action_bar_title);
+                        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
                         if (title == null) {
                             final int subtitleId = ApplicationLoader.applicationContext.getResources().getIdentifier("action_bar_title", "id", "android");
                             title = (TextView)parentActivity.findViewById(subtitleId);
                         }
                         if (title != null) {
-                            title.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock_blue, 0, 0, 0);
-                            title.setCompoundDrawablePadding((int)(4 * density));
+                            title.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock_white, 0, 0, 0);
+                            title.setCompoundDrawablePadding((int)(4 * ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density));
                         }
                     }
-
                     return false;
                 }
             });
@@ -431,7 +401,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public boolean onOptionsItemSelected(com.actionbarsherlock.view.MenuItem item) {
+    public boolean onOptionsItemSelected(MenuItem item) {
         int itemId = item.getItemId();
         switch (itemId) {
             case android.R.id.home:
@@ -483,7 +453,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public void onCreateOptionsMenu(Menu menu, com.actionbarsherlock.view.MenuInflater inflater) {
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         if (MessagesController.Instance.contactsDict.get(user_id) == null) {
             TLRPC.User user = MessagesController.Instance.users.get(user_id);
             if (user.phone != null && user.phone.length() != 0) {
@@ -508,7 +478,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     bundle.putInt("user_id", lower_part);
                     fragment.setArguments(bundle);
                     fragment.scrollToTopOnResume = true;
-                    ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat_user_" + lower_part, true, false);
+                    ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
                     removeSelfFromStack();
                     messageFragment.removeSelfFromStack();
                 } else if (lower_part < 0) {
@@ -516,7 +486,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     bundle.putInt("chat_id", -lower_part);
                     fragment.setArguments(bundle);
                     fragment.scrollToTopOnResume = true;
-                    ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat_group_" + -lower_part, true, false);
+                    ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
                     messageFragment.removeSelfFromStack();
                     removeSelfFromStack();
                 }
@@ -526,7 +496,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 bundle.putInt("enc_id", id);
                 fragment.setArguments(bundle);
                 fragment.scrollToTopOnResume = true;
-                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat_enc_" + id, false);
+                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), false);
                 messageFragment.removeSelfFromStack();
                 removeSelfFromStack();
             }
@@ -550,7 +520,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         @Override
         public boolean isEnabled(int i) {
             if (dialog_id == 0) {
-                return i == 2 || i == 3 || i == 5 || i == 6 || i == 8;
+                return i == 2 || i == 4 || i == 5 || i == 7;
             } else {
                 if (currentEncryptedChat instanceof TLRPC.TL_encryptedChat) {
                     return i == 2 || i == 4 || i == 5 || i == 6 || i == 7 || i == 9;
@@ -563,7 +533,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         @Override
         public int getCount() {
             if (dialog_id == 0) {
-                return 9;
+                return 8;
             } else {
                 if (currentEncryptedChat instanceof TLRPC.TL_encryptedChat) {
                     return 10;
@@ -599,16 +569,15 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.user_profile_avatar_layout, viewGroup, false);
 
-                    Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
                     onlineText = (TextView)view.findViewById(R.id.settings_online);
-                    onlineText.setTypeface(typeface);
                     avatarImage = (BackupImageView)view.findViewById(R.id.settings_avatar_image);
                     avatarImage.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
                             TLRPC.User user = MessagesController.Instance.users.get(user_id);
                             if (user.photo != null && user.photo.photo_big != null) {
-                                NotificationCenter.Instance.addToMemCache(3, user.photo.photo_big);
+                                NotificationCenter.Instance.addToMemCache(56, user_id);
+                                NotificationCenter.Instance.addToMemCache(53, user.photo.photo_big);
                                 Intent intent = new Intent(parentActivity, GalleryImageViewer.class);
                                 startActivity(intent);
                             }
@@ -619,6 +588,8 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     onlineText = (TextView)view.findViewById(R.id.settings_online);
                 }
                 TextView textView = (TextView)view.findViewById(R.id.settings_name);
+                Typeface typeface = Utilities.getTypeface("fonts/rmedium.ttf");
+                textView.setTypeface(typeface);
 
                 textView.setText(Utilities.formatName(user.first_name, user.last_name));
 
@@ -655,9 +626,9 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 TextView textView = (TextView)view.findViewById(R.id.settings_section_text);
                 if (i == 1) {
                     textView.setText(getStringEntry(R.string.PHONE));
-                } else if (i == 4 && dialog_id == 0 || dialog_id != 0 && i == 3) {
+                } else if (i == 3) {
                     textView.setText(getStringEntry(R.string.SETTINGS));
-                } else if (i == 7 && dialog_id == 0 ||
+                } else if (i == 6 && dialog_id == 0 ||
                         dialog_id != 0 && (i == 8 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat ||
                                 i == 6 && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat))) {
                     textView.setText(getStringEntry(R.string.SHAREDMEDIA));
@@ -686,7 +657,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                             startActivity(intent);
                                         } catch (Exception e) {
-                                            e.printStackTrace();
+                                            FileLog.e("tmessages", e);
                                         }
                                     } else if (i == 0) {
                                         int sdk = android.os.Build.VERSION.SDK_INT;
@@ -718,13 +689,11 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         Bundle bundle = new Bundle();
                         bundle.putInt("user_id", user_id);
                         fragment.setArguments(bundle);
-                        ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat_user_" + user_id, true, false);
+                        ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
                     }
                 });
                 TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
                 TextView detailTextView = (TextView)view.findViewById(R.id.settings_row_text_detail);
-                Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
-                detailTextView.setTypeface(typeface);
                 View divider = view.findViewById(R.id.settings_row_divider);
                 if (i == 2) {
                     if (user.phone != null && user.phone.length() != 0) {
@@ -732,7 +701,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     } else {
                         textView.setText("Unknown");
                     }
-                    divider.setVisibility(dialog_id == 0 ? View.VISIBLE : View.INVISIBLE);
+                    divider.setVisibility(View.INVISIBLE);
                     detailTextView.setText(getStringEntry(R.string.PhoneMobile));
                 }
             } else if (type == 3) {
@@ -742,10 +711,10 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 }
                 TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
                 View divider = view.findViewById(R.id.settings_row_divider);
-                if (i == 5 && dialog_id == 0 ||
+                if (i == 4 && dialog_id == 0 ||
                         dialog_id != 0 && (i == 6 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat ||
                                 i == 4 && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat))) {
-                    SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     String key;
                     if (dialog_id == 0) {
                         key = "notify_" + user_id;
@@ -769,13 +738,12 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 }
                 TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
                 TextView detailTextView = (TextView)view.findViewById(R.id.settings_row_text_detail);
-                Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
-                detailTextView.setTypeface(typeface);
+
                 View divider = view.findViewById(R.id.settings_row_divider);
-                if (i == 6 && dialog_id == 0 ||
+                if (i == 5 && dialog_id == 0 ||
                         dialog_id != 0 && (i == 7 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat ||
                                 i == 5 && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat))) {
-                    SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     String name = preferences.getString("sound_" + user_id, getStringEntry(R.string.Default));
                     if (name.equals("NoSound")) {
                         detailTextView.setText(getStringEntry(R.string.NoSound));
@@ -784,7 +752,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     }
                     textView.setText(R.string.Sound);
                     divider.setVisibility(View.INVISIBLE);
-                } else if (i == 8 && dialog_id == 0 ||
+                } else if (i == 7 && dialog_id == 0 ||
                         dialog_id != 0 && (i == 9 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat ||
                                 i == 7 && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat))) {
                     textView.setText(R.string.SharedMedia);
@@ -817,36 +785,17 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     }
                 }
             } else if (type == 5) {
-                if (dialog_id == 0) {
-                    if (view == null) {
-                        LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                        view = li.inflate(R.layout.settings_row_button_layout, viewGroup, false);
-                    }
-                    TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
-                    View divider = view.findViewById(R.id.settings_row_divider);
-                    if (i == 3) {
-                        if (isRTL) {
-                            textView.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_lock_gray, 0);
-                        } else {
-                            textView.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock_gray, 0, 0, 0);
-                        }
-                        textView.setCompoundDrawablePadding((int)(8 * getResources().getDisplayMetrics().density));
-                        textView.setText(getStringEntry(R.string.StartEncryptedChat));
-                        divider.setVisibility(View.INVISIBLE);
-                    }
-                } else {
-                    if (view == null) {
-                        LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                        view = li.inflate(R.layout.user_profile_identicon_layout, viewGroup, false);
-                    }
-                    TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
-                    View divider = view.findViewById(R.id.settings_row_divider);
-                    divider.setVisibility(View.VISIBLE);
-                    IdenticonView identiconView = (IdenticonView)view.findViewById(R.id.identicon_view);
-                    TLRPC.EncryptedChat encryptedChat = MessagesController.Instance.encryptedChats.get((int)(dialog_id >> 32));
-                    identiconView.setBytes(encryptedChat.auth_key);
-                    textView.setText(getStringEntry(R.string.EncryptionKey));
+                if (view == null) {
+                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                    view = li.inflate(R.layout.user_profile_identicon_layout, viewGroup, false);
                 }
+                TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
+                View divider = view.findViewById(R.id.settings_row_divider);
+                divider.setVisibility(View.VISIBLE);
+                IdenticonView identiconView = (IdenticonView)view.findViewById(R.id.identicon_view);
+                TLRPC.EncryptedChat encryptedChat = MessagesController.Instance.encryptedChats.get((int)(dialog_id >> 32));
+                identiconView.setBytes(encryptedChat.auth_key);
+                textView.setText(getStringEntry(R.string.EncryptionKey));
             }
 
             return view;
@@ -885,16 +834,14 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             } else {
                 if (i == 0) {
                     return 0;
-                } else if (i == 1 || i == 4 || i == 7) {
+                } else if (i == 1 || i == 3 || i == 6) {
                     return 1;
                 } else if (i == 2) {
                     return 2;
-                } else if (i == 5) {
+                } else if (i == 4) {
                     return 3;
-                } else if (i == 6 || i == 8) {
+                } else if (i == 5 || i == 7) {
                     return 4;
-                } else if (i == 3) {
-                    return 5;
                 }
             }
             return 0;

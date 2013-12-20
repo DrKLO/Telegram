@@ -26,7 +26,8 @@
                   android:layout_gravity="top|left"
                   android:id="@+id/chat_text_forward_text"/>
 
-        <TextView android:layout_height="wrap_content"
+        <TextView
+            android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:id="@+id/chat_text_forward_name"
             android:textColor="#006fc8"
@@ -37,26 +38,28 @@
             android:layout_gravity="top|left"/>
 
         <org.telegram.ui.Views.TightTextView
-                android:id="@+id/chat_message_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="16dp"
-                android:layout_marginBottom="8dp"
-                android:autoLink="web|email"
-                android:linksClickable="false"
-                android:layout_marginTop="34dp"
-                android:descendantFocusability="afterDescendants"
-                android:layout_gravity="top|left"
-                android:textColor="#000000"/>
+            android:id="@+id/chat_message_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16dp"
+            android:layout_marginBottom="8dp"
+            android:autoLink="web|email"
+            android:linksClickable="false"
+            android:layout_marginTop="34dp"
+            android:descendantFocusability="afterDescendants"
+            android:layout_gravity="top|left"
+            android:textColor="#000000"
+            android:textColorLink="#316f9f"/>
 
         <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/chat_time_text"
-                android:textColor="#a1aab3"
-                android:textSize="12dp"
-                android:textStyle="italic"
-                android:paddingBottom="5dp"
-                android:layout_gravity="bottom|right"/>
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/chat_time_text"
+            android:textColor="#a1aab3"
+            android:textSize="12dp"
+            android:paddingBottom="5dp"
+            android:layout_gravity="bottom|right"/>
+
     </org.telegram.ui.Views.MessageLayout>
+
 </LinearLayout>

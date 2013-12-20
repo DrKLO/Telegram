@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -107,7 +107,7 @@ public class EmojiView extends LinearLayout {
                 PagerSlidingTabStrip tabs = new PagerSlidingTabStrip(getContext());
                 tabs.setViewPager(this.pager);
                 tabs.setShouldExpand(true);
-                tabs.setIndicatorColor(-1710619);
+                tabs.setIndicatorColor(0xff33b5e5);
                 tabs.setIndicatorHeight(Emoji.scale(2.0F));
                 tabs.setUnderlineHeight(Emoji.scale(2.0F));
                 tabs.setUnderlineColor(1711276032);
@@ -241,7 +241,7 @@ public class EmojiView extends LinearLayout {
                         EmojiView.this.addToRecent((Long)paramAnonymousView.getTag());
                     }
                 });
-                localObject.setBackgroundResource(R.drawable.highlight);
+                localObject.setBackgroundResource(R.drawable.list_selector);
                 localObject.setScaleType(ImageView.ScaleType.CENTER);
             }
 

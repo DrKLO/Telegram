@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -9,26 +9,19 @@
 package org.telegram.ui;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.res.Configuration;
 import android.graphics.Typeface;
 import android.os.Bundle;
-import android.view.Display;
+import android.support.v7.app.ActionBar;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
-import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
-
-import com.actionbarsherlock.app.ActionBar;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.TL.TLRPC;
@@ -42,6 +35,7 @@ import org.telegram.ui.Views.BaseFragment;
 
 public class ContactAddActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private int user_id;
+    private String phone = null;
     private View doneButton;
     private EditText firstNameField;
     private EditText lastNameField;
@@ -54,6 +48,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         super.onFragmentCreate();
         NotificationCenter.Instance.addObserver(this, MessagesController.updateInterfaces);
         user_id = getArguments().getInt("user_id", 0);
+        phone = getArguments().getString("phone");
         return true;
     }
 
@@ -64,22 +59,20 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-    }
-
-    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         if (fragmentView == null) {
             fragmentView = inflater.inflate(R.layout.contact_add_layout, container, false);
 
             TLRPC.User user = MessagesController.Instance.users.get(user_id);
+            if (phone != null) {
+                user.phone = PhoneFormat.stripExceptNumbers(phone);
+            }
 
-            Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
             onlineText = (TextView)fragmentView.findViewById(R.id.settings_online);
-            onlineText.setTypeface(typeface);
             avatarImage = (BackupImageView)fragmentView.findViewById(R.id.settings_avatar_image);
             phoneText = (TextView)fragmentView.findViewById(R.id.settings_name);
+            Typeface typeface = Utilities.getTypeface("fonts/rmedium.ttf");
+            phoneText.setTypeface(typeface);
 
             firstNameField = (EditText)fragmentView.findViewById(R.id.first_name_field);
             firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -175,9 +168,10 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         ActionBar actionBar = parentActivity.getSupportActionBar();
         actionBar.setDisplayShowCustomEnabled(true);
         actionBar.setDisplayShowHomeEnabled(false);
+        actionBar.setDisplayHomeAsUpEnabled(false);
         actionBar.setDisplayShowTitleEnabled(false);
 
-        TextView title = (TextView)parentActivity.findViewById(R.id.abs__action_bar_title);
+        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
         if (title == null) {
             final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
             title = (TextView)parentActivity.findViewById(subtitleId);
@@ -213,54 +207,16 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
     @Override
     public void onResume() {
         super.onResume();
-        if (getSherlockActivity() == null) {
+        if (getActivity() == null) {
             return;
         }
         ((ApplicationActivity)parentActivity).updateActionBar();
-        fixLayout();
 
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
         boolean animations = preferences.getBoolean("view_animations", true);
         if (!animations) {
             firstNameField.requestFocus();
             Utilities.showKeyboard(firstNameField);
-        }
-    }
-
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        fixLayout();
-    }
-
-    private void fixLayout() {
-        final View view = getView();
-        if (view != null) {
-            ViewTreeObserver obs = view.getViewTreeObserver();
-            obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    WindowManager manager = (WindowManager)parentActivity.getSystemService(Context.WINDOW_SERVICE);
-                    Display display = manager.getDefaultDisplay();
-                    int rotation = display.getRotation();
-                    int height;
-                    int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
-                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
-                    if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
-                        height = currentActionBarHeight;
-                    } else {
-                        height = (int)(48.0f * density);
-                        if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                            height = (int)(40.0f * density);
-                        }
-                    }
-                    view.setPadding(view.getPaddingLeft(), height, view.getPaddingRight(), view.getPaddingBottom());
-
-                    view.getViewTreeObserver().removeOnPreDrawListener(this);
-
-                    return false;
-                }
-            });
         }
     }
 

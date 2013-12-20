@@ -1,0 +1,10 @@
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:sabd="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/block_user"
+        sabd:actionLayout="@layout/group_profile_add_member_layout"
+        sabd:showAsAction="always"/>
+
+</menu>

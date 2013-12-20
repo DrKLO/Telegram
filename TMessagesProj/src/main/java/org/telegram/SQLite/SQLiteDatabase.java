@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -8,10 +8,11 @@
 
 package org.telegram.SQLite;
 
+import org.telegram.messenger.FileLog;
+import org.telegram.ui.ApplicationLoader;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import android.util.Log;
 
 public class SQLiteDatabase {
 	private final int sqliteHandle;
@@ -25,7 +26,7 @@ public class SQLiteDatabase {
 	}
 
 	public SQLiteDatabase(String fileName) throws SQLiteException {
-		sqliteHandle = opendb(fileName);
+		sqliteHandle = opendb(fileName, ApplicationLoader.applicationContext.getFilesDir().getPath());
 		isOpen = true;
 		preparedMap = new HashMap<String, SQLitePreparedStatement>();
 	}
@@ -111,7 +112,7 @@ public class SQLiteDatabase {
 				}
 				closedb(sqliteHandle);
 			} catch (SQLiteException e) {
-				Log.e("tmessages", e.getMessage(), e);
+                FileLog.e("tmessages", e.getMessage(), e);
 			}
 			isOpen = false;
 		}
@@ -142,7 +143,7 @@ public class SQLiteDatabase {
         commitTransaction(sqliteHandle);
     }
 
-	native int opendb(String fileName) throws SQLiteException;
+	native int opendb(String fileName, String tempDir) throws SQLiteException;
 	native void closedb(int sqliteHandle) throws SQLiteException;
     native void beginTransaction(int sqliteHandle);
     native void commitTransaction(int sqliteHandle);

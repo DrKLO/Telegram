@@ -79,8 +79,7 @@
                     android:layout_height="wrap_content"
                     android:id="@+id/chat_time_text"
                     android:textColor="#70b15c"
-                    android:textSize="12dp"
-                    android:textStyle="italic"/>
+                    android:textSize="12dp"/>
 
                 <ImageView
                     android:layout_width="wrap_content"

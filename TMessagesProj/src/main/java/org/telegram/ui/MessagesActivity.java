@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -13,14 +13,19 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.internal.view.SupportMenuItem;
+import android.support.v4.view.MenuItemCompat;
+import android.support.v7.app.ActionBar;
+import android.support.v7.widget.SearchView;
 import android.text.Html;
-import android.view.Display;
+import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Surface;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.view.WindowManager;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
@@ -28,15 +33,11 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.actionbarsherlock.app.ActionBar;
-import com.actionbarsherlock.app.SherlockFragmentActivity;
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuItem;
-import com.actionbarsherlock.widget.SearchView;
-
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.TL.TLObject;
 import org.telegram.TL.TLRPC;
+import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLog;
 import org.telegram.objects.MessageObject;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.MessagesController;
@@ -48,6 +49,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.BaseFragment;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Timer;
@@ -58,7 +60,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     private MessagesAdapter messagesListViewAdapter;
     private TextView searchEmptyView;
     private View progressView;
-    private MenuItem searchItem;
+    private SupportMenuItem searchItem;
     private View empryView;
     private SearchView searchView;
     public int selectAlertString = 0;
@@ -86,6 +88,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
+        density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
         NotificationCenter.Instance.addObserver(this, MessagesController.dialogsNeedReload);
         NotificationCenter.Instance.addObserver(this, 999);
         NotificationCenter.Instance.addObserver(this, MessagesController.updateInterfaces);
@@ -97,6 +100,11 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         if (getArguments() != null) {
             onlySelect = getArguments().getBoolean("onlySelect", false);
             serverOnly = getArguments().getBoolean("serverOnly", false);
+        }
+        if (!dialogsLoaded) {
+            MessagesController.Instance.readContacts();
+            MessagesController.Instance.loadDialogs(0, 0, 100, true);
+            dialogsLoaded = true;
         }
         return true;
     }
@@ -138,12 +146,6 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             messagesListViewAdapter.notifyDataSetChanged();
             searchEmptyView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
             empryView = fragmentView.findViewById(R.id.list_empty_view);
-
-            Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
-            TextView textView = (TextView)fragmentView.findViewById(R.id.list_empty_view_text1);
-            textView.setTypeface(typeface);
-            textView = (TextView)fragmentView.findViewById(R.id.list_empty_view_text2);
-            textView.setTypeface(typeface);
 
             if (MessagesController.Instance.loadingDialogs && MessagesController.Instance.dialogs.isEmpty()) {
                 messagesListView.setEmptyView(null);
@@ -202,17 +204,17 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                             if (lower_part > 0) {
                                 bundle.putInt("user_id", lower_part);
                                 fragment.setArguments(bundle);
-                                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat_user_" + lower_part, false);
+                                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), false);
                             } else if (lower_part < 0) {
                                 bundle.putInt("chat_id", -lower_part);
                                 fragment.setArguments(bundle);
-                                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat_group_" + -lower_part, false);
+                                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), false);
                             }
                         } else {
                             int id = (int)(dialog_id >> 32);
                             bundle.putInt("enc_id", id);
                             fragment.setArguments(bundle);
-                            ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat_enc_" + id, false);
+                            ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), false);
                         }
                     }
                 }
@@ -248,8 +250,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                                 if (which == 0) {
                                     MessagesController.Instance.deleteDialog(selectedDialog, 0, true);
                                 } else if (which == 1) {
-                                    MessagesController.Instance.deleteDialog(selectedDialog, 0, false);
                                     MessagesController.Instance.deleteUserFromChat((int) -selectedDialog, UserConfig.clientUserId, null);
+                                    MessagesController.Instance.deleteDialog(selectedDialog, 0, false);
                                 }
                             }
                         });
@@ -287,19 +289,10 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 }
             });
 
-            if (!dialogsLoaded) {
+            if (MessagesController.Instance.loadingDialogs) {
                 progressView.setVisibility(View.VISIBLE);
-                MessagesController.Instance.readContacts();
-                MessagesController.Instance.loadDialogs(0, 0, 100, true);
-                Utilities.stageQueue.postRunnable(new Runnable() {
-                    @Override
-                    public void run() {
-                        MessagesController.Instance.getDifference();
-                    }
-                });
-                dialogsLoaded = true;
             }
-            fixLayout();
+
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
             if (parent != null) {
@@ -323,14 +316,15 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             actionBar.setDisplayShowCustomEnabled(false);
             actionBar.setSubtitle(null);
             actionBar.setCustomView(null);
-            actionBar.setTitle(Html.fromHtml("<font color='#006fc8'>" + getStringEntry(R.string.AppName) + "</font>"));
+            actionBar.setTitle(getStringEntry(R.string.AppName));
+            ((ApplicationActivity)parentActivity).fixBackButton();
         } else {
-            ImageView view = (ImageView)parentActivity.findViewById(android.R.id.home);
+            ImageView view = (ImageView)parentActivity.findViewById(16908332);
             if (view == null) {
-                view = (ImageView)parentActivity.findViewById(com.actionbarsherlock.R.id.abs__home);
+                view = (ImageView)parentActivity.findViewById(R.id.home);
             }
             if (view != null) {
-                view.setPadding((int)(ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density * 6), 0, (int)(ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density * 6), 0);
+                view.setPadding((int)(density * 6), 0, (int)(density * 6), 0);
             }
             actionBar.setHomeButtonEnabled(false);
             actionBar.setDisplayShowTitleEnabled(true);
@@ -343,7 +337,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             actionBar.setTitle(getStringEntry(R.string.AppName));
         }
 
-        TextView title = (TextView)parentActivity.findViewById(R.id.abs__action_bar_title);
+        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
         if (title == null) {
             final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
             title = (TextView)parentActivity.findViewById(subtitleId);
@@ -360,7 +354,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         if (isFinish) {
             return;
         }
-        if (getSherlockActivity() == null) {
+        if (getActivity() == null) {
             return;
         }
         if (messagesListViewAdapter != null) {
@@ -368,7 +362,6 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         }
         ((ApplicationActivity)parentActivity).showActionBar();
         ((ApplicationActivity)parentActivity).updateActionBar();
-        fixLayout();
     }
 
     @Override
@@ -441,44 +434,6 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     ((MessagesListRowHolder) tag).update();
                 }
             }
-        }
-    }
-
-    @Override
-    public void onConfigurationChanged(android.content.res.Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        fixLayout();
-    }
-
-    private void fixLayout() {
-        if (messagesListView != null) {
-            ViewTreeObserver obs = messagesListView.getViewTreeObserver();
-            obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    WindowManager manager = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
-                    Display display = manager.getDefaultDisplay();
-                    int rotation = display.getRotation();
-                    density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
-
-                    int height;
-                    int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
-                    if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
-                        height = currentActionBarHeight;
-                    } else {
-                        height = (int)(48.0f * density);
-                        if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                            height = (int)(40.0f * density);
-                        }
-                    }
-
-                    messagesListView.setPadding(messagesListView.getPaddingLeft(), height, messagesListView.getPaddingRight(), 0);
-
-                    messagesListView.getViewTreeObserver().removeOnPreDrawListener(this);
-
-                    return false;
-                }
-            });
         }
     }
 
@@ -566,7 +521,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     searchDialogsTimer.cancel();
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                FileLog.e("tmessages", e);
             }
             searchDialogsTimer = new Timer();
             searchDialogsTimer.schedule(new TimerTask() {
@@ -576,7 +531,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                         searchDialogsTimer.cancel();
                         searchDialogsTimer = null;
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        FileLog.e("tmessages", e);
                     }
                     MessagesStorage.Instance.searchDialogs(activityToken, query, !serverOnly);
                 }
@@ -585,20 +540,30 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public void onCreateOptionsMenu(Menu menu, com.actionbarsherlock.view.MenuInflater inflater) {
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         if (onlySelect) {
             inflater.inflate(R.menu.messages_list_select_menu, menu);
         } else {
             inflater.inflate(R.menu.messages_list_menu, menu);
         }
-        searchItem = menu.findItem(R.id.messages_list_menu_search);
+        searchItem = (SupportMenuItem)menu.findItem(R.id.messages_list_menu_search);
         searchView = (SearchView) searchItem.getActionView();
-        searchView.setQueryHint(getStringEntry(R.string.SearchMsgHint));
 
-        int srcId = searchView.getContext().getResources().getIdentifier("android:id/search_close_btn", null, null);
-        ImageView img = (ImageView) searchView.findViewById(srcId);
+        TextView textView = (TextView) searchView.findViewById(R.id.search_src_text);
+        if (textView != null) {
+            textView.setTextColor(0xffffffff);
+            try {
+                Field mCursorDrawableRes = TextView.class.getDeclaredField("mCursorDrawableRes");
+                mCursorDrawableRes.setAccessible(true);
+                mCursorDrawableRes.set(textView, R.drawable.search_carret);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        ImageView img = (ImageView) searchView.findViewById(R.id.search_close_btn);
         if (img != null) {
-            img.setImageResource(R.drawable.ic_msg_in_cross);
+            img.setImageResource(R.drawable.ic_msg_btn_cross_custom);
         }
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -612,28 +577,23 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 searchDialogs(s);
                 if (s.length() != 0) {
                     searchWas = true;
-                    if (messagesListView != null) {
-                        if (messagesListView.getPaddingLeft() != (int)(14 * density)) {
-                            messagesListView.setPadding((int)(14 * density), messagesListView.getPaddingTop(), (int)(14 * density), messagesListView.getPaddingBottom());
-                        }
+                    if (messagesListViewAdapter != null) {
+                        messagesListViewAdapter.notifyDataSetChanged();
                     }
                     if (searchEmptyView != null) {
                         messagesListView.setEmptyView(searchEmptyView);
                         empryView.setVisibility(View.GONE);
-                    }
-                    if (messagesListViewAdapter != null) {
-                        messagesListViewAdapter.notifyDataSetChanged();
                     }
                 }
                 return true;
             }
         });
 
-        searchItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
+        searchItem.setSupportOnActionExpandListener(new MenuItemCompat.OnActionExpandListener() {
             @Override
             public boolean onMenuItemActionExpand(MenuItem menuItem) {
                 if (parentActivity != null) {
-                    parentActivity.getSupportActionBar().setIcon(R.drawable.ic_ab_search);
+                    parentActivity.getSupportActionBar().setIcon(R.drawable.ic_ab_logo);
                 }
                 searching = true;
                 if (messagesListView != null) {
@@ -654,10 +614,12 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 if (messagesListView != null) {
                     messagesListView.setEmptyView(empryView);
                     searchEmptyView.setVisibility(View.GONE);
-                    messagesListView.setPadding(0, messagesListView.getPaddingTop(), 0, messagesListView.getPaddingBottom());
                 }
                 if (messagesListViewAdapter != null) {
                     messagesListViewAdapter.notifyDataSetChanged();
+                }
+                if (onlySelect) {
+                    ((ApplicationActivity)parentActivity).fixBackButton();
                 }
                 return true;
             }
@@ -669,9 +631,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int itemId = item.getItemId();
-        SherlockFragmentActivity inflaterActivity = parentActivity;
+        FragmentActivity inflaterActivity = parentActivity;
         if (inflaterActivity == null) {
-            inflaterActivity = getSherlockActivity();
+            inflaterActivity = getActivity();
         }
         if (inflaterActivity == null) {
             return true;
@@ -783,11 +745,14 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 int type = getItemViewType(i);
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    if (type == 3) {
+                    if (type == 2) {
                         view = li.inflate(R.layout.messages_search_user_layout, viewGroup, false);
                     } else {
                         view = li.inflate(R.layout.messages_search_chat_layout, viewGroup, false);
                     }
+                    View v = view.findViewById(R.id.settings_row_divider);
+                    v.setVisibility(View.VISIBLE);
+                    view.setPadding((int)(11 * density), 0, (int)(11 * density), 0);
                 }
                 MessagesListSearchRowHolder holder = (MessagesListSearchRowHolder)view.getTag();
                 if (holder == null) {
@@ -844,7 +809,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     } else {
                         int currentTime = ConnectionsManager.Instance.getCurrentTime();
                         if (user.status.expires > currentTime || user.status.was_online > currentTime) {
-                            holder.messageTextView.setTextColor(0xff006fc8);
+                            holder.messageTextView.setTextColor(0xff316f9f);
                             holder.messageTextView.setText(getStringEntry(R.string.Online));
                         } else {
                             if (user.status.was_online <= 10000 && user.status.expires <= 10000) {
@@ -864,7 +829,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 return view;
             }
             int type = getItemViewType(i);
-            if (type == 2) {
+            if (type == 1) {
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.loading_more_layout, viewGroup, false);
@@ -874,11 +839,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
             if (view == null) {
                 LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                if (type == 0) {
-                    view = li.inflate(R.layout.messages_list_row, viewGroup, false);
-                } else {
-                    view = li.inflate(R.layout.messages_list_row_chat, viewGroup, false);
-                }
+                view = li.inflate(R.layout.messages_list_row, viewGroup, false);
             }
 
             MessagesListRowHolder holder = (MessagesListRowHolder)view.getTag();
@@ -901,45 +862,26 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             if (searching && searchWas) {
                 TLObject obj = searchResult.get(i);
                 if (obj instanceof TLRPC.User || obj instanceof TLRPC.EncryptedChat) {
-                    return 3;
+                    return 2;
                 } else {
-                    return 4;
+                    return 3;
                 }
             }
             if (serverOnly) {
                 if (i == MessagesController.Instance.dialogsServerOnly.size()) {
-                    return 2;
+                    return 1;
                 }
             } else {
                 if (i == MessagesController.Instance.dialogs.size()) {
-                    return 2;
-                }
-            }
-            TLRPC.TL_dialog dialog;
-            if (serverOnly) {
-                dialog = MessagesController.Instance.dialogsServerOnly.get(i);
-            } else {
-                dialog = MessagesController.Instance.dialogs.get(i);
-            }
-            MessageObject message = MessagesController.Instance.dialogMessage.get(dialog.top_message);
-            if (message == null || message.messageOwner.action != null) {
-                return 0;
-            }
-            int lower_id = (int)dialog.id;
-            if (lower_id != 0) {
-                if (lower_id < 0) {
                     return 1;
-                } else {
-                    return 0;
                 }
-            } else {
-                return 0;
             }
+            return 0;
         }
 
         @Override
         public int getViewTypeCount() {
-            return 5;
+            return 4;
         }
 
         @Override
@@ -972,11 +914,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         public TextView nameTextView;
 
         public MessagesListSearchRowHolder(View view) {
-            Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
             messageTextView = (TextView)view.findViewById(R.id.messages_list_row_message);
-            if (messageTextView != null) {
-                messageTextView.setTypeface(typeface);
-            }
             nameTextView = (TextView)view.findViewById(R.id.messages_list_row_name);
             avatarImage = (BackupImageView)view.findViewById(R.id.messages_list_row_avatar);
         }
@@ -985,29 +923,22 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     private class MessagesListRowHolder {
         public ImageView errorImage;
         public TextView messagesCountImage;
-        public TextView typingTextView;
         public BackupImageView avatarImage;
         public TextView timeTextView;
         public TextView messageTextView;
         public TextView nameTextView;
-        public TextView chatUserName;
         public ImageView check1Image;
         public ImageView check2Image;
         public ImageView clockImage;
         public TLRPC.TL_dialog dialog;
 
         public MessagesListRowHolder(View view) {
-            Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
             messageTextView = (TextView)view.findViewById(R.id.messages_list_row_message);
-            if (messageTextView != null) {
-                messageTextView.setTypeface(typeface);
-            }
-            typingTextView = (TextView)view.findViewById(R.id.messages_list_row_typing);
-            if (typingTextView != null) {
-                typingTextView.setTypeface(typeface);
-            }
-            chatUserName = (TextView)view.findViewById(R.id.messages_list_row_chat_user);
             nameTextView = (TextView)view.findViewById(R.id.messages_list_row_name);
+            if (nameTextView != null) {
+                Typeface typeface = Utilities.getTypeface("fonts/rmedium.ttf");
+                nameTextView.setTypeface(typeface);
+            }
             timeTextView = (TextView)view.findViewById(R.id.messages_list_row_time);
             avatarImage = (BackupImageView)view.findViewById(R.id.messages_list_row_avatar);
             messagesCountImage = (TextView)view.findViewById(R.id.messages_list_row_badge);
@@ -1042,6 +973,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                         nameTextView.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_lock_green, 0);
                     }
                     nameTextView.setCompoundDrawablePadding((int)(4 * density));
+                } else {
+                    Log.e("test", "tda");
                 }
             }
 
@@ -1058,7 +991,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                             nameTextView.setTextColor(0xff000000);
                             nameTextView.setText(PhoneFormat.Instance.format("+" + user.phone));
                         } else {
-                            nameTextView.setTextColor(0xff006fc8);
+                            nameTextView.setTextColor(0xff316f9f);
                             nameTextView.setText(Utilities.formatName(user.first_name, user.last_name));
                         }
                     }
@@ -1093,14 +1026,11 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
             if (message == null) {
                 if (printingString != null) {
-                    typingTextView.setVisibility(View.VISIBLE);
-                    typingTextView.setText(printingString);
-                    messageTextView.setVisibility(View.GONE);
+                    messageTextView.setText(printingString);
+                    messageTextView.setTextColor(0xff316f9f);
                 } else {
-                    typingTextView.setVisibility(View.GONE);
-                    messageTextView.setVisibility(View.VISIBLE);
                     if (encryptedChat != null) {
-                        messageTextView.setTextColor(0xff006fc8);
+                        messageTextView.setTextColor(0xff316f9f);
                         if (encryptedChat instanceof TLRPC.TL_encryptedChatRequested) {
                             messageTextView.setText(getStringEntry(R.string.EncryptionProcessing));
                         } else if (encryptedChat instanceof TLRPC.TL_encryptedChatWaiting) {
@@ -1123,7 +1053,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     }
                 }
                 if (dialog.last_message_date != 0) {
-                    timeTextView.setText(Utilities.formatDate(dialog.last_message_date));
+                    timeTextView.setText(Utilities.stringForMessageListDate(dialog.last_message_date));
                 } else {
                     timeTextView.setText("");
                 }
@@ -1136,48 +1066,45 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 TLRPC.User fromUser = MessagesController.Instance.users.get(message.messageOwner.from_id);
 
                 if (dialog.last_message_date != 0) {
-                    timeTextView.setText(Utilities.formatDate(dialog.last_message_date));
+                    timeTextView.setText(Utilities.stringForMessageListDate(dialog.last_message_date));
                 } else {
-                    timeTextView.setText(Utilities.formatDate(message.messageOwner.date));
+                    timeTextView.setText(Utilities.stringForMessageListDate(message.messageOwner.date));
                 }
                 if (printingString != null) {
-                    if (chatUserName != null) {
-                        chatUserName.setVisibility(View.GONE);
-                    }
-                    messageTextView.setVisibility(View.GONE);
-                    typingTextView.setVisibility(View.VISIBLE);
-                    typingTextView.setText(printingString);
+                    messageTextView.setTextColor(0xff316f9f);
+                    messageTextView.setText(printingString);
                 } else {
-                    if (chatUserName != null) {
-                        chatUserName.setVisibility(View.VISIBLE);
-                        if (message.messageOwner.from_id == UserConfig.clientUserId) {
-                            chatUserName.setTextColor(0xff808080);
-                            chatUserName.setText(getStringEntry(R.string.FromYou));
-                        } else {
-                            chatUserName.setTextColor(0xff006fc8);
-                            if (fromUser != null && fromUser.first_name != null && fromUser.last_name != null) {
-                                chatUserName.setText(Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                    if (message.messageOwner instanceof TLRPC.TL_messageService) {
+                        messageTextView.setText(message.messageText);
+                        messageTextView.setTextColor(0xff316f9f);
+                    } else {
+                        if (chat != null) {
+                            String name = "";
+                            if (message.messageOwner.from_id == UserConfig.clientUserId) {
+                                name = getStringEntry(R.string.FromYou);
                             } else {
-                                chatUserName.setText("");
+                                if (fromUser != null) {
+                                    if (fromUser.first_name.length() > 0) {
+                                        name = fromUser.first_name;
+                                    } else {
+                                        name = fromUser.last_name;
+                                    }
+                                }
+                            }
+                            if (message.messageOwner.media != null && !(message.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
+                                messageTextView.setTextColor(0xff316f9f);
+                                messageTextView.setText(message.messageText);
+                            } else {
+                                messageTextView.setText(Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#316f9f>%s:</font> <font color=#808080>%s</font>", name, message.messageOwner.message))));
+                            }
+                        } else {
+                            messageTextView.setText(message.messageText);
+                            if (message.messageOwner.media != null && !(message.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
+                                messageTextView.setTextColor(0xff316f9f);
+                            } else {
+                                messageTextView.setTextColor(0xff808080);
                             }
                         }
-                    }
-                    typingTextView.setVisibility(View.GONE);
-                    messageTextView.setVisibility(View.VISIBLE);
-
-                    /*if (encryptedChat != null && encryptedChat instanceof TLRPC.TL_encryptedChatDiscarded) {
-                        messageTextView.setText(getStringEntry(R.string.EncryptionRejected));
-                    } else {
-                        messageTextView.setText(message.messageText);
-                    }*/
-
-                    messageTextView.setText(message.messageText);
-                    if (message.messageOwner instanceof TLRPC.TL_messageService) {
-                        messageTextView.setTextColor(0xff006fc8);
-                    } else if (message.messageOwner.media != null && !(message.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
-                        messageTextView.setTextColor(0xff006fc8);
-                    } else {
-                        messageTextView.setTextColor(0xff808080);
                     }
                 }
 

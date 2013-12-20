@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -13,16 +13,15 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.text.Html;
+import android.support.v7.app.ActionBar;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.actionbarsherlock.app.ActionBar;
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuInflater;
-import com.actionbarsherlock.view.MenuItem;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -33,6 +32,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import org.telegram.TL.TLRPC;
+import org.telegram.messenger.FileLog;
 import org.telegram.objects.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -177,7 +177,7 @@ public class LocationActivity extends BaseFragment implements LocationListener, 
         if (parentActivity == null) {
             return;
         }
-        final ActionBar actionBar = parentActivity.getSupportActionBar();
+        ActionBar actionBar = parentActivity.getSupportActionBar();
         actionBar.setDisplayShowTitleEnabled(true);
         actionBar.setDisplayShowHomeEnabled(false);
         actionBar.setDisplayHomeAsUpEnabled(true);
@@ -186,12 +186,12 @@ public class LocationActivity extends BaseFragment implements LocationListener, 
         actionBar.setDisplayShowCustomEnabled(false);
         actionBar.setCustomView(null);
         if (messageObject != null) {
-            actionBar.setTitle(Html.fromHtml("<font color='#006fc8'>" + getStringEntry(R.string.ChatLocation) + "</font>"));
+            actionBar.setTitle(getStringEntry(R.string.ChatLocation));
         } else {
-            actionBar.setTitle(Html.fromHtml("<font color='#006fc8'>" + getStringEntry(R.string.ShareLocation) + "</font>"));
+            actionBar.setTitle(getStringEntry(R.string.ShareLocation));
         }
 
-        TextView title = (TextView)parentActivity.findViewById(R.id.abs__action_bar_title);
+        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
         if (title == null) {
             final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
             title = (TextView)parentActivity.findViewById(subtitleId);
@@ -205,7 +205,7 @@ public class LocationActivity extends BaseFragment implements LocationListener, 
     @Override
     public void onResume() {
         super.onResume();
-        if (getSherlockActivity() == null) {
+        if (getActivity() == null) {
             return;
         }
         ((ApplicationActivity)parentActivity).showActionBar();
@@ -319,7 +319,7 @@ public class LocationActivity extends BaseFragment implements LocationListener, 
             }
             positionMarker(location);
         } catch (Exception e) {
-            e.printStackTrace();
+            FileLog.e("tmessages", e);
         }
     }
 

@@ -18,8 +18,15 @@ void Java_org_telegram_SQLite_SQLiteDatabase_commitTransaction(JNIEnv *env, jobj
     sqlite3_exec(handle, "COMMIT", 0, 0, 0);
 }
 
-int Java_org_telegram_SQLite_SQLiteDatabase_opendb(JNIEnv *env, jobject object, jstring fileName) {
+int Java_org_telegram_SQLite_SQLiteDatabase_opendb(JNIEnv *env, jobject object, jstring fileName, jstring tempDir) {
     char const *fileNameStr = (*env)->GetStringUTFChars(env, fileName, 0);
+    char const *tempDirStr = (*env)->GetStringUTFChars(env, tempDir, 0);
+    
+    if (sqlite3_temp_directory != 0) {
+        sqlite3_free(sqlite3_temp_directory);
+    }
+    sqlite3_temp_directory = sqlite3_mprintf("%s", tempDirStr);
+    
     sqlite3 *handle = 0;
     int err = sqlite3_open(fileNameStr, &handle);
     if (SQLITE_OK != err) {
@@ -27,6 +34,9 @@ int Java_org_telegram_SQLite_SQLiteDatabase_opendb(JNIEnv *env, jobject object, 
     }
     if (fileNameStr != 0) {
         (*env)->ReleaseStringUTFChars(env, fileName, fileNameStr);
+    }
+    if (tempDirStr != 0) {
+        (*env)->ReleaseStringUTFChars(env, tempDir, tempDirStr);
     }
     return (int)handle;
 }

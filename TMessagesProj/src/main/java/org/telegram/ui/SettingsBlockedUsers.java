@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -11,24 +11,19 @@ package org.telegram.ui;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.graphics.Typeface;
 import android.os.Bundle;
+import android.support.v7.app.ActionBar;
 import android.text.Html;
-import android.view.Display;
 import android.view.LayoutInflater;
-import android.view.Surface;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
-
-import com.actionbarsherlock.app.ActionBar;
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuItem;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.TL.TLObject;
@@ -253,9 +248,9 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
         actionBar.setDisplayShowCustomEnabled(false);
         actionBar.setSubtitle(null);
         actionBar.setCustomView(null);
-        actionBar.setTitle(Html.fromHtml("<font color='#006fc8'>" + getStringEntry(R.string.BlockedUsers) + "</font>"));
+        actionBar.setTitle(getStringEntry(R.string.BlockedUsers));
 
-        TextView title = (TextView)parentActivity.findViewById(R.id.abs__action_bar_title);
+        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
         if (title == null) {
             final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
             title = (TextView)parentActivity.findViewById(subtitleId);
@@ -264,6 +259,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
             title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
             title.setCompoundDrawablePadding(0);
         }
+        ((ApplicationActivity)parentActivity).fixBackButton();
     }
 
     @Override
@@ -272,7 +268,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
         if (isFinish) {
             return;
         }
-        if (getSherlockActivity() == null) {
+        if (getActivity() == null) {
             return;
         }
         if (!firstStart && listViewAdapter != null) {
@@ -281,47 +277,10 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
         firstStart = false;
         ((ApplicationActivity)parentActivity).showActionBar();
         ((ApplicationActivity)parentActivity).updateActionBar();
-        fixLayout();
     }
 
-    @Override
-    public void onConfigurationChanged(android.content.res.Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        fixLayout();
-    }
-
-    public void onCreateOptionsMenu(Menu menu, com.actionbarsherlock.view.MenuInflater inflater) {
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.settings_block_users_bar_menu, menu);
-    }
-
-    private void fixLayout() {
-        if (listView != null) {
-            ViewTreeObserver obs = listView.getViewTreeObserver();
-            obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    WindowManager manager = (WindowManager)parentActivity.getSystemService(Context.WINDOW_SERVICE);
-                    Display display = manager.getDefaultDisplay();
-                    int rotation = display.getRotation();
-                    int height;
-                    int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
-                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
-                    if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
-                        height = currentActionBarHeight;
-                    } else {
-                        height = (int)(48.0f * density);
-                        if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                            height = (int)(40.0f * density);
-                        }
-                    }
-                    listView.setPadding(listView.getPaddingLeft(), height, listView.getPaddingRight(), listView.getPaddingBottom());
-
-                    listView.getViewTreeObserver().removeOnPreDrawListener(this);
-
-                    return false;
-                }
-            });
-        }
     }
 
     @Override
@@ -428,8 +387,6 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                 if (holder == null) {
                     holder = new ContactsActivity.ContactListRowHolder(view);
                     view.setTag(holder);
-                    Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
-                    holder.nameTextView.setTypeface(typeface);
                 }
 
                 View divider = view.findViewById(R.id.settings_row_divider);
@@ -463,9 +420,6 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.settings_unblock_info_row_layout, viewGroup, false);
                     registerForContextMenu(view);
-                    TextView textView = (TextView)view.findViewById(R.id.info_text_view);
-                    Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
-                    textView.setTypeface(typeface);
                 }
             }
             return view;

@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -22,7 +22,6 @@ import android.text.Spannable;
 import android.text.Spanned;
 import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -364,7 +363,7 @@ public class Emoji {
 
 			return color;
 		} catch(Throwable x) {
-            Log.e("tmessages", "Error loading emoji", x);
+            FileLog.e("tmessages", "Error loading emoji", x);
         }
 		return null;
 	}
@@ -396,7 +395,7 @@ public class Emoji {
 	public static Drawable getEmojiDrawable(long code){
 		DrawableInfo info = rects.get(code);
 		if(info == null){
-			Log.e("tmessages", "No emoji drawable for code " + String.format("%016X", code));
+            FileLog.e("tmessages", "No emoji drawable for code " + String.format("%016X", code));
 			return null;
 		}
 		EmojiDrawable ed = new EmojiDrawable(info);

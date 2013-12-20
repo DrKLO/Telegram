@@ -5,12 +5,7 @@
 #include <inttypes.h>
 #include <android/log.h>
 #include "aes.h"
-
-#define LOG_TAG "tmessages_native"
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
-#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
-#define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__)
+#include "log.h"
 
 JNIEXPORT jbyteArray Java_org_telegram_messenger_Utilities_aesIgeEncryption(JNIEnv *env, jclass class, jbyteArray _what, jbyteArray _key, jbyteArray _iv, jboolean encrypt, jboolean changeIv) {
     unsigned char *what = (unsigned char *)(*env)->GetByteArrayElements(env, _what, NULL);
@@ -84,100 +79,3 @@ JNIEXPORT jlong Java_org_telegram_messenger_Utilities_doPQNative(JNIEnv* env, jc
     }
     return g;
 }
-
-//sqlite
-
-/*JNIEXPORT void Java_org_telegram_messenger_Utilities_beginTransaction(JNIEnv* env, jobject object, int dbHandle) {
-    sqlite3 *db = (sqlite3 *)dbHandle;
-    if (db == NULL) {
-        return;
-    }
-    sqlite3_exec(db, "BEGIN", 0, 0, 0);
-}
-
-JNIEXPORT void Java_org_telegram_messenger_Utilities_commitTransaction(JNIEnv* env, jobject object, int dbHandle) {
-    sqlite3 *db = (sqlite3 *)dbHandle;
-    if (db == NULL) {
-        return;
-    }
-    sqlite3_exec(db, "COMMIT", 0, 0, 0);
-}
-
-int Java_org_telegram_messenger_Utilities_step(JNIEnv* env, jobject object, int statementHandle) {
-	sqlite3_stmt *handle = (sqlite3_stmt *)statementHandle;
-    
-	int errcode = 0 ;
-    
-    errcode = sqlite3_step(handle);
-    if (errcode == SQLITE_ROW) {
-        return 0;
-    } else if(errcode == SQLITE_DONE) {
-        return 1;
-    } else if(errcode == SQLITE_BUSY) {
-        return -1;
-    }
-    
-	throw_sqlite3_exception(env, sqlite3_db_handle(handle), errcode);
-}
-
-int Java_org_telegram_messenger_Utilities_columnType(JNIEnv* env, jobject object, int statementHandle, int columnIndex) {
-	sqlite3_stmt *handle = (sqlite3_stmt *)statementHandle;
-    
-	return sqlite3_column_type(handle, columnIndex);
-}
-
-int Java_org_telegram_messenger_Utilities_columnIsNull(JNIEnv* env, jobject object, int statementHandle, int columnIndex) {
-	sqlite3_stmt *handle = (sqlite3_stmt *)statementHandle;
-    
-	int valType = sqlite3_column_type(handle, columnIndex);
-    
-	return SQLITE_NULL == valType;
-}
-
-int Java_org_telegram_messenger_Utilities_columnIntValue(JNIEnv* env, jobject object, int statementHandle, int columnIndex) {
-	sqlite3_stmt *handle = (sqlite3_stmt *)statementHandle;
-    
-	int valType = sqlite3_column_type(handle, columnIndex);
-	if (SQLITE_NULL == valType) {
-		return 0;
-	}
-    
-	return sqlite3_column_int(handle, columnIndex);
-}
-
-jdouble Java_org_telegram_messenger_Utilities_columnDoubleValue(JNIEnv* env, jobject object, int statementHandle, int columnIndex) {
-	sqlite3_stmt *handle = (sqlite3_stmt *)statementHandle;
-    
-	int valType = sqlite3_column_type(handle, columnIndex);
-	if (SQLITE_NULL == valType) {
-		return 0;
-	}
-    
-	return sqlite3_column_double(handle, columnIndex);
-}
-
-jstring Java_org_telegram_messenger_Utilities_columnStringValue(JNIEnv* env, jobject object, int statementHandle, int columnIndex) {
-	sqlite3_stmt *handle = (sqlite3_stmt *)statementHandle;
-    
-	const char* str = sqlite3_column_text(handle, columnIndex);
-	if (str != 0) {
-		return (*env)->NewStringUTF(env, str);
-	}
-    
-	return 0;
-}
-
-jbyteArray Java_org_telegram_messenger_Utilities_columnByteArrayValue(JNIEnv* env, jobject object, int statementHandle, int columnIndex) {
-	sqlite3_stmt *handle = (sqlite3_stmt *)statementHandle;
-    
-	void *buf = sqlite3_column_blob(handle, columnIndex);
-	int length = sqlite3_column_bytes(handle, columnIndex);
-    
-	if (buf != 0 && length > 0) {
-        jbyteArray result = (*env)->NewByteArray(env, length);
-        (*env)->SetByteArrayRegion(env, result, 0, length, buf);
-        return result;
-	}
-    
-	return 0;
-}*/

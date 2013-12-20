@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -24,6 +24,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.TL.TLRPC;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -82,7 +83,7 @@ public class NotificationView extends LinearLayout {
                         hideTimer = null;
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    FileLog.e("tmessages", e);
                 }
                 hide(true);
             }
@@ -103,7 +104,7 @@ public class NotificationView extends LinearLayout {
                         hideTimer = null;
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    FileLog.e("tmessages", e);
                 }
                 hide(true);
 
@@ -124,7 +125,7 @@ public class NotificationView extends LinearLayout {
         notificationParentView.addView(this);
         notificationParentView.setFocusable(false);
         setFocusable(false);
-        final WindowManager wm = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+        WindowManager wm = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
         notificationLayoutParams = new WindowManager.LayoutParams();
         notificationLayoutParams.height = 90;
         notificationLayoutParams.format = PixelFormat.TRANSLUCENT;
@@ -228,12 +229,12 @@ public class NotificationView extends LinearLayout {
                         hideTimer.cancel();
                         hideTimer = null;
                     } catch (Exception e) {
-                        e.printStackTrace();
+                FileLog.e("tmessages", e);
                     }
                 }
             }, 3000);
         } catch (Exception e) {
-            e.printStackTrace();
+            FileLog.e("tmessages", e);
         }
 
         if (!onScreen) {
@@ -255,7 +256,7 @@ public class NotificationView extends LinearLayout {
                         hideTimer = null;
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    FileLog.e("tmessages", e);
                 }
                 onScreen = false;
                 setVisibility(GONE);
@@ -278,13 +279,13 @@ public class NotificationView extends LinearLayout {
                         wm.removeViewImmediate(notificationParentView);
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    FileLog.e("tmessages", e);
                 }
             }
             notificationParentView = null;
             notificationLayoutParams = null;
         } catch (Exception e) {
-            e.printStackTrace();
+            FileLog.e("tmessages", e);
         }
     }
 
@@ -318,7 +319,7 @@ public class NotificationView extends LinearLayout {
         textLayout.setLayoutParams(params1);
 
         if (notificationParentView != null) {
-            notificationLayoutParams.height = height + (int)(2 * density);
+            notificationLayoutParams.height = height;
             if (notificationParentView.getParent() != null) {
                 WindowManager wm = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
                 wm.updateViewLayout(notificationParentView, notificationLayoutParams);

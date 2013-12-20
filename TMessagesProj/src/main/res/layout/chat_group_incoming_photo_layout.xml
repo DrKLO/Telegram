@@ -18,12 +18,13 @@
         android:layout_marginBottom="2dp"
         android:layout_gravity="bottom"/>
 
-    <org.telegram.ui.Views.FrameLayoutFixed android:layout_width="wrap_content"
-                 android:layout_height="wrap_content"
-                 android:layout_marginLeft="13dp"
-                 android:layout_gravity="top"
-                 android:id="@+id/chat_bubble_layout"
-                 android:addStatesFromChildren="true">
+    <org.telegram.ui.Views.FrameLayoutFixed
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="13dp"
+        android:layout_gravity="top"
+        android:id="@+id/chat_bubble_layout"
+        android:addStatesFromChildren="true">
 
         <org.telegram.ui.Views.BackupImageView
             android:layout_height="wrap_content"
@@ -35,48 +36,47 @@
             android:minWidth="100dp"
             android:id="@+id/chat_photo_image"/>
 
-        <FrameLayout android:layout_height="wrap_content"
+        <LinearLayout
             android:layout_width="wrap_content"
-            android:layout_gravity="bottom|right"
-            android:paddingLeft="4dp"
-            android:paddingRight="4dp"
+            android:layout_height="16dp"
+            android:id="@+id/chat_time_layout"
+            android:paddingLeft="3dp"
+            android:paddingRight="3dp"
             android:paddingBottom="1dp"
             android:paddingTop="1dp"
             android:layout_marginRight="8dp"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="8dp"
+            android:layout_gravity="right|bottom"
+            android:background="@drawable/phototime">
 
-            <TextView android:layout_height="wrap_content"
-                android:layout_width="wrap_content"
-                android:textColor="#55000000"
-                android:textSize="12dp"
-                android:textStyle="italic"
-                android:paddingTop="1dp"
-                android:id="@+id/chat_time_text_shadow"/>
-
-            <TextView android:layout_height="wrap_content"
+            <TextView
+                android:layout_height="wrap_content"
                 android:layout_width="wrap_content"
                 android:textColor="#ffffff"
                 android:textSize="12dp"
-                android:textStyle="italic"
-                android:id="@+id/chat_time_text"
-                android:shadowRadius="5"
-                android:shadowColor="#77000000"/>
-        </FrameLayout>
+                android:layout_gravity="bottom"
+                android:layout_marginBottom="1dp"
+                android:id="@+id/chat_time_text"/>
+
+        </LinearLayout>
 
     </org.telegram.ui.Views.FrameLayoutFixed>
 
-    <TextView android:layout_width="wrap_content"
-              android:layout_height="wrap_content"
-              android:text="@string/ViewPhoto"
-              android:textColor="#7f385266"
-              android:paddingLeft="14dp"
-              android:paddingRight="14dp"
-              android:textStyle="bold"
-              android:id="@+id/chat_view_action_button"
-              android:textSize="12dp"
-              android:layout_gravity="center"
-              android:descendantFocusability="blocksDescendants"
-              android:clickable="true"
-              android:gravity="center"
-              android:layout_marginLeft="10dp"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/ViewPhoto"
+        android:textColor="#54759e"
+        android:background="@drawable/chat_incoming_media_states"
+        android:paddingLeft="12dp"
+        android:paddingRight="12dp"
+        android:textStyle="bold"
+        android:id="@+id/chat_view_action_button"
+        android:textSize="14dp"
+        android:layout_gravity="center"
+        android:descendantFocusability="blocksDescendants"
+        android:clickable="true"
+        android:gravity="center"
+        android:layout_marginLeft="10dp"/>
+
 </LinearLayout>

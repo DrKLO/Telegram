@@ -7,18 +7,18 @@
 
     <TextView android:textSize="14dp"
               android:textStyle="bold"
-              android:textColor="#3d8cd4"
+              android:textColor="#3b84c0"
               android:layout_width="wrap_content"
               android:layout_height="wrap_content"
               android:layout_marginLeft="8dp"
               android:layout_marginTop="6dp"
               android:layout_marginRight="8dp"
-              android:layout_marginBottom="2dp"
+              android:layout_marginBottom="4dp"
               android:id="@+id/settings_section_text"
               android:layout_gravity="top|right"
               android:gravity="right"/>
 
-    <View android:background="#3d8cd4"
+    <View android:background="#6caae4"
           android:layout_width="fill_parent"
           android:layout_height="1dip" />
 

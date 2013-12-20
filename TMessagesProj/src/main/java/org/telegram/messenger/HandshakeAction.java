@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -7,8 +7,6 @@
  */
 
 package org.telegram.messenger;
-
-import android.util.Log;
 
 import org.telegram.TL.TLClassStore;
 import org.telegram.TL.TLObject;
@@ -50,15 +48,14 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
     }
 
     public void execute(HashMap params) {
-        Log.d("tmessages", String.format("Begin handshake with DC%d", datacenter.datacenterId));
+        FileLog.d("tmessages", String.format(Locale.US, "Begin handshake with DC%d", datacenter.datacenterId));
         beginHandshake(true);
     }
 
     void beginHandshake(boolean dropConnection) {
         if (datacenter.connection == null) {
-            datacenter.connection = new TcpConnection(datacenter.address, datacenter.port);
+            datacenter.connection = new TcpConnection(datacenter.datacenterId);
             datacenter.connection.delegate = this;
-            datacenter.connection.datacenterId = datacenter.datacenterId;
             datacenter.connection.transportRequestClass = RPCRequest.RPCRequestClassGeneric;
         }
 
@@ -168,7 +165,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
             if (Arrays.equals(authNonce, resPq.nonce)) {
                 final HashMap<String, Object> publicKey = selectPublicKey(resPq.server_public_key_fingerprints);
                 if (publicKey == null) {
-                    Log.e("tmessages", "***** Couldn't find valid server public key");
+                    FileLog.e("tmessages", "***** Couldn't find valid server public key");
                     beginHandshake(false);
                     return;
                 }
@@ -222,8 +219,10 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                                 SerializedData dataWithHash = new SerializedData();
                                 dataWithHash.writeRaw(Utilities.computeSHA1(innerDataBytes));
                                 dataWithHash.writeRaw(innerDataBytes);
+                                byte[] b = new byte[1];
                                 while (dataWithHash.length() < 255) {
-                                    dataWithHash.writeByte(0);
+                                    MessagesController.random.nextBytes(b);
+                                    dataWithHash.writeByte(b[0]);
                                 }
 
                                 byte[] encryptedBytes = Utilities.encryptWithRSA((BigInteger[])publicKey.get("key"), dataWithHash.toByteArray());
@@ -251,7 +250,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                     }
                 });
             } else {
-                Log.e("tmessages", "***** Error: invalid handshake nonce");
+                FileLog.e("tmessages", "***** Error: invalid handshake nonce");
                 beginHandshake(false);
             }
         } else if (message instanceof TLRPC.Server_DH_Params) {
@@ -309,7 +308,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 }
 
                 if (!hashVerified) {
-                    Log.e("tmessages", "***** Couldn't decode DH params");
+                    FileLog.e("tmessages", "***** Couldn't decode DH params");
                     beginHandshake(false);
                     return;
                 }
@@ -319,18 +318,18 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 TLRPC.TL_server_DH_inner_data dhInnerData = (TLRPC.TL_server_DH_inner_data)TLClassStore.Instance().TLdeserialize(answerIs, constructor);
 
                 if (!(dhInnerData instanceof TLRPC.TL_server_DH_inner_data)) {
-                    Log.e("tmessages", "***** Couldn't parse decoded DH params");
+                    FileLog.e("tmessages", "***** Couldn't parse decoded DH params");
                     beginHandshake(false);
                     return;
                 }
 
                 if (!Arrays.equals(authNonce, dhInnerData.nonce)) {
-                    Log.e("tmessages", "***** Invalid DH nonce");
+                    FileLog.e("tmessages", "***** Invalid DH nonce");
                     beginHandshake(false);
                     return;
                 }
                 if (!Arrays.equals(authServerNonce, dhInnerData.server_nonce)) {
-                    Log.e("tmessages", "***** Invalid DH server nonce");
+                    FileLog.e("tmessages", "***** Invalid DH server nonce");
                     beginHandshake(false);
                     return;
                 }
@@ -380,9 +379,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 serverSalt.validUntil = (int)(System.currentTimeMillis() / 1000) + timeDifference + 30 * 60;
                 serverSalt.value = saltBuffer.getLong();
 
-                if (ConnectionsManager.DEBUG_VERSION) {
-                    Log.d("tmessages", String.format(Locale.US, "===== Time difference: %d", timeDifference));
-                }
+                FileLog.d("tmessages", String.format(Locale.US, "===== Time difference: %d", timeDifference));
 
                 TLRPC.TL_client_DH_inner_data clientInnerData = new TLRPC.TL_client_DH_inner_data();
                 clientInnerData.nonce = authNonce;
@@ -396,8 +393,10 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 SerializedData clientDataWithHash = new SerializedData();
                 clientDataWithHash.writeRaw(Utilities.computeSHA1(clientInnerDataBytes));
                 clientDataWithHash.writeRaw(clientInnerDataBytes);
+                byte[] bb = new byte[1];
                 while (clientDataWithHash.length() % 16 != 0) {
-                    clientDataWithHash.writeByte(0);
+                    MessagesController.random.nextBytes(bb);
+                    clientDataWithHash.writeByte(bb[0]);
                 }
 
                 TLRPC.TL_set_client_DH_params setClientDhParams = new TLRPC.TL_set_client_DH_params();
@@ -413,19 +412,19 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 reqDHMsgData = null;
                 setClientDHParamsMsgData = sendMessageData(setClientDhParams, generateMessageId());
             } else {
-                Log.e("tmessages", "***** Couldn't set DH params");
+                FileLog.e("tmessages", "***** Couldn't set DH params");
                 beginHandshake(false);
             }
         } else if (message instanceof TLRPC.Set_client_DH_params_answer) {
             TLRPC.Set_client_DH_params_answer dhAnswer = (TLRPC.Set_client_DH_params_answer)message;
 
             if (!Arrays.equals(authNonce, dhAnswer.nonce)) {
-                Log.e("tmessages", "***** Invalid DH answer nonce");
+                FileLog.e("tmessages", "***** Invalid DH answer nonce");
                 beginHandshake(false);
                 return;
             }
             if (!Arrays.equals(authServerNonce, dhAnswer.server_nonce)) {
-                Log.e("tmessages", "***** Invalid DH answer server nonce");
+                FileLog.e("tmessages", "***** Invalid DH answer server nonce");
                 beginHandshake(false);
                 return;
             }
@@ -468,12 +467,12 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
             if (message instanceof TLRPC.TL_dh_gen_ok) {
                 TLRPC.TL_dh_gen_ok dhGenOk = (TLRPC.TL_dh_gen_ok)message;
                 if (!Arrays.equals(newNonceHash1, dhGenOk.new_nonce_hash1)) {
-                    Log.e("tmessages", "***** Invalid DH answer nonce hash 1");
+                    FileLog.e("tmessages", "***** Invalid DH answer nonce hash 1");
                     beginHandshake(false);
                     return;
                 }
 
-                Log.d("tmessages", String.format("Handshake with DC%d completed", datacenter.datacenterId));
+                FileLog.d("tmessages", String.format("Handshake with DC%d completed", datacenter.datacenterId));
                 datacenter.connection.delegate = null;
 
                 final Action parent = this;
@@ -493,23 +492,23 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
             } else if (message instanceof TLRPC.TL_dh_gen_retry) {
                 TLRPC.TL_dh_gen_retry dhRetry = (TLRPC.TL_dh_gen_retry)message;
                 if (!Arrays.equals(newNonceHash2, dhRetry.new_nonce_hash2)) {
-                    Log.e("tmessages", "***** Invalid DH answer nonce hash 2");
+                    FileLog.e("tmessages", "***** Invalid DH answer nonce hash 2");
                     beginHandshake(false);
                     return;
                 }
-                Log.d("tmessages", "***** Retry DH");
+                FileLog.d("tmessages", "***** Retry DH");
                 beginHandshake(false);
             } else if (message instanceof TLRPC.TL_dh_gen_fail) {
                 TLRPC.TL_dh_gen_fail dhFail = (TLRPC.TL_dh_gen_fail)message;
                 if (!Arrays.equals(newNonceHash3, dhFail.new_nonce_hash3)) {
-                    Log.e("tmessages", "***** Invalid DH answer nonce hash 3");
+                    FileLog.e("tmessages", "***** Invalid DH answer nonce hash 3");
                     beginHandshake(false);
                     return;
                 }
-                Log.d("tmessages", "***** Server declined DH params");
+                FileLog.d("tmessages", "***** Server declined DH params");
                 beginHandshake(false);
             } else {
-                Log.e("tmessages", "***** Unknown DH params response");
+                FileLog.e("tmessages", "***** Unknown DH params response");
                 beginHandshake(false);
             }
         } else {
@@ -518,6 +517,11 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
             msgsAck.msg_ids.add(messageId);
             sendMessageData(msgsAck, generateMessageId());
         }
+    }
+
+    @Override
+    public void tcpConnectionProgressChanged(TcpConnection connection, long messageId, int currentSize, int length) {
+
     }
 
     @Override
@@ -553,7 +557,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
         if (keyId == 0) {
             long messageId = is.readInt64();
             if (processedMessageIds.contains(messageId)) {
-                Log.d("tmessages", String.format("===== Duplicate message id %d received, ignoring", messageId));
+                FileLog.d("tmessages", String.format("===== Duplicate message id %d received, ignoring", messageId));
                 return;
             }
             int messageLength = is.readInt32();
@@ -566,7 +570,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
             }
             processMessage(object, messageId);
         } else {
-            Log.d("tmessages", "***** Received encrypted message while in handshake, restarting");
+            FileLog.d("tmessages", "***** Received encrypted message while in handshake, restarting");
             beginHandshake(true);
         }
     }

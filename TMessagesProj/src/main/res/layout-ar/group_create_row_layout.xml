@@ -43,13 +43,12 @@
 
     <ImageView android:layout_gravity="center_vertical|left"
                android:id="@+id/settings_row_check_button"
-               android:duplicateParentState="true"
                android:layout_width="wrap_content"
                android:layout_height="wrap_content"
                android:layout_marginLeft="14dp"
-               android:src="@drawable/btn_check_off"/>
+               android:src="@drawable/btn_check_off_old"/>
 
-    <View android:background="#dadada"
+    <View android:background="@color/divider"
           android:layout_width="fill_parent"
           android:layout_height="1px"
           android:layout_gravity="bottom"

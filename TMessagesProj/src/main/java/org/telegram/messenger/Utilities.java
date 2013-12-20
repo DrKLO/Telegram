@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -20,7 +20,6 @@ import android.text.Html;
 import android.text.SpannableStringBuilder;
 import android.text.format.DateFormat;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 
@@ -53,6 +52,7 @@ import javax.crypto.Cipher;
 
 public class Utilities {
     public static Handler applicationHandler;
+    public static int statusBarHeight = 0;
     private final static Integer lock = 1;
 
     public static class TPFactorizedValue {
@@ -63,7 +63,7 @@ public class Utilities {
     public static DispatchQueue globalQueue = new DispatchQueue("globalQueue");
     public static DispatchQueue cacheOutQueue = new DispatchQueue("cacheOutQueue");
     public static DispatchQueue imageLoadQueue = new DispatchQueue("imageLoadQueue");
-    public static DispatchQueue fileUploadQueue = new DispatchQueue("imageLoadQueue");
+    public static DispatchQueue fileUploadQueue = new DispatchQueue("fileUploadQueue");
 
     public native static long doPQNative(long _what);
     public native static byte[] aesIgeEncryption(byte[] _what, byte[] _key, byte[] _iv, boolean encrypt, boolean changeIv);
@@ -101,7 +101,7 @@ public class Utilities {
 
             return result;
         } else {
-            Log.e("tmessages", String.format("**** Factorization failed for %d", what));
+            FileLog.e("tmessages", String.format("**** Factorization failed for %d", what));
             TPFactorizedValue result = new TPFactorizedValue();
             result.p = 0;
             result.q = 0;
@@ -113,8 +113,8 @@ public class Utilities {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
             return md.digest(convertme);
-        } catch (Throwable e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
         return null;
     }
@@ -128,7 +128,7 @@ public class Utilities {
             cipher.init(Cipher.ENCRYPT_MODE, publicKey);
             return cipher.doFinal(data);
         } catch (Exception e) {
-            e.printStackTrace();
+            FileLog.e("tmessages", e);
         }
         return null;
     }
@@ -219,7 +219,7 @@ public class Utilities {
             SerializedData stream = new SerializedData(bytesOutput.toByteArray());
             return TLClassStore.Instance().TLdeserialize(stream, stream.readInt32(), parentObject);
         } catch (IOException e) {
-            e.printStackTrace();
+            FileLog.e("tmessages", e);
         }
         return null;
     }
@@ -235,8 +235,7 @@ public class Utilities {
                             assetPath);
                     cache.put(assetPath, t);
                 } catch (Exception e) {
-                    Log.e(TAG, "Could not get typeface '" + assetPath
-                            + "' because " + e.getMessage());
+                    FileLog.e(TAG, "Could not get typeface '" + assetPath + "' because " + e.getMessage());
                     return null;
                 }
             }
@@ -258,8 +257,7 @@ public class Utilities {
         if (view == null) {
             return false;
         }
-        InputMethodManager inputManager = (InputMethodManager) view
-                .getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+        InputMethodManager inputManager = (InputMethodManager) view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
         return inputManager.isActive(view);
     }
 
@@ -267,10 +265,10 @@ public class Utilities {
         if (view == null) {
             return;
         }
-        InputMethodManager imm = (InputMethodManager) view.getContext()
-                .getSystemService(Context.INPUT_METHOD_SERVICE);
-        if (!imm.isActive())
+        InputMethodManager imm = (InputMethodManager) view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (!imm.isActive()) {
             return;
+        }
         imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
@@ -279,18 +277,21 @@ public class Utilities {
         activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                progressDialog = new ProgressDialog(activity);
-                if (message != null) {
-                    progressDialog.setMessage(message);
+                if(!activity.isFinishing()) {
+                    progressDialog = new ProgressDialog(activity);
+                    if (message != null) {
+                        progressDialog.setMessage(message);
+                    }
+                    progressDialog.setCanceledOnTouchOutside(false);
+                    progressDialog.setCancelable(false);
+                    progressDialog.show();
                 }
-                progressDialog.setCanceledOnTouchOutside(false);
-                progressDialog.setCancelable(false);
-                progressDialog.show();
             }
         });
     }
 
     public static FastDateFormat formatterDay;
+    public static FastDateFormat formatterWeek;
     public static FastDateFormat formatterMonth;
     public static FastDateFormat formatterYear;
     public static FastDateFormat formatterYearMax;
@@ -300,11 +301,21 @@ public class Utilities {
     static {
         Locale locale = Locale.getDefault();
         String lang = locale.getLanguage();
-        formatterMonth = FastDateFormat.getInstance("dd MMM", locale);
-        formatterYear = FastDateFormat.getInstance("dd.MM.yy", locale);
-        formatterYearMax = FastDateFormat.getInstance("dd.MM.yyyy", locale);
-        chatDate = FastDateFormat.getInstance("d MMMM", locale);
-        chatFullDate = FastDateFormat.getInstance("d MMMM yyyy", locale);
+        if (lang.equals("en")) {
+            formatterMonth = FastDateFormat.getInstance("MMM dd", locale);
+            formatterYear = FastDateFormat.getInstance("dd.MM.yy", locale);
+            formatterYearMax = FastDateFormat.getInstance("dd.MM.yyyy", locale);
+            chatDate = FastDateFormat.getInstance("MMMM d", locale);
+            chatFullDate = FastDateFormat.getInstance("MMMM d, yyyy", locale);
+        } else {
+            formatterMonth = FastDateFormat.getInstance("dd MMM", locale);
+            formatterYear = FastDateFormat.getInstance("dd.MM.yy", locale);
+            formatterYearMax = FastDateFormat.getInstance("dd.MM.yyyy", locale);
+            chatDate = FastDateFormat.getInstance("d MMMM", locale);
+            chatFullDate = FastDateFormat.getInstance("d MMMM yyyy", locale);
+        }
+        formatterWeek = FastDateFormat.getInstance("EEE", locale);
+
         if (lang != null) {
             if (DateFormat.is24HourFormat(ApplicationLoader.applicationContext)) {
                 formatterDay = FastDateFormat.getInstance("HH:mm", locale);
@@ -394,7 +405,7 @@ public class Utilities {
             destination = new FileOutputStream(destFile).getChannel();
             destination.transferFrom(source, 0, source.size());
         } catch (Exception e) {
-            e.printStackTrace();
+            FileLog.e("tmessages", e);
             result = false;
         } finally {
             if(source != null) {
@@ -418,20 +429,20 @@ public class Utilities {
 
     public static int[] arrColors = {0xffee4928, 0xff41a903, 0xffe09602, 0xff0f94ed, 0xff8f3bf7, 0xfffc4380, 0xff00a1c4, 0xffeb7002};
     public static int[] arrUsersAvatars = {
-            R.drawable.user_placeholder_red,
-            R.drawable.user_placeholder_green,
-            R.drawable.user_placeholder_yellow,
-            R.drawable.user_placeholder_blue,
-            R.drawable.user_placeholder_purple,
-            R.drawable.user_placeholder_pink,
-            R.drawable.user_placeholder_cyan,
-            R.drawable.user_placeholder_orange};
+            R.drawable.user_red,
+            R.drawable.user_green,
+            R.drawable.user_yellow,
+            R.drawable.user_blue,
+            R.drawable.user_violet,
+            R.drawable.user_pink,
+            R.drawable.user_aqua,
+            R.drawable.user_orange};
 
     public static int[] arrGroupsAvatars = {
-            R.drawable.group_placeholder_green,
-            R.drawable.group_placeholder_red,
-            R.drawable.group_placeholder_blue,
-            R.drawable.group_placeholder_yellow};
+            R.drawable.group_green,
+            R.drawable.group_red,
+            R.drawable.group_blue,
+            R.drawable.group_yellow};
 
     public static int getColorIndex(int id) {
         int[] arr;
@@ -458,7 +469,7 @@ public class Utilities {
             }
             return Math.abs(b) % arr.length;
         } catch (Exception e) {
-            e.printStackTrace();
+            FileLog.e("tmessages", e);
         }
         return id % arr.length;
     }
@@ -491,7 +502,7 @@ public class Utilities {
             }
             return sb.toString();
         } catch (java.security.NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            FileLog.e("tmessages", e);
         }
         return null;
     }
@@ -523,14 +534,13 @@ public class Utilities {
             if (storageDir != null) {
                 if (! storageDir.mkdirs()) {
                     if (! storageDir.exists()){
-                        Log.d("tmessages", "failed to create directory");
+                        FileLog.d("tmessages", "failed to create directory");
                         return null;
                     }
                 }
             }
-
         } else {
-            Log.v("tmessages", "External storage is not mounted READ/WRITE.");
+            FileLog.d("tmessages", "External storage is not mounted READ/WRITE.");
         }
 
         return storageDir;
@@ -543,7 +553,7 @@ public class Utilities {
             String imageFileName = "IMG_" + timeStamp + "_";
             return File.createTempFile(imageFileName, ".jpg", storageDir);
         } catch (Exception e) {
-            e.printStackTrace();
+            FileLog.e("tmessages", e);
         }
         return null;
     }
@@ -560,6 +570,7 @@ public class Utilities {
         } else if (name2 != null && name2.length() != 0) {
             wholeString += " " + name2;
         }
+        wholeString = wholeString.trim();
         String[] args = wholeString.split(" ");
 
         for (String arg : args) {
@@ -571,7 +582,7 @@ public class Utilities {
                         builder.append(" ");
                     }
                     String query = str.substring(0, q.length());
-                    builder.append(Html.fromHtml("<font color=\"#1274c9\">" + query + "</font>"));
+                    builder.append(Html.fromHtml("<font color=\"#357aa8\">" + query + "</font>"));
                     str = str.substring(q.length());
                     builder.append(str);
                 } else {
@@ -597,7 +608,7 @@ public class Utilities {
             return new File(ApplicationLoader.applicationContext.getCacheDir(), fileName);
              */
         } catch (Exception e) {
-            e.printStackTrace();
+            FileLog.e("tmessages", e);
         }
         return null;
     }
@@ -610,5 +621,27 @@ public class Utilities {
             result += " " + lastName;
         }
         return result;
+    }
+
+    public static String stringForMessageListDate(long date) {
+        Calendar rightNow = Calendar.getInstance();
+        int day = rightNow.get(Calendar.DAY_OF_YEAR);
+        int year = rightNow.get(Calendar.YEAR);
+        rightNow.setTimeInMillis(date * 1000);
+        int dateDay = rightNow.get(Calendar.DAY_OF_YEAR);
+        int dateYear = rightNow.get(Calendar.YEAR);
+
+        if (year != dateYear) {
+            return formatterYear.format(new Date(date * 1000));
+        } else {
+            int dayDiff = dateDay - day;
+            if(dayDiff == 0 || dayDiff == -1 && (int)(System.currentTimeMillis() / 1000) - date < 60 * 60 * 8) {
+                return formatterDay.format(new Date(date * 1000));
+            } else if(dayDiff > -7 && dayDiff <= -1) {
+                return formatterWeek.format(new Date(date * 1000));
+            } else {
+                return formatterMonth.format(new Date(date * 1000));
+            }
+        }
     }
 }

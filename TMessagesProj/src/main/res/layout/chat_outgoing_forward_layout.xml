@@ -10,12 +10,13 @@
     android:layout_gravity="top">
 
     <org.telegram.ui.Views.MessageLayout
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:id="@+id/message_layout"
-            android:layout_gravity="right">
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:id="@+id/message_layout"
+        android:layout_gravity="right">
 
-        <TextView android:layout_height="wrap_content"
+        <TextView
+            android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:textColor="#4a923c"
             android:textSize="14dp"
@@ -25,7 +26,8 @@
             android:layout_gravity="top|left"
             android:id="@+id/chat_text_forward_text"/>
 
-        <TextView android:layout_height="wrap_content"
+        <TextView
+            android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:id="@+id/chat_text_forward_name"
             android:textColor="#4a923c"
@@ -36,51 +38,55 @@
             android:layout_gravity="top|left"/>
 
         <org.telegram.ui.Views.TightTextView
-                android:id="@+id/chat_message_text"
+            android:id="@+id/chat_message_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16dp"
+            android:linksClickable="false"
+            android:layout_marginTop="34dp"
+            android:layout_marginBottom="8dp"
+            android:autoLink="web|email"
+            android:descendantFocusability="afterDescendants"
+            android:layout_gravity="top"
+            android:textColor="#000000"
+            android:textColorLink="#316f9f"/>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/chat_time_layout"
+            android:layout_gravity="bottom|right">
+
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="16dp"
-                android:linksClickable="false"
-                android:layout_marginTop="34dp"
-                android:layout_marginBottom="8dp"
-                android:autoLink="web|email"
-                android:descendantFocusability="afterDescendants"
-                android:layout_gravity="top"
-                android:textColor="#000000"/>
-
-        <LinearLayout android:layout_width="wrap_content"
-                      android:layout_height="wrap_content"
-                      android:id="@+id/chat_time_layout"
-                      android:layout_gravity="bottom|right">
-            <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:id="@+id/chat_time_text"
-                    android:textColor="#70b15c"
-                    android:textSize="12dp"
-                    android:textStyle="italic"
-                    android:paddingBottom="5dp"/>
+                android:id="@+id/chat_time_text"
+                android:textColor="#70b15c"
+                android:textSize="12dp"
+                android:paddingBottom="5dp"/>
 
             <ImageView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:src="@drawable/msg_check"
-                    android:layout_marginTop="2dp"
-                    android:layout_marginLeft="4dp"
-                    android:layout_marginRight="-8dp"
-                    android:id="@+id/chat_row_check"
-                    android:visibility="visible"
-                    android:layout_gravity="top"/>
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/msg_check"
+                android:layout_marginTop="2dp"
+                android:layout_marginLeft="4dp"
+                android:layout_marginRight="-8dp"
+                android:id="@+id/chat_row_check"
+                android:visibility="visible"
+                android:layout_gravity="top"/>
 
             <ImageView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:src="@drawable/msg_halfcheck"
-                    android:layout_marginTop="2dp"
-                    android:id="@+id/chat_row_halfcheck"
-                    android:visibility="visible"
-                    android:layout_gravity="top"/>
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/msg_halfcheck"
+                android:layout_marginTop="2dp"
+                android:id="@+id/chat_row_halfcheck"
+                android:visibility="visible"
+                android:layout_gravity="top"/>
 
         </LinearLayout>
+
     </org.telegram.ui.Views.MessageLayout>
+
 </LinearLayout>

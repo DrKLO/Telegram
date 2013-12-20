@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -17,14 +17,12 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.text.Html;
-import android.view.Display;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
-import android.view.Surface;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
@@ -32,12 +30,10 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.actionbarsherlock.app.ActionBar;
-import com.actionbarsherlock.app.SherlockFragmentActivity;
-
 import org.telegram.TL.TLObject;
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
@@ -67,7 +63,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     if (i == 1 || i == 6) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
-                        boolean enabled = false;
+                        boolean enabled;
                         if (i == 1) {
                             enabled = preferences.getBoolean("EnableAll", true);
                             editor.putBoolean("EnableAll", !enabled);
@@ -77,58 +73,20 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         }
                         editor.commit();
                         listView.invalidateViews();
-
-                        TLRPC.TL_account_updateNotifySettings req = new TLRPC.TL_account_updateNotifySettings();
-                        req.settings = new TLRPC.TL_inputPeerNotifySettings();
-                        req.settings.sound = "";
-                        if (i == 1) {
-                            req.peer = new TLRPC.TL_inputNotifyAll();
-                            req.settings.show_previews = preferences.getBoolean("GlobalPreview", true);
-                        } else if (i == 6) {
-                            req.peer = new TLRPC.TL_inputNotifyChats();
-                            req.settings.show_previews = preferences.getBoolean("EnablePreviewGroup", true);
-                        }
-                        req.settings.events_mask = 1;
-                        if (enabled) {
-                            req.settings.mute_until = (int)(System.currentTimeMillis() / 1000) + 10 * 365 * 24 * 60 * 60;
-                        } else {
-                            req.settings.mute_until = 0;
-                        }
-                        ConnectionsManager.Instance.performRpc(req, null, null, true, RPCRequest.RPCRequestClassGeneric);
                     } else if (i == 2 || i == 7) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
                         boolean enabledAll = true;
-                        boolean enabled = true;
-
+                        boolean enabled;
                         if (i == 2) {
-                            enabledAll = preferences.getBoolean("EnableAll", true);
                             enabled = preferences.getBoolean("EnablePreviewAll", true);
                             editor.putBoolean("EnablePreviewAll", !enabled);
                         } else if (i == 7) {
-                            enabledAll = preferences.getBoolean("EnableGroup", true);
                             enabled = preferences.getBoolean("EnablePreviewGroup", true);
                             editor.putBoolean("EnablePreviewGroup", !enabled);
                         }
                         editor.commit();
                         listView.invalidateViews();
-
-                        TLRPC.TL_account_updateNotifySettings req = new TLRPC.TL_account_updateNotifySettings();
-                        if (i == 2) {
-                            req.peer = new TLRPC.TL_inputNotifyAll();
-                        } else if (i == 7) {
-                            req.peer = new TLRPC.TL_inputNotifyChats();
-                        }
-                        req.settings = new TLRPC.TL_inputPeerNotifySettings();
-                        req.settings.sound = "";
-                        req.settings.show_previews = !enabled;
-                        req.settings.events_mask = 1;
-                        if (!enabledAll) {
-                            req.settings.mute_until = (int)(System.currentTimeMillis() / 1000) + 10 * 365 * 24 * 60 * 60;
-                        } else {
-                            req.settings.mute_until = 0;
-                        }
-                        ConnectionsManager.Instance.performRpc(req, null, null, true, RPCRequest.RPCRequestClassGeneric);
                     } else if (i == 3 || i == 8) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
@@ -143,39 +101,43 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         editor.commit();
                         listView.invalidateViews();
                     } else if (i == 4 || i == 9) {
-                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                        Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
-                        tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
-                        tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false);
-                        Uri currentSound = null;
+                        try {
+                            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                            Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
+                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
+                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false);
+                            Uri currentSound = null;
 
-                        String defaultPath = null;
-                        Uri defaultUri = Settings.System.DEFAULT_NOTIFICATION_URI;
-                        if (defaultUri != null) {
-                            defaultPath = defaultUri.getPath();
-                        }
+                            String defaultPath = null;
+                            Uri defaultUri = Settings.System.DEFAULT_NOTIFICATION_URI;
+                            if (defaultUri != null) {
+                                defaultPath = defaultUri.getPath();
+                            }
 
-                        if (i == 4) {
-                            String path = preferences.getString("GlobalSoundPath", defaultPath);
-                            if (path != null && !path.equals("NoSound")) {
-                                if (path.equals(defaultPath)) {
-                                    currentSound = defaultUri;
-                                } else {
-                                    currentSound = Uri.parse(path);
+                            if (i == 4) {
+                                String path = preferences.getString("GlobalSoundPath", defaultPath);
+                                if (path != null && !path.equals("NoSound")) {
+                                    if (path.equals(defaultPath)) {
+                                        currentSound = defaultUri;
+                                    } else {
+                                        currentSound = Uri.parse(path);
+                                    }
+                                }
+                            } else if (i == 9) {
+                                String path = preferences.getString("GroupSoundPath", defaultPath);
+                                if (path != null && !path.equals("NoSound")) {
+                                    if (path.equals(defaultPath)) {
+                                        currentSound = defaultUri;
+                                    } else {
+                                        currentSound = Uri.parse(path);
+                                    }
                                 }
                             }
-                        } else if (i == 9) {
-                            String path = preferences.getString("GroupSoundPath", defaultPath);
-                            if (path != null && !path.equals("NoSound")) {
-                                if (path.equals(defaultPath)) {
-                                    currentSound = defaultUri;
-                                } else {
-                                    currentSound = Uri.parse(path);
-                                }
-                            }
+                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentSound);
+                            startActivityForResult(tmpIntent, i);
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
                         }
-                        tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentSound);
-                        startActivityForResult(tmpIntent, i);
                     } else if (i == 15) {
                         if (reseting) {
                             return;
@@ -188,9 +150,9 @@ public class SettingsNotificationsActivity extends BaseFragment {
                                 Utilities.RunOnUIThread(new Runnable() {
                                     @Override
                                     public void run() {
-                                        SherlockFragmentActivity inflaterActivity = parentActivity;
+                                        ActionBarActivity inflaterActivity = parentActivity;
                                         if (inflaterActivity == null) {
-                                            inflaterActivity = getSherlockActivity();
+                                            inflaterActivity = (ActionBarActivity)getActivity();
                                         }
                                         if (inflaterActivity == null) {
                                             return;
@@ -298,9 +260,9 @@ public class SettingsNotificationsActivity extends BaseFragment {
         actionBar.setDisplayUseLogoEnabled(false);
         actionBar.setDisplayShowCustomEnabled(false);
         actionBar.setCustomView(null);
-        actionBar.setTitle(Html.fromHtml("<font color='#006fc8'>" + getStringEntry(R.string.NotificationsAndSounds) + "</font>"));
+        actionBar.setTitle(getStringEntry(R.string.NotificationsAndSounds));
 
-        TextView title = (TextView)parentActivity.findViewById(R.id.abs__action_bar_title);
+        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
         if (title == null) {
             final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
             title = (TextView)parentActivity.findViewById(subtitleId);
@@ -317,53 +279,20 @@ public class SettingsNotificationsActivity extends BaseFragment {
         if (isFinish) {
             return;
         }
-        if (getSherlockActivity() == null) {
+        if (getActivity() == null) {
             return;
         }
         ((ApplicationActivity)parentActivity).showActionBar();
         ((ApplicationActivity)parentActivity).updateActionBar();
-        fixLayout();
     }
 
     @Override
     public void onConfigurationChanged(android.content.res.Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        fixLayout();
-    }
-
-    private void fixLayout() {
-        if (listView != null) {
-            ViewTreeObserver obs = listView.getViewTreeObserver();
-            obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    WindowManager manager = (WindowManager) parentActivity.getSystemService(Activity.WINDOW_SERVICE);
-                    Display display = manager.getDefaultDisplay();
-                    int rotation = display.getRotation();
-                    int height;
-                    int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
-                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
-                    if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
-                        height = currentActionBarHeight;
-                    } else {
-                        height = (int)(48.0f * density);
-                        if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                            height = (int)(40.0f * density);
-                        }
-                    }
-
-                    listView.setPadding(listView.getPaddingLeft(), height, listView.getPaddingRight(), listView.getPaddingBottom());
-
-                    listView.getViewTreeObserver().removeOnPreDrawListener(this);
-
-                    return false;
-                }
-            });
-        }
     }
 
     @Override
-    public boolean onOptionsItemSelected(com.actionbarsherlock.view.MenuItem item) {
+    public boolean onOptionsItemSelected(MenuItem item) {
         int itemId = item.getItemId();
         switch (itemId) {
             case android.R.id.home:

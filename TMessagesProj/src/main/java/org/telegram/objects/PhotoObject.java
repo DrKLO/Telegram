@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -41,6 +41,9 @@ public class PhotoObject {
         int closestHeight = 9999;
         PhotoObject closestObject = null;
         for (PhotoObject obj : arr) {
+            if (obj == null || obj.photoOwner == null) {
+                continue;
+            }
             int diffW = Math.abs(obj.photoOwner.w - width);
             int diffH = Math.abs(obj.photoOwner.h - height);
             if (closestObject == null || closestWidth > diffW && closestHeight > diffH || closestObject.photoOwner instanceof TLRPC.TL_photoCachedSize) {

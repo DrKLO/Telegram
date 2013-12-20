@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -12,9 +12,12 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
-import android.provider.MediaStore;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.ActionBar;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -24,11 +27,8 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.actionbarsherlock.app.ActionBar;
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuInflater;
-
 import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.FileLog;
 import org.telegram.objects.PhotoObject;
 import org.telegram.ui.Views.AbstractGalleryActivity;
 import org.telegram.ui.Views.GalleryViewPager;
@@ -43,10 +43,8 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 
 public class GalleryImageViewer extends AbstractGalleryActivity implements NotificationCenter.NotificationCenterDelegate {
@@ -63,18 +61,18 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
     private boolean loadingMore = false;
     private TextView title;
     private boolean ignoreSet = false;
+    private ProgressBar loadingProgress;
+    private String currentFileName;
+    private int user_id = 0;
 
     private ArrayList<MessageObject> imagesArrTemp = new ArrayList<MessageObject>();
     private HashMap<Integer, MessageObject> imagesByIdsTemp = new HashMap<Integer, MessageObject>();
 
-    private ArrayList<TLRPC.FileLocation> imagesArrLocations;
     private long currentDialog = 0;
     private int totalCount = 0;
     private int classGuid;
-    private boolean cacheEndReached;
-
-    private HashMap<String, ProgressBar> loadingFile = new HashMap<String, ProgressBar>();
-    private HashMap<Integer, String> progressByTag = new HashMap<Integer, String>();
+    private boolean firstLoad = true;
+    private boolean cacheEndReached = false;
 
     public static int needShowAllMedia = 2000;
 
@@ -100,8 +98,9 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
         timeTextView = (TextView)findViewById(R.id.gallery_view_time_text);
         bottomView = findViewById(R.id.gallery_view_bottom_view);
         fakeTitleView = (TextView)findViewById(R.id.fake_title_view);
+        loadingProgress = (ProgressBar)findViewById(R.id.action_progress);
 
-        title = (TextView)findViewById(R.id.abs__action_bar_title);
+        title = (TextView)findViewById(R.id.action_bar_title);
         if (title == null) {
             final int titleId = getResources().getIdentifier("action_bar_title", "id", "android");
             title = (TextView)findViewById(titleId);
@@ -112,19 +111,22 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
         NotificationCenter.Instance.addObserver(this, FileLoader.FileLoadProgressChanged);
         NotificationCenter.Instance.addObserver(this, MessagesController.mediaCountDidLoaded);
         NotificationCenter.Instance.addObserver(this, MessagesController.mediaDidLoaded);
+        NotificationCenter.Instance.addObserver(this, MessagesController.userPhotosLoaded);
 
         Integer index = null;
         if (localPagerAdapter == null) {
-            final MessageObject file = (MessageObject)NotificationCenter.Instance.getFromMemCache(1);
-            final TLRPC.FileLocation fileLocation = (TLRPC.FileLocation)NotificationCenter.Instance.getFromMemCache(3);
-            final ArrayList<MessageObject> messagesArr = (ArrayList<MessageObject>)NotificationCenter.Instance.getFromMemCache(4);
-            index = (Integer)NotificationCenter.Instance.getFromMemCache(5);
+            final MessageObject file = (MessageObject)NotificationCenter.Instance.getFromMemCache(51);
+            final TLRPC.FileLocation fileLocation = (TLRPC.FileLocation)NotificationCenter.Instance.getFromMemCache(53);
+            final ArrayList<MessageObject> messagesArr = (ArrayList<MessageObject>)NotificationCenter.Instance.getFromMemCache(54);
+            index = (Integer)NotificationCenter.Instance.getFromMemCache(55);
+            Integer uid = (Integer)NotificationCenter.Instance.getFromMemCache(56);
+            if (uid != null) {
+                user_id = uid;
+            }
 
-            ArrayList<MessageObject> imagesArr = null;
-            HashMap<Integer, MessageObject> imagesByIds = null;
             if (file != null) {
-                imagesArr = new ArrayList<MessageObject>();
-                imagesByIds = new HashMap<Integer, MessageObject>();
+                ArrayList<MessageObject> imagesArr = new ArrayList<MessageObject>();
+                HashMap<Integer, MessageObject> imagesByIds = new HashMap<Integer, MessageObject>();
                 imagesArr.add(file);
                 if (file.messageOwner.action == null || file.messageOwner.action instanceof TLRPC.TL_messageActionEmpty) {
                     needSearchMessage = true;
@@ -143,17 +145,18 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                         }
                     }
                 }
+                localPagerAdapter = new LocalPagerAdapter(imagesArr, imagesByIds);
             } else if (fileLocation != null) {
                 ArrayList<TLRPC.FileLocation> arr = new ArrayList<TLRPC.FileLocation>();
                 arr.add(fileLocation);
-                imagesArrLocations = arr;
                 withoutBottom = true;
                 deleteButton.setVisibility(View.INVISIBLE);
                 nameTextView.setVisibility(View.INVISIBLE);
                 timeTextView.setVisibility(View.INVISIBLE);
+                localPagerAdapter = new LocalPagerAdapter(arr);
             } else if (messagesArr != null) {
-                imagesArr = new ArrayList<MessageObject>();
-                imagesByIds = new HashMap<Integer, MessageObject>();
+                ArrayList<MessageObject> imagesArr = new ArrayList<MessageObject>();
+                HashMap<Integer, MessageObject> imagesByIds = new HashMap<Integer, MessageObject>();
                 imagesArr.addAll(messagesArr);
                 Collections.reverse(imagesArr);
                 for (MessageObject message : imagesArr) {
@@ -175,8 +178,8 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                         }
                     }
                 }
+                localPagerAdapter = new LocalPagerAdapter(imagesArr, imagesByIds);
             }
-            localPagerAdapter = new LocalPagerAdapter(imagesArr, imagesByIds);
         }
 
         float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
@@ -187,7 +190,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
 
         if (index != null) {
             fromAll = true;
-            mViewPager.setCurrentItem( index);
+            mViewPager.setCurrentItem(index);
         }
 
         shareButton.setOnClickListener(new View.OnClickListener() {
@@ -203,7 +206,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                         startActivity(intent);
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    FileLog.e("tmessages", e);
                 }
             }
         });
@@ -225,6 +228,10 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
         if (currentDialog != 0 && totalCount == 0) {
             MessagesController.Instance.getMediaCount(currentDialog, classGuid, true);
         }
+        if (user_id != 0) {
+            MessagesController.Instance.loadUserPhotos(user_id, 0, 30, 0, true, classGuid);
+        }
+        checkCurrentFile();
     }
 
     @Override
@@ -235,6 +242,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
         NotificationCenter.Instance.removeObserver(this, FileLoader.FileLoadProgressChanged);
         NotificationCenter.Instance.removeObserver(this, MessagesController.mediaCountDidLoaded);
         NotificationCenter.Instance.removeObserver(this, MessagesController.mediaDidLoaded);
+        NotificationCenter.Instance.removeObserver(this, MessagesController.userPhotosLoaded);
         ConnectionsManager.Instance.cancelRpcsForClassGuid(classGuid);
     }
 
@@ -243,28 +251,100 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
     public void didReceivedNotification(int id, final Object... args) {
         if (id == FileLoader.FileDidFailedLoad) {
             String location = (String)args[0];
-            if (loadingFile.containsKey(location)) {
-                loadingFile.remove(location);
-                localPagerAdapter.updateViews();
+            if (currentFileName != null && currentFileName.equals(location)) {
+                if (loadingProgress != null) {
+                    loadingProgress.setVisibility(View.GONE);
+                }
+                if (localPagerAdapter != null) {
+                    localPagerAdapter.updateViews();
+                }
             }
         } else if (id == FileLoader.FileDidLoaded) {
             String location = (String)args[0];
-            if (loadingFile.containsKey(location)) {
-                loadingFile.remove(location);
-                localPagerAdapter.updateViews();
+            if (currentFileName != null && currentFileName.equals(location)) {
+                if (loadingProgress != null) {
+                    loadingProgress.setVisibility(View.GONE);
+                }
+                if (localPagerAdapter != null) {
+                    localPagerAdapter.updateViews();
+                }
             }
         } else if (id == FileLoader.FileLoadProgressChanged) {
             String location = (String)args[0];
-            ProgressBar bar;
-            if ((bar = loadingFile.get(location)) != null) {
+            if (currentFileName != null && currentFileName.equals(location)) {
                 Float progress = (Float)args[1];
-                bar.setProgress((int)(progress * 100));
+                if (loadingProgress != null) {
+                    loadingProgress.setVisibility(View.VISIBLE);
+                    loadingProgress.setProgress((int)(progress * 100));
+                }
+                if (localPagerAdapter != null) {
+                    localPagerAdapter.updateViews();
+                }
+            }
+        } else if (id == MessagesController.userPhotosLoaded) {
+            int guid = (Integer)args[4];
+            int uid = (Integer)args[0];
+            if (user_id == uid && classGuid == guid) {
+                boolean fromCache = (Boolean)args[3];
+                TLRPC.FileLocation currentLocation = null;
+                int setToImage = -1;
+                if (localPagerAdapter != null && mViewPager != null) {
+                    int idx = mViewPager.getCurrentItem();
+                    if (localPagerAdapter.imagesArrLocations.size() > idx) {
+                        currentLocation = localPagerAdapter.imagesArrLocations.get(idx);
+                    }
+                }
+                ArrayList<TLRPC.Photo> photos = (ArrayList<TLRPC.Photo>)args[5];
+                if (photos.isEmpty()) {
+                    return;
+                }
+                ArrayList<TLRPC.FileLocation> arr = new ArrayList<TLRPC.FileLocation>();
+                for (TLRPC.Photo photo : photos) {
+                    if (photo instanceof TLRPC.TL_photoEmpty) {
+                        continue;
+
+                    }
+                    TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(photo.sizes, 800, 800);
+                    if (sizeFull != null) {
+                        if (currentLocation != null && sizeFull.location.local_id == currentLocation.local_id && sizeFull.location.volume_id == currentLocation.volume_id) {
+                            setToImage = arr.size();
+                        }
+                        arr.add(sizeFull.location);
+                    }
+                }
+                mViewPager.setAdapter(null);
+                int count = mViewPager.getChildCount();
+                for (int a = 0; a < count; a++) {
+                    View child = mViewPager.getChildAt(0);
+                    mViewPager.removeView(child);
+                }
+                mViewPager.mCurrentView = null;
+                needSearchMessage = false;
+                ignoreSet = true;
+                mViewPager.setAdapter(localPagerAdapter = new LocalPagerAdapter(arr));
+                mViewPager.invalidate();
+                ignoreSet = false;
+                if (setToImage != -1) {
+                    mViewPager.setCurrentItem(setToImage);
+                } else {
+                    mViewPager.setCurrentItem(0);
+                }
+                if (fromCache) {
+                    MessagesController.Instance.loadUserPhotos(user_id, 0, 30, 0, false, classGuid);
+                }
             }
         } else if (id == MessagesController.mediaCountDidLoaded) {
             long uid = (Long)args[0];
             if (uid == currentDialog) {
+                if ((int)currentDialog != 0) {
+                    boolean fromCache = (Boolean)args[2];
+                    if (fromCache) {
+                        MessagesController.Instance.getMediaCount(currentDialog, classGuid, false);
+                    }
+                }
                 totalCount = (Integer)args[1];
-                if (needSearchMessage) {
+                if (needSearchMessage && firstLoad) {
+                    firstLoad = false;
                     MessagesController.Instance.loadMedia(currentDialog, 0, 100, 0, true, classGuid);
                     loadingMore = true;
                 } else {
@@ -317,6 +397,9 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                             }
                         }
                     }
+                    if (added == 0) {
+                        totalCount = imagesArrTemp.size();
+                    }
 
                     if (foundIndex != -1) {
                         mViewPager.setAdapter(null);
@@ -353,17 +436,19 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                     if (arr.isEmpty() && !fromCache) {
                         totalCount = arr.size();
                     }
-                    int current = mViewPager.getCurrentItem();
-                    ignoreSet = true;
-                    imagesArrTemp = new ArrayList<MessageObject>(localPagerAdapter.imagesArr);
-                    imagesByIdsTemp = new HashMap<Integer, MessageObject>(localPagerAdapter.imagesByIds);
-                    mViewPager.setAdapter(localPagerAdapter = new LocalPagerAdapter(imagesArrTemp, imagesByIdsTemp));
-                    mViewPager.invalidate();
-                    ignoreSet = false;
-                    imagesArrTemp = null;
-                    imagesByIdsTemp = null;
                     if (added != 0) {
+                        int current = mViewPager.getCurrentItem();
+                        ignoreSet = true;
+                        imagesArrTemp = new ArrayList<MessageObject>(localPagerAdapter.imagesArr);
+                        imagesByIdsTemp = new HashMap<Integer, MessageObject>(localPagerAdapter.imagesByIds);
+                        mViewPager.setAdapter(localPagerAdapter = new LocalPagerAdapter(imagesArrTemp, imagesByIdsTemp));
+                        mViewPager.invalidate();
+                        ignoreSet = false;
+                        imagesArrTemp = null;
+                        imagesByIdsTemp = null;
                         mViewPager.setCurrentItem(current + added);
+                    } else {
+                        totalCount = localPagerAdapter.imagesArr.size();
                     }
                 }
             }
@@ -373,18 +458,22 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
     private TLRPC.FileLocation getCurrentFile() {
         int item = mViewPager.getCurrentItem();
         if (withoutBottom) {
-            return imagesArrLocations.get(item);
+            return localPagerAdapter.imagesArrLocations.get(item);
         } else {
             MessageObject message = localPagerAdapter.imagesArr.get(item);
             if (message.messageOwner instanceof TLRPC.TL_messageService) {
-                ArrayList<TLRPC.PhotoSize> sizes = message.messageOwner.action.photo.sizes;
-                if (sizes.size() > 0) {
-                    return sizes.get(sizes.size() - 1).location;
+                if (message.messageOwner.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
+                    return message.messageOwner.action.newUserPhoto.photo_big;
+                } else {
+                    TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(message.messageOwner.action.photo.sizes, 800, 800);
+                    if (sizeFull != null) {
+                        return sizeFull.location;
+                    }
                 }
             } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
-                ArrayList<TLRPC.PhotoSize> sizes = message.messageOwner.media.photo.sizes;
-                if (sizes.size() > 0) {
-                    return sizes.get(sizes.size() - 1).location;
+                TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, 800, 800);
+                if (sizeFull != null) {
+                    return sizeFull.location;
                 }
             } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
                 return message.messageOwner.media.video.thumb.location;
@@ -414,13 +503,69 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
         } else {
             nameTextView.setText("");
         }
-        invalidateOptionsMenu();
         isVideo = obj.messageOwner.media != null && obj.messageOwner.media instanceof TLRPC.TL_messageMediaVideo;
+
+        if (obj.messageOwner instanceof TLRPC.TL_messageService) {
+            if (obj.messageOwner.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
+                TLRPC.FileLocation file = obj.messageOwner.action.newUserPhoto.photo_big;
+                currentFileName = file.volume_id + "_" + file.local_id + ".jpg";
+            } else {
+                ArrayList<TLRPC.PhotoSize> sizes = obj.messageOwner.action.photo.sizes;
+                if (sizes.size() > 0) {
+                    TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(sizes, 800, 800);
+                    if (sizeFull != null) {
+                        currentFileName = sizeFull.location.volume_id + "_" + sizeFull.location.local_id + ".jpg";
+                    }
+                }
+            }
+        } else if (obj.messageOwner.media != null) {
+            if (obj.messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
+                currentFileName = obj.messageOwner.media.video.dc_id + "_" + obj.messageOwner.media.video.id + ".mp4";
+            } else if (obj.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
+                TLRPC.FileLocation file = getCurrentFile();
+                if (file != null) {
+                    currentFileName = file.volume_id + "_" + file.local_id + ".jpg";
+                } else {
+                    currentFileName = null;
+                }
+            }
+        } else {
+            currentFileName = null;
+        }
+
+        checkCurrentFile();
+        supportInvalidateOptionsMenu();
+    }
+
+    private void checkCurrentFile() {
+        if (currentFileName != null) {
+            File f = new File(Utilities.getCacheDir(), currentFileName);
+            if (f.exists()) {
+                loadingProgress.setVisibility(View.GONE);
+            } else {
+                loadingProgress.setVisibility(View.VISIBLE);
+                Float progress = FileLoader.Instance.fileProgresses.get(currentFileName);
+                if (progress != null) {
+                    loadingProgress.setProgress((int)(progress * 100));
+                } else {
+                    loadingProgress.setProgress(0);
+                }
+            }
+        } else {
+            loadingProgress.setVisibility(View.GONE);
+        }
+        if (isVideo) {
+            if (!FileLoader.Instance.isLoadingFile(currentFileName)) {
+                loadingProgress.setVisibility(View.GONE);
+            } else {
+                loadingProgress.setVisibility(View.VISIBLE);
+            }
+        }
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getSupportMenuInflater();
+        MenuInflater inflater = getMenuInflater();
         if (withoutBottom) {
             inflater.inflate(R.menu.gallery_save_only_menu, menu);
         } else {
@@ -436,14 +581,16 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
     @Override
     public void openOptionsMenu() {
         TLRPC.FileLocation file = getCurrentFile();
-        File f = new File(Utilities.getCacheDir(), file.volume_id + "_" + file.local_id + ".jpg");
-        if (f.exists()) {
-            super.openOptionsMenu();
+        if (file != null) {
+            File f = new File(Utilities.getCacheDir(), file.volume_id + "_" + file.local_id + ".jpg");
+            if (f.exists()) {
+                super.openOptionsMenu();
+            }
         }
     }
 
     @Override
-    public boolean onOptionsItemSelected(com.actionbarsherlock.view.MenuItem item) {
+    public boolean onOptionsItemSelected(MenuItem item) {
         int itemId = item.getItemId();
         processSelectedMenu(itemId);
         return true;
@@ -484,14 +631,13 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
             case R.id.gallery_menu_save:
                 TLRPC.FileLocation file = getCurrentFile();
                 File f = new File(Utilities.getCacheDir(), file.volume_id + "_" + file.local_id + ".jpg");
-                String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-                String imageFileName = "IMG_" + timeStamp + ".jpg";
+                File dstFile = Utilities.generatePicturePath();
                 try {
-                    MediaStore.Images.Media.insertImage(getContentResolver(), f.getAbsolutePath(), imageFileName, "");
+                    Utilities.copyFile(f, dstFile);
+                    Utilities.addMediaToGallery(Uri.fromFile(dstFile));
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    FileLog.e("tmessages", e);
                 }
-                //Utilities.addMediaToGallery(addToTouchActiveAlbum(imageFileName, f.getAbsolutePath()));
                 break;
 //            case R.id.gallery_menu_send: {
 //                Intent intent = new Intent(this, MessagesActivity.class);
@@ -548,21 +694,6 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
         }
     }
 
-
-
-    /*public Uri addToTouchActiveAlbum(String title, String filePath) {
-        ContentValues values = new ContentValues();
-        values.put(MediaStore.Images.Media.TITLE, title);
-        values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis());
-        values.put(MediaStore.Images.Media.BUCKET_ID, filePath.hashCode());
-        values.put(MediaStore.Images.Media.BUCKET_DISPLAY_NAME, "TMessages");
-
-        values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
-        //values.put(MediaStore.MediaColumns.DATA, filePath);
-        values.put(MediaStore.Images.Media.DATA, filePath);
-        return getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-    }*/
-
     private void startViewAnimation(final View panel, boolean up) {
         Animation animation;
         if (!up) {
@@ -612,11 +743,15 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
     public class LocalPagerAdapter extends PagerAdapter {
         public ArrayList<MessageObject> imagesArr;
         public HashMap<Integer, MessageObject> imagesByIds;
-        public int tagCounter = 0;
+        private ArrayList<TLRPC.FileLocation> imagesArrLocations;
 
         public LocalPagerAdapter(ArrayList<MessageObject> _imagesArr, HashMap<Integer, MessageObject> _imagesByIds) {
             imagesArr = _imagesArr;
             imagesByIds = _imagesByIds;
+        }
+
+        public LocalPagerAdapter(ArrayList<TLRPC.FileLocation> locations) {
+            imagesArrLocations = locations;
         }
 
         @Override
@@ -650,6 +785,26 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                     });
 
                 }
+            } else if (imagesArrLocations != null) {
+                TLRPC.FileLocation file = imagesArrLocations.get(position);
+                currentFileName = file.volume_id + "_" + file.local_id + ".jpg";
+                checkCurrentFile();
+                if (imagesArrLocations.size() > 1) {
+                    Utilities.RunOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            getSupportActionBar().setTitle(String.format("%d %s %d", position + 1, getString(R.string.Of), imagesArrLocations.size()));
+                            if (title != null) {
+                                fakeTitleView.setText(String.format("%d %s %d", position + 1, getString(R.string.Of), imagesArrLocations.size()));
+                                fakeTitleView.measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.AT_MOST), 40);
+                                title.setWidth(fakeTitleView.getMeasuredWidth() + (int)(8 * getResources().getDisplayMetrics().density));
+                                title.setMaxWidth(fakeTitleView.getMeasuredWidth() + (int)(8 * getResources().getDisplayMetrics().density));
+                            }
+                        }
+                    });
+                } else {
+                    getSupportActionBar().setTitle(getString(R.string.Gallery));
+                }
             }
         }
 
@@ -657,25 +812,22 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
             int count = mViewPager.getChildCount();
             for (int a = 0; a < count; a++) {
                 View v = mViewPager.getChildAt(a);
-                final ProgressBar progressBar = (ProgressBar)v.findViewById(R.id.action_progress);
                 final TextView playButton = (TextView)v.findViewById(R.id.action_button);
-                final View progressBarParent = v.findViewById(R.id.action_progress_parent);
                 MessageObject message = (MessageObject)playButton.getTag();
-                if (progressBar != null && message != null) {
-                    processViews(progressBar, playButton, message, progressBarParent);
+                if (message != null) {
+                    processViews(playButton, message);
                 }
             }
         }
 
-        public void processViews(ProgressBar progressBar, TextView playButton, MessageObject message, View progressBarParent) {
+        public void processViews(TextView playButton, MessageObject message) {
             if (message.messageOwner.send_state != MessagesController.MESSAGE_SEND_STATE_SENDING && message.messageOwner.send_state != MessagesController.MESSAGE_SEND_STATE_SEND_ERROR) {
+                playButton.setVisibility(View.VISIBLE);
                 String fileName = message.messageOwner.media.video.dc_id + "_" + message.messageOwner.media.video.id + ".mp4";
                 boolean load = false;
                 if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
                     File f = new File(message.messageOwner.attachPath);
                     if (f.exists()) {
-                        playButton.setVisibility(View.VISIBLE);
-                        progressBarParent.setVisibility(View.GONE);
                         playButton.setText(getString(R.string.ViewVideo));
                     } else {
                         load = true;
@@ -683,8 +835,6 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                 } else {
                     File cacheFile = new File(Utilities.getCacheDir(), fileName);
                     if (cacheFile.exists()) {
-                        playButton.setVisibility(View.VISIBLE);
-                        progressBarParent.setVisibility(View.GONE);
                         playButton.setText(getString(R.string.ViewVideo));
                     } else {
                         load = true;
@@ -692,33 +842,11 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                 }
                 if (load) {
                     Float progress = FileLoader.Instance.fileProgresses.get(fileName);
-                    if (loadingFile.containsKey(fileName) || progress != null) {
-                        if (progress != null) {
-                            progressBar.setProgress((int) (progress * 100));
-                        } else {
-                            progressBar.setProgress(0);
-                        }
-                        progressByTag.put((Integer)progressBar.getTag(), fileName);
-                        loadingFile.put(fileName, progressBar);
-                        progressBarParent.setVisibility(View.VISIBLE);
-                        playButton.setVisibility(View.GONE);
+                    if (FileLoader.Instance.isLoadingFile(fileName)) {
+                        playButton.setText(R.string.CancelDownload);
                     } else {
-                        progressBarParent.setVisibility(View.GONE);
-                        playButton.setVisibility(View.VISIBLE);
                         playButton.setText(String.format("%s %.1f MB", getString(R.string.DOWNLOAD), message.messageOwner.media.video.size / 1024.0f / 1024.0f));
                     }
-                } else {
-                    Integer tag = (Integer)progressBar.getTag();
-                    String file = progressByTag.get(tag);
-                    if (file != null) {
-                        loadingFile.remove(file);
-                    }
-                }
-            } else {
-                Integer tag = (Integer)progressBar.getTag();
-                String file = progressByTag.get(tag);
-                if (file != null) {
-                    loadingFile.remove(file);
                 }
             }
         }
@@ -734,24 +862,25 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
             ((ViewPager) collection).addView(view, 0);
 
             PZSImageView iv = (PZSImageView)view.findViewById(R.id.page_image);
-            final ProgressBar progressBar = (ProgressBar)view.findViewById(R.id.action_progress);
             final TextView playButton = (TextView)view.findViewById(R.id.action_button);
-            final View progressBarParent = view.findViewById(R.id.action_progress_parent);
-            progressBar.setTag(tagCounter);
-            tagCounter++;
 
             if (imagesArr != null) {
                 final MessageObject message = imagesArr.get(position);
                 view.setTag(message.messageOwner.id);
                 if (message.messageOwner instanceof TLRPC.TL_messageService) {
-                    ArrayList<TLRPC.PhotoSize> sizes = message.messageOwner.action.photo.sizes;
-                    iv.isVideo = false;
-                    if (sizes.size() > 0) {
-                        TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(sizes, 800, 800);
-                        if (message.imagePreview != null) {
-                            iv.setImage(sizeFull.location, null, message.imagePreview);
-                        } else {
-                            iv.setImage(sizeFull.location, null, 0);
+                    if (message.messageOwner.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
+                        iv.isVideo = false;
+                        iv.setImage(message.messageOwner.action.newUserPhoto.photo_big, null, 0, -1);
+                    } else {
+                        ArrayList<TLRPC.PhotoSize> sizes = message.messageOwner.action.photo.sizes;
+                        iv.isVideo = false;
+                        if (sizes.size() > 0) {
+                            TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(sizes, 800, 800);
+                            if (message.imagePreview != null) {
+                                iv.setImage(sizeFull.location, null, message.imagePreview, sizeFull.size);
+                            } else {
+                                iv.setImage(sizeFull.location, null, 0, sizeFull.size);
+                            }
                         }
                     }
                 } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
@@ -760,13 +889,13 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                     if (sizes.size() > 0) {
                         TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(sizes, 800, 800);
                         if (message.imagePreview != null) {
-                            iv.setImage(sizeFull.location, null, message.imagePreview);
+                            iv.setImage(sizeFull.location, null, message.imagePreview, sizeFull.size);
                         } else {
-                            iv.setImage(sizeFull.location, null, 0);
+                            iv.setImage(sizeFull.location, null, 0, sizeFull.size);
                         }
                     }
                 } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
-                    processViews(progressBar, playButton, message, progressBarParent);
+                    processViews(playButton, message);
                     playButton.setTag(message);
 
                     playButton.setOnClickListener(new View.OnClickListener() {
@@ -794,14 +923,13 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                                 }
                             }
                             if (loadFile) {
-                                if (!loadingFile.containsKey(fileName)) {
-                                    progressByTag.put((Integer)progressBar.getTag(), fileName);
-                                    loadingFile.put(fileName, progressBar);
+                                if (!FileLoader.Instance.isLoadingFile(fileName)) {
                                     FileLoader.Instance.loadFile(message.messageOwner.media.video, null);
-                                    progressBar.setProgress(0);
-                                    progressBarParent.setVisibility(View.VISIBLE);
-                                    playButton.setVisibility(View.INVISIBLE);
+                                } else {
+                                    FileLoader.Instance.cancelLoadFile(message.messageOwner.media.video, null);
                                 }
+                                checkCurrentFile();
+                                processViews(playButton, message);
                             }
                         }
                     });
@@ -809,12 +937,14 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                     if (message.messageOwner.media.video.thumb instanceof TLRPC.TL_photoCachedSize) {
                         iv.setImageBitmap(message.imagePreview);
                     } else {
-                        iv.setImage(message.messageOwner.media.video.thumb.location, null, 0);
+                        if (message.messageOwner.media.video.thumb != null) {
+                            iv.setImage(message.messageOwner.media.video.thumb.location, null, 0, message.messageOwner.media.video.thumb.size);
+                        }
                     }
                 }
             } else {
                 iv.isVideo = false;
-                iv.setImage(imagesArrLocations.get(position), null, 0);
+                iv.setImage(imagesArrLocations.get(position), null, 0, -1);
             }
 
             return view;
@@ -826,12 +956,6 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
             PZSImageView iv = (PZSImageView)((View)view).findViewById(R.id.page_image);
             FileLoader.Instance.cancelLoadingForImageView(iv);
             iv.clearImage();
-            final ProgressBar progressBar = (ProgressBar)((View)view).findViewById(R.id.action_progress);
-            Integer tag = (Integer)progressBar.getTag();
-            String file = progressByTag.get(tag);
-            if (file != null) {
-                loadingFile.remove(file);
-            }
         }
 
         @Override

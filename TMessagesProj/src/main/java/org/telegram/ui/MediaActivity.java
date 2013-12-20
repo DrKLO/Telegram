@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -11,12 +11,11 @@ package org.telegram.ui;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
-import android.text.Html;
-import android.view.Display;
+import android.support.v7.app.ActionBar;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,14 +27,11 @@ import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.TextView;
 
-import com.actionbarsherlock.app.ActionBar;
-import com.actionbarsherlock.view.MenuItem;
 import org.telegram.TL.TLRPC;
 import org.telegram.objects.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.OnSwipeTouchListener;
@@ -100,8 +96,8 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    NotificationCenter.Instance.addToMemCache(4, messages);
-                    NotificationCenter.Instance.addToMemCache(5, i);
+                    NotificationCenter.Instance.addToMemCache(54, messages);
+                    NotificationCenter.Instance.addToMemCache(55, i);
                     Intent intent = new Intent(parentActivity, GalleryImageViewer.class);
                     startActivity(intent);
                 }
@@ -161,7 +157,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 ArrayList<MessageObject> arr = (ArrayList<MessageObject>)args[2];
                 boolean added = false;
                 for (MessageObject message : arr) {
-                    if (!messagesDict.containsKey(message.messageOwner.id) && message.messageOwner.media != null && !(message.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
+                    if (!messagesDict.containsKey(message.messageOwner.id)) {
                         if (max_id == 0 || message.messageOwner.id < max_id) {
                             max_id = message.messageOwner.id;
                         }
@@ -250,10 +246,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         actionBar.setDisplayUseLogoEnabled(false);
         actionBar.setDisplayShowCustomEnabled(false);
         actionBar.setCustomView(null);
-        actionBar.setTitle(Html.fromHtml("<font color='#006fc8'>" + getStringEntry(R.string.SharedMedia) + "</font>"));
+        actionBar.setTitle(getStringEntry(R.string.SharedMedia));
         actionBar.setSubtitle(null);
 
-        TextView title = (TextView)parentActivity.findViewById(R.id.abs__action_bar_title);
+        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
         if (title == null) {
             final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
             title = (TextView)parentActivity.findViewById(subtitleId);
@@ -267,7 +263,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     @Override
     public void onResume() {
         super.onResume();
-        if (getSherlockActivity() == null) {
+        if (getActivity() == null) {
             return;
         }
         if (!firstStart && listAdapter != null) {
@@ -292,19 +288,9 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 @Override
                 public boolean onPreDraw() {
                     WindowManager manager = (WindowManager)parentActivity.getSystemService(Activity.WINDOW_SERVICE);
-                    Display display = manager.getDefaultDisplay();
-                    int rotation = display.getRotation();
-                    int height;
-                    int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
+                    int rotation = manager.getDefaultDisplay().getRotation();
                     float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
-                    if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
-                        height = currentActionBarHeight;
-                    } else {
-                        height = (int)(48.0f * density);
-                        if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                            height = (int)(40.0f * density);
-                        }
-                    }
+
                     if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
                         orientation = 1;
                         listView.setNumColumns(6);
@@ -316,7 +302,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         itemWidth = getResources().getDisplayMetrics().widthPixels / 4 - (int)(2 * density) * 3;
                         listView.setColumnWidth(itemWidth);
                     }
-                    listView.setPadding(listView.getPaddingLeft(), height + (int)(4 * density), listView.getPaddingRight(), listView.getPaddingBottom());
+                    listView.setPadding(listView.getPaddingLeft(), (int)(4 * density), listView.getPaddingRight(), listView.getPaddingBottom());
                     listAdapter.notifyDataSetChanged();
 
                     listView.getViewTreeObserver().removeOnPreDrawListener(this);
@@ -410,11 +396,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         if (message.imagePreview != null) {
                             imageView.setImageBitmap(message.imagePreview);
                         } else {
-                            imageView.setImage(message.messageOwner.media.photo.sizes.get(0).location, null, R.drawable.photo_placeholder);
+                            imageView.setImage(message.messageOwner.media.photo.sizes.get(0).location, null, R.drawable.photo_placeholder_in);
                         }
                     }
                 } else {
-                    imageView.setImageResource(R.drawable.photo_placeholder);
+                    imageView.setImageResource(R.drawable.photo_placeholder_in);
                 }
             } else if (type == 1) {
                 MessageObject message = messages.get(i);
@@ -428,8 +414,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 view.setLayoutParams(params);
 
                 TextView textView = (TextView)view.findViewById(R.id.chat_video_time);
-                Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
-                textView.setTypeface(typeface);
                 BackupImageView imageView = (BackupImageView)view.findViewById(R.id.media_photo_image);
 
                 if (message.messageOwner.media.video != null && message.messageOwner.media.video.thumb != null) {
@@ -440,12 +424,12 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     if (message.imagePreview != null) {
                         imageView.setImageBitmap(message.imagePreview);
                     } else {
-                        imageView.setImage(message.messageOwner.media.video.thumb.location, null, R.drawable.photo_placeholder);
+                        imageView.setImage(message.messageOwner.media.video.thumb.location, null, R.drawable.photo_placeholder_in);
                     }
                     textView.setVisibility(View.VISIBLE);
                 } else {
                     textView.setVisibility(View.GONE);
-                    imageView.setImageResource(R.drawable.photo_placeholder);
+                    imageView.setImageResource(R.drawable.photo_placeholder_in);
                 }
             } else if (type == 2) {
                 if (view == null) {

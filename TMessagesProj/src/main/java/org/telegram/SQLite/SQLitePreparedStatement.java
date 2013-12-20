@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -8,7 +8,7 @@
 
 package org.telegram.SQLite;
 
-import android.util.Log;
+import org.telegram.messenger.FileLog;
 
 public class SQLitePreparedStatement {
 	private boolean isFinalized = false;
@@ -90,7 +90,7 @@ public class SQLitePreparedStatement {
 			isFinalized = true;
 			finalize(sqliteStatementHandle);
 		} catch (SQLiteException e) {
-			Log.e("tmessages", e.getMessage(), e);
+            FileLog.e("tmessages", e.getMessage(), e);
 		}
 	}
 

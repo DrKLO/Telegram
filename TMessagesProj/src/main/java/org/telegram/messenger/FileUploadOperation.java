@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -29,15 +29,17 @@ public class FileUploadOperation {
     private long currentFileId;
     private boolean isLastPart = false;
     private long totalFileSize = 0;
+    private int totalPartsCount = 0;
     private long currentUploaded = 0;
     private byte[] key;
     private byte[] iv;
     private int fingerprint;
+    private boolean isBigFile = false;
     FileInputStream stream;
     MessageDigest mdEnc = null;
 
     public static interface FileUploadOperationDelegate {
-        public abstract void didFinishUploadingFile(FileUploadOperation operation, TLRPC.TL_inputFile inputFile, TLRPC.TL_inputEncryptedFileUploaded inputEncryptedFile);
+        public abstract void didFinishUploadingFile(FileUploadOperation operation, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile);
         public abstract void didFailedUploadingFile(FileUploadOperation operation);
         public abstract void didChangedUploadProgress(FileUploadOperation operation, float progress);
     }
@@ -60,14 +62,14 @@ public class FileUploadOperation {
                 }
                 fingerprint = Utilities.bytesToInt(fingerprintBytes);
             } catch (Exception e) {
-                e.printStackTrace();
+                FileLog.e("tmessages", e);
             }
         }
         currentFileId = (long)(MessagesController.random.nextDouble() * Long.MAX_VALUE);
         try {
             mdEnc = MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            FileLog.e("tmessages", e);
         }
     }
 
@@ -95,18 +97,23 @@ public class FileUploadOperation {
             return;
         }
 
-        TLRPC.TL_upload_saveFilePart req = new TLRPC.TL_upload_saveFilePart();
-        req.file_part = currentPartNum;
-        req.file_id = currentFileId;
+        TLObject finalRequest;
+
         try {
             if (stream == null) {
                 File cacheFile = new File(uploadingFilePath);
                 stream = new FileInputStream(cacheFile);
                 totalFileSize = cacheFile.length();
+                if (totalFileSize > 10 * 1024 * 1024) {
+                    FileLog.e("tmessages", "file is big!");
+                    isBigFile = true;
+                }
 
                 uploadChunkSize = (int)Math.max(32, Math.ceil(totalFileSize / (1024.0f * 3000))) * 1024;
+                totalPartsCount = (int)Math.ceil((float)totalFileSize / (float)uploadChunkSize);
                 readBuffer = new byte[uploadChunkSize];
             }
+
             int readed = stream.read(readBuffer);
             int toAdd = 0;
             if (key != null && readed % 16 != 0) {
@@ -121,14 +128,27 @@ public class FileUploadOperation {
                 sendBuffer = Utilities.aesIgeEncryption(sendBuffer, key, iv, true, true);
             }
             mdEnc.update(sendBuffer, 0, readed + toAdd);
-            req.bytes = sendBuffer;
+            if (isBigFile) {
+                TLRPC.TL_upload_saveBigFilePart req = new TLRPC.TL_upload_saveBigFilePart();
+                req.file_part = currentPartNum;
+                req.file_id = currentFileId;
+                req.file_total_parts = totalPartsCount;
+                req.bytes = sendBuffer;
+                finalRequest = req;
+            } else {
+                TLRPC.TL_upload_saveFilePart req = new TLRPC.TL_upload_saveFilePart();
+                req.file_part = currentPartNum;
+                req.file_id = currentFileId;
+                req.bytes = sendBuffer;
+                finalRequest = req;
+            }
             currentUploaded += readed;
         } catch (Exception e) {
-            e.printStackTrace();
+            FileLog.e("tmessages", e);
             delegate.didFailedUploadingFile(this);
             return;
         }
-        requestToken = ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+        requestToken = ConnectionsManager.Instance.performRpc(finalRequest, new RPCRequest.RPCRequestDelegate() {
                     @Override
                     public void run(TLObject response, TLRPC.TL_error error) {
                         requestToken = 0;
@@ -139,15 +159,25 @@ public class FileUploadOperation {
                                 if (isLastPart) {
                                     state = 3;
                                     if (key == null) {
-                                        TLRPC.TL_inputFile result = new TLRPC.TL_inputFile();
-                                        result.md5_checksum = String.format(Locale.US, "%32s", new BigInteger(1, mdEnc.digest()).toString(16)).replace(' ', '0');
+                                        TLRPC.InputFile result;
+                                        if (isBigFile) {
+                                            result = new TLRPC.TL_inputFileBig();
+                                        } else {
+                                            result = new TLRPC.TL_inputFile();
+                                            result.md5_checksum = String.format(Locale.US, "%32s", new BigInteger(1, mdEnc.digest()).toString(16)).replace(' ', '0');
+                                        }
                                         result.parts = currentPartNum;
                                         result.id = currentFileId;
                                         result.name = uploadingFilePath.substring(uploadingFilePath.lastIndexOf("/") + 1);
                                         delegate.didFinishUploadingFile(FileUploadOperation.this, result, null);
                                     } else {
-                                        TLRPC.TL_inputEncryptedFileUploaded result = new TLRPC.TL_inputEncryptedFileUploaded();
-                                        result.md5_checksum = String.format(Locale.US, "%32s", new BigInteger(1, mdEnc.digest()).toString(16)).replace(' ', '0');
+                                        TLRPC.InputEncryptedFile result;
+                                        if (isBigFile) {
+                                            result = new TLRPC.TL_inputEncryptedFileBigUploaded();
+                                        } else {
+                                            result = new TLRPC.TL_inputEncryptedFileUploaded();
+                                            result.md5_checksum = String.format(Locale.US, "%32s", new BigInteger(1, mdEnc.digest()).toString(16)).replace(' ', '0');
+                                        }
                                         result.parts = currentPartNum;
                                         result.id = currentFileId;
                                         result.key_fingerprint = fingerprint;

@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -9,22 +9,22 @@
 package org.telegram.ui.Views;
 
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v7.app.ActionBarActivity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 
-import com.actionbarsherlock.app.SherlockFragment;
-import com.actionbarsherlock.app.SherlockFragmentActivity;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.ui.ApplicationActivity;
 import org.telegram.ui.ApplicationLoader;
 
-public class BaseFragment extends SherlockFragment {
+public class BaseFragment extends Fragment {
     public int animationType = 0;
     public boolean isFinish = false;
     public View fragmentView;
-    public SherlockFragmentActivity parentActivity;
+    public ActionBarActivity parentActivity;
     public int classGuid = 0;
     public boolean firstStart = true;
     public boolean animationInProgress = false;
@@ -34,7 +34,7 @@ public class BaseFragment extends SherlockFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        parentActivity = getSherlockActivity();
+        parentActivity = (ActionBarActivity)getActivity();
     }
 
     public void willBeHidden() {
@@ -46,17 +46,24 @@ public class BaseFragment extends SherlockFragment {
     }
 
     public void finishFragment(boolean bySwipe) {
-        if (isFinish || animationInProgress || parentActivity == null) {
+        if (isFinish || animationInProgress) {
             return;
         }
         isFinish = true;
+        if (parentActivity == null) {
+            ApplicationLoader.fragmentsStack.remove(this);
+            onFragmentDestroy();
+            return;
+        }
         ((ApplicationActivity)parentActivity).finishFragment(bySwipe);
-        if (getSherlockActivity() == null) {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
+        if (getActivity() == null) {
+            if (fragmentView != null) {
+                ViewGroup parent = (ViewGroup)fragmentView.getParent();
+                if (parent != null) {
+                    parent.removeView(fragmentView);
+                }
+                fragmentView = null;
             }
-            fragmentView = null;
             parentActivity = null;
         } else {
             removeParentOnDestroy = true;
@@ -64,19 +71,25 @@ public class BaseFragment extends SherlockFragment {
     }
 
     public void removeSelfFromStack() {
-        if (isFinish || parentActivity == null) {
+        if (isFinish) {
             return;
         }
         isFinish = true;
+        if (parentActivity == null) {
+            ApplicationLoader.fragmentsStack.remove(this);
+            onFragmentDestroy();
+            return;
+        }
         ((ApplicationActivity)parentActivity).removeFromStack(this);
-        if (getSherlockActivity() == null) {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
+        if (getActivity() == null) {
+            if (fragmentView != null) {
+                ViewGroup parent = (ViewGroup)fragmentView.getParent();
+                if (parent != null) {
+                    parent.removeView(fragmentView);
+                }
+                fragmentView = null;
             }
-            fragmentView = null;
             parentActivity = null;
-
         } else {
             removeParentOnDestroy = true;
         }
@@ -113,11 +126,13 @@ public class BaseFragment extends SherlockFragment {
     public void onDestroy() {
         super.onDestroy();
         if (removeParentOnDestroy) {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
+            if (fragmentView != null) {
+                ViewGroup parent = (ViewGroup)fragmentView.getParent();
+                if (parent != null) {
+                    parent.removeView(fragmentView);
+                }
+                fragmentView = null;
             }
-            fragmentView = null;
             parentActivity = null;
         }
     }

@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -16,7 +16,6 @@ import android.graphics.PointF;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.util.FloatMath;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.GestureDetector.SimpleOnGestureListener;
@@ -25,6 +24,7 @@ import android.view.MotionEvent;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 
 public class PZSImageView extends BackupImageView {
@@ -193,8 +193,8 @@ public class PZSImageView extends BackupImageView {
         try {
             super.onDraw(canvas);
         } catch (Exception e) {
-            e.printStackTrace();
-            Log.e("tmessages", "trying draw " + currentPath);
+            FileLog.e("tmessages", e);
+            FileLog.e("tmessages", "trying draw " + currentPath);
         }
 	}
 

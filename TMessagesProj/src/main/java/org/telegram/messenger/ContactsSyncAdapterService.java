@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -13,13 +13,11 @@ import android.accounts.OperationCanceledException;
 import android.app.Service;
 import android.content.AbstractThreadedSyncAdapter;
 import android.content.ContentProviderClient;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SyncResult;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.util.Log;
 
 public class ContactsSyncAdapterService extends Service {
     private static SyncAdapterImpl sSyncAdapter = null;
@@ -41,7 +39,7 @@ public class ContactsSyncAdapterService extends Service {
             try {
                 ContactsSyncAdapterService.performSync(mContext, account, extras, authority, provider, syncResult);
             } catch (OperationCanceledException e) {
-                e.printStackTrace();
+                FileLog.e("tmessages", e);
             }
         }
     }
@@ -60,6 +58,6 @@ public class ContactsSyncAdapterService extends Service {
 
     private static void performSync(Context context, Account account, Bundle extras, String authority, ContentProviderClient provider, SyncResult syncResult)
             throws OperationCanceledException {
-        Log.i("telegram", "performSync: " + account.toString());
+        FileLog.d("telegram", "performSync: " + account.toString());
     }
 }

@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -13,6 +13,8 @@ import android.graphics.PointF;
 import android.support.v4.view.ViewPager;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+
+import org.telegram.messenger.FileLog;
 
 public class GalleryViewPager extends ViewPager {
 	PointF last;
@@ -68,7 +70,7 @@ public class GalleryViewPager extends ViewPager {
             } catch (Exception e2) {
                 e2.printStackTrace();
             }
-            e.printStackTrace();
+            FileLog.e("tmessages", e);
         }
 
         return false;
@@ -95,7 +97,7 @@ public class GalleryViewPager extends ViewPager {
                 return super.onInterceptTouchEvent(event);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            FileLog.e("tmessages", e);
         }
 
 		return false;

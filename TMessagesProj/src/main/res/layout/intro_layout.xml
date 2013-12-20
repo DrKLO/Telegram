@@ -1,65 +1,103 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_height="fill_parent"
+    android:layout_width="fill_parent"
+    android:fillViewport="true">
 
-    <LinearLayout android:layout_height="match_parent"
-                  android:layout_width="match_parent"
-                  android:weightSum="100"
-                  android:orientation="vertical"
-                  android:background="#ffffff">
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#fafafa">
 
-        <FrameLayout android:layout_gravity="top"
+        <FrameLayout
+            android:layout_gravity="top"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="44">
+            android:layout_height="wrap_content"
+            android:layout_marginTop="88dp">
 
-            <ImageView android:layout_width="wrap_content"
+            <ImageView
+                android:layout_width="wrap_content"
                 android:layout_gravity="center"
                 android:layout_height="wrap_content"
                 android:id="@+id/icon_image1"
-                android:src="@drawable/icon0"/>
+                android:src="@drawable/intro1"/>
 
-            <ImageView android:layout_width="wrap_content"
+            <ImageView
+                android:layout_width="wrap_content"
                 android:layout_gravity="center"
                 android:layout_height="wrap_content"
                 android:id="@+id/icon_image2"/>
 
         </FrameLayout>
 
-        <FrameLayout android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="56"
-            android:background="#ffffff"/>
+        <android.support.v4.view.ViewPager
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:id="@+id/intro_view_pager"/>
 
-    </LinearLayout>
+        <TextView android:layout_width="192dp"
+            android:layout_height="44dp"
+            android:layout_marginTop="336dp"
+            android:background="@drawable/regbtn_states"
+            android:text="@string/StartMessaging"
+            android:layout_gravity="center_horizontal"
+            android:textSize="18dp"
+            android:textColor="#ffffff"
+            android:gravity="center"
+            android:id="@+id/start_messaging_button"
+            android:paddingBottom="2dp"/>
 
-    <android.support.v4.view.ViewPager android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:id="@+id/intro_view_pager"/>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/bottom_pages"
+            android:orientation="horizontal"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="26dp">
 
-    <FrameLayout android:layout_height="3dp"
-        android:layout_width="fill_parent"
-        android:layout_marginRight="24dp"
-        android:layout_marginLeft="24dp"
-        android:background="#ebebeb"
-        android:layout_gravity="bottom"
-        android:layout_marginBottom="82dp"
-        android:id="@+id/parent_slinding_view"/>
+            <FrameLayout
+                android:layout_width="5dp"
+                android:layout_height="5dp"
+                android:background="#bbbbbb"/>
 
-    <FrameLayout android:layout_height="3dp"
-        android:layout_width="30dp"
-        android:background="#bfbfbf"
-        android:id="@+id/sliding_view"
-        android:layout_marginBottom="82dp"
-        android:layout_gravity="bottom"/>
+            <FrameLayout
+                android:layout_width="5dp"
+                android:layout_height="5dp"
+                android:background="#bbbbbb"
+                android:layout_marginLeft="7dp"/>
 
-    <TextView android:layout_width="fill_parent"
-        android:layout_height="84dp"
-        android:text="@string/StartMessaging"
-        android:layout_gravity="bottom"
-        android:textSize="22dp"
-        android:textColor="@color/blue_text_color_states"
-        android:gravity="center"
-        android:id="@+id/start_messaging_button"/>
+            <FrameLayout
+                android:layout_width="5dp"
+                android:layout_height="5dp"
+                android:background="#bbbbbb"
+                android:layout_marginLeft="7dp"/>
 
-</FrameLayout>
+            <FrameLayout
+                android:layout_width="5dp"
+                android:layout_height="5dp"
+                android:background="#bbbbbb"
+                android:layout_marginLeft="7dp"/>
+
+            <FrameLayout
+                android:layout_width="5dp"
+                android:layout_height="5dp"
+                android:background="#bbbbbb"
+                android:layout_marginLeft="7dp"/>
+
+            <FrameLayout
+                android:layout_width="5dp"
+                android:layout_height="5dp"
+                android:background="#bbbbbb"
+                android:layout_marginLeft="7dp"/>
+
+            <FrameLayout
+                android:layout_width="5dp"
+                android:layout_height="5dp"
+                android:background="#bbbbbb"
+                android:layout_marginLeft="7dp"/>
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+</ScrollView>

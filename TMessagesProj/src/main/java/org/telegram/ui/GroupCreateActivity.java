@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -12,10 +12,11 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.internal.view.SupportMenuItem;
+import android.support.v7.app.ActionBar;
 import android.text.Editable;
 import android.text.Html;
 import android.text.Spannable;
@@ -23,26 +24,21 @@ import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.TextWatcher;
 import android.text.style.ImageSpan;
-import android.view.Display;
 import android.view.LayoutInflater;
-import android.view.Surface;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.actionbarsherlock.app.ActionBar;
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuInflater;
-import com.actionbarsherlock.view.MenuItem;
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -64,7 +60,6 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private TextView doneTextView;
     private EditText userSelectEditText;
     private TextView countTextView;
-    private View topView;
     private boolean ignoreChange = false;
 
     private HashMap<Integer, Emoji.XImageSpan> selectedContacts =  new HashMap<Integer, Emoji.XImageSpan>();
@@ -114,7 +109,6 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             epmtyTextView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
             userSelectEditText = (EditText)fragmentView.findViewById(R.id.bubble_input_text);
             countTextView = (TextView)fragmentView.findViewById(R.id.bubble_counter_text);
-            topView = fragmentView.findViewById(R.id.top_layout);
             if (Build.VERSION.SDK_INT >= 11) {
                 userSelectEditText.setTextIsSelectable(false);
             }
@@ -142,7 +136,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                             try {
                                 deletedString = changeString.toString().substring(afterChangeIndex, beforeChangeIndex);
                             } catch (Exception e) {
-                                e.printStackTrace();
+                                FileLog.e("tmessages", e);
                             }
                             if (deletedString.length() > 0) {
                                 if (searching && searchWas) {
@@ -264,45 +258,6 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public void onConfigurationChanged(android.content.res.Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        fixLayout();
-    }
-
-    private void fixLayout() {
-        if (listView != null) {
-            ViewTreeObserver obs = listView.getViewTreeObserver();
-            obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    WindowManager manager = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
-                    Display display = manager.getDefaultDisplay();
-                    int rotation = display.getRotation();
-                    int height;
-                    int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
-                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
-                    if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
-                        height = currentActionBarHeight;
-                    } else {
-                        height = (int)(48.0f * density);
-                        if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                            height = (int)(40.0f * density);
-                        }
-                    }
-
-                    LinearLayout.LayoutParams params2 = (LinearLayout.LayoutParams)topView.getLayoutParams();
-                    params2.setMargins(0, height, 0, 0);
-                    topView.setLayoutParams(params2);
-
-                    listView.getViewTreeObserver().removeOnPreDrawListener(this);
-
-                    return false;
-                }
-            });
-        }
-    }
-
-    @Override
     public void applySelfActionBar() {
         if (parentActivity == null) {
             return;
@@ -314,9 +269,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         actionBar.setDisplayUseLogoEnabled(false);
         actionBar.setDisplayShowCustomEnabled(false);
         actionBar.setCustomView(null);
-        actionBar.setTitle(Html.fromHtml("<font color='#006fc8'>" + getStringEntry(R.string.NewGroup) + "</font>"));
+        actionBar.setTitle(getStringEntry(R.string.NewGroup));
 
-        TextView title = (TextView)parentActivity.findViewById(R.id.abs__action_bar_title);
+        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
         if (title == null) {
             final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
             title = (TextView)parentActivity.findViewById(subtitleId);
@@ -330,12 +285,11 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     @Override
     public void onResume() {
         super.onResume();
-        if (getSherlockActivity() == null) {
+        if (getActivity() == null) {
             return;
         }
         ((ApplicationActivity)parentActivity).showActionBar();
         ((ApplicationActivity)parentActivity).updateActionBar();
-        fixLayout();
     }
 
     public Emoji.XImageSpan createAndPutChipForUser(TLRPC.User user) {
@@ -382,7 +336,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     searchDialogsTimer.cancel();
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                FileLog.e("tmessages", e);
             }
             searchDialogsTimer = new Timer();
             searchDialogsTimer.schedule(new TimerTask() {
@@ -392,7 +346,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         searchDialogsTimer.cancel();
                         searchDialogsTimer = null;
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        FileLog.e("tmessages", e);
                     }
                     processSearch(query);
                 }
@@ -454,7 +408,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.group_create_menu, menu);
-        MenuItem doneItem = menu.findItem(R.id.done_menu_item);
+        SupportMenuItem doneItem = (SupportMenuItem)menu.findItem(R.id.done_menu_item);
         doneTextView = (TextView)doneItem.getActionView().findViewById(R.id.done_button);
         doneTextView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -551,9 +505,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
             ImageView checkButton = (ImageView)convertView.findViewById(R.id.settings_row_check_button);
             if (selectedContacts.containsKey(user.id)) {
-                checkButton.setImageResource(R.drawable.btn_check_on);
+                checkButton.setImageResource(R.drawable.btn_check_on_old);
             } else {
-                checkButton.setImageResource(R.drawable.btn_check_off);
+                checkButton.setImageResource(R.drawable.btn_check_off_old);
             }
 
             View divider = convertView.findViewById(R.id.settings_row_divider);
@@ -565,7 +519,6 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
             if (searchWas && searching) {
                 holder.nameTextView.setText(searchResultNames.get(position));
-                holder.nameTextView.setTypeface(null);
             } else {
                 if (user.first_name.length() != 0 && user.last_name.length() != 0) {
                     holder.nameTextView.setText(Html.fromHtml(user.first_name + " <b>" + user.last_name + "</b>"));
@@ -574,8 +527,6 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 } else {
                     holder.nameTextView.setText(Html.fromHtml("<b>" + user.last_name + "</b>"));
                 }
-                Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
-                holder.nameTextView.setTypeface(typeface);
             }
 
             TLRPC.FileLocation photo = null;
@@ -591,7 +542,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             } else {
                 int currentTime = ConnectionsManager.Instance.getCurrentTime();
                 if (user.status.expires > currentTime || user.status.was_online > currentTime) {
-                    holder.messageTextView.setTextColor(0xff006fc8);
+                    holder.messageTextView.setTextColor(0xff357aa8);
                     holder.messageTextView.setText(getStringEntry(R.string.Online));
                 } else {
                     if (user.status.was_online <= 10000 && user.status.expires <= 10000) {

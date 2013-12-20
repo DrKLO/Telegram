@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -813,6 +813,7 @@ public class TLRPC {
         public String phone_number;
         public String first_name;
         public String last_name;
+        public byte[] bytes;
         public int user_id;
     }
 
@@ -884,6 +885,19 @@ public class TLRPC {
             stream.writeString(first_name);
             stream.writeString(last_name);
             stream.writeInt32(user_id);
+        }
+    }
+
+    public static class TL_messageMediaUnsupported extends MessageMedia {
+        public static int constructor = 0x29632a36;
+
+        public void readParams(SerializedData stream) {
+            bytes = stream.readByteArray();
+        }
+
+        public void serializeToStream(SerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeByteArray(bytes);
         }
     }
 
@@ -2011,7 +2025,6 @@ public class TLRPC {
     public static class TL_messageActionChatEditPhoto extends MessageAction {
         public static int constructor = 0x7fcb13a8;
 
-
         public void readParams(SerializedData stream) {
             photo = (Photo)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
         }
@@ -2463,12 +2476,12 @@ public class TLRPC {
     }
 
     public static class InputMedia extends TLObject {
-        public TL_inputFile file;
+        public InputFile file;
         public InputGeoPoint geo_point;
         public String phone_number;
         public String first_name;
         public String last_name;
-        public TL_inputFile thumb;
+        public InputFile thumb;
         public int duration;
         public int w;
         public int h;
@@ -2479,7 +2492,7 @@ public class TLRPC {
 
 
         public void readParams(SerializedData stream) {
-            file = (TL_inputFile)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+            file = (InputFile)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
         }
 
         public void serializeToStream(SerializedData stream) {
@@ -2540,8 +2553,8 @@ public class TLRPC {
 
 
         public void readParams(SerializedData stream) {
-            file = (TL_inputFile)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
-            thumb = (TL_inputFile)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+            file = (InputFile)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+            thumb = (InputFile)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
             duration = stream.readInt32();
             w = stream.readInt32();
             h = stream.readInt32();
@@ -2562,7 +2575,7 @@ public class TLRPC {
 
 
         public void readParams(SerializedData stream) {
-            file = (TL_inputFile)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+            file = (InputFile)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
             duration = stream.readInt32();
             w = stream.readInt32();
             h = stream.readInt32();
@@ -3408,6 +3421,24 @@ public class TLRPC {
         }
     }
 
+    public static class TL_inputEncryptedFileBigUploaded extends InputEncryptedFile {
+        public static int constructor = 0x2dc173c8;
+
+
+        public void readParams(SerializedData stream) {
+            id = stream.readInt64();
+            parts = stream.readInt32();
+            key_fingerprint = stream.readInt32();
+        }
+
+        public void serializeToStream(SerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(id);
+            stream.writeInt32(parts);
+            stream.writeInt32(key_fingerprint);
+        }
+    }
+
     public static class TL_inputEncryptedFileEmpty extends InputEncryptedFile {
         public static int constructor = 0x1837c364;
 
@@ -3434,6 +3465,34 @@ public class TLRPC {
             stream.writeInt32(parts);
             stream.writeString(md5_checksum);
             stream.writeInt32(key_fingerprint);
+        }
+    }
+
+    public static class TL_upload_saveBigFilePart extends TLObject {
+        public static int constructor = 0xde7b673d;
+
+        public long file_id;
+        public int file_part;
+        public int file_total_parts;
+        public byte[] bytes;
+
+        public Class responseClass () {
+            return Bool.class;
+        }
+
+        public void readParams(SerializedData stream) {
+            file_id = stream.readInt64();
+            file_part = stream.readInt32();
+            file_total_parts = stream.readInt32();
+            bytes = stream.readByteArray();
+        }
+
+        public void serializeToStream(SerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(file_id);
+            stream.writeInt32(file_part);
+            stream.writeInt32(file_total_parts);
+            stream.writeByteArray(bytes);
         }
     }
 
@@ -4582,13 +4641,15 @@ public class TLRPC {
         }
     }
 
-    public static class TL_inputFile extends TLObject {
-        public static int constructor = 0xf52ff27f;
-
+    public static class InputFile extends TLObject {
         public long id;
         public int parts;
         public String name;
         public String md5_checksum;
+    }
+
+    public static class TL_inputFile extends InputFile {
+        public static int constructor = 0xf52ff27f;
 
         public void readParams(SerializedData stream) {
             id = stream.readInt64();
@@ -4603,6 +4664,24 @@ public class TLRPC {
             stream.writeInt32(parts);
             stream.writeString(name);
             stream.writeString(md5_checksum);
+        }
+    }
+
+    public static class TL_inputFileBig extends InputFile {
+        public static int constructor = 0xfa4f0bb5;
+
+
+        public void readParams(SerializedData stream) {
+            id = stream.readInt64();
+            parts = stream.readInt32();
+            name = stream.readString();
+        }
+
+        public void serializeToStream(SerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(id);
+            stream.writeInt32(parts);
+            stream.writeString(name);
         }
     }
 
@@ -5139,7 +5218,7 @@ public class TLRPC {
     public static class InputChatPhoto extends TLObject {
         public InputPhoto id;
         public InputPhotoCrop crop;
-        public TL_inputFile file;
+        public InputFile file;
     }
 
     public static class TL_inputChatPhoto extends InputChatPhoto {
@@ -5172,7 +5251,7 @@ public class TLRPC {
 
 
         public void readParams(SerializedData stream) {
-            file = (TL_inputFile)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+            file = (InputFile)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
             crop = (InputPhotoCrop)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
         }
 
@@ -6661,7 +6740,7 @@ public class TLRPC {
     public static class TL_photos_uploadProfilePhoto extends TLObject {
         public static int constructor = 0xd50f9c88;
 
-        public TL_inputFile file;
+        public InputFile file;
         public String caption;
         public InputGeoPoint geo_point;
         public InputPhotoCrop crop;
@@ -6671,7 +6750,7 @@ public class TLRPC {
         }
 
         public void readParams(SerializedData stream) {
-            file = (TL_inputFile)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+            file = (InputFile)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
             caption = stream.readString();
             geo_point = (InputGeoPoint)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
             crop = (InputPhotoCrop)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
@@ -7949,6 +8028,7 @@ public class TLRPC {
         public int unread_count;
         public int last_message_date;
         public long id;
+        public int last_read;
 
         public void readParams(SerializedData stream) {
             peer = (Peer)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
@@ -8032,6 +8112,7 @@ public class TLRPC {
 
     public static class MessageAction extends TLObject {
         public Photo photo;
+        public UserProfilePhoto newUserPhoto;
         public int user_id;
         public String title;
         public ArrayList<Integer> users = new ArrayList<Integer>();
@@ -8090,6 +8171,46 @@ public class TLRPC {
         }
     }
 
+    public static class TL_messageActionUserUpdatedPhoto extends MessageAction {
+        public static int constructor = 0x55555551;
+
+        public void readParams(SerializedData stream) {
+            newUserPhoto = (UserProfilePhoto)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+        }
+
+        public void serializeToStream(SerializedData stream) {
+            stream.writeInt32(constructor);
+            newUserPhoto.serializeToStream(stream);
+        }
+    }
+
+    public static class TL_messageActionUserJoined extends MessageAction {
+        public static int constructor = 0x55555550;
+
+        public void readParams(SerializedData stream) {
+
+        }
+
+        public void serializeToStream(SerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class TL_messageActionLoginUnknownLocation extends MessageAction {
+        public static int constructor = 0x555555F5;
+
+        public void readParams(SerializedData stream) {
+            title = stream.readString();
+            address = stream.readString();
+        }
+
+        public void serializeToStream(SerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeString(title);
+            stream.writeString(address);
+        }
+    }
+
     public static class invokeWithLayer8 extends TLObject {
         public static int constructor = 0xe9abd9fd;
 
@@ -8097,6 +8218,38 @@ public class TLRPC {
 
         public void serializeToStream(SerializedData stream) {
             stream.writeInt32(constructor);
+            query.serializeToStream(stream);
+        }
+    }
+
+    public static class invokeWithLayer9 extends TLObject {
+        public static int constructor = 0x76715a63;
+
+        public TLObject query;
+
+        public void serializeToStream(SerializedData stream) {
+            stream.writeInt32(constructor);
+            query.serializeToStream(stream);
+        }
+    }
+
+    public static class initConnection extends TLObject {
+        public static int constructor = 0x69796de9;
+
+        public int api_id;
+        public String device_model;
+        public String system_version;
+        public String app_version;
+        public String lang_code;
+        public TLObject query;
+
+        public void serializeToStream(SerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(api_id);
+            stream.writeString(device_model);
+            stream.writeString(system_version);
+            stream.writeString(app_version);
+            stream.writeString(lang_code);
             query.serializeToStream(stream);
         }
     }

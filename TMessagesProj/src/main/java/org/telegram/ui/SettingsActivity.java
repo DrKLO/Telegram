@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -15,16 +15,13 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Typeface;
-import android.os.Build;
+import android.net.Uri;
 import android.os.Bundle;
-import android.text.Html;
-import android.view.Display;
+import android.support.v7.app.ActionBar;
 import android.view.LayoutInflater;
-import android.view.Surface;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageButton;
@@ -32,12 +29,11 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.actionbarsherlock.app.ActionBar;
-
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.TL.TLObject;
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -49,8 +45,8 @@ import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.OnSwipeTouchListener;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.File;
+import java.util.ArrayList;
 
 public class SettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private ListView listView;
@@ -69,6 +65,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     int supportSectionRow;
     int askQuestionRow;
     int logoutRow;
+    int sendLogsRow;
     int rowCount;
 
     @Override
@@ -77,7 +74,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         avatarUpdater.parentFragment = this;
         avatarUpdater.delegate = new AvatarUpdater.AvatarUpdaterDelegate() {
             @Override
-            public void didUploadedPhoto(TLRPC.TL_inputFile file, TLRPC.PhotoSize small, TLRPC.PhotoSize big) {
+            public void didUploadedPhoto(TLRPC.InputFile file, TLRPC.PhotoSize small, TLRPC.PhotoSize big) {
                 TLRPC.TL_photos_uploadProfilePhoto req = new TLRPC.TL_photos_uploadProfilePhoto();
                 req.caption = "";
                 req.crop = new TLRPC.TL_inputPhotoCropAuto();
@@ -105,6 +102,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         blockedRow = rowCount++;
         backgroundRow = rowCount++;
         supportSectionRow = rowCount++;
+        if (FileLog.DEBUG_VERSION) {
+            sendLogsRow = rowCount++;
+        }
         askQuestionRow = rowCount++;
         logoutRow = rowCount++;
 
@@ -137,12 +137,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     if (i == textSizeRow) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
                         builder.setTitle(getStringEntry(R.string.TextSize));
-                        builder.setItems(new CharSequence[]{String.format("%d", 16), String.format("%d", 17), String.format("%d", 18), String.format("%d", 19), String.format("%d", 20)}, new DialogInterface.OnClickListener() {
+                        builder.setItems(new CharSequence[]{String.format("%d", 12), String.format("%d", 13), String.format("%d", 14), String.format("%d", 15), String.format("%d", 16), String.format("%d", 17), String.format("%d", 18), String.format("%d", 19), String.format("%d", 20)}, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                                 SharedPreferences.Editor editor = preferences.edit();
-                                editor.putInt("fons_size", 16 + which);
+                                editor.putInt("fons_size", 12 + which);
                                 editor.commit();
                                 if (listView != null) {
                                     listView.invalidateViews();
@@ -171,7 +171,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         Bundle bundle = new Bundle();
                         bundle.putInt("user_id", 333000);
                         fragment.setArguments(bundle);
-                        ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat_user_" + 333000, false);
+                        ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), false);
+                    } else if (i == sendLogsRow) {
+                        sendLogs();
                     }
 //                else if (i == 6) {
 //                    UserConfig.saveIncomingPhotos = !UserConfig.saveIncomingPhotos;
@@ -197,7 +199,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        avatarUpdater.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 232) {
+            FileLog.cleanupLogs();
+        } else {
+            avatarUpdater.onActivityResult(requestCode, resultCode, data);
+        }
     }
 
     @Override
@@ -222,9 +228,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         actionBar.setDisplayShowCustomEnabled(false);
         actionBar.setSubtitle(null);
         actionBar.setCustomView(null);
-        actionBar.setTitle(Html.fromHtml("<font color='#006fc8'>" + getStringEntry(R.string.Settings) + "</font>"));
+        actionBar.setTitle(getStringEntry(R.string.Settings));
 
-        TextView title = (TextView)parentActivity.findViewById(R.id.abs__action_bar_title);
+        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
         if (title == null) {
             final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
             title = (TextView)parentActivity.findViewById(subtitleId);
@@ -235,13 +241,37 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
     }
 
+    private void sendLogs() {
+        try {
+            ArrayList<Uri> uris = new ArrayList<Uri>();
+            File sdCard = ApplicationLoader.applicationContext.getExternalFilesDir(null);
+            File dir = new File (sdCard.getAbsolutePath() + "/logs");
+            File[] files = dir.listFiles();
+            for (File file : files) {
+                uris.add(Uri.fromFile(file));
+            }
+
+            if (uris.isEmpty()) {
+                return;
+            }
+            Intent i = new Intent(Intent.ACTION_SEND_MULTIPLE);
+            i.setType("message/rfc822") ;
+            i.putExtra(Intent.EXTRA_EMAIL, new String[]{"drklo.2kb@gmail.com"});
+            i.putExtra(Intent.EXTRA_SUBJECT, "last logs");
+            i.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris);
+            startActivityForResult(Intent.createChooser(i, "Select email application."), 232);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public void onResume() {
         super.onResume();
         if (isFinish) {
             return;
         }
-        if (getSherlockActivity() == null) {
+        if (getActivity() == null) {
             return;
         }
         if (!firstStart && listAdapter != null) {
@@ -250,47 +280,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         firstStart = false;
         ((ApplicationActivity)parentActivity).showActionBar();
         ((ApplicationActivity)parentActivity).updateActionBar();
-        fixLayout();
     }
 
     @Override
-    public void onConfigurationChanged(android.content.res.Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        fixLayout();
-    }
-
-    private void fixLayout() {
-        if (listView != null) {
-            ViewTreeObserver obs = listView.getViewTreeObserver();
-            obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    WindowManager manager = (WindowManager)parentActivity.getSystemService(Context.WINDOW_SERVICE);
-                    Display display = manager.getDefaultDisplay();
-                    int rotation = display.getRotation();
-                    int height;
-                    int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
-                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
-                    if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
-                        height = currentActionBarHeight;
-                    } else {
-                        height = (int)(48.0f * density);
-                        if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                            height = (int)(40.0f * density);
-                        }
-                    }
-                    listView.setPadding(listView.getPaddingLeft(), height, listView.getPaddingRight(), listView.getPaddingBottom());
-
-                    listView.getViewTreeObserver().removeOnPreDrawListener(this);
-
-                    return false;
-                }
-            });
-        }
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(com.actionbarsherlock.view.MenuItem item) {
+    public boolean onOptionsItemSelected(MenuItem item) {
         int itemId = item.getItemId();
         switch (itemId) {
             case android.R.id.home:
@@ -298,27 +291,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 break;
         }
         return true;
-    }
-
-    private void sendLogs() {
-        try {
-            Process process = Runtime.getRuntime().exec("logcat -d -v time");
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            StringBuilder log = new StringBuilder();
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                log.append(line).append("\r\n");
-            }
-
-            Intent i = new Intent(Intent.ACTION_SEND);
-            i.setType("message/rfc822") ;
-            i.putExtra(Intent.EXTRA_EMAIL, new String[]{"drklo.2kb@gmail.com"});
-            i.putExtra(Intent.EXTRA_SUBJECT, "last logs");
-            i.putExtra(Intent.EXTRA_TEXT, log.toString());
-            startActivity(Intent.createChooser(i, "Select email application."));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     private class ListAdapter extends BaseAdapter {
@@ -335,7 +307,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public boolean isEnabled(int i) {
-            return i == textSizeRow || i == enableAnimationsRow || i == blockedRow || i == notificationRow || i == backgroundRow || i == askQuestionRow;
+            return i == textSizeRow || i == enableAnimationsRow || i == blockedRow || i == notificationRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow;
         }
 
         @Override
@@ -366,10 +338,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.settings_name_layout, viewGroup, false);
 
-                    Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
-                    TextView onlineText = (TextView)view.findViewById(R.id.settings_online);
-                    onlineText.setTypeface(typeface);
-
                     ImageButton button = (ImageButton)view.findViewById(R.id.settings_edit_name);
                     button.setOnClickListener(new View.OnClickListener() {
                         @Override
@@ -394,20 +362,31 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             if (user == null) {
                                 return;
                             }
+                            boolean fullMenu = false;
                             if (user.photo != null && user.photo.photo_big != null && !(user.photo instanceof TLRPC.TL_userProfilePhotoEmpty)) {
-                                items = new CharSequence[] {getStringEntry(R.string.FromCamera), getStringEntry(R.string.FromGalley), getStringEntry(R.string.DeletePhoto)};
+                                items = new CharSequence[] {getStringEntry(R.string.OpenPhoto), getStringEntry(R.string.FromCamera), getStringEntry(R.string.FromGalley), getStringEntry(R.string.DeletePhoto)};
+                                fullMenu = true;
                             } else {
                                 items = new CharSequence[] {getStringEntry(R.string.FromCamera), getStringEntry(R.string.FromGalley)};
                             }
 
+                            final boolean full = fullMenu;
                             builder.setItems(items, new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialogInterface, int i) {
-                                    if (i == 0) {
+                                    if (i == 0 && full) {
+                                        TLRPC.User user = MessagesController.Instance.users.get(UserConfig.clientUserId);
+                                        if (user != null && user.photo != null && user.photo.photo_big != null) {
+                                            NotificationCenter.Instance.addToMemCache(56, user.id);
+                                            NotificationCenter.Instance.addToMemCache(53, user.photo.photo_big);
+                                            Intent intent = new Intent(parentActivity, GalleryImageViewer.class);
+                                            startActivity(intent);
+                                        }
+                                    } else if (i == 0 && !full || i == 1 && full) {
                                         avatarUpdater.openCamera();
-                                    } else if (i == 1) {
+                                    } else if (i == 1 && !full || i == 2 && full) {
                                         avatarUpdater.openGallery();
-                                    } else if (i == 2) {
+                                    } else if (i == 3) {
                                         TLRPC.TL_photos_updateProfilePhoto req = new TLRPC.TL_photos_updateProfilePhoto();
                                         req.id = new TLRPC.TL_inputPhotoEmpty();
                                         req.crop = new TLRPC.TL_inputPhotoCropAuto();
@@ -437,6 +416,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     });
                 }
                 TextView textView = (TextView)view.findViewById(R.id.settings_name);
+                Typeface typeface = Utilities.getTypeface("fonts/rmedium.ttf");
+                textView.setTypeface(typeface);
                 TLRPC.User user = MessagesController.Instance.users.get(UserConfig.clientUserId);
                 if (user == null) {
                     user = UserConfig.currentUser;
@@ -488,6 +469,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 } else if (i == backgroundRow) {
                     textView.setText(getStringEntry(R.string.ChatBackground));
                     divider.setVisibility(View.INVISIBLE);
+                } else if (i == sendLogsRow) {
+                    textView.setText("Send Logs");
+                    divider.setVisibility(View.VISIBLE);
                 } else if (i == askQuestionRow) {
                     textView.setText(getStringEntry(R.string.AskAQuestion));
                     divider.setVisibility(View.INVISIBLE);
@@ -555,8 +539,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 }
                 TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
                 TextView detailTextView = (TextView)view.findViewById(R.id.settings_row_text_detail);
-                Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
-                detailTextView.setTypeface(typeface);
                 View divider = view.findViewById(R.id.settings_row_divider);
                 if (i == textSizeRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
@@ -580,7 +562,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 5;
             } else if (i == enableAnimationsRow) {
                 return 3;
-            } else if (i == numberRow || i == notificationRow || i == blockedRow || i == backgroundRow || i == askQuestionRow) {
+            } else if (i == numberRow || i == notificationRow || i == blockedRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow) {
                 return 2;
             } else if (i == logoutRow) {
                 return 4;

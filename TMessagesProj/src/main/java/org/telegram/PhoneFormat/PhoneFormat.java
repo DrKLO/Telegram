@@ -36,6 +36,7 @@ import java.util.Locale;
 
 public class PhoneFormat {
     public byte[] data;
+    private boolean initialzed = false;
     public ByteBuffer buffer;
     public String defaultCountry;
     public String defaultCallingCode;
@@ -90,6 +91,7 @@ public class PhoneFormat {
             buffer.order(ByteOrder.LITTLE_ENDIAN);
         } catch (Exception e) {
             e.printStackTrace();
+            return;
         }
 
         if (countryCode != null && countryCode.length() != 0) {
@@ -104,6 +106,7 @@ public class PhoneFormat {
         countryCallingCode = new HashMap<String, String>(255);
 
         parseDataHeader();
+        initialzed = true;
     }
 
     public String defaultCallingCode() {
@@ -139,6 +142,9 @@ public class PhoneFormat {
     }
 
     public String format(String orig) {
+        if (!initialzed) {
+            return orig;
+        }
         String str = strip(orig);
 
         if (str.startsWith("+")) {
@@ -177,6 +183,9 @@ public class PhoneFormat {
     }
 
     public boolean isPhoneNumberValid(String phoneNumber) {
+        if (!initialzed) {
+            return true;
+        }
         String str = strip(phoneNumber);
 
         if (str.startsWith("+")) {

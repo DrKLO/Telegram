@@ -31,13 +31,8 @@ import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import jawnae.pyronet.events.PyroClientListener;
-import jawnae.pyronet.traffic.ByteStream;
-
 public class PyroClient {
     private final PyroSelector selector;
-
-    final PyroServer server;
 
     private final SelectionKey key;
 
@@ -46,18 +41,17 @@ public class PyroClient {
     // called by PyroSelector.connect()
     PyroClient(PyroSelector selector, InetSocketAddress bind,
             InetSocketAddress host) throws IOException {
-        this(selector, null, PyroClient.bindAndConfigure(selector,
+        this(selector, PyroClient.bindAndConfigure(selector,
                 SocketChannel.open(), bind));
 
         ((SocketChannel) this.key.channel()).connect(host);
     }
 
     // called by PyroClient and PyroServer
-    PyroClient(PyroSelector selector, PyroServer server, SelectionKey key) {
+    PyroClient(PyroSelector selector, SelectionKey key) {
         this.selector = selector;
         this.selector.checkThread();
 
-        this.server = server;
         this.key = key;
         this.key.attach(this);
 
@@ -162,20 +156,6 @@ public class PyroClient {
     }
 
     //
-
-    /**
-     * Returns the server that accepted this client.
-     * 
-     * @throws PyroException
-     *             if this client was not accepted by a server (it connected to
-     *             a server)
-     */
-
-    public final PyroServer getServer() throws PyroException {
-        if (this.server == null)
-            throw new PyroException("this client was not accepted by a server");
-        return this.server;
-    }
 
     //
 
@@ -425,7 +405,7 @@ public class PyroClient {
 
     private int onReadyToWrite(long now) throws IOException {
         this.selector.checkThread();
-        this.lastEventTime = now;
+        //this.lastEventTime = now;
 
         int sent = 0;
 
@@ -479,13 +459,9 @@ public class PyroClient {
             return;
         }
 
-        if (this.server != null) {
-            this.server.onDisconnect(this);
-        }
-
         if (cause instanceof ConnectException) {
             for (PyroClientListener listener: this.listeners)
-                listener.unconnectableClient(this);
+                listener.unconnectableClient(this, (Exception)cause);
         } else if (cause instanceof EOFException) // after read=-1
         {
             for (PyroClientListener listener: this.listeners)
@@ -495,7 +471,7 @@ public class PyroClient {
                 listener.droppedClient(this, (IOException) cause);
         } else if (!(cause instanceof String)) {
             for (PyroClientListener listener: this.listeners)
-                listener.unconnectableClient(this);
+                listener.unconnectableClient(this, null);
         } else if (cause.equals("local")) {
             for (PyroClientListener listener: this.listeners)
                 listener.disconnectedClient(this);
@@ -551,7 +527,7 @@ public class PyroClient {
         // channel.socket().setSoLinger(false, 0); // this will b0rk your
         // connections
         channel.socket().setSoLinger(true, 4);
-        channel.socket().setReuseAddress(true);
+        channel.socket().setReuseAddress(false);
         channel.socket().setKeepAlive(false);
         channel.socket().setTcpNoDelay(true);
         channel.socket().setReceiveBufferSize(PyroSelector.BUFFER_SIZE);

@@ -1,4 +1,5 @@
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:paddingLeft="16dp"
@@ -10,7 +11,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        <LinearLayout
             android:gravity="center_vertical|right"
             android:orientation="horizontal"
             android:layout_width="fill_parent"
@@ -18,15 +19,17 @@
             android:paddingTop="12dp"
             android:paddingBottom="12dp">
 
-
-            <LinearLayout android:layout_gravity="center_vertical|left"
+            <LinearLayout
+                android:layout_gravity="center_vertical|left"
                 android:orientation="vertical"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="14dp">
+                android:layout_marginRight="13dp"
+                android:layout_marginBottom="1dp">
 
-                <TextView android:textSize="19dp"
-                    android:textColor="#000000"
+                <TextView
+                    android:textSize="21dp"
+                    android:textColor="#333333"
                     android:ellipsize="end"
                     android:id="@+id/settings_name"
                     android:layout_width="wrap_content"
@@ -36,14 +39,16 @@
                     android:gravity="right"
                     android:layout_gravity="right"/>
 
-                <TextView android:textSize="17dp"
-                    android:textColor="#006dcb"
+                <TextView
+                    android:textSize="14dp"
+                    android:textColor="#999999"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="-2dp"
+                    android:layout_marginTop="4dp"
                     android:id="@+id/settings_online"
                     android:gravity="right"
                     android:layout_gravity="right"/>
+
             </LinearLayout>
 
             <org.telegram.ui.Views.BackupImageView
@@ -54,7 +59,8 @@
 
         </LinearLayout>
 
-        <EditText android:textSize="19dp"
+        <EditText
+            android:textSize="19dp"
             android:textColorHint="#a3a3a3"
             android:layout_gravity="center_vertical"
             android:id="@+id/first_name_field"
@@ -69,9 +75,12 @@
             android:imeOptions="actionNext"
             android:paddingLeft="15dp"
             android:paddingRight="15dp"
-            android:gravity="right"/>
+            android:gravity="right"
+            android:textCursorDrawable="@null"
+            android:textColor="#000000"/>
 
-        <EditText android:textSize="19dp"
+        <EditText
+            android:textSize="19dp"
             android:textColorHint="#a3a3a3"
             android:layout_gravity="center_vertical"
             android:id="@+id/last_name_field"
@@ -86,7 +95,9 @@
             android:imeOptions="actionDone"
             android:paddingLeft="15dp"
             android:paddingRight="15dp"
-            android:gravity="right"/>
+            android:gravity="right"
+            android:textCursorDrawable="@null"
+            android:textColor="#000000"/>
 
     </LinearLayout>
 

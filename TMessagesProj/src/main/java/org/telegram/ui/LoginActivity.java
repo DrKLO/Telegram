@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -8,58 +8,48 @@
 
 package org.telegram.ui;
 
+import android.animation.Animator;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
-import android.content.res.Configuration;
-import android.graphics.Typeface;
+import android.graphics.PixelFormat;
+import android.graphics.Point;
 import android.os.Bundle;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.internal.view.SupportMenuItem;
+import android.support.v7.app.ActionBarActivity;
+import android.view.Display;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.View;
-import android.view.ViewTreeObserver;
-import android.view.animation.AlphaAnimation;
-import android.view.animation.Animation;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.actionbarsherlock.app.SherlockFragment;
-import com.actionbarsherlock.app.SherlockFragmentActivity;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.Views.NonSwipeableViewPager;
-import org.telegram.ui.Views.SlideFragment;
+import org.telegram.ui.Views.SlideView;
 
-import java.util.HashMap;
-
-public class LoginActivity extends SherlockFragmentActivity implements NonSwipeableViewPager.SlideFramentProceed {
-    private NonSwipeableViewPager pager;
-    protected FragmentStatePagerAdapter pagerAdapter;
-    private TextView nextButton;
-    private TextView backButton;
-    private TextView headerTextView;
-    private Animation in, out;
-    private String animateToText;
-    private HashMap<String, String> paramsToSet;
-    private SlideFragment currentFragment;
-    private int currentIndex;
+public class LoginActivity extends ActionBarActivity implements SlideView.SlideViewDelegate {
+    private int currentViewNum = 0;
+    private SlideView[] views = new SlideView[3];
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (currentFragment instanceof ScreenSlidePageFragmentRegister) {
-            ((ScreenSlidePageFragmentRegister)currentFragment).avatarUpdater.onActivityResult(requestCode, resultCode, data);
+        if (currentViewNum == 0) {
+            if (resultCode == RESULT_OK) {
+                ((LoginActivityPhoneView)views[0]).selectCountry(data.getStringExtra("country"));
+            }
         }
-    }
-
-    @Override
-    public void didProceed(HashMap<String, String> params) {
-        paramsToSet = params;
+//        if (views[currentViewNum] instanceof LoginActivityRegisterView) {
+//            ((LoginActivityRegisterView)views[currentViewNum]).avatarUpdater.onActivityResult(requestCode, resultCode, data);
+//        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        ApplicationLoader.lastPauseTime = 0;
+        ApplicationLoader.resetLastPauseTime();
     }
 
     @Override
@@ -83,160 +73,72 @@ public class LoginActivity extends SherlockFragmentActivity implements NonSwipea
         });
     }
 
-    private class ScreenSlidePagerAdapter extends FragmentStatePagerAdapter {
-        public ScreenSlidePagerAdapter(FragmentManager fm) {
-            super(fm);
-        }
-
-        @Override
-        public SherlockFragment getItem(int position) {
-            SlideFragment fragment = null;
-            if (position == 0) {
-                fragment = new ScreenSlidePageFragmentPhone();
-            } else if (position == 1) {
-                fragment = new ScreenSlidePageFragmentSms();
-            } else if (position == 2) {
-                fragment = new ScreenSlidePageFragmentRegister();
-            }
-            fragment.delegate = LoginActivity.this;
-            return fragment;
-        }
-
-        @Override
-        public int getCount() {
-            return 3;
-        }
-
-        public void setPrimaryItem(android.view.ViewGroup container, int position, java.lang.Object object) {
-            super.setPrimaryItem(container, position, object);
-            currentIndex = position;
-            if (object instanceof SlideFragment) {
-                ((SlideFragment)object).delegate = LoginActivity.this;
-            }
-            if (currentFragment != object) {
-                SlideFragment fragment = (SlideFragment)object;
-                currentFragment = fragment;
-                if (paramsToSet != null) {
-                    fragment.setParams(paramsToSet);
-                    paramsToSet = null;
-                }
-                if (headerTextView.getText() == null || headerTextView.getText().length() == 0) {
-                    headerTextView.setText(fragment.getHeaderName());
-                } else {
-                    animateToText = fragment.getHeaderName();
-                    headerTextView.startAnimation(out);
-                }
-                if (position != 0) {
-                    backButton.setVisibility(View.VISIBLE);
-                }
-            }
-        }
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        in = new AlphaAnimation(0.0f, 1.0f);
-        in.setDuration(200);
-        out = new AlphaAnimation(1.0f, 0.0f);
-        out.setDuration(200);
-        out.setAnimationListener(new Animation.AnimationListener() {
-
-            @Override
-            public void onAnimationStart(Animation animation) {
-
-            }
-
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                headerTextView.setText(animateToText);
-                headerTextView.startAnimation(in);
-            }
-
-            @Override
-            public void onAnimationRepeat(Animation animation) {
-
-            }
-        });
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.login_layout);
         ApplicationLoader.applicationContext = this.getApplicationContext();
         ConnectionsManager inst = ConnectionsManager.Instance;
 
-        Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
-        headerTextView = (TextView) findViewById(R.id.login_header_text);
-        headerTextView.setTypeface(typeface);
+        getSupportActionBar().setLogo(R.drawable.ab_icon_fixed2);
+        getSupportActionBar().show();
+        float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
+        ImageView view = (ImageView)findViewById(16908332);
+        if (view == null) {
+            view = (ImageView)findViewById(R.id.home);
+        }
+        if (view != null) {
+            view.setPadding((int)(density * 6), 0, (int)(density * 6), 0);
+        }
 
-        pager = (NonSwipeableViewPager)findViewById(R.id.login_pager);
-        pagerAdapter = new ScreenSlidePagerAdapter(this.getSupportFragmentManager());
-        pager.setAdapter(pagerAdapter);
+        views[0] = (SlideView)findViewById(R.id.login_page1);
+        views[1] = (SlideView)findViewById(R.id.login_page2);
+        views[2] = (SlideView)findViewById(R.id.login_page3);
 
-        nextButton = (TextView) findViewById(R.id.login_next_button);
-        nextButton.setOnClickListener(new View.OnClickListener() {
+        getSupportActionBar().setTitle(views[0].getHeaderName());
+
+        if (savedInstanceState != null) {
+            currentViewNum = savedInstanceState.getInt("currentViewNum", 0);
+        }
+        for (int a = 0; a < views.length; a++) {
+            SlideView v = views[a];
+            if (v != null) {
+                v.delegate = this;
+                v.setVisibility(currentViewNum == a ? View.VISIBLE : View.GONE);
+            }
+        }
+
+        getWindow().setBackgroundDrawableResource(R.drawable.transparent);
+        getWindow().setFormat(PixelFormat.RGB_565);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.group_create_menu, menu);
+        SupportMenuItem doneItem = (SupportMenuItem)menu.findItem(R.id.done_menu_item);
+        TextView doneTextView = (TextView)doneItem.getActionView().findViewById(R.id.done_button);
+        doneTextView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                currentFragment.delegate = LoginActivity.this;
-                currentFragment.onNextPressed();
+                onNextAction();
             }
         });
-
-        backButton = (TextView)findViewById(R.id.login_back_button);
-        backButton.setVisibility(View.INVISIBLE);
-        backButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                onBackPressed();
-            }
-        });
-
-        getSupportActionBar().hide();
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override
     public void onBackPressed() {
-        if (pager.getCurrentItem() == 0) {
-            super.onBackPressed();
-        } else {
-            if (currentFragment != null) {
-                currentFragment.onBackPressed();
-            }
-            if (pager.getCurrentItem() == 2) {
-                pager.setCurrentItem(0);
-            } else {
-                pager.setCurrentItem(pager.getCurrentItem() - 1);
-            }
-            if (pager.getCurrentItem() == 0) {
-                backButton.setVisibility(View.INVISIBLE);
-            }
-        }
-    }
-
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        fixLayout();
-    }
-
-    private void fixLayout() {
-        if (pager != null) {
-            ViewTreeObserver obs = pager.getViewTreeObserver();
-            obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    /*pager.beginFakeDrag();
-                    pager.fakeDragBy(1);
-                    pager.endFakeDrag();*/
-                    pager.setCurrentItem(currentIndex);
-                    pager.getViewTreeObserver().removeOnPreDrawListener(this);
-                    return false;
+        if (currentViewNum == 0) {
+            for (SlideView v : views) {
+                if (v != null) {
+                    v.onDestroyActivity();
                 }
-            });
+            }
+            super.onBackPressed();
+        } else if (currentViewNum != 1 && currentViewNum != 2) {
+            setPage(0, true, null, true);
         }
-    }
-
-    @Override
-    public void onNextAction() {
-        nextButton.performClick();
     }
 
     @Override
@@ -254,9 +156,91 @@ public class LoginActivity extends SherlockFragmentActivity implements NonSwipea
         Utilities.HideProgressDialog(this);
     }
 
+    public void setPage(int page, boolean animated, Bundle params, boolean back) {
+        if(android.os.Build.VERSION.SDK_INT > 11) {
+            Point displaySize = new Point();
+            Display display = getWindowManager().getDefaultDisplay();
+            if(android.os.Build.VERSION.SDK_INT < 13) {
+                displaySize.set(display.getWidth(), display.getHeight());
+            } else {
+                display.getSize(displaySize);
+            }
+
+            final SlideView outView = views[currentViewNum];
+            final SlideView newView = views[page];
+            currentViewNum = page;
+
+            newView.setParams(params);
+            getSupportActionBar().setTitle(newView.getHeaderName());
+            newView.onShow();
+            newView.setX(back ? -displaySize.x : displaySize.x);
+            outView.animate().setInterpolator(new AccelerateDecelerateInterpolator()).setListener(new Animator.AnimatorListener() {
+                @Override
+                public void onAnimationStart(Animator animator) {
+                }
+
+                @Override
+                public void onAnimationEnd(Animator animator) {
+                    outView.setVisibility(View.GONE);
+                    outView.setX(0);
+                }
+
+                @Override
+                public void onAnimationCancel(Animator animator) {
+                }
+
+                @Override
+                public void onAnimationRepeat(Animator animator) {
+                }
+            }).setDuration(300).translationX(back ? displaySize.x : -displaySize.x).start();
+            newView.animate().setInterpolator(new AccelerateDecelerateInterpolator()).setListener(new Animator.AnimatorListener() {
+                @Override
+                public void onAnimationStart(Animator animator) {
+                    newView.setVisibility(View.VISIBLE);
+                }
+
+                @Override
+                public void onAnimationEnd(Animator animator) {
+                }
+
+                @Override
+                public void onAnimationCancel(Animator animator) {
+                }
+
+                @Override
+                public void onAnimationRepeat(Animator animator) {
+                }
+            }).setDuration(300).translationX(0).start();
+        } else {
+            views[currentViewNum].setVisibility(View.GONE);
+            currentViewNum = page;
+            views[page].setParams(params);
+            views[page].setVisibility(View.VISIBLE);
+            getSupportActionBar().setTitle(views[page].getHeaderName());
+            views[page].onShow();
+        }
+    }
+
     @Override
-    public void needSlidePager(int page, boolean arg0) {
-        pager.setCurrentItem(page, arg0);
+    public void onNextAction() {
+        views[currentViewNum].onNextPressed();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        for (SlideView v : views) {
+            if (v != null) {
+                v.onDestroyActivity();
+            }
+        }
+        Utilities.HideProgressDialog(this);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt("currentViewNum", currentViewNum);
     }
 
     @Override

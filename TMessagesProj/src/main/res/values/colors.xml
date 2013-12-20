@@ -4,5 +4,5 @@
     <color name="chat_background_color">#ffd6e4ef</color>
     <color name="gallery_background_color">#ff000000</color>
     <color name="settings_background_color">#ffffffff</color>
-    <color name="divider">#ebebeb</color>
+    <color name="divider">#dcdcdc</color>
 </resources>

@@ -1,6 +1,0 @@
-<rotate xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@drawable/p2r_progress_custom"
-    android:fromDegrees="0"
-    android:pivotX="50%"
-    android:pivotY="50%"
-    android:toDegrees="360" />

@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -13,25 +13,22 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.PixelFormat;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.text.Html;
-import android.view.Display;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarActivity;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
-import android.widget.FrameLayout;
 import android.widget.TextView;
 
-import com.actionbarsherlock.app.ActionBar;
-import com.actionbarsherlock.app.SherlockFragmentActivity;
-import com.actionbarsherlock.internal.app.ActionBarImpl;
-
 import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -47,22 +44,28 @@ import net.hockeyapp.android.UpdateManager;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-public class ApplicationActivity extends SherlockFragmentActivity implements NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate {
-    private View shadowView;
+public class ApplicationActivity extends ActionBarActivity implements NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate {
     private boolean finished = false;
     private NotificationView notificationView;
-    String photoPath = null;
-    String videoPath = null;
-    String sendingText = null;
+    private String photoPath = null;
+    private String videoPath = null;
+    private String sendingText = null;
     private int currentConnectionState;
     private View statusView;
     private View backStatusButton;
     private View statusBackground;
     private TextView statusText;
+    private View containerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            Utilities.statusBarHeight = getResources().getDimensionPixelSize(resourceId);
+        }
+
         NotificationCenter.Instance.postNotificationName(702, this);
         currentConnectionState = ConnectionsManager.Instance.connectionState;
         for (BaseFragment fragment : ApplicationLoader.fragmentsStack) {
@@ -71,12 +74,11 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
                 if (parent != null) {
                     parent.removeView(fragment.fragmentView);
                 }
-                fragment.parentActivity = null;
                 fragment.fragmentView = null;
             }
+            fragment.parentActivity = this;
         }
         setContentView(R.layout.application_layout);
-        shadowView = findViewById(R.id.shadow);
         NotificationCenter.Instance.addObserver(this, 1234);
         NotificationCenter.Instance.addObserver(this, 658);
         NotificationCenter.Instance.addObserver(this, 701);
@@ -88,6 +90,7 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
         statusView = getLayoutInflater().inflate(R.layout.updating_state_layout, null);
         statusBackground = statusView.findViewById(R.id.back_button_background);
         backStatusButton = statusView.findViewById(R.id.back_button);
+        containerView = findViewById(R.id.container);
         statusText = (TextView)statusView.findViewById(R.id.status_text);
         statusBackground.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -125,7 +128,7 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
                 if (fragment.onFragmentCreate()) {
                     pushOpened = true;
                     ApplicationLoader.fragmentsStack.add(fragment);
-                    getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat_user_" + push_user_id).commitAllowingStateLoss();
+                    getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
                 }
             }
         } else if (push_chat_id != 0) {
@@ -136,7 +139,7 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
             if (fragment.onFragmentCreate()) {
                 pushOpened = true;
                 ApplicationLoader.fragmentsStack.add(fragment);
-                getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat_group_" + push_chat_id).commitAllowingStateLoss();
+                getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
             }
         }  else if (push_enc_id != 0) {
             ChatActivity fragment = new ChatActivity();
@@ -146,7 +149,7 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
             if (fragment.onFragmentCreate()) {
                 pushOpened = true;
                 ApplicationLoader.fragmentsStack.add(fragment);
-                getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat_enc_" + push_enc_id).commitAllowingStateLoss();
+                getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
             }
         }
         if (videoPath != null || photoPath != null || sendingText != null) {
@@ -175,14 +178,16 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
         }
 
         getWindow().setBackgroundDrawableResource(R.drawable.transparent);
+        getWindow().setFormat(PixelFormat.RGB_565);
     }
 
     @SuppressWarnings("unchecked")
     private void prepareForHideShowActionBar() {
         try {
-            Class aClass = getSupportActionBar().getClass();
-            if (aClass == ActionBarImpl.class) {
-                Method method = aClass.getDeclaredMethod("setShowHideAnimationEnabled", boolean.class);
+            Class firstClass = getSupportActionBar().getClass();
+            Class aClass = firstClass.getSuperclass();
+            if (aClass == android.support.v7.app.ActionBar.class) {
+                Method method = firstClass.getDeclaredMethod("setShowHideAnimationEnabled", boolean.class);
                 method.invoke(getSupportActionBar(), false);
             } else {
                 Field field = aClass.getDeclaredField("mActionBar");
@@ -190,20 +195,18 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
                 Method method = field.get(getSupportActionBar()).getClass().getDeclaredMethod("setShowHideAnimationEnabled", boolean.class);
                 method.invoke(field.get(getSupportActionBar()), false);
             }
-        } catch (Exception exception) {
-            exception.printStackTrace();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
     }
 
     public void showActionBar() {
         prepareForHideShowActionBar();
-        shadowView.setVisibility(View.VISIBLE);
         getSupportActionBar().show();
     }
 
     public void hideActionBar() {
         prepareForHideShowActionBar();
-        shadowView.setVisibility(View.INVISIBLE);
         getSupportActionBar().hide();
     }
 
@@ -241,7 +244,7 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
                 fragment.setArguments(bundle);
                 if (fragment.onFragmentCreate()) {
                     ApplicationLoader.fragmentsStack.add(fragment);
-                    getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat_user_" + push_user_id).commitAllowingStateLoss();
+                    getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
                 }
             }
         } else if (push_chat_id != 0) {
@@ -251,7 +254,7 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
             fragment.setArguments(bundle);
             if (fragment.onFragmentCreate()) {
                 ApplicationLoader.fragmentsStack.add(fragment);
-                getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat_group_" + push_chat_id).commitAllowingStateLoss();
+                getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
             }
         } else if (push_enc_id != 0) {
             ChatActivity fragment = new ChatActivity();
@@ -260,7 +263,7 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
             fragment.setArguments(bundle);
             if (fragment.onFragmentCreate()) {
                 ApplicationLoader.fragmentsStack.add(fragment);
-                getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat_enc_" + push_enc_id).commitAllowingStateLoss();
+                getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
             }
         }
         if (open_settings != 0) {
@@ -284,13 +287,13 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
                     bundle.putInt("user_id", lower_part);
                     fragment.setArguments(bundle);
                     fragment.scrollToTopOnResume = true;
-                    presentFragment(fragment, "chat_user_" + lower_part, true, false);
+                    presentFragment(fragment, "chat" + Math.random(), true, false);
                 } else if (lower_part < 0) {
                     NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
                     bundle.putInt("chat_id", -lower_part);
                     fragment.setArguments(bundle);
                     fragment.scrollToTopOnResume = true;
-                    presentFragment(fragment, "chat_group_" + -lower_part, true, false);
+                    presentFragment(fragment, "chat" + Math.random(), true, false);
                 }
             } else {
                 NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
@@ -298,7 +301,7 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
                 bundle.putInt("enc_id", chat_id);
                 fragment.setArguments(bundle);
                 fragment.scrollToTopOnResume = true;
-                presentFragment(fragment, "chat_enc_" + chat_id, true, false);
+                presentFragment(fragment, "chat" + Math.random(), true, false);
             }
             if (photoPath != null) {
                 fragment.processSendingPhoto(photoPath);
@@ -318,7 +321,7 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
     }
 
     private void checkForUpdates() {
-        if (ConnectionsManager.DEBUG_VERSION) {
+        if (FileLog.DEBUG_VERSION) {
             UpdateManager.register(this, "your-hockeyapp-api-key-here");
         }
     }
@@ -347,14 +350,14 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
         fixLayout();
         checkForCrashes();
         checkForUpdates();
-        ApplicationLoader.lastPauseTime = 0;
-        invalidateOptionsMenu();
+        ApplicationLoader.resetLastPauseTime();
+        supportInvalidateOptionsMenu();
         updateActionBar();
         try {
             NotificationManager mNotificationManager = (NotificationManager)this.getSystemService(Context.NOTIFICATION_SERVICE);
             mNotificationManager.cancel(1);
         } catch (Exception e) {
-            e.printStackTrace();
+            FileLog.e("tmessages", e);
         }
     }
 
@@ -383,14 +386,13 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
     }
 
     private void fixLayout() {
-        if (shadowView != null) {
-            ViewTreeObserver obs = shadowView.getViewTreeObserver();
+        if (containerView != null) {
+            ViewTreeObserver obs = containerView.getViewTreeObserver();
             obs.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                 @Override
                 public void onGlobalLayout() {
                     WindowManager manager = (WindowManager) getSystemService(WINDOW_SERVICE);
-                    Display display = manager.getDefaultDisplay();
-                    int rotation = display.getRotation();
+                    int rotation = manager.getDefaultDisplay().getRotation();
                     float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
 
                     int height;
@@ -408,13 +410,10 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
                         notificationView.applyOrientationPaddings(rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90, density, height);
                     }
 
-                    FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) shadowView.getLayoutParams();
-                    params.setMargins(0, height, 0, 0);
-                    shadowView.setLayoutParams(params);
                     if (Build.VERSION.SDK_INT < 16) {
-                        shadowView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                        containerView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
                     } else {
-                        shadowView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                        containerView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                     }
                 }
             });
@@ -459,7 +458,7 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
                         lastFragment.willBeHidden();
                     }
                     ApplicationLoader.fragmentsStack.add(fragment);
-                    getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat_user_" + push_user_id).commitAllowingStateLoss();
+                    getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
                 }
             } else if (push_chat_id != 0) {
                 NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
@@ -473,7 +472,7 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
                         lastFragment.willBeHidden();
                     }
                     ApplicationLoader.fragmentsStack.add(fragment);
-                    getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat_group_" + push_chat_id).commitAllowingStateLoss();
+                    getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
                 }
             }  else if (push_enc_id != 0) {
                 NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
@@ -487,7 +486,7 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
                         lastFragment.willBeHidden();
                     }
                     ApplicationLoader.fragmentsStack.add(fragment);
-                    getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat_enc_" + push_enc_id).commitAllowingStateLoss();
+                    getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
                 }
             }
         } else if (id == 701) {
@@ -502,8 +501,38 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
         } else if (id == 703) {
             int state = (Integer)args[0];
             if (currentConnectionState != state) {
+                FileLog.e("tmessages", "switch to state " + state);
                 currentConnectionState = state;
                 updateActionBar();
+            }
+        }
+    }
+
+    public void fixBackButton() {
+        if(android.os.Build.VERSION.SDK_INT == 19) {
+            //workaround for back button dissapear
+            try {
+                Class firstClass = getSupportActionBar().getClass();
+                Class aClass = firstClass.getSuperclass();
+                if (aClass == android.support.v7.app.ActionBar.class) {
+
+                } else {
+                    Field field = aClass.getDeclaredField("mActionBar");
+                    field.setAccessible(true);
+                    android.app.ActionBar bar = (android.app.ActionBar)field.get(getSupportActionBar());
+
+                    field = bar.getClass().getDeclaredField("mActionView");
+                    field.setAccessible(true);
+                    View v = (View)field.get(bar);
+                    aClass = v.getClass();
+
+                    field = aClass.getDeclaredField("mHomeLayout");
+                    field.setAccessible(true);
+                    v = (View)field.get(v);
+                    v.setVisibility(View.VISIBLE);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
@@ -540,14 +569,31 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
                 }
 
                 if (currentConnectionState == 1) {
-                    statusText.setText(Html.fromHtml("<font color='#006fc8'>" + getString(R.string.WaitingForNetwork) + "</font>"));
+                    statusText.setText(getString(R.string.WaitingForNetwork));
                 } else if (currentConnectionState == 2) {
-                    statusText.setText(Html.fromHtml("<font color='#006fc8'>" + getString(R.string.Connecting) + "</font>"));
+                    statusText.setText(getString(R.string.Connecting));
                 } else if (currentConnectionState == 3) {
-                    statusText.setText(Html.fromHtml("<font color='#006fc8'>" + getString(R.string.Updating) + "</font>"));
+                    statusText.setText(getString(R.string.Updating));
                 }
                 if (actionBar.getCustomView() != statusView) {
                     actionBar.setCustomView(statusView);
+                }
+
+                float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
+                try {
+                    if (statusView.getLayoutParams() instanceof android.support.v7.app.ActionBar.LayoutParams) {
+                        android.support.v7.app.ActionBar.LayoutParams statusParams = (android.support.v7.app.ActionBar.LayoutParams)statusView.getLayoutParams();
+                        statusText.measure(View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.AT_MOST), 100);
+                        statusParams.width = (int)(statusText.getMeasuredWidth() + 54 * density);
+                        statusView.setLayoutParams(statusParams);
+                    } else if (statusView.getLayoutParams() instanceof android.app.ActionBar.LayoutParams) {
+                        android.app.ActionBar.LayoutParams statusParams = (android.app.ActionBar.LayoutParams)statusView.getLayoutParams();
+                        statusText.measure(View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.AT_MOST), 100);
+                        statusParams.width = (int)(statusText.getMeasuredWidth() + 54 * density);
+                        statusView.setLayoutParams(statusParams);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
         }
@@ -644,6 +690,15 @@ public class ApplicationActivity extends SherlockFragmentActivity implements Not
             if (lastFragment.onBackPressed()) {
                 finishFragment(false);
             }
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        try {
+            super.onSaveInstanceState(outState);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
     }
 }

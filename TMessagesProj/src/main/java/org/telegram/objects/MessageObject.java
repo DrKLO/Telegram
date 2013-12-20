@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -43,58 +43,146 @@ public class MessageObject {
                     fromUser = MessagesController.Instance.users.get(message.from_id);
                 }
                 if (message.action instanceof TLRPC.TL_messageActionChatCreate) {
-                    messageText = ApplicationLoader.applicationContext.getResources().getString(R.string.ActionCreateGroup).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                    if (message.from_id == UserConfig.clientUserId) {
+                        messageText = ApplicationLoader.applicationContext.getString(R.string.ActionCreateGroup).replace("un1", ApplicationLoader.applicationContext.getString(R.string.FromYou));
+                    } else {
+                        if (fromUser != null) {
+                            messageText = ApplicationLoader.applicationContext.getString(R.string.ActionCreateGroup).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                        } else {
+                            messageText = ApplicationLoader.applicationContext.getString(R.string.ActionCreateGroup).replace("un1", "");
+                        }
+                    }
                 } else if (message.action instanceof TLRPC.TL_messageActionChatDeleteUser) {
                     if (message.action.user_id == message.from_id) {
-                        messageText = ApplicationLoader.applicationContext.getResources().getString(R.string.ActionLeftUser).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                        if (message.from_id == UserConfig.clientUserId) {
+                            messageText = ApplicationLoader.applicationContext.getString(R.string.ActionLeftUser).replace("un1", ApplicationLoader.applicationContext.getString(R.string.FromYou));
+                        } else {
+                            if (fromUser != null) {
+                                messageText = ApplicationLoader.applicationContext.getString(R.string.ActionLeftUser).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                            } else {
+                                messageText = ApplicationLoader.applicationContext.getString(R.string.ActionLeftUser).replace("un1", "");
+                            }
+                        }
                     } else {
                         TLRPC.User who = users.get(message.action.user_id);
-                        String str = ApplicationLoader.applicationContext.getResources().getString(R.string.ActionKickUser);
-                        messageText = str.replace("un2", Utilities.formatName(who.first_name, who.last_name)).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                        if (who == null) {
+                            MessagesController.Instance.users.get(message.action.user_id);
+                        }
+                        String str = ApplicationLoader.applicationContext.getString(R.string.ActionKickUser);
+                        if (who != null && fromUser != null) {
+                            if (message.from_id == UserConfig.clientUserId) {
+                                messageText = str.replace("un2", Utilities.formatName(who.first_name, who.last_name)).replace("un1", ApplicationLoader.applicationContext.getString(R.string.FromYou));
+                            } else if (message.action.user_id == UserConfig.clientUserId) {
+                                messageText = str.replace("un2", ApplicationLoader.applicationContext.getString(R.string.FromYou)).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                            } else {
+                                messageText = str.replace("un2", Utilities.formatName(who.first_name, who.last_name)).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                            }
+                        } else {
+                            messageText = str.replace("un2", "").replace("un1", "");
+                        }
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionChatAddUser) {
                     TLRPC.User whoUser = users.get(message.action.user_id);
-                    String str = ApplicationLoader.applicationContext.getResources().getString(R.string.ActionAddUser);
-                    messageText = str.replace("un2", Utilities.formatName(whoUser.first_name, whoUser.last_name)).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                    if (whoUser == null) {
+                        MessagesController.Instance.users.get(message.action.user_id);
+                    }
+                    String str = ApplicationLoader.applicationContext.getString(R.string.ActionAddUser);
+                    if (whoUser != null && fromUser != null) {
+                        if (message.from_id == UserConfig.clientUserId) {
+                            messageText = str.replace("un2", Utilities.formatName(whoUser.first_name, whoUser.last_name)).replace("un1", ApplicationLoader.applicationContext.getString(R.string.FromYou));
+                        } else if (message.action.user_id == UserConfig.clientUserId) {
+                            messageText = str.replace("un2", ApplicationLoader.applicationContext.getString(R.string.FromYou)).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                        } else {
+                            messageText = str.replace("un2", Utilities.formatName(whoUser.first_name, whoUser.last_name)).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                        }
+                    } else {
+                        messageText = str.replace("un2", "").replace("un1", "");
+                    }
                 } else if (message.action instanceof TLRPC.TL_messageActionChatEditPhoto) {
                     photoThumbs = new ArrayList<PhotoObject>();
                     for (TLRPC.PhotoSize size : message.action.photo.sizes) {
                         photoThumbs.add(new PhotoObject(size));
                     }
-                    messageText = ApplicationLoader.applicationContext.getResources().getString(R.string.ActionChangedPhoto).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                    if (message.from_id == UserConfig.clientUserId) {
+                        messageText = ApplicationLoader.applicationContext.getString(R.string.ActionChangedPhoto).replace("un1", ApplicationLoader.applicationContext.getString(R.string.FromYou));
+                    } else {
+                        if (fromUser != null) {
+                            messageText = ApplicationLoader.applicationContext.getString(R.string.ActionChangedPhoto).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                        } else {
+                            messageText = ApplicationLoader.applicationContext.getString(R.string.ActionChangedPhoto).replace("un1", "");
+                        }
+                    }
                 } else if (message.action instanceof TLRPC.TL_messageActionChatEditTitle) {
-                    messageText = ApplicationLoader.applicationContext.getResources().getString(R.string.ActionChangedTitle).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name)).replace("un2", message.action.title);
+                    if (message.from_id == UserConfig.clientUserId) {
+                        messageText = ApplicationLoader.applicationContext.getString(R.string.ActionChangedTitle).replace("un1", ApplicationLoader.applicationContext.getString(R.string.FromYou)).replace("un2", message.action.title);
+                    } else {
+                        if (fromUser != null) {
+                            messageText = ApplicationLoader.applicationContext.getString(R.string.ActionChangedTitle).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name)).replace("un2", message.action.title);
+                        } else {
+                            messageText = ApplicationLoader.applicationContext.getString(R.string.ActionChangedTitle).replace("un1", "").replace("un2", message.action.title);
+                        }
+                    }
                 } else if (message.action instanceof TLRPC.TL_messageActionChatDeletePhoto) {
-                    messageText = ApplicationLoader.applicationContext.getResources().getString(R.string.ActionRemovedPhoto).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                    if (message.from_id == UserConfig.clientUserId) {
+                        messageText = ApplicationLoader.applicationContext.getString(R.string.ActionRemovedPhoto).replace("un1", ApplicationLoader.applicationContext.getString(R.string.FromYou));
+                    } else {
+                        if (fromUser != null) {
+                            messageText = ApplicationLoader.applicationContext.getString(R.string.ActionRemovedPhoto).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                        } else {
+                            messageText = ApplicationLoader.applicationContext.getString(R.string.ActionRemovedPhoto).replace("un1", "");
+                        }
+                    }
                 } else if (message.action instanceof TLRPC.TL_messageActionTTLChange) {
                     if (message.action.ttl != 0) {
                         String timeString;
                         if (message.action.ttl == 2) {
-                            timeString = ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetime2s);
+                            timeString = ApplicationLoader.applicationContext.getString(R.string.MessageLifetime2s);
                         } else if (message.action.ttl == 5) {
-                            timeString = ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetime5s);
+                            timeString = ApplicationLoader.applicationContext.getString(R.string.MessageLifetime5s);
                         } else if (message.action.ttl == 60) {
-                            timeString = ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetime1m);
+                            timeString = ApplicationLoader.applicationContext.getString(R.string.MessageLifetime1m);
                         } else if (message.action.ttl == 60 * 60) {
-                            timeString = ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetime1h);
+                            timeString = ApplicationLoader.applicationContext.getString(R.string.MessageLifetime1h);
                         } else if (message.action.ttl == 60 * 60 * 24) {
-                            timeString = ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetime1d);
+                            timeString = ApplicationLoader.applicationContext.getString(R.string.MessageLifetime1d);
                         } else if (message.action.ttl == 60 * 60 * 24 * 7) {
-                            timeString = ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetime1w);
+                            timeString = ApplicationLoader.applicationContext.getString(R.string.MessageLifetime1w);
                         } else {
                             timeString = String.format("%d", message.action.ttl);
                         }
                         if (message.from_id == UserConfig.clientUserId) {
-                            messageText = String.format(ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetimeChangedOutgoing), timeString);
+                            messageText = String.format(ApplicationLoader.applicationContext.getString(R.string.MessageLifetimeChangedOutgoing), timeString);
                         } else {
-                            messageText = String.format(ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetimeChanged), fromUser.first_name, timeString);
+                            if (fromUser != null) {
+                                messageText = String.format(ApplicationLoader.applicationContext.getString(R.string.MessageLifetimeChanged), fromUser.first_name, timeString);
+                            } else {
+                                messageText = String.format(ApplicationLoader.applicationContext.getString(R.string.MessageLifetimeChanged), "", timeString);
+                            }
                         }
                     } else {
                         if (message.from_id == UserConfig.clientUserId) {
-                            messageText = String.format(ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetimeRemoved), ApplicationLoader.applicationContext.getResources().getString(R.string.FromYou));
+                            messageText = String.format(ApplicationLoader.applicationContext.getString(R.string.MessageLifetimeRemoved), ApplicationLoader.applicationContext.getString(R.string.FromYou));
                         } else {
-                            messageText = String.format(ApplicationLoader.applicationContext.getResources().getString(R.string.MessageLifetimeRemoved), fromUser.first_name);
+                            if (fromUser != null) {
+                                messageText = String.format(ApplicationLoader.applicationContext.getString(R.string.MessageLifetimeRemoved), fromUser.first_name);
+                            } else {
+                                messageText = String.format(ApplicationLoader.applicationContext.getString(R.string.MessageLifetimeRemoved), "");
+                            }
                         }
+                    }
+                } else if (message.action instanceof TLRPC.TL_messageActionLoginUnknownLocation) {
+                    messageText = ApplicationLoader.applicationContext.getString(R.string.NotificationUnrecognizedDevice, message.action.title, message.action.address);
+                } else if (message.action instanceof TLRPC.TL_messageActionUserJoined) {
+                    if (fromUser != null) {
+                        messageText = ApplicationLoader.applicationContext.getString(R.string.NotificationContactJoined, Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                    } else {
+                        messageText = ApplicationLoader.applicationContext.getString(R.string.NotificationContactJoined, "");
+                    }
+                } else if (message.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
+                    if (fromUser != null) {
+                        messageText = ApplicationLoader.applicationContext.getString(R.string.NotificationContactNewPhoto, Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                    } else {
+                        messageText = ApplicationLoader.applicationContext.getString(R.string.NotificationContactNewPhoto, "");
                     }
                 }
             }
@@ -108,7 +196,7 @@ public class MessageObject {
                         imagePreview = obj.image;
                     }
                 }
-                messageText = ApplicationLoader.applicationContext.getResources().getString(R.string.AttachPhoto);
+                messageText = ApplicationLoader.applicationContext.getString(R.string.AttachPhoto);
             } else if (message.media instanceof TLRPC.TL_messageMediaVideo) {
                 photoThumbs = new ArrayList<PhotoObject>();
                 PhotoObject obj = new PhotoObject(message.media.video.thumb);
@@ -116,11 +204,13 @@ public class MessageObject {
                 if (imagePreview == null && obj.image != null) {
                     imagePreview = obj.image;
                 }
-                messageText = ApplicationLoader.applicationContext.getResources().getString(R.string.AttachVideo);
+                messageText = ApplicationLoader.applicationContext.getString(R.string.AttachVideo);
             } else if (message.media instanceof TLRPC.TL_messageMediaGeo) {
-                messageText = ApplicationLoader.applicationContext.getResources().getString(R.string.AttachLocation);
+                messageText = ApplicationLoader.applicationContext.getString(R.string.AttachLocation);
             } else if (message.media instanceof TLRPC.TL_messageMediaContact) {
-                messageText = ApplicationLoader.applicationContext.getResources().getString(R.string.AttachContact);
+                messageText = ApplicationLoader.applicationContext.getString(R.string.AttachContact);
+            } else if (message.media instanceof TLRPC.TL_messageMediaUnsupported) {
+                messageText = ApplicationLoader.applicationContext.getString(R.string.UnsuppotedMedia);
             }
         } else {
             messageText = message.message;
@@ -159,9 +249,15 @@ public class MessageObject {
                 } else {
                     type = 13;
                 }
+            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaUnsupported) {
+                if (message.from_id == UserConfig.clientUserId) {
+                    type = 0;
+                } else {
+                    type = 1;
+                }
             }
         } else if (message instanceof TLRPC.TL_messageService) {
-            if (message.action instanceof TLRPC.TL_messageActionChatEditPhoto) {
+            if (message.action instanceof TLRPC.TL_messageActionChatEditPhoto || message.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
                 type = 11;
             } else {
                 type = 10;

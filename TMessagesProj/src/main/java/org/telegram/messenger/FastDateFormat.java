@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -961,20 +961,15 @@ public class FastDateFormat extends Format {
      * @return <code>true</code> if equal
      */
     public boolean equals(Object obj) {
-        if (obj instanceof FastDateFormat == false) {
+        if (!(obj instanceof FastDateFormat)) {
             return false;
         }
         FastDateFormat other = (FastDateFormat) obj;
-        if (
-            (mPattern == other.mPattern || mPattern.equals(other.mPattern)) &&
-            (mTimeZone == other.mTimeZone || mTimeZone.equals(other.mTimeZone)) &&
-            (mLocale == other.mLocale || mLocale.equals(other.mLocale)) &&
-            (mTimeZoneForced == other.mTimeZoneForced) &&
-            (mLocaleForced == other.mLocaleForced)
-            ) {
-            return true;
-        }
-        return false;
+        return (mPattern == other.mPattern || mPattern.equals(other.mPattern)) &&
+                (mTimeZone == other.mTimeZone || mTimeZone.equals(other.mTimeZone)) &&
+                (mLocale == other.mLocale || mLocale.equals(other.mLocale)) &&
+                (mTimeZoneForced == other.mTimeZoneForced) &&
+                (mLocaleForced == other.mLocaleForced);
     }
 
     /**

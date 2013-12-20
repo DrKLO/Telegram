@@ -53,7 +53,6 @@
                 android:id="@+id/chat_time_text"
                 android:textColor="#a1aab3"
                 android:textSize="12dp"
-                android:textStyle="italic"
                 android:layout_gravity="bottom|right"/>
 
         </FrameLayout>

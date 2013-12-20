@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -15,7 +15,6 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
-import android.util.Log;
 import android.view.ViewConfiguration;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -25,6 +24,7 @@ import com.google.android.gms.gcm.GoogleCloudMessaging;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.UserConfig;
@@ -62,7 +62,7 @@ public class ApplicationLoader extends Application {
         java.lang.System.setProperty("java.net.preferIPv6Addresses", "false");
 
         applicationContext = getApplicationContext();
-        Utilities.getTypeface("fonts/rlight.ttf");
+        Utilities.getTypeface("fonts/rmedium.ttf");
         UserConfig.loadConfig();
         SharedPreferences preferences = getSharedPreferences("Notifications", MODE_PRIVATE);
         if (UserConfig.currentUser != null) {
@@ -101,7 +101,7 @@ public class ApplicationLoader extends Application {
                 menuKeyField.setBoolean(config, false);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            FileLog.e("tmessages", e);
         }
 
         if (checkPlayServices()) {
@@ -114,15 +114,18 @@ public class ApplicationLoader extends Application {
                 sendRegistrationIdToBackend(false);
             }
         } else {
-            Log.i("tmessages", "No valid Google Play Services APK found.");
+            FileLog.d("tmessages", "No valid Google Play Services APK found.");
         }
 
         PhoneFormat format = PhoneFormat.Instance;
 
-        lastPauseTime = System.currentTimeMillis() - 5000;
-        if (ConnectionsManager.DEBUG_VERSION) {
-            Log.e("tmessages", "start application with time " + lastPauseTime);
-        }
+        lastPauseTime = System.currentTimeMillis();
+        FileLog.e("tmessages", "start application with time " + lastPauseTime);
+    }
+
+    public static void resetLastPauseTime() {
+        lastPauseTime = 0;
+        ConnectionsManager.Instance.applicationMovedToForeground();
     }
 
     private boolean checkPlayServices() {
@@ -143,13 +146,13 @@ public class ApplicationLoader extends Application {
         final SharedPreferences prefs = getGCMPreferences(context);
         String registrationId = prefs.getString(PROPERTY_REG_ID, "");
         if (registrationId.length() == 0) {
-            Log.i("tmessages", "Registration not found.");
+            FileLog.d("tmessages", "Registration not found.");
             return "";
         }
         int registeredVersion = prefs.getInt(PROPERTY_APP_VERSION, Integer.MIN_VALUE);
         int currentVersion = getAppVersion(context);
         if (registeredVersion != currentVersion) {
-            Log.i("tmessages", "App version changed.");
+            FileLog.d("tmessages", "App version changed.");
             return "";
         }
         return registrationId;
@@ -172,17 +175,29 @@ public class ApplicationLoader extends Application {
         AsyncTask<String, String, Boolean> task = new AsyncTask<String, String, Boolean>() {
             @Override
             protected Boolean doInBackground(String... objects) {
-                String msg;
-                try {
-                    if (gcm == null) {
-                        gcm = GoogleCloudMessaging.getInstance(applicationContext);
+                if (gcm == null) {
+                    gcm = GoogleCloudMessaging.getInstance(applicationContext);
+                }
+                int count = 0;
+                while (count < 1000) {
+                    try {
+                        count++;
+                        regid = gcm.register(SENDER_ID);
+                        sendRegistrationIdToBackend(true);
+                        storeRegistrationId(applicationContext, regid);
+                        return true;
+                    } catch (IOException e) {
+                        FileLog.e("tmessages", e);
                     }
-                    regid = gcm.register(SENDER_ID);
-                    sendRegistrationIdToBackend(true);
-                    storeRegistrationId(applicationContext, regid);
-                    return true;
-                } catch (IOException ex) {
-                    ex.printStackTrace();
+                    try {
+                        if (count % 20 == 0) {
+                            Thread.sleep(60000 * 30);
+                        } else {
+                            Thread.sleep(5000);
+                        }
+                    } catch (InterruptedException e) {
+                        FileLog.e("tmessages", e);
+                    }
                 }
                 return false;
             }
@@ -196,7 +211,12 @@ public class ApplicationLoader extends Application {
                 UserConfig.pushString = regid;
                 UserConfig.registeredForPush = !isNew;
                 UserConfig.saveConfig(false);
-                MessagesController.Instance.registerForPush(regid);
+                Utilities.RunOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        MessagesController.Instance.registerForPush(regid);
+                    }
+                });
             }
         });
     }
@@ -204,7 +224,7 @@ public class ApplicationLoader extends Application {
     private void storeRegistrationId(Context context, String regId) {
         final SharedPreferences prefs = getGCMPreferences(context);
         int appVersion = getAppVersion(context);
-        Log.i("tmessages", "Saving regId on app version " + appVersion);
+        FileLog.e("tmessages", "Saving regId on app version " + appVersion);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString(PROPERTY_REG_ID, regId);
         editor.putInt(PROPERTY_APP_VERSION, appVersion);

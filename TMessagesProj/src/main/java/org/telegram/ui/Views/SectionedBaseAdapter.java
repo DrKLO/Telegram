@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -141,6 +141,9 @@ public abstract class SectionedBaseAdapter extends BaseAdapter implements Pinned
     }
 
     public int getPositionInSectionForPosition(int position) {
+        if (position == 0) {
+            position = 1;
+        }
         // first try to retrieve values from cache
         Integer cachedPosition = mSectionPositionCache.get(position);
         if (cachedPosition != null) {

@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -33,6 +33,7 @@ import org.telegram.TL.TLObject;
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -159,7 +160,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                             done = Utilities.copyFile(f, toFile);
                         } catch (Exception e) {
                             done = false;
-                            e.printStackTrace();
+                            FileLog.e("tmessages", e);
                         }
                     } else {
                         done = true;
@@ -202,9 +203,8 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                     selectedColor = 0;
                     backgroundImage.setImageBitmap(bitmap);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    FileLog.e("tmessages", e);
                 }
-
                 currentPicturePath = null;
             } else if (requestCode == 1) {
                 Uri imageUri = data.getData();
@@ -212,11 +212,14 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 if (cursor == null) {
                     return;
                 }
-                cursor.moveToFirst();
-                final String imageFilePath = cursor.getString(0);
-                cursor.close();
 
                 try {
+                    String imageFilePath = null;
+                    if (cursor.moveToFirst()) {
+                        imageFilePath = cursor.getString(0);
+                    }
+                    cursor.close();
+
                     Bitmap bitmap = FileLoader.loadBitmap(imageFilePath, (int)(320 * density), (int)(480 * density));
                     File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
                     FileOutputStream stream = new FileOutputStream(toFile);
@@ -225,7 +228,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                     selectedColor = 0;
                     backgroundImage.setImageBitmap(bitmap);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    FileLog.e("tmessages", e);
                 }
             }
         }
@@ -413,7 +416,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
         if (isFinish) {
             return;
         }
-        if (getSherlockActivity() == null) {
+        if (getActivity() == null) {
             return;
         }
         if (!firstStart && listAdapter != null) {

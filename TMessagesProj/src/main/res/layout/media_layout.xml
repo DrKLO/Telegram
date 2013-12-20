@@ -15,7 +15,6 @@
         android:horizontalSpacing="4dp"
         android:numColumns="auto_fit"
         android:stretchMode="columnWidth"
-        android:paddingTop="48dp"
         android:gravity="center"
         android:layout_gravity="top"/>
 

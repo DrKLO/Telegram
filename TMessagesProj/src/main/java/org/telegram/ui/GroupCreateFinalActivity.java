@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -12,28 +12,23 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Typeface;
 import android.os.Bundle;
+import android.support.v4.internal.view.SupportMenuItem;
+import android.support.v7.app.ActionBar;
 import android.text.Html;
-import android.util.Log;
-import android.view.Display;
 import android.view.LayoutInflater;
-import android.view.Surface;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.actionbarsherlock.app.ActionBar;
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuInflater;
-import com.actionbarsherlock.view.MenuItem;
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -50,11 +45,10 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     private PinnedHeaderListView listView;
     private TextView nameTextView;
     private TLRPC.FileLocation avatar;
-    private TLRPC.TL_inputFile uploadedAvatar;
+    private TLRPC.InputFile uploadedAvatar;
     private ArrayList<Integer> selectedContacts;
     private BackupImageView avatarImage;
     private boolean createAfterUpload;
-    private View topView;
     private boolean donePressed;
     private AvatarUpdater avatarUpdater = new AvatarUpdater();
 
@@ -116,7 +110,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                             } else if (i == 2) {
                                 avatar = null;
                                 uploadedAvatar = null;
-                                avatarImage.setImage(avatar, "50_50", R.drawable.group_placeholder_blue);
+                                avatarImage.setImage(avatar, "50_50", R.drawable.group_blue);
                             }
                         }
                     });
@@ -125,7 +119,6 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             });
 
             avatarImage = (BackupImageView)fragmentView.findViewById(R.id.settings_avatar_image);
-            topView = fragmentView.findViewById(R.id.top_layout);
 
             nameTextView = (EditText)fragmentView.findViewById(R.id.bubble_input_text);
             listView = (PinnedHeaderListView)fragmentView.findViewById(R.id.listView);
@@ -140,45 +133,6 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     }
 
     @Override
-    public void onConfigurationChanged(android.content.res.Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        fixLayout();
-    }
-
-    private void fixLayout() {
-        if (listView != null) {
-            ViewTreeObserver obs = listView.getViewTreeObserver();
-            obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    WindowManager manager = (WindowManager)parentActivity.getSystemService(Context.WINDOW_SERVICE);
-                    Display display = manager.getDefaultDisplay();
-                    int rotation = display.getRotation();
-                    int height;
-                    int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
-                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
-                    if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
-                        height = currentActionBarHeight;
-                    } else {
-                        height = (int)(48.0f * density);
-                        if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                            height = (int)(40.0f * density);
-                        }
-                    }
-
-                    LinearLayout.LayoutParams params2 = (LinearLayout.LayoutParams)topView.getLayoutParams();
-                    params2.setMargins(0, height, 0, 0);
-                    topView.setLayoutParams(params2);
-
-                    listView.getViewTreeObserver().removeOnPreDrawListener(this);
-
-                    return false;
-                }
-            });
-        }
-    }
-
-    @Override
     public void applySelfActionBar() {
         if (parentActivity == null) {
             return;
@@ -190,9 +144,9 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         actionBar.setDisplayUseLogoEnabled(false);
         actionBar.setDisplayShowCustomEnabled(false);
         actionBar.setCustomView(null);
-        actionBar.setTitle(Html.fromHtml("<font color='#006fc8'>" + getStringEntry(R.string.NewGroup) + "</font>"));
+        actionBar.setTitle(getStringEntry(R.string.NewGroup));
 
-        TextView title = (TextView)parentActivity.findViewById(R.id.abs__action_bar_title);
+        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
         if (title == null) {
             final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
             title = (TextView)parentActivity.findViewById(subtitleId);
@@ -206,24 +160,23 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     @Override
     public void onResume() {
         super.onResume();
-        if (getSherlockActivity() == null) {
+        if (getActivity() == null) {
             return;
         }
         ((ApplicationActivity)parentActivity).showActionBar();
         ((ApplicationActivity)parentActivity).updateActionBar();
-        fixLayout();
     }
 
     @Override
-    public void didUploadedPhoto(final TLRPC.TL_inputFile file, final TLRPC.PhotoSize small, final TLRPC.PhotoSize big) {
+    public void didUploadedPhoto(final TLRPC.InputFile file, final TLRPC.PhotoSize small, final TLRPC.PhotoSize big) {
         Utilities.RunOnUIThread(new Runnable() {
             @Override
             public void run() {
                 uploadedAvatar = file;
                 avatar = small.location;
-                avatarImage.setImage(avatar, "50_50", R.drawable.group_placeholder_blue);
+                avatarImage.setImage(avatar, "50_50", R.drawable.group_blue);
                 if (createAfterUpload) {
-                    Log.e("tmessages", "avatar did uploaded");
+                    FileLog.e("tmessages", "avatar did uploaded");
                     MessagesController.Instance.createChat(nameTextView.getText().toString(), selectedContacts, uploadedAvatar);
                 }
             }
@@ -250,7 +203,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.group_create_menu, menu);
-        MenuItem doneItem = menu.findItem(R.id.done_menu_item);
+        SupportMenuItem doneItem = (SupportMenuItem)menu.findItem(R.id.done_menu_item);
         TextView doneTextView = (TextView)doneItem.getActionView().findViewById(R.id.done_button);
         doneTextView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -281,7 +234,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         } else if (id == MessagesController.chatDidFailCreate) {
             Utilities.HideProgressDialog(parentActivity);
             donePressed = false;
-            Log.e("tmessages", "did fail create");
+            FileLog.e("tmessages", "did fail create chat");
         } else if (id == MessagesController.chatDidCreated) {
             Utilities.RunOnUIThread(new Runnable() {
                 @Override
@@ -291,7 +244,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                     Bundle bundle = new Bundle();
                     bundle.putInt("chat_id", (Integer)args[0]);
                     fragment.setArguments(bundle);
-                    ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat_group_" + args[0], true, false);
+                    ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
                 }
             });
         }
@@ -331,6 +284,9 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
         @Override
         public int getCountForSection(int section) {
+            if (selectedContacts == null) {
+                return 0;
+            }
             return selectedContacts.size();
         }
 
@@ -346,8 +302,6 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             if (holder == null) {
                 holder = new ContactsActivity.ContactListRowHolder(convertView);
                 convertView.setTag(holder);
-                Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
-                holder.nameTextView.setTypeface(typeface);
             }
 
             View divider = convertView.findViewById(R.id.settings_row_divider);
@@ -378,7 +332,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             } else {
                 int currentTime = ConnectionsManager.Instance.getCurrentTime();
                 if (user.status.expires > currentTime || user.status.was_online > currentTime) {
-                    holder.messageTextView.setTextColor(0xff006fc8);
+                    holder.messageTextView.setTextColor(0xff357aa8);
                     holder.messageTextView.setText(getStringEntry(R.string.Online));
                 } else {
                     if (user.status.was_online <= 10000 && user.status.expires <= 10000) {

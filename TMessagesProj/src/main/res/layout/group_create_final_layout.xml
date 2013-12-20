@@ -19,7 +19,7 @@
                 android:id="@+id/settings_avatar_image"
                                        android:layout_width="fill_parent"
                                        android:layout_height="fill_parent"
-                                       android:src="@drawable/group_placeholder_blue"/>
+                                       android:src="@drawable/group_blue"/>
 
             <ImageButton android:id="@+id/settings_change_avatar_button"
                          android:background="@drawable/photo_spinner"
@@ -27,21 +27,24 @@
                          android:layout_height="fill_parent"/>
         </FrameLayout>
 
-        <EditText android:textSize="18dp"
-                  android:textColorHint="#a6a6a6"
-                  android:id="@+id/bubble_input_text"
-                  android:layout_width="fill_parent"
-                  android:layout_height="wrap_content"
-                  android:layout_marginLeft="96dp"
-                  android:layout_marginRight="16dp"
-                  android:minHeight="52dp"
-                  android:hint="@string/EnterGroupNamePlaceholder"
-                  android:maxLines="4"
-                  android:paddingTop="0dp"
-                  android:layout_marginTop="0dp"
-                  android:gravity="left|center_vertical"
-                  android:imeOptions="flagNoExtractUi"
-                android:layout_gravity="center_vertical"/>
+        <EditText
+            android:textSize="18dp"
+            android:textColorHint="#a6a6a6"
+            android:id="@+id/bubble_input_text"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="96dp"
+            android:layout_marginRight="16dp"
+            android:minHeight="52dp"
+            android:hint="@string/EnterGroupNamePlaceholder"
+            android:maxLines="4"
+            android:paddingTop="0dp"
+            android:layout_marginTop="0dp"
+            android:gravity="left|center_vertical"
+            android:imeOptions="flagNoExtractUi"
+            android:layout_gravity="center_vertical"
+            android:textCursorDrawable="@null"
+            android:textColor="#000000"/>
 
     </FrameLayout>
 

@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -8,9 +8,7 @@
 
 package org.telegram.TL;
 
-import android.util.Log;
-
-import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.SerializedData;
 
 import java.util.HashMap;
@@ -373,6 +371,10 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_messages_sendEncryptedFile.constructor, TLRPC.TL_messages_sendEncryptedFile.class);
         classStore.put(TLRPC.TL_messages_sendEncryptedService.constructor, TLRPC.TL_messages_sendEncryptedService.class);
         classStore.put(TLRPC.TL_messages_receivedQueue.constructor, TLRPC.TL_messages_receivedQueue.class);
+        classStore.put(TLRPC.TL_upload_saveBigFilePart.constructor, TLRPC.TL_upload_saveBigFilePart.class);
+        classStore.put(TLRPC.TL_inputEncryptedFileBigUploaded.constructor, TLRPC.TL_inputEncryptedFileBigUploaded.class);
+        classStore.put(TLRPC.TL_inputFileBig.constructor, TLRPC.TL_inputFileBig.class);
+        classStore.put(TLRPC.TL_messageMediaUnsupported.constructor, TLRPC.TL_messageMediaUnsupported.class);
 
         classStore.put(TLRPC.TL_msg_container.constructor, TLRPC.TL_msg_container.class);
         classStore.put(TLRPC.TL_fileEncryptedLocation.constructor, TLRPC.TL_fileEncryptedLocation.class);
@@ -381,6 +383,9 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_gzip_packed.constructor, TLRPC.TL_gzip_packed.class);
         classStore.put(TLRPC.Vector.constructor, TLRPC.Vector.class);
         classStore.put(TLRPC.TL_userProfilePhotoOld.constructor, TLRPC.TL_userProfilePhotoOld.class);
+        classStore.put(TLRPC.TL_messageActionUserUpdatedPhoto.constructor, TLRPC.TL_messageActionUserUpdatedPhoto.class);
+        classStore.put(TLRPC.TL_messageActionUserJoined.constructor, TLRPC.TL_messageActionUserJoined.class);
+        classStore.put(TLRPC.TL_messageActionLoginUnknownLocation.constructor, TLRPC.TL_messageActionLoginUnknownLocation.class);
     }
 
     static TLClassStore store = null;
@@ -419,16 +424,14 @@ public class TLClassStore {
                 }
                 return response;
             } catch (IllegalAccessException e) {
-                Log.e("tmessages", "can't create class");
+                FileLog.e("tmessages", "can't create class");
                 return null;
             } catch (InstantiationException e2) {
-                Log.e("tmessages", "can't create class");
+                FileLog.e("tmessages", "can't create class");
                 return null;
             }
         } else {
-            if (ConnectionsManager.DEBUG_VERSION) {
-                Log.e("tmessages", String.format("unknown class %x", constructor));
-            }
+            FileLog.e("tmessages", String.format("unknown class %x", constructor));
             return null;
             //throw new RuntimeException(String.format("unknown class %x", constructor));
         }

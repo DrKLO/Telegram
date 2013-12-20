@@ -3,7 +3,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:0.5.+'
+        classpath 'com.android.tools.build:gradle:0.7.+'
     }
 }
 apply plugin: 'android'
@@ -22,25 +22,49 @@ task nativeLibsToJar(
     into 'lib/'
 }
 
-tasks.withType(Compile) {
+tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
 
-tasks.withType(Compile) {
+tasks.withType(JavaCompile) {
     compileTask -> compileTask.dependsOn(nativeLibsToJar)
 }
 
 dependencies {
-    compile 'com.actionbarsherlock:actionbarsherlock:4.4.0@aar'
     compile 'com.google.android.gms:play-services:4.0.+'
     compile 'net.hockeyapp.android:HockeySDK:3.0.1'
     compile 'com.android.support:support-v4:19.0.+'
-    compile fileTree(dir: "$buildDir/native-libs", include: '*.jar')
+    compile 'com.android.support:appcompat-v7:19.0.+'
+    compile fileTree(dir: "$buildDir/native-libs", include: 'native-libs.jar')
 }
 
 android {
     compileSdkVersion 19
-    buildToolsVersion "19.0.0"
+    buildToolsVersion '19.0.0'
+
+    signingConfigs {
+        debug {
+            storeFile file("debug.keystore")
+        }
+
+        release {
+            storeFile file("release.keystore")
+        }
+    }
+
+    buildTypes {
+        debug {
+            debuggable true
+            jniDebugBuild true
+            signingConfig signingConfigs.debug
+        }
+
+        release {
+            debuggable false
+            jniDebugBuild false
+            signingConfig signingConfigs.release
+        }
+    }
 
     defaultConfig {
         minSdkVersion 8

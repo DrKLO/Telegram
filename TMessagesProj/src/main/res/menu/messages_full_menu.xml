@@ -1,13 +1,19 @@
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/copy"
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/copy"
         android:icon="@drawable/ic_ab_fwd_copy"
         android:title="@string/Copy"/>
 
-    <item android:id="@+id/forward"
+    <item
+        android:id="@+id/forward"
         android:icon="@drawable/ic_ab_fwd_forward"
         android:title="@string/Forward"/>
 
-    <item android:id="@+id/delete"
+    <item
+        android:id="@+id/delete"
         android:icon="@drawable/ic_ab_fwd_delete"
         android:title="@string/Delete"/>
+
 </menu>

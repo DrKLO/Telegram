@@ -1,5 +1,10 @@
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/block_user"
-          android:icon="@drawable/ic_ab_add_member"
-          android:showAsAction="always"/>
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:sabd="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/block_user"
+        android:icon="@drawable/plus"
+        sabd:showAsAction="always"/>
+
 </menu>

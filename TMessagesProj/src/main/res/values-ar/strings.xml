@@ -5,6 +5,8 @@
     <!--signin view-->
     <string name="YourPhone">رقم هاتفك المحمول</string>
     <string name="StartText">يرجى التحقق من صحة رمز بلدك وإدخال رقم هاتفك المحمول</string>
+    <string name="ChooseCountry">اختر دولة</string>
+    <string name="WrongCountry">رمز البلد خاطئ</string>
     
     <!--code enter view-->
     <string name="YourCode">رمز التفعيل</string>
@@ -12,12 +14,15 @@
     <string name="CallText">سنتصل بك خلال</string>
     <string name="Calling">جاري الاتصال بك ...</string>
     <string name="Code">رمز التفعيل</string>
+    <string name="WrongNumber">الرقم خاطئ؟</string>
     
     <!--signup view-->
     <string name="YourName">اسمك</string>
-    <string name="RegisterText">قم بإدخال اسمك وصورتك</string>
+    <string name="RegisterText">اختر الاسم الأول واسم العائلة</string>
+    <!--<string name="RegisterText">قم بإدخال اسمك وصورتك</string>-->
     <string name="FirstName">الاسم الأول</string>
     <string name="LastName">اسم العائلة</string>
+    <string name="CancelRegistration">إلغاء التسجيل</string>
     
     <!--chats view-->
     <string name="Chats">الدردشات</string>
@@ -25,7 +30,6 @@
     <string name="NewMessages">الرسائل الجديدة</string>
     <string name="Settings">الإعدادات</string>
     <string name="Contacts">جهات الاتصال</string>
-    <string name="SearchMsgHint">بحث عن محادثات</string>
     <string name="NewGroup">مجموعة جديدة</string>
     <string name="Yesterday">أمس</string>
     <string name="NoResult">لا توجد نتائج</string>
@@ -76,6 +80,11 @@
     <string name="EncryptedDescription2">لا تترك أثرًا في خوادمنا</string>
     <string name="EncryptedDescription3">تمتلك عداد للتدمير الذاتي</string>
     <string name="EncryptedDescription4">لا تسمح بتحويل الرسائل</string>
+    <string name="OneNewMessage">%1$d رسالة جديدة</string>
+    <string name="FewNewMessages">%1$d رسائل جديدة</string>
+    <string name="YouWereKicked">لقد تم إخراجك من هذه المجموعة</string>
+    <string name="YouLeft">لقد قمت بمغادرة المجموعة</string>
+    <string name="DeleteThisGroup">حذف المجموعة</string>
     
     <!--notification-->
     <string name="EncryptedChatRequested">تم طلب محادثة سرية</string>
@@ -90,9 +99,30 @@
     <string name="MessageLifetime1d">يوم</string>
     <string name="MessageLifetime1w">أسبوع</string>
     <string name="YouHaveNewMessage">لديك رسالة جديدة</string>
+    <string name="NotificationMessageText">%1$s: %2$s</string>
+    <string name="NotificationMessageNoText">%1$s قام بإرسال رسالة لك</string>
+    <string name="NotificationMessagePhoto">%1$s قام بإرسال صورة لك</string>
+    <string name="NotificationMessageVideo">%1$s قام بإرسال مقطع مرئي لك</string>
+    <string name="NotificationMessageContact">%1$s قام بإرسال جهة اتصال لك</string>
+    <string name="NotificationMessageMap">%1$s قام بإرسال خريطة لك</string>
+    <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
+    <string name="NotificationMessageGroupNoText">%1$s  قام بإرسال رسالة للمجموعة %2$s</string>
+    <string name="NotificationMessageGroupPhoto">%1$s قام بإرسال صورة للمجموعة %2$s</string>
+    <string name="NotificationMessageGroupVideo">%1$s قام بإرسال مقطع مرئي للمجموعة %2$s</string>
+    <string name="NotificationMessageGroupContact">%1$s قام بإرسال جهة اتصال للمجموعة %2$s</string>
+    <string name="NotificationMessageGroupMap">%1$s قام بإرسال خريطة للمجموعة %2$s</string>
+    <string name="NotificationInvitedToGroup">%1$s قام بدعوتك للمجموعة %2$s</string>
+    <string name="NotificationEditedGroupName">%1$s قام بتعديل اسم المجموعة %2$s</string>
+    <string name="NotificationEditedGroupPhoto">%1$s قام بتغيير صورة المجموعة %2$s</string>
+    <string name="NotificationGroupAddMember">%1$s قام بدعوة %3$s للمجموعة %2$s</string>
+    <string name="NotificationGroupKickMember">%1$s قام بإخراج %3$s من المجموعة %2$s</string>
+    <string name="NotificationGroupKickYou">%1$s قام بإخراجك من المجموعة %2$s</string>
+    <string name="NotificationGroupLeftMember">%1$s قام بمغادرة المجموعة %2$s</string>
+    <string name="NotificationContactJoined">%1$s قام بالتسجيل في تيليجرام!</string>
+    <string name="NotificationUnrecognizedDevice">لقد تم تسجيل الدخول لحسابك من جهاز غير معروف من نوع %1$s, الموقع: %2$s</string>
+    <string name="NotificationContactNewPhoto">%1$s قام بتغيير صورته الشخصية</string>
     
     <!--contacts view-->
-    <string name="SearchContactHint">إبحث عن جهات الاتصال</string>
     <string name="SelectContact">اختر جهة اتصال</string>
     <string name="NoContacts">لا توجد جهات اتصال بعد</string>
     <string name="InviteText">http://telegram.org/dl2 مرحبا! هيا نستخدم تيليجرام: </string>
@@ -183,6 +213,7 @@
     
     <!--media view-->
     <string name="NoMedia">لا توجد وسائط بعد</string>
+    <string name="CancelDownload">إلغاء التنزيل</string>
     
     <!--map view-->
     <string name="MyLocation">موقعي</string>
@@ -228,6 +259,7 @@
     <string name="ActionChangedPhoto">تم تغيير صورة المجموعة من قِبَل un1</string>
     <string name="ActionChangedTitle">un1 قام بتغيير اسم المجموعة إلى un2</string>
     <string name="ActionCreateGroup">تم إنشاء مجموعة جديدة من قِبَل un1</string>
+    <string name="UnsuppotedMedia">نسخة تيليجرام التي تستخدمها لا تدعم هذه الرسالة</string>
     <string name="AttachPhoto">صورة</string>
     <string name="AttachVideo">مقطع مرئي</string>
     <string name="AttachLocation">موقع</string>
@@ -237,6 +269,7 @@
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">رقم الهاتف غير صحيح</string>
     <string name="CodeExpired">انتهت صلاحية الرمز الخاص بك، يرجى تسجيل الدخول مرة أخرى</string>
+    <string name="FloodWait">محاولات كثيرة خاطئة، نرجو المحاولة لاحقًا</string>
     <string name="InvalidCode">الرمز غير صحيح</string>
     <string name="InvalidFirstName">الاسم الأول غير صحيح</string>
     <string name="InvalidLastName">اسم العائلة غير صحيح</string>
@@ -253,15 +286,17 @@
     <string name="Page1Title">تيليجرام</string>
     <string name="Page2Title">سريع</string>
     <string name="Page3Title">مجاني</string>
-    <string name="Page4Title">قوي</string>
-    <string name="Page5Title">آمن</string>
+    <string name="Page4Title">آمن</string>
+    <string name="Page5Title">قوي</string>
     <string name="Page6Title">مرتبط بالسحاب</string>
-    <string name="Page1Message">مرحبًا بك<![CDATA[<br/>]]>في عصر جديد من المراسلة</string>
+    <string name="Page7Title">خصوصي</string>
+    <string name="Page1Message">مرحبًا بك في عصر جديد من المراسلة</string>
     <string name="Page2Message"><![CDATA[<b>تيليجرام</b>]]> يوصل الرسائل بسرعة أفضل من أي تطبيق آخر.</string>
     <string name="Page3Message"><![CDATA[<b>تيليجرام</b>]]> مجاني للأبد. بدون أية إعلانات. وبدون رسوم إشتراك.</string>
-    <string name="Page4Message"><![CDATA[<b>تيليجرام</b>]]> لا يفرض عليك حدود لحجم الوسائط والمحادثات.</string>
-    <string name="Page5Message"><![CDATA[<b>تيليجرام</b>]]> يحمي الرسائل الخاصة بك من هجمات المخترقين.</string>
+    <string name="Page4Message"><![CDATA[<b>تيليجرام</b>]]>  يحمي الرسائل الخاصة بك من هجمات المخترقين.</string>
+    <string name="Page5Message"><![CDATA[<b>تيليجرام</b>]]>  لا يفرض عليك حدود لحجم الوسائط والمحادثات.</string>
     <string name="Page6Message"><![CDATA[<b>تيليجرام</b>]]> يمكنك الوصول إلى الرسائل الخاصة بك من أجهزة متعددة.</string>
+    <string name="Page7Message"><![CDATA[<b>تيليجرام</b>]]> الرسائل مشفرة بشكل قوي وتستطيع تدمير ذاتها</string>
     <string name="StartMessaging">إبدأ المراسلة</string>
     
     <!--Don't change this! Not for localization!-->

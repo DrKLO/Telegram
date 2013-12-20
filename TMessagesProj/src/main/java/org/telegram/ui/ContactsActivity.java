@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -12,32 +12,28 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.internal.view.SupportMenuItem;
+import android.support.v4.view.MenuItemCompat;
+import android.support.v7.app.ActionBar;
+import android.support.v7.widget.SearchView;
 import android.text.Html;
-import android.view.Display;
 import android.view.LayoutInflater;
-import android.view.Surface;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
-
-import com.actionbarsherlock.app.ActionBar;
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuInflater;
-import com.actionbarsherlock.view.MenuItem;
-import com.actionbarsherlock.widget.SearchView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -48,6 +44,8 @@ import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.OnSwipeTouchListener;
 import org.telegram.ui.Views.PinnedHeaderListView;
 import org.telegram.ui.Views.SectionedBaseAdapter;
+
+import java.lang.reflect.Field;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -71,7 +69,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private SearchView searchView;
     private TextView epmtyTextView;
     private HashMap<Integer, TLRPC.User> ignoreUsers;
-    MenuItem searchItem;
+    private SupportMenuItem searchItem;
     private boolean isRTL;
 
     private Timer searchDialogsTimer;
@@ -170,7 +168,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 Bundle bundle = new Bundle();
                                 bundle.putInt("user_id", user_id);
                                 fragment.setArguments(bundle);
-                                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat_user_" + user_id, destroyAfterSelect, false);
+                                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), destroyAfterSelect, false);
                             }
                         }
                     } else {
@@ -191,7 +189,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                         intent.putExtra(Intent.EXTRA_TEXT, getStringEntry(R.string.InviteText));
                                         startActivity(intent);
                                     } catch (Exception e) {
-                                        e.printStackTrace();
+                                        FileLog.e("tmessages", e);
                                     }
                                     return;
                                 } else {
@@ -222,7 +220,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                     Bundle bundle = new Bundle();
                                     bundle.putInt("user_id", uid);
                                     fragment.setArguments(bundle);
-                                    ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat_user_" + uid, destroyAfterSelect, false);
+                                    ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), destroyAfterSelect, false);
                                 }
                             }
                         } else {
@@ -247,7 +245,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                         Bundle bundle = new Bundle();
                                         bundle.putInt("user_id", cLocal.user_id);
                                         fragment.setArguments(bundle);
-                                        ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat_user_" + cLocal.user_id, destroyAfterSelect, false);
+                                        ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), destroyAfterSelect, false);
                                     }
                                     return;
                                 }
@@ -260,12 +258,11 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 @Override
                                 public void onClick(DialogInterface dialogInterface, int i) {
                                     try {
-                                        String number = arg1;
-                                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromParts("sms", number, null));
+                                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromParts("sms", arg1, null));
                                         intent.putExtra("sms_body", getStringEntry(R.string.InviteText));
                                         startActivity(intent);
                                     } catch (Exception e) {
-                                        e.printStackTrace();
+                                        FileLog.e("tmessages", e);
                                     }
                                 }
                             });
@@ -305,12 +302,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         return fragmentView;
     }
 
-    @Override
-    public void onConfigurationChanged(android.content.res.Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        fixLayout();
-    }
-
     private void didSelectResult(final int user_id, boolean useAlert) {
         if (useAlert && selectAlertString != 0) {
             AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
@@ -339,39 +330,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    private void fixLayout() {
-        if (listView != null) {
-            ViewTreeObserver obs = listView.getViewTreeObserver();
-            obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    WindowManager manager = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
-                    Display display = manager.getDefaultDisplay();
-                    int rotation = display.getRotation();
-                    int height;
-                    int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
-                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
-                    if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
-                        height = currentActionBarHeight;
-                    } else {
-                        height = (int)(48.0f * density);
-                        if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                            height = (int)(40.0f * density);
-                        }
-                    }
-
-                    FrameLayout.LayoutParams params = (FrameLayout.LayoutParams)listView.getLayoutParams();
-                    params.setMargins(0, height, 0, 0);
-                    listView.setLayoutParams(params);
-
-                    listView.getViewTreeObserver().removeOnPreDrawListener(this);
-
-                    return false;
-                }
-            });
-        }
-    }
-
     @Override
     public void applySelfActionBar() {
         if (parentActivity == null) {
@@ -386,7 +344,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         actionBar.setCustomView(null);
         actionBar.setSubtitle(null);
 
-        TextView title = (TextView)parentActivity.findViewById(R.id.abs__action_bar_title);
+        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
         if (title == null) {
             final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
             title = (TextView)parentActivity.findViewById(subtitleId);
@@ -397,10 +355,12 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         }
 
         if (destroyAfterSelect) {
-            actionBar.setTitle(Html.fromHtml("<font color='#006fc8'>" + getStringEntry(R.string.SelectContact) + "</font>"));
+            actionBar.setTitle(getStringEntry(R.string.SelectContact));
         } else {
-            actionBar.setTitle(Html.fromHtml("<font color='#006fc8'>" + getStringEntry(R.string.Contacts) + "</font>"));
+            actionBar.setTitle(getStringEntry(R.string.Contacts));
         }
+
+        ((ApplicationActivity)parentActivity).fixBackButton();
     }
 
     @Override
@@ -409,7 +369,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         if (isFinish) {
             return;
         }
-        if (getSherlockActivity() == null) {
+        if (getActivity() == null) {
             return;
         }
         if (!firstStart && listViewAdapter != null) {
@@ -418,7 +378,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         firstStart = false;
         ((ApplicationActivity)parentActivity).showActionBar();
         ((ApplicationActivity)parentActivity).updateActionBar();
-        fixLayout();
     }
 
     public void searchDialogs(final String query) {
@@ -431,7 +390,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     searchDialogsTimer.cancel();
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                FileLog.e("tmessages", e);
             }
             searchDialogsTimer = new Timer();
             searchDialogsTimer.schedule(new TimerTask() {
@@ -441,7 +400,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         searchDialogsTimer.cancel();
                         searchDialogsTimer = null;
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        FileLog.e("tmessages", e);
                     }
                     processSearch(query);
                 }
@@ -453,14 +412,15 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         Utilities.globalQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
-                if (query.length() == 0) {
+
+                String q = query.trim().toLowerCase();
+                if (q.length() == 0) {
                     updateSearchResults(new ArrayList<TLRPC.User>(), new ArrayList<CharSequence>());
                     return;
                 }
                 long time = System.currentTimeMillis();
                 ArrayList<TLRPC.User> resultArray = new ArrayList<TLRPC.User>();
                 ArrayList<CharSequence> resultArrayNames = new ArrayList<CharSequence>();
-                String q = query.toLowerCase();
 
                 for (TLRPC.TL_contact contact : MessagesController.Instance.contacts) {
                     TLRPC.User user = MessagesController.Instance.users.get(contact.user_id);
@@ -510,14 +470,24 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         super.onCreateOptionsMenu(menu, inflater);
 
         inflater.inflate(R.menu.contacts_menu, menu);
-        searchItem = menu.findItem(R.id.messages_list_menu_search);
-        searchView = (SearchView) searchItem.getActionView();
-        searchView.setQueryHint(getStringEntry(R.string.SearchContactHint));
+        searchItem = (SupportMenuItem)menu.findItem(R.id.messages_list_menu_search);
+        searchView = (SearchView)searchItem.getActionView();
 
-        int srcId = searchView.getContext().getResources().getIdentifier("android:id/search_close_btn", null, null);
-        ImageView img = (ImageView) searchView.findViewById(srcId);
+        TextView textView = (TextView) searchView.findViewById(R.id.search_src_text);
+        if (textView != null) {
+            textView.setTextColor(0xffffffff);
+            try {
+                Field mCursorDrawableRes = TextView.class.getDeclaredField("mCursorDrawableRes");
+                mCursorDrawableRes.setAccessible(true);
+                mCursorDrawableRes.set(textView, R.drawable.search_carret);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        ImageView img = (ImageView) searchView.findViewById(R.id.search_close_btn);
         if (img != null) {
-            img.setImageResource(R.drawable.ic_msg_in_cross);
+            img.setImageResource(R.drawable.ic_msg_btn_cross_custom);
         }
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -549,10 +519,13 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             }
         });
 
-        searchItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
+        searchItem.setSupportOnActionExpandListener(new MenuItemCompat.OnActionExpandListener() {
             @Override
             public boolean onMenuItemActionExpand(MenuItem menuItem) {
-                parentActivity.getSupportActionBar().setIcon(R.drawable.ic_ab_search);
+                if (parentActivity != null) {
+                    ActionBar actionBar = parentActivity.getSupportActionBar();
+                    actionBar.setIcon(R.drawable.ic_ab_search);
+                }
                 searching = true;
                 return true;
             }
@@ -563,19 +536,21 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 searchDialogs(null);
                 searching = false;
                 searchWas = false;
-                ViewGroup group = (ViewGroup)listView.getParent();
+                ViewGroup group = (ViewGroup) listView.getParent();
                 listView.setAdapter(listViewAdapter);
                 float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
                 if (!isRTL) {
-                    listView.setPadding((int)(density * 16), listView.getPaddingTop(), (int)(density * 30), listView.getPaddingBottom());
+                    listView.setPadding((int) (density * 16), listView.getPaddingTop(), (int) (density * 30), listView.getPaddingBottom());
                 } else {
-                    listView.setPadding((int)(density * 30), listView.getPaddingTop(), (int)(density * 16), listView.getPaddingBottom());
+                    listView.setPadding((int) (density * 30), listView.getPaddingTop(), (int) (density * 16), listView.getPaddingBottom());
                 }
-                if(android.os.Build.VERSION.SDK_INT >= 11) {
+                if (android.os.Build.VERSION.SDK_INT >= 11) {
                     listView.setFastScrollAlwaysVisible(true);
                 }
                 listView.setFastScrollEnabled(true);
                 listView.setVerticalScrollBarEnabled(false);
+                ((ApplicationActivity)parentActivity).updateActionBar();
+
                 epmtyTextView.setText(getStringEntry(R.string.NoContacts));
                 return true;
             }
@@ -599,7 +574,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 Bundle bundle = new Bundle();
                 bundle.putInt("enc_id", encryptedChat.id);
                 fragment.setArguments(bundle);
-                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat_enc_" + id, true, false);
+                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
             }
         }
     }
@@ -703,7 +678,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 } else {
                     int currentTime = ConnectionsManager.Instance.getCurrentTime();
                     if (user.status.expires > currentTime || user.status.was_online > currentTime) {
-                        holder.messageTextView.setTextColor(0xff006fc8);
+                        holder.messageTextView.setTextColor(0xff357aa8);
                         holder.messageTextView.setText(getStringEntry(R.string.Online));
                     } else {
                         if (user.status.was_online <= 10000 && user.status.expires <= 10000) {
@@ -829,8 +804,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 if (holder == null) {
                     holder = new ContactListRowHolder(convertView);
                     convertView.setTag(holder);
-                    Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
-                    holder.nameTextView.setTypeface(typeface);
                 }
 
                 if (ignoreUsers != null) {
@@ -876,7 +849,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 } else {
                     int currentTime = ConnectionsManager.Instance.getCurrentTime();
                     if (user.status.expires > currentTime || user.status.was_online > currentTime) {
-                        holder.messageTextView.setTextColor(0xff006fc8);
+                        holder.messageTextView.setTextColor(0xff357aa8);
                         holder.messageTextView.setText(getStringEntry(R.string.Online));
                     } else {
                         if (user.status.was_online <= 10000 && user.status.expires <= 10000) {
@@ -899,8 +872,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                 convertView = li.inflate(R.layout.settings_row_button_layout, parent, false);
                 textView = (TextView)convertView.findViewById(R.id.settings_row_text);
-                Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
-                textView.setTypeface(typeface);
             } else {
                 textView = (TextView)convertView.findViewById(R.id.settings_row_text);
             }
@@ -999,11 +970,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         public TextView nameTextView;
 
         public ContactListRowHolder(View view) {
-            Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
             messageTextView = (TextView)view.findViewById(R.id.messages_list_row_message);
-            if (messageTextView != null) {
-                messageTextView.setTypeface(typeface);
-            }
             nameTextView = (TextView)view.findViewById(R.id.messages_list_row_name);
             avatarImage = (BackupImageView)view.findViewById(R.id.messages_list_row_avatar);
         }

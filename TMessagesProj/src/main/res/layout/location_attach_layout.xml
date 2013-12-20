@@ -19,7 +19,7 @@
             android:text="@string/SendLocation"
             android:gravity="center"
             android:textSize="18dp"
-            android:textColor="#006dcb"
+            android:textColor="#316f9f"
             android:background="@drawable/location_send_button_states"
             android:id="@+id/location_send_button"/>
 

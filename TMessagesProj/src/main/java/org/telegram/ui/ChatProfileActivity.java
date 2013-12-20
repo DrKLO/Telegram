@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -20,14 +20,15 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.support.v4.internal.view.SupportMenuItem;
+import android.support.v7.app.ActionBar;
 import android.text.Html;
-import android.view.Display;
 import android.view.LayoutInflater;
-import android.view.Surface;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageButton;
@@ -35,16 +36,12 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.actionbarsherlock.app.ActionBar;
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuInflater;
-import com.actionbarsherlock.view.MenuItem;
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.AvatarUpdater;
@@ -83,7 +80,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         MessagesController.Instance.getMediaCount(-chat_id, classGuid, true);
         avatarUpdater.delegate = new AvatarUpdater.AvatarUpdaterDelegate() {
             @Override
-            public void didUploadedPhoto(TLRPC.TL_inputFile file, TLRPC.PhotoSize small, TLRPC.PhotoSize big) {
+            public void didUploadedPhoto(TLRPC.InputFile file, TLRPC.PhotoSize small, TLRPC.PhotoSize big) {
                 if (chat_id != 0) {
                     MessagesController.Instance.changeChatAvatar(chat_id, file);
                 }
@@ -163,45 +160,34 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         editor.putBoolean(key, !value);
                         editor.commit();
                         listView.invalidateViews();
-
-                        TLRPC.TL_account_updateNotifySettings req = new TLRPC.TL_account_updateNotifySettings();
-                        req.settings = new TLRPC.TL_inputPeerNotifySettings();
-                        req.settings.sound = "";
-                        req.peer = new TLRPC.TL_inputNotifyPeer();
-                        ((TLRPC.TL_inputNotifyPeer)req.peer).peer = new TLRPC.TL_inputPeerChat();
-                        ((TLRPC.TL_inputNotifyPeer)req.peer).peer.chat_id = chat_id;
-                        req.settings.show_previews = true;
-                        req.settings.events_mask = 1;
-                        if (value) {
-                            req.settings.mute_until = (int)(System.currentTimeMillis() / 1000) + 10 * 365 * 24 * 60 * 60;
-                        } else {
-                            req.settings.mute_until = 0;
-                        }
-                        ConnectionsManager.Instance.performRpc(req, null, null, true, RPCRequest.RPCRequestClassGeneric);
                     } else if (i == 3) {
-                        Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
-                        tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
-                        tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false);
-                        SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                        Uri currentSound = null;
+                        try {
+                            Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
+                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
+                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false);
+                            SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                            Uri currentSound = null;
 
-                        String defaultPath = null;
-                        Uri defaultUri = Settings.System.DEFAULT_NOTIFICATION_URI;
-                        if (defaultUri != null) {
-                            defaultPath = defaultUri.getPath();
-                        }
-
-                        String path = preferences.getString("sound_chat_path_" + chat_id, defaultPath);
-                        if (path != null && !path.equals("NoSound")) {
-                            if (path.equals(defaultPath)) {
-                                currentSound = defaultUri;
-                            } else {
-                                currentSound = Uri.parse(path);
+                            String defaultPath = null;
+                            Uri defaultUri = Settings.System.DEFAULT_NOTIFICATION_URI;
+                            if (defaultUri != null) {
+                                defaultPath = defaultUri.getPath();
                             }
-                        }
 
-                        tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentSound);
-                        startActivityForResult(tmpIntent, 15);
+                            String path = preferences.getString("sound_chat_path_" + chat_id, defaultPath);
+                            if (path != null && !path.equals("NoSound")) {
+                                if (path.equals(defaultPath)) {
+                                    currentSound = defaultUri;
+                                } else {
+                                    currentSound = Uri.parse(path);
+                                }
+                            }
+
+                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentSound);
+                            startActivityForResult(tmpIntent, 15);
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
                     } else if (i == 5) {
                         MediaActivity fragment = new MediaActivity();
                         Bundle bundle = new Bundle();
@@ -330,10 +316,10 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         actionBar.setDisplayUseLogoEnabled(false);
         actionBar.setDisplayShowCustomEnabled(false);
         actionBar.setCustomView(null);
-        actionBar.setTitle(Html.fromHtml("<font color='#006fc8'>" + getStringEntry(R.string.GroupInfo) + "</font>"));
+        actionBar.setTitle(getStringEntry(R.string.GroupInfo));
         actionBar.setSubtitle(null);
 
-        TextView title = (TextView)parentActivity.findViewById(R.id.abs__action_bar_title);
+        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
         if (title == null) {
             final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
             title = (TextView)parentActivity.findViewById(subtitleId);
@@ -342,12 +328,13 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
             title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
             title.setCompoundDrawablePadding(0);
         }
+        ((ApplicationActivity)parentActivity).fixBackButton();
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        if (getSherlockActivity() == null) {
+        if (getActivity() == null) {
             return;
         }
         if (listViewAdapter != null) {
@@ -355,44 +342,6 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         }
         ((ApplicationActivity)parentActivity).showActionBar();
         ((ApplicationActivity)parentActivity).updateActionBar();
-        fixLayout();
-    }
-
-    @Override
-    public void onConfigurationChanged(android.content.res.Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        fixLayout();
-    }
-
-    private void fixLayout() {
-        if (listView != null) {
-            ViewTreeObserver obs = listView.getViewTreeObserver();
-            obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    WindowManager manager = (WindowManager)parentActivity.getSystemService(Activity.WINDOW_SERVICE);
-                    Display display = manager.getDefaultDisplay();
-                    int rotation = display.getRotation();
-                    int height;
-                    int currentActionBarHeight = parentActivity.getSupportActionBar().getHeight();
-                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
-                    if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
-                        height = currentActionBarHeight;
-                    } else {
-                        height = (int)(48.0f * density);
-                        if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                            height = (int)(40.0f * density);
-                        }
-                    }
-
-                    listView.setPadding(listView.getPaddingLeft(), height, listView.getPaddingRight(), listView.getPaddingBottom());
-
-                    listView.getViewTreeObserver().removeOnPreDrawListener(this);
-
-                    return false;
-                }
-            });
-        }
     }
 
     @Override
@@ -401,9 +350,6 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         switch (itemId) {
             case android.R.id.home:
                 finishFragment();
-                break;
-            case R.id.block_user:
-                openAddMenu();
                 break;
         }
         return true;
@@ -466,7 +412,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         if (action == 0) {
             TLRPC.Chat chat = MessagesController.Instance.chats.get(chat_id);
             if (chat.photo != null && chat.photo.photo_big != null) {
-                NotificationCenter.Instance.addToMemCache(3, chat.photo.photo_big);
+                NotificationCenter.Instance.addToMemCache(53, chat.photo.photo_big);
                 Intent intent = new Intent(parentActivity, GalleryImageViewer.class);
                 startActivity(intent);
             }
@@ -506,15 +452,23 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         } else {
             NotificationCenter.Instance.removeObserver(this, MessagesController.closeChats);
             NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
-            MessagesController.Instance.deleteDialog(-chat_id, 0, false);
             MessagesController.Instance.deleteUserFromChat(chat_id, UserConfig.clientUserId, info);
+            MessagesController.Instance.deleteDialog(-chat_id, 0, false);
             finishFragment();
         }
     }
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.settings_block_users_bar_menu, menu);
+        inflater.inflate(R.menu.group_profile_menu, menu);
+        SupportMenuItem doneItem = (SupportMenuItem)menu.findItem(R.id.block_user);
+        TextView doneTextView = (TextView)doneItem.getActionView().findViewById(R.id.done_button);
+        doneTextView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                openAddMenu();
+            }
+        });
     }
 
     private class ListAdapter extends BaseAdapter {
@@ -571,9 +525,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.chat_profile_avatar_layout, viewGroup, false);
-                    Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
                     onlineText = (TextView)view.findViewById(R.id.settings_online);
-                    onlineText.setTypeface(typeface);
 
                     ImageButton button = (ImageButton)view.findViewById(R.id.settings_edit_name);
                     button.setOnClickListener(new View.OnClickListener() {
@@ -636,11 +588,13 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 }
                 avatarImage = (BackupImageView)view.findViewById(R.id.settings_avatar_image);
                 TextView textView = (TextView)view.findViewById(R.id.settings_name);
+                Typeface typeface = Utilities.getTypeface("fonts/rmedium.ttf");
+                textView.setTypeface(typeface);
 
                 textView.setText(chat.title);
 
                 if (chat.participants_count != 0 && onlineCount > 0) {
-                    onlineText.setText(Html.fromHtml(String.format("%d %s, <font color='#006fc8'>%d %s</font>", chat.participants_count, getStringEntry(R.string.Members), onlineCount, getStringEntry(R.string.Online))));
+                    onlineText.setText(Html.fromHtml(String.format("%d %s, <font color='#357aa8'>%d %s</font>", chat.participants_count, getStringEntry(R.string.Members), onlineCount, getStringEntry(R.string.Online))));
                 } else {
                     onlineText.setText(String.format("%d %s", chat.participants_count, getStringEntry(R.string.Members)));
                 }
@@ -692,8 +646,6 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 }
                 TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
                 TextView detailTextView = (TextView)view.findViewById(R.id.settings_row_text_detail);
-                Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
-                detailTextView.setTypeface(typeface);
                 View divider = view.findViewById(R.id.settings_row_divider);
                 if (i == 3) {
                     SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
@@ -726,8 +678,6 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 if (holder == null) {
                     holder = new ContactsActivity.ContactListRowHolder(view);
                     view.setTag(holder);
-                    Typeface typeface = Utilities.getTypeface("fonts/rlight.ttf");
-                    holder.nameTextView.setTypeface(typeface);
                 }
 
                 View divider = view.findViewById(R.id.settings_row_divider);
@@ -741,19 +691,11 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     holder.nameTextView.setText(Html.fromHtml("<b>" + user.last_name + "</b>"));
                 }
 
-                if (info.admin_id != UserConfig.clientUserId && part.inviter_id != UserConfig.clientUserId && part.user_id != UserConfig.clientUserId) {
-                    if(android.os.Build.VERSION.SDK_INT >= 11) {
-                        holder.avatarImage.setAlpha(0.7f);
-                        holder.nameTextView.setAlpha(0.7f);
-                        holder.messageTextView.setAlpha(0.7f);
-                    }
-                } else {
-                    if(android.os.Build.VERSION.SDK_INT >= 11) {
-                        holder.avatarImage.setAlpha(1.0f);
-                        holder.nameTextView.setAlpha(1.0f);
-                        holder.messageTextView.setAlpha(1.0f);
-                    }
-                }
+//                if (info.admin_id != UserConfig.clientUserId && part.inviter_id != UserConfig.clientUserId && part.user_id != UserConfig.clientUserId) {
+//
+//                } else {
+//
+//                }
 
                 TLRPC.FileLocation photo = null;
                 if (user.photo != null) {
@@ -768,7 +710,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 } else {
                     int currentTime = ConnectionsManager.Instance.getCurrentTime();
                     if ((user.status.expires > currentTime || user.status.was_online > currentTime || user.id == UserConfig.clientUserId) && user.status.expires != 0) {
-                        holder.messageTextView.setTextColor(0xff006fc8);
+                        holder.messageTextView.setTextColor(0xff357aa8);
                         holder.messageTextView.setText(getStringEntry(R.string.Online));
                     } else {
                         if (user.status.was_online <= 10000 && user.status.expires <= 10000) {

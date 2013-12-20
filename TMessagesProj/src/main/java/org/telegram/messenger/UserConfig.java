@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 1.2.3.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -10,13 +10,13 @@ package org.telegram.messenger;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Base64;
 
 import org.telegram.TL.TLClassStore;
 import org.telegram.TL.TLRPC;
 import org.telegram.ui.ApplicationLoader;
 
 import java.io.File;
-import java.io.FileOutputStream;
 
 public class UserConfig {
     public static TLRPC.User currentUser;
@@ -24,8 +24,8 @@ public class UserConfig {
     public static boolean clientActivated = false;
     public static boolean registeredForPush = false;
     public static String pushString = "";
-    public static int lastSendMessageId = -1;
-    public static int lastLocalId = -1;
+    public static int lastSendMessageId = -210000;
+    public static int lastLocalId = -210000;
     public static String contactsHash = "";
     public static String importHash = "";
     private final static Integer sync = 1;
@@ -41,45 +41,53 @@ public class UserConfig {
     }
 
     public static void saveConfig(boolean withFile) {
+        saveConfig(withFile, null);
+    }
+
+    public static void saveConfig(boolean withFile, File oldFile) {
         synchronized (sync) {
-            SerializedData data = new SerializedData();
-            if (currentUser != null) {
-                data.writeInt32(2);
-                currentUser.serializeToStream(data);
-                clientUserId = currentUser.id;
-                clientActivated = true;
+            try {
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = preferences.edit();
-                editor.putBoolean("registeredForPush", registeredForPush);
-                editor.putString("pushString", pushString);
-                editor.putInt("lastSendMessageId", lastSendMessageId);
-                editor.putInt("lastLocalId", lastLocalId);
-                editor.putString("contactsHash", contactsHash);
-                editor.putString("importHash", importHash);
-                editor.putBoolean("saveIncomingPhotos", saveIncomingPhotos);
-                editor.commit();
-            } else {
-                data.writeInt32(0);
-            }
-            if (withFile) {
-                try {
-                    File configFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "user.dat");
-                    if (!configFile.exists()) {
-                        configFile.createNewFile();
+                if (currentUser != null) {
+                    editor.putBoolean("registeredForPush", registeredForPush);
+                    editor.putString("pushString", pushString);
+                    editor.putInt("lastSendMessageId", lastSendMessageId);
+                    editor.putInt("lastLocalId", lastLocalId);
+                    editor.putString("contactsHash", contactsHash);
+                    editor.putString("importHash", importHash);
+                    editor.putBoolean("saveIncomingPhotos", saveIncomingPhotos);
+                    if (withFile) {
+                        SerializedData data = new SerializedData();
+                        currentUser.serializeToStream(data);
+                        clientUserId = currentUser.id;
+                        clientActivated = true;
+                        String userString = Base64.encodeToString(data.toByteArray(), Base64.DEFAULT);
+                        editor.putString("user", userString);
                     }
-                    FileOutputStream stream = new FileOutputStream(configFile);
-                    stream.write(data.toByteArray());
-                    stream.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
+                } else {
+                    editor.putBoolean("registeredForPush", registeredForPush);
+                    editor.putString("pushString", pushString);
+                    editor.putInt("lastSendMessageId", lastSendMessageId);
+                    editor.putInt("lastLocalId", lastLocalId);
+                    editor.putString("contactsHash", contactsHash);
+                    editor.putString("importHash", importHash);
+                    editor.putBoolean("saveIncomingPhotos", saveIncomingPhotos);
+                    editor.remove("user");
                 }
+                editor.commit();
+                if (oldFile != null) {
+                    oldFile.delete();
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
             }
         }
     }
 
     public static void loadConfig() {
         synchronized (sync) {
-            File configFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "user.dat");
+            final File configFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "user.dat");
             if (configFile.exists()) {
                 try {
                     SerializedData data = new SerializedData(configFile);
@@ -113,6 +121,12 @@ public class UserConfig {
                             MessagesStorage.secretPBytes = data.readByteArray();
                         }
                         MessagesStorage.secretG = data.readInt32();
+                        Utilities.stageQueue.postRunnable(new Runnable() {
+                            @Override
+                            public void run() {
+                                saveConfig(true, configFile);
+                            }
+                        });
                     } else if (ver == 2) {
                         int constructor = data.readInt32();
                         currentUser = (TLRPC.TL_userSelf)TLClassStore.Instance().TLdeserialize(data, constructor);
@@ -122,14 +136,49 @@ public class UserConfig {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
                         registeredForPush = preferences.getBoolean("registeredForPush", false);
                         pushString = preferences.getString("pushString", "");
-                        lastSendMessageId = preferences.getInt("lastSendMessageId", -1);
-                        lastLocalId = preferences.getInt("lastLocalId", -1);
+                        lastSendMessageId = preferences.getInt("lastSendMessageId", -210000);
+                        lastLocalId = preferences.getInt("lastLocalId", -210000);
                         contactsHash = preferences.getString("contactsHash", "");
                         importHash = preferences.getString("importHash", "");
                         saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
                     }
+                    if (lastLocalId > -210000) {
+                        lastLocalId = -210000;
+                    }
+                    if (lastSendMessageId > -210000) {
+                        lastSendMessageId = -210000;
+                    }
+                    Utilities.stageQueue.postRunnable(new Runnable() {
+                        @Override
+                        public void run() {
+                            saveConfig(true, configFile);
+                        }
+                    });
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    FileLog.e("tmessages", e);
+                }
+            } else {
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
+                registeredForPush = preferences.getBoolean("registeredForPush", false);
+                pushString = preferences.getString("pushString", "");
+                lastSendMessageId = preferences.getInt("lastSendMessageId", -210000);
+                lastLocalId = preferences.getInt("lastLocalId", -210000);
+                contactsHash = preferences.getString("contactsHash", "");
+                importHash = preferences.getString("importHash", "");
+                saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
+                String user = preferences.getString("user", null);
+                if (user != null) {
+                    byte[] userBytes = Base64.decode(user, Base64.DEFAULT);
+                    if (userBytes != null) {
+                        SerializedData data = new SerializedData(userBytes);
+                        currentUser = (TLRPC.TL_userSelf)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                        clientUserId = currentUser.id;
+                        clientActivated = true;
+                    }
+                }
+                if (currentUser == null) {
+                    clientActivated = false;
+                    clientUserId = 0;
                 }
             }
         }
@@ -141,10 +190,11 @@ public class UserConfig {
         currentUser = null;
         registeredForPush = false;
         contactsHash = "";
-        lastLocalId = -1;
+        lastLocalId = -210000;
         importHash = "";
-        lastSendMessageId = -1;
+        lastSendMessageId = -210000;
         saveIncomingPhotos = false;
         saveConfig(true);
+        MessagesController.Instance.deleteAllAppAccounts();
     }
 }
