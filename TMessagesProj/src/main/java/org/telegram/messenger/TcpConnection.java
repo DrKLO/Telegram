@@ -85,6 +85,14 @@ public class TcpConnection extends PyroClientAdapter {
 
                 connectionState = TcpConnectionState.TcpConnectionStageConnecting;
                 try {
+                    try {
+                        if (reconnectTimer != null) {
+                            reconnectTimer.cancel();
+                            reconnectTimer = null;
+                        }
+                    } catch (Exception e2) {
+                        FileLog.e("tmessages", e2);
+                    }
                     Datacenter datacenter = ConnectionsManager.Instance.datacenterWithId(datacenterId);
                     hostAddress = datacenter.getCurrentAddress();
                     hostPort = datacenter.getCurrentPort();

@@ -37,6 +37,9 @@ public class ExportAuthorizationAction extends Action {
         ConnectionsManager.Instance.performRpc(exportAuthorization, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
+                if (delegate == null) {
+                    return;
+                }
                 if (error == null) {
                     exportedAuthorization = (TLRPC.TL_auth_exportedAuthorization)response;
                     beginImport();
@@ -65,6 +68,9 @@ public class ExportAuthorizationAction extends Action {
         ConnectionsManager.Instance.performRpc(importAuthorization, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
+                if (delegate == null) {
+                    return;
+                }
                 if (error == null) {
                     delegate.ActionDidFinishExecution(ExportAuthorizationAction.this, null);
                 } else {

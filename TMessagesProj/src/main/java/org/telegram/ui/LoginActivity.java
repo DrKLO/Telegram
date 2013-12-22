@@ -157,14 +157,10 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
     }
 
     public void setPage(int page, boolean animated, Bundle params, boolean back) {
-        if(android.os.Build.VERSION.SDK_INT > 11) {
+        if(android.os.Build.VERSION.SDK_INT > 13) {
             Point displaySize = new Point();
             Display display = getWindowManager().getDefaultDisplay();
-            if(android.os.Build.VERSION.SDK_INT < 13) {
-                displaySize.set(display.getWidth(), display.getHeight());
-            } else {
-                display.getSize(displaySize);
-            }
+            display.getSize(displaySize);
 
             final SlideView outView = views[currentViewNum];
             final SlideView newView = views[page];

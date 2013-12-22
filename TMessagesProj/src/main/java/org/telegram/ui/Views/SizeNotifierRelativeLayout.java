@@ -39,9 +39,11 @@ public class SizeNotifierRelativeLayout extends RelativeLayout {
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
-        int usableViewHeight = this.getRootView().getHeight() - Utilities.statusBarHeight;
-        this.getWindowVisibleDisplayFrame(rect);
-        int keyboardHeight = usableViewHeight - (rect.bottom - rect.top);
-        delegate.onSizeChanged(keyboardHeight);
+        if (delegate != null) {
+            int usableViewHeight = this.getRootView().getHeight() - Utilities.statusBarHeight;
+            this.getWindowVisibleDisplayFrame(rect);
+            int keyboardHeight = usableViewHeight - (rect.bottom - rect.top);
+            delegate.onSizeChanged(keyboardHeight);
+        }
     }
 }

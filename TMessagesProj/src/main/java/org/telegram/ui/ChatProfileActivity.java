@@ -410,6 +410,9 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
     private void processPhotoMenu(int action) {
         if (action == 0) {
+            if (parentActivity == null) {
+                return;
+            }
             TLRPC.Chat chat = MessagesController.Instance.chats.get(chat_id);
             if (chat.photo != null && chat.photo.photo_big != null) {
                 NotificationCenter.Instance.addToMemCache(53, chat.photo.photo_big);

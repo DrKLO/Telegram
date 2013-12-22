@@ -178,6 +178,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 Utilities.globalQueue.postRunnable(new Runnable() {
                     @Override
                     public void run() {
+
                         final Utilities.TPFactorizedValue factorizedPq = Utilities.getFactorizedValue(pqf);
 
                         Utilities.stageQueue.postRunnable(new Runnable() {
@@ -323,6 +324,10 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                     return;
                 }
 
+                if (!Utilities.isGoodPrime(dhInnerData.dh_prime)) {
+                    throw new RuntimeException("bad prime");
+                }
+
                 if (!Arrays.equals(authNonce, dhInnerData.nonce)) {
                     FileLog.e("tmessages", "***** Invalid DH nonce");
                     beginHandshake(false);
@@ -339,12 +344,13 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                     b[a] = (byte)(MessagesController.random.nextDouble() * 255);
                 }
 
+                BigInteger dhBI = new BigInteger(1, dhInnerData.dh_prime);
                 BigInteger i_g_b = BigInteger.valueOf(dhInnerData.g);
-                i_g_b = i_g_b.modPow(new BigInteger(1, b), new BigInteger(1, dhInnerData.dh_prime));
+                i_g_b = i_g_b.modPow(new BigInteger(1, b), dhBI);
                 byte[] g_b = i_g_b.toByteArray();
 
                 BigInteger i_authKey = new BigInteger(1, dhInnerData.g_a);
-                i_authKey = i_authKey.modPow(new BigInteger(1, b), new BigInteger(1, dhInnerData.dh_prime));
+                i_authKey = i_authKey.modPow(new BigInteger(1, b), dhBI);
 
                 authKey = i_authKey.toByteArray();
                 if (authKey.length > 256) {

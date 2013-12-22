@@ -257,8 +257,10 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             String name = null;
             if (ringtone != null) {
                 Ringtone rng = RingtoneManager.getRingtone(ApplicationLoader.applicationContext, ringtone);
-                name = rng.getTitle(ApplicationLoader.applicationContext);
-                rng.stop();
+                if (rng != null) {
+                    name = rng.getTitle(ApplicationLoader.applicationContext);
+                    rng.stop();
+                }
             }
 
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
@@ -276,7 +278,6 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             editor.commit();
             listView.invalidateViews();
         }
-
     }
 
     public void didReceivedNotification(int id, Object... args) {

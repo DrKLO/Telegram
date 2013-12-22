@@ -1224,6 +1224,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
                 for (TLRPC.TL_contact value : contactsArr) {
                     TLRPC.User user = usersDict.get(value.user_id);
+                    if (user == null) {
+                        continue;
+                    }
                     contactsDictionery.put(value.user_id, value);
                     contactsPhones.put(user.phone, value);
 
@@ -4880,6 +4883,12 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 if (error == null) {
                     TLRPC.messages_DhConfig res = (TLRPC.messages_DhConfig)response;
                     if (response instanceof TLRPC.TL_messages_dhConfig) {
+                        if (!Utilities.isGoodPrime(res.p)) {
+                            acceptingChats.remove(encryptedChat.id);
+                            declineSecretChat(encryptedChat.id);
+                            return;
+                        }
+
                         MessagesStorage.secretPBytes = res.p;
                         MessagesStorage.secretG = res.g;
                         MessagesStorage.lastSecretVersion = res.version;
@@ -4967,6 +4976,17 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 if (error == null) {
                     TLRPC.messages_DhConfig res = (TLRPC.messages_DhConfig)response;
                     if (response instanceof TLRPC.TL_messages_dhConfig) {
+                        if (!Utilities.isGoodPrime(res.p)) {
+                            Utilities.RunOnUIThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (!((ActionBarActivity)context).isFinishing()) {
+                                        progressDialog.dismiss();
+                                    }
+                                }
+                            });
+                            return;
+                        }
                         MessagesStorage.secretPBytes = res.p;
                         MessagesStorage.secretG = res.g;
                         MessagesStorage.lastSecretVersion = res.version;
