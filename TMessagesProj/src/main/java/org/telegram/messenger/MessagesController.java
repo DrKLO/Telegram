@@ -4824,9 +4824,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             }
             authKey = correctedAuth;
         }
-        for (int a = 0; a < 256; a++) {
-            authKey[a] = (byte)(authKey[a] ^ encryptedChat.nonce[a]);
-        }
         byte[] authKeyHash = Utilities.computeSHA1(authKey);
         byte[] authKeyId = new byte[8];
         System.arraycopy(authKeyHash, authKeyHash.length - 8, authKeyId, 0, 8);
@@ -4917,9 +4914,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             authKey[a] = 0;
                         }
                         authKey = correctedAuth;
-                    }
-                    for (int a = 0; a < 256; a++) {
-                        authKey[a] = (byte)(authKey[a] ^ encryptedChat.nonce[a]);
                     }
                     byte[] authKeyHash = Utilities.computeSHA1(authKey);
                     byte[] authKeyId = new byte[8];
