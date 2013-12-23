@@ -100,7 +100,10 @@ public class Utilities {
         return new String(hexChars);
     }
 
-    public static boolean isGoodPrime(byte[] prime) {
+    public static boolean isGoodPrime(byte[] prime, int g) {
+        if (!(g >= 2 && g <= 7)) {
+            return false;
+        }
         String hex = bytesToHex(prime);
         for (String cached : goodPrimes) {
             if (cached.equals(hex)) {
@@ -118,6 +121,16 @@ public class Utilities {
             return false;
         }
 
+        return true;
+    }
+
+    public static boolean isGoodGaAndGb(BigInteger g_a, BigInteger g_b, BigInteger p) {
+        if (g_a != null && g_a.compareTo(BigInteger.valueOf(1)) != 1) {
+            return false;
+        }
+        if (g_b != null && p != null && g_b.compareTo(p.subtract(BigInteger.valueOf(1))) != -1) {
+            return false;
+        }
         return true;
     }
 

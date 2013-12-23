@@ -4811,8 +4811,15 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     public void processAcceptedSecretChat(final TLRPC.EncryptedChat encryptedChat) {
+        BigInteger p = new BigInteger(1, MessagesStorage.secretPBytes);
         BigInteger i_authKey = new BigInteger(1, encryptedChat.g_a_or_b);
-        i_authKey = i_authKey.modPow(new BigInteger(1, encryptedChat.a_or_b), new BigInteger(1, MessagesStorage.secretPBytes));
+
+        if (!Utilities.isGoodGaAndGb(null, i_authKey, p)) {
+            declineSecretChat(encryptedChat.id);
+            return;
+        }
+
+        i_authKey = i_authKey.modPow(new BigInteger(1, encryptedChat.a_or_b), p);
 
         byte[] authKey = i_authKey.toByteArray();
         if (authKey.length > 256) {
@@ -4883,7 +4890,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 if (error == null) {
                     TLRPC.messages_DhConfig res = (TLRPC.messages_DhConfig)response;
                     if (response instanceof TLRPC.TL_messages_dhConfig) {
-                        if (!Utilities.isGoodPrime(res.p)) {
+                        if (!Utilities.isGoodPrime(res.p, res.g)) {
                             acceptingChats.remove(encryptedChat.id);
                             declineSecretChat(encryptedChat.id);
                             return;
@@ -4899,19 +4906,27 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         salt[a] = (byte)((byte)(random.nextDouble() * 255) ^ res.random[a]);
                     }
                     encryptedChat.a_or_b = salt;
-                    BigInteger i_g_b = BigInteger.valueOf(MessagesStorage.secretG);
-                    i_g_b = i_g_b.modPow(new BigInteger(1, salt), new BigInteger(1, MessagesStorage.secretPBytes));
-                    byte[] g_b = i_g_b.toByteArray();
-                    if (g_b.length > 256) {
-                        byte[] correctedAuth = new byte[256];
-                        System.arraycopy(g_b, 1, correctedAuth, 0, 256);
-                        g_b = correctedAuth;
+                    BigInteger p = new BigInteger(1, MessagesStorage.secretPBytes);
+                    BigInteger g_b = BigInteger.valueOf(MessagesStorage.secretG);
+                    g_b = g_b.modPow(new BigInteger(1, salt), p);
+                    BigInteger g_a = new BigInteger(1, encryptedChat.g_a);
+
+                    if (!Utilities.isGoodGaAndGb(g_a, g_b, p)) {
+                        acceptingChats.remove(encryptedChat.id);
+                        declineSecretChat(encryptedChat.id);
+                        return;
                     }
 
-                    BigInteger i_authKey = new BigInteger(1, encryptedChat.g_a);
-                    i_authKey = i_authKey.modPow(new BigInteger(1, salt), new BigInteger(1, MessagesStorage.secretPBytes));
+                    byte[] g_b_bytes = g_b.toByteArray();
+                    if (g_b_bytes.length > 256) {
+                        byte[] correctedAuth = new byte[256];
+                        System.arraycopy(g_b_bytes, 1, correctedAuth, 0, 256);
+                        g_b_bytes = correctedAuth;
+                    }
 
-                    byte[] authKey = i_authKey.toByteArray();
+                    g_a = g_a.modPow(new BigInteger(1, salt), p);
+
+                    byte[] authKey = g_a.toByteArray();
                     if (authKey.length > 256) {
                         byte[] correctedAuth = new byte[256];
                         System.arraycopy(authKey, authKey.length - 256, correctedAuth, 0, 256);
@@ -4930,7 +4945,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     encryptedChat.auth_key = authKey;
 
                     TLRPC.TL_messages_acceptEncryption req2 = new TLRPC.TL_messages_acceptEncryption();
-                    req2.g_b = g_b;
+                    req2.g_b = g_b_bytes;
                     req2.peer = new TLRPC.TL_inputEncryptedChat();
                     req2.peer.chat_id = encryptedChat.id;
                     req2.peer.access_hash = encryptedChat.access_hash;
@@ -4976,7 +4991,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 if (error == null) {
                     TLRPC.messages_DhConfig res = (TLRPC.messages_DhConfig)response;
                     if (response instanceof TLRPC.TL_messages_dhConfig) {
-                        if (!Utilities.isGoodPrime(res.p)) {
+                        if (!Utilities.isGoodPrime(res.p, res.g)) {
                             Utilities.RunOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
@@ -4996,6 +5011,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     for (int a = 0; a < 256; a++) {
                         salt[a] = (byte)((byte)(random.nextDouble() * 255) ^ res.random[a]);
                     }
+
                     BigInteger i_g_a = BigInteger.valueOf(MessagesStorage.secretG);
                     i_g_a = i_g_a.modPow(new BigInteger(1, salt), new BigInteger(1, MessagesStorage.secretPBytes));
                     byte[] g_a = i_g_a.toByteArray();

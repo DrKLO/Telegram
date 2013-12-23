@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.telegram.messenger"
     android:versionCode="126"
-    android:versionName="1.3.4">
+    android:versionName="1.3.5">
     
     <supports-screens android:anyDensity="true"
     android:smallScreens="true"

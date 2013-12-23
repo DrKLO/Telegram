@@ -324,7 +324,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                     return;
                 }
 
-                if (!Utilities.isGoodPrime(dhInnerData.dh_prime)) {
+                if (!Utilities.isGoodPrime(dhInnerData.dh_prime, dhInnerData.g)) {
                     throw new RuntimeException("bad prime");
                 }
 
@@ -344,15 +344,17 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                     b[a] = (byte)(MessagesController.random.nextDouble() * 255);
                 }
 
-                BigInteger dhBI = new BigInteger(1, dhInnerData.dh_prime);
-                BigInteger i_g_b = BigInteger.valueOf(dhInnerData.g);
-                i_g_b = i_g_b.modPow(new BigInteger(1, b), dhBI);
-                byte[] g_b = i_g_b.toByteArray();
+                BigInteger p = new BigInteger(1, dhInnerData.dh_prime);
+                BigInteger g_b = BigInteger.valueOf(dhInnerData.g);
+                BigInteger g_a = new BigInteger(1, dhInnerData.g_a);
+                if (!Utilities.isGoodGaAndGb(g_a, g_b, p)) {
+                    throw new RuntimeException("bad prime");
+                }
 
-                BigInteger i_authKey = new BigInteger(1, dhInnerData.g_a);
-                i_authKey = i_authKey.modPow(new BigInteger(1, b), dhBI);
+                g_b = g_b.modPow(new BigInteger(1, b), p);
+                g_a = g_a.modPow(new BigInteger(1, b), p);
 
-                authKey = i_authKey.toByteArray();
+                authKey = g_a.toByteArray();
                 if (authKey.length > 256) {
                     byte[] correctedAuth = new byte[256];
                     System.arraycopy(authKey, 1, correctedAuth, 0, 256);
@@ -390,7 +392,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 TLRPC.TL_client_DH_inner_data clientInnerData = new TLRPC.TL_client_DH_inner_data();
                 clientInnerData.nonce = authNonce;
                 clientInnerData.server_nonce = authServerNonce;
-                clientInnerData.g_b = g_b;
+                clientInnerData.g_b = g_b.toByteArray();
                 clientInnerData.retry_id = 0;
                 SerializedData os = new SerializedData();
                 clientInnerData.serializeToStream(os);
