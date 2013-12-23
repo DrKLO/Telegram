@@ -124,14 +124,8 @@ public class Utilities {
         return true;
     }
 
-    public static boolean isGoodGaAndGb(BigInteger g_a, BigInteger g_b, BigInteger p) {
-        if (g_a != null && g_a.compareTo(BigInteger.valueOf(1)) != 1) {
-            return false;
-        }
-        if (g_b != null && p != null && g_b.compareTo(p.subtract(BigInteger.valueOf(1))) != -1) {
-            return false;
-        }
-        return true;
+    public static boolean isGoodGaAndGb(BigInteger g_a, BigInteger p) {
+        return !(g_a.compareTo(BigInteger.valueOf(1)) != 1 || g_a.compareTo(p.subtract(BigInteger.valueOf(1))) != -1);
     }
 
     public static TPFactorizedValue getFactorizedValue(long what) {

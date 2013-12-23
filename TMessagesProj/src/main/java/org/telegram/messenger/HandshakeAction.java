@@ -345,12 +345,12 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 }
 
                 BigInteger p = new BigInteger(1, dhInnerData.dh_prime);
-                BigInteger g_b = BigInteger.valueOf(dhInnerData.g);
                 BigInteger g_a = new BigInteger(1, dhInnerData.g_a);
-                if (!Utilities.isGoodGaAndGb(g_a, g_b, p)) {
+                if (!Utilities.isGoodGaAndGb(g_a, p)) {
                     throw new RuntimeException("bad prime");
                 }
 
+                BigInteger g_b = BigInteger.valueOf(dhInnerData.g);
                 g_b = g_b.modPow(new BigInteger(1, b), p);
                 g_a = g_a.modPow(new BigInteger(1, b), p);
 

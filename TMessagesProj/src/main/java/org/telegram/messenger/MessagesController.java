@@ -4814,7 +4814,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         BigInteger p = new BigInteger(1, MessagesStorage.secretPBytes);
         BigInteger i_authKey = new BigInteger(1, encryptedChat.g_a_or_b);
 
-        if (!Utilities.isGoodGaAndGb(null, i_authKey, p)) {
+        if (!Utilities.isGoodGaAndGb(i_authKey, p)) {
             declineSecretChat(encryptedChat.id);
             return;
         }
@@ -4911,7 +4911,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     g_b = g_b.modPow(new BigInteger(1, salt), p);
                     BigInteger g_a = new BigInteger(1, encryptedChat.g_a);
 
-                    if (!Utilities.isGoodGaAndGb(g_a, g_b, p)) {
+                    if (!Utilities.isGoodGaAndGb(g_a, p)) {
                         acceptingChats.remove(encryptedChat.id);
                         declineSecretChat(encryptedChat.id);
                         return;
