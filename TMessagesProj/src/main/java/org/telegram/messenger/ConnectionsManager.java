@@ -2342,6 +2342,18 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 }
                 set.add(messageId);
             }
+            
+            byte[] realMessageKeyFull = Utilities.computeSHA1(messageData, 0, Math.min(messageLength + 32, messageData.length));
+            if (realMessageKeyFull == null) {
+                return;
+            }
+            byte[] realMessageKey = new byte[16];
+            System.arraycopy(realMessageKeyFull, realMessageKeyFull.length - 16, realMessageKey, 0, 16);
+            
+            if (!Arrays.equals(messageKey, realMessageKey)) {
+                FileLog.e("tmessages", "***** Error: invalid message key");
+                return;
+            }
 
             if (!doNotProcess) {
                 int messageLength = messageIs.readInt32();

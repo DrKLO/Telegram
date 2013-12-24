@@ -131,6 +131,7 @@ public class TcpConnection extends PyroClientAdapter {
                             }
                         });
                     }
+
                     failedConnectionCount++;
                     if (failedConnectionCount == 1) {
                         if (hasSomeDataSinceLastConnect) {
@@ -139,11 +140,13 @@ public class TcpConnection extends PyroClientAdapter {
                             willRetryConnectCount = 1;
                         }
                     }
-                    isNextPort = true;
-                    if (failedConnectionCount > willRetryConnectCount) {
-                        Datacenter datacenter = ConnectionsManager.Instance.datacenterWithId(datacenterId);
-                        datacenter.nextAddressOrPort();
-                        failedConnectionCount = 0;
+                    if (ConnectionsManager.isNetworkOnline()) {
+                        isNextPort = true;
+                        if (failedConnectionCount > willRetryConnectCount) {
+                            Datacenter datacenter = ConnectionsManager.Instance.datacenterWithId(datacenterId);
+                            datacenter.nextAddressOrPort();
+                            failedConnectionCount = 0;
+                        }
                     }
 
                     FileLog.e("tmessages", e);
@@ -410,7 +413,9 @@ public class TcpConnection extends PyroClientAdapter {
             Utilities.stageQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
-                    delegate.tcpConnectionClosed(TcpConnection.this);
+                    if (delegate != null) {
+                        delegate.tcpConnectionClosed(TcpConnection.this);
+                    }
                 }
             });
         }
@@ -424,11 +429,13 @@ public class TcpConnection extends PyroClientAdapter {
                     willRetryConnectCount = 1;
                 }
             }
-            isNextPort = true;
-            if (failedConnectionCount > willRetryConnectCount) {
-                Datacenter datacenter = ConnectionsManager.Instance.datacenterWithId(datacenterId);
-                datacenter.nextAddressOrPort();
-                failedConnectionCount = 0;
+            if (ConnectionsManager.isNetworkOnline()) {
+                isNextPort = true;
+                if (failedConnectionCount > willRetryConnectCount) {
+                    Datacenter datacenter = ConnectionsManager.Instance.datacenterWithId(datacenterId);
+                    datacenter.nextAddressOrPort();
+                    failedConnectionCount = 0;
+                }
             }
             FileLog.d("tmessages", "Reconnect " + hostAddress + ":" + hostPort + " " + TcpConnection.this);
             try {
