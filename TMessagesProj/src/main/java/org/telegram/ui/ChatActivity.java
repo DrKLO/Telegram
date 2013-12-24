@@ -3075,7 +3075,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             } else if (type == 4 || type == 5) {
                 double lat = message.messageOwner.media.geo.lat;
                 double lon = message.messageOwner.media.geo._long;
-                String url = String.format(Locale.US, "http://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=13&size=100x100&maptype=roadmap&scale=%d&markers=color:red|size:big|%f,%f&sensor=false", lat, lon, Math.min(2, (int)Math.ceil(displayDensity)), lat, lon);
+                String url = String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=13&size=100x100&maptype=roadmap&scale=%d&markers=color:red|size:big|%f,%f&sensor=false", lat, lon, Math.min(2, (int)Math.ceil(displayDensity)), lat, lon);
                 photoImage.setImage(url, null, message.messageOwner.out ? R.drawable.photo_placeholder_out : R.drawable.photo_placeholder_in);
             } else if (type == 11 || type == 10) {
                 int width = (int)(displaySize.x - (30 * displayDensity));
