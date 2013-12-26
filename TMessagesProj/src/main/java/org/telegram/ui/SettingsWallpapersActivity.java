@@ -248,11 +248,11 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 progressBar.setVisibility(View.VISIBLE);
                 loadingSize = size;
                 selectedColor = 0;
-                FileLoader.Instance.loadFile(null, size);
+                FileLoader.Instance.loadFile(null, size, null);
                 backgroundImage.setBackgroundColor(0);
             } else {
                 if (loadingFile != null) {
-                    FileLoader.Instance.cancelLoadFile(null, loadingSize);
+                    FileLoader.Instance.cancelLoadFile(null, loadingSize, null);
                 }
                 loadingFileObject = null;
                 loadingFile = null;
@@ -265,7 +265,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
             }
         } else {
             if (loadingFile != null) {
-                FileLoader.Instance.cancelLoadFile(null, loadingSize);
+                FileLoader.Instance.cancelLoadFile(null, loadingSize, null);
             }
             if (selectedBackground == 1000001) {
                 backgroundImage.setImageResource(R.drawable.background_hd);

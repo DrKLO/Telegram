@@ -77,9 +77,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
 
         TLRPC.TL_req_pq reqPq = new TLRPC.TL_req_pq();
         byte[] nonceBytes = new byte[16];
-        for (int a = 0; a < 16; a++) {
-            nonceBytes[a] = (byte)(MessagesController.random.nextDouble() * 255);
-        }
+        MessagesController.random.nextBytes(nonceBytes);
         authNonce = reqPq.nonce = nonceBytes;
         reqPQMsgData = sendMessageData(reqPq, generateMessageId());
     }
@@ -103,6 +101,45 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                                 "31b32eee64ad15a8ba68885cde74a5bfc920f6abf59ba5c75506373e7130f9042da922179251f", 16),
                         new BigInteger("010001", 16)});
                 map.put("fingerprint", 0xc3b42b026ce86b21L);
+                serverPublicKeys.add(map);
+
+                map = new HashMap<String, Object>();
+                map.put("key", new BigInteger[]{
+                        new BigInteger("c6aeda78b02a251db4b6441031f467fa871faed32526c436524b1fb3b5dc" +
+                                "a28efb8c089dd1b46d92c895993d87108254951c5f001a0f055f3063dcd14d431a300eb9e29" +
+                                "517e359a1c9537e5e87ab1b116faecf5d17546ebc21db234d9d336a693efcb2b6fbcca1e7d1" +
+                                "a0be414dca408a11609b9c4269a920b09fed1f9a1597be02761430f09e4bc48fcafbe289054" +
+                                "c99dba51b6b5eb7d9c3a2ab4e490545b4676bd620e93804bcac93bf94f73f92c729ca899477" +
+                                "ff17625ef14a934d51dc11d5f8650a3364586b3a52fcff2fedec8a8406cac4e751705a472e5" +
+                                "5707e3c8cd5594342b119c6c3293532d85dbe9271ed54a2fd18b4dc79c04a30951107d5639397", 16),
+                        new BigInteger("010001", 16)});
+                map.put("fingerprint", 0x9a996a1db11c729bL);
+                serverPublicKeys.add(map);
+
+                map = new HashMap<String, Object>();
+                map.put("key", new BigInteger[]{
+                        new BigInteger("b1066749655935f0a5936f517034c943bea7f3365a8931ae52c8bcb14856" +
+                                "f004b83d26cf2839be0f22607470d67481771c1ce5ec31de16b20bbaa4ecd2f7d2ecf6b6356" +
+                                "f27501c226984263edc046b89fb6d3981546b01d7bd34fedcfcc1058e2d494bda732ff813e5" +
+                                "0e1c6ae249890b225f82b22b1e55fcb063dc3c0e18e91c28d0c4aa627dec8353eee6038a95a" +
+                                "4fd1ca984eb09f94aeb7a2220635a8ceb450ea7e61d915cdb4eecedaa083aa3801daf071855" +
+                                "ec1fb38516cb6c2996d2d60c0ecbcfa57e4cf1fb0ed39b2f37e94ab4202ecf595e167b3ca62" +
+                                "669a6da520859fb6d6c6203dfdfc79c75ec3ee97da8774b2da903e3435f2cd294670a75a526c1", 16),
+                        new BigInteger("010001", 16)});
+                map.put("fingerprint", 0xb05b2a6f70cdea78L);
+                serverPublicKeys.add(map);
+
+                map = new HashMap<String, Object>();
+                map.put("key", new BigInteger[]{
+                        new BigInteger("c2a8c55b4a62e2b78a19b91cf692bcdc4ba7c23fe4d06f194e2a0c30f6d9" +
+                                "996f7d1a2bcc89bc1ac4333d44359a6c433252d1a8402d9970378b5912b75bc8cc3fa76710a" +
+                                "025bcb9032df0b87d7607cc53b928712a174ea2a80a8176623588119d42ffce40205c6d7216" +
+                                "0860d8d80b22a8b8651907cf388effbef29cd7cf2b4eb8a872052da1351cfe7fec214ce4830" +
+                                "4ea472bd66329d60115b3420d08f6894b0410b6ab9450249967617670c932f7cbdb5d6fbcce" +
+                                "1e492c595f483109999b2661fcdeec31b196429b7834c7211a93c6789d9ee601c18c39e521f" +
+                                "da9d7264e61e518add6f0712d2d5228204b851e13c4f322e5c5431c3b7f31089668486aadc59f", 16),
+                        new BigInteger("010001", 16)});
+                map.put("fingerprint", 0x71e025b6c76033e3L);
                 serverPublicKeys.add(map);
             }
         }
@@ -209,9 +246,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                                 innerData.q = reqDH.q;
 
                                 byte[] nonceBytes = new byte[32];
-                                for (int a = 0; a < 32; a++) {
-                                    nonceBytes[a] = (byte)(MessagesController.random.nextDouble() * 255);
-                                }
+                                MessagesController.random.nextBytes(nonceBytes);
                                 innerData.new_nonce = authNewNonce = nonceBytes;
                                 innerData.serializeToStream(os);
 
@@ -340,9 +375,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 }
 
                 byte[] b = new byte[256];
-                for (int a = 0; a < 256; a++) {
-                    b[a] = (byte)(MessagesController.random.nextDouble() * 255);
-                }
+                MessagesController.random.nextBytes(b);
 
                 BigInteger p = new BigInteger(1, dhInnerData.dh_prime);
                 BigInteger g_a = new BigInteger(1, dhInnerData.g_a);

@@ -58,6 +58,8 @@ public class RPCRequest {
 
     boolean confirmed;
 
+    boolean initRequest = false;
+
     ArrayList<Long> respondsToMessageIds = new ArrayList<Long>();
 
     public void addRespondMessageId(long messageId) {

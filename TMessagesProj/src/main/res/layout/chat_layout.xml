@@ -28,7 +28,7 @@
             android:textSize="14dp"
             android:id="@+id/searchEmptyView"
             android:visibility="gone"
-            android:layout_centerInParent="true"/>
+            android:layout_gravity="center"/>
 
         <include
             layout="@layout/encrypted_chat_placeholder"

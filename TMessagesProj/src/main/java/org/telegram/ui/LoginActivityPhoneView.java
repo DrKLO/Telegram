@@ -292,8 +292,6 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
         updatePhoneField();
     }
 
-
-
     @Override
     public void onNothingSelected(AdapterView<?> adapterView) {
 
@@ -303,8 +301,8 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
     public void onNextPressed() {
         TLRPC.TL_auth_sendCode req = new TLRPC.TL_auth_sendCode();
         String phone = PhoneFormat.stripExceptNumbers("" + codeField.getText() + phoneField.getText());
-        req.api_hash = "5bce48dc7d331e62c955669eb7233217";
-        req.api_id = 2458;
+        req.api_hash = ConnectionsManager.APP_HASH;
+        req.api_id = ConnectionsManager.APP_ID;
         req.sms_type = 0;
         req.phone_number = phone;
         req.lang_code = Locale.getDefault().getCountry();

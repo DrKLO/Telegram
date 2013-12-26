@@ -102,7 +102,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         blockedRow = rowCount++;
         backgroundRow = rowCount++;
         supportSectionRow = rowCount++;
-        if (FileLog.DEBUG_VERSION) {
+        if (ConnectionsManager.DEBUG_VERSION) {
             sendLogsRow = rowCount++;
         }
         askQuestionRow = rowCount++;

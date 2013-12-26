@@ -2,7 +2,6 @@
 
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:paddingBottom="1dp"
@@ -106,4 +105,5 @@
         </FrameLayout>
 
     </LinearLayout>
+
 </FrameLayout>

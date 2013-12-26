@@ -20,18 +20,19 @@ import java.util.Comparator;
 import java.util.HashMap;
 
 public class Datacenter {
-    private final int DATA_VERSION = 2;
+    private final int DATA_VERSION = 3;
 
     public int datacenterId;
     public ArrayList<String> addresses = new ArrayList<String>();
     public HashMap<String, Integer> ports = new HashMap<String, Integer>();
-    public int[] defaultPorts = new int[] {-1, 80, -1, 88, -1, 443, -1, 80, -1, 443, -1};
+    public int[] defaultPorts = new int[] {-1, 80, -1, 443, -1, 443, -1, 80, -1, 443, -1};
     public boolean authorized;
     public long authSessionId;
     public long authDownloadSessionId;
     public long authUploadSessionId;
     public byte[] authKey;
     public byte[] authKeyId;
+    public int lastInitVersion = 0;
     private volatile int currentPortNum = 0;
     private volatile int currentAddressNum = 0;
 
@@ -74,8 +75,11 @@ public class Datacenter {
             }
         } else if (version == 1) {
             int currentVersion = data.readInt32();
-            if (currentVersion == 2) {
+            if (currentVersion == 2 || currentVersion == 3) {
                 datacenterId = data.readInt32();
+                if (currentVersion == 3) {
+                    lastInitVersion = data.readInt32();
+                }
                 int len = data.readInt32();
                 for (int a = 0; a < len; a++) {
                     String address = data.readString();
@@ -182,6 +186,7 @@ public class Datacenter {
     public void SerializeToStream(SerializedData stream) {
         stream.writeInt32(DATA_VERSION);
         stream.writeInt32(datacenterId);
+        stream.writeInt32(lastInitVersion);
         stream.writeInt32(addresses.size());
         for (String address : addresses) {
             stream.writeString(address);

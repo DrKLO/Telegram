@@ -1,0 +1,83 @@
+<!--
+  ~ This is the source code of Telegram for Android v. 1.3.2.
+  ~ It is licensed under GNU GPL v. 2 or later.
+  ~ You should have received a copy of the license in this archive (see LICENSE).
+  ~
+  ~ Copyright Nikolai Kudashov, 2013.
+  -->
+
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/HLRelativeLayout1"
+    android:layout_width="match_parent"
+    android:layout_height="64dp"
+    android:paddingLeft="13dp"
+    android:paddingRight="13dp">
+
+    <TextView
+        android:id="@+id/docs_item_type"
+        android:layout_width="55dp"
+        android:layout_height="42dp"
+        android:layout_marginTop="11dp"
+        android:background="#1A808080"
+        android:ellipsize="marquee"
+        android:gravity="center"
+        android:padding="5dp"
+        android:singleLine="true"
+        android:textColor="#919191"
+        android:textSize="16dp"
+        android:textStyle="bold"
+        android:layout_gravity="top|right"/>
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="62dp"
+        android:layout_marginLeft="7dp"
+        android:layout_marginRight="66dp"
+        android:gravity="center_vertical"
+        android:orientation="vertical"
+        android:layout_gravity="top|right">
+
+        <TextView
+            android:id="@+id/docs_item_title"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="marquee"
+            android:singleLine="true"
+            android:text="TextView"
+            android:textColor="#000"
+            android:textSize="18dp"
+            android:gravity="right"
+            android:layout_gravity="top|right"/>
+
+        <TextView
+            android:id="@+id/docs_item_info"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="marquee"
+            android:singleLine="true"
+            android:text="TextView"
+            android:textColor="#a6a6a6"
+            android:textSize="16dp"
+            android:gravity="right"
+            android:layout_gravity="top|right"/>
+
+    </LinearLayout>
+
+    <org.telegram.ui.Views.BackupImageView
+        android:id="@+id/docs_item_thumb"
+        android:layout_width="55dp"
+        android:layout_height="42dp"
+        android:scaleType="centerCrop"
+        android:layout_marginTop="11dp"
+        android:layout_gravity="top|right"/>
+
+    <View
+        android:background="@color/divider"
+        android:layout_width="fill_parent"
+        android:layout_height="1px"
+        android:layout_gravity="bottom"
+        android:id="@+id/settings_row_divider"/>
+
+</FrameLayout>

@@ -87,6 +87,8 @@ public class TightTextView extends TextView {
                         if (w < getMeasuredWidth()) {
                             super.onMeasure(MeasureSpec.makeMeasureSpec(w, MeasureSpec.AT_MOST), heightMeasureSpec);
                         }
+                    } else {
+                        super.onMeasure(MeasureSpec.makeMeasureSpec(Math.min(maxWidth, linesMaxWidth), MeasureSpec.AT_MOST), heightMeasureSpec);
                     }
                 }
             }
@@ -99,6 +101,7 @@ public class TightTextView extends TextView {
     public void setMaxWidth(int maxpixels) {
         super.setMaxWidth(maxpixels);
         hasMaxWidth = true;
+        maxWidth = maxpixels;
     }
 
     @Override

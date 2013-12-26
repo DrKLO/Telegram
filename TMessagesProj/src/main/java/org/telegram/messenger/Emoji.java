@@ -19,7 +19,6 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.text.Spannable;
-import android.text.Spanned;
 import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
 import android.view.View;
@@ -510,9 +509,9 @@ public class Emoji {
                     EmojiSpan span = new EmojiSpan(d, DynamicDrawableSpan.ALIGN_BOTTOM);
                     emojiCount++;
                     if (c>= 0xDDE6 && c <= 0xDDFA) {
-                        s.setSpan(span, i - 3, i + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        s.setSpan(span, i - 3, i + 1, 0);
                     } else {
-                        s.setSpan(span, i - 1, i + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        s.setSpan(span, i - 1, i + 1, 0);
                     }
                 }
                 buf = 0;
@@ -527,7 +526,7 @@ public class Emoji {
                         if(d != null) {
                             EmojiSpan span = new EmojiSpan(d, DynamicDrawableSpan.ALIGN_BOTTOM);
                             emojiCount++;
-                            s.setSpan(span, i - 1, i + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            s.setSpan(span, i - 1, i + 1, 0);
                         }
                         buf = 0;
                     }
@@ -537,7 +536,7 @@ public class Emoji {
                 if(d != null){
                     EmojiSpan span = new EmojiSpan(d, DynamicDrawableSpan.ALIGN_BOTTOM);
                     emojiCount++;
-                    s.setSpan(span, i, i + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    s.setSpan(span, i, i + 1, 0);
                 }
             }
             if (emojiCount >= 50) {

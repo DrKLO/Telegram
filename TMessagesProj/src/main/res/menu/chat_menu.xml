@@ -25,6 +25,11 @@
                 android:id="@+id/attach_video"/>
 
             <item
+                android:icon="@drawable/ic_ab_doc"
+                android:title="@string/ChatDocument"
+                android:id="@+id/attach_document"/>
+
+            <item
                 android:icon="@drawable/ic_attach_location"
                 android:title="@string/ChatLocation"
                 android:id="@+id/attach_location"/>

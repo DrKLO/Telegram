@@ -382,7 +382,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
                 BackupImageView imageView = (BackupImageView)view.findViewById(R.id.media_photo_image);
 
-                if (message.messageOwner.media.photo != null && !message.messageOwner.media.photo.sizes.isEmpty()) {
+                if (message.messageOwner.media != null && message.messageOwner.media.photo != null && !message.messageOwner.media.photo.sizes.isEmpty()) {
                     ArrayList<TLRPC.PhotoSize> sizes = message.messageOwner.media.photo.sizes;
                     boolean set = false;
 //                    for (TLRPC.PhotoSize size : sizes) {

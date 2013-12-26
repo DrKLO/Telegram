@@ -150,7 +150,7 @@ public class ApplicationLoader extends Application {
             return "";
         }
         int registeredVersion = prefs.getInt(PROPERTY_APP_VERSION, Integer.MIN_VALUE);
-        int currentVersion = getAppVersion(context);
+        int currentVersion = getAppVersion();
         if (registeredVersion != currentVersion) {
             FileLog.d("tmessages", "App version changed.");
             return "";
@@ -162,9 +162,9 @@ public class ApplicationLoader extends Application {
         return getSharedPreferences(ApplicationLoader.class.getSimpleName(), Context.MODE_PRIVATE);
     }
 
-    private static int getAppVersion(Context context) {
+    public static int getAppVersion() {
         try {
-            PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            PackageInfo packageInfo = applicationContext.getPackageManager().getPackageInfo(applicationContext.getPackageName(), 0);
             return packageInfo.versionCode;
         } catch (PackageManager.NameNotFoundException e) {
             throw new RuntimeException("Could not get package name: " + e);
@@ -223,7 +223,7 @@ public class ApplicationLoader extends Application {
 
     private void storeRegistrationId(Context context, String regId) {
         final SharedPreferences prefs = getGCMPreferences(context);
-        int appVersion = getAppVersion(context);
+        int appVersion = getAppVersion();
         FileLog.e("tmessages", "Saving regId on app version " + appVersion);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString(PROPERTY_REG_ID, regId);

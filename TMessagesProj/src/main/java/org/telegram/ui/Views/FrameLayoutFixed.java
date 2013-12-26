@@ -150,6 +150,7 @@ public class FrameLayoutFixed extends FrameLayout {
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         }
     }
 }

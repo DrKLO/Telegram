@@ -47,6 +47,20 @@
     <string name="ClearHistory">Clear History</string>
     <string name="DeleteChat">Delete and Exit</string>
 
+    <!--documents view-->
+    <string name="SelectFile">Select File</string>
+    <string name="FreeOfTotal">Free %1$s of %2$s</string>
+    <string name="UnknownError">Unknown error</string>
+    <string name="AccessError">Access error</string>
+    <string name="NoFiles">No files yet...</string>
+    <string name="FileUploadLimit">File size shouldn\'t be greater than %1$s</string>
+    <string name="NotMounted">Storage not mounted</string>
+    <string name="UsbActive">Usb transfer active</string>
+    <string name="InternalStorage">Internal Storage</string>
+    <string name="ExternalStorage">External Storage</string>
+    <string name="SystemRoot">System Root</string>
+    <string name="SdCard">SD Card</string>
+
     <!--chat view-->
     <string name="Invisible">invisible</string>
     <string name="Typing">typing...</string>
@@ -59,6 +73,7 @@
     <string name="ChatGallery">Gallery</string>
     <string name="ChatLocation">Location</string>
     <string name="ChatVideo">Video</string>
+    <string name="ChatDocument">Document</string>
     <string name="NoMessages">No messages here yet...</string>
     <string name="ViewPhoto">View Photo</string>
     <string name="ViewLocation">View Location</string>
@@ -105,12 +120,16 @@
     <string name="NotificationMessageVideo">%1$s sent you a video</string>
     <string name="NotificationMessageContact">%1$s shared a contact with you</string>
     <string name="NotificationMessageMap">%1$s sent you a map</string>
+    <string name="NotificationMessageDocument">%1$s sent you a document</string>
+    <string name="NotificationMessageAudio">%1$s sent you an audio</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s sent a message to the group %2$s</string>
     <string name="NotificationMessageGroupPhoto">%1$s sent a photo to the group %2$s</string>
     <string name="NotificationMessageGroupVideo">%1$s sent a video to the group %2$s</string>
     <string name="NotificationMessageGroupContact">%1$s shared a contact in the group %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s sent a map to the group %2$s</string>
+    <string name="NotificationMessageGroupDocument">%1$s sent a document to the group %2$s</string>
+    <string name="NotificationMessageGroupAudio">%1$s sent an audio to the group %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s invited you to the group %2$s</string>
     <string name="NotificationEditedGroupName">%1$s edited the group\'s %2$s name</string>
     <string name="NotificationEditedGroupPhoto">%1$s edited the group\'s %2$s photo</string>
@@ -235,6 +254,7 @@
     <string name="Next">Next</string>
     <string name="Back">Back</string>
     <string name="Done">Done</string>
+    <string name="Open">Open</string>
     <string name="Cancel">Cancel</string>
     <string name="Add">Add</string>
     <string name="Edit">Edit</string>
@@ -264,6 +284,8 @@
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Location</string>
     <string name="AttachContact">Contact</string>
+    <string name="AttachDocument">Document</string>
+    <string name="AttachAudio">Audio</string>
     <string name="FromYou">You</string>
 
     <!--Alert messages-->
@@ -275,6 +297,7 @@
     <string name="InvalidLastName">Invalid last name</string>
     <string name="Loading">Loading...</string>
     <string name="NoPlayerInstalled">You don\'t have a video player, please install one to continue</string>
+    <string name="NoHandleAppInstalled">You don\'t have any application that can handle with mime type \'%1$s\', please install one to continue</string>
     <string name="InviteUser">This user does not have Telegram yet, send an invitation?</string>
     <string name="AreYouSure">Are you sure?</string>
     <string name="AddContactQ">Add contact?</string>

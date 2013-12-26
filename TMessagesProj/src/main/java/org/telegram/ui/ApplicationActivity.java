@@ -317,12 +317,12 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
     }
 
     private void checkForCrashes() {
-        CrashManager.register(this, "your-hockeyapp-api-key-here");
+        CrashManager.register(this, ConnectionsManager.HOCKEY_APP_HASH);
     }
 
     private void checkForUpdates() {
-        if (FileLog.DEBUG_VERSION) {
-            UpdateManager.register(this, "your-hockeyapp-api-key-here");
+        if (ConnectionsManager.DEBUG_VERSION) {
+            UpdateManager.register(this, ConnectionsManager.HOCKEY_APP_HASH);
         }
     }
 

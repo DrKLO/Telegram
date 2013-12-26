@@ -42,6 +42,7 @@ public class FileLoadOperation {
     private File cacheFileFinal;
     private File cacheIvTemp;
 
+    private String ext;
     private String httpUrl;
     private URLConnection httpConnection;
     public boolean needBitmapCreate = true;
@@ -90,6 +91,34 @@ public class FileLoadOperation {
             System.arraycopy(videoLocation.iv, 0, iv, 0, iv.length);
             key = videoLocation.key;
         }
+        ext = ".mp4";
+    }
+
+    public FileLoadOperation(TLRPC.Document documentLocation) {
+        if (documentLocation instanceof TLRPC.TL_document) {
+            location = new TLRPC.TL_inputDocumentFileLocation();
+            datacenter_id = documentLocation.dc_id;
+            location.id = documentLocation.id;
+            location.access_hash = documentLocation.access_hash;
+        } else if (documentLocation instanceof TLRPC.TL_documentEncrypted) {
+            location = new TLRPC.TL_inputEncryptedFileLocation();
+            location.id = documentLocation.id;
+            location.access_hash = documentLocation.access_hash;
+            datacenter_id = documentLocation.dc_id;
+            iv = new byte[32];
+            System.arraycopy(documentLocation.iv, 0, iv, 0, iv.length);
+            key = documentLocation.key;
+        }
+        ext = documentLocation.file_name;
+        int idx = -1;
+        if (ext == null || (idx = ext.lastIndexOf(".")) == -1) {
+            ext = "";
+        } else {
+            ext = ext.substring(idx);
+            if (ext.length() <= 1) {
+                ext = "";
+            }
+        }
     }
 
     public FileLoadOperation(String url) {
@@ -112,13 +141,20 @@ public class FileLoadOperation {
         }
         boolean ignoreCache = false;
         boolean onlyCache = false;
+        boolean isLocalFile = false;
         String fileNameFinal = null;
         String fileNameTemp = null;
         String fileNameIv = null;
         if (httpUrl != null) {
-            fileNameFinal = Utilities.MD5(httpUrl);
-            fileNameTemp = fileNameFinal + "_temp.jpg";
-            fileNameFinal += ".jpg";
+            if (!httpUrl.startsWith("http")) {
+                onlyCache = true;
+                isLocalFile = true;
+                fileNameFinal = httpUrl;
+            } else {
+                fileNameFinal = Utilities.MD5(httpUrl);
+                fileNameTemp = fileNameFinal + "_temp.jpg";
+                fileNameFinal += ".jpg";
+            }
         } else if (location.volume_id != 0 && location.local_id != 0) {
             fileNameTemp = location.volume_id + "_" + location.local_id + "_temp.jpg";
             fileNameFinal = location.volume_id + "_" + location.local_id + ".jpg";
@@ -131,15 +167,20 @@ public class FileLoadOperation {
         } else {
             ignoreCache = true;
             needBitmapCreate = false;
-            fileNameTemp = datacenter_id + "_" + location.id + "_temp.mp4";
-            fileNameFinal = datacenter_id + "_" + location.id + ".mp4";
+            fileNameTemp = datacenter_id + "_" + location.id + "_temp" + ext;
+            fileNameFinal = datacenter_id + "_" + location.id + ext;
             if (key != null) {
                 fileNameIv = datacenter_id + "_" + location.id + ".iv";
             }
         }
 
         boolean exist;
-        cacheFileFinal = new File(Utilities.getCacheDir(), fileNameFinal);
+        if (isLocalFile) {
+            cacheFileFinal = new File(fileNameFinal);
+        } else {
+            cacheFileFinal = new File(Utilities.getCacheDir(), fileNameFinal);
+        }
+        final boolean dontDelete = isLocalFile;
         if ((exist = cacheFileFinal.exists()) && !ignoreCache) {
             Utilities.cacheOutQueue.postRunnable(new Runnable() {
                 @Override
@@ -184,7 +225,9 @@ public class FileLoadOperation {
                             image = BitmapFactory.decodeStream(is, null, opts);
                             is.close();
                             if (image == null) {
-                                cacheFileFinal.delete();
+                                if (!dontDelete) {
+                                    cacheFileFinal.delete();
+                                }
                             } else {
                                 if (filter != null && image != null) {
                                     float bitmapW = image.getWidth();
@@ -213,7 +256,9 @@ public class FileLoadOperation {
                             }
                         });
                     } catch (Exception e) {
-                        cacheFileFinal.delete();
+                        if (!dontDelete) {
+                            cacheFileFinal.delete();
+                        }
                         FileLog.e("tmessages", e);
                     }
                 }
@@ -293,7 +338,9 @@ public class FileLoadOperation {
     private void cleanup() {
         if (httpUrl != null) {
             try {
-                httpConnectionStream.close();
+                if (httpConnectionStream != null) {
+                    httpConnectionStream.close();
+                }
                 httpConnection = null;
                 httpConnectionStream = null;
             } catch (Exception e) {

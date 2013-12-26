@@ -10,6 +10,7 @@ package org.telegram.objects;
 
 import android.graphics.Bitmap;
 
+import org.telegram.TL.TLObject;
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.MessagesController;
@@ -211,6 +212,10 @@ public class MessageObject {
                 messageText = ApplicationLoader.applicationContext.getString(R.string.AttachContact);
             } else if (message.media instanceof TLRPC.TL_messageMediaUnsupported) {
                 messageText = ApplicationLoader.applicationContext.getString(R.string.UnsuppotedMedia);
+            } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
+                messageText = ApplicationLoader.applicationContext.getString(R.string.AttachDocument);
+            } else if (message.media instanceof TLRPC.TL_messageMediaAudio) {
+                messageText = ApplicationLoader.applicationContext.getString(R.string.AttachAudio);
             }
         } else {
             messageText = message.message;
@@ -255,6 +260,12 @@ public class MessageObject {
                 } else {
                     type = 1;
                 }
+            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaDocument) {
+                if (message.from_id == UserConfig.clientUserId) {
+                    type = 16;
+                } else {
+                    type = 17;
+                }
             }
         } else if (message instanceof TLRPC.TL_messageService) {
             if (message.action instanceof TLRPC.TL_messageActionChatEditPhoto || message.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
@@ -276,5 +287,39 @@ public class MessageObject {
         int dateYear = rightNow.get(Calendar.YEAR);
         int dateMonth = rightNow.get(Calendar.MONTH);
         dateKey = String.format("%d_%02d_%02d", dateYear, dateMonth, dateDay);
+    }
+
+    public String getFileName() {
+        if (messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
+            return getAttachFileName(messageOwner.media.video);
+        } else if (messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
+            return getAttachFileName(messageOwner.media.document);
+        }
+        return "";
+    }
+
+    public static String getAttachFileName(TLObject attach) {
+        if (attach instanceof TLRPC.Video) {
+            TLRPC.Video video = (TLRPC.Video)attach;
+            return video.dc_id + "_" + video.id + ".mp4";
+        } else if (attach instanceof TLRPC.Document) {
+            TLRPC.Document document = (TLRPC.Document)attach;
+            String ext = document.file_name;
+            int idx = -1;
+            if (ext == null || (idx = ext.lastIndexOf(".")) == -1) {
+                ext = "";
+            } else {
+                ext = ext.substring(idx);
+            }
+            if (ext.length() > 1) {
+                return document.dc_id + "_" + document.id + ext;
+            } else {
+                return document.dc_id + "_" + document.id;
+            }
+        } else if (attach instanceof TLRPC.PhotoSize) {
+            TLRPC.PhotoSize photo = (TLRPC.PhotoSize)attach;
+            return photo.location.volume_id + "_" + photo.location.local_id + ".jpg";
+        }
+        return "";
     }
 }

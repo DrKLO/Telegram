@@ -46,6 +46,20 @@
     <string name="EncryptedChatStartedIncoming">لقد قمت بالدخول للمحادثة السرية.</string>
     <string name="ClearHistory">مسح سجل التاريخ</string>
     <string name="DeleteChat">حذف وخروج</string>
+
+    <!--documents view-->
+    <string name="SelectFile">اختر ملف</string>
+    <string name="FreeOfTotal">متاح %1$s من %2$s</string>
+    <string name="UnknownError">حدث خطأ غير معروف</string>
+    <string name="AccessError">خطأ في الوصول</string>
+    <string name="NoFiles">لا يوجد ملفات بعد...</string>
+    <string name="FileUploadLimit">حجم الملف لا يمكن أن يكون أكبر من %1$s</string>
+    <string name="NotMounted">الذاكرة غير مثبتة</string>
+    <string name="UsbActive">نقل اليو إس بي مفعل</string>
+    <string name="InternalStorage">الذاكرة الداخلية</string>
+    <string name="ExternalStorage">الذاكرة الخارجية</string>
+    <string name="SystemRoot">جذر النظام</string>
+    <string name="SdCard">بطاقة الذاكرة</string>
     
     <!--chat view-->
     <string name="Invisible">مخفي</string>
@@ -59,6 +73,7 @@
     <string name="ChatGallery">صورة</string>
     <string name="ChatLocation"> موقع</string>
     <string name="ChatVideo">مقطع مرئي</string>
+    <string name="ChatDocument">مستند</string>
     <string name="NoMessages">...لا توجد رسائل بعد</string>
     <string name="ViewPhoto">عرض الصورة</string>
     <string name="ViewLocation">عرض الموقع</string>
@@ -105,12 +120,16 @@
     <string name="NotificationMessageVideo">%1$s قام بإرسال مقطع مرئي لك</string>
     <string name="NotificationMessageContact">%1$s قام بإرسال جهة اتصال لك</string>
     <string name="NotificationMessageMap">%1$s قام بإرسال خريطة لك</string>
+    <string name="NotificationMessageDocument">%1$s قام بإرسال مستند لك</string>
+    <string name="NotificationMessageAudio">%1$s قام بإرسال مقطع صوتي لك</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s  قام بإرسال رسالة للمجموعة %2$s</string>
     <string name="NotificationMessageGroupPhoto">%1$s قام بإرسال صورة للمجموعة %2$s</string>
     <string name="NotificationMessageGroupVideo">%1$s قام بإرسال مقطع مرئي للمجموعة %2$s</string>
     <string name="NotificationMessageGroupContact">%1$s قام بإرسال جهة اتصال للمجموعة %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s قام بإرسال خريطة للمجموعة %2$s</string>
+    <string name="NotificationMessageGroupDocument">%1$s قام بإرسال مستند للمجموعة %2$s</string>
+    <string name="NotificationMessageGroupAudio">%1$s قام بإرسال مقطع صوتي للمجموعة %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s قام بدعوتك للمجموعة %2$s</string>
     <string name="NotificationEditedGroupName">%1$s قام بتعديل اسم المجموعة %2$s</string>
     <string name="NotificationEditedGroupPhoto">%1$s قام بتغيير صورة المجموعة %2$s</string>
@@ -235,6 +254,7 @@
     <string name="Next">التالي</string>
     <string name="Back">رجوع</string>
     <string name="Done">تم</string>
+    <string name="Open">فتح</string>
     <string name="Cancel">إلغاء</string>
     <string name="Add">إضافة</string>
     <string name="Edit">تعديل</string>
@@ -264,6 +284,8 @@
     <string name="AttachVideo">مقطع مرئي</string>
     <string name="AttachLocation">موقع</string>
     <string name="AttachContact">جهة اتصال</string>
+    <string name="AttachDocument">مستند</string>
+    <string name="AttachAudio">مقطع صوتي</string>
     <string name="FromYou">أنت</string>
     
     <!--Alert messages-->
@@ -275,6 +297,7 @@
     <string name="InvalidLastName">اسم العائلة غير صحيح</string>
     <string name="Loading">جاري التحميل ...</string>
     <string name="NoPlayerInstalled">ليس لديك أي مشغل مقاطع مرئية، يرجى تنزيل أية مشغل</string>
+    <string name="NoHandleAppInstalled">لا يوجد لديك تطبيق يمكنه فته هذا المستند، يرجى تنزيل تطبيق يمكنه للإستمرار</string>
     <string name="InviteUser">هذا المستخدم ليس لديه تيليجرام بعد ، هل ترغب في دعوته الآن؟</string>
     <string name="AreYouSure">هل أنت متأكد؟</string>
     <string name="DeleteChatQuestion">هل تريد حذف هذه الدردشة؟</string>

@@ -19,6 +19,7 @@ import android.view.View;
 import android.widget.ImageView;
 
 import org.telegram.TL.TLRPC;
+import org.telegram.objects.MessageObject;
 import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Views.BackupImageView;
 
@@ -388,8 +389,8 @@ public class FileLoader {
         });
     }
 
-    public void cancelLoadFile(final TLRPC.Video video, final TLRPC.PhotoSize photo) {
-        if (video == null && photo == null) {
+    public void cancelLoadFile(final TLRPC.Video video, final TLRPC.PhotoSize photo, final TLRPC.Document document) {
+        if (video == null && photo == null && document == null) {
             return;
         }
         Utilities.fileUploadQueue.postRunnable(new Runnable() {
@@ -397,9 +398,14 @@ public class FileLoader {
             public void run() {
                 String fileName = null;
                 if (video != null) {
-                    fileName = video.dc_id + "_" + video.id + ".mp4";
+                    fileName = MessageObject.getAttachFileName(video);
                 } else if (photo != null) {
-                    fileName = photo.location.volume_id + "_" + photo.location.local_id + ".jpg";
+                    fileName = MessageObject.getAttachFileName(photo);
+                } else if (document != null) {
+                    fileName = MessageObject.getAttachFileName(document);
+                }
+                if (fileName == null) {
+                    return;
                 }
                 FileLoadOperation operation = loadOperationPaths.get(fileName);
                 if (operation != null) {
@@ -414,15 +420,20 @@ public class FileLoader {
         return loadOperationPaths.containsKey(fileName);
     }
 
-    public void loadFile(final TLRPC.Video video, final TLRPC.PhotoSize photo) {
+    public void loadFile(final TLRPC.Video video, final TLRPC.PhotoSize photo, final TLRPC.Document document) {
         Utilities.fileUploadQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
                 String fileName = null;
                 if (video != null) {
-                    fileName = video.dc_id + "_" + video.id + ".mp4";
+                    fileName = MessageObject.getAttachFileName(video);
                 } else if (photo != null) {
-                    fileName = photo.location.volume_id + "_" + photo.location.local_id + ".jpg";
+                    fileName = MessageObject.getAttachFileName(photo);
+                } else if (document != null) {
+                    fileName = MessageObject.getAttachFileName(document);
+                }
+                if (fileName == null) {
+                    return;
                 }
                 if (loadOperationPaths.containsKey(fileName)) {
                     return;
@@ -435,6 +446,9 @@ public class FileLoader {
                     operation = new FileLoadOperation(photo.location);
                     operation.totalBytesCount = photo.size;
                     operation.needBitmapCreate = false;
+                } else if (document != null) {
+                    operation = new FileLoadOperation(document);
+                    operation.totalBytesCount = document.size;
                 }
 
                 final String arg1 = fileName;
@@ -536,24 +550,6 @@ public class FileLoader {
         memCache.evictAll();
     }
 
-    public void cleanDisk(boolean all) {
-        /*if (all) {
-            [cacheInQueue cancelAllOperations];
-            [[NSFileManager defaultManager] removeItemAtPath:diskCachePath error:nil];
-            [[NSFileManager defaultManager] createDirectoryAtPath:diskCachePath withIntermediateDirectories:YES attributes:nil error:NULL];
-        } else {
-            NSDate *expirationDate = [NSDate dateWithTimeIntervalSinceNow:-cacheMaxCacheAge];
-            NSDirectoryEnumerator *fileEnumerator = [[NSFileManager defaultManager] enumeratorAtPath:diskCachePath];
-            for (NSString *fileName in fileEnumerator) {
-                NSString *filePath = [diskCachePath stringByAppendingPathComponent:fileName];
-                NSDictionary *attrs = [[NSFileManager defaultManager] attributesOfItemAtPath:filePath error:nil];
-                if ([[[attrs fileModificationDate] laterDate:expirationDate] isEqualToDate:expirationDate]) {
-                    [[NSFileManager defaultManager] removeItemAtPath:filePath error:nil];
-                }
-            }
-        }*/
-    }
-
     public void cancelLoadingForImageView(final View imageView) {
         if (imageView == null) {
             return;
@@ -598,10 +594,11 @@ public class FileLoader {
         String key;
         if (httpUrl != null) {
             key = Utilities.MD5(httpUrl);
-        } else if (filter == null) {
-            key = url.volume_id + "_" + url.local_id;
         } else {
-            key = url.volume_id + "_" + url.local_id + "@" + filter;
+            key = url.volume_id + "_" + url.local_id;
+        }
+        if (filter != null) {
+            key += "@" + filter;
         }
 
         Bitmap img = imageFromKey(key);
@@ -664,10 +661,11 @@ public class FileLoader {
                 String key;
                 if (httpUrl != null) {
                     key = Utilities.MD5(httpUrl);
-                } else if (filter == null) {
-                    key = url.volume_id + "_" + url.local_id;
                 } else {
-                    key = url.volume_id + "_" + url.local_id + "@" + filter;
+                    key = url.volume_id + "_" + url.local_id;
+                }
+                if (filter != null) {
+                    key += "@" + filter;
                 }
 
                 Integer num = (Integer)imageView.getTag(R.string.CacheTag);
