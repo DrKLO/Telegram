@@ -12,12 +12,12 @@ import android.view.View;
 import android.widget.TextView;
 
 import org.telegram.messenger.R;
+import org.telegram.messenger.Utilities;
 
 public class MessageLayout extends FrameLayoutFixed {
     public TextView timeTextView;
     public View timeLayout;
     public TightTextView messageTextView;
-    public float density = 1;
     public int maxWidth;
 
     public MessageLayout(android.content.Context context) {
@@ -38,18 +38,17 @@ public class MessageLayout extends FrameLayoutFixed {
         int timeWidth = timeLayout != null ? timeLayout.getMeasuredWidth() : timeTextView.getMeasuredWidth();
         int totalWidth = getMeasuredWidth();
 
-
         int maxChildWidth = getChildAt(0).getMeasuredWidth();
         int count = getChildCount();
         for (int a = 1; a < count - 1; a++) {
             maxChildWidth = Math.max(maxChildWidth, getChildAt(a).getMeasuredWidth());
         }
-        int timeMore = (int)(timeWidth + 6 * density);
+        int timeMore = timeWidth + Utilities.dp(6);
         int fields = totalWidth - Math.max(maxChildWidth, timeWidth);
         int height = getMeasuredHeight();
 
         if (maxWidth - messageTextView.lastLineWidth < timeMore) {
-            setMeasuredDimension(Math.max(maxChildWidth, messageTextView.lastLineWidth) + fields, (int)(height + 14 * density));
+            setMeasuredDimension(Math.max(maxChildWidth, messageTextView.lastLineWidth) + fields, height + Utilities.dp(14));
         } else {
             int diff = maxChildWidth - messageTextView.lastLineWidth;
             if (diff >= 0 && diff <= timeMore) {

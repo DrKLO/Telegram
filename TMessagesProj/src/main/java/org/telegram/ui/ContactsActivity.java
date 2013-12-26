@@ -502,8 +502,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 if (s.length() != 0) {
                     searchWas = true;
                     if (listView != null) {
-                        float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
-                        listView.setPadding((int)(density * 16), listView.getPaddingTop(), (int)(density * 16), listView.getPaddingBottom());
+                        listView.setPadding(Utilities.dp(16), listView.getPaddingTop(), Utilities.dp(16), listView.getPaddingBottom());
                         listView.setAdapter(searchListViewAdapter);
                         if(android.os.Build.VERSION.SDK_INT >= 11) {
                             listView.setFastScrollAlwaysVisible(false);
@@ -538,11 +537,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 searchWas = false;
                 ViewGroup group = (ViewGroup) listView.getParent();
                 listView.setAdapter(listViewAdapter);
-                float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
                 if (!isRTL) {
-                    listView.setPadding((int) (density * 16), listView.getPaddingTop(), (int) (density * 30), listView.getPaddingBottom());
+                    listView.setPadding(Utilities.dp(16), listView.getPaddingTop(), Utilities.dp(30), listView.getPaddingBottom());
                 } else {
-                    listView.setPadding((int) (density * 30), listView.getPaddingTop(), (int) (density * 16), listView.getPaddingBottom());
+                    listView.setPadding(Utilities.dp(30), listView.getPaddingTop(), Utilities.dp(16), listView.getPaddingBottom());
                 }
                 if (android.os.Build.VERSION.SDK_INT >= 11) {
                     listView.setFastScrollAlwaysVisible(true);

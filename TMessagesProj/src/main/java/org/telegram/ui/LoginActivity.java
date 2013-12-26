@@ -82,13 +82,13 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
 
         getSupportActionBar().setLogo(R.drawable.ab_icon_fixed2);
         getSupportActionBar().show();
-        float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
+
         ImageView view = (ImageView)findViewById(16908332);
         if (view == null) {
             view = (ImageView)findViewById(R.id.home);
         }
         if (view != null) {
-            view.setPadding((int)(density * 6), 0, (int)(density * 6), 0);
+            view.setPadding(Utilities.dp(6), 0, Utilities.dp(6), 0);
         }
 
         views[0] = (SlideView)findViewById(R.id.login_page1);

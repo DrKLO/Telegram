@@ -25,6 +25,7 @@ import android.widget.TextView;
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.IdenticonView;
 
@@ -91,7 +92,7 @@ public class IdenticonActivity extends BaseFragment {
         }
         if (title != null) {
             title.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock_white, 0, 0, 0);
-            title.setCompoundDrawablePadding((int)(4 * getResources().getDisplayMetrics().density));
+            title.setCompoundDrawablePadding(Utilities.dp(4));
         }
     }
 
@@ -125,7 +126,6 @@ public class IdenticonActivity extends BaseFragment {
                     LinearLayout layout = (LinearLayout)fragmentView;
                     WindowManager manager = (WindowManager)parentActivity.getSystemService(Context.WINDOW_SERVICE);
                     int rotation = manager.getDefaultDisplay().getRotation();
-                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
 
                     if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
                         layout.setOrientation(LinearLayout.HORIZONTAL);
@@ -143,7 +143,7 @@ public class IdenticonActivity extends BaseFragment {
                     }
                     if (title != null) {
                         title.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock_white, 0, 0, 0);
-                        title.setCompoundDrawablePadding((int)(4 * density));
+                        title.setCompoundDrawablePadding(Utilities.dp(4));
                     }
 
                     return false;

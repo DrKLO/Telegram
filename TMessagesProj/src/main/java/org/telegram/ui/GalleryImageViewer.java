@@ -182,9 +182,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
             }
         }
 
-        float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
-
-        mViewPager.setPageMargin((int)(20 * density));
+        mViewPager.setPageMargin(Utilities.dp(20));
         mViewPager.setOffscreenPageLimit(1);
         mViewPager.setAdapter(localPagerAdapter);
 
@@ -357,8 +355,8 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                                 if (title != null) {
                                     fakeTitleView.setText(String.format("%d %s %d", pos, getString(R.string.Of), totalCount));
                                     fakeTitleView.measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.AT_MOST), 40);
-                                    title.setWidth(fakeTitleView.getMeasuredWidth() + (int)(8 * getResources().getDisplayMetrics().density));
-                                    title.setMaxWidth(fakeTitleView.getMeasuredWidth() + (int)(8 * getResources().getDisplayMetrics().density));
+                                    title.setWidth(fakeTitleView.getMeasuredWidth() + Utilities.dp(8));
+                                    title.setMaxWidth(fakeTitleView.getMeasuredWidth() + Utilities.dp(8));
                                 }
                             }
                         });
@@ -778,8 +776,8 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                             if (title != null) {
                                 fakeTitleView.setText(String.format("%d %s %d", (totalCount - imagesArr.size()) + position + 1, getString(R.string.Of), totalCount));
                                 fakeTitleView.measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.AT_MOST), 40);
-                                title.setWidth(fakeTitleView.getMeasuredWidth() + (int)(8 * getResources().getDisplayMetrics().density));
-                                title.setMaxWidth(fakeTitleView.getMeasuredWidth() + (int)(8 * getResources().getDisplayMetrics().density));
+                                title.setWidth(fakeTitleView.getMeasuredWidth() + Utilities.dp(8));
+                                title.setMaxWidth(fakeTitleView.getMeasuredWidth() + Utilities.dp(8));
                             }
                         }
                     });
@@ -797,8 +795,8 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                             if (title != null) {
                                 fakeTitleView.setText(String.format("%d %s %d", position + 1, getString(R.string.Of), imagesArrLocations.size()));
                                 fakeTitleView.measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.AT_MOST), 40);
-                                title.setWidth(fakeTitleView.getMeasuredWidth() + (int)(8 * getResources().getDisplayMetrics().density));
-                                title.setMaxWidth(fakeTitleView.getMeasuredWidth() + (int)(8 * getResources().getDisplayMetrics().density));
+                                title.setWidth(fakeTitleView.getMeasuredWidth() + Utilities.dp(8));
+                                title.setMaxWidth(fakeTitleView.getMeasuredWidth() + Utilities.dp(8));
                             }
                         }
                     });

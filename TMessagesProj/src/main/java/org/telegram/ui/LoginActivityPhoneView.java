@@ -306,6 +306,9 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
         req.sms_type = 0;
         req.phone_number = phone;
         req.lang_code = Locale.getDefault().getCountry();
+        if (req.lang_code == null || req.lang_code.length() == 0) {
+            req.lang_code = "en";
+        }
 
         final Bundle params = new Bundle();
         params.putString("phone", "+" + codeField.getText() + phoneField.getText());

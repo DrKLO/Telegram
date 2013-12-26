@@ -53,7 +53,6 @@ public class FileLoader {
     public static long lastCacheOutTime = 0;
     public ConcurrentHashMap<String, Float> fileProgresses = new ConcurrentHashMap<String, Float>();
     private long lastProgressUpdateTime = 0;
-    public float density = 1;
     private HashMap<String, Integer> BitmapUseCounts = new HashMap<String, Integer>();
 
     int lastImageNum;
@@ -254,7 +253,6 @@ public class FileLoader {
     public FileLoader() {
         int cacheSize = Math.min(15, ((ActivityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACTIVITY_SERVICE)).getMemoryClass() / 7) * 1024 * 1024;
 
-        density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
         if (Build.VERSION.SDK_INT < 11) {
             runtimeHack = new VMRuntimeHack();
             cacheSize = 1024 * 1024 * 3;

@@ -659,6 +659,18 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     invoke.app_version = "App version unknown";
                     invoke.system_version = "SDK " + Build.VERSION.SDK_INT;
                 }
+                if (invoke.lang_code == null || invoke.lang_code.length() == 0) {
+                    invoke.lang_code = "en";
+                }
+                if (invoke.device_model == null || invoke.device_model.length() == 0) {
+                    invoke.device_model = "Android unknown";
+                }
+                if (invoke.app_version == null || invoke.app_version.length() == 0) {
+                    invoke.app_version = "App version unknown";
+                }
+                if (invoke.system_version == null || invoke.system_version.length() == 0) {
+                    invoke.system_version = "SDK Unknown";
+                }
                 object = invoke;
             }
             TLRPC.invokeWithLayer11 invoke = new TLRPC.invokeWithLayer11();

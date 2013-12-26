@@ -8961,7 +8961,7 @@ public class TLRPC {
         }
     }
 
-    public static class TL_encryptedChat_old extends EncryptedChat {
+    public static class TL_encryptedChat_old extends TL_encryptedChat {
         public static int constructor = 0x6601d14f;
 
 

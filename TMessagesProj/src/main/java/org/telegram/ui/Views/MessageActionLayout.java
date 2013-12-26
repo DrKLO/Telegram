@@ -11,10 +11,10 @@ package org.telegram.ui.Views;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.R;
+import org.telegram.messenger.Utilities;
 
 public class MessageActionLayout extends FrameLayout {
     public TightTextView messageTextView;
-    public float density = 1;
 
     public MessageActionLayout(android.content.Context context) {
         super(context);
@@ -31,7 +31,7 @@ public class MessageActionLayout extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        setMeasuredDimension(messageTextView.linesMaxWidth + (int)(14 * density), getMeasuredHeight());
+        setMeasuredDimension(messageTextView.linesMaxWidth + Utilities.dp(14), getMeasuredHeight());
     }
 
     @Override

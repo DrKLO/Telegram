@@ -48,6 +48,7 @@ public class MessagesStorage {
 
     public void openDatabase() {
         cacheFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "cache4.db");
+
         boolean createTable = false;
         //cacheFile.delete();
         if (!cacheFile.exists()) {

@@ -393,21 +393,20 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
                 public void onGlobalLayout() {
                     WindowManager manager = (WindowManager) getSystemService(WINDOW_SERVICE);
                     int rotation = manager.getDefaultDisplay().getRotation();
-                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
 
                     int height;
                     int currentActionBarHeight = getSupportActionBar().getHeight();
-                    if (currentActionBarHeight != 48 * density && currentActionBarHeight != 40 * density) {
+                    if (currentActionBarHeight != Utilities.dp(48) && currentActionBarHeight != Utilities.dp(40)) {
                         height = currentActionBarHeight;
                     } else {
-                        height = (int) (48.0f * density);
+                        height = Utilities.dp(48);
                         if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                            height = (int) (40.0f * density);
+                            height = Utilities.dp(40);
                         }
                     }
 
                     if (notificationView != null) {
-                        notificationView.applyOrientationPaddings(rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90, density, height);
+                        notificationView.applyOrientationPaddings(rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90, height);
                     }
 
                     if (Build.VERSION.SDK_INT < 16) {
@@ -579,17 +578,16 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
                     actionBar.setCustomView(statusView);
                 }
 
-                float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
                 try {
                     if (statusView.getLayoutParams() instanceof android.support.v7.app.ActionBar.LayoutParams) {
                         android.support.v7.app.ActionBar.LayoutParams statusParams = (android.support.v7.app.ActionBar.LayoutParams)statusView.getLayoutParams();
                         statusText.measure(View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.AT_MOST), 100);
-                        statusParams.width = (int)(statusText.getMeasuredWidth() + 54 * density);
+                        statusParams.width = (int)(statusText.getMeasuredWidth() + Utilities.dp(54));
                         statusView.setLayoutParams(statusParams);
                     } else if (statusView.getLayoutParams() instanceof android.app.ActionBar.LayoutParams) {
                         android.app.ActionBar.LayoutParams statusParams = (android.app.ActionBar.LayoutParams)statusView.getLayoutParams();
                         statusText.measure(View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.AT_MOST), 100);
-                        statusParams.width = (int)(statusText.getMeasuredWidth() + 54 * density);
+                        statusParams.width = (int)(statusText.getMeasuredWidth() + Utilities.dp(54));
                         statusView.setLayoutParams(statusParams);
                     }
                 } catch (Exception e) {

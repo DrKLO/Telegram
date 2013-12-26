@@ -30,10 +30,8 @@ public class IntroActivity extends ActionBarActivity {
     private ViewPager viewPager;
     private ImageView topImage1;
     private ImageView topImage2;
-    private TextView startMessagingButton;
     private ViewGroup bottomPages;
     private int lastPage = 0;
-    private float density = 1;
     private boolean isRTL = false;
     private boolean justCreated = false;
     private boolean startPressed = false;
@@ -107,9 +105,8 @@ public class IntroActivity extends ActionBarActivity {
                     R.string.Page7Message
             };
         }
-        density = getResources().getDisplayMetrics().density;
         viewPager = (ViewPager)findViewById(R.id.intro_view_pager);
-        startMessagingButton = (TextView)findViewById(R.id.start_messaging_button);
+        TextView startMessagingButton = (TextView) findViewById(R.id.start_messaging_button);
         topImage1 = (ImageView)findViewById(R.id.icon_image1);
         topImage2 = (ImageView)findViewById(R.id.icon_image2);
         bottomPages = (ViewGroup)findViewById(R.id.bottom_pages);

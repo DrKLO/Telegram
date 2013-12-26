@@ -28,6 +28,7 @@ import android.widget.GridView;
 import android.widget.TextView;
 
 import org.telegram.TL.TLRPC;
+import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -289,20 +290,19 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 public boolean onPreDraw() {
                     WindowManager manager = (WindowManager)parentActivity.getSystemService(Activity.WINDOW_SERVICE);
                     int rotation = manager.getDefaultDisplay().getRotation();
-                    float density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
 
                     if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
                         orientation = 1;
                         listView.setNumColumns(6);
-                        itemWidth = getResources().getDisplayMetrics().widthPixels / 6 - (int)(2 * density) * 5;
+                        itemWidth = getResources().getDisplayMetrics().widthPixels / 6 - Utilities.dp(2) * 5;
                         listView.setColumnWidth(itemWidth);
                     } else {
                         orientation = 0;
                         listView.setNumColumns(4);
-                        itemWidth = getResources().getDisplayMetrics().widthPixels / 4 - (int)(2 * density) * 3;
+                        itemWidth = getResources().getDisplayMetrics().widthPixels / 4 - Utilities.dp(2) * 3;
                         listView.setColumnWidth(itemWidth);
                     }
-                    listView.setPadding(listView.getPaddingLeft(), (int)(4 * density), listView.getPaddingRight(), listView.getPaddingBottom());
+                    listView.setPadding(listView.getPaddingLeft(), Utilities.dp(4), listView.getPaddingRight(), listView.getPaddingBottom());
                     listAdapter.notifyDataSetChanged();
 
                     listView.getViewTreeObserver().removeOnPreDrawListener(this);

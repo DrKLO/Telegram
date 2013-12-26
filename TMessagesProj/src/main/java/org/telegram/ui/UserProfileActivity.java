@@ -345,7 +345,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         if (title != null) {
             if (dialog_id != 0) {
                 title.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock_white, 0, 0, 0);
-                title.setCompoundDrawablePadding((int)(4 * getResources().getDisplayMetrics().density));
+                title.setCompoundDrawablePadding(Utilities.dp(4));
             } else {
                 title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
                 title.setCompoundDrawablePadding(0);
@@ -392,7 +392,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         }
                         if (title != null) {
                             title.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock_white, 0, 0, 0);
-                            title.setCompoundDrawablePadding((int)(4 * ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density));
+                            title.setCompoundDrawablePadding(Utilities.dp(4));
                         }
                     }
                     return false;

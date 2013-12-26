@@ -70,7 +70,6 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     private static boolean dialogsLoaded = false;
     private boolean searching = false;
     private boolean searchWas = false;
-    private float density = 1;
     private boolean onlySelect = false;
     private int activityToken = (int)(MessagesController.random.nextDouble() * Integer.MAX_VALUE);
     private long selectedDialog;
@@ -88,7 +87,6 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
         NotificationCenter.Instance.addObserver(this, MessagesController.dialogsNeedReload);
         NotificationCenter.Instance.addObserver(this, 999);
         NotificationCenter.Instance.addObserver(this, MessagesController.updateInterfaces);
@@ -324,7 +322,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 view = (ImageView)parentActivity.findViewById(R.id.home);
             }
             if (view != null) {
-                view.setPadding((int)(density * 6), 0, (int)(density * 6), 0);
+                view.setPadding(Utilities.dp(6), 0, Utilities.dp(6), 0);
             }
             actionBar.setHomeButtonEnabled(false);
             actionBar.setDisplayShowTitleEnabled(true);
@@ -752,7 +750,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     }
                     View v = view.findViewById(R.id.settings_row_divider);
                     v.setVisibility(View.VISIBLE);
-                    view.setPadding((int)(11 * density), 0, (int)(11 * density), 0);
+                    view.setPadding(Utilities.dp(11), 0, Utilities.dp(11), 0);
                 }
                 MessagesListSearchRowHolder holder = (MessagesListSearchRowHolder)view.getTag();
                 if (holder == null) {
@@ -781,7 +779,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     } else {
                         holder.nameTextView.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_lock_green, 0);
                     }
-                    holder.nameTextView.setCompoundDrawablePadding((int)(4 * density));
+                    holder.nameTextView.setCompoundDrawablePadding(Utilities.dp(4));
                 } else {
                     holder.nameTextView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
                     holder.nameTextView.setCompoundDrawablePadding(0);
@@ -972,7 +970,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     } else {
                         nameTextView.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_lock_green, 0);
                     }
-                    nameTextView.setCompoundDrawablePadding((int)(4 * density));
+                    nameTextView.setCompoundDrawablePadding(Utilities.dp(4));
                 } else {
                     Log.e("test", "tda");
                 }

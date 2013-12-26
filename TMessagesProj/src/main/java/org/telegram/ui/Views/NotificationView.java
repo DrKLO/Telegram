@@ -289,7 +289,7 @@ public class NotificationView extends LinearLayout {
         }
     }
 
-    public void applyOrientationPaddings(boolean isLandscape, float density, int height) {
+    public void applyOrientationPaddings(boolean isLandscape, int height) {
         FrameLayout.LayoutParams params = (FrameLayout.LayoutParams)avatarImage.getLayoutParams();
         params.width = height;
         params.height = height;
@@ -298,22 +298,22 @@ public class NotificationView extends LinearLayout {
         if (isLandscape) {
             nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
             messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-            nameTextView.setPadding(0, (int)(2 * density), 0, 0);
-            messageTextView.setPadding(0, (int)(18 * density), 0, 0);
+            nameTextView.setPadding(0, Utilities.dp(2), 0, 0);
+            messageTextView.setPadding(0, Utilities.dp(18), 0, 0);
             if (isRTL) {
-                params1.setMargins((int)(40 * density), 0, (int)(height + 6 * density), 0);
+                params1.setMargins(Utilities.dp(40), 0, height + Utilities.dp(6), 0);
             } else {
-                params1.setMargins((int)(height + 6 * density), 0, (int)(40 * density), 0);
+                params1.setMargins(height + Utilities.dp(6), 0, Utilities.dp(40), 0);
             }
         } else {
             nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
             messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
-            nameTextView.setPadding(0, (int)(4 * density), 0, 0);
-            messageTextView.setPadding(0, (int) (24 * density), 0, 0);
+            nameTextView.setPadding(0, Utilities.dp(4), 0, 0);
+            messageTextView.setPadding(0, Utilities.dp(24), 0, 0);
             if (isRTL) {
-                params1.setMargins((int)(40 * density), 0, (int)(height + 8 * density), 0);
+                params1.setMargins(Utilities.dp(40), 0, height + Utilities.dp(8), 0);
             } else {
-                params1.setMargins((int)(height + 8 * density), 0, (int)(40 * density), 0);
+                params1.setMargins(height + Utilities.dp(8), 0, Utilities.dp(40), 0);
             }
         }
         textLayout.setLayoutParams(params1);

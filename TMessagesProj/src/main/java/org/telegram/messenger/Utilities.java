@@ -56,6 +56,7 @@ import javax.crypto.Cipher;
 public class Utilities {
     public static Handler applicationHandler;
     public static int statusBarHeight = 0;
+    public static float density = 1;
     private final static Integer lock = 1;
 
     public static ArrayList<String> goodPrimes = new ArrayList<String>();
@@ -74,6 +75,7 @@ public class Utilities {
     public native static byte[] aesIgeEncryption(byte[] _what, byte[] _key, byte[] _iv, boolean encrypt, boolean changeIv);
 
     static {
+        density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("primes", Context.MODE_PRIVATE);
         String primes = preferences.getString("primes", null);
         if (primes == null) {
@@ -119,6 +121,10 @@ public class Utilities {
             hexChars[j * 2 + 1] = hexArray[v & 0x0F];
         }
         return new String(hexChars);
+    }
+
+    public static int dp(int value) {
+        return (int)(density * value);
     }
 
     public static boolean isGoodPrime(byte[] prime, int g) {

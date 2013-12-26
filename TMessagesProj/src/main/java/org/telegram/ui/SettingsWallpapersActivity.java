@@ -52,7 +52,6 @@ import java.util.HashMap;
 public class SettingsWallpapersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private HorizontalListView listView;
     private ListAdapter listAdapter;
-    private float density;
     private ImageView backgroundImage;
     private ProgressBar progressBar;
     private int selectedBackground;
@@ -95,7 +94,6 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
         if (fragmentView == null) {
             fragmentView = inflater.inflate(R.layout.settings_wallpapers_layout, container, false);
             listAdapter = new ListAdapter(parentActivity);
-            density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
 
             progressBar = (ProgressBar)fragmentView.findViewById(R.id.action_progress);
             backgroundImage = (ImageView)fragmentView.findViewById(R.id.background_image);
@@ -152,7 +150,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                     boolean done;
                     TLRPC.WallPaper wallPaper = wallpappersByIds.get(selectedBackground);
                     if (wallPaper != null && wallPaper.id != 1000001 && wallPaper instanceof TLRPC.TL_wallPaper) {
-                        TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, (int) (320 * density), (int) (480 * density));
+                        TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, Utilities.dp(320), Utilities.dp(480));
                         String fileName = size.location.volume_id + "_" + size.location.local_id + ".jpg";
                         File f = new File(Utilities.getCacheDir(), fileName);
                         File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
@@ -195,7 +193,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
             if (requestCode == 0) {
                 Utilities.addMediaToGallery(currentPicturePath);
                 try {
-                    Bitmap bitmap = FileLoader.loadBitmap(currentPicturePath, (int)(320 * density), (int)(480 * density));
+                    Bitmap bitmap = FileLoader.loadBitmap(currentPicturePath, Utilities.dp(320), Utilities.dp(480));
                     File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
                     FileOutputStream stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
@@ -220,7 +218,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                     }
                     cursor.close();
 
-                    Bitmap bitmap = FileLoader.loadBitmap(imageFilePath, (int)(320 * density), (int)(480 * density));
+                    Bitmap bitmap = FileLoader.loadBitmap(imageFilePath, Utilities.dp(320), Utilities.dp(480));
                     File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
                     FileOutputStream stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
@@ -237,7 +235,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
     private void processSelectedBackground() {
         TLRPC.WallPaper wallPaper = wallpappersByIds.get(selectedBackground);
         if (selectedBackground != -1 && selectedBackground != 1000001 && wallPaper != null && wallPaper instanceof TLRPC.TL_wallPaper) {
-            TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, (int)(320 * density), (int)(480 * density));
+            TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, Utilities.dp(320), Utilities.dp(480));
             String fileName = size.location.volume_id + "_" + size.location.local_id + ".jpg";
             File f = new File(Utilities.getCacheDir(), fileName);
             if (!f.exists()) {
@@ -509,7 +507,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 BackupImageView image = (BackupImageView)view.findViewById(R.id.image);
                 View selection = view.findViewById(R.id.selection);
                 TLRPC.WallPaper wallPaper = wallPapers.get(i - 1);
-                TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, (int)(100 * density), (int)(100 * density));
+                TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, Utilities.dp(100), Utilities.dp(100));
                 image.setImage(size.location, "100_100", 0);
                 if (wallPaper.id == selectedBackground) {
                     selection.setVisibility(View.VISIBLE);

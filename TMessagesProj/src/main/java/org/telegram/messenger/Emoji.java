@@ -287,7 +287,7 @@ public class Emoji {
                     0x00000000D83DDD34L, 0x00000000D83DDD35L, 0x00000000D83DDD3BL, 0x00000000D83DDD36L, 0x00000000D83DDD37L, 0x00000000D83DDD38L, 0x00000000D83DDD39L}};
 	
 	static {
-		imgSize = Math.min(scale(30), ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density < 1.5f ? 28 : 56);
+		imgSize = Math.min(scale(30), Utilities.density < 1.5f ? 28 : 56);
 		drawImgSize = scale(20);
 		bigImgSize = scale(30);
 		if(Math.abs(imgSize - bigImgSize) < 5) {
@@ -317,7 +317,7 @@ public class Emoji {
 			opts.inPreferredConfig = Bitmap.Config.ARGB_8888;
 
 			opts.inDither = false;
-			if (ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density < 1.5f) {
+			if (Utilities.density < 1.5f) {
 				opts.inSampleSize = 2;
             }
 
@@ -559,8 +559,8 @@ public class Emoji {
 
             int sz = super.getSize(paint, text, start, end, fm);
 
-            int offset = (int)(8 * ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density);
-            int w = (int)(20 * ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density / 2);
+            int offset = Utilities.dp(8);
+            int w = Utilities.dp(10);
             fm.top = -w - offset;
             fm.bottom = w - offset;
             fm.ascent = -w - offset;
@@ -586,7 +586,7 @@ public class Emoji {
 
             int sz = super.getSize(paint, text, start, end, fm);
 
-            int offset = (int)(6 * ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density);
+            int offset = Utilities.dp(6);
             int w = (fm.bottom - fm.top) / 2;
             fm.top = -w - offset;
             fm.bottom = w - offset;

@@ -8,10 +8,7 @@
 
 package org.telegram.ui;
 
-import android.app.Activity;
 import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.view.LayoutInflater;
@@ -32,7 +29,6 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import org.telegram.TL.TLRPC;
-import org.telegram.messenger.FileLog;
 import org.telegram.objects.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -41,10 +37,9 @@ import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.BaseFragment;
 
-public class LocationActivity extends BaseFragment implements LocationListener, NotificationCenter.NotificationCenterDelegate {
+public class LocationActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private GoogleMap googleMap;
     private TextView distanceTextView;
-    private Marker myLocationMarker;
     private Marker userMarker;
     private Location myLocation;
     private Location userLocation;
@@ -60,16 +55,22 @@ public class LocationActivity extends BaseFragment implements LocationListener, 
         @Override
         public void onActivityCreated(Bundle savedInstanceState) {
             super.onActivityCreated(savedInstanceState);
-            setupLocationListener();
             googleMap = getMap();
             if (googleMap == null) {
                 return;
             }
 
-            googleMap.setMyLocationEnabled(false);
+            googleMap.setMyLocationEnabled(true);
             googleMap.getUiSettings().setMyLocationButtonEnabled(false);
             googleMap.getUiSettings().setZoomControlsEnabled(false);
             googleMap.getUiSettings().setCompassEnabled(false);
+            googleMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
+                @Override
+                public void onMyLocationChange(Location location) {
+                    positionMarker(location);
+                }
+            });
+            myLocation = googleMap.getMyLocation();
 
             if (sendButton != null) {
                 userLocation = new Location("network");
@@ -160,8 +161,6 @@ public class LocationActivity extends BaseFragment implements LocationListener, 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        LocationManager locationManager = (LocationManager)parentActivity.getSystemService(Activity.LOCATION_SERVICE);
-        locationManager.removeUpdates(this);
         NotificationCenter.Instance.removeObserver(this, MessagesController.updateInterfaces);
         NotificationCenter.Instance.removeObserver(this, MessagesController.closeChats);
     }
@@ -295,47 +294,11 @@ public class LocationActivity extends BaseFragment implements LocationListener, 
         return true;
     }
 
-    private void setupLocationListener() {
-        try {
-            LocationManager locationManager = (LocationManager)parentActivity.getSystemService(Activity.LOCATION_SERVICE);
-            boolean isGPSEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
-            boolean isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-
-            Location location = null;
-
-            if (isGPSEnabled || isNetworkEnabled) {
-                if (isGPSEnabled) {
-                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000 * 3 * 1, 1, this);
-                    if (locationManager != null) {
-                        location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                    }
-                }
-                if (location == null && isNetworkEnabled) {
-                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000 * 3 * 1, 1, this);
-                    if (locationManager != null) {
-                        location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                    }
-                }
-            }
-            positionMarker(location);
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
-    }
-
     private void positionMarker(Location location) {
         if (location == null) {
             return;
         }
         myLocation = location;
-        if (myLocationMarker == null) {
-            if (googleMap != null) {
-                myLocationMarker = googleMap.addMarker(new MarkerOptions().position(new LatLng(location.getLatitude(), location.getLongitude())).
-                        icon(BitmapDescriptorFactory.fromResource(R.drawable.map_dot)).anchor(0.5f, 0.5f));
-            }
-        } else {
-            myLocationMarker.setPosition(new LatLng(location.getLatitude(), location.getLongitude()));
-        }
         if (messageObject != null) {
             if (userLocation != null && distanceTextView != null) {
                 float distance = location.distanceTo(userLocation);
@@ -361,28 +324,6 @@ public class LocationActivity extends BaseFragment implements LocationListener, 
             }
         }
 
-    }
-
-    @Override
-    public void onLocationChanged(final Location location) {
-        Utilities.RunOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                positionMarker(location);
-            }
-        });
-    }
-
-    @Override
-    public void onProviderDisabled(String provider) {
-    }
-
-    @Override
-    public void onProviderEnabled(String provider) {
-    }
-
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
     }
 
     @Override

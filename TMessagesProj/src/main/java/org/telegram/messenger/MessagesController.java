@@ -3364,6 +3364,20 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             req.system_version = "SDK " + Build.VERSION.SDK_INT;
             req.app_version = "App version unknown";
         }
+
+        if (req.lang_code == null || req.lang_code.length() == 0) {
+            req.lang_code = "en";
+        }
+        if (req.device_model == null || req.device_model.length() == 0) {
+            req.device_model = "Android unknown";
+        }
+        if (req.app_version == null || req.app_version.length() == 0) {
+            req.app_version = "App version unknown";
+        }
+        if (req.system_version == null || req.system_version.length() == 0) {
+            req.system_version = "SDK Unknown";
+        }
+
         if (req.app_version != null) {
             ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
                 @Override

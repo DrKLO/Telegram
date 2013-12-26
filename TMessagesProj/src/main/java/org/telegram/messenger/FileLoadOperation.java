@@ -205,8 +205,8 @@ public class FileLoadOperation {
                             float h_filter;
                             if (filter != null) {
                                 String args[] = filter.split("_");
-                                w_filter = Float.parseFloat(args[0]) * FileLoader.Instance.density;
-                                h_filter = Float.parseFloat(args[1]) * FileLoader.Instance.density;
+                                w_filter = Float.parseFloat(args[0]) * Utilities.density;
+                                h_filter = Float.parseFloat(args[1]) * Utilities.density;
 
                                 opts.inJustDecodeBounds = true;
                                 BitmapFactory.decodeFile(cacheFileFinal.getAbsolutePath(), opts);
@@ -399,8 +399,8 @@ public class FileLoadOperation {
                     float h_filter;
                     if (filter != null) {
                         String args[] = filter.split("_");
-                        w_filter = Float.parseFloat(args[0]) * FileLoader.Instance.density;
-                        h_filter = Float.parseFloat(args[1]) * FileLoader.Instance.density;
+                        w_filter = Float.parseFloat(args[0]) * Utilities.density;
+                        h_filter = Float.parseFloat(args[1]) * Utilities.density;
 
                         opts.inJustDecodeBounds = true;
                         BitmapFactory.decodeFile(cacheFileFinal.getAbsolutePath(), opts);
