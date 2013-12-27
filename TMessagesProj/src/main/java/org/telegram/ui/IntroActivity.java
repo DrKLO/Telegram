@@ -129,7 +129,6 @@ public class IntroActivity extends ActionBarActivity {
             public void onPageScrollStateChanged(int i) {
                 if (i == ViewPager.SCROLL_STATE_IDLE || i == ViewPager.SCROLL_STATE_SETTLING) {
                     if (lastPage != viewPager.getCurrentItem()) {
-                        int prevPage = lastPage;
                         lastPage = viewPager.getCurrentItem();
 
                         final ImageView fadeoutImage;

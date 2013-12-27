@@ -78,7 +78,6 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
         super.onCreate(savedInstanceState);
         setContentView(R.layout.login_layout);
         ApplicationLoader.applicationContext = this.getApplicationContext();
-        ConnectionsManager inst = ConnectionsManager.Instance;
 
         getSupportActionBar().setLogo(R.drawable.ab_icon_fixed2);
         getSupportActionBar().show();
