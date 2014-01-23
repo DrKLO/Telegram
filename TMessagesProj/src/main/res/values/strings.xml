@@ -34,7 +34,7 @@
     <string name="Yesterday">ayer</string>
     <string name="NoResult">Sin resultados</string>
     <string name="NoChats">Sin conversaciones aún...</string>
-    <string name="NoChatsHelp">Empieza a hablar presionando el\ncompose el botón en la esquina derecha\no ve a la sección de Contactos.</string>
+    <string name="NoChatsHelp">Empieza a hablar presionando el\nbotón en la esquina derecha\no ve a la sección de Contactos.</string>
     <string name="WaitingForNetwork">Esperando a la Red...</string>
     <string name="Connecting">Conectando...</string>
     <string name="Updating">Actualizando...</string>
