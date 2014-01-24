@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingBottom="1dp"
+    android:paddingTop="1dp"
+    android:layout_gravity="top">
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_height="69dp"
+        android:layout_width="wrap_content"
+        android:layout_marginLeft="40dp"
+        android:layout_gravity="top|right"
+        android:id="@+id/chat_bubble_layout">
+
+        <FrameLayout android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="8dp"
+            android:layout_gravity="top"
+            android:id="@+id/add_contact_view">
+
+            <FrameLayout android:layout_height="54dp"
+                android:layout_width="1dp"
+                android:background="#aa70b15c"
+                android:paddingLeft="8dp"
+                android:layout_gravity="right"/>
+
+            <ImageView android:layout_width="40dp"
+                android:layout_height="54dp"
+                android:src="@drawable/ic_ab_add_member"
+                android:scaleType="center"
+                android:layout_marginRight="8dp"
+                android:paddingLeft="4dp"
+                android:id="@+id/add_contact_button"/>
+
+        </FrameLayout>
+
+        <FrameLayout android:layout_height="58dp"
+            android:layout_width="0dp"
+            android:id="@+id/shared_layout"
+            android:layout_weight="1">
+
+            <org.telegram.ui.Views.BackupImageView android:layout_height="42dp"
+                android:layout_width="42dp"
+                android:id="@+id/contact_avatar"/>
+
+            <TextView android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:scrollHorizontally="true"
+                android:paddingLeft="51dp"
+                android:layout_marginTop="1dp"
+                android:textSize="15dp"
+                android:lines="1"
+                android:singleLine="true"
+                android:layout_gravity="top"
+                android:ellipsize="end"
+                android:id="@+id/chat_user_group_name"/>
+
+            <TextView android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:paddingLeft="51dp"
+                android:layout_marginTop="20dp"
+                android:layout_gravity="top"
+                android:textSize="15dp"
+                android:maxLines="1"
+                android:id="@+id/phone_text_view"/>
+
+            <LinearLayout android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/chat_time_layout"
+                android:layout_gravity="bottom|right">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/chat_time_text"
+                    android:textColor="#70b15c"
+                    android:textSize="12dp"/>
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/msg_check"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginLeft="4dp"
+                    android:layout_marginRight="-8dp"
+                    android:id="@+id/chat_row_check"
+                    android:visibility="visible"
+                    android:layout_gravity="top"/>
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/msg_halfcheck"
+                    android:layout_marginTop="2dp"
+                    android:id="@+id/chat_row_halfcheck"
+                    android:visibility="visible"
+                    android:layout_gravity="top"/>
+
+            </LinearLayout>
+
+        </FrameLayout>
+
+    </LinearLayout>
+
+</FrameLayout>

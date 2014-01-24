@@ -1,0 +1,45 @@
+<LinearLayout
+    android:layout_height="fill_parent"
+    android:layout_width="fill_parent"
+    android:orientation="vertical"
+    android:weightSum="100"
+    android:background="#f0f0f0"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <FrameLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="40"
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="20dp">
+
+        <org.telegram.ui.Views.IdenticonView
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:id="@+id/identicon_view"/>
+
+    </FrameLayout>
+
+    <FrameLayout android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="60"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:paddingBottom="10dp"
+        android:background="#ffffff">
+
+        <TextView android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:textColor="#7f7f7f"
+            android:textSize="16dp"
+            android:layout_gravity="center"
+            android:autoLink="web"
+            android:gravity="center"
+            android:textColorLink="#316f9f"
+            android:id="@+id/identicon_text"/>
+
+    </FrameLayout>
+
+</LinearLayout>

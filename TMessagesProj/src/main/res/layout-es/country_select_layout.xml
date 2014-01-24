@@ -1,0 +1,35 @@
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="#fafafa">
+
+    <org.telegram.ui.Views.PinnedHeaderListView
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:id="@+id/listView"
+        android:clipToPadding="false"
+        android:fadingEdge="none"
+        android:fadingEdgeLength="0dp"
+        android:paddingLeft="16dp"
+        android:paddingRight="30dp"
+        android:dividerHeight="0dp"
+        android:divider="@null"
+        android:paddingBottom="16dp"
+        android:fastScrollEnabled="true"
+        android:fastScrollAlwaysVisible="true"
+        android:scrollbarStyle="outsideOverlay"
+        android:layout_gravity="top"/>
+
+
+    <TextView android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:textColor="#808080"
+        android:gravity="center"
+        android:text="@string/NoResult"
+        android:textSize="24dp"
+        android:id="@+id/searchEmptyView"
+        android:visibility="invisible"
+        android:layout_gravity="top"/>
+
+</FrameLayout>

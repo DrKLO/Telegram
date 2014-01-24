@@ -1,0 +1,39 @@
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="400dp"
+    android:layout_height="fill_parent"
+    android:background="@drawable/bar_selector"
+    android:id="@+id/back_button_background">
+
+    <ProgressBar
+        android:layout_height="32dp"
+        android:layout_width="32dp"
+        android:indeterminate="true"
+        android:indeterminateDrawable="@drawable/loading_header_animation"
+        android:indeterminateBehavior="repeat"
+        android:indeterminateDuration="1200"
+        android:indeterminateOnly="true"
+        android:layout_gravity="center_vertical|left"
+        android:visibility="visible"
+        android:layout_marginLeft="12dp"/>
+
+    <ImageView android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:src="@drawable/ic_ab_back"
+        android:layout_gravity="center_vertical|left"
+        android:layout_marginLeft="3dp"
+        android:id="@+id/back_button"/>
+
+    <TextView android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:layout_marginLeft="52dp"
+        android:textColor="#ffffff"
+        android:textSize="17dp"
+        android:layout_gravity="center_vertical|left"
+        android:gravity="left"
+        android:ellipsize="end"
+        android:singleLine="true"
+        android:paddingRight="2dp"
+        android:id="@+id/status_text"/>
+
+</FrameLayout>

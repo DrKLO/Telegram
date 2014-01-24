@@ -1,0 +1,84 @@
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+
+    <ImageView
+        android:layout_height="fill_parent"
+        android:layout_width="fill_parent"
+        android:scaleType="centerCrop"
+        android:id="@+id/background_image"
+        android:layout_marginBottom="48dp"/>
+
+    <ProgressBar
+        android:background="#99000000"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_gravity="center"
+        android:id="@+id/action_progress"
+        android:padding="6dp"
+        android:visibility="visible"
+        android:layout_marginBottom="52dp"/>
+
+    <org.telegram.ui.Views.HorizontalListView
+        android:layout_width="fill_parent"
+        android:layout_height="102dp"
+        android:layout_gravity="bottom"
+        android:id="@+id/listView"
+        android:clipToPadding="false"
+        android:paddingLeft="40dp"
+        android:paddingRight="40dp"
+        android:layout_marginBottom="48dp"/>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="fill_parent"
+        android:layout_height="48dp"
+        android:layout_gravity="bottom">
+
+        <Button
+            android:textSize="12dp"
+            android:textColor="#111111"
+            android:id="@+id/cancel_button"
+            android:background="@drawable/list_selector"
+            android:paddingLeft="3dp"
+            android:layout_width="0.0dip"
+            android:layout_height="fill_parent"
+            android:text="@string/Cancel"
+            android:textAllCaps="true"
+            android:layout_weight="1.0"
+            android:textStyle="bold"/>
+
+        <View
+            android:layout_gravity="center_vertical"
+            android:background="#c9c9c9"
+            android:layout_width="1px"
+            android:layout_height="28dp" />
+
+        <FrameLayout
+            android:id="@+id/done_button"
+            android:background="@drawable/list_selector"
+            android:paddingRight="3dp"
+            android:clickable="true"
+            android:layout_width="0.0dip"
+            android:layout_height="fill_parent"
+            android:layout_weight="1.0">
+
+            <TextView
+                android:textSize="12dp"
+                android:textColor="#111111"
+                android:gravity="center"
+                android:layout_gravity="center"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAllCaps="true"
+                android:id="@+id/done_button_text"
+                android:text="@string/Set"
+                android:drawableLeft="@drawable/ic_ab_done_gray"
+                android:drawablePadding="8dp"
+                android:textStyle="bold"/>
+        </FrameLayout>
+
+    </LinearLayout>
+
+</FrameLayout>

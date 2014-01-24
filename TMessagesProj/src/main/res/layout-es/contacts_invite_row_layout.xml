@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="66dp"
+    android:layout_gravity="top">
+
+    <ImageView
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:id="@+id/messages_list_row_avatar"
+        android:src="@drawable/ic_ab_share"
+        android:contentDescription=""
+        android:scaleType="center"
+        android:layout_marginTop="8dp"
+        android:layout_gravity="top"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/messages_list_row_name"
+        android:textSize="18dp"
+        android:layout_marginLeft="61dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="@string/InviteFriends"
+        android:textColor="#006fc8"
+        android:layout_gravity="center_vertical"/>
+
+    <View android:background="@color/divider"
+        android:layout_width="fill_parent"
+        android:layout_height="1px"
+        android:layout_gravity="bottom"
+        android:id="@+id/settings_row_divider"
+        android:visibility="gone"/>
+</FrameLayout>
