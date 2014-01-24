@@ -1,0 +1,30 @@
+<!--
+  ~ This is the source code of Telegram for Android v. 1.2.9.
+  ~ It is licensed under GNU GPL v. 2 or later.
+  ~ You should have received a copy of the license in this archive (see LICENSE).
+  ~
+  ~ Copyright Nikolai Kudashov, 2013.
+  -->
+
+<FrameLayout
+    android:layout_width="wrap_content"
+    android:layout_height="fill_parent"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_gravity="right|center_vertical"
+    android:minHeight="60dp">
+
+    <TextView android:layout_height="fill_parent"
+        android:layout_width="wrap_content"
+        android:text="@string/AddMember"
+        android:textColor="#ffffff"
+        android:textSize="14dp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_gravity="center"
+        android:id="@+id/done_button"
+        android:paddingRight="16dp"
+        android:paddingLeft="16dp"
+        android:background="@drawable/bar_selector"
+        android:minHeight="60dp"/>
+
+</FrameLayout>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             android:layout_width="match_parent"
+             android:layout_height="66dp"
+             android:layout_gravity="top">
+
+    <org.telegram.ui.Views.BackupImageView
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:id="@+id/messages_list_row_avatar"
+            android:contentDescription=""
+            android:layout_marginTop="8dp"
+            android:layout_gravity="top"/>
+
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/messages_list_row_name"
+            android:textSize="18dp"
+            android:layout_marginLeft="61dp"
+            android:ellipsize="end"
+            android:layout_marginTop="10dp"
+            android:maxLines="1"
+            android:textColor="#000000"
+            android:layout_marginRight="60dp"
+            android:layout_gravity="top"/>
+
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/messages_list_row_message"
+            android:textSize="15dp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="#808080"
+            android:layout_marginLeft="61dp"
+            android:layout_marginTop="34dp"
+            android:layout_marginRight="60dp"
+            android:layout_gravity="top"/>
+
+    <ImageView android:layout_gravity="center_vertical|right"
+               android:id="@+id/settings_row_check_button"
+               android:layout_width="wrap_content"
+               android:layout_height="wrap_content"
+               android:layout_marginRight="14dp"
+               android:src="@drawable/btn_check_off_old"/>
+
+    <View android:background="@color/divider"
+          android:layout_width="fill_parent"
+          android:layout_height="1px"
+          android:layout_gravity="bottom"
+          android:id="@+id/settings_row_divider"
+          android:visibility="gone"/>
+</FrameLayout>

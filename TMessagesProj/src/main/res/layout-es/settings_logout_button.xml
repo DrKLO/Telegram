@@ -1,0 +1,17 @@
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="56dp"
+    android:paddingTop="8dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/logout_button_states"
+        android:text="@string/LogOut"
+        android:gravity="center"
+        android:textSize="17dp"
+        android:textColor="#000000"
+        android:id="@+id/settings_row_text"/>
+
+</FrameLayout>

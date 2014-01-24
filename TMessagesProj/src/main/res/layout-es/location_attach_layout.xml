@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             android:layout_width="match_parent"
+             android:layout_height="match_parent"
+             android:layout_gravity="top">
+
+    <FrameLayout android:id="@+id/map_view"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:layout_gravity="top"/>
+
+    <TextView android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_gravity="bottom"
+            android:layout_marginBottom="15dp"
+            android:layout_marginRight="15dp"
+            android:layout_marginLeft="15dp"
+            android:text="@string/SendLocation"
+            android:gravity="center"
+            android:textSize="18dp"
+            android:textColor="#316f9f"
+            android:background="@drawable/location_send_button_states"
+            android:id="@+id/location_send_button"/>
+
+</FrameLayout>

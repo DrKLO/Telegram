@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#ffffff">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+        android:paddingTop="8dp">
+
+        <include layout="@layout/settings_section_layout"/>
+
+        <EditText
+            android:textSize="19dp"
+            android:textColorHint="#a3a3a3"
+            android:layout_gravity="center_vertical"
+            android:id="@+id/first_name_field"
+            android:paddingBottom="15dp"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="15dp"
+            android:hint="@string/FirstName"
+            android:lines="1"
+            android:singleLine="true"
+            android:inputType="textCapSentences|textAutoCorrect"
+            android:imeOptions="actionNext"
+            android:paddingLeft="15dp"
+            android:paddingRight="15dp"
+            android:textCursorDrawable="@null"
+            android:textColor="#000000"/>
+
+        <EditText
+            android:textSize="19dp"
+            android:textColorHint="#a3a3a3"
+            android:layout_gravity="center_vertical"
+            android:id="@+id/last_name_field"
+            android:paddingBottom="15dp"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:hint="@string/LastName"
+            android:lines="1"
+            android:singleLine="true"
+            android:inputType="textCapSentences|textAutoCorrect"
+            android:imeOptions="actionDone"
+            android:paddingLeft="15dp"
+            android:paddingRight="15dp"
+            android:textCursorDrawable="@null"
+            android:textColor="#000000"/>
+
+    </LinearLayout>
+
+</RelativeLayout>

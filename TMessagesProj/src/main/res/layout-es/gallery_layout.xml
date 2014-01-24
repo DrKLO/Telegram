@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="#00000000"
+    android:layout_gravity="top">
+
+    <org.telegram.ui.Views.GalleryViewPager
+        android:id="@+id/gallery_view_pager"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_gravity="top"/>
+
+    <ProgressBar
+        android:layout_width="fill_parent"
+        android:layout_height="3dp"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:progress="50"
+        android:layout_gravity="bottom|center_horizontal"
+        android:id="@+id/action_progress"
+        android:max="100"
+        android:progressDrawable="@drawable/photo_progress"
+        android:layout_marginBottom="48dp"
+        android:layout_marginLeft="6dp"
+        android:layout_marginRight="6dp"/>
+
+    <FrameLayout
+        android:layout_width="fill_parent"
+        android:layout_height="48dp"
+        android:layout_gravity="bottom"
+        android:background="#dd000000"
+        android:id="@+id/gallery_view_bottom_view">
+
+        <ImageView
+            android:layout_height="fill_parent"
+            android:layout_width="50dp"
+            android:src="@drawable/ic_ab_share_white"
+            android:scaleType="center"
+            android:id="@+id/gallery_view_share_button"
+            android:background="@drawable/list_selector"/>
+
+        <ImageView
+            android:layout_height="fill_parent"
+            android:layout_width="50dp"
+            android:src="@drawable/ic_ab_delete_white"
+            android:scaleType="center"
+            android:layout_gravity="right"
+            android:id="@+id/gallery_view_delete_button"
+            android:background="@drawable/list_selector"/>
+
+        <TextView
+            android:layout_height="wrap_content"
+            android:layout_width="fill_parent"
+            android:layout_marginLeft="60dp"
+            android:layout_marginRight="60dp"
+            android:textSize="17dp"
+            android:maxLines="1"
+            android:textColor="#ffffff"
+            android:gravity="center"
+            android:layout_marginTop="2dp"
+            android:id="@+id/gallery_view_name_text"
+            android:layout_gravity="top"/>
+
+        <TextView
+            android:layout_height="wrap_content"
+            android:layout_width="fill_parent"
+            android:layout_marginLeft="60dp"
+            android:layout_marginRight="60dp"
+            android:layout_marginTop="26dp"
+            android:gravity="center"
+            android:textColor="#b8bdbe"
+            android:textSize="14dp"
+            android:id="@+id/gallery_view_time_text"
+            android:layout_gravity="top"/>
+
+    </FrameLayout>
+
+    <TextView
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:layout_marginTop="-70dp"
+        android:id="@+id/fake_title_view"
+        android:textSize="18dp"
+        android:layout_gravity="top|left"/>
+
+</FrameLayout>

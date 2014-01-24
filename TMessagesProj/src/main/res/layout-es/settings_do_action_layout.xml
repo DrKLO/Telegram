@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    android:orientation="horizontal"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <Button
+        android:textSize="12dp"
+        android:textColor="#ffffff"
+        android:id="@+id/cancel_button"
+        android:background="@drawable/bar_selector"
+        android:paddingLeft="3dp"
+        android:layout_width="0.0dip"
+        android:layout_height="fill_parent"
+        android:text="@string/Cancel"
+        android:textAllCaps="true"
+        android:layout_weight="1.0"
+        android:textStyle="bold"/>
+
+    <View
+        android:layout_gravity="center_vertical"
+        android:background="#c9c9c9"
+        android:layout_width="1px"
+        android:layout_height="28dp" />
+
+    <FrameLayout
+        android:id="@+id/done_button"
+        android:background="@drawable/bar_selector"
+        android:paddingRight="3dp"
+        android:clickable="true"
+        android:layout_width="0.0dip"
+        android:layout_height="fill_parent"
+        android:layout_weight="1.0">
+
+        <TextView
+            android:textSize="12dp"
+            android:textColor="#ffffff"
+            android:gravity="center"
+            android:layout_gravity="center"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAllCaps="true"
+            android:id="@+id/done_button_text"
+            android:text="@string/Done"
+            android:drawableLeft="@drawable/ic_done"
+            android:drawablePadding="8dp"
+            android:textStyle="bold"/>
+
+    </FrameLayout>
+
+</LinearLayout>

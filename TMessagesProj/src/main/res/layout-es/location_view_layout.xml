@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             android:layout_width="match_parent"
+             android:layout_height="match_parent"
+             android:layout_gravity="top">
+
+    <FrameLayout android:id="@+id/map_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="top"/>
+
+    <FrameLayout android:layout_width="fill_parent"
+                 android:layout_height="91dp"
+                 android:layout_gravity="bottom"
+                 android:background="@drawable/location_panel"
+                 android:id="@+id/location_bottom_view">
+        <org.telegram.ui.Views.BackupImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:contentDescription=""
+                android:id="@+id/location_avatar_view"
+                android:layout_marginLeft="12dp"
+                android:layout_marginTop="16dp"
+                android:layout_gravity="top"/>
+
+        <TextView android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="22dp"
+                android:textColor="#000000"
+                android:layout_marginLeft="88dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginRight="12dp"
+                android:id="@+id/location_name_label"
+                android:layout_gravity="top"
+                android:maxLines="1"/>
+
+        <TextView android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:textSize="15dp"
+                  android:layout_marginLeft="88dp"
+                  android:layout_marginTop="52dp"
+                  android:layout_marginRight="12dp"
+                  android:textColor="#999999"
+                  android:id="@+id/location_distance_label"
+                  android:layout_gravity="top"
+                  android:maxLines="1"/>
+    </FrameLayout>
+</FrameLayout>

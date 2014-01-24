@@ -1,0 +1,291 @@
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#fafafa"
+    android:fillViewport="true">
+
+    <org.telegram.ui.Views.FrameLayoutFixed
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|left">
+
+        <org.telegram.ui.LoginActivityPhoneView
+            android:orientation="vertical"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:visibility="visible"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp"
+            android:layout_marginTop="30dp"
+            android:layout_gravity="top|left"
+            android:id="@+id/login_page1">
+
+            <TextView
+                android:layout_width="fill_parent"
+                android:layout_height="50dp"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="20dp"
+                android:id="@+id/login_coutry_textview"
+                android:textSize="20dp"
+                android:paddingTop="10dp"
+                android:gravity="left|center_horizontal"
+                android:textIsSelectable="false"
+                android:textColor="#000000"
+                android:paddingLeft="12dp"
+                android:paddingRight="12dp"
+                android:maxLines="1"
+                android:background="@drawable/spinner_states"/>
+
+            <View
+                android:layout_width="fill_parent"
+                android:layout_height="1px"
+                android:paddingLeft="12dp"
+                android:paddingRight="12dp"
+                android:background="#808080"
+                android:layout_marginTop="-6.5dp"
+                android:layout_marginLeft="24dp"
+                android:layout_marginRight="24dp"/>
+
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:layout_gravity="top|left"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="+"
+                    android:textColor="#a6a6a6"
+                    android:textSize="20dp"
+                    android:layout_marginLeft="8dp"
+                    android:layout_gravity="top|left"/>
+
+                <EditText
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/login_county_code_field"
+                    android:width="70dp"
+                    android:editable="true"
+                    android:inputType="phone"
+                    android:maxLength="4"
+                    android:maxLines="1"
+                    android:textSize="18dp"
+                    android:gravity="center"
+                    android:imeOptions="actionNext|flagNoExtractUi"
+                    android:textCursorDrawable="@null"
+                    android:textColor="#000000"
+                    android:layout_gravity="top|left"/>
+
+                <EditText
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/login_phone_field"
+                    android:inputType="phone"
+                    android:maxLines="1"
+                    android:textSize="18dp"
+                    android:layout_marginRight="20dp"
+                    android:imeOptions="actionNext|flagNoExtractUi"
+                    android:textCursorDrawable="@null"
+                    android:textColor="#000000"
+                    android:textColorHint="#979797"
+                    android:gravity="center_vertical"
+                    android:layout_gravity="top|left"/>
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/StartText"
+                android:id="@+id/login_confirm_text"
+                android:layout_marginTop="28dp"
+                android:textColor="#808080"
+                android:layout_gravity="center_horizontal"
+                android:textSize="16dp"
+                android:gravity="center"
+                android:layout_marginBottom="10dp"
+                android:lineSpacingExtra="2dp"/>
+
+        </org.telegram.ui.LoginActivityPhoneView>
+
+        <org.telegram.ui.LoginActivitySmsView
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp"
+            android:layout_marginTop="30dp"
+            android:visibility="gone"
+            android:id="@+id/login_page2"
+            android:layout_gravity="top|left"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/login_sms_confirm_text"
+                android:textColor="#808080"
+                android:textSize="16dp"
+                android:gravity="center_horizontal"
+                android:layout_gravity="center_horizontal"
+                android:lineSpacingExtra="2dp"/>
+
+            <EditText
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal"
+                android:width="220dp"
+                android:id="@+id/login_sms_code_field"
+                android:layout_marginTop="20dp"
+                android:gravity="center_horizontal"
+                android:maxLines="1"
+                android:editable="true"
+                android:textSize="18dp"
+                android:imeOptions="actionNext|flagNoExtractUi"
+                android:hint="@string/Code"
+                android:textCursorDrawable="@null"
+                android:layout_gravity="center_horizontal"
+                android:textColor="#000000"
+                android:textColorHint="#979797"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/login_time_text"
+                android:layout_marginTop="20dp"
+                android:gravity="center_horizontal"
+                android:layout_gravity="center_horizontal"
+                android:textSize="16dp"
+                android:textColor="#808080"
+                android:lineSpacingExtra="2dp"/>
+
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:layout_below="@+id/spinner"
+                android:gravity="center_horizontal|bottom"
+                android:layout_gravity="top|left">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/wrong_number"
+                    android:gravity="center"
+                    android:textSize="16dp"
+                    android:textColor="#316f9f"
+                    android:lineSpacingExtra="2dp"
+                    android:text="@string/WrongNumber"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:paddingTop="24dp"
+                    android:layout_marginBottom="10dp"/>
+
+            </LinearLayout>
+
+        </org.telegram.ui.LoginActivitySmsView>
+
+        <org.telegram.ui.LoginActivityRegisterView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="30dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:orientation="vertical"
+            android:id="@+id/login_page3"
+            android:visibility="gone"
+            android:layout_gravity="top|left">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/RegisterText"
+                android:id="@+id/login_register_info"
+                android:layout_marginTop="8dp"
+                android:textColor="#808080"
+                android:gravity="center_horizontal"
+                android:layout_gravity="center_horizontal"
+                android:textSize="16dp"/>
+
+            <EditText
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/login_first_name_field"
+                android:maxLines="1"
+                android:textSize="18dp"
+                android:imeOptions="actionNext|flagNoExtractUi"
+                android:layout_marginLeft="40dp"
+                android:layout_marginRight="40dp"
+                android:layout_marginTop="34dp"
+                android:hint="@string/FirstName"
+                android:lines="1"
+                android:capitalize="words"
+                android:textCursorDrawable="@null"
+                android:textColor="#000000"
+                android:textColorHint="#979797"/>
+
+            <EditText
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/login_last_name_field"
+                android:textSize="18dp"
+                android:imeOptions="actionNext|flagNoExtractUi"
+                android:layout_marginLeft="40dp"
+                android:layout_marginRight="40dp"
+                android:hint="@string/LastName"
+                android:lines="1"
+                android:maxLines="1"
+                android:capitalize="words"
+                android:autoText="false"
+                android:textCursorDrawable="@null"
+                android:textColor="#000000"
+                android:textColorHint="#979797"
+                android:layout_marginTop="10dp"/>
+
+            <!--<FrameLayout-->
+                <!--android:layout_width="108dp"-->
+                <!--android:layout_height="108dp"-->
+                <!--android:layout_marginTop="20dp"-->
+                <!--android:layout_below="@+id/login_register_info"-->
+                <!--android:id="@+id/login_avatar_button">-->
+
+                <!--<org.telegram.ui.Views.BackupImageView-->
+                    <!--android:id="@+id/settings_avatar_image"-->
+                    <!--android:layout_width="fill_parent"-->
+                    <!--android:layout_height="fill_parent"-->
+                    <!--android:src="@drawable/user_placeholder"/>-->
+
+                <!--<ImageButton-->
+                    <!--android:id="@+id/settings_change_avatar_button"-->
+                    <!--android:background="@drawable/photo_spinner"-->
+                    <!--android:layout_width="fill_parent"-->
+                    <!--android:layout_height="fill_parent"/>-->
+            <!--</FrameLayout>-->
+
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:layout_below="@+id/spinner"
+                android:gravity="center_horizontal|bottom"
+                android:minHeight="140dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="30dp"
+                    android:id="@+id/changed_mind"
+                    android:gravity="center"
+                    android:textSize="16dp"
+                    android:textColor="#316f9f"
+                    android:lineSpacingExtra="2dp"
+                    android:text="@string/CancelRegistration"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginTop="-40dp"
+                    android:layout_marginBottom="20dp"/>
+
+            </LinearLayout>
+
+        </org.telegram.ui.LoginActivityRegisterView>
+
+    </org.telegram.ui.Views.FrameLayoutFixed>
+
+</ScrollView>

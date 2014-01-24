@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="66dp">
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/messages_list_row_avatar"
+        android:contentDescription=""
+        android:src="@drawable/addmember"
+        android:scaleType="center"
+        android:layout_gravity="center_vertical"
+        android:layout_marginLeft="24dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/messages_list_row_name"
+        android:textSize="18dp"
+        android:layout_marginLeft="61dp"
+        android:ellipsize="end"
+        android:textColor="#000000"
+        android:text="@string/AddMember"
+        android:maxLines="1"
+        android:layout_gravity="center_vertical"/>
+
+    <View android:background="@color/divider"
+        android:layout_width="fill_parent"
+        android:layout_height="1px"
+        android:layout_gravity="bottom"
+        android:id="@+id/settings_row_divider"/>
+</FrameLayout>

@@ -1,0 +1,57 @@
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="64dp"
+    android:background="@drawable/list_selector"
+    android:layout_gravity="top">
+
+    <TextView
+        android:textSize="18dp"
+        android:textColor="#333333"
+        android:id="@+id/settings_row_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:gravity="center_vertical"
+        android:layout_marginTop="9dp"
+        android:layout_gravity="top"/>
+
+    <TextView
+        android:textSize="13dp"
+        android:textColor="#999999"
+        android:id="@+id/settings_row_text_detail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="9dp"
+        android:textAllCaps="true"
+        android:layout_gravity="bottom"/>
+
+    <View
+        android:background="#e8e8e8"
+        android:layout_width="1dp"
+        android:layout_height="48dp"
+        android:layout_gravity="right|center_vertical"
+        android:layout_marginRight="48dp"/>
+
+    <ImageButton
+        android:id="@+id/settings_edit_name"
+        android:background="@drawable/list_selector"
+        android:clickable="true"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_profile_send_message"
+        android:layout_gravity="right|center_vertical"
+        android:paddingTop="2dp"/>
+
+    <View
+        android:background="@color/divider"
+        android:layout_width="fill_parent"
+        android:layout_height="1px"
+        android:layout_gravity="bottom"
+        android:id="@+id/settings_row_divider"/>
+
+</FrameLayout>
