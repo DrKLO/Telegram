@@ -3,38 +3,38 @@
     <string name="AppName">Telegram</string>
 
     <!--signin view-->
-    <string name="YourPhone">Your phone</string>
-    <string name="StartText">Please confirm your country code\nand enter your phone number.</string>
-    <string name="ChooseCountry">Choose a country</string>
-    <string name="WrongCountry">Wrong country code</string>
+    <string name="YourPhone">Tu teléfono</string>
+    <string name="StartText">Por favor confirma tu código de país \e introduce tu número de teléfono.</string>
+    <string name="ChooseCountry">Selecciona un  país</string>
+    <string name="WrongCountry">Código de país erróneo</string>
 
     <!--code enter view-->
-    <string name="YourCode">Your code</string>
-    <string name="SentSmsCode">We\'ve sent an SMS with an activation code to your phone</string>
-    <string name="CallText">We will call you in</string>
-    <string name="Calling">Calling you...</string>
-    <string name="Code">Code</string>
-    <string name="WrongNumber">Wrong number?</string>
+    <string name="YourCode">Tú código</string>
+    <string name="SentSmsCode">Te hemos enviado un SMS con el código de activación a tu teléfono</string>
+    <string name="CallText">Te llamaremos en</string>
+    <string name="Calling">Llamándote...</string>
+    <string name="Code">Código</string>
+    <string name="WrongNumber">Número erróneo?</string>
 
     <!--signup view-->
-    <string name="YourName">Your name</string>
-    <string name="RegisterText">Set up your first and last name</string>
+    <string name="YourName">Su nombre</string>
+    <string name="RegisterText">Introduce tu nombre y apellidos</string>
     <!--<string name="RegisterText">Set up your name and picture</string>-->
-    <string name="FirstName">First name (required)</string>
-    <string name="LastName">Last name (optional)</string>
-    <string name="CancelRegistration">Cancel registration</string>
+    <string name="FirstName">Nombre (requerido)</string>
+    <string name="LastName">Apellidos (opcional)</string>
+    <string name="CancelRegistration">Cancelar registro</string>
 
     <!--chats view-->
     <string name="Chats">Chats</string>
     <string name="Search">Search</string>
     <string name="NewMessages">New messages</string>
-    <string name="Settings">Settings</string>
-    <string name="Contacts">Contacts</string>
-    <string name="NewGroup">New Group</string>
+    <string name="Settings">Ajustes</string>
+    <string name="Contacts">Contactos</string>
+    <string name="NewGroup">Nuevo Grupo</string>
     <string name="Yesterday">yesterday</string>
-    <string name="NoResult">No results</string>
-    <string name="NoChats">No chats yet...</string>
-    <string name="NoChatsHelp">Start messaging by pressing the\ncompose button in the top right corner\nor go to the Contacts section.</string>
+    <string name="NoResult">No hay resultados</string>
+    <string name="NoChats">No tienes chats aún...</string>
+    <string name="NoChatsHelp">Comienza a chatear pulsando el botón de\ncomponer un mensaje situado en la esquina superior derecha\no ves a la sección Contactos.</string>
     <string name="WaitingForNetwork">Waiting for network...</string>
     <string name="Connecting">Connecting...</string>
     <string name="Updating">Updating...</string>
@@ -69,11 +69,11 @@
     <string name="AreTyping">are typing...</string>
     <string name="AndMoreTyping">and %d more people</string>
     <string name="GotAQuestion">Got a question\nabout Telegram?</string>
-    <string name="ChatTakePhoto">Take a photo</string>
-    <string name="ChatGallery">Gallery</string>
-    <string name="ChatLocation">Location</string>
-    <string name="ChatVideo">Video</string>
-    <string name="ChatDocument">Document</string>
+    <string name="ChatTakePhoto">Tomar una foto</string>
+    <string name="ChatGallery">Galería</string>
+    <string name="ChatLocation">Localización</string>
+    <string name="ChatVideo">Vídeo</string>
+    <string name="ChatDocument">Documento</string>
     <string name="NoMessages">No messages here yet...</string>
     <string name="ViewPhoto">View Photo</string>
     <string name="ViewLocation">View Location</string>
@@ -166,7 +166,7 @@
     <string name="SharedMedia">Shared Media</string>
     <string name="GroupInfo">Group Info</string>
     <string name="SHAREDMEDIA">SHARED MEDIA</string>
-    <string name="SETTINGS">SETTINGS</string>
+    <string name="SETTINGS">AJUSTES</string>
     <string name="AddMember">Add member</string>
     <string name="DeleteAndExit">Delete and leave group</string>
     <string name="Notifications">Notifications</string>
@@ -201,7 +201,7 @@
     <!--settings view-->
     <string name="ResetNotificationsText">Reset all notification settings to default</string>
     <string name="TextSize">Messages Text Size</string>
-    <string name="AskAQuestion">Ask a Question</string>
+    <string name="AskAQuestion">Hacer una pregunta</string>
     <string name="EnableAnimations">Enable Animations</string>
     <string name="Unblock">Unblock</string>
     <string name="UnblockText">Tap and hold on user to unblock.</string>
@@ -211,7 +211,7 @@
     <string name="Alert">Alert</string>
     <string name="MessagePreview">Message Preview</string>
     <string name="GroupNotifications">GROUP NOTIFICATIONS</string>
-    <string name="Sound">Sound</string>
+    <string name="Sound">Sonido</string>
     <string name="InAppNotifications">IN-APP NOTIFICATIONS</string>
     <string name="InAppSounds">In-App Sounds</string>
     <string name="InAppVibrate">In-App Vibrate</string>
@@ -221,28 +221,28 @@
     <string name="ResetAllNotifications">Reset All Notifications</string>
     <string name="UndoAllCustom">Undo all custom notification settings for all your contacts and groups</string>
     <string name="NotificationsAndSounds">Notifications and Sounds</string>
-    <string name="BlockedUsers">Blocked Users</string>
+    <string name="BlockedUsers">Usuarios Bloqueados</string>
     <string name="SaveIncomingPhotos">Save Incoming Photos</string>
-    <string name="LogOut">Log Out</string>
-    <string name="YourFirstNameAndLastName">YOUR FIRST AND LAST NAME</string>
+    <string name="LogOut">Finalizar Sesión</string>
+    <string name="YourFirstNameAndLastName">TU NOMBRE Y APELLIDOS</string>
     <string name="NoSound">No sound</string>
     <string name="Default">Default</string>
-    <string name="Support">SUPPORT</string>
-    <string name="ChatBackground">Chat Background</string>
+    <string name="Support">SOPORTE</string>
+    <string name="ChatBackground">Fondo Chat</string>
 
     <!--media view-->
     <string name="NoMedia">No shared media yet</string>
     <string name="CancelDownload">Cancel Download</string>
 
     <!--map view-->
-    <string name="MyLocation">My location</string>
+    <string name="MyLocation">My localización</string>
     <string name="Map">Map</string>
     <string name="Satellite">Satellite</string>
     <string name="Hybrid">Hybrid</string>
     <string name="MetersAway">m away</string>
     <string name="KMetersAway">km away</string>
-    <string name="SendLocation">Send Location</string>
-    <string name="ShareLocation">Share Location</string>
+    <string name="SendLocation">Enviar Localización</string>
+    <string name="ShareLocation">Compartir Localización</string>
 
     <!--photo gallery view-->
     <string name="ShowAllMedia">Show all media</string>
@@ -251,23 +251,23 @@
     <string name="Gallery">Gallery</string>
 
     <!--button titles-->
-    <string name="Next">Next</string>
-    <string name="Back">Back</string>
-    <string name="Done">Done</string>
-    <string name="Open">Open</string>
-    <string name="Cancel">Cancel</string>
-    <string name="Add">Add</string>
-    <string name="Edit">Edit</string>
-    <string name="Send">Send</string>
-    <string name="Call">Call</string>
-    <string name="Copy">Copy</string>
-    <string name="Delete">Delete</string>
+    <string name="Next">Siguiente</string>
+    <string name="Back">Atrás</string>
+    <string name="Done">Hecho</string>
+    <string name="Open">Abrir</string>
+    <string name="Cancel">Cancelar</string>
+    <string name="Add">Añadir</string>
+    <string name="Edit">Editar</string>
+    <string name="Send">Enviar</string>
+    <string name="Call">Llamar</string>
+    <string name="Copy">Copiar</string>
+    <string name="Delete">Borrar</string>
     <string name="Forward">Forward</string>
-    <string name="Retry">Retry</string>
-    <string name="FromCamera">From camera</string>
-    <string name="FromGalley">From gallery</string>
-    <string name="DeletePhoto">Delete photo</string>
-    <string name="OpenPhoto">Open photo</string>
+    <string name="Retry">Reintentar</string>
+    <string name="FromCamera">Desde la cámara</string>
+    <string name="FromGalley">Desde la galería</string>
+    <string name="DeletePhoto">Borrar foto</string>
+    <string name="OpenPhoto">Abrir foto</string>
     <string name="Set">Set</string>
     <string name="OK">OK</string>
 
