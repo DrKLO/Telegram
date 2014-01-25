@@ -92,9 +92,9 @@
     <string name="EncryptedPlaceholderTitleOutgoing">Has invitado a %s a unirse a un chat secreto.</string>
     <string name="EncryptedDescriptionTitle">Chat secretos:</string>
     <string name="EncryptedDescription1">Usa una encriptación punto-a-punto</string>
-    <string name="EncryptedDescription2">No deja huella en nuestros servidores</string>
-    <string name="EncryptedDescription3">Tiene un temporizador de autodestrucción</string>
-    <string name="EncryptedDescription4">No permitir reenviar</string>
+    <string name="EncryptedDescription2">No deja ni rastro en nuestros servidores</string>
+    <string name="EncryptedDescription3">Con temporizador de autodestrucción</string>
+    <string name="EncryptedDescription4">No se puede reenviar</string>
     <string name="OneNewMessage">%1$d nuevo mensaje</string>
     <string name="FewNewMessages">%1$d nuevos mensajes</string>
     <string name="YouWereKicked">Has sido expulsado de este grupo</string>
@@ -134,9 +134,9 @@
     <string name="NotificationEditedGroupName">%1$s ha cambiado el nombre del grupo %2$s</string>
     <string name="NotificationEditedGroupPhoto">%1$s ha cambiado la imagen del grupo %2$s</string>
     <string name="NotificationGroupAddMember">%1$s ha invitado a %3$s al grupo %2$s</string>
-    <string name="NotificationGroupKickMember">%1$s ha echado a %3$s del grupo %2$s</string>
-    <string name="NotificationGroupKickYou">%1$s te ha echado del grupo %2$s</string>
-    <string name="NotificationGroupLeftMember">%1$s ha dejado el grupo %2$s</string>
+    <string name="NotificationGroupKickMember">%1$s ha expulsado a %3$s del grupo %2$s</string>
+    <string name="NotificationGroupKickYou">%1$s te ha expulsado del grupo %2$s</string>
+    <string name="NotificationGroupLeftMember">%1$s ha abandonado el grupo %2$s</string>
     <string name="NotificationContactJoined">%1$s se ha unido a Telegram!</string>
     <string name="NotificationUnrecognizedDevice">Nueva sesión desde un dispositivo desconocido %1$s, posición: %2$s</string>
     <string name="NotificationContactNewPhoto">%1$s ha actualizado su imagen de perfil</string>
@@ -170,7 +170,7 @@
     <string name="AddMember">Añadir miembro</string>
     <string name="DeleteAndExit">Eliminar y abandonar grupo</string>
     <string name="Notifications">Notificaciones</string>
-    <string name="KickFromGroup">Echar del grupo</string>
+    <string name="KickFromGroup">Expulsar del grupo</string>
 
     <!--contact info view-->
     <string name="ShareContact">Compartir contacto</string>
@@ -190,12 +190,12 @@
     <string name="EncryptionKey">Clave de encriptación</string>
     <string name="MessageLifetime">Temporizador de la autodestrucción</string>
     <string name="ShortMessageLifetimeForever">Off</string>
-    <string name="ShortMessageLifetime2s">2s</string>
-    <string name="ShortMessageLifetime5s">5s</string>
-    <string name="ShortMessageLifetime1m">1m</string>
-    <string name="ShortMessageLifetime1h">1h</string>
-    <string name="ShortMessageLifetime1d">1d</string>
-    <string name="ShortMessageLifetime1w">1sem</string>
+    <string name="ShortMessageLifetime2s">2 segundos</string>
+    <string name="ShortMessageLifetime5s">5 segundos</string>
+    <string name="ShortMessageLifetime1m">1 minuto</string>
+    <string name="ShortMessageLifetime1h">1 hora</string>
+    <string name="ShortMessageLifetime1d">1 día</string>
+    <string name="ShortMessageLifetime1w">1 semana</string>
     <string name="EncryptionKeyDescription">Esta imagen es una visualización de la clave de encriptación para este chat secreto con <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Si la imagen se ve igual en el dispositivo de <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, este chat es 200%% seguro.<![CDATA[<br><br>]]>Aprende más en telegram.org</string>
 
     <!--settings view-->
@@ -209,14 +209,14 @@
     <string name="YourPhoneNumber">TU NÚMERO DE TELÉFONO</string>
     <string name="MessageNotifications">NOTIFICACIONES DE MENSAJES</string>
     <string name="Alert">Alerta</string>
-    <string name="MessagePreview">Vista previa del mensaje</string>
+    <string name="MessagePreview">Ver mensaje</string>
     <string name="GroupNotifications">NOTIFICACIONES DE GRUPO</string>
     <string name="Sound">Sonido</string>
     <string name="InAppNotifications">NOTIFICACIONES DE LA APLICACIÓN</string>
-    <string name="InAppSounds">Sonidos de la aplicación</string>
-    <string name="InAppVibrate">Vibración de la aplicación</string>
+    <string name="InAppSounds">Sonar</string>
+    <string name="InAppVibrate">Vibrar</string>
     <string name="Vibrate">Vibrar</string>
-    <string name="InAppPreview">Vista previa de la aplicación</string>
+    <string name="InAppPreview">Ver mensaje</string>
     <string name="Reset">RESTABLECER</string>
     <string name="ResetAllNotifications">Restablecer todas las notificaciones</string>
     <string name="UndoAllCustom">Deshacer todos los ajustes de notificaciones personalizadas para todos tus contactos y grupos</string>
@@ -272,8 +272,8 @@
     <string name="OK">OK</string>
 
     <!--messages-->
-    <string name="ActionKickUser">un1 ha echado a un2</string>
-    <string name="ActionLeftUser">un1 ha dejado el grupo</string>
+    <string name="ActionKickUser">un1 ha expulsado a un2</string>
+    <string name="ActionLeftUser">un1 ha abandonado el grupo</string>
     <string name="ActionAddUser">un1 añadió un2</string>
     <string name="ActionRemovedPhoto">un1 eliminó la imagen del grupo</string>
     <string name="ActionChangedPhoto">un1 cambió la imagen del grupo</string>
