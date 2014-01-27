@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="AppName">Telegram</string>
+
+    <!--signin view-->
+    <string name="YourPhone">El teu telèfon</string>
+    <string name="StartText">Si us plau confirma el teu codi de país\ni el teu número de telèfon.</string>
+    <string name="ChooseCountry">Tria un país</string>
+    <string name="WrongCountry">Codi de país erroni</string>
+
+    <!--code enter view-->
+    <string name="YourCode">El teu codi</string>
+    <string name="SentSmsCode">Hem enviat un SMS amb un codi d\'activació al teu telèfon phone</string>
+    <string name="CallText">Et trucarem</string>
+    <string name="Calling">Trucan-te...</string>
+    <string name="Code">Codi</string>
+    <string name="WrongNumber">Número erroni?</string>
+
+    <!--signup view-->
+    <string name="YourName">El teu nom</string>
+    <string name="RegisterText">Escriu el teu nom i primer cognom</string>
+    <!--<string name="RegisterText">Set up your name and picture</string>-->
+    <string name="FirstName">Nom (requerit)</string>
+    <string name="LastName">Cognom (opcional)</string>
+    <string name="CancelRegistration">Cancel·la el registre</string>
+
+    <!--chats view-->
+    <string name="Chats">Xats</string>
+    <string name="Search">Cerca</string>
+    <string name="NewMessages">Nous missatges</string>
+    <string name="Settings">Configuració</string>
+    <string name="Contacts">Contactes</string>
+    <string name="NewGroup">Grup nou</string>
+    <string name="Yesterday">ahir</string>
+    <string name="NoResult">No hi ha resultats</string>
+    <string name="NoChats">No tens cap xat encara...</string>
+    <string name="NoChatsHelp">Inicia una conversa prement el\nbotó de crear un xat a la cantonada superior dreta\no ves a la secció de Contactes.</string>
+    <string name="WaitingForNetwork">Esperant connexió de xarxa...</string>
+    <string name="Connecting">Connectant...</string>
+    <string name="Updating">Actualitzant...</string>
+    <string name="NewSecretChat">Nou xat secret</string>
+    <string name="AwaitingEncryption">Esperant que %s es connecti...</string>
+    <string name="EncryptionRejected">Xat secret cancel·lat</string>
+    <string name="EncryptionProcessing">Intercanviant claus de xifrat...</string>
+    <string name="EncryptedChatStartedOutgoing">%s s\'ha apuntat al teu xat secret.</string>
+    <string name="EncryptedChatStartedIncoming">T\'has apuntat al xat secret.</string>
+    <string name="ClearHistory">Buidar historial</string>
+    <string name="DeleteChat">Elimina i surt</string>
+
+    <!--documents view-->
+    <string name="SelectFile">Selecciona fitxer</string>
+    <string name="FreeOfTotal">Lliure %1$s de %2$s</string>
+    <string name="UnknownError">Error desconegut</string>
+    <string name="AccessError">Error d\'accés</string>
+    <string name="NoFiles">Cap fitxer encara...</string>
+    <string name="FileUploadLimit">La mida del fitxer no hauria de superar %1$s</string>
+    <string name="NotMounted">Emmagatzematge no muntat</string>
+    <string name="UsbActive">Transferència USB activa</string>
+    <string name="InternalStorage">Emmagatzematge intern</string>
+    <string name="ExternalStorage">Emmagatzematge extern</string>
+    <string name="SystemRoot">Arrel del sistema</string>
+    <string name="SdCard">Targeta SD</string>
+
+    <!--chat view-->
+    <string name="Invisible">invisible</string>
+    <string name="Typing">escrivint...</string>
+    <string name="Attach">Adjunta</string>
+    <string name="IsTyping">està escrivint...</string>
+    <string name="AreTyping">estan escrivint...</string>
+    <string name="AndMoreTyping">i %d més gent</string>
+    <string name="GotAQuestion">Tens alguna pregunta\nsobre Telegram?</string>
+    <string name="ChatTakePhoto">Fes una foto</string>
+    <string name="ChatGallery">Galeria</string>
+    <string name="ChatLocation">Localització</string>
+    <string name="ChatVideo">Vídeo</string>
+    <string name="ChatDocument">Document</string>
+    <string name="NoMessages">Cap missatge encara...</string>
+    <string name="ViewPhoto">Veure foto</string>
+    <string name="ViewLocation">Veure localització</string>
+    <string name="ViewVideo">Reprodueix vídeo</string>
+    <string name="ForwardedMessage">Reenviar missatge</string>
+    <string name="From">De</string>
+    <string name="NoRecent">Cap recent</string>
+    <string name="Members">membres</string>
+    <string name="Message">Missatge</string>
+    <string name="TypeMessage">Tipus de missatge</string>
+    <string name="DOWNLOAD">Descarrega</string>
+    <string name="Selected">Seleccionat:</string>
+    <string name="ShareMyContactInfo">COMPARTEIX INFORMACIÓ DE CONTACTE</string>
+    <string name="AddToContacts">AFEGEIX A CONTACTES</string>
+    <string name="EncryptedPlaceholderTitleIncoming">%s convidats a participar en el xat secret.</string>
+    <string name="EncryptedPlaceholderTitleOutgoing"> %s t\'ha convidat a participar a un xat secret.</string>
+    <string name="EncryptedDescriptionTitle">Xats secrets:</string>
+    <string name="EncryptedDescription1">Usa xifratge descentralitzat</string>
+    <string name="EncryptedDescription2">No deixis rastre en els nostres servidors</string>
+    <string name="EncryptedDescription3">Tenir temporitzador d\'auto-destrucció</string>
+    <string name="EncryptedDescription4">No permetis re-emetre missatges</string>
+    <string name="OneNewMessage">%1$d missatge nou</string>
+    <string name="FewNewMessages">%1$d nous missatges</string>
+    <string name="YouWereKicked">Has estat expulsat d\'aquest grup</string>
+    <string name="YouLeft">Has abandonat aquest grup</string>
+    <string name="DeleteThisGroup">Elimina quest grup</string>
+
+    <!--notification-->
+    <string name="EncryptedChatRequested">Xat secret sol·licitat</string>
+    <string name="EncryptedChatAccepted">Xat secret iniciat</string>
+    <string name="MessageLifetimeChanged">%1$s ha ajustat el temporitzador d\'auto-destrucció a %2$s</string>
+    <string name="MessageLifetimeChangedOutgoing">Has activat el temporitzador d\'autodestrucció a %1$s</string>
+    <string name="MessageLifetimeRemoved">%1$s ha desactivat el temporitzador d\'autodestrucció</string>
+    <string name="MessageLifetime2s">2 segons</string>
+    <string name="MessageLifetime5s">5 segons</string>
+    <string name="MessageLifetime1m">1 minuts</string>
+    <string name="MessageLifetime1h">1 hores</string>
+    <string name="MessageLifetime1d">1 dies</string>
+    <string name="MessageLifetime1w">1 setmanes</string>
+    <string name="YouHaveNewMessage">Tens un nou missatge</string>
+    <string name="NotificationMessageText">%1$s: %2$s</string>
+    <string name="NotificationMessageNoText">%1$s t\'ha enviat un nou missatge</string>
+    <string name="NotificationMessagePhoto">%1$s t\'ha enviat una foto</string>
+    <string name="NotificationMessageVideo">%1$s t\'ha enviat un video</string>
+    <string name="NotificationMessageContact">%1$s ha compartit un contacte amb tu</string>
+    <string name="NotificationMessageMap">%1$s t\'ha enviat un mapa</string>
+    <string name="NotificationMessageDocument">%1$s t\'ha enviat un document</string>
+    <string name="NotificationMessageAudio">%1$s t\'ha enviat un àudio</string>
+    <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
+    <string name="NotificationMessageGroupNoText">%1$s ha enviat un missatge al grup %2$s</string>
+    <string name="NotificationMessageGroupPhoto">%1$s ha enviat una foto al grup %2$s</string>
+    <string name="NotificationMessageGroupVideo">%1$s ha enviat un vídeo al grup %2$s</string>
+    <string name="NotificationMessageGroupContact">%1$s ha compartit un contacte en el grup %2$s</string>
+    <string name="NotificationMessageGroupMap">%1$s ha enviat un mapa al grup %2$s</string>
+    <string name="NotificationMessageGroupDocument">%1$s ha enviat un document al grup %2$s</string>
+    <string name="NotificationMessageGroupAudio">%1$s ha enviat un àudio al grup %2$s</string>
+    <string name="NotificationInvitedToGroup">%1$s t\'ha convidat al grup %2$s</string>
+    <string name="NotificationEditedGroupName">%1$s ha editat el/s grup/s %2$s name</string>
+    <string name="NotificationEditedGroupPhoto">%1$s ha editat el/s grup/s %2$s photo</string>
+    <string name="NotificationGroupAddMember">%1$s ha convidat %3$s al grup %2$s</string>
+    <string name="NotificationGroupKickMember">%1$s ha expulsat %3$s del grup %2$s</string>
+    <string name="NotificationGroupKickYou">%1$s t\'ha expulsat del grup %2$s</string>
+    <string name="NotificationGroupLeftMember">%1$s ha abandonat el grup %2$s</string>
+    <string name="NotificationContactJoined">%1$s és a Telegram!</string>
+    <string name="NotificationUnrecognizedDevice">Nou inici de sessió de dispositiu no reconegut %1$s, localització: %2$s</string>
+    <string name="NotificationContactNewPhoto">%1$s ha actualitzat la seva foto de perfil</string>
+
+    <!--contacts view-->
+    <string name="SelectContact">Selecciona un contacte</string>
+    <string name="NoContacts">Cap contacte encara</string>
+    <string name="InviteText">Ei, canvia\'t a Telegram: http://telegram.org/dl2</string>
+    <string name="TodayAt">avui a</string>
+    <string name="YesterdayAt">ahir a</string>
+    <string name="OtherAt">a</string>
+    <string name="Online">en línia</string>
+    <string name="Offline">fora de línia</string>
+    <string name="LastSeen">última vegada</string>
+    <string name="InviteFriends">Convidar amics</string>
+
+    <!--group create view-->
+    <string name="SendMessageTo">Envia missatge a...</string>
+    <string name="EnterGroupNamePlaceholder">Entra nom del grup</string>
+    <string name="MEMBER">MEMBRE</string>
+    <string name="GroupName">Nom del grup</string>
+    <string name="MEMBERS">MEMBRES</string>
+    <string name="AllContacts">TOTS ELS CONTACTES</string>
+
+    <!--group info view-->
+    <string name="EnterGroupNameTitle">ENTRA NOM DEL GRUP</string>
+    <string name="SharedMedia">Continguts compartits</string>
+    <string name="GroupInfo">Informació del Grup</string>
+    <string name="SHAREDMEDIA">CONTINGUTS COMPARTITS</string>
+    <string name="SETTINGS">OPCIONS</string>
+    <string name="AddMember">Afegeix membre</string>
+    <string name="DeleteAndExit">Elimina i abandona el grup</string>
+    <string name="Notifications">Notificacions</string>
+    <string name="KickFromGroup">Expulsa del grup</string>
+
+    <!--contact info view-->
+    <string name="ShareContact">Comparteix contacte</string>
+    <string name="AddContact">Afegeix contacte</string>
+    <string name="BlockContact">Bloca contacte</string>
+    <string name="PhoneHome">CASA</string>
+    <string name="PhoneMobile">MÒBIL</string>
+    <string name="PhoneWork">FEINA</string>
+    <string name="PhoneOther">ALTRE</string>
+    <string name="PhoneMain">PRINCIPAL</string>
+    <string name="ContactInfo">Informació contacte</string>
+    <string name="PHONE">TELÈFON</string>
+    <string name="StartEncryptedChat">Inicia xat secret</string>
+    <string name="CreateEncryptedChatError">Ha ocorregut un error.</string>
+    <string name="CreateEncryptedChatOutdatedError">No es pot crear un xat secret amb %1$s.\n\n%2$s està usant una versió antiga de Telegram i primer necessita actualitzar-lo.</string>
+    <string name="SecretTitle">Xat secret</string>
+    <string name="EncryptionKey">Clau de xifratge</string>
+    <string name="MessageLifetime">Temporitzador d\'auto-destrucció</string>
+    <string name="ShortMessageLifetimeForever">Apagat</string>
+    <string name="ShortMessageLifetime2s">2sg</string>
+    <string name="ShortMessageLifetime5s">5sg</string>
+    <string name="ShortMessageLifetime1m">1m</string>
+    <string name="ShortMessageLifetime1h">1h</string>
+    <string name="ShortMessageLifetime1d">1d</string>
+    <string name="ShortMessageLifetime1w">1st</string>
+    <string name="EncryptionKeyDescription">Aquesta imatge és una visualització de la clau de xifratge per aquest xat amb <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Si aquesta imatge se li mostra igual al telèfon de <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]>, el teu xat és un 200%% segur.<![CDATA[<br><br>]]>Aprent-ne més a telegram.org</string>
+
+    <!--settings view-->
+    <string name="ResetNotificationsText">Reinicia totes les opcions de notificació a per defecte</string>
+    <string name="TextSize">Mida del text dels missatges</string>
+    <string name="AskAQuestion">Fes una pregunta</string>
+    <string name="EnableAnimations">Activa animacions</string>
+    <string name="Unblock">Desbloca</string>
+    <string name="UnblockText">Prem una estona l\'usuari per desbloquejar-lo.</string>
+    <string name="NoBlocked">Cap usuari bloquejat encara</string>
+    <string name="YourPhoneNumber">EL TEU NÚMERO DE TELÈFON</string>
+    <string name="MessageNotifications">NOTIFICACIONS DE MISSATGE</string>
+    <string name="Alert">Alerta</string>
+    <string name="MessagePreview">Pre-visualització de missatge</string>
+    <string name="GroupNotifications">NOTIFICACIONS GRUPS</string>
+    <string name="Sound">So</string>
+    <string name="InAppNotifications">NOTIFICACIONS DINS DE L\'APLICACIÓ</string>
+    <string name="InAppSounds">Sons dins l\'aplicació</string>
+    <string name="InAppVibrate">Vibra dins l\'aplicació</string>
+    <string name="Vibrate">Vibra</string>
+    <string name="InAppPreview">Pre-visualitza dins l\'aplicació</string>
+    <string name="Reset">REINICIA</string>
+    <string name="ResetAllNotifications">Reinicia totes les notificacions</string>
+    <string name="UndoAllCustom">Desfés totes les opcions de notificacions per totes els teus contactes i grups</string>
+    <string name="NotificationsAndSounds">Notificacions i Sons</string>
+    <string name="BlockedUsers">Usuaris blocats</string>
+    <string name="SaveIncomingPhotos">Desa fotos rebudes</string>
+    <string name="LogOut">Surt</string>
+    <string name="YourFirstNameAndLastName">EL TEU NOM I COGNOM</string>
+    <string name="NoSound">Cap so</string>
+    <string name="Default">Per defecte</string>
+    <string name="Support">SUPORT</string>
+    <string name="ChatBackground">Fons de xat</string>
+
+    <!--media view-->
+    <string name="NoMedia">Cap contingut compartit encara</string>
+    <string name="CancelDownload">Descàrrega cancel·lada</string>
+
+    <!--map view-->
+    <string name="MyLocation">La meva localització</string>
+    <string name="Map">Mapa</string>
+    <string name="Satellite">Satèlit</string>
+    <string name="Hybrid">Híbrid</string>
+    <string name="MetersAway">m de distància</string>
+    <string name="KMetersAway">km de distància</string>
+    <string name="SendLocation">Envia localització</string>
+    <string name="ShareLocation">Comparteix localització</string>
+
+    <!--photo gallery view-->
+    <string name="ShowAllMedia">Mostra tots els continguts</string>
+    <string name="SaveToGallery">Desa a la galeria</string>
+    <string name="Of">de</string>
+    <string name="Gallery">Galeria</string>
+
+    <!--button titles-->
+    <string name="Next">Següent</string>
+    <string name="Back">Enrere</string>
+    <string name="Done">Fet</string>
+    <string name="Open">Obre</string>
+    <string name="Cancel">Cancel·la</string>
+    <string name="Add">Afegeix</string>
+    <string name="Edit">Edita</string>
+    <string name="Send">Envia</string>
+    <string name="Call">Truca</string>
+    <string name="Copy">Copia</string>
+    <string name="Delete">Elimina</string>
+    <string name="Forward">Re-envia</string>
+    <string name="Retry">Respon</string>
+    <string name="FromCamera">De la càmera</string>
+    <string name="FromGalley">De la galeria</string>
+    <string name="DeletePhoto">Elimina foto</string>
+    <string name="OpenPhoto">Obre foto</string>
+    <string name="Set">Tria</string>
+    <string name="OK">OK</string>
+
+    <!--messages-->
+    <string name="ActionKickUser">un1 ha expulsat un2</string>
+    <string name="ActionLeftUser">un1 ha abandonat el grup</string>
+    <string name="ActionAddUser">un1 ha afegit un2</string>
+    <string name="ActionRemovedPhoto">un1 ha eliminat la foto del grup</string>
+    <string name="ActionChangedPhoto">un1 ha canviat la foto del grup</string>
+    <string name="ActionChangedTitle">un1 ha canviat el nom del grup a un2</string>
+    <string name="ActionCreateGroup">un1 ha creat el grup</string>
+    <string name="UnsuppotedMedia">Aquest missatge no té suport en la teva versió de Telegram.</string>
+    <string name="AttachPhoto">Foto</string>
+    <string name="AttachVideo">Vídeo</string>
+    <string name="AttachLocation">Localització</string>
+    <string name="AttachContact">Contacte</string>
+    <string name="AttachDocument">Document</string>
+    <string name="AttachAudio">Àudio</string>
+    <string name="FromYou">Tu</string>
+
+    <!--Alert messages-->
+    <string name="InvalidPhoneNumber">Número de telèfon no vàlid</string>
+    <string name="CodeExpired">El codi ha expirat, prova d\'entrar de nou</string>
+    <string name="FloodWait">Masses intents, si us plau prova-ho més tard</string>
+    <string name="InvalidCode">Codi no vàlid</string>
+    <string name="InvalidFirstName">Nom no vàlid</string>
+    <string name="InvalidLastName">Cognom no vàlid</string>
+    <string name="Loading">Carregant...</string>
+    <string name="NoPlayerInstalled">No tens cap reproductor de vídeo, si us plau instal·la\'n un per continuar</string>
+    <string name="NoHandleAppInstalled">No tens cap aplicació que pugui obrir el tipus de fitxer \'%1$s\', si us plau instal·la\'n una per continuar</string>
+    <string name="InviteUser">Aquest usuari no té encara Telegram, li envies una invitació?</string>
+    <string name="AreYouSure">N\'estàs segur/a?</string>
+    <string name="AddContactQ">Afegeix contacte?</string>
+    <string name="AddToTheGroup">Afegeix %1$s al grup?</string>
+    <string name="ForwardMessagesTo">Vols re-enviar els missatges a %1$s?</string>
+    <string name="DeleteChatQuestion">Vols eliminar aquest xat?</string>
+
+    <!--Intro view-->
+    <string name="Page1Title">Telegram</string>
+    <string name="Page2Title">Ràpid</string>
+    <string name="Page3Title">Gratuït</string>
+    <string name="Page4Title">Segur</string>
+    <string name="Page5Title">Poderós</string>
+    <string name="Page6Title">Basat en el núvol</string>
+    <string name="Page7Title">Privat</string>
+    <string name="Page1Message">Benvingut/da a l\'era de la missatgeria ràpida i segura</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> entrega els missatges més ràpid<![CDATA[<br/>]]>que d\'altres aplicacions</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> serà gratuït per sempre. Sense anuncis.<![CDATA[<br/>]]>Sense quotes de subscripció</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> manté els teus missatges segurs<![CDATA[<br/>]]>dels atacs informàtics</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> no té límits de mida dels<![CDATA[<br/>]]>teus continguts i xats</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> et permet accedir als teus missatges<![CDATA[<br/>]]>des de diversos aparells</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> xifra a nivell alt els teus missatges<![CDATA[<br/>]]>i poden ser auto-destructibles</string>
+    <string name="StartMessaging">Comença la conversa</string>
+
+    <!--Don't change this! Not for localization!-->
+    <string name="CacheTag">CACHE_TAG</string>
+</resources>
