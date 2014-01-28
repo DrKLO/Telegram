@@ -57,12 +57,12 @@
     <string name="Yesterday">ayer</string>
     <string name="NoResult">Sin resultados</string>
     <string name="NoChats">Todavía no hay conversaciones...</string>
-    <string name="NoChatsHelp">Start messaging by pressing the\ncompose button in the top right corner\nor go to the Contacts section.</string>
+    <string name="NoChatsHelp">Comienza a escribir mensajes pulsando\nel botón de componer en la esquina\nsuperior derecha o ve a la sección\nde Contactos.</string>
     <string name="WaitingForNetwork">Buscando red...</string>
     <string name="Connecting">Conectando...</string>
     <string name="Updating">Actualizando...</string>
     <string name="NewSecretChat">New Secret Chat</string>
-    <string name="AwaitingEncryption">Eseperando a que %s esté en línea...</string>
+    <string name="AwaitingEncryption">Esperando a que %s esté en línea...</string>
     <string name="EncryptionRejected">Conversación secreta cancelada</string>
     <string name="EncryptionProcessing">Intercambiando claves de cifrado...</string>
     <string name="EncryptedChatStartedOutgoing">%s se unió a tu conversación secreta.</string>
@@ -169,7 +169,7 @@
     <!--contacts view-->
     <string name="SelectContact">Seleccionar Contacto</string>
     <string name="NoContacts">Ningún contactos aún</string>
-    <string name="InviteText">Hey, let\'s switch to Telegram: http://telegram.org/dl2</string>
+    <string name="InviteText">Oye,vamos a cambiar a Telegram: http://telegram.org/dl2</string>
     <string name="TodayAt">hoy a las</string>
     <string name="YesterdayAt">ayer a las</string>
     <string name="OtherAt">a las</string>
@@ -297,13 +297,13 @@
     <string name="OK">OK</string>
 
     <!--messages-->
-    <string name="ActionKickUser">un1 kicked un2</string>
-    <string name="ActionLeftUser">un1 left group</string>
-    <string name="ActionAddUser">un1 added un2</string>
-    <string name="ActionRemovedPhoto">un1 removed group photo</string>
-    <string name="ActionChangedPhoto">un1 changed group photo</string>
-    <string name="ActionChangedTitle">un1 changed group name to un2</string>
-    <string name="ActionCreateGroup">un1 created the group</string>
+    <string name="ActionKickUser">un1 expulso un2</string>
+    <string name="ActionLeftUser">un1 dejó el grupo</string>
+    <string name="ActionAddUser">un1 añadió un2</string>
+    <string name="ActionRemovedPhoto">un1 eliminó la foto del grupo</string>
+    <string name="ActionChangedPhoto">un1 cambió la foto del grupo</string>
+    <string name="ActionChangedTitle">un1 cambió el nombre del grupo a un2</string>
+    <string name="ActionCreateGroup">un1 creó el grupo</string>
     <string name="UnsuppotedMedia">This message is not supported on your version of Telegram.</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Vídeo</string>
@@ -315,8 +315,8 @@
 
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Número de teléfono inválido</string>
-    <string name="CodeExpired">Code expired, please login again</string>
-    <string name="FloodWait">Too many attempts, please try again later</string>
+    <string name="CodeExpired">Código expirado, por favor conectate de nuevo</string>
+    <string name="FloodWait">Demasiados intentos, por favor intentalo de nuevo mas tarde</string>
     <string name="InvalidCode">Código inválido</string>
     <string name="InvalidFirstName">Nombre inválido</string>
     <string name="InvalidLastName">Apellido inválio</string>
