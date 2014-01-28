@@ -61,111 +61,111 @@
         android:name="org.telegram.ui.ApplicationLoader"
         android:hardwareAccelerated="true"
         android:largeHeap="true">
-        
-        <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="your-google-maps-api-key-here" />
-        
-        <activity
-            android:name="org.telegram.ui.LaunchActivity"
-            android:windowSoftInputMode="adjustResize"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.SEND"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="image/*"/>
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.SEND"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="video/*"/>
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.SEND"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="text/plain"/>
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="vnd.android.cursor.item/vnd.org.telegram.messenger.android.profile"/>
-            </intent-filter>
-        </activity>
-        <activity
-            android:name="org.telegram.ui.LoginActivity"
-            android:windowSoftInputMode="adjustResize"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
-            android:screenOrientation="portrait">
-        </activity>
-        <activity
-            android:name="org.telegram.ui.CountrySelectActivity"
-            android:windowSoftInputMode="adjustResize"
-            android:theme="@style/Theme.TMessages"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
-            android:screenOrientation="portrait">
-        </activity>
-        <activity
-            android:name="org.telegram.ui.IntroActivity"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
-            android:screenOrientation="portrait">
-        </activity>
-        <activity
-            android:name="org.telegram.ui.ApplicationActivity"
-            android:windowSoftInputMode="adjustResize"
-            android:theme="@style/Theme.TMessages"
-            android:hardwareAccelerated="true"
-            android:launchMode="singleTask"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize">
-        </activity>
-        <activity
-            android:name="org.telegram.ui.GalleryImageViewer"
-            android:theme="@style/Theme.TMessages.Gallery"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize">
-        </activity>
-        
-        
-        <activity android:name="net.hockeyapp.android.UpdateActivity" />
-        
-        <receiver android:name="org.telegram.messenger.SmsListener">
-            <intent-filter>
-                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
-            </intent-filter>
-        </receiver>
-        
-        <receiver
-            android:name="org.telegram.messenger.GcmBroadcastReceiver"
-            android:permission="com.google.android.c2dm.permission.SEND" >
-            <intent-filter>
-                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
-                <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
-                <category android:name="org.telegram.messenger" />
-            </intent-filter>
-        </receiver>
-        
-        <service android:name="org.telegram.messenger.AuthenticatorService"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.accounts.AccountAuthenticator"/>
-            </intent-filter>
-            <meta-data android:name="android.accounts.AccountAuthenticator"
-            android:resource="@xml/auth"/>
-        </service>
-        
-        <service android:name="org.telegram.messenger.ContactsSyncAdapterService"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.content.SyncAdapter" />
-            </intent-filter>
-            <meta-data android:name="android.content.SyncAdapter"
-            android:resource="@xml/sync_contacts" />
-            <meta-data android:name="android.provider.CONTACTS_STRUCTURE"
-            android:resource="@xml/contacts" />
-        </service>
-        
-        <uses-library android:name="com.google.android.maps" android:required="false"/>
-    </application>
-    
+        <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
+        <!--meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="your-google-maps-api-key-here" />-->
+
+       <activity
+           android:name="org.telegram.ui.LaunchActivity"
+           android:windowSoftInputMode="adjustResize"
+           android:configChanges="keyboard|keyboardHidden|orientation|screenSize">
+           <intent-filter>
+               <action android:name="android.intent.action.MAIN" />
+               <category android:name="android.intent.category.LAUNCHER" />
+           </intent-filter>
+           <intent-filter>
+               <action android:name="android.intent.action.SEND"/>
+               <category android:name="android.intent.category.DEFAULT"/>
+               <data android:mimeType="image/*"/>
+           </intent-filter>
+           <intent-filter>
+               <action android:name="android.intent.action.SEND"/>
+               <category android:name="android.intent.category.DEFAULT"/>
+               <data android:mimeType="video/*"/>
+           </intent-filter>
+           <intent-filter>
+               <action android:name="android.intent.action.SEND"/>
+               <category android:name="android.intent.category.DEFAULT"/>
+               <data android:mimeType="text/plain"/>
+           </intent-filter>
+           <intent-filter>
+               <action android:name="android.intent.action.VIEW"/>
+               <category android:name="android.intent.category.DEFAULT"/>
+               <data android:mimeType="vnd.android.cursor.item/vnd.org.telegram.messenger.android.profile"/>
+           </intent-filter>
+       </activity>
+       <activity
+           android:name="org.telegram.ui.LoginActivity"
+           android:windowSoftInputMode="adjustResize"
+           android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+           android:screenOrientation="portrait">
+       </activity>
+       <activity
+           android:name="org.telegram.ui.CountrySelectActivity"
+           android:windowSoftInputMode="adjustResize"
+           android:theme="@style/Theme.TMessages"
+           android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+           android:screenOrientation="portrait">
+       </activity>
+       <activity
+           android:name="org.telegram.ui.IntroActivity"
+           android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+           android:screenOrientation="portrait">
+       </activity>
+       <activity
+           android:name="org.telegram.ui.ApplicationActivity"
+           android:windowSoftInputMode="adjustResize"
+           android:theme="@style/Theme.TMessages"
+           android:hardwareAccelerated="true"
+           android:launchMode="singleTask"
+           android:configChanges="keyboard|keyboardHidden|orientation|screenSize">
+       </activity>
+       <activity
+           android:name="org.telegram.ui.GalleryImageViewer"
+           android:theme="@style/Theme.TMessages.Gallery"
+           android:configChanges="keyboard|keyboardHidden|orientation|screenSize">
+       </activity>
+
+
+       <activity android:name="net.hockeyapp.android.UpdateActivity" />
+
+       <receiver android:name="org.telegram.messenger.SmsListener">
+           <intent-filter>
+               <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+           </intent-filter>
+       </receiver>
+
+       <receiver
+           android:name="org.telegram.messenger.GcmBroadcastReceiver"
+           android:permission="com.google.android.c2dm.permission.SEND" >
+           <intent-filter>
+               <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+               <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
+               <category android:name="org.telegram.messenger" />
+           </intent-filter>
+       </receiver>
+
+       <service android:name="org.telegram.messenger.AuthenticatorService"
+           android:exported="true">
+           <intent-filter>
+               <action android:name="android.accounts.AccountAuthenticator"/>
+           </intent-filter>
+           <meta-data android:name="android.accounts.AccountAuthenticator"
+           android:resource="@xml/auth"/>
+       </service>
+
+       <service android:name="org.telegram.messenger.ContactsSyncAdapterService"
+           android:exported="true">
+           <intent-filter>
+               <action android:name="android.content.SyncAdapter" />
+           </intent-filter>
+           <meta-data android:name="android.content.SyncAdapter"
+           android:resource="@xml/sync_contacts" />
+           <meta-data android:name="android.provider.CONTACTS_STRUCTURE"
+           android:resource="@xml/contacts" />
+       </service>
+
+       <uses-library android:name="com.google.android.maps" android:required="false"/>
+   </application>
+
 </manifest>
 

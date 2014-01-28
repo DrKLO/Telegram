@@ -31,7 +31,7 @@ tasks.withType(JavaCompile) {
 }
 
 dependencies {
-    compile 'com.google.android.gms:play-services:4.0.+'
+    compile 'com.google.android.gms:play-services:4.1.+'
     compile 'net.hockeyapp.android:HockeySDK:3.0.1'
     compile 'com.android.support:support-v4:19.0.+'
     compile 'com.android.support:appcompat-v7:19.0.+'
