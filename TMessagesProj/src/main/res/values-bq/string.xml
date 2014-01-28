@@ -142,16 +142,16 @@
     <string name="NotificationContactNewPhoto">%1$s updated profile photo</string>
 
     <!--contacts view-->
-    <string name="SelectContact">Select Contact</string>
-    <string name="NoContacts">No contacts yet</string>
-    <string name="InviteText">Hey, let\'s switch to Telegram: http://telegram.org/dl2</string>
-    <string name="TodayAt">today at</string>
-    <string name="YesterdayAt">yesterday at</string>
-    <string name="OtherAt">at</string>
+    <string name="SelectContact">Aukeratu kontaktua</string>
+    <string name="NoContacts">Ez dago kontakturik oraindik</string>
+    <string name="InviteText">Aizu! Telegram-era alda gaitezen: http://telegram.org/dl2</string>
+    <string name="TodayAt">gaur ordu honetan</string>
+    <string name="YesterdayAt">atzo ordu honetan</string>
+    <string name="OtherAt">ordu honetan</string>
     <string name="Online">online</string>
     <string name="Offline">offline</string>
-    <string name="LastSeen">last seen</string>
-    <string name="InviteFriends">Invite Friends</string>
+    <string name="LastSeen">Azkenengoz ikusia</string>
+    <string name="InviteFriends">Gonbidatu lagunak</string>
 
     <!--group create view-->
     <string name="SendMessageTo">Send message to...</string>
