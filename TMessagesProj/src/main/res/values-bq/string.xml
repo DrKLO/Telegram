@@ -10,63 +10,63 @@
 
     <!--code enter view-->
     <string name="YourCode">Zure kodea</string>
-    <string name="SentSmsCode">We\'ve sent an SMS with an activation code to your phone</string>
-    <string name="CallText">We will call you in</string>
-    <string name="Calling">Calling you...</string>
-    <string name="Code">Code</string>
-    <string name="WrongNumber">Wrong number?</string>
+    <string name="SentSmsCode">SMS-a bidali dizugu zure mugikorrera aktibazio zenbakiarekin</string>
+    <string name="CallText">Deituko zaitugu...</string>
+    <string name="Calling">Deitzen...</string>
+    <string name="Code">Kodea</string>
+    <string name="WrongNumber">Zenbaki okerra?</string>
 
     <!--signup view-->
-    <string name="YourName">Your name</string>
-    <string name="RegisterText">Set up your first and last name</string>
+    <string name="YourName">Zure izena</string>
+    <string name="RegisterText">Idatzi zure izena eta abizena</string>
     <!--<string name="RegisterText">Set up your name and picture</string>-->
-    <string name="FirstName">First name (required)</string>
-    <string name="LastName">Last name (optional)</string>
-    <string name="CancelRegistration">Cancel registration</string>
+    <string name="FirstName">Izena (derrigorrezkoa)</string>
+    <string name="LastName">Abizena (aukeran)</string>
+    <string name="CancelRegistration">Izen ematea deuseztatu</string>
 
     <!--chats view-->
-    <string name="Chats">Chats</string>
-    <string name="Search">Search</string>
-    <string name="NewMessages">New messages</string>
-    <string name="Settings">Settings</string>
-    <string name="Contacts">Contacts</string>
-    <string name="NewGroup">New Group</string>
-    <string name="Yesterday">yesterday</string>
-    <string name="NoResult">No results</string>
-    <string name="NoChats">No chats yet...</string>
+    <string name="Chats">Txatak</string>
+    <string name="Search">Bilatu</string>
+    <string name="NewMessages">Mezu berriak</string>
+    <string name="Settings">Ezarpenak</string>
+    <string name="Contacts">Kontaktuak</string>
+    <string name="NewGroup">Talde berria</string>
+    <string name="Yesterday">atzo</string>
+    <string name="NoResult">Emaitzarik ez</string>
+    <string name="NoChats">Oraindik txatarik gabe</string>
     <string name="NoChatsHelp">Start messaging by pressing the\ncompose button in the top right corner\nor go to the Contacts section.</string>
     <string name="WaitingForNetwork">Waiting for network...</string>
-    <string name="Connecting">Connecting...</string>
-    <string name="Updating">Updating...</string>
-    <string name="NewSecretChat">New Secret Chat</string>
+    <string name="Connecting">Konektatzen...</string>
+    <string name="Updating">Eguneratzen...</string>
+    <string name="NewSecretChat">Txat sekretu berria</string>
     <string name="AwaitingEncryption">Waiting for %s to get online...</string>
-    <string name="EncryptionRejected">Secret chat cancelled</string>
+    <string name="EncryptionRejected">Txat sekretua deuseztatu</string>
     <string name="EncryptionProcessing">Exchanging encryption keys...</string>
     <string name="EncryptedChatStartedOutgoing">%s joined your secret chat.</string>
     <string name="EncryptedChatStartedIncoming">You joined the secret chat.</string>
-    <string name="ClearHistory">Clear History</string>
-    <string name="DeleteChat">Delete and Exit</string>
+    <string name="ClearHistory">Historikoa garbitu</string>
+    <string name="DeleteChat">Ezabatu eta irten</string>
 
     <!--documents view-->
-    <string name="SelectFile">Select File</string>
-    <string name="FreeOfTotal">Free %1$s of %2$s</string>
-    <string name="UnknownError">Unknown error</string>
+    <string name="SelectFile">Fitxategia aukeratu</string>
+    <string name="FreeOfTotal">Libre %1$s-tik %2$s</string>
+    <string name="UnknownError">Akats ezezaguna</string>
     <string name="AccessError">Access error</string>
-    <string name="NoFiles">No files yet...</string>
+    <string name="NoFiles">Fitxategirik ez...</string>
     <string name="FileUploadLimit">File size shouldn\'t be greater than %1$s</string>
     <string name="NotMounted">Storage not mounted</string>
     <string name="UsbActive">Usb transfer active</string>
     <string name="InternalStorage">Internal Storage</string>
     <string name="ExternalStorage">External Storage</string>
     <string name="SystemRoot">System Root</string>
-    <string name="SdCard">SD Card</string>
+    <string name="SdCard">SD Txartela</string>
 
     <!--chat view-->
     <string name="Invisible">invisible</string>
     <string name="Typing">typing...</string>
     <string name="Attach">Attach</string>
-    <string name="IsTyping">is typing...</string>
-    <string name="AreTyping">are typing...</string>
+    <string name="IsTyping">idazten ari da...</string>
+    <string name="AreTyping">idazten ari dira...</string>
     <string name="AndMoreTyping">and %d more people</string>
     <string name="GotAQuestion">Got a question\nabout Telegram?</string>
     <string name="ChatTakePhoto">Take a photo</string>
