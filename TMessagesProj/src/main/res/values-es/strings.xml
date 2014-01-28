@@ -4,7 +4,7 @@
 
     <!--signin view-->
     <string name="YourPhone">Tu Telefono</string>
-    <string name="StartText">Por favor confirmar tu condigo de país e introducir número de teléfono.</string>
+    <string name="StartText">Por favor confirmar tu código de país e introducir número de teléfono.</string>
     <string name="ChooseCountry">Selecciona un país</string>
     <string name="WrongCountry">Código de país incorrecto</string>
 
