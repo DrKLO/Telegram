@@ -3,13 +3,13 @@
     <string name="AppName">Telegram</string>
 
     <!--signin view-->
-    <string name="YourPhone">Your phone</string>
-    <string name="StartText">Please confirm your country code\nand enter your phone number.</string>
-    <string name="ChooseCountry">Choose a country</string>
-    <string name="WrongCountry">Wrong country code</string>
+    <string name="YourPhone">Zure zenbakia</string>
+    <string name="StartText">Mesedez, estatuaren kodea baieztatu eta zure telefono zenbakia sartu.</string>
+    <string name="ChooseCountry">Estatua aukeratu</string>
+    <string name="WrongCountry">Estatu kode okerra</string>
 
     <!--code enter view-->
-    <string name="YourCode">Your code</string>
+    <string name="YourCode">Zure kodea</string>
     <string name="SentSmsCode">We\'ve sent an SMS with an activation code to your phone</string>
     <string name="CallText">We will call you in</string>
     <string name="Calling">Calling you...</string>
