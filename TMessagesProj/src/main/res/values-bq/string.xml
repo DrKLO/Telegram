@@ -307,15 +307,15 @@
 
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
-    <string name="Page2Title">Fast</string>
-    <string name="Page3Title">Free</string>
-    <string name="Page4Title">Secure</string>
-    <string name="Page5Title">Powerful</string>
-    <string name="Page6Title">Cloud-Based</string>
-    <string name="Page7Title">Private</string>
-    <string name="Page1Message">Welcome to the era of fast and secure messaging</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> delivers messages faster than<![CDATA[<br/>]]>any other application</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is free forever. No ads.<![CDATA[<br/>]]>No subscription fees</string>
+    <string name="Page2Title">Azkarra</string>
+    <string name="Page3Title">Askea</string>
+    <string name="Page4Title">Segurua</string>
+    <string name="Page5Title">Ahaltsua</string>
+    <string name="Page6Title">Hodeian</string>
+    <string name="Page7Title">Pribatua</string>
+    <string name="Page1Message">Ongi etorri mezularitza azkarra eta seguruaren arora</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram-ek</b>]]> mezuak bidaltzen ditu azkarrago<![CDATA[<br/>]]>beste edozein aplikaziok baino</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> doakoa da betiko. No ads.<![CDATA[<br/>]]>No subscription fees</string>
     <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> keeps your messages safe<![CDATA[<br/>]]>from hacker attacks</string>
     <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> has no limits on the size of<![CDATA[<br/>]]>your media and chats</string>
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lets you access your messages<![CDATA[<br/>]]>from multiple devices</string>
