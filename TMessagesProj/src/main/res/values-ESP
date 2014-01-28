@@ -5,7 +5,7 @@
     <!--signin view-->
     <string name="YourPhone">Tu telefono</string>
     <string name="StartText">^Por favor confirma tu código de pais e introduce tu número de telefono.</string>
-    <string name="ChooseCountry">Elije un país</string>
+    <string name="ChooseCountry">Elige un país</string>
     <string name="WrongCountry">Código de país incorrecto</string>
 
     <!--code enter view-->
