@@ -196,7 +196,7 @@
     <string name="ShortMessageLifetime1h">1o</string>
     <string name="ShortMessageLifetime1d">1e</string>
     <string name="ShortMessageLifetime1w">1a</string>
-    <string name="EncryptionKeyDescription">Irudi hau ezkutuko txat honetarako zifratzeko gakoaren ikusmena da This image is a visualization of the encryption key for this secret chat with <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>If this image looks the same on <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> phone, your chat is 200%% secure.<![CDATA[<br><br>]]>Learn more at telegram.org</string>
+    <string name="EncryptionKeyDescription">Irudi hau <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>-(r)ekin duzun ezkutuko txat honetarako zifratzeko gakoaren ikusmena da.<![CDATA[<br><br>]]>Irudi hau berdin ikusten bada <![CDATA[<b>]]>%2$s\-(r)en<![CDATA[</b>]]> telefonoan, zure txata segurua da %%200ean.<![CDATA[<br><br>]]>Ikasi gehiago telegram.org-n</string>
 
     <!--settings view-->
     <string name="ResetNotificationsText">Reset all notification settings to default</string>
