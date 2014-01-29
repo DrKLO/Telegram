@@ -297,7 +297,7 @@
     <string name="InvalidLastName">اسم العائلة غير صحيح</string>
     <string name="Loading">جاري التحميل ...</string>
     <string name="NoPlayerInstalled">ليس لديك أي مشغل مقاطع مرئية، يرجى تنزيل أية مشغل</string>
-    <string name="NoHandleAppInstalled">لا يوجد لديك تطبيق يمكنه فته هذا المستند، يرجى تنزيل تطبيق يمكنه للإستمرار</string>
+    <string name="NoHandleAppInstalled">لا يوجد لديك تطبيق يمكنه فتح هذا المستند، يرجى تنزيل تطبيق يمكنه للإستمرار</string>
     <string name="InviteUser">هذا المستخدم ليس لديه تيليجرام بعد ، هل ترغب في دعوته الآن؟</string>
     <string name="AreYouSure">هل أنت متأكد؟</string>
     <string name="DeleteChatQuestion">هل تريد حذف هذه الدردشة؟</string>
