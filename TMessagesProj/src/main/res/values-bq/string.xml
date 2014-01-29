@@ -154,23 +154,23 @@
     <string name="InviteFriends">Gonbidatu lagunak</string>
 
     <!--group create view-->
-    <string name="SendMessageTo">Send message to...</string>
-    <string name="EnterGroupNamePlaceholder">Enter group name</string>
-    <string name="MEMBER">MEMBER</string>
-    <string name="GroupName">Group name</string>
-    <string name="MEMBERS">MEMBERS</string>
-    <string name="AllContacts">ALL CONTACTS</string>
+    <string name="SendMessageTo">Bidali mezua honi...</string>
+    <string name="EnterGroupNamePlaceholder">Idatzi taldearen izena</string>
+    <string name="MEMBER">KIDEA</string>
+    <string name="GroupName">Taldearen izena</string>
+    <string name="MEMBERS">KIDEAK</string>
+    <string name="AllContacts">KONTAKTU GUZTIAK</string>
 
     <!--group info view-->
-    <string name="EnterGroupNameTitle">ENTER GROUP NAME</string>
-    <string name="SharedMedia">Shared Media</string>
-    <string name="GroupInfo">Group Info</string>
-    <string name="SHAREDMEDIA">SHARED MEDIA</string>
-    <string name="SETTINGS">SETTINGS</string>
-    <string name="AddMember">Add member</string>
-    <string name="DeleteAndExit">Delete and leave group</string>
-    <string name="Notifications">Notifications</string>
-    <string name="KickFromGroup">Kick from group</string>
+    <string name="EnterGroupNameTitle">IDATZI TALDEAREN IZENA</string>
+    <string name="SharedMedia">Partekatutako eduki multimedia</string>
+    <string name="GroupInfo">Taldearen informazioa</string>
+    <string name="SHAREDMEDIA">PARTEKATUTAKO EDUKI MULTIMEDIA</string>
+    <string name="SETTINGS">EZARPENAK</string>
+    <string name="AddMember">Gehitu kidea</string>
+    <string name="DeleteAndExit">Ezabatu eta utzi taldea</string>
+    <string name="Notifications">Jakinarazpenak</string>
+    <string name="KickFromGroup">Kanporatu taldetik</string>
 
     <!--contact info view-->
     <string name="ShareContact">Share Contact</string>
