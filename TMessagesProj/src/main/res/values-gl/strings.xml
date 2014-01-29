@@ -21,12 +21,12 @@
     <string name="RegisterText">Inserta o teu nome e primeiro apelido</string>
     <!--<string name="RegisterText">Set up your name and picture</string>-->
     <string name="FirstName">Nome (requerido)</string>
-    <string name="LastName">Apelido (optativo)</string>
+    <string name="LastName">Apelidos (optativo)</string>
     <string name="CancelRegistration">Cancelar rexistro</string>
 
     <!--chats view-->
     <string name="Chats">Conversas</string>
-    <string name="Search">Busca</string>
+    <string name="Search">Buscar</string>
     <string name="NewMessages">Novas mensaxes</string>
     <string name="Settings">Axustes</string>
     <string name="Contacts">Contactos</string>
@@ -49,7 +49,7 @@
 
     <!--documents view-->
     <string name="SelectFile">Escolla arquivo</string>
-    <string name="FreeOfTotal">Libres %1$s de %2$s</string>
+    <string name="FreeOfTotal">%1$s libres de %2$s</string>
     <string name="UnknownError">Erro descoñecido</string>
     <string name="AccessError">Erro de acceso</string>
     <string name="NoFiles">Aínda non hai arquivos...</string>
@@ -86,13 +86,13 @@
     <string name="TypeMessage">Escribe a mensaxe</string>
     <string name="DOWNLOAD">Descarga</string>
     <string name="Selected">Seleccionado:</string>
-    <string name="ShareMyContactInfo">COMPARTIR A INFORMACIÓN DOS MEUS CONTACTOS</string>
+    <string name="ShareMyContactInfo">COMPARTIR A MIÑA INFORMACIÓN DE CONTACTO</string>
     <string name="AddToContacts">ENGADIR ÓS CONTACTOS</string  >
     <string name="EncryptedPlaceholderTitleIncoming">%s invitoute a unirte a unha conversa secreta.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">Invitaches a %s a unirse a unha conversa secreta.</string>
     <string name="EncryptedDescriptionTitle">Conversas secretas:</string>
     <string name="EncryptedDescription1">Usar encriptación punto a punto</string>
-    <string name="EncryptedDescription2">Non deixar rastros nos servidores</string>
+    <string name="EncryptedDescription2">Non deixan rastro nos nosos servidores</string>
     <string name="EncryptedDescription3">Definir un tempo de autodestrucción</string>
     <string name="EncryptedDescription4">Non permitir reenvío</string>
     <string name="OneNewMessage">%1$d nova mensaxe</string>
