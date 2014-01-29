@@ -173,30 +173,30 @@
     <string name="KickFromGroup">Kanporatu taldetik</string>
 
     <!--contact info view-->
-    <string name="ShareContact">Share Contact</string>
-    <string name="AddContact">Add Contact</string>
-    <string name="BlockContact">Block Contact</string>
-    <string name="PhoneHome">HOME</string>
-    <string name="PhoneMobile">MOBILE</string>
-    <string name="PhoneWork">WORK</string>
-    <string name="PhoneOther">OTHER</string>
-    <string name="PhoneMain">MAIN</string>
-    <string name="ContactInfo">Contact Info</string>
-    <string name="PHONE">PHONE</string>
-    <string name="StartEncryptedChat">Start Secret Chat</string>
-    <string name="CreateEncryptedChatError">An error occurred.</string>
-    <string name="CreateEncryptedChatOutdatedError">Cannot create a secret chat with %1$s.\n\n%2$s is using an older version of Telegram and needs to update first.</string>
-    <string name="SecretTitle">Secret Chat</string>
-    <string name="EncryptionKey">Encryption Key</string>
-    <string name="MessageLifetime">Self-Destruct Timer</string>
-    <string name="ShortMessageLifetimeForever">Off</string>
+    <string name="ShareContact">Partekatu kontaktua</string>
+    <string name="AddContact">Gehitu kontaktua</string>
+    <string name="BlockContact">Blokeatu kontaktua</string>
+    <string name="PhoneHome">ETXEKO TELEFONOA</string>
+    <string name="PhoneMobile">SAKELAKO TELEFONOA</string>
+    <string name="PhoneWork">LANEKO TELEFONOA</string>
+    <string name="PhoneOther">BESTE TELEFONO BAT</string>
+    <string name="PhoneMain">TELEFONO NAGUSIA</string>
+    <string name="ContactInfo">Kontaktuaren informazioa</string>
+    <string name="PHONE">TELEFONOA</string>
+    <string name="StartEncryptedChat">Hasi exkutuko txata</string>
+    <string name="CreateEncryptedChatError">Akats bat gertatu da.</string>
+    <string name="CreateEncryptedChatOutdatedError">Ezin da sortu ezkutuko txata %1$s -rekin.\n\n%2$s Telegram aplikazioaren bertsio zaharra erabiltzen ari da eta eguneratu egin behar da.</string>
+    <string name="SecretTitle">Ezkutuko txata</string>
+    <string name="EncryptionKey">Zifratzeko gakoa</string>
+    <string name="MessageLifetime">Mezua deuseztatzeko denbora</string>
+    <string name="ShortMessageLifetimeForever">Inoiz ez</string>
     <string name="ShortMessageLifetime2s">2s</string>
     <string name="ShortMessageLifetime5s">5s</string>
     <string name="ShortMessageLifetime1m">1m</string>
-    <string name="ShortMessageLifetime1h">1h</string>
-    <string name="ShortMessageLifetime1d">1d</string>
-    <string name="ShortMessageLifetime1w">1w</string>
-    <string name="EncryptionKeyDescription">This image is a visualization of the encryption key for this secret chat with <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>If this image looks the same on <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> phone, your chat is 200%% secure.<![CDATA[<br><br>]]>Learn more at telegram.org</string>
+    <string name="ShortMessageLifetime1h">1o</string>
+    <string name="ShortMessageLifetime1d">1e</string>
+    <string name="ShortMessageLifetime1w">1a</string>
+    <string name="EncryptionKeyDescription">Irudi hau ezkutuko txat honetarako zifratzeko gakoaren ikusmena da This image is a visualization of the encryption key for this secret chat with <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>If this image looks the same on <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> phone, your chat is 200%% secure.<![CDATA[<br><br>]]>Learn more at telegram.org</string>
 
     <!--settings view-->
     <string name="ResetNotificationsText">Reset all notification settings to default</string>
