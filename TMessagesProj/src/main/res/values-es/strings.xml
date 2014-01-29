@@ -10,7 +10,7 @@
 
     <!--code enter view-->
     <string name="YourCode">Tu código</string>
-    <string name="SentSmsCode">Te hemos enviado un SMS con un código de activación a tu teléfono\n</string>
+    <string name="SentSmsCode">Hemos enviado un SMS con un código de activación a tu teléfono\n</string>
     <string name="CallText">Te llamaremos en</string>
     <string name="Calling">Llamándote...</string>
     <string name="Code">Código</string>
@@ -25,35 +25,35 @@
     <string name="CancelRegistration">Cancelar registro</string>
 
     <!--chats view-->
-    <string name="Chats">Conversaciones</string>
-    <string name="Search">Búsqueda</string>
+    <string name="Chats">Chats</string>
+    <string name="Search">Buscar</string>
     <string name="NewMessages">Nuevos mensajes</string>
     <string name="Settings">Ajustes</string>
     <string name="Contacts">Contactos</string>
     <string name="NewGroup">Nuevo Grupo</string>
     <string name="Yesterday">ayer</string>
     <string name="NoResult">No hay resultados</string>
-    <string name="NoChats">No hay conversaciones aún...</string>
-    <string name="NoChatsHelp">Empieza a conversar pulsando el\nbotón de componer en la esquina superior derecha\no vaya a la sección de Contactos.</string>
-    <string name="WaitingForNetwork">Esperando por red...</string>
+    <string name="NoChats">Lista de chats vacía...</string>
+    <string name="NoChatsHelp">Empieza a chatear pulsando el\nbotón de componer en la esquina superior derecha\no vaya a la sección de Contactos.</string>
+    <string name="WaitingForNetwork">Esperando conexión de red...</string>
     <string name="Connecting">Conectando...</string>
     <string name="Updating">Actualizando...</string>
-    <string name="NewSecretChat">Nueva Conversación Secreta</string>
-    <string name="AwaitingEncryption">Esperando a que %s esté en línea...</string>
-    <string name="EncryptionRejected">Conversación secreta cancelada</string>
+    <string name="NewSecretChat">Nuevo Chat Secreto</string>
+    <string name="AwaitingEncryption">Esperando a que %s se conecte...</string>
+    <string name="EncryptionRejected">Chat secreto cancelado</string>
     <string name="EncryptionProcessing">Intercambiando claves de cifrado...</string>
-    <string name="EncryptedChatStartedOutgoing">%s se ha unido a tu conversación secreta.</string>
-    <string name="EncryptedChatStartedIncoming">Te has unido a la conversación secreta.</string>
+    <string name="EncryptedChatStartedOutgoing">%s se unió a tu chat secreto.</string>
+    <string name="EncryptedChatStartedIncoming">Te has unido al chat secreto.</string>
     <string name="ClearHistory">Limpiar Historial</string>
     <string name="DeleteChat">Eliminar y Salir</string>
 
     <!--documents view-->
     <string name="SelectFile">Seleccionar Archivo</string>
-    <string name="FreeOfTotal">%1$s libres de %2$s</string>
+    <string name="FreeOfTotal">%1$s de %2$s libres</string>
     <string name="UnknownError">Error desconocido</string>
     <string name="AccessError">Error de acceso</string>
     <string name="NoFiles">No hay archivos aún...</string>
-    <string name="FileUploadLimit">El tamaño del archivo no puede ser mayor de %1$s</string>
+    <string name="FileUploadLimit">El tamaño del archivo no puede superar los %1$s</string>
     <string name="NotMounted">Almacenamiento no montado</string>
     <string name="UsbActive">Transferencia USB activa</string>
     <string name="InternalStorage">Almacenamiento Interno</string>
@@ -73,12 +73,12 @@
     <string name="ChatGallery">Galería</string>
     <string name="ChatLocation">Ubicación</string>
     <string name="ChatVideo">Vídeo</string>
-    <string name="ChatDocument">Documento</string>
+    <string name="ChatDocument">Archivo</string>
     <string name="NoMessages">No hay mensajes aún...</string>
     <string name="ViewPhoto">Ver Foto</string>
     <string name="ViewLocation">Ver Ubicación</string>
     <string name="ViewVideo">Reproducir Vídeo</string>
-    <string name="ForwardedMessage">Reenviar mensaje</string>
+    <string name="ForwardedMessage">Mensaje reenviado</string>
     <string name="From">De</string>
     <string name="NoRecent">No hay recientes</string>
     <string name="Members">miembros</string>
@@ -87,23 +87,23 @@
     <string name="DOWNLOAD">Descargar</string>
     <string name="Selected">Seleccionado:</string>
     <string name="ShareMyContactInfo">COMPARTIR MI INFORMACIÓN DE CONTACTO</string>
-    <string name="AddToContacts">AÑADIR CONTACTOSS</string>
-    <string name="EncryptedPlaceholderTitleIncoming">%s te ha invitado a unirse al chat secreto.</string>
-    <string name="EncryptedPlaceholderTitleOutgoing">Has invitado a %s a unirse al chat secreto.</string>
-    <string name="EncryptedDescriptionTitle">Conversaciones secretas:</string>
+    <string name="AddToContacts">AÑADIR CONTACTOS</string>
+    <string name="EncryptedPlaceholderTitleIncoming">%s te ha invitado a un chat secreto.</string>
+    <string name="EncryptedPlaceholderTitleOutgoing">Has invitado a %s a un chat secreto.</string>
+    <string name="EncryptedDescriptionTitle">Chats secretos:</string>
     <string name="EncryptedDescription1">Usan cifrado de extremo-a-extremo</string>
     <string name="EncryptedDescription2">No dejan rastro en nuestros servidores</string>
     <string name="EncryptedDescription3">Tienen un temporizador de autodestrucción</string>
-    <string name="EncryptedDescription4">No permiten reenvíos</string>
-    <string name="OneNewMessage">Nuevo mensaje de %1$d</string>
-    <string name="FewNewMessages">Nuevos mensajes de %1$d</string>
+    <string name="EncryptedDescription4">No permiten reenvío de mensajes</string>
+    <string name="OneNewMessage">%1$d nuevo mensaje</string>
+    <string name="FewNewMessages">%1$d nuevos mensajes</string>
     <string name="YouWereKicked">Has sido expulsado de este grupo</string>
     <string name="YouLeft">Has abandonado este grupo</string>
-    <string name="DeleteThisGroup">Eliminar este grupo</string>
+    <string name="DeleteThisGroup">Eliminar este Grupo</string>
 
     <!--notification-->
-    <string name="EncryptedChatRequested">Conversación secreta solicitada</string>
-    <string name="EncryptedChatAccepted">Conversación secreta iniciada</string>
+    <string name="EncryptedChatRequested">Chat secreto solicitado</string>
+    <string name="EncryptedChatAccepted">Chat secreto iniciado</string>
     <string name="MessageLifetimeChanged">%1$s ha fijado el temporizador de autodestrucción en %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Has fijado el temporizador de autodestrucción en %1$s</string>
     <string name="MessageLifetimeRemoved">%1$s desactivó el temporizador de autodestrucción</string>
@@ -120,7 +120,7 @@
     <string name="NotificationMessageVideo">%1$s te envió un vídeo</string>
     <string name="NotificationMessageContact">%1$s compartió un contacto contigo</string>
     <string name="NotificationMessageMap">%1$s te envió un mapa</string>
-    <string name="NotificationMessageDocument">%1$s te envió un documento</string>
+    <string name="NotificationMessageDocument">%1$s te envió un archivo</string>
     <string name="NotificationMessageAudio">%1$s te envió un audio</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s envió un mensaje al grupo %2$s</string>
@@ -128,11 +128,11 @@
     <string name="NotificationMessageGroupVideo">%1$s envió un vídeo al grupo %2$s</string>
     <string name="NotificationMessageGroupContact">%1$s compartió un contacto en el grupo %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s envió un mapa al grupo %2$s</string>
-    <string name="NotificationMessageGroupDocument">%1$s envió un documento al grupo %2$s</string>
+    <string name="NotificationMessageGroupDocument">%1$s envió un archivo al grupo %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s envió un audio al grupo %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s te invitó al grupo %2$s</string>
     <string name="NotificationEditedGroupName">%1$s editó el nombre del grupo %2$s</string>
-    <string name="NotificationEditedGroupPhoto">%1$s editó la foto del grupo %2$s</string>
+    <string name="NotificationEditedGroupPhoto">%1$s actualizó la foto del grupo %2$s</string>
     <string name="NotificationGroupAddMember">%1$s invitó a %3$s al grupo %2$s</string>
     <string name="NotificationGroupKickMember">%1$s expulsó a %3$s del grupo %2$s</string>
     <string name="NotificationGroupKickYou">%1$s le expulsó del grupo %2$s</string>
@@ -183,10 +183,10 @@
     <string name="PhoneMain">PRINCIPAL</string>
     <string name="ContactInfo">Información de Contacto</string>
     <string name="PHONE">TELÉFONO</string>
-    <string name="StartEncryptedChat">Iniciar Conversación Secreta</string>
+    <string name="StartEncryptedChat">Iniciar Chat Secreto</string>
     <string name="CreateEncryptedChatError">Ha ocurrido un error.</string>
-    <string name="CreateEncryptedChatOutdatedError">No se puede crear una conversación secreta con %1$s.\n\n%2$s está usando una versión antigua de Telegram y primero debe actualizarla.</string>
-    <string name="SecretTitle">Conversación Secreta</string>
+    <string name="CreateEncryptedChatOutdatedError">No se puede crear un chat secreto con %1$s.\n\n%2$s está usando una versión antigua de Telegram y primero debe actualizarla.</string>
+    <string name="SecretTitle">Chat Secreto</string>
     <string name="EncryptionKey">Clave de Cifrado</string>
     <string name="MessageLifetime">Tiempo de Autodestrucción</string>
     <string name="ShortMessageLifetimeForever">Desactivado</string>
@@ -196,7 +196,7 @@
     <string name="ShortMessageLifetime1h">1h</string>
     <string name="ShortMessageLifetime1d">1d</string>
     <string name="ShortMessageLifetime1w">1sem</string>
-    <string name="EncryptionKeyDescription">Esta imagen es una visualización de la clave de cifrado para esta conversación secreta con <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Si esta imagen se ve igual en el teléfono de <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]>, su conversación es un 200%% segura.<![CDATA[<br><br>]]>Aprenda más en telegram.org</string>
+    <string name="EncryptionKeyDescription">Esta imagen es una visualización de la clave de cifrado para este chat secreto con <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Si esta imagen se ve igual en el teléfono de <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]>, su conversación es un 200%% segura.<![CDATA[<br><br>]]>Aprenda más en telegram.org</string>
 
     <!--settings view-->
     <string name="ResetNotificationsText">Restablecer todas las notificaciones por defecto</string>
@@ -228,7 +228,7 @@
     <string name="NoSound">Sin sonido</string>
     <string name="Default">Predeterminado</string>
     <string name="Support">SOPORTE</string>
-    <string name="ChatBackground">Fondo de la Conversación</string>
+    <string name="ChatBackground">Fondo del Chat</string>
 
     <!--media view-->
     <string name="NoMedia">No se han compartido archivos aún</string>
@@ -320,7 +320,7 @@
     <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> no limita el tamaño de tus archivos o conversaciones</string>
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> te permite acceder a tus mensajes desde múltiples dispositivos</string>
     <string name="Page7Message">Los mensajes de <![CDATA[<b>Telegram</b>]]> están duramente cifrados y pueden autodestruirse</string>
-    <string name="StartMessaging">Empezar a Conversar</string>
+    <string name="StartMessaging">Empezar a Chatear</string>
 
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
