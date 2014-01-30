@@ -320,7 +320,7 @@
     <string name="Page5Message"><![CDATA[<b>Telegram-ek</b>]]> ez dauka tamaina limiterik<![CDATA[<br/>]]>zure multimedia fitxategietan eta txatetan</string>
     <string name="Page6Message"><![CDATA[<b>Telegram-ekin</b>]]> zure mezuak eskuragarri daude<![CDATA[<br/>]]>gailu ezberdinetatik</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> mezuak oso sendo daude zifratuta<![CDATA[<br/>]]>eta auto-suntsitzen dira</string>
-    <string name="StartMessaging">Start Messaging</string>
+    <string name="StartMessaging">Mezuak bidali!</string>
 
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
