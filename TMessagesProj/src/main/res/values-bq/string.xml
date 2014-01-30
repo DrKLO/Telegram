@@ -62,7 +62,7 @@
     <string name="SdCard">SD Txartela</string>
 
     <!--chat view-->
-    <string name="Invisible">invisible</string>
+    <string name="Invisible">nire </string>
     <string name="Typing">idazten...</string>
     <string name="Attach">Attach</string>
     <string name="IsTyping">idazten ari da...</string>
