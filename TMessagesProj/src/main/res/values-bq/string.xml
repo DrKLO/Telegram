@@ -97,7 +97,7 @@
     <string name="EncryptedDescription4">Partekatzeko baimenik ez</string>
     <string name="OneNewMessage">%1$d mezu berria</string>
     <string name="FewNewMessages">%1$d mezu berri</string>
-    <string name="YouWereKicked">Talde honetatik kaleratu zaituzte</string>
+    <string name="YouWereKicked">Talde honetatik kanporatu zaituzte</string>
     <string name="YouLeft">Taldea utzi</string>
     <string name="DeleteThisGroup">Talde hau ezabatu</string>
 
@@ -134,8 +134,8 @@
     <string name="NotificationEditedGroupName">%1$s edited the group\'s %2$s name</string>
     <string name="NotificationEditedGroupPhoto">%1$s %2$s taldearen irudia eguneratu du</string>
     <string name="NotificationGroupAddMember">%1$s %3$s gonbidatu du %2$s taldera</string>
-    <string name="NotificationGroupKickMember">%1$s %3$s kaleratu du %2$s taldetik</string>
-    <string name="NotificationGroupKickYou">%1$s %2$s taldetik kaleratu zaitu</string>
+    <string name="NotificationGroupKickMember">%1$s-(e)k %3$s kanporatu du %2$s taldetik</string>
+    <string name="NotificationGroupKickYou">%1$s-(e)k %2$s taldetik kanporatu zaitu</string>
     <string name="NotificationGroupLeftMember">%1$s taldea utzi du %2$s</string>
     <string name="NotificationContactJoined">%1$s Telegram hasieratu du!</string>
     <string name="NotificationUnrecognizedDevice">Gailu ezezagunatik saioa hasita: %1$s, kokalekua: %2$s</string>
@@ -239,15 +239,15 @@
     <string name="Map">Mapa</string>
     <string name="Satellite">Satelitea</string>
     <string name="Hybrid">Hibridoa</string>
-    <string name="MetersAway">m away</string>
-    <string name="KMetersAway">km away</string>
+    <string name="MetersAway">m -ra</string>
+    <string name="KMetersAway">km -ra</string>
     <string name="SendLocation">Kokalekua bidali</string>
     <string name="ShareLocation">Kokalekua partekatu</string>
 
     <!--photo gallery view-->
     <string name="ShowAllMedia">Media guztia ikusi</string>
     <string name="SaveToGallery">Galerian gorde</string>
-    <string name="Of">tik</string>
+    <string name="Of">Of</string>
     <string name="Gallery">Galeria</string>
 
     <!--button titles-->
@@ -257,29 +257,29 @@
     <string name="Open">Ireki</string>
     <string name="Cancel">Ezeztatu</string>
     <string name="Add">Gehitu</string>
-    <string name="Edit">Eguneratu</string>
+    <string name="Edit">Aldatu</string>
     <string name="Send">Bidali</string>
     <string name="Call">Deitu</string>
     <string name="Copy">Kopiatu</string>
     <string name="Delete">Ezabatu</string>
-    <string name="Forward">Partekatu</string>
-    <string name="Retry">Berriz saiatu</string>
+    <string name="Forward">Berbidali</string>
+    <string name="Retry">Saiatu Berriro</string>
     <string name="FromCamera">Kameratik</string>
     <string name="FromGalley">Galeriatik</string>
-    <string name="DeletePhoto">Irudia ezabatu</string>
-    <string name="OpenPhoto">Irudia ireki</string>
+    <string name="DeletePhoto">Ezabatu Irudia</string>
+    <string name="OpenPhoto">Ireki Irudia</string>
     <string name="Set">Ezarri</string>
     <string name="OK">Ados</string>
 
     <!--messages-->
-    <string name="ActionKickUser">un1 un2 kaleratu du</string>
-    <string name="ActionLeftUser">un1 taldea utzi du</string>
-    <string name="ActionAddUser">un1 un2 gehitu du</string>
-    <string name="ActionRemovedPhoto">un1 taldearen irudia ezabatu du</string>
-    <string name="ActionChangedPhoto">un1 taldearen irudia aldatu du</string>
-    <string name="ActionChangedTitle">un1 taldearen izena aldatu du un2-ra</string>
-    <string name="ActionCreateGroup">un1 taldea sortu du</string>
-    <string name="UnsuppotedMedia">Mezu hau ez da bateragarria zure Telegran bertsioan.</string>
+    <string name="ActionKickUser">un1-(e)k un2 kanporatu du</string>
+    <string name="ActionLeftUser">un1-(e)k taldea utzi du</string>
+    <string name="ActionAddUser">un1-(e)k un2 gehitu du</string>
+    <string name="ActionRemovedPhoto">un1-(e)k taldearen irudia ezabatu du</string>
+    <string name="ActionChangedPhoto">un1-(e)k taldearen irudia aldatu du</string>
+    <string name="ActionChangedTitle">un1-(e)k taldearen izena aldatu du un2-ra</string>
+    <string name="ActionCreateGroup">un1-(e)k taldea sortu du</string>
+    <string name="UnsuppotedMedia">Mezu hau ez da bateragarria zure Telegram bertsioarekin.</string>
     <string name="AttachPhoto">Irudia</string>
     <string name="AttachVideo">Bideo</string>
     <string name="AttachLocation">Kokalekua</string>
@@ -289,21 +289,21 @@
     <string name="FromYou">Zu</string>
 
     <!--Alert messages-->
-    <string name="InvalidPhoneNumber">_Baliogabeko telefono zenbakia</string>
-    <string name="CodeExpired">Iraungitako kodea, saioa hasi berriro</string>
-    <string name="FloodWait">Saiakera gehiegi, mesedez saiatu geroago</string>
-    <string name="InvalidCode">Baliogabeko kodea</string>
-    <string name="InvalidFirstName">Baliogabeko izena</string>
-    <string name="InvalidLastName">Baliogabeko abizena</string>
+    <string name="InvalidPhoneNumber">Telefono zenbaki baliogabea</string>
+    <string name="CodeExpired">Kodea iraungi da, saioa hasi berriro, mesedez</string>
+    <string name="FloodWait">Saio gehiegi, mesedez saiatu beranduago</string>
+    <string name="InvalidCode">Kode baliogabea</string>
+    <string name="InvalidFirstName">Izen baliogabea</string>
+    <string name="InvalidLastName">Abizen baliogabea</string>
     <string name="Loading">Kargatzen...</string>
-    <string name="NoPlayerInstalled">Ez duzu bideo erreproduzgailurik, instalatu eta jarraitu</string>
-    <string name="NoHandleAppInstalled">You don\'t have any application that can handle with mime type \'%1$s\', please install one to continue</string>
-    <string name="InviteUser">Erabiltzaile honek ez dauka Telegram, gonbidapena bidali?</string>
-    <string name="AreYouSure">Ziur zaude??</string>
+    <string name="NoPlayerInstalled">Ez duzu bideo erreproduzgailurik, mesedez instalatu bat eta jarraitu</string>
+    <string name="NoHandleAppInstalled">Ez duzu inolako aplikaziorik \'%1$s\' mime type erabili ahal izateko, mesedez instalatu bat eta jarraitu</string>
+    <string name="InviteUser">Erabiltzaile honek ez dauka Telegram oraindik, gonbidapena bidaliko?</string>
+    <string name="AreYouSure">Ziur zaude?</string>
     <string name="AddContactQ">Kontaktua gehitu??</string>
     <string name="AddToTheGroup">%1$s taldera gehitu?</string>
     <string name="ForwardMessagesTo">Partekatu mezuak %1$s-(r)ekin?</string>
-    <string name="DeleteChatQuestion">Txata hau ezabatu??</string>
+    <string name="DeleteChatQuestion">Txat hau ezabatu?</string>
 
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
@@ -315,10 +315,10 @@
     <string name="Page7Title">Pribatua</string>
     <string name="Page1Message">Ongi etorri mezularitza azkarra eta seguruaren arora</string>
     <string name="Page2Message"><![CDATA[<b>Telegram-ek</b>]]> mezuak bidaltzen ditu azkarrago<![CDATA[<br/>]]>beste edozein aplikaziok baino</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> doakoa da betiko. No ads.<![CDATA[<br/>]]>No subscription fees</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> zure mezuak seguru gorde<![CDATA[<br/>]]>hacker erasoetatik</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> ez dauka limiterik<![CDATA[<br/>]]>txaten eta multimedia fitxategietan</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lets you access your messages<![CDATA[<br/>]]>from multiple devices</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> doakoa da betiko. Iragarkirik gabe.<![CDATA[<br/>]]>Harpidetza kuotarik gabe</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram-ek</b>]]> zure mezuak seguru gordetzen ditu<![CDATA[<br/>]]>pirata informatikoen erasoetatik</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram-ek</b>]]> ez dauka tamaina limiterik<![CDATA[<br/>]]>zure multimedia fitxategietan eta txatetan</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram-ekin</b>]]> zure mezuak eskuragarri daude<![CDATA[<br/>]]>gailu ezberdinetatik</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> mezuak oso sendo daude zifratuta<![CDATA[<br/>]]>eta auto-suntsitzen dira</string>
     <string name="StartMessaging">Start Messaging</string>
 
