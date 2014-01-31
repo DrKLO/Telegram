@@ -93,7 +93,7 @@
     <string name="EncryptedDescriptionTitle">Chats secretos:</string>
     <string name="EncryptedDescription1">Usar encriptación end-to-end</string>
     <string name="EncryptedDescription2">No dejar rastro en nuestros servidores</string>
-    <string name="EncryptedDescription3">Habilitar temporizador de auto-destrucci�n</string>
+    <string name="EncryptedDescription3">Habilitar temporizador de auto-destrucción</string>
     <string name="EncryptedDescription4">No permitir reenvíos</string>
     <string name="OneNewMessage">%1$d nuevo mensaje</string>
     <string name="FewNewMessages">%1$d nuevos mensajes</string>
