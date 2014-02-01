@@ -235,7 +235,7 @@
     <string name="CancelDownload">Cancel·la la baixada</string>
 
     <!--map view-->
-    <string name="MyLocation">La vostra ubicació</string>
+    <string name="MyLocation">La meva ubicació</string>
     <string name="Map">Mapa</string>
     <string name="Satellite">Satèl·lit</string>
     <string name="Hybrid">Híbrid</string>
@@ -316,8 +316,8 @@
     <string name="Page1Message">Benvingut a l\'era de la missatgeria ràpida i segura</string>
     <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> lliura els missatges més ràpid que<![CDATA[<br/>]]>qualsevol altra aplicació</string>
     <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> és gratuït per sempre. Sense publicitat.<![CDATA[<br/>]]>Sense subscripcions</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> deixa els vostres missatges protegits<![CDATA[<br/>]]>d'atacs hackers</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> no té límits a la mida<![CDATA[<br/>]]>dels vostres fitxers i xats</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> manté els vostres missatges protegits<![CDATA[<br/>]]>d'atacs hackers</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> no posa límits a la mida<![CDATA[<br/>]]>dels vostres fitxers i xats</string>
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> us permet accedir als vostres missatges<![CDATA[<br/>]]>des de múltiples dispositius</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> encripta els vostres missatges fortament<![CDATA[<br/>]]>i permet que s\'autodestrueixin</string>
     <string name="StartMessaging">Comenceu a enviar missatges</string>
