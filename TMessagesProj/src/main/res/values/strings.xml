@@ -10,18 +10,18 @@
 
     <!--code enter view-->
     <string name="YourCode">El vostre codi</string>
-    <string name="SentSmsCode">Us enviarem un SMS amb el codi d\'activació pel vostre telèfon</string>
+    <string name="SentSmsCode">Us hem enviat un SMS al vostre telèfon amb un codi d\'activació</string>
     <string name="CallText">Us trucarem en</string>
     <string name="Calling">Us estem trucant...</string>
     <string name="Code">Codi</string>
-    <string name="WrongNumber">Número erroni?</string>
+    <string name="WrongNumber">El número de telèfon no és correcte?</string>
 
     <!--signup view-->
     <string name="YourName">El vostre nom</string>
-    <string name="RegisterText">Introduïu el vostre nom i cognom</string>
+    <string name="RegisterText">Introduïu el nom i els cognoms</string>
     <!--<string name="RegisterText">Set up your name and picture</string>-->
-    <string name="FirstName">Nom (requerit)</string>
-    <string name="LastName">Cognom (opcional)</string>
+    <string name="FirstName">Nom (necessari)</string>
+    <string name="LastName">Cognoms (opcional)</string>
     <string name="CancelRegistration">Cancel·la el registre</string>
 
     <!--chats view-->
@@ -32,29 +32,29 @@
     <string name="Contacts">Contactes</string>
     <string name="NewGroup">Grup nou</string>
     <string name="Yesterday">ahir</string>
-    <string name="NoResult">No hi ha resultats</string>
-    <string name="NoChats">No hi ha xats...</string>
+    <string name="NoResult">Sense resultats</string>
+    <string name="NoChats">Encara no teniu xats...</string>
     <string name="NoChatsHelp">Per començar a enviar missatges premeu el\nbotó per redactar de la cantonada de dalt a la dreta\no aneu a la secció de «Contactes».</string>
     <string name="WaitingForNetwork">S\'està esperant una connexió a la xarxa...</string>
     <string name="Connecting">S\'està connectant...</string>
     <string name="Updating">S\'està actualitzant...</string>
     <string name="NewSecretChat">Xat secret nou</string>
-    <string name="AwaitingEncryption">S\'està esperant per estar en línia per %s...</string>
+    <string name="AwaitingEncryption">S\'està esperant que es connecti %s...</string>
     <string name="EncryptionRejected">Xat secret cancel·lat</string>
     <string name="EncryptionProcessing">S\'està intercanviant les claus d\'encriptació...</string>
     <string name="EncryptedChatStartedOutgoing">%s s\'ha unit al vostre xat secret.</string>
     <string name="EncryptedChatStartedIncoming">Us heu unit al xat secret.</string>
-    <string name="ClearHistory">Neteja l\'historial</string>
-    <string name="DeleteChat">Esborra i surt</string>
+    <string name="ClearHistory">Esborra l'historial</string>
+    <string name="DeleteChat">Surt i elimina el xat</string>
 
     <!--documents view-->
     <string name="SelectFile">Selecciona un fitxer</string>
     <string name="FreeOfTotal">%1$s lliures de %2$s</string>
-    <string name="UnknownError">No es coneix l\'error</string>
+    <string name="UnknownError">Error desconegut</string>
     <string name="AccessError">Error d\'accés</string>
     <string name="NoFiles">Encara no hi ha fitxers...</string>
-    <string name="FileUploadLimit">La mida del fitxer no hauria de ser més gran que %1$s</string>
-    <string name="NotMounted">L\'emmagatzematge no s\'ha muntat</string>
+    <string name="FileUploadLimit">La mida del fitxer no hauria de superar els %1$s</string>
+    <string name="NotMounted">No s\'ha muntat l\'emmagatzematge</string>
     <string name="UsbActive">Transferència USB activa</string>
     <string name="InternalStorage">Emmagatzematge intern</string>
     <string name="ExternalStorage">Emmagatzematge extern</string>
@@ -92,17 +92,17 @@
     <string name="EncryptedPlaceholderTitleOutgoing">Heu convidat a %s a unir-se a un xat secret.</string>
     <string name="EncryptedDescriptionTitle">Xats secrets:</string>
     <string name="EncryptedDescription1">Utilitza l\'encriptació end-to-end</string>
-    <string name="EncryptedDescription2">No deixis rastre als nostres servidors</string>
-    <string name="EncryptedDescription3">Estableix un temporitzador d\'autodestrucció</string>
-    <string name="EncryptedDescription4">No permetis reenviaments</string>
+    <string name="EncryptedDescription2">No deixa rastre als nostres servidors</string>
+    <string name="EncryptedDescription3">Permet establir un temporitzador d\'autodestrucció</string>
+    <string name="EncryptedDescription4">No permet el reenviament</string>
     <string name="OneNewMessage">%1$d missatge nou</string>
     <string name="FewNewMessages">%1$d missatges nous</string>
     <string name="YouWereKicked">Us han fet fora d\'aquest grup</string>
     <string name="YouLeft">Heu deixat aquest grup</string>
-    <string name="DeleteThisGroup">Esborra aquest grup</string>
+    <string name="DeleteThisGroup">Elimina aquest grup</string>
 
     <!--notification-->
-    <string name="EncryptedChatRequested">Sol·licitació de xat secret</string>
+    <string name="EncryptedChatRequested">Sol·licitud de xat secret</string>
     <string name="EncryptedChatAccepted">Inici del xat secret</string>
     <string name="MessageLifetimeChanged">%1$s ha establert el temporitzador d\'autodestrucció en %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Heu establert el temporitzador d\'autodestrucció en %1$s</string>
@@ -148,27 +148,27 @@
     <string name="TodayAt">avui a les</string>
     <string name="YesterdayAt">ahir a les</string>
     <string name="OtherAt">a</string>
-    <string name="Online">en línia</string>
-    <string name="Offline">fora de línia</string>
+    <string name="Online">connectat</string>
+    <string name="Offline">desconnectat</string>
     <string name="LastSeen">Darrera visualització</string>
     <string name="InviteFriends">Convida a amics</string>
 
     <!--group create view-->
     <string name="SendMessageTo">Envia un missatge a...</string>
-    <string name="EnterGroupNamePlaceholder">Introdueix el nom del grup</string>
+    <string name="EnterGroupNamePlaceholder">Introduïu el nom del grup</string>
     <string name="MEMBER">MEMBRE</string>
     <string name="GroupName">Nom del grup</string>
     <string name="MEMBERS">MEMBRES</string>
     <string name="AllContacts">TOTS ELS CONTACTES</string>
 
     <!--group info view-->
-    <string name="EnterGroupNameTitle">INTRODUEIX EL NOM DEL GRUP</string>
+    <string name="EnterGroupNameTitle">INTRODUÏU EL NOM DEL GRUP</string>
     <string name="SharedMedia">Fitxers compartits</string>
     <string name="GroupInfo">Informació del grup</string>
     <string name="SHAREDMEDIA">FITXERS COMPARTITS</string>
     <string name="SETTINGS">PREFERÈNCIES</string>
     <string name="AddMember">Afegeix un membre</string>
-    <string name="DeleteAndExit">Esborra i abandona el grup</string>
+    <string name="DeleteAndExit">Elimina i surt del grup</string>
     <string name="Notifications">Notificacions</string>
     <string name="KickFromGroup">Fes fora del grup</string>
 
