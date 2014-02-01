@@ -20,8 +20,8 @@
     <string name="YourName">El vostre nom</string>
     <string name="RegisterText">Introduïu el vostre nom i cognom</string>
     <!--<string name="RegisterText">Set up your name and picture</string>-->
-    <string name="FirstName">Nom (required)</string>
-    <string name="LastName">Cognom (optional)</string>
+    <string name="FirstName">Nom (requerit)</string>
+    <string name="LastName">Cognom (opcional)</string>
     <string name="CancelRegistration">Cancel·la el registre</string>
 
     <!--chats view-->
