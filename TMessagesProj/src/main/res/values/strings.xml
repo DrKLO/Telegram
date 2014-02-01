@@ -49,7 +49,7 @@
 
     <!--documents view-->
     <string name="SelectFile">Selecciona un fitxer</string>
-    <string name="FreeOfTotal">Lliure %1$s de %2$s</string>
+    <string name="FreeOfTotal">%1$s lliures de %2$s</string>
     <string name="UnknownError">No es coneix l\'error</string>
     <string name="AccessError">Error d\'accés</string>
     <string name="NoFiles">Encara no hi ha fitxers...</string>
@@ -80,13 +80,13 @@
     <string name="ViewVideo">Reprodueix el vídeo</string>
     <string name="ForwardedMessage">Missatge reenviat</string>
     <string name="From">Des de</string>
-    <string name="NoRecent">No recent</string>
+    <string name="NoRecent">Cap recent</string>
     <string name="Members">membres</string>
     <string name="Message">Missatge</string>
     <string name="TypeMessage">Escriu un missatge</string>
     <string name="DOWNLOAD">Baixa</string>
     <string name="Selected">Seleccionat:</string>
-    <string name="ShareMyContactInfo">COMPARTEIX LA MEVA INFORMACIÓ DE CONTACTE</string>
+    <string name="ShareMyContactInfo">COMPARTIU LA VOSTRA INFORMACIÓ DE CONTACTE</string>
     <string name="AddToContacts">AFEGEIX ALS CONTACTES</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s us convida a unir-vos a un xat secret.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">Heu convidat a %s a unir-se a un xat secret.</string>
@@ -121,7 +121,7 @@
     <string name="NotificationMessageContact">%1$s ha compartit un contacte amb vós</string>
     <string name="NotificationMessageMap">%1$s us ha enviat un mapa</string>
     <string name="NotificationMessageDocument">%1$s us ha enviat un document</string>
-    <string name="NotificationMessageAudio">%1$s us ha enviat un àudio</string>
+    <string name="NotificationMessageAudio">%1$s us ha enviat un fitxer d'àudio</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s ha enviat un missatge al grup %2$s</string>
     <string name="NotificationMessageGroupPhoto">%1$s ha enviat una fotografia al grup %2$s</string>
@@ -129,7 +129,7 @@
     <string name="NotificationMessageGroupContact">%1$s ha compartit un contacte amb el grup %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s ha enviat un mapa al grup %2$s</string>
     <string name="NotificationMessageGroupDocument">%1$s ha enviat un document al grup %2$s</string>
-    <string name="NotificationMessageGroupAudio">%1$s ha enviat un àudio al grup %2$s</string>
+    <string name="NotificationMessageGroupAudio">%1$s ha enviat un fitxer d'àudio al grup %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s us ha convidat al grup %2$s</string>
     <string name="NotificationEditedGroupName">%1$s ha editat el nom del grup %2$s</string>
     <string name="NotificationEditedGroupPhoto">%1$s ha editat la fotografia del grup %2$s</string>
@@ -137,8 +137,8 @@
     <string name="NotificationGroupKickMember">%1$s ha fet fora a %3$s del grup %2$s</string>
     <string name="NotificationGroupKickYou">%1$s us ha fet fora del grup %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s ha deixat el grup %2$s</string>
-    <string name="NotificationContactJoined">%1$s s\'ha unit a Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">S\'ha iniciat la sessió des d\'un dispositiu desconegut %1$s, localització: %2$s</string>
+    <string name="NotificationContactJoined">%1$s s\'ha unit a Telegram.</string>
+    <string name="NotificationUnrecognizedDevice">%1$s ha iniciat la sessió des d\'un dispositiu desconegut, localització: %2$s</string>
     <string name="NotificationContactNewPhoto">%1$s ha actualitzat la fotografia del perfil</string>
 
     <!--contacts view-->
