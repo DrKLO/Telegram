@@ -294,7 +294,7 @@
     <string name="FloodWait">Heu excedit el nombre d\'intents. Torneu a provar-ho més tard.</string>
     <string name="InvalidCode">Codi no vàlid</string>
     <string name="InvalidFirstName">Nom no vàlid</string>
-    <string name="InvalidLastName">Cognom no vàlid</string>
+    <string name="InvalidLastName">Cognoms no vàlids</string>
     <string name="Loading">S\'està carregant...</string>
     <string name="NoPlayerInstalled">No teniu cap reproductor de vídeo. Cal que n\'instal·leu un per poder continuar</string>
     <string name="NoHandleAppInstalled">No teniu cap aplicació capaç de gestionar aquest tipus MIME \'%1$s\'. Cal que n\'instal·leu una per poder continuar</string>
