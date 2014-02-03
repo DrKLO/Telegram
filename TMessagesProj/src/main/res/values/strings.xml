@@ -147,7 +147,7 @@
     <string name="InviteText">Iep! Canvieu-vos a Telegram: http://telegram.org/dl2</string>
     <string name="TodayAt">avui a les</string>
     <string name="YesterdayAt">ahir a les</string>
-    <string name="OtherAt">a</string>
+    <string name="OtherAt">a les</string>
     <string name="Online">connectat</string>
     <string name="Offline">desconnectat</string>
     <string name="LastSeen">Darrera visualització</string>
