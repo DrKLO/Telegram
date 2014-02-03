@@ -29,6 +29,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.HockeyServiceWrapper;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -37,9 +38,6 @@ import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.NotificationView;
-
-import net.hockeyapp.android.CrashManager;
-import net.hockeyapp.android.UpdateManager;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -317,12 +315,12 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
     }
 
     private void checkForCrashes() {
-        CrashManager.register(this, ConnectionsManager.HOCKEY_APP_HASH);
+        HockeyServiceWrapper.registerCrashManager(this);
     }
 
     private void checkForUpdates() {
         if (ConnectionsManager.DEBUG_VERSION) {
-            UpdateManager.register(this, ConnectionsManager.HOCKEY_APP_HASH);
+            HockeyServiceWrapper.registerUpdateManager(this);
         }
     }
 

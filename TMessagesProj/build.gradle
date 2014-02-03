@@ -31,8 +31,6 @@ tasks.withType(JavaCompile) {
 }
 
 dependencies {
-    compile 'com.google.android.gms:play-services:4.0.+'
-    compile 'net.hockeyapp.android:HockeySDK:3.0.1'
     compile 'com.android.support:support-v4:19.0.+'
     compile 'com.android.support:appcompat-v7:19.0.+'
     compile fileTree(dir: "$buildDir/native-libs", include: 'native-libs.jar')
@@ -41,6 +39,20 @@ dependencies {
 android {
     compileSdkVersion 19
     buildToolsVersion '19.0.0'
+
+    productFlavors {
+        standard {
+            packageName 'org.telegram.ui.ApplicationLoader.standard'
+        }
+        foss {
+            packageName 'org.telegram.ui.ApplicationLoader.foss'
+        }
+    }
+
+    dependencies {
+        standardCompile 'com.google.android.gms:play-services:4.0.+'
+        standardCompile 'net.hockeyapp.android:HockeySDK:3.0.1'
+    }
 
     signingConfigs {
         debug {
