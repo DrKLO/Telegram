@@ -299,6 +299,10 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
 
     @Override
     public void onNextPressed() {
+        if (codeField.length() == 0 || phoneField.length() == 0) {
+            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidPhoneNumber));
+            return;
+        }
         TLRPC.TL_auth_sendCode req = new TLRPC.TL_auth_sendCode();
         String phone = PhoneFormat.stripExceptNumbers("" + codeField.getText() + phoneField.getText());
         req.api_hash = ConnectionsManager.APP_HASH;
@@ -327,25 +331,31 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
                     Utilities.RunOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            delegate.setPage(1, true, params, false);
+                            if (delegate != null) {
+                                delegate.setPage(1, true, params, false);
+                            }
                         }
                     });
                 } else {
-                    if (error.text != null) {
-                        if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidPhoneNumber));
-                        } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidCode));
-                        } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.CodeExpired));
-                        } else if (error.text.contains("FLOOD_WAIT")) {
-                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.FloodWait));
-                        } else {
-                            delegate.needShowAlert(error.text);
+                    if (delegate != null) {
+                        if (error.text != null) {
+                            if (error.text.contains("PHONE_NUMBER_INVALID")) {
+                                delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidPhoneNumber));
+                            } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
+                                delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidCode));
+                            } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                                delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.CodeExpired));
+                            } else if (error.text.contains("FLOOD_WAIT")) {
+                                delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.FloodWait));
+                            } else {
+                                delegate.needShowAlert(error.text);
+                            }
                         }
                     }
                 }
-                delegate.needHideProgress();
+                if (delegate != null) {
+                    delegate.needHideProgress();
+                }
             }
         }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
     }

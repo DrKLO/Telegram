@@ -256,7 +256,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         });
 
         tabsContainer.addView(tab);
-
+        tab.setSelected(position == currentPosition);
     }
 
     private void updateExpanded() {
@@ -309,21 +309,6 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
 
         int myWidth = getMeasuredWidth();
         tabsContainer.measure(MeasureSpec.EXACTLY | myWidth, heightMeasureSpec);
-        /*int childWidth = 0;
-        for (int i = 0; i < tabCount; i++) {
-            childWidth += tabsContainer.getChildAt(i).getMeasuredWidth();
-        }
-
-        if (!checkedTabWidths && childWidth > 0 && myWidth > 0) {
-
-            if (childWidth <= myWidth) {
-                for (int i = 0; i < tabCount; i++) {
-                    tabsContainer.getChildAt(i).setLayoutParams(expandedTabLayoutParams);
-                }
-            }
-
-            checkedTabWidths = true;
-        }*/
     }
 
     private void scrollToChild(int position, int offset) {

@@ -21,6 +21,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -39,6 +40,7 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.TL.TLObject;
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -50,6 +52,8 @@ import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.IdenticonView;
 import org.telegram.ui.Views.OnSwipeTouchListener;
+
+import java.util.ArrayList;
 
 public class UserProfileActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate {
     private ListView listView;
@@ -104,7 +108,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 @Override
                 public void onClick(View view) {
                     creatingChat = true;
-                    MessagesController.Instance.startSecretChat(parentActivity, user_id);
+                    MessagesController.Instance.startSecretChat(parentActivity, MessagesController.Instance.users.get(user_id));
                 }
             });
             if (dialog_id == 0) {
@@ -282,8 +286,11 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
 
     public void didReceivedNotification(int id, Object... args) {
         if (id == MessagesController.updateInterfaces) {
-            if (listView != null) {
-                listView.invalidateViews();
+            int mask = (Integer)args[0];
+            if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
+                if (listView != null) {
+                    listView.invalidateViews();
+                }
             }
         } else if (id == MessagesController.contactsDidLoaded) {
             if (parentActivity != null) {
@@ -409,16 +416,12 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 finishFragment();
                 break;
             case R.id.block_contact: {
-                TLRPC.TL_contacts_block req = new TLRPC.TL_contacts_block();
                 TLRPC.User user = MessagesController.Instance.users.get(user_id);
-                if (user instanceof TLRPC.TL_userForeign || user instanceof TLRPC.TL_userRequest) {
-                    req.id = new TLRPC.TL_inputUserForeign();
-                    req.id.access_hash = user.access_hash;
-                    req.id.user_id = user_id;
-                } else {
-                    req.id = new TLRPC.TL_inputUserContact();
-                    req.id.user_id = user_id;
+                if (user == null) {
+                    break;
                 }
+                TLRPC.TL_contacts_block req = new TLRPC.TL_contacts_block();
+                req.id = MessagesController.getInputUser(user);
                 TLRPC.TL_contactBlocked blocked = new TLRPC.TL_contactBlocked();
                 blocked.user_id = user_id;
                 blocked.date = (int)(System.currentTimeMillis() / 1000);
@@ -449,14 +452,51 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat_select", false);
                 break;
             }
+            case R.id.edit_contact: {
+                ContactAddActivity fragment = new ContactAddActivity();
+                Bundle args = new Bundle();
+                args.putInt("user_id", user_id);
+                fragment.setArguments(args);
+                ((ApplicationActivity)parentActivity).presentFragment(fragment, "add_contact_" + user_id, false);
+                break;
+            }
+            case R.id.delete_contact: {
+                final TLRPC.User user = MessagesController.Instance.users.get(user_id);
+                if (user == null) {
+                    break;
+                }
+                AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                builder.setMessage(getStringEntry(R.string.AreYouSure));
+                builder.setTitle(getStringEntry(R.string.AppName));
+                builder.setPositiveButton(getStringEntry(R.string.OK), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        TLRPC.TL_auth_resetAuthorizations req = new TLRPC.TL_auth_resetAuthorizations();
+                        ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                            @Override
+                            public void run(TLObject response, TLRPC.TL_error error) {
+                                ArrayList<TLRPC.User> arrayList = new ArrayList<TLRPC.User>();
+                                arrayList.add(user);
+                                ContactsController.Instance.deleteContact(arrayList);
+                            }
+                        }, null, true, RPCRequest.RPCRequestClassGeneric);
+                    }
+                });
+                builder.setNegativeButton(getStringEntry(R.string.Cancel), null);
+                builder.show().setCanceledOnTouchOutside(true);
+                break;
+            }
         }
         return true;
     }
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        if (MessagesController.Instance.contactsDict.get(user_id) == null) {
+        if (ContactsController.Instance.contactsDict.get(user_id) == null) {
             TLRPC.User user = MessagesController.Instance.users.get(user_id);
+            if (user == null) {
+                return;
+            }
             if (user.phone != null && user.phone.length() != 0) {
                 inflater.inflate(R.menu.user_profile_menu, menu);
             } else {
@@ -608,7 +648,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                             if (value == 0) {
                                 value = user.status.expires;
                             }
-                            onlineText.setText(String.format("%s %s", getStringEntry(R.string.LastSeen), Utilities.formatDateOnline(value)));
+                            onlineText.setText(Utilities.formatDateOnline(value));
                         }
                     }
                 }
@@ -661,12 +701,19 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                                             FileLog.e("tmessages", e);
                                         }
                                     } else if (i == 0) {
+                                        ActionBarActivity inflaterActivity = parentActivity;
+                                        if (inflaterActivity == null) {
+                                            inflaterActivity = (ActionBarActivity)getActivity();
+                                        }
+                                        if (inflaterActivity == null) {
+                                            return;
+                                        }
                                         int sdk = android.os.Build.VERSION.SDK_INT;
                                         if(sdk < android.os.Build.VERSION_CODES.HONEYCOMB) {
-                                            android.text.ClipboardManager clipboard = (android.text.ClipboardManager)parentActivity.getSystemService(Context.CLIPBOARD_SERVICE);
+                                            android.text.ClipboardManager clipboard = (android.text.ClipboardManager)inflaterActivity.getSystemService(Context.CLIPBOARD_SERVICE);
                                             clipboard.setText(selectedPhone);
                                         } else {
-                                            android.content.ClipboardManager clipboard = (android.content.ClipboardManager)parentActivity.getSystemService(Context.CLIPBOARD_SERVICE);
+                                            android.content.ClipboardManager clipboard = (android.content.ClipboardManager)inflaterActivity.getSystemService(Context.CLIPBOARD_SERVICE);
                                             android.content.ClipData clip = android.content.ClipData.newPlainText("label", selectedPhone);
                                             clipboard.setPrimaryClip(clip);
                                         }

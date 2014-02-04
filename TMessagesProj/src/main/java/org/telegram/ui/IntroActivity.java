@@ -23,8 +23,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.R;
-
-import java.util.Locale;
+import org.telegram.messenger.Utilities;
 
 public class IntroActivity extends ActionBarActivity {
     private ViewPager viewPager;
@@ -32,7 +31,6 @@ public class IntroActivity extends ActionBarActivity {
     private ImageView topImage2;
     private ViewGroup bottomPages;
     private int lastPage = 0;
-    private boolean isRTL = false;
     private boolean justCreated = false;
     private boolean startPressed = false;
     private int[] icons;
@@ -45,10 +43,7 @@ public class IntroActivity extends ActionBarActivity {
 
         setContentView(R.layout.intro_layout);
 
-        Locale locale = Locale.getDefault();
-        String lang = locale.getLanguage();
-        if (lang != null && lang.toLowerCase().equals("ar")) {
-            isRTL = true;
+        if (Utilities.isRTL) {
             icons = new int[] {
                     R.drawable.intro7,
                     R.drawable.intro6,
@@ -212,7 +207,7 @@ public class IntroActivity extends ActionBarActivity {
     protected void onResume() {
         super.onResume();
         if (justCreated) {
-            if (isRTL) {
+            if (Utilities.isRTL) {
                 viewPager.setCurrentItem(6);
                 lastPage = 6;
             } else {

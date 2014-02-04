@@ -72,8 +72,6 @@
             android:id="@+id/chat_time_layout"
             android:paddingLeft="3dp"
             android:paddingRight="3dp"
-            android:paddingBottom="1dp"
-            android:paddingTop="1dp"
             android:layout_marginRight="8dp"
             android:layout_marginBottom="8dp"
             android:layout_gravity="right|bottom"

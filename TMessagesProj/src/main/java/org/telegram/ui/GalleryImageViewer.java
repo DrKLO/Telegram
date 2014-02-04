@@ -9,12 +9,14 @@
 package org.telegram.ui;
 
 import android.content.Intent;
+import android.graphics.Point;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
+import android.view.Display;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -64,6 +66,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
     private ProgressBar loadingProgress;
     private String currentFileName;
     private int user_id = 0;
+    private Point displaySize = new Point();
 
     private ArrayList<MessageObject> imagesArrTemp = new ArrayList<MessageObject>();
     private HashMap<Integer, MessageObject> imagesByIdsTemp = new HashMap<Integer, MessageObject>();
@@ -80,6 +83,14 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Display display = getWindowManager().getDefaultDisplay();
+        if(android.os.Build.VERSION.SDK_INT < 13) {
+            displaySize.set(display.getWidth(), display.getHeight());
+        } else {
+            display.getSize(displaySize);
+        }
+
         classGuid = ConnectionsManager.Instance.generateClassGuid();
         setContentView(R.layout.gallery_layout);
 
@@ -112,6 +123,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
         NotificationCenter.Instance.addObserver(this, MessagesController.mediaCountDidLoaded);
         NotificationCenter.Instance.addObserver(this, MessagesController.mediaDidLoaded);
         NotificationCenter.Instance.addObserver(this, MessagesController.userPhotosLoaded);
+        NotificationCenter.Instance.addObserver(this, 658);
 
         Integer index = null;
         if (localPagerAdapter == null) {
@@ -212,6 +224,9 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
         deleteButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                if (mViewPager == null) {
+                    return;
+                }
                 int item = mViewPager.getCurrentItem();
                 MessageObject obj = localPagerAdapter.imagesArr.get(item);
                 if (obj.messageOwner.send_state == MessagesController.MESSAGE_SEND_STATE_SENT) {
@@ -241,6 +256,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
         NotificationCenter.Instance.removeObserver(this, MessagesController.mediaCountDidLoaded);
         NotificationCenter.Instance.removeObserver(this, MessagesController.mediaDidLoaded);
         NotificationCenter.Instance.removeObserver(this, MessagesController.userPhotosLoaded);
+        NotificationCenter.Instance.removeObserver(this, 658);
         ConnectionsManager.Instance.cancelRpcsForClassGuid(classGuid);
     }
 
@@ -354,7 +370,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                                 getSupportActionBar().setTitle(String.format("%d %s %d", pos, getString(R.string.Of), totalCount));
                                 if (title != null) {
                                     fakeTitleView.setText(String.format("%d %s %d", pos, getString(R.string.Of), totalCount));
-                                    fakeTitleView.measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.AT_MOST), 40);
+                                    fakeTitleView.measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.AT_MOST));
                                     title.setWidth(fakeTitleView.getMeasuredWidth() + Utilities.dp(8));
                                     title.setMaxWidth(fakeTitleView.getMeasuredWidth() + Utilities.dp(8));
                                 }
@@ -450,10 +466,21 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                     }
                 }
             }
+        } else if (id == 658) {
+            try {
+                if (!isFinishing()) {
+                    finish();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
     private TLRPC.FileLocation getCurrentFile() {
+        if (mViewPager == null) {
+            return null;
+        }
         int item = mViewPager.getCurrentItem();
         if (withoutBottom) {
             return localPagerAdapter.imagesArrLocations.get(item);
@@ -775,7 +802,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                             getSupportActionBar().setTitle(String.format("%d %s %d", (totalCount - imagesArr.size()) + position + 1, getString(R.string.Of), totalCount));
                             if (title != null) {
                                 fakeTitleView.setText(String.format("%d %s %d", (totalCount - imagesArr.size()) + position + 1, getString(R.string.Of), totalCount));
-                                fakeTitleView.measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.AT_MOST), 40);
+                                fakeTitleView.measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.AT_MOST));
                                 title.setWidth(fakeTitleView.getMeasuredWidth() + Utilities.dp(8));
                                 title.setMaxWidth(fakeTitleView.getMeasuredWidth() + Utilities.dp(8));
                             }
@@ -794,7 +821,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                             getSupportActionBar().setTitle(String.format("%d %s %d", position + 1, getString(R.string.Of), imagesArrLocations.size()));
                             if (title != null) {
                                 fakeTitleView.setText(String.format("%d %s %d", position + 1, getString(R.string.Of), imagesArrLocations.size()));
-                                fakeTitleView.measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.AT_MOST), 40);
+                                fakeTitleView.measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.AT_MOST));
                                 title.setWidth(fakeTitleView.getMeasuredWidth() + Utilities.dp(8));
                                 title.setMaxWidth(fakeTitleView.getMeasuredWidth() + Utilities.dp(8));
                             }
@@ -885,7 +912,16 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                     ArrayList<TLRPC.PhotoSize> sizes = message.messageOwner.media.photo.sizes;
                     iv.isVideo = false;
                     if (sizes.size() > 0) {
-                        TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(sizes, 800, 800);
+                        int width = (int)(Math.min(displaySize.x, displaySize.y) * 0.7f);
+                        int height = width + Utilities.dp(100);
+                        if (width > 800) {
+                            width = 800;
+                        }
+                        if (height > 800) {
+                            height = 800;
+                        }
+
+                        TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(sizes, width, height);
                         if (message.imagePreview != null) {
                             iv.setImage(sizeFull.location, null, message.imagePreview, sizeFull.size);
                         } else {

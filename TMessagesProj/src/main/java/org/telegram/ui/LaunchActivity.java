@@ -14,6 +14,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Parcelable;
 
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.FileLog;
@@ -21,6 +22,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.PausableActivity;
 
 public class LaunchActivity extends PausableActivity {
@@ -46,13 +48,22 @@ public class LaunchActivity extends PausableActivity {
                 if (Intent.ACTION_SEND.equals(intent.getAction())) {
                     if (intent.getType() != null) {
                         if (intent.getType().startsWith("image/")) {
-                            String path = intent.getParcelableExtra(Intent.EXTRA_STREAM).toString();
-                            if (path.startsWith("content:")) {
-                                Cursor cursor = getContentResolver().query(Uri.parse(path), new String[]{android.provider.MediaStore.Images.ImageColumns.DATA}, null, null, null);
-                                if (cursor != null) {
-                                    cursor.moveToFirst();
-                                    path = cursor.getString(0);
-                                    cursor.close();
+                            Parcelable parcelable = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+                            if (parcelable == null) {
+                                return;
+                            }
+                            String path = null;
+                            if (parcelable instanceof Uri) {
+                                path = Utilities.getPath(this, (Uri)parcelable);
+                            } else {
+                                path = intent.getParcelableExtra(Intent.EXTRA_STREAM).toString();
+                                if (path.startsWith("content:")) {
+                                    Cursor cursor = getContentResolver().query(Uri.parse(path), new String[]{android.provider.MediaStore.Images.ImageColumns.DATA}, null, null, null);
+                                    if (cursor != null) {
+                                        cursor.moveToFirst();
+                                        path = cursor.getString(0);
+                                        cursor.close();
+                                    }
                                 }
                             }
                             if (path != null) {
@@ -62,13 +73,22 @@ public class LaunchActivity extends PausableActivity {
                                 NotificationCenter.Instance.addToMemCache(533, path);
                             }
                         } else if (intent.getType().startsWith("video/")) {
-                            String path = intent.getParcelableExtra(Intent.EXTRA_STREAM).toString();
-                            if (path.startsWith("content:")) {
-                                Cursor cursor = getContentResolver().query(Uri.parse(path), new String[]{android.provider.MediaStore.Images.ImageColumns.DATA}, null, null, null);
-                                if (cursor != null) {
-                                    cursor.moveToFirst();
-                                    path = cursor.getString(0);
-                                    cursor.close();
+                            Parcelable parcelable = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+                            if (parcelable == null) {
+                                return;
+                            }
+                            String path = null;
+                            if (parcelable instanceof Uri) {
+                                path = Utilities.getPath(this, (Uri)parcelable);
+                            } else {
+                                path = parcelable.toString();
+                                if (path.startsWith("content:")) {
+                                    Cursor cursor = getContentResolver().query(Uri.parse(path), new String[]{android.provider.MediaStore.Images.ImageColumns.DATA}, null, null, null);
+                                    if (cursor != null) {
+                                        cursor.moveToFirst();
+                                        path = cursor.getString(0);
+                                        cursor.close();
+                                    }
                                 }
                             }
                             if (path != null) {
@@ -79,17 +99,24 @@ public class LaunchActivity extends PausableActivity {
                             }
                         } else if (intent.getType().equals("text/plain")) {
                             String text = intent.getStringExtra(Intent.EXTRA_TEXT);
-                            if (text.length() != 0) {
+                            if (text != null && text.length() != 0) {
                                 NotificationCenter.Instance.addToMemCache(535, text);
                             }
                         }
                     }
                 } else if (Intent.ACTION_VIEW.equals(intent.getAction())) {
-                    Cursor cursor = getContentResolver().query(intent.getData(), null, null, null, null);
-                    if (cursor.moveToFirst()) {
-                        int userId = cursor.getInt(cursor.getColumnIndex("DATA4"));
-                        NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
-                        NotificationCenter.Instance.addToMemCache("push_user_id", userId);
+                    try {
+                        Cursor cursor = getContentResolver().query(intent.getData(), null, null, null, null);
+                        if (cursor != null) {
+                            if (cursor.moveToFirst()) {
+                                int userId = cursor.getInt(cursor.getColumnIndex("DATA4"));
+                                NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
+                                NotificationCenter.Instance.addToMemCache("push_user_id", userId);
+                            }
+                            cursor.close();
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
                     }
                 } else if (intent.getAction().equals("org.telegram.messenger.OPEN_ACCOUNT")) {
                     NotificationCenter.Instance.addToMemCache("open_settings", 1);
@@ -115,6 +142,7 @@ public class LaunchActivity extends PausableActivity {
         }
         int chatId = getIntent().getIntExtra("chatId", 0);
         int userId = getIntent().getIntExtra("userId", 0);
+        int encId = getIntent().getIntExtra("encId", 0);
         if (chatId != 0) {
             TLRPC.Chat chat = MessagesController.Instance.chats.get(chatId);
             if (chat != null) {
@@ -126,6 +154,12 @@ public class LaunchActivity extends PausableActivity {
             if (user != null) {
                 NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
                 NotificationCenter.Instance.addToMemCache("push_user_id", userId);
+            }
+        } else if (encId != 0) {
+            TLRPC.EncryptedChat chat = MessagesController.Instance.encryptedChats.get(encId);
+            if (chat != null) {
+                NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
+                NotificationCenter.Instance.addToMemCache("push_enc_id", encId);
             }
         }
     }

@@ -29,6 +29,7 @@ public class RPCRequest {
     public static int RPCRequestClassUploadMedia = 4;
     public static int RPCRequestClassEnableUnauthorized = 8;
     public static int RPCRequestClassFailOnServerErrors = 16;
+    public static int RPCRequestClassCanCompress = 32;
 
     static int RPCRequestClassTransportMask = (RPCRequestClassGeneric | RPCRequestClassDownloadMedia | RPCRequestClassUploadMedia);
 
@@ -37,6 +38,7 @@ public class RPCRequest {
 
     int serverFailureCount;
     int flags;
+    public int retryCount = 0;
 
     TLObject rawRequest;
     TLObject rpcRequest;

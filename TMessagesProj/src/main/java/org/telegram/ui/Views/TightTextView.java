@@ -94,6 +94,12 @@ public class TightTextView extends TextView {
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
+            try {
+                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            } catch (Exception e2) {
+                setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
+                FileLog.e("tmessages", e2);
+            }
         }
     }
 

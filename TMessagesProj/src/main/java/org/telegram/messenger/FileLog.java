@@ -118,6 +118,8 @@ public class FileLog {
                     }
                 }
             });
+        } else {
+            e.printStackTrace();
         }
     }
 

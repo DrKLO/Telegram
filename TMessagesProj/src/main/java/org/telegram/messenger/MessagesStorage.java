@@ -9,7 +9,6 @@
 package org.telegram.messenger;
 
 import android.text.Html;
-import android.util.Log;
 import android.util.SparseArray;
 
 import org.telegram.SQLite.SQLiteCursor;
@@ -74,6 +73,11 @@ public class MessagesStorage {
                 database.executeFast("INSERT INTO params VALUES(1, 0, 0, 0, 0, 0, 0, NULL)").stepThis().dispose();
                 database.executeFast("CREATE TABLE user_photos(uid INTEGER, id INTEGER, data BLOB, PRIMARY KEY (uid, id))").stepThis().dispose();
 
+                database.executeFast("CREATE TABLE user_contacts_v6(uid INTEGER PRIMARY KEY, fname TEXT, sname TEXT)").stepThis().dispose();
+                database.executeFast("CREATE TABLE user_phones_v6(uid INTEGER, phone TEXT, sphone TEXT, deleted INTEGER, PRIMARY KEY (uid, phone))").stepThis().dispose();
+
+                database.executeFast("CREATE INDEX IF NOT EXISTS sphone_deleted_idx_user_phones ON user_phones_v6(sphone, deleted);").stepThis().dispose();
+
                 database.executeFast("CREATE INDEX IF NOT EXISTS date_idx_dialogs ON dialogs(date);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS date_idx_enc_tasks ON enc_tasks(date);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS last_mid_idx_dialogs ON dialogs(last_mid);").stepThis().dispose();
@@ -133,6 +137,10 @@ public class MessagesStorage {
                 database.executeFast("CREATE INDEX IF NOT EXISTS mid_out_idx_messages ON messages(mid, out);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS task_idx_messages ON messages(uid, out, read_state, ttl, date, send_state);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS uid_date_mid_idx_messages ON messages(uid, date, mid);").stepThis().dispose();
+
+                database.executeFast("CREATE TABLE IF NOT EXISTS user_contacts_v6(uid INTEGER PRIMARY KEY, fname TEXT, sname TEXT)").stepThis().dispose();
+                database.executeFast("CREATE TABLE IF NOT EXISTS user_phones_v6(uid INTEGER, phone TEXT, sphone TEXT, deleted INTEGER, PRIMARY KEY (uid, phone))").stepThis().dispose();
+                database.executeFast("CREATE INDEX IF NOT EXISTS sphone_deleted_idx_user_phones ON user_phones_v6(sphone, deleted);").stepThis().dispose();
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -291,37 +299,55 @@ public class MessagesStorage {
     }
 
     public void getUserPhotos(final int uid, final int offset, final int count, final long max_id, final int classGuid) {
-        try {
-            SQLiteCursor cursor;
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    SQLiteCursor cursor;
 
-            if (max_id != 0) {
-                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data FROM user_photos WHERE uid = %d AND id < %d ORDER BY id DESC LIMIT %d", uid, max_id, count));
-            } else {
-                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data FROM user_photos WHERE uid = %d ORDER BY id DESC LIMIT %d,%d", uid, offset, count));
-            }
+                    if (max_id != 0) {
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT data FROM user_photos WHERE uid = %d AND id < %d ORDER BY id DESC LIMIT %d", uid, max_id, count));
+                    } else {
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT data FROM user_photos WHERE uid = %d ORDER BY id DESC LIMIT %d,%d", uid, offset, count));
+                    }
 
-            final TLRPC.photos_Photos res = new TLRPC.photos_Photos();
+                    final TLRPC.photos_Photos res = new TLRPC.photos_Photos();
 
-            while (cursor.next()) {
-                byte[] messageData = cursor.byteArrayValue(0);
-                if (messageData != null) {
-                    SerializedData data = new SerializedData(messageData);
-                    TLRPC.Photo photo = (TLRPC.Photo)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                    res.photos.add(photo);
+                    while (cursor.next()) {
+                        byte[] messageData = cursor.byteArrayValue(0);
+                        if (messageData != null) {
+                            SerializedData data = new SerializedData(messageData);
+                            TLRPC.Photo photo = (TLRPC.Photo)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                            res.photos.add(photo);
+                        }
+                    }
+                    cursor.dispose();
+
+                    Utilities.stageQueue.postRunnable(new Runnable() {
+                        @Override
+                        public void run() {
+                            MessagesController.Instance.processLoadedUserPhotos(res, uid, offset, count, max_id, true, classGuid);
+                        }
+                    });
+
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
                 }
             }
-            cursor.dispose();
+        }, true);
+    }
 
-            Utilities.stageQueue.postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    MessagesController.Instance.processLoadedUserPhotos(res, uid, offset, count, max_id, true, classGuid);
+    public void clearUserPhotos(final int uid) {
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    database.executeFast("DELETE FROM user_photos WHERE uid = " + uid).stepThis().dispose();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
                 }
-            });
-
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
+            }
+        });
     }
 
     public void putUserPhotos(final int uid, final TLRPC.photos_Photos photos) {
@@ -394,10 +420,11 @@ public class MessagesStorage {
                     int minDate = Integer.MAX_VALUE;
                     SparseArray<ArrayList<Integer>> messages = new SparseArray<ArrayList<Integer>>();
                     String mids = "";
-                    SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid, ttl FROM messages WHERE uid = %d AND out = %d AND read_state = 1 AND ttl > 0 AND date <= %d AND send_state = 0", ((long)chat_id) << 32, isOut, time));
+                    SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid, ttl, read_state FROM messages WHERE uid = %d AND out = %d AND ttl > 0 AND date <= %d AND send_state = 0", ((long)chat_id) << 32, isOut, time));
                     while (cursor.next()) {
                         int mid = cursor.intValue(0);
                         int ttl = cursor.intValue(1);
+                        int read_state = cursor.intValue(2);
                         int date = readTime + ttl;
                         minDate = Math.min(minDate, date);
                         ArrayList<Integer> arr = messages.get(date);
@@ -690,6 +717,63 @@ public class MessagesStorage {
         });
     }
 
+    public void updateChatInfo(final int chat_id, final int user_id, final boolean deleted, final int invited_id, final int version) {
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    SQLiteCursor cursor = database.queryFinalized("SELECT participants FROM chat_settings WHERE uid = " + chat_id);
+                    TLRPC.ChatParticipants info = null;
+                    ArrayList<TLRPC.User> loadedUsers = new ArrayList<TLRPC.User>();
+                    if (cursor.next()) {
+                        byte[] userData = cursor.byteArrayValue(0);
+                        if (userData != null) {
+                            SerializedData data = new SerializedData(userData);
+                            info = (TLRPC.ChatParticipants)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                        }
+                    }
+                    cursor.dispose();
+                    if (info != null) {
+                        if (deleted) {
+                            for (int a = 0; a < info.participants.size(); a++) {
+                                TLRPC.TL_chatParticipant participant = info.participants.get(a);
+                                if (participant.user_id == user_id) {
+                                    info.participants.remove(a);
+                                    break;
+                                }
+                            }
+                        } else {
+                            TLRPC.TL_chatParticipant participant = new TLRPC.TL_chatParticipant();
+                            participant.user_id = user_id;
+                            participant.inviter_id = invited_id;
+                            participant.date = ConnectionsManager.Instance.getCurrentTime();
+                            info.participants.add(participant);
+                        }
+                        info.version = version;
+
+                        final TLRPC.ChatParticipants finalInfo = info;
+                        Utilities.RunOnUIThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                NotificationCenter.Instance.postNotificationName(MessagesController.chatInfoDidLoaded, finalInfo.chat_id, finalInfo);
+                            }
+                        });
+
+                        SQLitePreparedStatement state = database.executeFast("REPLACE INTO chat_settings VALUES(?, ?)");
+                        SerializedData data = new SerializedData();
+                        info.serializeToStream(data);
+                        state.bindInteger(1, chat_id);
+                        state.bindByteArray(2, data.toByteArray());
+                        state.step();
+                        state.dispose();
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        });
+    }
+
     public void loadChatInfo(final int chat_id) {
         storageQueue.postRunnable(new Runnable() {
             @Override
@@ -883,7 +967,7 @@ public class MessagesStorage {
                     FileLog.e("tmessages", e);
                 }
             }
-        });
+        }, true);
     }
 
     public void putContacts(final ArrayList<TLRPC.TL_contact> contacts, final boolean deleteAll) {
@@ -912,6 +996,118 @@ public class MessagesStorage {
                 }
             }
         });
+    }
+
+    public void deleteContacts(final ArrayList<Integer> uids) {
+        if (uids == null || uids.isEmpty()) {
+            return;
+        }
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    String ids = "";
+                    for (Integer uid : uids) {
+                        if (ids.length() != 0) {
+                            ids += ",";
+                        }
+                        ids += "" + uid;
+                    }
+                    database.executeFast("DELETE FROM contacts WHERE uid IN (" + ids + ")").stepThis().dispose();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        });
+    }
+
+    public void applyPhoneBookUpdates(final String adds, final String deletes) {
+        if (adds.length() == 0 && deletes.length() == 0) {
+            return;
+        }
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (adds.length() != 0) {
+                        database.executeFast(String.format(Locale.US, "UPDATE user_phones_v6 SET deleted = 0 WHERE sphone IN (%s)", adds)).stepThis().dispose();
+                    }
+                    if (deletes.length() != 0) {
+                        database.executeFast(String.format(Locale.US, "UPDATE user_phones_v6 SET deleted = 1 WHERE sphone IN (%s)", deletes)).stepThis().dispose();
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        });
+    }
+
+    public void putCachedPhoneBook(final HashMap<Integer, ContactsController.Contact> contactHashMap) {
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    database.executeFast("DELETE FROM user_contacts_v6 WHERE 1").stepThis().dispose();
+                    database.executeFast("DELETE FROM user_phones_v6 WHERE 1").stepThis().dispose();
+                    database.beginTransaction();
+                    SQLitePreparedStatement state = database.executeFast("REPLACE INTO user_contacts_v6 VALUES(?, ?, ?)");
+                    SQLitePreparedStatement state2 = database.executeFast("REPLACE INTO user_phones_v6 VALUES(?, ?, ?, ?)");
+                    for (HashMap.Entry<Integer, ContactsController.Contact> entry : contactHashMap.entrySet()) {
+                        ContactsController.Contact contact = entry.getValue();
+                        state.requery();
+                        state.bindInteger(1, contact.id);
+                        state.bindString(2, contact.first_name);
+                        state.bindString(3, contact.last_name);
+                        state.step();
+                        for (int a = 0; a < contact.phones.size(); a++) {
+                            state2.requery();
+                            state2.bindInteger(1, contact.id);
+                            state2.bindString(2, contact.phones.get(a));
+                            state2.bindString(3, contact.shortPhones.get(a));
+                            state2.bindInteger(4, contact.phoneDeleted.get(a));
+                            state2.step();
+                        }
+                    }
+                    state.dispose();
+                    state2.dispose();
+                    database.commitTransaction();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        });
+    }
+
+    public void getCachedPhoneBook() {
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                HashMap<Integer, ContactsController.Contact> contactHashMap = new HashMap<Integer, ContactsController.Contact>();
+                try {
+                    SQLiteCursor cursor = database.queryFinalized("SELECT us.uid, us.fname, us.sname, up.phone, up.sphone, up.deleted FROM user_contacts_v6 as us LEFT JOIN user_phones_v6 as up ON us.uid = up.uid WHERE 1");
+                    while (cursor.next()) {
+                        int uid = cursor.intValue(0);
+                        ContactsController.Contact contact = contactHashMap.get(uid);
+                        if (contact == null) {
+                            contact = new ContactsController.Contact();
+                            contact.first_name = cursor.stringValue(1);
+                            contact.last_name = cursor.stringValue(2);
+                            contact.id = uid;
+                            contactHashMap.put(uid, contact);
+                        }
+                        contact.phones.add(cursor.stringValue(3));
+                        contact.shortPhones.add(cursor.stringValue(4));
+                        contact.phoneDeleted.add(cursor.intValue(5));
+                        contact.phoneTypes.add("");
+                    }
+                    cursor.dispose();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                } finally {
+                    ContactsController.Instance.performSyncPhoneBook(contactHashMap, true, true);
+                }
+            }
+        }, true);
     }
 
     public void getContacts() {
@@ -954,12 +1150,12 @@ public class MessagesStorage {
                         }
                         cursor.dispose();
                     }
-                    MessagesController.Instance.processLoadedContacts(contacts, users, 1);
+                    ContactsController.Instance.processLoadedContacts(contacts, users, 1);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
             }
-        });
+        }, true);
     }
 
     public void putMediaCount(final long uid, final int count) {
@@ -1007,7 +1203,7 @@ public class MessagesStorage {
                     FileLog.e("tmessages", e);
                 }
             }
-        });
+        }, true);
     }
 
     public void loadMedia(final long uid, final int offset, final int count, final int max_id, final int classGuid) {
@@ -1083,7 +1279,7 @@ public class MessagesStorage {
                     MessagesController.Instance.processLoadedMedia(res, uid, offset, count, max_id, true, classGuid);
                 }
             }
-        });
+        }, true);
     }
 
     public void putMedia(final long uid, final ArrayList<TLRPC.Message> messages) {
@@ -1103,8 +1299,6 @@ public class MessagesStorage {
                             state2.bindInteger(3, message.date);
                             state2.bindByteArray(4, data.toByteArray());
                             state2.step();
-                        } else {
-                            Log.e("tmessages", "test");
                         }
                     }
                     state2.dispose();
@@ -1136,7 +1330,7 @@ public class MessagesStorage {
 
                     if (lower_id != 0) {
                         if (forward) {
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT read_state, data, send_state, mid, date FROM messages WHERE uid = %d AND mid > %d ORDER BY date ASC, mid ASC LIMIT %d", dialog_id, max_id, count_query));
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT read_state, data, send_state, mid, date FROM messages WHERE uid = %d AND date >= %d AND mid > %d ORDER BY date ASC, mid ASC LIMIT %d", dialog_id, minDate, max_id, count_query));
                         } else if (minDate != 0) {
                             if (max_id != 0) {
                                 cursor = database.queryFinalized(String.format(Locale.US, "SELECT read_state, data, send_state, mid, date FROM messages WHERE uid = %d AND date < %d AND mid < %d ORDER BY date DESC, mid DESC LIMIT %d", dialog_id, minDate, max_id, count_query));
@@ -1275,7 +1469,7 @@ public class MessagesStorage {
                     MessagesController.Instance.processLoadedMessages(res, dialog_id, offset, count_query, max_id, true, classGuid, min_unread_id, max_unread_id, count_unread, max_unread_date, forward);
                 }
             }
-        });
+        }, true);
     }
 
     public void startTransaction(boolean useQueue) {
@@ -1559,9 +1753,87 @@ public class MessagesStorage {
             HashMap<Long, TLRPC.Message> messagesMap = new HashMap<Long, TLRPC.Message>();
             HashMap<Long, Integer> messagesCounts = new HashMap<Long, Integer>();
             HashMap<Long, Integer> mediaCounts = new HashMap<Long, Integer>();
+            HashMap<Integer, Long> messagesIdsMap = new HashMap<Integer, Long>();
+            HashMap<Integer, Long> messagesMediaIdsMap = new HashMap<Integer, Long>();
+            String messageIds = "";
+            String messageMediaIds = "";
             SQLitePreparedStatement state = database.executeFast("REPLACE INTO messages VALUES(?, ?, ?, ?, ?, ?, ?, ?)");
             SQLitePreparedStatement state2 = database.executeFast("REPLACE INTO media VALUES(?, ?, ?, ?)");
             SQLitePreparedStatement state3 = database.executeFast("REPLACE INTO randoms VALUES(?, ?)");
+
+            for (TLRPC.Message message : messages) {
+                long dialog_id = 0;
+                if (message.unread && !message.out) {
+                    if (messageIds.length() > 0) {
+                        messageIds += ",";
+                    }
+                    messageIds += message.id;
+
+                    dialog_id = message.dialog_id;
+                    if (dialog_id == 0) {
+                        if (message.to_id.chat_id != 0) {
+                            dialog_id = -message.to_id.chat_id;
+                        } else if (message.to_id.user_id != 0) {
+                            dialog_id = message.to_id.user_id;
+                        }
+                    }
+
+                    messagesIdsMap.put(message.id, dialog_id);
+                }
+
+                if (message.media instanceof TLRPC.TL_messageMediaVideo || message.media instanceof TLRPC.TL_messageMediaPhoto) {
+                    if (dialog_id == 0) {
+                        dialog_id = message.dialog_id;
+                        if (dialog_id == 0) {
+                            if (message.to_id.chat_id != 0) {
+                                dialog_id = -message.to_id.chat_id;
+                            } else if (message.to_id.user_id != 0) {
+                                dialog_id = message.to_id.user_id;
+                            }
+                        }
+                    }
+                    if (messageMediaIds.length() > 0) {
+                        messageMediaIds += ",";
+                    }
+                    messageMediaIds += message.id;
+                    messagesMediaIdsMap.put(message.id, dialog_id);
+                }
+            }
+
+            if (messageIds.length() > 0) {
+                SQLiteCursor cursor = database.queryFinalized("SELECT mid FROM messages WHERE mid IN(" + messageIds + ")");
+                while (cursor.next()) {
+                    int mid = cursor.intValue(0);
+                    messagesIdsMap.remove(mid);
+                }
+                cursor.dispose();
+                for (Long dialog_id : messagesIdsMap.values()) {
+                    Integer count = messagesCounts.get(dialog_id);
+                    if (count == null) {
+                        count = 0;
+                    }
+                    count++;
+                    messagesCounts.put(dialog_id, count);
+                }
+            }
+
+            if (messageMediaIds.length() > 0) {
+                SQLiteCursor cursor = database.queryFinalized("SELECT mid FROM media WHERE mid IN(" + messageMediaIds + ")");
+                while (cursor.next()) {
+                    int mid = cursor.intValue(0);
+                    messagesMediaIdsMap.remove(mid);
+                }
+                cursor.dispose();
+                for (Long dialog_id : messagesMediaIdsMap.values()) {
+                    Integer count = mediaCounts.get(dialog_id);
+                    if (count == null) {
+                        count = 0;
+                    }
+                    count++;
+                    mediaCounts.put(dialog_id, count);
+                }
+            }
+
             for (TLRPC.Message message : messages) {
                 long dialog_id = message.dialog_id;
                 if (dialog_id == 0) {
@@ -1584,14 +1856,6 @@ public class MessagesStorage {
                 if (lastMessage == null || message.date > lastMessage.date) {
                     messagesMap.put(dialog_id, message);
                 }
-                if (message.unread && !message.out) {
-                    Integer count = messagesCounts.get(dialog_id);
-                    if (count == null) {
-                        count = 0;
-                    }
-                    count++;
-                    messagesCounts.put(dialog_id, count);
-                }
                 state.bindInteger(1, messageId);
                 state.bindLong(2, dialog_id);
                 state.bindInteger(3, (message.unread ? 0 : 1));
@@ -1611,28 +1875,12 @@ public class MessagesStorage {
                 }
 
                 if (message.media instanceof TLRPC.TL_messageMediaVideo || message.media instanceof TLRPC.TL_messageMediaPhoto) {
-                    boolean exist = false;
-                    SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid FROM media WHERE mid = %d LIMIT 1", message.id));
-                    if (cursor.next()) {
-                        exist = true;
-                    }
-                    cursor.dispose();
-
                     state2.requery();
                     state2.bindInteger(1, messageId);
                     state2.bindLong(2, dialog_id);
                     state2.bindInteger(3, message.date);
                     state2.bindByteArray(4, bytes);
                     state2.step();
-
-                    if (!exist) {
-                        Integer count = mediaCounts.get(dialog_id);
-                        if (count == null) {
-                            count = 0;
-                        }
-                        count++;
-                        mediaCounts.put(dialog_id, count);
-                    }
                 }
             }
             state.dispose();
@@ -1662,6 +1910,7 @@ public class MessagesStorage {
             if (withTransaction) {
                 database.commitTransaction();
             }
+            MessagesController.Instance.dialogsUnreadCountIncr(messagesCounts);
 
             if (!mediaCounts.isEmpty()) {
                 state = database.executeFast("REPLACE INTO media_counts VALUES(?, ?)");
@@ -2442,7 +2691,7 @@ public class MessagesStorage {
                     MessagesController.Instance.processLoadedDialogs(dialogs, encryptedChats, 0, 0, 100, true, true);
                 }
             }
-        });
+        }, true);
     }
 
     public void putDialogs(final TLRPC.messages_Dialogs dialogs) {

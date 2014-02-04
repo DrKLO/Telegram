@@ -131,7 +131,7 @@ public class ChatProfileChangeNameActivity extends BaseFragment {
         }
         ((ApplicationActivity)parentActivity).updateActionBar();
 
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         boolean animations = preferences.getBoolean("view_animations", true);
         if (!animations) {
             firstNameField.requestFocus();

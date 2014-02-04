@@ -82,7 +82,7 @@ public class SettingsChangeNameActivity extends BaseFragment {
             }
         });
 
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         boolean animations = preferences.getBoolean("view_animations", true);
         if (!animations) {
             firstNameField.requestFocus();
@@ -171,6 +171,9 @@ public class SettingsChangeNameActivity extends BaseFragment {
 
     private void saveName() {
         TLRPC.TL_account_updateProfile req = new TLRPC.TL_account_updateProfile();
+        if (UserConfig.currentUser == null || lastNameField.getText() == null || firstNameField.getText() == null) {
+            return;
+        }
         UserConfig.currentUser.first_name = req.first_name = firstNameField.getText().toString();
         UserConfig.currentUser.last_name = req.last_name = lastNameField.getText().toString();
         TLRPC.User user = MessagesController.Instance.users.get(UserConfig.clientUserId);
@@ -179,7 +182,7 @@ public class SettingsChangeNameActivity extends BaseFragment {
             user.last_name = req.last_name;
         }
         UserConfig.saveConfig(true);
-        NotificationCenter.Instance.postNotificationName(MessagesController.updateInterfaces, MessagesController.UPDATE_MASK_ALL);
+        NotificationCenter.Instance.postNotificationName(MessagesController.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
         ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {

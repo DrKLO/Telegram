@@ -102,8 +102,12 @@ public class DocumentSelectActivity extends BaseFragment {
 
     @Override
     public void onFragmentDestroy() {
-        if (receiverRegistered) {
-            parentActivity.unregisterReceiver(receiver);
+        try {
+            if (receiverRegistered) {
+                parentActivity.unregisterReceiver(receiver);
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
         super.onFragmentDestroy();
     }
@@ -376,13 +380,17 @@ public class DocumentSelectActivity extends BaseFragment {
             if (extDevice != null) {
                 result.removeAll(aliases.get(extDevice));
                 for (String path : result) {
-                    boolean isSd = path.toLowerCase().contains("sd");
-                    ListItem item = new ListItem();
-                    item.title = getString(isSd ? R.string.SdCard : R.string.ExternalStorage);
-                    item.icon = R.drawable.ic_external_storage;
-                    item.subtitle = getRootSubtitle(path);
-                    item.file = new File(path);
-                    items.add(item);
+                    try {
+                        boolean isSd = path.toLowerCase().contains("sd");
+                        ListItem item = new ListItem();
+                        item.title = getString(isSd ? R.string.SdCard : R.string.ExternalStorage);
+                        item.icon = R.drawable.ic_external_storage;
+                        item.subtitle = getRootSubtitle(path);
+                        item.file = new File(path);
+                        items.add(item);
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
                 }
             }
         } catch (Exception e) {
