@@ -70,6 +70,7 @@ import android.widget.TextView;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocationServiceWrapper;
 import org.telegram.objects.MessageObject;
 import org.telegram.objects.PhotoObject;
 import org.telegram.messenger.ConnectionsManager;
@@ -2567,11 +2568,11 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 break;
             }
             case R.id.attach_location: {
-                if (!isGoogleMapsInstalled()) {
+                if (!LocationServiceWrapper.isGoogleMapsInstalled()) {
+                    askGoogleMapsInstallation();
                     return true;
                 }
-                LocationActivity fragment = new LocationActivity();
-                ((ApplicationActivity)parentActivity).presentFragment(fragment, "location", false);
+                LocationServiceWrapper.presentLocationView((ApplicationActivity) parentActivity);
                 break;
             }
             case R.id.attach_document: {
@@ -2584,31 +2585,25 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         return true;
     }
 
-    public boolean isGoogleMapsInstalled() {
-        try {
-            ApplicationInfo info = ApplicationLoader.applicationContext.getPackageManager().getApplicationInfo("com.google.android.apps.maps", 0 );
-            return true;
-        } catch(PackageManager.NameNotFoundException e) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
-            builder.setMessage("Install Google Maps?");
-            builder.setCancelable(true);
-            builder.setPositiveButton(getStringEntry(R.string.OK), new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    try {
-                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.apps.maps"));
-                        startActivity(intent);
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
+    public void askGoogleMapsInstallation() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+        builder.setMessage("Install Google Maps?");
+        builder.setCancelable(true);
+        builder.setPositiveButton(getStringEntry(R.string.OK), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.apps.maps"));
+                    startActivity(intent);
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
                 }
-            });
-            builder.setNegativeButton(R.string.Cancel, null);
-            visibleDialog = builder.create();
-            visibleDialog.setCanceledOnTouchOutside(true);
-            visibleDialog.show();
-            return false;
-        }
+            }
+        });
+        builder.setNegativeButton(R.string.Cancel, null);
+        visibleDialog = builder.create();
+        visibleDialog.setCanceledOnTouchOutside(true);
+        visibleDialog.show();
     }
 
     private boolean spanClicked(ListView list, View view, int textViewId) {
@@ -3628,12 +3623,12 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             }
             if (message != null) {
                 if (message.type == 4 || message.type == 5) {
-                    if (!isGoogleMapsInstalled()) {
+                    if (!LocationServiceWrapper.isGoogleMapsInstalled()) {
+                        askGoogleMapsInstallation();
                         return;
                     }
                     NotificationCenter.Instance.addToMemCache(0, message);
-                    LocationActivity fragment = new LocationActivity();
-                    ((ApplicationActivity)parentActivity).presentFragment(fragment, "location_view", false);
+                    LocationServiceWrapper.presentLocationView((ApplicationActivity) parentActivity);
                 } else if (message.type == 2 || message.type == 3) {
                     NotificationCenter.Instance.addToMemCache(51, message);
                     Intent intent = new Intent(parentActivity, GalleryImageViewer.class);
