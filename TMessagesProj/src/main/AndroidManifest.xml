@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.telegram.messenger"
-    android:versionCode="148"
-    android:versionName="1.3.19">
+    package="org.telegram.messenger" >
 
     <supports-screens android:anyDensity="true"
                       android:smallScreens="true"
