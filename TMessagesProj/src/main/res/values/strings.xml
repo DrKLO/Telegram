@@ -58,7 +58,7 @@
     <string name="UsbActive">Transferència USB activa</string>
     <string name="InternalStorage">Emmagatzematge intern</string>
     <string name="ExternalStorage">Emmagatzematge extern</string>
-    <string name="SystemRoot">Sistema Root</string>
+    <string name="SystemRoot">Arrel del sistema</string>
     <string name="SdCard">Targeta SD</string>
 
     <!--chat view-->
@@ -87,7 +87,7 @@
     <string name="DOWNLOAD">Baixada</string>
     <string name="Selected">Sel·leccionat:</string>
     <string name="ShareMyContactInfo">COMPARTEIX LA MEVA INFORMACIÓ SOBRE ELS CONTACTES</string>
-    <string name="AddToContacts">AFEGEIX CONTAXTES</string>
+    <string name="AddToContacts">AFEGEIX CONTACTES</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s t\'ha convidat a afegir-te a un xat secret.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">Has sigut convidat per %s a afegir-te a un xat secret.</string>
     <string name="EncryptedDescriptionTitle">Xats Secrets:</string>
@@ -95,8 +95,8 @@
     <string name="EncryptedDescription2">No deixis petjada als nostres servidors</string>
     <string name="EncryptedDescription3">Posar un comptador d\'autodestrucció</string>
     <string name="EncryptedDescription4">No permetis el reenviament</string>
-    <string name="OneNewMessage">%1$d Nou missatge</string>
-    <string name="FewNewMessages">%1$d Nou missatge</string>
+    <string name="OneNewMessage">%1$d missatge nou</string>
+    <string name="FewNewMessages">%1$d missatges nous</string>
     <string name="YouWereKicked">Has sigut expulsat del grup</string>
     <string name="YouLeft">Has deixat el grup</string>
     <string name="DeleteThisGroup">Esborra el Grup</string>
@@ -139,7 +139,7 @@
     <string name="NotificationGroupLeftMember">%1$s ha deixat el grup %2$s</string>
     <string name="NotificationContactJoined">%1$s ara utilitza Telegram!</string>
     <string name="NotificationUnrecognizedDevice">Nova sessió desde un dispositiu desconegut %1$s, localització: %2$s</string>
-    <string name="NotificationContactNewPhoto">%1$s Imatge de perfil actualitzada</string>
+    <string name="NotificationContactNewPhoto">%1$s ha actualitzat la imatge de perfil</string>
 
     <!--contacts view-->
     <string name="SelectContact">Sel·lecciona el contacte</string>
@@ -204,7 +204,7 @@
     <string name="AskAQuestion">Pregunta\'ns</string>
     <string name="EnableAnimations">Activa les animacions</string>
     <string name="Unblock">Desbloca</string>
-    <string name="UnblockText">Pitja i mantinga\'t sobre el contacte per desblocar-lo.</string>
+    <string name="UnblockText">Pitja i mantén-te sobre el contacte per desbloquejar.</string>
     <string name="NoBlocked">No hi ha usuaris bloquejats actualment</string>
     <string name="YourPhoneNumber">EL TEU NÚMERO DE TELÈFON</string>
     <string name="MessageNotifications">NOTIFICACIONS DE MISSATGE</string>
