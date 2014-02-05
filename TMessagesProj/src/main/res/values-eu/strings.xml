@@ -232,13 +232,13 @@
     <string name="Support">LAGUNTZA</string>
     <string name="ChatBackground">Txatetarako atzealdea</string>
     <string name="MessagesSettings">MEZUAK</string>
-    <string name="SendByEnter">Bidali enter sakatuta</string>
+    <string name="SendByEnter">Bidali enter teklari sakatuta</string>
     <string name="TerminateAllSessions">Bukatu beste saio guztiak</string>
-    <string name="AutomaticPhotoDownload">IRUDI JEITSIERA AUTOMÁTIKOA</string>
+    <string name="AutomaticPhotoDownload">IRUDI JEITSIERA AUTOMATIKOA</string>
     <string name="AutomaticPhotoDownloadGroups">Taldeak</string>
     <string name="AutomaticPhotoDownloadPrivateChats">Ezkutuko txata</string>
-    <string name="Events">EBENTUAK</string>
-    <string name="ContactJoined">Kontaktua Telegram jarri du</string>
+    <string name="Events">GERTAERAK</string>
+    <string name="ContactJoined">KontaktuaK Telegram jarri du</string>
 
     <!--media view-->
     <string name="NoMedia">Ez dago partetatutako multimediarik</string>
