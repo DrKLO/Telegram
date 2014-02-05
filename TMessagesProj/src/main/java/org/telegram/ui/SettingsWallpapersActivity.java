@@ -73,7 +73,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
         NotificationCenter.Instance.addObserver(this, FileLoader.FileLoadProgressChanged);
         NotificationCenter.Instance.addObserver(this, MessagesStorage.wallpapersDidLoaded);
 
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         selectedBackground = preferences.getInt("selectedBackground", 1000001);
         selectedColor = preferences.getInt("selectedColor", 0);
         MessagesStorage.Instance.getWallpapers();
@@ -165,7 +165,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                     }
 
                     if (done) {
-                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
                         editor.putInt("selectedBackground", selectedBackground);
                         editor.putInt("selectedColor", selectedColor);

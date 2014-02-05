@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item android:drawable="@drawable/ic_ab_logo"
+        android:left="-6dp"/>
+</layer-list><!-- From: file:/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/src/main/res/drawable/ab_icon_fixed2.xml -->

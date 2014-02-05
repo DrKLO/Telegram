@@ -41,7 +41,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -54,7 +53,6 @@ public class CountrySelectActivity extends ActionBarActivity {
     private boolean searching;
     private BaseAdapter searchListViewAdapter;
     private TextView epmtyTextView;
-    private boolean isRTL;
     private HashMap<String, ArrayList<Country>> countries = new HashMap<String, ArrayList<Country>>();
     private ArrayList<String> sortedCountries = new ArrayList<String>();
 
@@ -70,10 +68,6 @@ public class CountrySelectActivity extends ActionBarActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        Locale locale = Locale.getDefault();
-        String lang = locale.getLanguage();
-        isRTL = lang != null && lang.toLowerCase().equals("ar");
 
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(getResources().getAssets().open("countries.txt")));
@@ -260,7 +254,7 @@ public class CountrySelectActivity extends ActionBarActivity {
                 searchWas = false;
                 ViewGroup group = (ViewGroup) listView.getParent();
                 listView.setAdapter(listViewAdapter);
-                if (!isRTL) {
+                if (!Utilities.isRTL) {
                     listView.setPadding(Utilities.dp(16), listView.getPaddingTop(), Utilities.dp(30), listView.getPaddingBottom());
                 } else {
                     listView.setPadding(Utilities.dp(30), listView.getPaddingTop(), Utilities.dp(16), listView.getPaddingBottom());

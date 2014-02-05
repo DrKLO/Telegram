@@ -11,6 +11,8 @@
         android:layout_alignParentBottom="true"
         android:clipToPadding="false"
         android:fadingEdge="none"
+        android:divider="@drawable/messages_list_divider"
+        android:dividerHeight="1px"
         android:fadingEdgeLength="0dp"
         android:verticalScrollbarPosition="left"/>
 
@@ -37,6 +39,7 @@
             android:textColor="#959595"
             android:text="@string/NoChats"
             android:textSize="24dp"
+            android:gravity="center"
             android:id="@+id/list_empty_view_text1"/>
 
         <TextView android:layout_width="wrap_content"

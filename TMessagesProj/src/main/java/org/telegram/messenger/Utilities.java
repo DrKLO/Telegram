@@ -10,13 +10,18 @@ package org.telegram.messenger;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.graphics.Typeface;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
+import android.provider.DocumentsContract;
+import android.provider.MediaStore;
 import android.text.Html;
 import android.text.SpannableStringBuilder;
 import android.text.format.DateFormat;
@@ -49,7 +54,10 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import javax.crypto.Cipher;
 
@@ -57,7 +65,12 @@ public class Utilities {
     public static Handler applicationHandler;
     public static int statusBarHeight = 0;
     public static float density = 1;
+    public static boolean isRTL = false;
+    public static Pattern pattern = Pattern.compile("[0-9]+");
     private final static Integer lock = 1;
+
+    private static boolean waitingForSms = false;
+    private static final Integer smsLock = 2;
 
     public static ArrayList<String> goodPrimes = new ArrayList<String>();
 
@@ -73,6 +86,30 @@ public class Utilities {
 
     public native static long doPQNative(long _what);
     public native static byte[] aesIgeEncryption(byte[] _what, byte[] _key, byte[] _iv, boolean encrypt, boolean changeIv);
+
+    public static boolean isWaitingForSms() {
+        boolean value = false;
+        synchronized (smsLock) {
+            value = waitingForSms;
+        }
+        return value;
+    }
+
+    public static void setWaitingForSms(boolean value) {
+        synchronized (smsLock) {
+            waitingForSms = value;
+        }
+    }
+
+    public static Integer parseInt(String value) {
+        Integer val = 0;
+        Matcher matcher = pattern.matcher(value);
+        if (matcher.find()) {
+            String num = matcher.group(0);
+            val = Integer.parseInt(num);
+        }
+        return val;
+    }
 
     static {
         density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
@@ -360,6 +397,25 @@ public class Utilities {
         return null;
     }
 
+    public static byte[] compress(byte[] data) {
+        if (data == null) {
+            return null;
+        }
+
+        byte[] packedData = null;
+        ByteArrayOutputStream bytesStream = new ByteArrayOutputStream();
+        try {
+            GZIPOutputStream zip = new GZIPOutputStream(bytesStream);
+            zip.write(data);
+            zip.close();
+            packedData = bytesStream.toByteArray();
+        } catch (IOException e) {
+            FileLog.e("tmessages", e);
+        }
+        return packedData;
+    }
+
+
     private static final String TAG = "Typefaces";
     private static final Hashtable<String, Typeface> cache = new Hashtable<String, Typeface>();
 
@@ -434,15 +490,25 @@ public class Utilities {
     public static FastDateFormat chatDate;
     public static FastDateFormat chatFullDate;
 
-    static {
+    public static void recreateFormatters() {
         Locale locale = Locale.getDefault();
         String lang = locale.getLanguage();
+        if (lang == null) {
+            lang = "en";
+        }
+        isRTL = lang.toLowerCase().equals("ar");
         if (lang.equals("en")) {
             formatterMonth = FastDateFormat.getInstance("MMM dd", locale);
             formatterYear = FastDateFormat.getInstance("dd.MM.yy", locale);
             formatterYearMax = FastDateFormat.getInstance("dd.MM.yyyy", locale);
             chatDate = FastDateFormat.getInstance("MMMM d", locale);
             chatFullDate = FastDateFormat.getInstance("MMMM d, yyyy", locale);
+        } else if (lang.startsWith("es")) {
+            formatterMonth = FastDateFormat.getInstance("dd 'de' MMM", locale);
+            formatterYear = FastDateFormat.getInstance("dd.MM.yy", locale);
+            formatterYearMax = FastDateFormat.getInstance("dd.MM.yyyy", locale);
+            chatDate = FastDateFormat.getInstance("d 'de' MMMM", locale);
+            chatFullDate = FastDateFormat.getInstance("d 'de' MMMM 'de' yyyy", locale);
         } else {
             formatterMonth = FastDateFormat.getInstance("dd MMM", locale);
             formatterYear = FastDateFormat.getInstance("dd.MM.yy", locale);
@@ -465,6 +531,10 @@ public class Utilities {
         } else {
             formatterDay = FastDateFormat.getInstance("h:mm a", Locale.US);
         }
+    }
+
+    static {
+        recreateFormatters();
     }
 
     public static String formatDateChat(long date) {
@@ -508,13 +578,13 @@ public class Utilities {
         int dateYear = rightNow.get(Calendar.YEAR);
 
         if (dateDay == day && year == dateYear) {
-            return String.format("%s %s", ApplicationLoader.applicationContext.getResources().getString(R.string.TodayAt), formatterDay.format(new Date(date * 1000)));
+            return String.format("%s %s %s", ApplicationLoader.applicationContext.getString(R.string.LastSeen), ApplicationLoader.applicationContext.getString(R.string.TodayAt), formatterDay.format(new Date(date * 1000)));
         } else if (dateDay + 1 == day && year == dateYear) {
-            return String.format("%s %s", ApplicationLoader.applicationContext.getResources().getString(R.string.YesterdayAt), formatterDay.format(new Date(date * 1000)));
+            return String.format("%s %s %s", ApplicationLoader.applicationContext.getString(R.string.LastSeen), ApplicationLoader.applicationContext.getString(R.string.YesterdayAt), formatterDay.format(new Date(date * 1000)));
         } else if (year == dateYear) {
-            return String.format("%s %s %s", formatterMonth.format(new Date(date * 1000)), ApplicationLoader.applicationContext.getResources().getString(R.string.OtherAt), formatterDay.format(new Date(date * 1000)));
+            return String.format("%s %s %s %s", ApplicationLoader.applicationContext.getString(R.string.LastSeenDate), formatterMonth.format(new Date(date * 1000)), ApplicationLoader.applicationContext.getString(R.string.OtherAt), formatterDay.format(new Date(date * 1000)));
         } else {
-            return String.format("%s %s %s", formatterYear.format(new Date(date * 1000)), ApplicationLoader.applicationContext.getResources().getString(R.string.OtherAt), formatterDay.format(new Date(date * 1000)));
+            return String.format("%s %s %s %s", ApplicationLoader.applicationContext.getString(R.string.LastSeenDate), formatterYear.format(new Date(date * 1000)), ApplicationLoader.applicationContext.getString(R.string.OtherAt), formatterDay.format(new Date(date * 1000)));
         }
     }
 
@@ -556,9 +626,6 @@ public class Utilities {
 
     public static void RunOnUIThread(Runnable runnable) {
         synchronized (lock) {
-            if (applicationHandler == null) {
-                applicationHandler = new Handler(ApplicationLoader.applicationContext.getMainLooper());
-            }
             applicationHandler.post(runnable);
         }
     }
@@ -680,6 +747,83 @@ public class Utilities {
         }
 
         return storageDir;
+    }
+
+    public static String getPath(final Context context, final Uri uri) {
+        final boolean isKitKat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
+        if (isKitKat && DocumentsContract.isDocumentUri(context, uri)) {
+            if (isExternalStorageDocument(uri)) {
+                final String docId = DocumentsContract.getDocumentId(uri);
+                final String[] split = docId.split(":");
+                final String type = split[0];
+                if ("primary".equalsIgnoreCase(type)) {
+                    return Environment.getExternalStorageDirectory() + "/" + split[1];
+                }
+            } else if (isDownloadsDocument(uri)) {
+                final String id = DocumentsContract.getDocumentId(uri);
+                final Uri contentUri = ContentUris.withAppendedId(Uri.parse("content://downloads/public_downloads"), Long.valueOf(id));
+                return getDataColumn(context, contentUri, null, null);
+            } else if (isMediaDocument(uri)) {
+                final String docId = DocumentsContract.getDocumentId(uri);
+                final String[] split = docId.split(":");
+                final String type = split[0];
+
+                Uri contentUri = null;
+                if ("image".equals(type)) {
+                    contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+                } else if ("video".equals(type)) {
+                    contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+                } else if ("audio".equals(type)) {
+                    contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+                }
+
+                final String selection = "_id=?";
+                final String[] selectionArgs = new String[] {
+                        split[1]
+                };
+
+                return getDataColumn(context, contentUri, selection, selectionArgs);
+            }
+        } else if ("content".equalsIgnoreCase(uri.getScheme())) {
+            return getDataColumn(context, uri, null, null);
+        } else if ("file".equalsIgnoreCase(uri.getScheme())) {
+            return uri.getPath();
+        }
+
+        return null;
+    }
+
+    public static String getDataColumn(Context context, Uri uri, String selection, String[] selectionArgs) {
+
+        Cursor cursor = null;
+        final String column = "_data";
+        final String[] projection = {
+                column
+        };
+
+        try {
+            cursor = context.getContentResolver().query(uri, projection, selection, selectionArgs, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                final int column_index = cursor.getColumnIndexOrThrow(column);
+                return cursor.getString(column_index);
+            }
+        } finally {
+            if (cursor != null)
+                cursor.close();
+        }
+        return null;
+    }
+
+    public static boolean isExternalStorageDocument(Uri uri) {
+        return "com.android.externalstorage.documents".equals(uri.getAuthority());
+    }
+
+    public static boolean isDownloadsDocument(Uri uri) {
+        return "com.android.providers.downloads.documents".equals(uri.getAuthority());
+    }
+
+    public static boolean isMediaDocument(Uri uri) {
+        return "com.android.providers.media.documents".equals(uri.getAuthority());
     }
 
     public static File generatePicturePath() {

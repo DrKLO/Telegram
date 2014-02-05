@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- From: file:/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/build/exploded-bundles/ComAndroidSupportAppcompatV71901.aar/res/values-w360dp/values.xml -->
+    <eat-comment />
+
+    <integer name="abc_max_action_buttons">3</integer>
+
+</resources>

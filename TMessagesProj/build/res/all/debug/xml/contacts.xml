@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ContactsSource xmlns:android="http://schemas.android.com/apk/res/android">
+    <ContactsDataKind android:icon="@drawable/ic_launcher"
+        android:mimeType="vnd.android.cursor.item/vnd.org.telegram.messenger.android.profile"
+        android:summaryColumn="data2"
+        android:detailColumn="data3"
+        android:detailSocialSummary="true"/>
+</ContactsSource>
+<!-- From: file:/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/src/main/res/xml/contacts.xml -->

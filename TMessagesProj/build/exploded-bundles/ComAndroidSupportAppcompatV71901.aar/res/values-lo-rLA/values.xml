@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- From: file:/Volumes/Android/int/klp-dev/frameworks/support/v7/appcompat/res/values-lo-rLA/strings.xml -->
+    <string name="abc_action_bar_home_description" msgid="4600421777120114993">"ກັບໄປໜ້າຫຼັກ"</string>
+    <string name="abc_action_bar_up_description" msgid="1594238315039666878">"ຂຶ້ນເທິງ"</string>
+    <string name="abc_action_menu_overflow_description" msgid="3588849162933574182">"ໂຕເລືອກອື່ນ"</string>
+    <string name="abc_action_mode_done" msgid="4076576682505996667">"ແລ້ວໆ"</string>
+    <string name="abc_activity_chooser_view_see_all" msgid="7468859129482906941">"ເບິ່ງທັງຫມົດ"</string>
+    <string name="abc_activitychooserview_choose_application" msgid="2031811694353399454">"ເລືອກແອັບຯ"</string>
+    <string name="abc_searchview_description_clear" msgid="3691816814315814921">"ລຶບຂໍ້ຄວາມຊອກຫາ"</string>
+    <string name="abc_searchview_description_query" msgid="2550479030709304392">"ຊອກຫາ"</string>
+    <string name="abc_searchview_description_search" msgid="8264924765203268293">"ຊອກຫາ"</string>
+    <string name="abc_searchview_description_submit" msgid="8928215447528550784">"ສົ່ງການຊອກຫາ"</string>
+    <string name="abc_searchview_description_voice" msgid="893419373245838918">"ຊອກຫາດ້ວຍສຽງ"</string>
+    <string name="abc_shareactionprovider_share_with" msgid="3421042268587513524">"ແບ່ງປັນກັບ"</string>
+    <string name="abc_shareactionprovider_share_with_application" msgid="7165123711973476752">"ແບ່ງ​ປັນ​ກັບ​ %s"</string>
+
+</resources>

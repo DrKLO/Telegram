@@ -1,0 +1,116 @@
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_height="fill_parent"
+    android:layout_width="fill_parent"
+    android:fillViewport="true"
+    android:clickable="false">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#fafafa">
+
+        <FrameLayout
+            android:layout_gravity="top"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="88dp">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_gravity="center"
+                android:layout_height="wrap_content"
+                android:id="@+id/icon_image1"
+                android:src="@drawable/intro1"/>
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_gravity="center"
+                android:layout_height="wrap_content"
+                android:id="@+id/icon_image2"/>
+
+        </FrameLayout>
+
+        <android.support.v4.view.ViewPager
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:id="@+id/intro_view_pager"/>
+
+        <TextView android:layout_width="192dp"
+            android:layout_height="44dp"
+            android:layout_marginTop="336dp"
+            android:background="@drawable/regbtn_states"
+            android:text="@string/StartMessaging"
+            android:layout_gravity="center_horizontal"
+            android:textSize="18dp"
+            android:textColor="#ffffff"
+            android:gravity="center"
+            android:id="@+id/start_messaging_button"
+            android:paddingBottom="2dp"/>
+        <TextView
+            android:layout_width="305dp"
+            android:layout_height="28dp"
+            android:layout_marginBottom="36dp"
+            android:text="Aplikazio hau Gaueko.com-k eta Bitarlan.net-ek euskaratu dute Telegram 1.3.19 bertsioan oinarrituta"
+            android:id="@+id/textView"
+            android:layout_gravity="center_horizontal|bottom"
+            android:autoLink="web"
+            android:textSize="11dp"
+            android:linksClickable="true" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/bottom_pages"
+            android:orientation="horizontal"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="26dp">
+
+            <FrameLayout
+                android:layout_width="5dp"
+                android:layout_height="5dp"
+                android:background="#bbbbbb"/>
+
+            <FrameLayout
+                android:layout_width="5dp"
+                android:layout_height="5dp"
+                android:background="#bbbbbb"
+                android:layout_marginLeft="7dp"/>
+
+            <FrameLayout
+                android:layout_width="5dp"
+                android:layout_height="5dp"
+                android:background="#bbbbbb"
+                android:layout_marginLeft="7dp"/>
+
+            <FrameLayout
+                android:layout_width="5dp"
+                android:layout_height="5dp"
+                android:background="#bbbbbb"
+                android:layout_marginLeft="7dp"/>
+
+            <FrameLayout
+                android:layout_width="5dp"
+                android:layout_height="5dp"
+                android:background="#bbbbbb"
+                android:layout_marginLeft="7dp"/>
+
+            <FrameLayout
+                android:layout_width="5dp"
+                android:layout_height="5dp"
+                android:background="#bbbbbb"
+                android:layout_marginLeft="7dp"/>
+
+            <FrameLayout
+                android:layout_width="5dp"
+                android:layout_height="5dp"
+                android:background="#bbbbbb"
+                android:layout_marginLeft="7dp"/>
+
+
+        </LinearLayout>
+
+
+
+    </FrameLayout>
+
+</ScrollView><!-- From: file:/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/src/main/res/layout/intro_layout.xml -->

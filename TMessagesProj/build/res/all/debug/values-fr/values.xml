@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:ns1="urn:oasis:names:tc:xliff:document:1.2">
+
+    <!-- From: file:/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/build/exploded-bundles/ComAndroidSupportAppcompatV71901.aar/res/values-fr/values.xml -->
+    <eat-comment />
+
+    <string name="abc_action_bar_home_description" msgid="4600421777120114993">"Revenir à l\'accueil"</string>
+    <string name="abc_action_bar_up_description" msgid="1594238315039666878">"Revenir en haut de la page"</string>
+    <string name="abc_action_menu_overflow_description" msgid="3588849162933574182">"Plus d\'options"</string>
+    <string name="abc_action_mode_done" msgid="4076576682505996667">"OK"</string>
+    <string name="abc_activity_chooser_view_see_all" msgid="7468859129482906941">"Tout afficher"</string>
+    <string name="abc_activitychooserview_choose_application" msgid="2031811694353399454">"Sélectionner une application"</string>
+    <string name="abc_searchview_description_clear" msgid="3691816814315814921">"Effacer la requête"</string>
+    <string name="abc_searchview_description_query" msgid="2550479030709304392">"Requête de recherche"</string>
+    <string name="abc_searchview_description_search" msgid="8264924765203268293">"Rechercher"</string>
+    <string name="abc_searchview_description_submit" msgid="8928215447528550784">"Envoyer la requête"</string>
+    <string name="abc_searchview_description_voice" msgid="893419373245838918">"Recherche vocale"</string>
+    <string name="abc_shareactionprovider_share_with" msgid="3421042268587513524">"Partager avec"</string>
+    <string name="abc_shareactionprovider_share_with_application" msgid="7165123711973476752">"Partager avec %s"</string>
+    <!-- From: file:/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/build/exploded-bundles/ComGoogleAndroidGmsPlayServices4132.aar/res/values-fr/strings.xml -->
+    <eat-comment />
+
+    <string name="auth_client_needs_enabling_title" msgid="3983201110833868073">"Une application requiert l\'activation des services Google Play"</string>
+    <string name="auth_client_needs_installation_title" msgid="7999585836145154206">"Une application requiert l\'installation des services Google Play"</string>
+    <string name="auth_client_needs_update_title" msgid="6488605506794595966">"Une application requiert la mise à jour des services Google Play"</string>
+    <string name="auth_client_play_services_err_notification_msg" msgid="3635065018897986478">"Erreur liée aux services Google Play"</string>
+    <string name="auth_client_requested_by_msg" msgid="6304135633531965756">"Demandée par <ns1:g id="APP_NAME">%1$s</ns1:g>"</string>
+    <string name="auth_client_using_bad_version_title" msgid="2534454398764507874">"Une application requiert une version valide des services Google Play"</string>
+    <string name="common_google_play_services_enable_button" msgid="4181637455539816337">"Activer services Google Play"</string>
+    <string name="common_google_play_services_enable_text" msgid="7627896071867667758">"Cette application ne fonctionnera pas tant que vous n\'aurez pas activé les services Google Play."</string>
+    <string name="common_google_play_services_enable_title" msgid="529078775174559253">"Activer les services Google Play"</string>
+    <string name="common_google_play_services_install_button" msgid="8515591849428043265">"Installer services Google Play"</string>
+    <string name="common_google_play_services_install_text_phone" msgid="8685301130651051380">"Cette application ne fonctionnera pas sans les services Google Play, qui ne sont pas installés sur votre téléphone."</string>
+    <string name="common_google_play_services_install_text_tablet" msgid="1589957570365247855">"Cette application ne fonctionnera pas sans les services Google Play, qui ne sont pas installés sur votre tablette."</string>
+    <string name="common_google_play_services_install_title" msgid="26645092511305524">"Installer les services Google Play"</string>
+    <string name="common_google_play_services_invalid_account_text" msgid="4983316348021735578">"Le compte indiqué n\'existe pas sur cet appareil. Veuillez sélectionner un autre compte."</string>
+    <string name="common_google_play_services_invalid_account_title" msgid="1066672360770936753">"Compte erroné"</string>
+    <string name="common_google_play_services_network_error_text" msgid="9038847255613537209">"Vous devez disposer d\'une connexion de données pour utiliser les services Google Play."</string>
+    <string name="common_google_play_services_network_error_title" msgid="3827284619958211114">"Erreur réseau"</string>
+    <string name="common_google_play_services_unknown_issue" msgid="4762332809710093730">"Problème inconnu avec les services Google Play."</string>
+    <string name="common_google_play_services_unsupported_date_text" msgid="4725396522367789365">"La date sur l\'appareil semble incorrecte. Veuillez la vérifier."</string>
+    <string name="common_google_play_services_unsupported_text" msgid="3542578567569488671">"Les services Google Play, dont dépendent certaines de vos applications, ne sont pas compatibles avec votre appareil. Veuillez contacter le fabricant pour obtenir de l\'aide."</string>
+    <string name="common_google_play_services_unsupported_title" msgid="6334768798839376943">"Services Google Play"</string>
+    <string name="common_google_play_services_update_button" msgid="8932944190611227642">"Mettre à jour"</string>
+    <string name="common_google_play_services_update_text" msgid="448354684997260580">"Cette application ne fonctionnera pas tant que vous n\'aurez pas mis à jour les services Google Play."</string>
+    <string name="common_google_play_services_update_title" msgid="6006316683626838685">"Mettre à jour les services Google Play"</string>
+    <string name="common_signin_button_text" msgid="9071884888741449141">"Connexion"</string>
+    <string name="common_signin_button_text_long" msgid="2429381841831957106">"Se connecter avec Google"</string>
+
+</resources>

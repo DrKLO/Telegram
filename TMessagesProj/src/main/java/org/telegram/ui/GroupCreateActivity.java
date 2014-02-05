@@ -37,6 +37,7 @@ import android.widget.TextView;
 
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
@@ -44,6 +45,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.PinnedHeaderListView;
 import org.telegram.ui.Views.SectionedBaseAdapter;
@@ -198,7 +200,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     if (searching && searchWas) {
                         user = searchResult.get(row);
                     } else {
-                        ArrayList<TLRPC.TL_contact> arr = MessagesController.Instance.usersSectionsDict.get(MessagesController.Instance.sortedUsersSectionsArray.get(section));
+                        ArrayList<TLRPC.TL_contact> arr = ContactsController.Instance.usersSectionsDict.get(ContactsController.Instance.sortedUsersSectionsArray.get(section));
                         user = MessagesController.Instance.users.get(arr.get(row).user_id);
                         listView.invalidateViews();
                     }
@@ -367,7 +369,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 ArrayList<CharSequence> resultArrayNames = new ArrayList<CharSequence>();
                 String q = query.toLowerCase();
 
-                for (TLRPC.TL_contact contact : MessagesController.Instance.contacts) {
+                for (TLRPC.TL_contact contact : ContactsController.Instance.contacts) {
                     TLRPC.User user = MessagesController.Instance.users.get(contact.user_id);
                     if (user.first_name.toLowerCase().startsWith(q) || user.last_name.toLowerCase().startsWith(q)) {
                         if (user.id == UserConfig.clientUserId) {
@@ -432,8 +434,11 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 listViewAdapter.notifyDataSetChanged();
             }
         } else if (id == MessagesController.updateInterfaces) {
-            if (listView != null) {
-                listView.invalidateViews();
+            int mask = (Integer)args[0];
+            if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0 || (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
+                if (listView != null) {
+                    listView.invalidateViews();
+                }
             }
         } else if (id == MessagesController.chatDidCreated) {
             Utilities.RunOnUIThread(new Runnable() {
@@ -467,7 +472,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             if (searching && searchWas) {
                 return searchResult == null || searchResult.isEmpty() ? 0 : 1;
             }
-            return MessagesController.Instance.sortedUsersSectionsArray.size();
+            return ContactsController.Instance.sortedUsersSectionsArray.size();
         }
 
         @Override
@@ -475,7 +480,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             if (searching && searchWas) {
                 return searchResult == null ? 0 : searchResult.size();
             }
-            ArrayList<TLRPC.TL_contact> arr = MessagesController.Instance.usersSectionsDict.get(MessagesController.Instance.sortedUsersSectionsArray.get(section));
+            ArrayList<TLRPC.TL_contact> arr = ContactsController.Instance.usersSectionsDict.get(ContactsController.Instance.sortedUsersSectionsArray.get(section));
             return arr.size();
         }
 
@@ -488,7 +493,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 user = MessagesController.Instance.users.get(searchResult.get(position).id);
                 size = searchResult.size();
             } else {
-                ArrayList<TLRPC.TL_contact> arr = MessagesController.Instance.usersSectionsDict.get(MessagesController.Instance.sortedUsersSectionsArray.get(section));
+                ArrayList<TLRPC.TL_contact> arr = ContactsController.Instance.usersSectionsDict.get(ContactsController.Instance.sortedUsersSectionsArray.get(section));
                 user = MessagesController.Instance.users.get(arr.get(position).user_id);
                 size = arr.size();
             }
@@ -497,9 +502,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                 convertView = li.inflate(R.layout.group_create_row_layout, parent, false);
             }
-            ContactsActivity.ContactListRowHolder holder = (ContactsActivity.ContactListRowHolder)convertView.getTag();
+            ContactListRowHolder holder = (ContactListRowHolder)convertView.getTag();
             if (holder == null) {
-                holder = new ContactsActivity.ContactListRowHolder(convertView);
+                holder = new ContactListRowHolder(convertView);
                 convertView.setTag(holder);
             }
 
@@ -552,7 +557,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         if (value == 0) {
                             value = user.status.expires;
                         }
-                        holder.messageTextView.setText(getStringEntry(R.string.LastSeen) + " " + Utilities.formatDateOnline(value));
+                        holder.messageTextView.setText(Utilities.formatDateOnline(value));
                     }
                     holder.messageTextView.setTextColor(0xff808080);
                 }
@@ -592,9 +597,21 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             if (searching && searchWas) {
                 textView.setText(getStringEntry(R.string.AllContacts));
             } else {
-                textView.setText(MessagesController.Instance.sortedUsersSectionsArray.get(section));
+                textView.setText(ContactsController.Instance.sortedUsersSectionsArray.get(section));
             }
             return convertView;
+        }
+    }
+
+    public static class ContactListRowHolder {
+        public BackupImageView avatarImage;
+        public TextView messageTextView;
+        public TextView nameTextView;
+
+        public ContactListRowHolder(View view) {
+            messageTextView = (TextView)view.findViewById(R.id.messages_list_row_message);
+            nameTextView = (TextView)view.findViewById(R.id.messages_list_row_name);
+            avatarImage = (BackupImageView)view.findViewById(R.id.messages_list_row_avatar);
         }
     }
 }

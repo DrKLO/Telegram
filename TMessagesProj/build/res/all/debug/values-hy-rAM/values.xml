@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:ns1="urn:oasis:names:tc:xliff:document:1.2">
+
+    <!-- From: file:/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/build/exploded-bundles/ComAndroidSupportAppcompatV71901.aar/res/values-hy-rAM/values.xml -->
+    <eat-comment />
+
+    <string name="abc_action_bar_home_description" msgid="4600421777120114993">"Ուղղվել տուն"</string>
+    <string name="abc_action_bar_up_description" msgid="1594238315039666878">"Ուղղվել վերև"</string>
+    <string name="abc_action_menu_overflow_description" msgid="3588849162933574182">"Այլ ընտրանքներ"</string>
+    <string name="abc_action_mode_done" msgid="4076576682505996667">"Կատարված է"</string>
+    <string name="abc_activity_chooser_view_see_all" msgid="7468859129482906941">"Տեսնել բոլորը"</string>
+    <string name="abc_activitychooserview_choose_application" msgid="2031811694353399454">"Ընտրել ծրագիր"</string>
+    <string name="abc_searchview_description_clear" msgid="3691816814315814921">"Մաքրել հարցումը"</string>
+    <string name="abc_searchview_description_query" msgid="2550479030709304392">"Որոնման հարցում"</string>
+    <string name="abc_searchview_description_search" msgid="8264924765203268293">"Որոնել"</string>
+    <string name="abc_searchview_description_submit" msgid="8928215447528550784">"Ուղարկել հարցումը"</string>
+    <string name="abc_searchview_description_voice" msgid="893419373245838918">"Ձայնային որոնում"</string>
+    <string name="abc_shareactionprovider_share_with" msgid="3421042268587513524">"Տարածել"</string>
+    <string name="abc_shareactionprovider_share_with_application" msgid="7165123711973476752">"Տարածել ըստ %s"</string>
+    <!-- From: file:/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/build/exploded-bundles/ComGoogleAndroidGmsPlayServices4132.aar/res/values-hy-rAM/strings.xml -->
+    <eat-comment />
+
+    <string name="auth_client_needs_enabling_title" msgid="3983201110833868073">"Հավելվածը պահանջում է միացնել Google Play ծառայությունները:"</string>
+    <string name="auth_client_needs_installation_title" msgid="7999585836145154206">"Հավելվածը պահանջում է տեղադրել Google Play ծառայությունները:"</string>
+    <string name="auth_client_needs_update_title" msgid="6488605506794595966">"Հավելվածը պահանջում է թարմացնել Google Play ծառայությունները:"</string>
+    <string name="auth_client_play_services_err_notification_msg" msgid="3635065018897986478">"Google Play ծառայությունների սխալ"</string>
+    <string name="auth_client_requested_by_msg" msgid="6304135633531965756">"<ns1:g id="APP_NAME">%1$s</ns1:g>-ի հարցմամբ"</string>
+    <string name="auth_client_using_bad_version_title" msgid="2534454398764507874">"Հավելվածը փորձել է կիրառել Google Play ծառայությունների վատ տարբերակը:"</string>
+    <string name="common_google_play_services_enable_button" msgid="4181637455539816337">"Միացնել Google Play ծառայությունները"</string>
+    <string name="common_google_play_services_enable_text" msgid="7627896071867667758">"Այս ծրագիրը չի աշխատի, եթե դուք չմիացնեք Google Play ծառայությունները:"</string>
+    <string name="common_google_play_services_enable_title" msgid="529078775174559253">"Միացնել Google Play ծառայությունները"</string>
+    <string name="common_google_play_services_install_button" msgid="8515591849428043265">"Տեղադրել Google Play ծառայությունները"</string>
+    <string name="common_google_play_services_install_text_phone" msgid="8685301130651051380">"Այս հավելվածը չի գործարկվի առանց Google Play ծառայությունների, որոնք բացակայում են ձեր հեռախոսում:"</string>
+    <string name="common_google_play_services_install_text_tablet" msgid="1589957570365247855">"Այս հավելվածը չի գործարկվի առանց Google Play ծառայությունների, որոնք բացակայում են ձեր գրասալիկում:"</string>
+    <string name="common_google_play_services_install_title" msgid="26645092511305524">"Տեղադրեք Google Play ծառայությունները"</string>
+    <string name="common_google_play_services_invalid_account_text" msgid="4983316348021735578">"Նշված հաշիվը գոյություն չունի այս սարքում: Ընտրեք այլ հաշիվ:"</string>
+    <string name="common_google_play_services_invalid_account_title" msgid="1066672360770936753">"Հաշիվն անվավեր է"</string>
+    <string name="common_google_play_services_network_error_text" msgid="9038847255613537209">"Պահանջվում է տվյալների կապ` Google Play ծառայություններին միանալու համար:"</string>
+    <string name="common_google_play_services_network_error_title" msgid="3827284619958211114">"Ցանցի սխալ կա"</string>
+    <string name="common_google_play_services_unknown_issue" msgid="4762332809710093730">"Անհայտ խնդիր՝ Google Play ծառայություններում:"</string>
+    <string name="common_google_play_services_unsupported_date_text" msgid="4725396522367789365">"Սարքի ամսաթիվը կարծես սխալ է: Ստուգեք սարքի ամսաթիվը:"</string>
+    <string name="common_google_play_services_unsupported_text" msgid="3542578567569488671">"Google Play ծառայությունները, որոնց ապավինում են ձեր ծրագրերից որոշները, չեն աջակցվում ձեր սարքի կողմից: Խնդրում ենք կապվել արտադրողի հետ օգնության համար:"</string>
+    <string name="common_google_play_services_unsupported_title" msgid="6334768798839376943">"Google Play ծառայություններ"</string>
+    <string name="common_google_play_services_update_button" msgid="8932944190611227642">"Նորացնել"</string>
+    <string name="common_google_play_services_update_text" msgid="448354684997260580">"Այս ծրագիրը չի գործարկվի, եթե դուք չնորացնեք Google Play ծառայությունները:"</string>
+    <string name="common_google_play_services_update_title" msgid="6006316683626838685">"Նորացրեք Google Play ծառայությունները"</string>
+    <string name="common_signin_button_text" msgid="9071884888741449141">"Մուտք գործել"</string>
+    <string name="common_signin_button_text_long" msgid="2429381841831957106">"Մուտք գործեք Google-ով"</string>
+
+</resources>

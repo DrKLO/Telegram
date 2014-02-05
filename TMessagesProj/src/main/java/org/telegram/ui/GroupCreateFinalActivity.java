@@ -15,7 +15,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.internal.view.SupportMenuItem;
 import android.support.v7.app.ActionBar;
-import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -27,12 +26,12 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import org.telegram.TL.TLRPC;
-import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Cells.ChatOrUserCell;
 import org.telegram.ui.Views.AvatarUpdater;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.BaseFragment;
@@ -228,8 +227,9 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     @Override
     public void didReceivedNotification(int id, final Object... args) {
         if (id == MessagesController.updateInterfaces) {
-            if (listView != null) {
-                listView.invalidateViews();
+            int mask = (Integer)args[0];
+            if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0 || (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
+                updateVisibleRows(mask);
             }
         } else if (id == MessagesController.chatDidFailCreate) {
             Utilities.HideProgressDialog(parentActivity);
@@ -247,6 +247,19 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                     ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
                 }
             });
+        }
+    }
+
+    private void updateVisibleRows(int mask) {
+        if (listView == null) {
+            return;
+        }
+        int count = listView.getChildCount();
+        for (int a = 0; a < count; a++) {
+            View child = listView.getChildAt(a);
+            if (child instanceof ChatOrUserCell) {
+                ((ChatOrUserCell) child).update(mask);
+            }
         }
     }
 
@@ -295,58 +308,13 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             TLRPC.User user = MessagesController.Instance.users.get(selectedContacts.get(position));
 
             if (convertView == null) {
-                LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                convertView = li.inflate(R.layout.messages_search_user_layout, parent, false);
-            }
-            ContactsActivity.ContactListRowHolder holder = (ContactsActivity.ContactListRowHolder)convertView.getTag();
-            if (holder == null) {
-                holder = new ContactsActivity.ContactListRowHolder(convertView);
-                convertView.setTag(holder);
+                convertView = new ChatOrUserCell(mContext);
+                ((ChatOrUserCell)convertView).useBoldFont = true;
+                ((ChatOrUserCell)convertView).usePadding = false;
             }
 
-            View divider = convertView.findViewById(R.id.settings_row_divider);
-            if (position == selectedContacts.size() - 1) {
-                divider.setVisibility(View.INVISIBLE);
-            } else {
-                divider.setVisibility(View.VISIBLE);
-            }
-
-            if (user.first_name.length() != 0 && user.last_name.length() != 0) {
-                holder.nameTextView.setText(Html.fromHtml(user.first_name + " <b>" + user.last_name + "</b>"));
-            } else if (user.first_name.length() != 0) {
-                holder.nameTextView.setText(Html.fromHtml("<b>" + user.first_name + "</b>"));
-            } else {
-                holder.nameTextView.setText(Html.fromHtml("<b>" + user.last_name + "</b>"));
-            }
-
-            TLRPC.FileLocation photo = null;
-            if (user.photo != null) {
-                photo = user.photo.photo_small;
-            }
-            int placeHolderId = Utilities.getUserAvatarForId(user.id);
-            holder.avatarImage.setImage(photo, "50_50", placeHolderId);
-
-            if (user.status == null) {
-                holder.messageTextView.setTextColor(0xff808080);
-                holder.messageTextView.setText(getStringEntry(R.string.Offline));
-            } else {
-                int currentTime = ConnectionsManager.Instance.getCurrentTime();
-                if (user.status.expires > currentTime || user.status.was_online > currentTime) {
-                    holder.messageTextView.setTextColor(0xff357aa8);
-                    holder.messageTextView.setText(getStringEntry(R.string.Online));
-                } else {
-                    if (user.status.was_online <= 10000 && user.status.expires <= 10000) {
-                        holder.messageTextView.setText(getStringEntry(R.string.Invisible));
-                    } else {
-                        int value = user.status.was_online;
-                        if (value == 0) {
-                            value = user.status.expires;
-                        }
-                        holder.messageTextView.setText(getStringEntry(R.string.LastSeen) + " " + Utilities.formatDateOnline(value));
-                    }
-                    holder.messageTextView.setTextColor(0xff808080);
-                }
-            }
+            ((ChatOrUserCell)convertView).setData(user, null, null, null, null);
+            ((ChatOrUserCell) convertView).useSeparator = position != selectedContacts.size() - 1;
 
             return convertView;
         }

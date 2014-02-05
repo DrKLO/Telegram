@@ -3,7 +3,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:0.7.+'
+        classpath 'com.android.tools.build:gradle:0.8.+'
     }
 }
 apply plugin: 'android'
@@ -31,7 +31,7 @@ tasks.withType(JavaCompile) {
 }
 
 dependencies {
-    compile 'com.google.android.gms:play-services:4.0.+'
+    compile 'com.google.android.gms:play-services:4.1.+'
     compile 'net.hockeyapp.android:HockeySDK:3.0.1'
     compile 'com.android.support:support-v4:19.0.+'
     compile 'com.android.support:appcompat-v7:19.0.+'
@@ -40,24 +40,27 @@ dependencies {
 
 android {
     compileSdkVersion 19
-    buildToolsVersion '19.0.0'
+    buildToolsVersion '19.0.1'
 
     signingConfigs {
-        debug {
+        /*debug {
             storeFile file("debug.keystore")
-        }
+        }*/
 
         release {
             storeFile file("release.keystore")
+            storePassword "h1a0m0t0"
+            keyAlias "release"
+            keyPassword "h1a0m0t0"
         }
     }
 
     buildTypes {
-        debug {
+        /*debug {
             debuggable true
             jniDebugBuild true
             signingConfig signingConfigs.debug
-        }
+        }*/
 
         release {
             debuggable false

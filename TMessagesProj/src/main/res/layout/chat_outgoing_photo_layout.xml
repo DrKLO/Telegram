@@ -10,56 +10,6 @@
     android:paddingTop="1dp">
 
     <org.telegram.ui.Views.FrameLayoutFixed
-        android:layout_height="wrap_content"
-        android:layout_width="140dp"
-        android:layout_marginRight="10dp"
-        android:id="@+id/chat_view_action_layout"
-        android:layout_gravity="center"
-        android:visibility="gone">
-
-        <ImageView
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:scaleType="centerInside"
-            android:layout_marginLeft="4dp"
-            android:id="@+id/chat_view_action_cancel_button"
-            android:src="@drawable/ic_msg_btn_cross_custom"
-            android:layout_gravity="left|center"
-            android:clickable="true"/>
-
-        <ProgressBar
-            android:layout_width="fill_parent"
-            android:layout_height="3dp"
-            android:layout_gravity="right|center_vertical"
-            android:progressDrawable="@drawable/photo_progress_chat"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:progress="50"
-            android:layout_marginLeft="36dp"
-            android:layout_marginRight="12dp"
-            android:id="@+id/chat_view_action_progress"
-            android:max="100"/>
-
-    </org.telegram.ui.Views.FrameLayoutFixed>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/ViewPhoto"
-        android:textColor="#54759e"
-        android:background="@drawable/chat_incoming_media_states"
-        android:paddingLeft="12dp"
-        android:paddingRight="12dp"
-        android:id="@+id/chat_view_action_button"
-        android:textSize="14dp"
-        android:layout_marginRight="10dp"
-        android:descendantFocusability="blocksDescendants"
-        android:clickable="true"
-        android:gravity="center"
-        android:textStyle="bold"
-        android:layout_gravity="center"
-        android:visibility="gone"/>
-
-    <org.telegram.ui.Views.FrameLayoutFixed
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginRight="9dp"
@@ -67,8 +17,8 @@
         android:addStatesFromChildren="true">
 
         <org.telegram.ui.Views.BackupImageView
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
+            android:layout_height="100dp"
+            android:layout_width="100dp"
             android:layout_margin="6dp"
             android:layout_gravity="top|left"
             android:scaleType="centerCrop"
@@ -76,47 +26,95 @@
             android:minWidth="100dp"
             android:id="@+id/chat_photo_image"/>
 
+        <org.telegram.ui.Views.FrameLayoutFixed
+            android:layout_height="40dp"
+            android:layout_width="40dp"
+            android:id="@+id/chat_view_action_layout"
+            android:layout_gravity="center"
+            android:visibility="visible">
+
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:scaleType="centerInside"
+                android:id="@+id/chat_view_action_cancel_button"
+                android:src="@drawable/photo_download_cancel_states"
+                android:layout_gravity="center"
+                android:clickable="true"/>
+
+        </org.telegram.ui.Views.FrameLayoutFixed>
+
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="fill_parent"
             android:layout_height="16dp"
-            android:id="@+id/chat_time_layout"
-            android:paddingLeft="3dp"
-            android:paddingRight="3dp"
-            android:paddingBottom="1dp"
-            android:paddingTop="1dp"
-            android:layout_marginRight="8dp"
-            android:layout_marginBottom="8dp"
+            android:orientation="horizontal"
+            android:layout_marginLeft="10dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginRight="10dp"
             android:layout_gravity="right|bottom"
-            android:background="@drawable/phototime">
+            android:gravity="right">
 
-            <TextView
-                android:layout_height="wrap_content"
-                android:layout_width="wrap_content"
-                android:textColor="#ffffff"
-                android:textSize="12dp"
-                android:layout_gravity="bottom"
-                android:layout_marginBottom="1dp"
-                android:id="@+id/chat_time_text"/>
+            <org.telegram.ui.Views.FrameLayoutFixed
+                android:layout_width="0dp"
+                android:layout_height="16dp"
+                android:paddingLeft="6dp"
+                android:paddingRight="6dp"
+                android:paddingTop="1dp"
+                android:layout_marginRight="4dp"
+                android:background="@drawable/phototime"
+                android:id="@+id/photo_progress"
+                android:layout_weight="1">
 
-            <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/msg_check_w"
-                android:layout_marginTop="1dp"
-                android:layout_marginLeft="3dp"
-                android:layout_marginRight="-8dp"
-                android:id="@+id/chat_row_check"
-                android:visibility="visible"
-                android:layout_gravity="top"/>
+                <ProgressBar
+                    android:layout_width="fill_parent"
+                    android:layout_height="3dp"
+                    android:layout_gravity="right|center_vertical"
+                    android:progressDrawable="@drawable/photo_progress_chat"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:progress="50"
+                    android:id="@+id/chat_view_action_progress"
+                    android:max="100"/>
 
-            <ImageView
+            </org.telegram.ui.Views.FrameLayoutFixed>
+
+            <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="1dp"
-                android:id="@+id/chat_row_halfcheck"
-                android:visibility="visible"
-                android:src="@drawable/msg_halfcheck_w"
-                android:layout_gravity="top"/>
+                android:layout_height="16dp"
+                android:id="@+id/chat_time_layout"
+                android:paddingLeft="3dp"
+                android:paddingRight="3dp"
+                android:background="@drawable/phototime">
+
+                <TextView
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"
+                    android:textColor="#ffffff"
+                    android:textSize="12dp"
+                    android:layout_gravity="bottom"
+                    android:layout_marginBottom="1dp"
+                    android:id="@+id/chat_time_text"/>
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/msg_check_w"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginLeft="3dp"
+                    android:layout_marginRight="-8dp"
+                    android:id="@+id/chat_row_check"
+                    android:visibility="visible"
+                    android:layout_gravity="top"/>
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:id="@+id/chat_row_halfcheck"
+                    android:visibility="visible"
+                    android:src="@drawable/msg_halfcheck_w"
+                    android:layout_gravity="top"/>
+
+            </LinearLayout>
 
         </LinearLayout>
 

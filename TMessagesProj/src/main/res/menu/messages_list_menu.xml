@@ -16,28 +16,23 @@
         sabd:showAsAction="always"/>
 
     <item
-        android:id="@+id/chat_menu_attach"
-        android:icon="@drawable/ic_ab_other"
-        sabd:showAsAction="always">
+        android:id="@+id/messages_list_menu_new_chat"
+        android:title="@string/NewGroup"
+        sabd:showAsAction="never"/>
 
-        <menu>
-            <item
-                android:id="@+id/messages_list_menu_new_chat"
-                android:title="@string/NewGroup"/>
+    <item
+        android:id="@+id/messages_list_menu_new_secret_chat"
+        android:title="@string/NewSecretChat"
+        sabd:showAsAction="never"/>
 
-            <item
-                android:id="@+id/messages_list_menu_new_secret_chat"
-                android:title="@string/NewSecretChat"/>
+    <item
+        android:id="@+id/messages_list_menu_contacts"
+        android:title="@string/Contacts"
+        sabd:showAsAction="never"/>
 
-            <item
-                android:id="@+id/messages_list_menu_contacts"
-                android:title="@string/Contacts"/>
-
-            <item
-                android:id="@+id/messages_list_menu_settings"
-                android:title="@string/Settings"/>
-        </menu>
-
-    </item>
+    <item
+        android:id="@+id/messages_list_menu_settings"
+        android:title="@string/Settings"
+        sabd:showAsAction="never"/>
 
 </menu>

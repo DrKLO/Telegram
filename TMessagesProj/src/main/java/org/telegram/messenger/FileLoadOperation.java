@@ -420,7 +420,12 @@ public class FileLoadOperation {
                         if (renamed) {
                             image = BitmapFactory.decodeStream(new FileInputStream(cacheFileFinal), null, opts);
                         } else {
-                            image = BitmapFactory.decodeStream(new FileInputStream(cacheFileTemp), null, opts);
+                            try {
+                                image = BitmapFactory.decodeStream(new FileInputStream(cacheFileTemp), null, opts);
+                            } catch (Exception e) {
+                                FileLog.e("tmessages", e);
+                                image = BitmapFactory.decodeStream(new FileInputStream(cacheFileFinal), null, opts);
+                            }
                         }
                         if (filter != null && image != null) {
                             float bitmapW = image.getWidth();
@@ -440,10 +445,11 @@ public class FileLoadOperation {
                         if (FileLoader.Instance.runtimeHack != null) {
                             FileLoader.Instance.runtimeHack.trackFree(image.getRowBytes() * image.getHeight());
                         }
+                        delegate.didFinishLoadingFile(FileLoadOperation.this);
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
+                        delegate.didFailedLoadingFile(FileLoadOperation.this);
                     }
-                    delegate.didFinishLoadingFile(FileLoadOperation.this);
                 }
             });
         } else {

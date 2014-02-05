@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merger>
+
+    <dataSet config="ComAndroidSupportAppcompatV71901.aar" >
+        <source path="/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/build/exploded-bundles/ComAndroidSupportAppcompatV71901.aar/assets" />
+    </dataSet>
+    <dataSet config="main" >
+        <source path="/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/src/main/assets" >
+            <file
+                name="fonts/rmedium.ttf"
+                path="/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/src/main/assets/fonts/rmedium.ttf" />
+            <file
+                name="emojisprite_2.png"
+                path="/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/src/main/assets/emojisprite_2.png" />
+            <file
+                name="countries.txt"
+                path="/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/src/main/assets/countries.txt" />
+            <file
+                name="emojisprite_3.png"
+                path="/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/src/main/assets/emojisprite_3.png" />
+            <file
+                name="emojisprite_0.png"
+                path="/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/src/main/assets/emojisprite_0.png" />
+            <file
+                name="PhoneFormats.dat"
+                path="/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/src/main/assets/PhoneFormats.dat" />
+            <file
+                name="emojisprite_4.png"
+                path="/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/src/main/assets/emojisprite_4.png" />
+            <file
+                name="emojisprite_1.png"
+                path="/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/src/main/assets/emojisprite_1.png" />
+        </source>
+    </dataSet>
+    <dataSet config="debug" >
+        <source path="/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/src/debug/assets" />
+    </dataSet>
+
+</merger>

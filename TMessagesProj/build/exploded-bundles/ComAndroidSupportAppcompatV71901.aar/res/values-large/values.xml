@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- From: file:/Volumes/Android/int/klp-dev/frameworks/support/v7/appcompat/res/values-large/bools.xml -->
+    <bool name="abc_action_bar_embed_tabs_pre_jb">true</bool>
+    <!-- From: file:/Volumes/Android/int/klp-dev/frameworks/support/v7/appcompat/res/values-large/config.xml -->
+    <bool name="abc_config_allowActionMenuItemTextWithIcon">true</bool>
+    <!-- From: file:/Volumes/Android/int/klp-dev/frameworks/support/v7/appcompat/res/values-large/bools.xml -->
+    <bool name="abc_split_action_bar_is_narrow">false</bool>
+    <!-- From: file:/Volumes/Android/int/klp-dev/frameworks/support/v7/appcompat/res/values-large/config.xml -->
+    <dimen name="abc_config_prefDialogWidth">440dp</dimen>
+    <!-- From: file:/Volumes/Android/int/klp-dev/frameworks/support/v7/appcompat/res/values-large/dimens.xml -->
+    <dimen name="abc_search_view_text_min_width">192dip</dimen>
+
+    <integer name="abc_max_action_buttons">4</integer>
+
+</resources>

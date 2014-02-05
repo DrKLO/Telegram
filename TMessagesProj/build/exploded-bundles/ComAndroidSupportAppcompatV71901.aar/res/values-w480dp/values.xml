@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- From: file:/Volumes/Android/int/klp-dev/frameworks/support/v7/appcompat/res/values-w480dp/bools.xml -->
+    <bool name="abc_action_bar_embed_tabs_pre_jb">true</bool>
+    <!-- From: file:/Volumes/Android/int/klp-dev/frameworks/support/v7/appcompat/res/values-w480dp/config.xml -->
+    <bool name="abc_config_allowActionMenuItemTextWithIcon">true</bool>
+    <!-- From: file:/Volumes/Android/int/klp-dev/frameworks/support/v7/appcompat/res/values-w480dp/bools.xml -->
+    <bool name="abc_split_action_bar_is_narrow">false</bool>
+
+</resources>

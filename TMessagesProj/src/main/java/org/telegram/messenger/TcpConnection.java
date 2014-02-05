@@ -50,6 +50,7 @@ public class TcpConnection extends PyroClientAdapter {
     private boolean hasSomeDataSinceLastConnect = false;
     private int willRetryConnectCount = 5;
     private boolean isNextPort = false;
+    private final Integer timerSync = 1;
 
     public int transportRequestClass;
 
@@ -86,9 +87,11 @@ public class TcpConnection extends PyroClientAdapter {
                 connectionState = TcpConnectionState.TcpConnectionStageConnecting;
                 try {
                     try {
-                        if (reconnectTimer != null) {
-                            reconnectTimer.cancel();
-                            reconnectTimer = null;
+                        synchronized (timerSync) {
+                            if (reconnectTimer != null) {
+                                reconnectTimer.cancel();
+                                reconnectTimer = null;
+                            }
                         }
                     } catch (Exception e2) {
                         FileLog.e("tmessages", e2);
@@ -115,19 +118,22 @@ public class TcpConnection extends PyroClientAdapter {
                     selector.wakeup();
                 } catch (Exception e) {
                     try {
-                        if (reconnectTimer != null) {
-                            reconnectTimer.cancel();
-                            reconnectTimer = null;
+                        synchronized (timerSync) {
+                            if (reconnectTimer != null) {
+                                reconnectTimer.cancel();
+                                reconnectTimer = null;
+                            }
                         }
                     } catch (Exception e2) {
                         FileLog.e("tmessages", e2);
                     }
                     connectionState =  TcpConnectionState.TcpConnectionStageReconnecting;
                     if (delegate != null) {
+                        final TcpConnectionDelegate finalDelegate = delegate;
                         Utilities.stageQueue.postRunnable(new Runnable() {
                             @Override
                             public void run() {
-                                delegate.tcpConnectionClosed(TcpConnection.this);
+                                finalDelegate.tcpConnectionClosed(TcpConnection.this);
                             }
                         });
                     }
@@ -160,9 +166,11 @@ public class TcpConnection extends PyroClientAdapter {
                                     @Override
                                     public void run() {
                                         try {
-                                            if (reconnectTimer != null) {
-                                                reconnectTimer.cancel();
-                                                reconnectTimer = null;
+                                            synchronized (timerSync) {
+                                                if (reconnectTimer != null) {
+                                                    reconnectTimer.cancel();
+                                                    reconnectTimer = null;
+                                                }
                                             }
                                         } catch (Exception e2) {
                                             FileLog.e("tmessages", e2);
@@ -181,9 +189,11 @@ public class TcpConnection extends PyroClientAdapter {
     }
 
     private void suspendConnectionInternal() {
-        if (reconnectTimer != null) {
-            reconnectTimer.cancel();
-            reconnectTimer = null;
+        synchronized (timerSync) {
+            if (reconnectTimer != null) {
+                reconnectTimer.cancel();
+                reconnectTimer = null;
+            }
         }
         if (connectionState == TcpConnectionState.TcpConnectionStageIdle || connectionState == TcpConnectionState.TcpConnectionStageSuspended) {
             return;
@@ -196,10 +206,11 @@ public class TcpConnection extends PyroClientAdapter {
             client = null;
         }
         if (delegate != null) {
+            final TcpConnectionDelegate finalDelegate = delegate;
             Utilities.stageQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
-                    delegate.tcpConnectionClosed(TcpConnection.this);
+                    finalDelegate.tcpConnectionClosed(TcpConnection.this);
                 }
             });
         }
@@ -314,10 +325,11 @@ public class TcpConnection extends PyroClientAdapter {
                 buffer.order(ByteOrder.BIG_ENDIAN);
                 final int ackId = buffer.getInt() & (~(1 << 31));
                 if (delegate != null) {
+                    final TcpConnectionDelegate finalDelegate = delegate;
                     Utilities.stageQueue.postRunnable(new Runnable() {
                         @Override
                         public void run() {
-                            delegate.tcpConnectionQuiackAckReceived(TcpConnection.this, ackId);
+                            finalDelegate.tcpConnectionQuiackAckReceived(TcpConnection.this, ackId);
                         }
                     });
                 }
@@ -360,12 +372,13 @@ public class TcpConnection extends PyroClientAdapter {
                     }
                     if (lastMessageId != -1 && lastMessageId != 0) {
                         if (delegate != null) {
+                            final TcpConnectionDelegate finalDelegate = delegate;
                             final int arg2 = buffer.remaining();
                             final int arg3 = currentPacketLength;
                             Utilities.stageQueue.postRunnable(new Runnable() {
                                 @Override
                                 public void run() {
-                                    delegate.tcpConnectionProgressChanged(TcpConnection.this, lastMessageId, arg2, arg3);
+                                    finalDelegate.tcpConnectionProgressChanged(TcpConnection.this, lastMessageId, arg2, arg3);
                                 }
                             });
                         }
@@ -383,10 +396,11 @@ public class TcpConnection extends PyroClientAdapter {
             buffer.get(packetData);
 
             if (delegate != null) {
+                final TcpConnectionDelegate finalDelegate = delegate;
                 Utilities.stageQueue.postRunnable(new Runnable() {
                     @Override
                     public void run() {
-                        delegate.tcpConnectionReceivedData(TcpConnection.this, packetData);
+                        finalDelegate.tcpConnectionReceivedData(TcpConnection.this, packetData);
                     }
                 });
             }
@@ -394,9 +408,11 @@ public class TcpConnection extends PyroClientAdapter {
     }
 
     public void handleDisconnect(PyroClient client, Exception e) {
-        if (reconnectTimer != null) {
-            reconnectTimer.cancel();
-            reconnectTimer = null;
+        synchronized (timerSync) {
+            if (reconnectTimer != null) {
+                reconnectTimer.cancel();
+                reconnectTimer = null;
+            }
         }
         if (e != null) {
             FileLog.d("tmessages", "Disconnected " + TcpConnection.this + " with error " + e);
@@ -410,12 +426,11 @@ public class TcpConnection extends PyroClientAdapter {
             connectionState = TcpConnectionState.TcpConnectionStageIdle;
         }
         if (delegate != null) {
+            final TcpConnectionDelegate finalDelegate = delegate;
             Utilities.stageQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
-                    if (delegate != null) {
-                        delegate.tcpConnectionClosed(TcpConnection.this);
-                    }
+                    finalDelegate.tcpConnectionClosed(TcpConnection.this);
                 }
             });
         }
@@ -447,9 +462,11 @@ public class TcpConnection extends PyroClientAdapter {
                             @Override
                             public void run() {
                                 try {
-                                    if (reconnectTimer != null) {
-                                        reconnectTimer.cancel();
-                                        reconnectTimer = null;
+                                    synchronized (timerSync) {
+                                        if (reconnectTimer != null) {
+                                            reconnectTimer.cancel();
+                                            reconnectTimer = null;
+                                        }
                                     }
                                 } catch (Exception e2) {
                                     FileLog.e("tmessages", e2);
@@ -471,10 +488,11 @@ public class TcpConnection extends PyroClientAdapter {
         channelToken = generateChannelToken();
         FileLog.d("tmessages", String.format(TcpConnection.this + " Connected (%s:%d)", hostAddress, hostPort));
         if (delegate != null) {
+            final TcpConnectionDelegate finalDelegate = delegate;
             Utilities.stageQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
-                    delegate.tcpConnectionConnected(TcpConnection.this);
+                    finalDelegate.tcpConnectionConnected(TcpConnection.this);
                 }
             });
         }

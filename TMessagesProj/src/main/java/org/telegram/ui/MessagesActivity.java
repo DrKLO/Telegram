@@ -11,15 +11,12 @@ package org.telegram.ui;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.internal.view.SupportMenuItem;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.widget.SearchView;
-import android.text.Html;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -33,25 +30,22 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.TL.TLObject;
 import org.telegram.TL.TLRPC;
-import org.telegram.messenger.Emoji;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
-import org.telegram.objects.MessageObject;
-import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.Views.BackupImageView;
+import org.telegram.ui.Cells.ChatOrUserCell;
+import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Views.BaseFragment;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -65,7 +59,6 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     private SearchView searchView;
     public int selectAlertString = 0;
     private boolean serverOnly = false;
-    private boolean isRTL;
 
     private static boolean dialogsLoaded = false;
     private boolean searching = false;
@@ -91,7 +84,6 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.Instance.addObserver(this, 999);
         NotificationCenter.Instance.addObserver(this, MessagesController.updateInterfaces);
         NotificationCenter.Instance.addObserver(this, MessagesController.reloadSearchResults);
-        NotificationCenter.Instance.addObserver(this, MessagesController.userPrintUpdateAll);
         NotificationCenter.Instance.addObserver(this, MessagesController.encryptedChatUpdated);
         NotificationCenter.Instance.addObserver(this, MessagesController.contactsDidLoaded);
         NotificationCenter.Instance.addObserver(this, 1234);
@@ -100,8 +92,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             serverOnly = getArguments().getBoolean("serverOnly", false);
         }
         if (!dialogsLoaded) {
-            MessagesController.Instance.readContacts();
             MessagesController.Instance.loadDialogs(0, 0, 100, true);
+            ContactsController.Instance.checkAppAccount();
             dialogsLoaded = true;
         }
         return true;
@@ -114,7 +106,6 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.Instance.removeObserver(this, 999);
         NotificationCenter.Instance.removeObserver(this, MessagesController.updateInterfaces);
         NotificationCenter.Instance.removeObserver(this, MessagesController.reloadSearchResults);
-        NotificationCenter.Instance.removeObserver(this, MessagesController.userPrintUpdateAll);
         NotificationCenter.Instance.removeObserver(this, MessagesController.encryptedChatUpdated);
         NotificationCenter.Instance.removeObserver(this, MessagesController.contactsDidLoaded);
         NotificationCenter.Instance.removeObserver(this, 1234);
@@ -133,9 +124,6 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             fragmentView = inflater.inflate(R.layout.messages_list, container, false);
 
             messagesListViewAdapter = new MessagesAdapter(parentActivity);
-            Locale locale = Locale.getDefault();
-            String lang = locale.getLanguage();
-            isRTL = lang != null && lang.toLowerCase().equals("ar");
 
             messagesListView = (ListView)fragmentView.findViewById(R.id.messages_list_view);
             messagesListView.setAdapter(messagesListViewAdapter);
@@ -248,7 +236,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                                 if (which == 0) {
                                     MessagesController.Instance.deleteDialog(selectedDialog, 0, true);
                                 } else if (which == 1) {
-                                    MessagesController.Instance.deleteUserFromChat((int) -selectedDialog, UserConfig.clientUserId, null);
+                                    MessagesController.Instance.deleteUserFromChat((int) -selectedDialog, MessagesController.Instance.users.get(UserConfig.clientUserId), null);
                                     MessagesController.Instance.deleteDialog(selectedDialog, 0, false);
                                 }
                             }
@@ -314,7 +302,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             actionBar.setDisplayShowCustomEnabled(false);
             actionBar.setSubtitle(null);
             actionBar.setCustomView(null);
-            actionBar.setTitle(getStringEntry(R.string.AppName));
+            actionBar.setTitle(getStringEntry(R.string.SelectChat));
             ((ApplicationActivity)parentActivity).fixBackButton();
         } else {
             ImageView view = (ImageView)parentActivity.findViewById(16908332);
@@ -392,12 +380,10 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             }
         } else if (id == 999) {
             if (messagesListView != null) {
-                updateVisibleRows();
+                updateVisibleRows(0);
             }
         } else if (id == MessagesController.updateInterfaces) {
-            if (messagesListViewAdapter != null) {
-                messagesListViewAdapter.notifyDataSetChanged();
-            }
+            updateVisibleRows((Integer)args[0]);
         } else if (id == MessagesController.reloadSearchResults) {
             int token = (Integer)args[0];
             if (token == activityToken) {
@@ -405,32 +391,24 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             }
         } else if (id == 1234) {
             dialogsLoaded = false;
-        } else if (id == MessagesController.userPrintUpdateAll) {
-            if (messagesListView != null) {
-                updateVisibleRows();
-            }
         } else if (id == MessagesController.encryptedChatUpdated) {
-            if (messagesListView != null) {
-                updateVisibleRows();
-            }
+            updateVisibleRows(0);
         } else if (id == MessagesController.contactsDidLoaded) {
-            if (messagesListView != null) {
-                updateVisibleRows();
-            }
+            updateVisibleRows(0);
         }
     }
 
-    private void updateVisibleRows() {
-        if (searching && searchWas) {
-            messagesListView.invalidate();
-        } else {
-            int count = messagesListView.getChildCount();
-            for (int a = 0; a < count; a++) {
-                View child = messagesListView.getChildAt(a);
-                Object tag = child.getTag();
-                if (tag instanceof MessagesListRowHolder) {
-                    ((MessagesListRowHolder) tag).update();
-                }
+    private void updateVisibleRows(int mask) {
+        if (messagesListView == null) {
+            return;
+        }
+        int count = messagesListView.getChildCount();
+        for (int a = 0; a < count; a++) {
+            View child = messagesListView.getChildAt(a);
+            if (child instanceof DialogCell) {
+                ((DialogCell) child).update(mask);
+            } else if (child instanceof ChatOrUserCell) {
+                ((ChatOrUserCell) child).update(mask);
             }
         }
     }
@@ -452,15 +430,24 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             if (lower_part != 0) {
                 if (lower_part > 0) {
                     TLRPC.User user = MessagesController.Instance.users.get(lower_part);
+                    if (user == null) {
+                        return;
+                    }
                     builder.setMessage(String.format(getStringEntry(selectAlertString), Utilities.formatName(user.first_name, user.last_name)));
                 } else if (lower_part < 0) {
                     TLRPC.Chat chat = MessagesController.Instance.chats.get(-lower_part);
+                    if (chat == null) {
+                        return;
+                    }
                     builder.setMessage(String.format(getStringEntry(selectAlertString), chat.title));
                 }
             } else {
                 int chat_id = (int)(dialog_id >> 32);
                 TLRPC.EncryptedChat chat = MessagesController.Instance.encryptedChats.get(chat_id);
                 TLRPC.User user = MessagesController.Instance.users.get(chat.user_id);
+                if (user == null) {
+                    return;
+                }
                 builder.setMessage(String.format(getStringEntry(selectAlertString), Utilities.formatName(user.first_name, user.last_name)));
             }
             builder.setPositiveButton(R.string.OK, new DialogInterface.OnClickListener() {
@@ -740,29 +727,14 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
             if (searching && searchWas) {
-                int type = getItemViewType(i);
                 if (view == null) {
-                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    if (type == 2) {
-                        view = li.inflate(R.layout.messages_search_user_layout, viewGroup, false);
-                    } else {
-                        view = li.inflate(R.layout.messages_search_chat_layout, viewGroup, false);
-                    }
-                    View v = view.findViewById(R.id.settings_row_divider);
-                    v.setVisibility(View.VISIBLE);
-                    view.setPadding(Utilities.dp(11), 0, Utilities.dp(11), 0);
-                }
-                MessagesListSearchRowHolder holder = (MessagesListSearchRowHolder)view.getTag();
-                if (holder == null) {
-                    holder = new MessagesListSearchRowHolder(view);
-                    view.setTag(holder);
+                    view = new ChatOrUserCell(mContext);
                 }
                 TLRPC.User user = null;
                 TLRPC.Chat chat = null;
                 TLRPC.EncryptedChat encryptedChat = null;
 
                 TLObject obj = searchResult.get(i);
-                CharSequence name = searchResultNames.get(i);
                 if (obj instanceof TLRPC.User) {
                     user = MessagesController.Instance.users.get(((TLRPC.User)obj).id);
                 } else if (obj instanceof TLRPC.Chat) {
@@ -772,57 +744,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     user = MessagesController.Instance.users.get(encryptedChat.user_id);
                 }
 
-                holder.nameTextView.setText(name);
-                if (encryptedChat != null) {
-                    if (!isRTL) {
-                        holder.nameTextView.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock_green, 0, 0, 0);
-                    } else {
-                        holder.nameTextView.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_lock_green, 0);
-                    }
-                    holder.nameTextView.setCompoundDrawablePadding(Utilities.dp(4));
-                } else {
-                    holder.nameTextView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
-                    holder.nameTextView.setCompoundDrawablePadding(0);
-                }
-
-                TLRPC.FileLocation photo = null;
-                int placeHolderId = 0;
-                if (user != null) {
-                    if (user.photo != null) {
-                        photo = user.photo.photo_small;
-                    }
-                    placeHolderId = Utilities.getUserAvatarForId(user.id);
-                } else if (chat != null) {
-                    if (chat.photo != null) {
-                        photo = chat.photo.photo_small;
-                    }
-                    placeHolderId = Utilities.getGroupAvatarForId(chat.id);
-                }
-                holder.avatarImage.setImage(photo, "50_50", placeHolderId);
-
-                if (user != null) {
-                    if (user.status == null) {
-                        holder.messageTextView.setTextColor(0xff808080);
-                        holder.messageTextView.setText(getStringEntry(R.string.Offline));
-                    } else {
-                        int currentTime = ConnectionsManager.Instance.getCurrentTime();
-                        if (user.status.expires > currentTime || user.status.was_online > currentTime) {
-                            holder.messageTextView.setTextColor(0xff316f9f);
-                            holder.messageTextView.setText(getStringEntry(R.string.Online));
-                        } else {
-                            if (user.status.was_online <= 10000 && user.status.expires <= 10000) {
-                                holder.messageTextView.setText(getStringEntry(R.string.Invisible));
-                            } else {
-                                int value = user.status.was_online;
-                                if (value == 0) {
-                                    value = user.status.expires;
-                                }
-                                holder.messageTextView.setText(getStringEntry(R.string.LastSeen) + " " + Utilities.formatDateOnline(value));
-                            }
-                            holder.messageTextView.setTextColor(0xff808080);
-                        }
-                    }
-                }
+                ((ChatOrUserCell)view).setData(user, chat, encryptedChat, searchResultNames.get(i), null);
 
                 return view;
             }
@@ -836,21 +758,13 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             }
 
             if (view == null) {
-                LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                view = li.inflate(R.layout.messages_list_row, viewGroup, false);
-            }
-
-            MessagesListRowHolder holder = (MessagesListRowHolder)view.getTag();
-            if (holder == null) {
-                holder = new MessagesListRowHolder(view);
-                view.setTag(holder);
+                view = new DialogCell(mContext);
             }
             if (serverOnly) {
-                holder.dialog = MessagesController.Instance.dialogsServerOnly.get(i);
+                ((DialogCell)view).setDialog(MessagesController.Instance.dialogsServerOnly.get(i));
             } else {
-                holder.dialog = MessagesController.Instance.dialogs.get(i);
+                ((DialogCell)view).setDialog(MessagesController.Instance.dialogs.get(i));
             }
-            holder.update();
 
             return view;
         }
@@ -865,14 +779,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     return 3;
                 }
             }
-            if (serverOnly) {
-                if (i == MessagesController.Instance.dialogsServerOnly.size()) {
-                    return 1;
-                }
-            } else {
-                if (i == MessagesController.Instance.dialogs.size()) {
-                    return 1;
-                }
+            if (serverOnly && i == MessagesController.Instance.dialogsServerOnly.size() || !serverOnly && i == MessagesController.Instance.dialogs.size()) {
+                return 1;
             }
             return 0;
         }
@@ -903,252 +811,6 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 count++;
             }
             return count == 0;
-        }
-    }
-
-    private class MessagesListSearchRowHolder {
-        public BackupImageView avatarImage;
-        public TextView messageTextView;
-        public TextView nameTextView;
-
-        public MessagesListSearchRowHolder(View view) {
-            messageTextView = (TextView)view.findViewById(R.id.messages_list_row_message);
-            nameTextView = (TextView)view.findViewById(R.id.messages_list_row_name);
-            avatarImage = (BackupImageView)view.findViewById(R.id.messages_list_row_avatar);
-        }
-    }
-
-    private class MessagesListRowHolder {
-        public ImageView errorImage;
-        public TextView messagesCountImage;
-        public BackupImageView avatarImage;
-        public TextView timeTextView;
-        public TextView messageTextView;
-        public TextView nameTextView;
-        public ImageView check1Image;
-        public ImageView check2Image;
-        public ImageView clockImage;
-        public TLRPC.TL_dialog dialog;
-
-        public MessagesListRowHolder(View view) {
-            messageTextView = (TextView)view.findViewById(R.id.messages_list_row_message);
-            nameTextView = (TextView)view.findViewById(R.id.messages_list_row_name);
-            if (nameTextView != null) {
-                Typeface typeface = Utilities.getTypeface("fonts/rmedium.ttf");
-                nameTextView.setTypeface(typeface);
-            }
-            timeTextView = (TextView)view.findViewById(R.id.messages_list_row_time);
-            avatarImage = (BackupImageView)view.findViewById(R.id.messages_list_row_avatar);
-            messagesCountImage = (TextView)view.findViewById(R.id.messages_list_row_badge);
-            errorImage = (ImageView)view.findViewById(R.id.messages_list_row_error);
-            check1Image = (ImageView)view.findViewById(R.id.messages_list_row_check_half);
-            check2Image = (ImageView)view.findViewById(R.id.messages_list_row_check);
-            clockImage = (ImageView)view.findViewById(R.id.messages_list_row_clock);
-        }
-
-        public void update() {
-            MessageObject message = MessagesController.Instance.dialogMessage.get(dialog.top_message);
-            TLRPC.User user = null;
-            TLRPC.Chat chat = null;
-            TLRPC.EncryptedChat encryptedChat = null;
-
-            int lower_id = (int)dialog.id;
-            if (lower_id != 0) {
-                if (lower_id < 0) {
-                    chat = MessagesController.Instance.chats.get(-lower_id);
-                } else {
-                    user = MessagesController.Instance.users.get(lower_id);
-                }
-                nameTextView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
-                nameTextView.setCompoundDrawablePadding(0);
-            } else {
-                encryptedChat = MessagesController.Instance.encryptedChats.get((int)(dialog.id >> 32));
-                if (encryptedChat != null) {
-                    user = MessagesController.Instance.users.get(encryptedChat.user_id);
-                    if (!isRTL) {
-                        nameTextView.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock_green, 0, 0, 0);
-                    } else {
-                        nameTextView.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_lock_green, 0);
-                    }
-                    nameTextView.setCompoundDrawablePadding(Utilities.dp(4));
-                } else {
-                    Log.e("test", "tda");
-                }
-            }
-
-            if (chat != null) {
-                nameTextView.setText(chat.title);
-                nameTextView.setTextColor(0xff000000);
-            } else if (user != null) {
-                if (user.id != 333000 && MessagesController.Instance.contactsDict.get(user.id) == null) {
-                    if (MessagesController.Instance.contactsDict.size() == 0 && MessagesController.Instance.loadingContacts) {
-                        nameTextView.setTextColor(0xff000000);
-                        nameTextView.setText(Utilities.formatName(user.first_name, user.last_name));
-                    } else {
-                        if (user.phone != null && user.phone.length() != 0) {
-                            nameTextView.setTextColor(0xff000000);
-                            nameTextView.setText(PhoneFormat.Instance.format("+" + user.phone));
-                        } else {
-                            nameTextView.setTextColor(0xff316f9f);
-                            nameTextView.setText(Utilities.formatName(user.first_name, user.last_name));
-                        }
-                    }
-                    if (encryptedChat != null) {
-                        nameTextView.setTextColor(0xff00a60e);
-                    }
-                } else {
-                    if (encryptedChat != null) {
-                        nameTextView.setTextColor(0xff00a60e);
-                    } else {
-                        nameTextView.setTextColor(0xff000000);
-                    }
-                    nameTextView.setText(Utilities.formatName(user.first_name, user.last_name));
-                }
-            }
-            TLRPC.FileLocation photo = null;
-            int placeHolderId = 0;
-            if (user != null) {
-                if (user.photo != null) {
-                    photo = user.photo.photo_small;
-                }
-                placeHolderId = Utilities.getUserAvatarForId(user.id);
-            } else if (chat != null) {
-                if (chat.photo != null) {
-                    photo = chat.photo.photo_small;
-                }
-                placeHolderId = Utilities.getGroupAvatarForId(chat.id);
-            }
-            CharSequence printingString = MessagesController.Instance.printingStrings.get(dialog.id);
-
-            avatarImage.setImage(photo, "50_50", placeHolderId);
-
-            if (message == null) {
-                if (printingString != null) {
-                    messageTextView.setText(printingString);
-                    messageTextView.setTextColor(0xff316f9f);
-                } else {
-                    if (encryptedChat != null) {
-                        messageTextView.setTextColor(0xff316f9f);
-                        if (encryptedChat instanceof TLRPC.TL_encryptedChatRequested) {
-                            messageTextView.setText(getStringEntry(R.string.EncryptionProcessing));
-                        } else if (encryptedChat instanceof TLRPC.TL_encryptedChatWaiting) {
-                            messageTextView.setText(String.format(getStringEntry(R.string.AwaitingEncryption), user.first_name));
-                        } else if (encryptedChat instanceof TLRPC.TL_encryptedChatDiscarded) {
-                            messageTextView.setText(getStringEntry(R.string.EncryptionRejected));
-                        } else if (encryptedChat instanceof TLRPC.TL_encryptedChat) {
-                            if (encryptedChat.admin_id == UserConfig.clientUserId) {
-                                if (user != null) {
-                                    messageTextView.setText(String.format(getStringEntry(R.string.EncryptedChatStartedOutgoing), user.first_name));
-                                }
-                            } else {
-                                if (user != null) {
-                                    messageTextView.setText(String.format(getStringEntry(R.string.EncryptedChatStartedIncoming), user.first_name));
-                                }
-                            }
-                        }
-                    } else {
-                        messageTextView.setText("");
-                    }
-                }
-                if (dialog.last_message_date != 0) {
-                    timeTextView.setText(Utilities.stringForMessageListDate(dialog.last_message_date));
-                } else {
-                    timeTextView.setText("");
-                }
-                messagesCountImage.setVisibility(View.GONE);
-                check1Image.setVisibility(View.GONE);
-                check2Image.setVisibility(View.GONE);
-                errorImage.setVisibility(View.GONE);
-                clockImage.setVisibility(View.GONE);
-            } else {
-                TLRPC.User fromUser = MessagesController.Instance.users.get(message.messageOwner.from_id);
-
-                if (dialog.last_message_date != 0) {
-                    timeTextView.setText(Utilities.stringForMessageListDate(dialog.last_message_date));
-                } else {
-                    timeTextView.setText(Utilities.stringForMessageListDate(message.messageOwner.date));
-                }
-                if (printingString != null) {
-                    messageTextView.setTextColor(0xff316f9f);
-                    messageTextView.setText(printingString);
-                } else {
-                    if (message.messageOwner instanceof TLRPC.TL_messageService) {
-                        messageTextView.setText(message.messageText);
-                        messageTextView.setTextColor(0xff316f9f);
-                    } else {
-                        if (chat != null) {
-                            String name = "";
-                            if (message.messageOwner.from_id == UserConfig.clientUserId) {
-                                name = getStringEntry(R.string.FromYou);
-                            } else {
-                                if (fromUser != null) {
-                                    if (fromUser.first_name.length() > 0) {
-                                        name = fromUser.first_name;
-                                    } else {
-                                        name = fromUser.last_name;
-                                    }
-                                }
-                            }
-                            if (message.messageOwner.media != null && !(message.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
-                                messageTextView.setTextColor(0xff316f9f);
-                                messageTextView.setText(message.messageText);
-                            } else {
-                                messageTextView.setText(Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#316f9f>%s:</font> <font color=#808080>%s</font>", name, message.messageOwner.message))));
-                            }
-                        } else {
-                            messageTextView.setText(message.messageText);
-                            if (message.messageOwner.media != null && !(message.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
-                                messageTextView.setTextColor(0xff316f9f);
-                            } else {
-                                messageTextView.setTextColor(0xff808080);
-                            }
-                        }
-                    }
-                }
-
-                if (dialog.unread_count != 0) {
-                    messagesCountImage.setVisibility(View.VISIBLE);
-                    messagesCountImage.setText(String.format("%d", dialog.unread_count));
-                } else {
-                    messagesCountImage.setVisibility(View.GONE);
-                }
-
-                if (message.messageOwner.id < 0 && message.messageOwner.send_state != MessagesController.MESSAGE_SEND_STATE_SENT) {
-                    if (MessagesController.Instance.sendingMessages.get(message.messageOwner.id) == null) {
-                        message.messageOwner.send_state = MessagesController.MESSAGE_SEND_STATE_SEND_ERROR;
-                    }
-                }
-
-                if (message.messageOwner.from_id == UserConfig.clientUserId) {
-                    if (message.messageOwner.send_state == MessagesController.MESSAGE_SEND_STATE_SENDING) {
-                        check1Image.setVisibility(View.GONE);
-                        check2Image.setVisibility(View.GONE);
-                        clockImage.setVisibility(View.VISIBLE);
-                        errorImage.setVisibility(View.GONE);
-                    } else if (message.messageOwner.send_state == MessagesController.MESSAGE_SEND_STATE_SEND_ERROR) {
-                        check1Image.setVisibility(View.GONE);
-                        check2Image.setVisibility(View.GONE);
-                        clockImage.setVisibility(View.GONE);
-                        errorImage.setVisibility(View.VISIBLE);
-                        messagesCountImage.setVisibility(View.GONE);
-                    } else if (message.messageOwner.send_state == MessagesController.MESSAGE_SEND_STATE_SENT) {
-                        if (!message.messageOwner.unread) {
-                            check1Image.setVisibility(View.VISIBLE);
-                            check2Image.setVisibility(View.VISIBLE);
-                        } else {
-                            check1Image.setVisibility(View.GONE);
-                            check2Image.setVisibility(View.VISIBLE);
-                        }
-                        clockImage.setVisibility(View.GONE);
-                        errorImage.setVisibility(View.GONE);
-                    }
-                } else {
-                    check1Image.setVisibility(View.GONE);
-                    check2Image.setVisibility(View.GONE);
-                    errorImage.setVisibility(View.GONE);
-                    clockImage.setVisibility(View.GONE);
-                }
-            }
         }
     }
 }

@@ -109,7 +109,16 @@ public class FileUploadOperation {
                     isBigFile = true;
                 }
 
-                uploadChunkSize = (int)Math.max(32, Math.ceil(totalFileSize / (1024.0f * 3000))) * 1024;
+                uploadChunkSize = (int)Math.max(32, Math.ceil(totalFileSize / (1024.0f * 3000)));
+                if (1024 % uploadChunkSize != 0) {
+                    int chunkSize = 64;
+                    while (uploadChunkSize > chunkSize) {
+                        chunkSize *= 2;
+                    }
+                    uploadChunkSize = chunkSize;
+                }
+
+                uploadChunkSize *= 1024;
                 totalPartsCount = (int)Math.ceil((float)totalFileSize / (float)uploadChunkSize);
                 readBuffer = new byte[uploadChunkSize];
             }

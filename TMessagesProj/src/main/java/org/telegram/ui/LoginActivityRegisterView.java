@@ -22,6 +22,7 @@ import android.widget.TextView;
 import org.telegram.TL.TLObject;
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
@@ -191,7 +192,9 @@ public class LoginActivityRegisterView extends SlideView {
         ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
-                delegate.needHideProgress();
+                if (delegate != null) {
+                    delegate.needHideProgress();
+                }
                 if (error == null) {
                     final TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization)response;
                     Utilities.RunOnUIThread(new Runnable() {
@@ -211,23 +214,27 @@ public class LoginActivityRegisterView extends SlideView {
                             MessagesStorage.Instance.putUsersAndChats(users, null, true, true);
                             //MessagesController.Instance.uploadAndApplyUserAvatar(avatarPhotoBig);
                             MessagesController.Instance.users.put(res.user.id, res.user);
-                            MessagesController.Instance.checkAppAccount();
-                            delegate.needFinishActivity();
+                            ContactsController.Instance.checkAppAccount();
+                            if (delegate != null) {
+                                delegate.needFinishActivity();
+                            }
                         }
                     });
                 } else {
-                    if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                        delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidPhoneNumber));
-                    } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                        delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidCode));
-                    } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                        delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.CodeExpired));
-                    } else if (error.text.contains("FIRSTNAME_INVALID")) {
-                        delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidFirstName));
-                    } else if (error.text.contains("LASTNAME_INVALID")) {
-                        delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidLastName));
-                    } else {
-                        delegate.needShowAlert(error.text);
+                    if (delegate != null) {
+                        if (error.text.contains("PHONE_NUMBER_INVALID")) {
+                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidPhoneNumber));
+                        } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
+                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidCode));
+                        } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.CodeExpired));
+                        } else if (error.text.contains("FIRSTNAME_INVALID")) {
+                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidFirstName));
+                        } else if (error.text.contains("LASTNAME_INVALID")) {
+                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidLastName));
+                        } else {
+                            delegate.needShowAlert(error.text);
+                        }
                     }
                 }
             }

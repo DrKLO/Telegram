@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
+
+<!--Translation by Khalid Alaraifi-->
+
 <resources>
     <string name="AppName">Telegram</string>
-    
+
     <!--signin view-->
     <string name="YourPhone">رقم هاتفك المحمول</string>
     <string name="StartText">يرجى التحقق من صحة رمز بلدك وإدخال رقم هاتفك المحمول</string>
     <string name="ChooseCountry">اختر دولة</string>
     <string name="WrongCountry">رمز البلد خاطئ</string>
-    
+
     <!--code enter view-->
     <string name="YourCode">رمز التفعيل</string>
     <string name="SentSmsCode">تم إرسال رسالة قصيرة تحتوي على رمز التفعيل الخاص بك</string>
@@ -15,7 +18,7 @@
     <string name="Calling">جاري الاتصال بك ...</string>
     <string name="Code">رمز التفعيل</string>
     <string name="WrongNumber">الرقم خاطئ؟</string>
-    
+
     <!--signup view-->
     <string name="YourName">اسمك</string>
     <string name="RegisterText">اختر الاسم الأول واسم العائلة</string>
@@ -23,7 +26,7 @@
     <string name="FirstName">الاسم الأول</string>
     <string name="LastName">اسم العائلة</string>
     <string name="CancelRegistration">إلغاء التسجيل</string>
-    
+
     <!--chats view-->
     <string name="Chats">الدردشات</string>
     <string name="Search">بحث</string>
@@ -46,6 +49,8 @@
     <string name="EncryptedChatStartedIncoming">لقد قمت بالدخول للمحادثة السرية.</string>
     <string name="ClearHistory">مسح سجل التاريخ</string>
     <string name="DeleteChat">حذف وخروج</string>
+    <string name="HiddenName">الاسم مخفي</string>
+    <string name="SelectChat">اختر محادثة</string>
 
     <!--documents view-->
     <string name="SelectFile">اختر ملف</string>
@@ -60,7 +65,7 @@
     <string name="ExternalStorage">الذاكرة الخارجية</string>
     <string name="SystemRoot">جذر النظام</string>
     <string name="SdCard">بطاقة الذاكرة</string>
-    
+
     <!--chat view-->
     <string name="Invisible">مخفي</string>
     <string name="Typing">جاري الكتابة… </string>
@@ -100,13 +105,14 @@
     <string name="YouWereKicked">لقد تم إخراجك من هذه المجموعة</string>
     <string name="YouLeft">لقد قمت بمغادرة المجموعة</string>
     <string name="DeleteThisGroup">حذف المجموعة</string>
-    
+
     <!--notification-->
     <string name="EncryptedChatRequested">تم طلب محادثة سرية</string>
     <string name="EncryptedChatAccepted">تم بدء المحادثة السرية</string>
     <string name="MessageLifetimeChanged">%1$s قام بتعيين عداد التدمير الذاتي إلى to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">لقد قمت بتعيين التدمير الذاتي إلى %1$s</string>
     <string name="MessageLifetimeRemoved">%1$s قام بإيقاف عداد التدمير الذاتي</string>
+    <string name="MessageLifetimeYouRemoved">لقد قمت بتعطيل عداد التدمير الذاتي</string>
     <string name="MessageLifetime2s">ثانيتان</string>
     <string name="MessageLifetime5s">٥ ثوانٍ</string>
     <string name="MessageLifetime1m">دقيقة</string>
@@ -138,9 +144,9 @@
     <string name="NotificationGroupKickYou">%1$s قام بإخراجك من المجموعة %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s قام بمغادرة المجموعة %2$s</string>
     <string name="NotificationContactJoined">%1$s قام بالتسجيل في تيليجرام!</string>
-    <string name="NotificationUnrecognizedDevice">لقد تم تسجيل الدخول لحسابك من جهاز غير معروف من نوع %1$s, الموقع: %2$s</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nتم تسجيل الدخول لحسابك من جهاز جديد يوم %2$s\n\nالجهاز: %3$s\nالموقع: %4$s\n\nإذا لم يكن أنت من سجل الدخول، يمكنك الذهاب للإعدادات ثم تسجيل الخروج من كافة الأجهزة الأخرى.\n\nشكرًا,\nفريق عمل تيليجرام</string>
     <string name="NotificationContactNewPhoto">%1$s قام بتغيير صورته الشخصية</string>
-    
+
     <!--contacts view-->
     <string name="SelectContact">اختر جهة اتصال</string>
     <string name="NoContacts">لا توجد جهات اتصال بعد</string>
@@ -151,8 +157,9 @@
     <string name="Online">متصل</string>
     <string name="Offline">غير متصل</string>
     <string name="LastSeen">آخر ظهور</string>
+    <string name="LastSeenDate">آخر ظهور</string>
     <string name="InviteFriends">قم بدعوة صديق</string>
-    
+
     <!--group create view-->
     <string name="SendMessageTo">إرسال الرسالة إلى...</string>
     <string name="EnterGroupNamePlaceholder">أدخل اسم للمجموعة</string>
@@ -160,7 +167,7 @@
     <string name="GroupName">اسم المجموعة</string>
     <string name="MEMBERS">أعضاء</string>
     <string name="AllContacts">جميع جهات الاتصال</string>
-    
+
     <!--group info view-->
     <string name="EnterGroupNameTitle">أدخل سم للمجموعة</string>
     <string name="SharedMedia">عدد الوسائط المشتركة</string>
@@ -171,11 +178,13 @@
     <string name="DeleteAndExit">مغادرة المجموعة وحذفها</string>
     <string name="Notifications">الإشعارات</string>
     <string name="KickFromGroup">إخراج من المجموعة</string>
-    
+
     <!--contact info view-->
-    <string name="ShareContact">أرسل جهة الاتصال</string>
-    <string name="AddContact">إضافة جهة الاتصال</string>
-    <string name="BlockContact">حظر جهة الاتصال</string>
+    <string name="ShareContact">مشاركة</string>
+    <string name="AddContact">إضافة</string>
+    <string name="BlockContact">حظر</string>
+    <string name="EditContact">تعديل</string>
+    <string name="DeleteContact">حذف</string>
     <string name="PhoneHome">الهاتف المنزلي</string>
     <string name="PhoneMobile">الهاتف المحمول</string>
     <string name="PhoneWork">هاتف العمل</string>
@@ -197,7 +206,7 @@
     <string name="ShortMessageLifetime1d">يوم</string>
     <string name="ShortMessageLifetime1w">أسبوع</string>
     <string name="EncryptionKeyDescription">هذه الصورة هي تصور لمفتاح التشفير لهذه المحادثة السرية مع <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>إذا كانت مطابقة للصورة التي في جهاز <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, فمحادثتكم آمنة ٢٠٠٪.<![CDATA[<br><br>]]>للمزيد نرجو الذهاب إلى telegram.org</string>
-    
+
     <!--settings view-->
     <string name="ResetNotificationsText">تم تعيين كافة الإشعارات افتراضيا</string>
     <string name="TextSize">حجم نص الرسائل</string>
@@ -229,11 +238,19 @@
     <string name="Default">افتراضي</string>
     <string name="Support">الدعم</string>
     <string name="ChatBackground">خلفية الدردشة</string>
-    
+    <string name="MessagesSettings">الرسائل</string>
+    <string name="SendByEnter">أرسل بزر الإدخال</string>
+    <string name="TerminateAllSessions">سجل الخروج من كافة الأجهزة الأخرى</string>
+    <string name="AutomaticPhotoDownload">تنزيل الصور تلقائيًا</string>
+    <string name="AutomaticPhotoDownloadGroups">المجموعات</string>
+    <string name="AutomaticPhotoDownloadPrivateChats">المحادثات</string>
+    <string name="Events">الأحداث</string>
+    <string name="ContactJoined">عندما يشترك صديق في تيليجرام</string>
+
     <!--media view-->
     <string name="NoMedia">لا توجد وسائط بعد</string>
     <string name="CancelDownload">إلغاء التنزيل</string>
-    
+
     <!--map view-->
     <string name="MyLocation">موقعي</string>
     <string name="Map">الخريطة</string>
@@ -243,13 +260,13 @@
     <string name="KMetersAway">كيلومتر يبعد</string>
     <string name="SendLocation">أرسل موقعك</string>
     <string name="ShareLocation">مشاركة الموقع</string>
-    
+
     <!--photo gallery view-->
     <string name="ShowAllMedia">عرض كافة الوسائط</string>
     <string name="SaveToGallery">حفظ في الجهاز</string>
     <string name="Of">من</string>
     <string name="Gallery">الألبوم</string>
-    
+
     <!--button titles-->
     <string name="Next">التالي</string>
     <string name="Back">رجوع</string>
@@ -270,7 +287,7 @@
     <string name="OpenPhoto">فتح الصورة</string>
     <string name="Set">تعيين</string>
     <string name="OK">موافق</string>
-    
+
     <!--messages-->
     <string name="ActionKickUser">un1 قام بإخراج un2</string>
     <string name="ActionLeftUser">غادر المجموعة العضو un1</string>
@@ -279,6 +296,15 @@
     <string name="ActionChangedPhoto">تم تغيير صورة المجموعة من قِبَل un1</string>
     <string name="ActionChangedTitle">un1 قام بتغيير اسم المجموعة إلى un2</string>
     <string name="ActionCreateGroup">تم إنشاء مجموعة جديدة من قِبَل un1</string>
+    <string name="ActionYouKickUser">لقد قمت بإخراج un2</string>
+    <string name="ActionYouLeftUser">لقد قمت بمغادرة المجموعة</string>
+    <string name="ActionYouAddUser">لقد قمت بإضافة un2</string>
+    <string name="ActionYouRemovedPhoto">لقد قمت بإزالة صورة المجموعة</string>
+    <string name="ActionYouChangedPhoto">لقد قمت بتغيير صورة المجموعة</string>
+    <string name="ActionYouChangedTitle">لقد قمت بتغيير اسم المجموعة إلى un2</string>
+    <string name="ActionYouCreateGroup">لقد قمت بإنشاء المجموعة</string>
+    <string name="ActionKickUserYou">un1 قام بإخراجك</string>
+    <string name="ActionAddUserYou">un1 قام بإضافتك</string>
     <string name="UnsuppotedMedia">نسخة تيليجرام التي تستخدمها لا تدعم هذه الرسالة</string>
     <string name="AttachPhoto">صورة</string>
     <string name="AttachVideo">مقطع مرئي</string>
@@ -287,7 +313,7 @@
     <string name="AttachDocument">مستند</string>
     <string name="AttachAudio">مقطع صوتي</string>
     <string name="FromYou">أنت</string>
-    
+
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">رقم الهاتف غير صحيح</string>
     <string name="CodeExpired">انتهت صلاحية الرمز الخاص بك، يرجى تسجيل الدخول مرة أخرى</string>
@@ -297,14 +323,14 @@
     <string name="InvalidLastName">اسم العائلة غير صحيح</string>
     <string name="Loading">جاري التحميل ...</string>
     <string name="NoPlayerInstalled">ليس لديك أي مشغل مقاطع مرئية، يرجى تنزيل أية مشغل</string>
-    <string name="NoHandleAppInstalled">لا يوجد لديك تطبيق يمكنه فته هذا المستند، يرجى تنزيل تطبيق يمكنه للإستمرار</string>
+    <string name="NoHandleAppInstalled">لا يوجد لديك تطبيق يمكنه فتح \'%1$s\'، يرجى تنزيل تطبيق مناسب للإستمرار</string>
     <string name="InviteUser">هذا المستخدم ليس لديه تيليجرام بعد ، هل ترغب في دعوته الآن؟</string>
     <string name="AreYouSure">هل أنت متأكد؟</string>
     <string name="DeleteChatQuestion">هل تريد حذف هذه الدردشة؟</string>
     <string name="AddContactQ">هل تريد إضافة جهة اتصال؟</string>
     <string name="AddToTheGroup">إلى المجموعة؟ %1$s هل تريد إضافة</string>
     <string name="ForwardMessagesTo">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
-    
+
     <!--Intro view-->
     <string name="Page1Title">تيليجرام</string>
     <string name="Page2Title">سريع</string>
@@ -321,7 +347,7 @@
     <string name="Page6Message"><![CDATA[<b>تيليجرام</b>]]> يمكنك الوصول إلى الرسائل الخاصة بك من أجهزة متعددة.</string>
     <string name="Page7Message"><![CDATA[<b>تيليجرام</b>]]> الرسائل مشفرة بشكل قوي وتستطيع تدمير ذاتها</string>
     <string name="StartMessaging">إبدأ المراسلة</string>
-    
+
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
 </resources>

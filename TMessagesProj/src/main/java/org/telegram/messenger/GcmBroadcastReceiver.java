@@ -14,6 +14,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.PowerManager;
 
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 
@@ -27,6 +28,10 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
         setResultCode(Activity.RESULT_OK);
 
         if (intent.getAction().equals("com.google.android.c2dm.intent.RECEIVE")) {
+            PowerManager pm = (PowerManager)context.getSystemService(Context.POWER_SERVICE);
+            final PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "lock");
+            wl.acquire();
+
             SharedPreferences preferences = context.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
             boolean globalEnabled = preferences.getBoolean("EnableAll", true);
             if (!globalEnabled) {
@@ -38,12 +43,13 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
                 public void run() {
                     GoogleCloudMessaging gcm = GoogleCloudMessaging.getInstance(context);
                     String messageType = gcm.getMessageType(intent);
-                    sendNotification(context, intent.getExtras());
+                    ConnectionsManager.Instance.resumeNetworkMaybe();
+                    wl.release();
                 }
             });
             thread.setPriority(Thread.MAX_PRIORITY);
             thread.start();
-        } else if (intent.getAction().equals("com.google.android.c2dm.intent.RECEIVE")) {
+        } else if (intent.getAction().equals("com.google.android.c2dm.intent.REGISTRATION")) {
             String registration = intent.getStringExtra("registration_id");
             if (intent.getStringExtra("error") != null) {
                 FileLog.e("tmessages", "Registration failed, should try again later.");
@@ -53,158 +59,5 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
                 FileLog.e("tmessages", "registration id = " + registration);
             }
         }
-    }
-
-    private void sendNotification(Context context, Bundle extras) {
-        ConnectionsManager.Instance.resumeNetworkMaybe();
-        /*if (!UserConfig.clientActivated || context == null || extras == null) {
-            return;
-        }
-        SharedPreferences preferences = context.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
-
-        boolean groupEnabled = preferences.getBoolean("EnableGroup", true);
-        boolean globalVibrate = preferences.getBoolean("EnableVibrateAll", true);
-        boolean groupVibrate = preferences.getBoolean("EnableVibrateGroup", true);
-
-
-        if (ApplicationLoader.Instance != null && (ApplicationLoader.lastPauseTime == 0 || ApplicationLoader.lastPauseTime > System.currentTimeMillis() - 200)) {
-            return;
-        }
-
-        String defaultPath = null;
-        Uri defaultUri = Settings.System.DEFAULT_NOTIFICATION_URI;
-        if (defaultUri != null) {
-            defaultPath = defaultUri.getPath();
-        }
-
-        String globalSound = preferences.getString("GlobalSoundPath", defaultPath);
-        String chatSound = preferences.getString("GroupSoundPath", defaultPath);
-        String userSoundPath = null;
-        String chatSoundPath = null;
-
-        NotificationManager mNotificationManager = (NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
-        Intent intent = new Intent(context, LaunchActivity.class);
-        String msg = extras.getString("message");
-
-        try {
-            String to_id = extras.getString("user_id");
-            int to = Integer.parseInt(to_id);
-            if (to != UserConfig.clientUserId) {
-                return;
-            }
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
-
-        int chat_id = 0;
-        int user_id = 0;
-        String custom = extras.getString("custom");
-        try {
-            if (custom != null) {
-                JSONObject obj = new JSONObject(custom);
-                if (obj.has("chat_id")) {
-                    Object object = obj.get("chat_id");
-                    if (object instanceof Integer) {
-                        chat_id = (Integer)object;
-                    } else if (object instanceof String) {
-                        chat_id = Integer.parseInt((String)object);
-                    }
-                    if (chat_id != 0) {
-                        intent.putExtra("chatId", chat_id);
-                    }
-                } else if (obj.has("from_id")) {
-                    Object object = obj.get("from_id");
-                    if (object instanceof Integer) {
-                        user_id = (Integer)object;
-                    } else if (object instanceof String) {
-                        user_id = Integer.parseInt((String)object);
-                    }
-                    if (user_id != 0) {
-                        intent.putExtra("userId", user_id);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
-
-        if (user_id != 0) {
-            String key = "notify_" + user_id;
-            boolean value = preferences.getBoolean(key, true);
-            if (!value) {
-                return;
-            }
-            userSoundPath = preferences.getString("sound_path_" + user_id, null);
-        }
-        if (chat_id != 0) {
-            if (!groupEnabled) {
-                return;
-            }
-            String key = "notify_" + (-chat_id);
-            boolean value = preferences.getBoolean(key, true);
-            if (!value) {
-                return;
-            }
-            chatSoundPath = preferences.getString("sound_chat_path_" + chat_id, null);
-        }
-
-        boolean needVibrate;
-        String choosenSoundPath = null;
-
-        if (chat_id != 0) {
-            needVibrate = groupVibrate;
-        } else {
-            needVibrate = globalVibrate;
-        }
-
-        if (user_id != 0) {
-            if (userSoundPath != null) {
-                choosenSoundPath = userSoundPath;
-            } else if (globalSound != null) {
-                choosenSoundPath = globalSound;
-            }
-        } else if (chat_id != 0) {
-            if (chatSoundPath != null) {
-                choosenSoundPath = chatSoundPath;
-            } else if (chatSound != null) {
-                choosenSoundPath = chatSound;
-            }
-        } else {
-            choosenSoundPath = globalSound;
-        }
-
-        intent.setAction("com.tmessages.openchat" + Math.random() + Integer.MAX_VALUE);
-        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        //intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-        PendingIntent contentIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_ONE_SHOT);
-
-        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context)
-                .setContentTitle(ApplicationLoader.applicationContext.getString(R.string.AppName))
-                .setSmallIcon(R.drawable.notification)
-                .setStyle(new NotificationCompat.BigTextStyle()
-                        .bigText(msg))
-                .setContentText(msg)
-                .setAutoCancel(true)
-                .setTicker(msg);
-
-        if (needVibrate) {
-            mBuilder.setVibrate(new long[]{0, 100, 0, 100});
-        }
-        if (choosenSoundPath != null && !choosenSoundPath.equals("NoSound")) {
-            if (choosenSoundPath.equals(defaultPath)) {
-                mBuilder.setSound(defaultUri);
-            } else {
-                mBuilder.setSound(Uri.parse(choosenSoundPath));
-            }
-        }
-
-        mBuilder.setContentIntent(contentIntent);
-        mNotificationManager.cancel(NOTIFICATION_ID);
-        Notification notification = mBuilder.build();
-        notification.ledARGB = 0xff00ff00;
-        notification.ledOnMS = 1000;
-        notification.ledOffMS = 1000;
-        notification.flags |= Notification.FLAG_SHOW_LIGHTS;
-        mNotificationManager.notify(NOTIFICATION_ID, notification);*/
     }
 }
