@@ -152,7 +152,8 @@
     <string name="OtherAt"></string>
     <string name="Online">online</string>
     <string name="Offline">offline</string>
-    <string name="LastSeen">Ikusia</string>
+    <string name="LastSeen">noiz ikusia:</string>
+    <string name="LastSeenDate">noiz ikusia:</string>
     <string name="InviteFriends">Gonbidatu lagunak</string>
 
     <!--group create view-->
