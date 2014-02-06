@@ -251,6 +251,7 @@ public class DialogCell extends BaseCell {
             requestLayout();
         }
 
+        tryInstallAccessibilityDelegate();
         invalidate();
     }
 

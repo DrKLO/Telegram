@@ -24,17 +24,14 @@ public class BaseCell extends View {
 
     public BaseCell(Context context) {
         super(context);
-        tryInstallAccessibilityDelegate();
     }
 
     public BaseCell(Context context, AttributeSet attrs) {
         super(context, attrs);
-        tryInstallAccessibilityDelegate();
     }
 
     public BaseCell(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        tryInstallAccessibilityDelegate();
     }
 
     protected void setDrawableBounds(Drawable drawable, int x, int y) {
