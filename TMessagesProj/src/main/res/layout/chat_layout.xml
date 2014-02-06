@@ -129,6 +129,7 @@
             android:scaleType="centerInside"
             android:paddingLeft="4dp"
             android:id="@+id/chat_smile_button"
+            android:contentDescription="@string/Emoticons"
             android:layout_alignBottom="@+id/chat_text_edit"/>
 
         <ImageButton
@@ -140,6 +141,7 @@
             android:layout_alignParentRight="true"
             android:layout_alignBottom="@+id/chat_text_edit"
             android:enabled="false"
+            android:contentDescription="@string/SendMessage"
             android:background="@android:color/transparent"/>
 
         <EditText
