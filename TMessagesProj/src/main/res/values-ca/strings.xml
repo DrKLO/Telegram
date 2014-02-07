@@ -75,8 +75,8 @@
     <string name="ChatVideo">Vídeo</string>
     <string name="ChatDocument">Document</string>
     <string name="NoMessages">Encara no hi ha missatges aquí...</string>
-    <string name="ViewPhoto">Visualitza la fotografia</string>
-    <string name="ViewLocation">Visualitza la ubicació</string>
+    <string name="ViewPhoto">Mostra la fotografia</string>
+    <string name="ViewLocation">Mostra la ubicació</string>
     <string name="ViewVideo">Reprodueix el vídeo</string>
     <string name="ForwardedMessage">Missatge reenviat</string>
     <string name="From">Des de</string>
