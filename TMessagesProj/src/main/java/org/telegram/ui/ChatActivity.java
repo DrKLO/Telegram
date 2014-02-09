@@ -1188,9 +1188,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         text = text.replaceAll("\n\n+", "\n\n");
         text = text.replaceAll(" +", " ");
         if (text.length() != 0) {
-            int count = (int)Math.ceil(text.length() / 2048.0f);
+            int count = (int)Math.ceil(text.length() / 4096.0f);
             for (int a = 0; a < count; a++) {
-                String mess = text.substring(a * 2048, Math.min((a + 1) * 2048, text.length()));
+                String mess = text.substring(a * 4096, Math.min((a + 1) * 4096, text.length()));
                 MessagesController.Instance.sendMessage(mess, dialog_id);
             }
             return true;
