@@ -346,7 +346,7 @@
     <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> Hat keine Datenbegrenzung für<![CDATA[<br/>]]>deine Medien und Chats</string>
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> bietet dir Zugriff zu deinen Nachrichten<![CDATA[<br/>]]>von diversen Geräten</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> Nachrichten werden stark verschlüsselt<![CDATA[<br/>]]>und können selbst zerstört werden</string>
-    <string name="StartMessaging">Start Jetzt</string>
+    <string name="StartMessaging">Starte Jetzt</string>
 
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
