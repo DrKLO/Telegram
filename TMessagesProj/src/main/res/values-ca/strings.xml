@@ -4,12 +4,12 @@
 
 <resources>
 	<string name="AppName">Telegram</string>
-	<string name="YourPhone">El telèfon</string>
-	<string name="StartText">Confirmeu si us plau el codi de país \ni introdueixi el seu número de telèfon.</string>
+	<string name="YourPhone">El teléfon</string>
+	<string name="StartText">Confirmeu si us plau el codi de país \ni introdueixi el seu número de teléfon.</string>
 	<string name="ChooseCountry">Tria un país</string>
 	<string name="WrongCountry">Codi de país incorrecte</string>
 	<string name="YourCode">El seu codi</string>
-	<string name="SentSmsCode">Nosaltres hem enviat un SMS amb un codi d\'activació al teu telèfon</string>
+	<string name="SentSmsCode">Nosaltres hem enviat un SMS amb un codi d\'activació al teu teléfon</string>
 	<string name="CallText">Li trucarem en</string>
 	<string name="Calling">Trucante...</string>
 	<string name="Code">Codi</string>
@@ -168,7 +168,7 @@
 	<string name="PhoneOther">ALTRES</string>
 	<string name="PhoneMain">PRINCIPAL</string>
 	<string name="ContactInfo">Contacte</string>
-	<string name="PHONE">TELÈFON</string>
+	<string name="PHONE">Teléfon</string>
 	<string name="StartEncryptedChat">Iniciar el xat Secret</string>
 	<string name="CreateEncryptedChatError">S\'ha produït un error.</string>
 	<string name="CreateEncryptedChatOutdatedError">No es pot crear una conversa secreta amb %1$s.\n\n%2$s està utilitzant una versió antiga del telegrama i necessita actualitzar primer.</string>
@@ -190,7 +190,7 @@
 	<string name="Unblock">Desbloquejar</string>
 	<string name="UnblockText">Toqueu en l\'usuari per desbloquejar.</string>
 	<string name="NoBlocked">No hi ha usuaris bloquejats encara</string>
-	<string name="YourPhoneNumber">EL TEU NÚMERO DE TELÈFON</string>
+	<string name="YourPhoneNumber">EL TEU NÚMERO DE TELÉFON</string>
 	<string name="MessageNotifications">Notificacions de missatges</string>
 	<string name="Alert">Alerta</string>
 	<string name="MessagePreview">Vista prèvia del missatge</string>
@@ -278,7 +278,7 @@
 	<string name="AttachDocument">Document</string>
 	<string name="AttachAudio">Àudio</string>
 	<string name="FromYou">Vostè</string>
-	<string name="InvalidPhoneNumber">Número de telèfon vàlid</string>
+	<string name="InvalidPhoneNumber">Número de teléfon vàlid</string>
 	<string name="CodeExpired">Codi caducat, si us plau entra de nou</string>
 	<string name="FloodWait">Massa intents, si us plau intenti-ho més tard</string>
 	<string name="InvalidCode">Codi no vàlid</string>
