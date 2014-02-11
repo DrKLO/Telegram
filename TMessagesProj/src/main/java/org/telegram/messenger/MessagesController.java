@@ -1564,6 +1564,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 lon = msgObj.messageOwner.media.geo._long;
             } else if (msgObj.messageOwner.media.video != null) {
                 video = (TLRPC.TL_video) msgObj.messageOwner.media.video;
+                video.path = msgObj.messageOwner.attachPath;
             } else if (msgObj.messageOwner.media.document != null) {
                 document = (TLRPC.TL_document) msgObj.messageOwner.media.document;
             } else if (msgObj.messageOwner.message != null) {
