@@ -10,6 +10,7 @@ package org.telegram.messenger;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Timer;
@@ -51,6 +52,7 @@ public class TcpConnection extends PyroClientAdapter {
     private int willRetryConnectCount = 5;
     private boolean isNextPort = false;
     private final Integer timerSync = 1;
+    private boolean wasConnected;
 
     public int transportRequestClass;
 
@@ -102,6 +104,7 @@ public class TcpConnection extends PyroClientAdapter {
                     FileLog.d("tmessages", String.format(TcpConnection.this + " Connecting (%s:%d)", hostAddress, hostPort));
                     firstPacket = true;
                     restOfTheData = null;
+                    wasConnected = false;
                     hasSomeDataSinceLastConnect = false;
                     if (client != null) {
                         client.removeListener(TcpConnection.this);
@@ -113,7 +116,7 @@ public class TcpConnection extends PyroClientAdapter {
                     if (isNextPort) {
                         client.setTimeout(8000);
                     } else {
-                        client.setTimeout(35000);
+                        client.setTimeout(15000);
                     }
                     selector.wakeup();
                 } catch (Exception e) {
@@ -141,7 +144,7 @@ public class TcpConnection extends PyroClientAdapter {
                     failedConnectionCount++;
                     if (failedConnectionCount == 1) {
                         if (hasSomeDataSinceLastConnect) {
-                            willRetryConnectCount = 5;
+                            willRetryConnectCount = 3;
                         } else {
                             willRetryConnectCount = 1;
                         }
@@ -217,6 +220,7 @@ public class TcpConnection extends PyroClientAdapter {
         firstPacket = true;
         restOfTheData = null;
         channelToken = 0;
+        wasConnected = false;
     }
 
     public void suspendConnection(boolean task) {
@@ -306,7 +310,7 @@ public class TcpConnection extends PyroClientAdapter {
                 Datacenter datacenter = ConnectionsManager.Instance.datacenterWithId(datacenterId);
                 datacenter.storeCurrentAddressAndPortNum();
                 isNextPort = false;
-                client.setTimeout(35000);
+                client.setTimeout(20000);
             }
             hasSomeDataSinceLastConnect = true;
 
@@ -407,7 +411,7 @@ public class TcpConnection extends PyroClientAdapter {
         }
     }
 
-    public void handleDisconnect(PyroClient client, Exception e) {
+    public void handleDisconnect(PyroClient client, Exception e, boolean timedout) {
         synchronized (timerSync) {
             if (reconnectTimer != null) {
                 reconnectTimer.cancel();
@@ -419,9 +423,11 @@ public class TcpConnection extends PyroClientAdapter {
         } else {
             FileLog.d("tmessages", "Disconnected " + TcpConnection.this);
         }
+        boolean swirchToNextPort = wasConnected && hasSomeDataSinceLastConnect;
         firstPacket = true;
         restOfTheData = null;
         channelToken = 0;
+        wasConnected = false;
         if (connectionState != TcpConnectionState.TcpConnectionStageSuspended && connectionState != TcpConnectionState.TcpConnectionStageIdle) {
             connectionState = TcpConnectionState.TcpConnectionStageIdle;
         }
@@ -446,7 +452,7 @@ public class TcpConnection extends PyroClientAdapter {
             }
             if (ConnectionsManager.isNetworkOnline()) {
                 isNextPort = true;
-                if (failedConnectionCount > willRetryConnectCount) {
+                if (failedConnectionCount > willRetryConnectCount || swirchToNextPort) {
                     Datacenter datacenter = ConnectionsManager.Instance.datacenterWithId(datacenterId);
                     datacenter.nextAddressOrPort();
                     failedConnectionCount = 0;
@@ -486,6 +492,7 @@ public class TcpConnection extends PyroClientAdapter {
     public void connectedClient(PyroClient client) {
         connectionState = TcpConnectionState.TcpConnectionStageConnected;
         channelToken = generateChannelToken();
+        wasConnected = true;
         FileLog.d("tmessages", String.format(TcpConnection.this + " Connected (%s:%d)", hostAddress, hostPort));
         if (delegate != null) {
             final TcpConnectionDelegate finalDelegate = delegate;
@@ -500,18 +507,18 @@ public class TcpConnection extends PyroClientAdapter {
 
     @Override
     public void unconnectableClient(PyroClient client, Exception cause) {
-        handleDisconnect(client, cause);
+        handleDisconnect(client, cause, false);
     }
 
     @Override
     public void droppedClient(PyroClient client, IOException cause) {
         super.droppedClient(client, cause);
-        handleDisconnect(client, cause);
+        handleDisconnect(client, cause, (cause instanceof SocketTimeoutException));
     }
 
     @Override
     public void disconnectedClient(PyroClient client) {
-        handleDisconnect(client, null);
+        handleDisconnect(client, null, false);
     }
 
     @Override
@@ -527,7 +534,5 @@ public class TcpConnection extends PyroClientAdapter {
 
     @Override
     public void sentData(PyroClient client, int bytes) {
-        failedConnectionCount = 0;
-        FileLog.d("tmessages", TcpConnection.this + " bytes sent " + bytes);
     }
 }

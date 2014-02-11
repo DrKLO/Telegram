@@ -8,10 +8,12 @@
 
 package org.telegram.ui;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.internal.view.SupportMenuItem;
@@ -30,12 +32,15 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.telegram.TL.TLObject;
 import org.telegram.TL.TLRPC;
+import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Cells.ChatOrUserCell;
@@ -48,6 +53,7 @@ import java.lang.reflect.Field;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -70,6 +76,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private SupportMenuItem searchItem;
 
     private Timer searchDialogsTimer;
+    private String inviteText;
+    private boolean updatingInviteText = false;
     public ArrayList<TLRPC.User> searchResult;
     public ArrayList<CharSequence> searchResultNames;
     public ContactsActivityDelegate delegate;
@@ -95,6 +103,15 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 ignoreUsers = (HashMap<Integer, TLRPC.User>)NotificationCenter.Instance.getFromMemCache(7);
             }
         }
+
+
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        inviteText = preferences.getString("invitetext", null);
+        int time = preferences.getInt("invitetexttime", 0);
+        if (inviteText == null || time + 86400 < (int)(System.currentTimeMillis() / 1000)) {
+            updateInviteText();
+        }
+
         return true;
     }
 
@@ -165,14 +182,20 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     } else {
                         int section = listViewAdapter.getSectionForPosition(i);
                         int row = listViewAdapter.getPositionInSectionForPosition(i);
+                        if (row < 0 || section < 0) {
+                            return;
+                        }
                         TLRPC.User user = null;
                         if (usersAsSections) {
                             if (section < ContactsController.Instance.sortedUsersSectionsArray.size()) {
                                 ArrayList<TLRPC.TL_contact> arr = ContactsController.Instance.usersSectionsDict.get(ContactsController.Instance.sortedUsersSectionsArray.get(section));
-                                if (row >= arr.size()) {
+                                if (row < arr.size()) {
+                                    TLRPC.TL_contact contact = arr.get(row);
+                                    user = MessagesController.Instance.users.get(contact.user_id);
+                                } else {
                                     return;
                                 }
-                                user = MessagesController.Instance.users.get(arr.get(row).user_id);
+
                             }
                         } else {
                             if (section == 0) {
@@ -180,7 +203,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                     try {
                                         Intent intent = new Intent(Intent.ACTION_SEND);
                                         intent.setType("text/plain");
-                                        intent.putExtra(Intent.EXTRA_TEXT, getStringEntry(R.string.InviteText));
+                                        intent.putExtra(Intent.EXTRA_TEXT, inviteText != null ? inviteText : getStringEntry(R.string.InviteText));
                                         startActivity(intent);
                                     } catch (Exception e) {
                                         FileLog.e("tmessages", e);
@@ -552,6 +575,41 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
             }
         }
+    }
+
+    private void updateInviteText() {
+        if (updatingInviteText) {
+            return;
+        }
+        updatingInviteText = true;
+        TLRPC.TL_help_getInviteText req = new TLRPC.TL_help_getInviteText();
+        req.lang_code = Locale.getDefault().getCountry();
+        if (req.lang_code == null || req.lang_code.length() == 0) {
+            req.lang_code = "en";
+        }
+        ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            @Override
+            public void run(TLObject response, TLRPC.TL_error error) {
+                if (error != null) {
+                    return;
+                }
+                final TLRPC.TL_help_inviteText res = (TLRPC.TL_help_inviteText)response;
+                if (res.message.length() == 0) {
+                    return;
+                }
+                Utilities.RunOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        updatingInviteText = false;
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        editor.putString("invitetext", res.message);
+                        editor.putInt("invitetexttime", (int) (System.currentTimeMillis() / 1000));
+                        editor.commit();
+                    }
+                });
+            }
+        }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
     }
 
     private void updateVisibleRows(int mask) {

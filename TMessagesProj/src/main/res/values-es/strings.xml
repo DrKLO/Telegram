@@ -24,20 +24,20 @@
     <string name="RegisterText">Ingresa tu nombre y apellidos</string>
     <!--<string name="RegisterText">Ingresa tu nombre y foto</string>-->
     <string name="FirstName">Nombre (requerido)</string>
-    <string name="LastName">Apellido/s (opcional)</string>
+    <string name="LastName">Apellido(s) (opcional)</string>
     <string name="CancelRegistration">Cancelar registro</string>
 
     <!--chats view-->
     <string name="Chats">Chats</string>
     <string name="Search">Buscar</string>
-    <string name="NewMessages">Mensajes nuevos</string>
+    <string name="NewMessages">Nuevo mensaje</string>
     <string name="Settings">Ajustes</string>
     <string name="Contacts">Contactos</string>
     <string name="NewGroup">Nuevo grupo</string>
     <string name="Yesterday">ayer</string>
     <string name="NoResult">Sin resultados</string>
     <string name="NoChats">No tienes conversaciones todavía...</string>
-    <string name="NoChatsHelp">Empieza a chatear presionando el\nbotón de componer en la esquina superior\nderecha o ve a la sección de Contactos.</string>
+    <string name="NoChatsHelp">Empieza a chatear presionando el\nbotón de Nuevo mensaje en la esquina superior\nderecha o ve a la sección de Contactos.</string>
     <string name="WaitingForNetwork">Esperando red...</string>
     <string name="Connecting">Conectando...</string>
     <string name="Updating">Actualizando...</string>
@@ -170,9 +170,9 @@
 
     <!--group info view-->
     <string name="EnterGroupNameTitle">INGRESA EL NOMBRE DEL GRUPO</string>
-    <string name="SharedMedia">Multimedia compartida</string>
+    <string name="SharedMedia">Fotos y vídeos</string>
     <string name="GroupInfo">Información del grupo</string>
-    <string name="SHAREDMEDIA">MULTIMEDIA COMPARTIDA</string>
+    <string name="SHAREDMEDIA">FOTOS Y VÍDEOS</string>
     <string name="SETTINGS">AJUSTES</string>
     <string name="AddMember">Añadir miembro</string>
     <string name="DeleteAndExit">Eliminar y salir del grupo</string>
@@ -210,11 +210,11 @@
     <!--settings view-->
     <string name="ResetNotificationsText">Restablecer todas las notificaciones</string>
     <string name="TextSize">Tamaño del texto</string>
-    <string name="AskAQuestion">Haz una pregunta</string>
+    <string name="AskAQuestion">Hacer una pregunta</string>
     <string name="EnableAnimations">Activar animaciones</string>
     <string name="Unblock">Desbloquear</string>
     <string name="UnblockText">Mantén pulsado un usuario para desbloquearlo</string>
-    <string name="NoBlocked">No hay usuarios bloqueados aún</string>
+    <string name="NoBlocked">No hay usuarios bloqueados</string>
     <string name="YourPhoneNumber">TU NÚMERO DE TELÉFONO</string>
     <string name="MessageNotifications">NOTIFICACIONES DE MENSAJES</string>
     <string name="Alert">Alerta</string>
@@ -239,7 +239,7 @@
     <string name="Support">SOPORTE</string>
     <string name="ChatBackground">Fondo de chat</string>
     <string name="MessagesSettings">MENSAJES</string>
-    <string name="SendByEnter">Enviar con enter</string>
+    <string name="SendByEnter">Enviar con ‘Enter’</string>
     <string name="TerminateAllSessions">Cerrar todas las otras sesiones</string>
     <string name="AutomaticPhotoDownload">DESCARGA AUTOMÁTICA DE FOTOS</string>
     <string name="AutomaticPhotoDownloadGroups">Grupos</string>

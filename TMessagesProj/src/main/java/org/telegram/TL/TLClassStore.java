@@ -414,6 +414,7 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_messageActionTTLChange.constructor, TLRPC.TL_messageActionTTLChange.class);
         classStore.put(TLRPC.TL_videoEncrypted.constructor, TLRPC.TL_videoEncrypted.class);
         classStore.put(TLRPC.TL_documentEncrypted.constructor, TLRPC.TL_documentEncrypted.class);
+        classStore.put(TLRPC.TL_audioEncrypted.constructor, TLRPC.TL_audioEncrypted.class);
         classStore.put(TLRPC.TL_gzip_packed.constructor, TLRPC.TL_gzip_packed.class);
         classStore.put(TLRPC.Vector.constructor, TLRPC.Vector.class);
         classStore.put(TLRPC.TL_userProfilePhotoOld.constructor, TLRPC.TL_userProfilePhotoOld.class);
