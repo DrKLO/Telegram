@@ -394,18 +394,22 @@ public class DialogCell extends BaseCell {
                         if (encryptedChat instanceof TLRPC.TL_encryptedChatRequested) {
                             messageString = ApplicationLoader.applicationContext.getString(R.string.EncryptionProcessing);
                         } else if (encryptedChat instanceof TLRPC.TL_encryptedChatWaiting) {
-                            messageString = String.format(ApplicationLoader.applicationContext.getString(R.string.AwaitingEncryption), user.first_name);
+                            if (user != null && user.first_name != null) {
+                                messageString = String.format(ApplicationLoader.applicationContext.getString(R.string.AwaitingEncryption), user.first_name);
+                            } else {
+                                messageString = String.format(ApplicationLoader.applicationContext.getString(R.string.AwaitingEncryption), "");
+                            }
                         } else if (encryptedChat instanceof TLRPC.TL_encryptedChatDiscarded) {
                             messageString = ApplicationLoader.applicationContext.getString(R.string.EncryptionRejected);
                         } else if (encryptedChat instanceof TLRPC.TL_encryptedChat) {
                             if (encryptedChat.admin_id == UserConfig.clientUserId) {
-                                if (user != null) {
+                                if (user != null && user.first_name != null) {
                                     messageString = String.format(ApplicationLoader.applicationContext.getString(R.string.EncryptedChatStartedOutgoing), user.first_name);
+                                } else {
+                                    messageString = String.format(ApplicationLoader.applicationContext.getString(R.string.EncryptedChatStartedOutgoing), "");
                                 }
                             } else {
-                                if (user != null) {
-                                    messageString = String.format(ApplicationLoader.applicationContext.getString(R.string.EncryptedChatStartedIncoming), user.first_name);
-                                }
+                                messageString = ApplicationLoader.applicationContext.getString(R.string.EncryptedChatStartedIncoming);
                             }
                         }
                     }

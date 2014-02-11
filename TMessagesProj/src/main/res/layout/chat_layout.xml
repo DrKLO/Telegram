@@ -132,7 +132,7 @@
             android:layout_alignBottom="@+id/chat_text_edit"/>
 
         <ImageButton
-            android:layout_width="52dp"
+            android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_marginTop="2dp"
             android:scaleType="centerInside"
@@ -140,6 +140,20 @@
             android:layout_alignParentRight="true"
             android:layout_alignBottom="@+id/chat_text_edit"
             android:enabled="false"
+            android:src="@drawable/send_button_states"
+            android:background="@android:color/transparent"/>
+
+        <ImageButton
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="2dp"
+            android:scaleType="centerInside"
+            android:id="@+id/chat_audio_send_button"
+            android:layout_alignParentRight="true"
+            android:layout_alignBottom="@+id/chat_text_edit"
+            android:enabled="false"
+            android:src="@drawable/mic_button_states"
+            android:paddingRight="4dp"
             android:background="@android:color/transparent"/>
 
         <EditText

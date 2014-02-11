@@ -22,7 +22,6 @@ import org.telegram.ui.ApplicationLoader;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.GregorianCalendar;
 
 public class MessageObject {
@@ -303,6 +302,8 @@ public class MessageObject {
             return getAttachFileName(messageOwner.media.video);
         } else if (messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
             return getAttachFileName(messageOwner.media.document);
+        } else if (messageOwner.media instanceof TLRPC.TL_messageMediaAudio) {
+            return getAttachFileName(messageOwner.media.audio);
         }
         return "";
     }
@@ -328,6 +329,9 @@ public class MessageObject {
         } else if (attach instanceof TLRPC.PhotoSize) {
             TLRPC.PhotoSize photo = (TLRPC.PhotoSize)attach;
             return photo.location.volume_id + "_" + photo.location.local_id + ".jpg";
+        } else if (attach instanceof TLRPC.Audio) {
+            TLRPC.Audio audio = (TLRPC.Audio)attach;
+            return audio.dc_id + "_" + audio.id + ".m4a";
         }
         return "";
     }

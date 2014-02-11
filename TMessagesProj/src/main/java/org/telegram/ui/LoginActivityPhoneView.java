@@ -253,7 +253,9 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
     public void selectCountry(String name) {
         int index = countriesArray.indexOf(name);
         if (index != -1) {
+            ignoreOnTextChange = true;
             codeField.setText(countriesMap.get(name));
+            countryButton.setText(name);
         }
     }
 

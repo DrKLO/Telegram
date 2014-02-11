@@ -10,11 +10,10 @@ package org.telegram.ui.Views;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Bundle;
 import android.provider.MediaStore;
-import android.support.v4.app.Fragment;
 
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.FileLoader;
@@ -22,17 +21,19 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.ApplicationActivity;
+import org.telegram.ui.PhotoCropActivity;
 
 import java.io.File;
 
-public class AvatarUpdater implements NotificationCenter.NotificationCenterDelegate {
+public class AvatarUpdater implements NotificationCenter.NotificationCenterDelegate, PhotoCropActivity.PhotoCropActivityDelegate {
     public String currentPicturePath;
     private TLRPC.PhotoSize smallPhoto;
     private TLRPC.PhotoSize bigPhoto;
     public String uploadingAvatar = null;
     File picturePath = null;
     public Activity parentActivity = null;
-    public Fragment parentFragment = null;
+    public BaseFragment parentFragment = null;
     public AvatarUpdaterDelegate delegate;
     private boolean clearAfterUpdate = false;
     public boolean returnOnly = false;
@@ -85,22 +86,38 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
 
     private void startCrop(String path) {
         try {
-            Intent cropIntent = new Intent("com.android.camera.action.CROP");
-            cropIntent.setDataAndType(Uri.fromFile(new File(path)), "image/*");
-            cropIntent.putExtra("crop", "true");
-            cropIntent.putExtra("aspectX", 1);
-            cropIntent.putExtra("aspectY", 1);
-            cropIntent.putExtra("outputX", 800);
-            cropIntent.putExtra("outputY", 800);
-            cropIntent.putExtra("scale", true);
-            cropIntent.putExtra("return-data", false);
-            picturePath = Utilities.generatePicturePath();
-            cropIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(picturePath));
-            cropIntent.putExtra("output", Uri.fromFile(picturePath));
             if (parentFragment != null) {
-                parentFragment.startActivityForResult(cropIntent, 2);
-            } else if (parentActivity != null) {
-                parentActivity.startActivityForResult(cropIntent, 2);
+                ApplicationActivity activity = (ApplicationActivity)parentFragment.parentActivity;
+                if (activity == null) {
+                    activity = (ApplicationActivity)parentFragment.getActivity();
+                }
+                if (activity == null) {
+                    return;
+                }
+                Bundle params = new Bundle();
+                params.putString("photoPath", path);
+                PhotoCropActivity photoCropActivity = new PhotoCropActivity();
+                photoCropActivity.delegate = this;
+                photoCropActivity.setArguments(params);
+                activity.presentFragment(photoCropActivity, "crop", false);
+            } else {
+                Intent cropIntent = new Intent("com.android.camera.action.CROP");
+                cropIntent.setDataAndType(Uri.fromFile(new File(path)), "image/*");
+                cropIntent.putExtra("crop", "true");
+                cropIntent.putExtra("aspectX", 1);
+                cropIntent.putExtra("aspectY", 1);
+                cropIntent.putExtra("outputX", 800);
+                cropIntent.putExtra("outputY", 800);
+                cropIntent.putExtra("scale", true);
+                cropIntent.putExtra("return-data", false);
+                picturePath = Utilities.generatePicturePath();
+                cropIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(picturePath));
+                cropIntent.putExtra("output", Uri.fromFile(picturePath));
+                if (parentFragment != null) {
+                    parentFragment.startActivityForResult(cropIntent, 2);
+                } else if (parentActivity != null) {
+                    parentActivity.startActivityForResult(cropIntent, 2);
+                }
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -120,26 +137,15 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
                 if (data == null) {
                     return;
                 }
-                Uri imageUri = data.getData();
-                Cursor cursor = null;
                 try {
-                    if (parentFragment != null) {
-                        cursor = parentFragment.getActivity().getContentResolver().query(imageUri, new String[]{android.provider.MediaStore.Images.ImageColumns.DATA}, null, null, null);
-                    } else if (parentActivity != null) {
-                        cursor = parentActivity.getContentResolver().query(imageUri, new String[]{android.provider.MediaStore.Images.ImageColumns.DATA}, null, null, null);
+                    Uri imageUri = data.getData();
+                    if (imageUri != null) {
+                        String imageFilePath = Utilities.getPath(imageUri);
+                        startCrop(imageFilePath);
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
-                    return;
                 }
-                if (cursor == null) {
-                    return;
-                }
-                if (cursor.moveToFirst()) {
-                    String imageFilePath = cursor.getString(0);
-                    startCrop(imageFilePath);
-                }
-                cursor.close();
             } else if (requestCode == 2) {
                 Bitmap bitmap = FileLoader.loadBitmap(picturePath.getAbsolutePath(), 800, 800);
                 processBitmap(bitmap);
@@ -166,6 +172,11 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
                 FileLoader.Instance.uploadFile(uploadingAvatar, null, null);
             }
         }
+    }
+
+    @Override
+    public void didFinishCrop(Bitmap bitmap) {
+        processBitmap(bitmap);
     }
 
     @Override

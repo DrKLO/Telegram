@@ -393,7 +393,7 @@ public class ChatOrUserCell extends BaseCell {
                                     if (value == 0) {
                                         value = user.status.expires;
                                     }
-                                    onlineString = getResources().getString(R.string.LastSeen) + " " + Utilities.formatDateOnline(value);
+                                    onlineString = Utilities.formatDateOnline(value);
                                 }
                             }
                         }

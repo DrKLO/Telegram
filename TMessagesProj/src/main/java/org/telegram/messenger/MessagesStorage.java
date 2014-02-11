@@ -334,7 +334,7 @@ public class MessagesStorage {
                     FileLog.e("tmessages", e);
                 }
             }
-        }, true);
+        });
     }
 
     public void clearUserPhotos(final int uid) {
@@ -967,7 +967,7 @@ public class MessagesStorage {
                     FileLog.e("tmessages", e);
                 }
             }
-        }, true);
+        });
     }
 
     public void putContacts(final ArrayList<TLRPC.TL_contact> contacts, final boolean deleteAll) {
@@ -1102,21 +1102,21 @@ public class MessagesStorage {
                     }
                     cursor.dispose();
                 } catch (Exception e) {
+                    contactHashMap.clear();
                     FileLog.e("tmessages", e);
-                } finally {
-                    ContactsController.Instance.performSyncPhoneBook(contactHashMap, true, true);
                 }
+                ContactsController.Instance.performSyncPhoneBook(contactHashMap, true, true);
             }
-        }, true);
+        });
     }
 
     public void getContacts() {
         storageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
+                ArrayList<TLRPC.TL_contact> contacts = new ArrayList<TLRPC.TL_contact>();
+                ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
                 try {
-                    ArrayList<TLRPC.TL_contact> contacts = new ArrayList<TLRPC.TL_contact>();
-                    ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
                     SQLiteCursor cursor = database.queryFinalized("SELECT * FROM contacts WHERE 1");
                     String uids = "";
                     while (cursor.next()) {
@@ -1150,12 +1150,14 @@ public class MessagesStorage {
                         }
                         cursor.dispose();
                     }
-                    ContactsController.Instance.processLoadedContacts(contacts, users, 1);
                 } catch (Exception e) {
+                    contacts.clear();
+                    users.clear();
                     FileLog.e("tmessages", e);
                 }
+                ContactsController.Instance.processLoadedContacts(contacts, users, 1);
             }
-        }, true);
+        });
     }
 
     public void putMediaCount(final long uid, final int count) {
@@ -1203,7 +1205,7 @@ public class MessagesStorage {
                     FileLog.e("tmessages", e);
                 }
             }
-        }, true);
+        });
     }
 
     public void loadMedia(final long uid, final int offset, final int count, final int max_id, final int classGuid) {
@@ -1279,7 +1281,7 @@ public class MessagesStorage {
                     MessagesController.Instance.processLoadedMedia(res, uid, offset, count, max_id, true, classGuid);
                 }
             }
-        }, true);
+        });
     }
 
     public void putMedia(final long uid, final ArrayList<TLRPC.Message> messages) {
@@ -1469,7 +1471,7 @@ public class MessagesStorage {
                     MessagesController.Instance.processLoadedMessages(res, dialog_id, offset, count_query, max_id, true, classGuid, min_unread_id, max_unread_id, count_unread, max_unread_date, forward);
                 }
             }
-        }, true);
+        });
     }
 
     public void startTransaction(boolean useQueue) {
@@ -2691,7 +2693,7 @@ public class MessagesStorage {
                     MessagesController.Instance.processLoadedDialogs(dialogs, encryptedChats, 0, 0, 100, true, true);
                 }
             }
-        }, true);
+        });
     }
 
     public void putDialogs(final TLRPC.messages_Dialogs dialogs) {

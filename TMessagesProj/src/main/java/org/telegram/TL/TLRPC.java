@@ -1227,16 +1227,6 @@ public class TLRPC {
         }
     }
 
-    public static class Audio extends TLObject {
-        public long id;
-        public long access_hash;
-        public int user_id;
-        public int date;
-        public int duration;
-        public int size;
-        public int dc_id;
-    }
-
     public static class TL_audioEmpty extends Audio {
         public static int constructor = 0x586988d8;
 
@@ -8776,6 +8766,19 @@ public class TLRPC {
         public byte[] iv;
     }
 
+    public static class Audio extends TLObject {
+        public long id;
+        public long access_hash;
+        public int user_id;
+        public int date;
+        public int duration;
+        public int size;
+        public int dc_id;
+        public String path;
+        public byte[] key;
+        public byte[] iv;
+    }
+
     public static class MessageAction extends TLObject {
         public Photo photo;
         public UserProfilePhoto newUserPhoto;
@@ -8866,6 +8869,36 @@ public class TLRPC {
             stream.writeInt32(dc_id);
             stream.writeInt32(w);
             stream.writeInt32(h);
+            stream.writeByteArray(key);
+            stream.writeByteArray(iv);
+        }
+    }
+
+    public static class TL_audioEncrypted extends Audio {
+        public static int constructor = 0x555555F6;
+
+
+        public void readParams(SerializedData stream) {
+            id = stream.readInt64();
+            access_hash = stream.readInt64();
+            user_id = stream.readInt32();
+            date = stream.readInt32();
+            duration = stream.readInt32();
+            size = stream.readInt32();
+            dc_id = stream.readInt32();
+            key = stream.readByteArray();
+            iv = stream.readByteArray();
+        }
+
+        public void serializeToStream(SerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(id);
+            stream.writeInt64(access_hash);
+            stream.writeInt32(user_id);
+            stream.writeInt32(date);
+            stream.writeInt32(duration);
+            stream.writeInt32(size);
+            stream.writeInt32(dc_id);
             stream.writeByteArray(key);
             stream.writeByteArray(iv);
         }
