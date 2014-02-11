@@ -423,7 +423,7 @@ public class TcpConnection extends PyroClientAdapter {
         } else {
             FileLog.d("tmessages", "Disconnected " + TcpConnection.this);
         }
-        boolean swirchToNextPort = wasConnected && hasSomeDataSinceLastConnect;
+        boolean switchToNextPort = wasConnected && !hasSomeDataSinceLastConnect && timedout;
         firstPacket = true;
         restOfTheData = null;
         channelToken = 0;
@@ -452,7 +452,7 @@ public class TcpConnection extends PyroClientAdapter {
             }
             if (ConnectionsManager.isNetworkOnline()) {
                 isNextPort = true;
-                if (failedConnectionCount > willRetryConnectCount || swirchToNextPort) {
+                if (failedConnectionCount > willRetryConnectCount || switchToNextPort) {
                     Datacenter datacenter = ConnectionsManager.Instance.datacenterWithId(datacenterId);
                     datacenter.nextAddressOrPort();
                     failedConnectionCount = 0;
