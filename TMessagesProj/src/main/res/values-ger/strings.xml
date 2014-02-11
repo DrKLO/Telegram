@@ -37,10 +37,10 @@
     <string name="Yesterday">gestern</string>
     <string name="NoResult">Keine Ergebnisse</string>
     <string name="NoChats">Noch keine Unterhaltungen...</string>
-    <string name="NoChatsHelp">Start messaging by pressing the\ncompose button in the top right corner\nor go to the Contacts section.</string>
-    <string name="WaitingForNetwork">Waiting for network...</string>
+    <string name="NoChatsHelp">Starte eine Unterhaltung mit\n dem Options Button rechts oben,\n oder über den jeweiligen Kontakt.</string>
+    <string name="WaitingForNetwork">Warten auf Netzwerk...</string>
     <string name="Connecting">Verbinden...</string>
-    <string name="Updating">Updating...</string>
+    <string name="Updating">Aktualisieren...</string>
     <string name="NewSecretChat">Neuer geheimer Chat</string>
     <string name="AwaitingEncryption">Warten, bis %s online ist...</string>
     <string name="EncryptionRejected">Geheimer Chat beendet</string>
@@ -54,13 +54,13 @@
 
     <!--documents view-->
     <string name="SelectFile">Datei auswählen</string>
-    <string name="FreeOfTotal">Free %1$s of %2$s</string>
+    <string name="FreeOfTotal">Frei %1$s von %2$s</string>
     <string name="UnknownError">Unbekannter Fehler</string>
-    <string name="AccessError">Zugriffs Fehler</string>
+    <string name="AccessError">Zugriffsfehler</string>
     <string name="NoFiles">Noch keine Dateien...</string>
     <string name="FileUploadLimit">Die Dateien sollten nicht größer als %1$s sein</string>
     <string name="NotMounted">Speicher nicht gefunden</string>
-    <string name="UsbActive">Usb transfer aktiv</string>
+    <string name="UsbActive">USB-Transfer aktiv</string>
     <string name="InternalStorage">Interner Speicher</string>
     <string name="ExternalStorage">Externer Speicher</string>
     <string name="SystemRoot">System Verzeichnis</string>
@@ -69,7 +69,7 @@
     <!--chat view-->
     <string name="Invisible">unsichtbar</string>
     <string name="Typing">schreibt...</string>
-    <string name="Attach">Attach</string>
+    <string name="Attach">Anhang</string>
     <string name="IsTyping">schreibt...</string>
     <string name="AreTyping">schreiben...</string>
     <string name="AndMoreTyping">und %d weiter Personen</string>
@@ -85,7 +85,7 @@
     <string name="ViewVideo">Video abspielen</string>
     <string name="ForwardedMessage">Weitergeleitete Nachricht</string>
     <string name="From">Von</string>
-    <string name="NoRecent">No recent</string>
+    <string name="NoRecent">keine kürzlichen</string>
     <string name="Members">Mitglieder</string>
     <string name="Message">Nachricht</string>
     <string name="TypeMessage">Type message</string>
