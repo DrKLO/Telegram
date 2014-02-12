@@ -4,7 +4,7 @@
 
     <!--signin view-->
     <string name="YourPhone">Il tuo Telefono</string>
-    <string name="StartText">Per favore conferma il tuo codice paese ed inserisci il tuo numero di telefono.</string>
+    <string name="StartText">Per favore conferma il codice del tuo paese ed inserisci il tuo numero di telefono.</string>
 
     <!--code enter view-->
     <string name="YourCode">Il tuo codice</string>
