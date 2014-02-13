@@ -67,6 +67,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
     private String currentFileName;
     private int user_id = 0;
     private Point displaySize = new Point();
+    private boolean cancelRunning = false;
 
     private ArrayList<MessageObject> imagesArrTemp = new ArrayList<MessageObject>();
     private HashMap<Integer, MessageObject> imagesByIdsTemp = new HashMap<Integer, MessageObject>();
@@ -224,7 +225,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
         deleteButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (mViewPager == null) {
+                if (mViewPager == null || localPagerAdapter == null || localPagerAdapter.imagesArr == null) {
                     return;
                 }
                 int item = mViewPager.getCurrentItem();
@@ -645,9 +646,20 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
         }
     }
 
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        cancelRunning = true;
+        mViewPager.setAdapter(null);
+        localPagerAdapter = null;
+        finish();
+        System.gc();
+    }
+
     private void processSelectedMenu(int itemId) {
         switch (itemId) {
             case android.R.id.home:
+                cancelRunning = true;
                 mViewPager.setAdapter(null);
                 localPagerAdapter = null;
                 finish();
@@ -958,9 +970,9 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                             }
                             if (loadFile) {
                                 if (!FileLoader.Instance.isLoadingFile(fileName)) {
-                                    FileLoader.Instance.loadFile(message.messageOwner.media.video, null, null);
+                                    FileLoader.Instance.loadFile(message.messageOwner.media.video, null, null, null);
                                 } else {
-                                    FileLoader.Instance.cancelLoadFile(message.messageOwner.media.video, null, null);
+                                    FileLoader.Instance.cancelLoadFile(message.messageOwner.media.video, null, null, null);
                                 }
                                 checkCurrentFile();
                                 processViews(playButton, message);
@@ -988,7 +1000,9 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
         public void destroyItem(View collection, int position, Object view) {
             ((ViewPager)collection).removeView((View)view);
             PZSImageView iv = (PZSImageView)((View)view).findViewById(R.id.page_image);
-            FileLoader.Instance.cancelLoadingForImageView(iv);
+            if (cancelRunning) {
+                FileLoader.Instance.cancelLoadingForImageView(iv);
+            }
             iv.clearImage();
         }
 

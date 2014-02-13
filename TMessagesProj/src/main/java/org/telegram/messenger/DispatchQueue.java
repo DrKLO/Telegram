@@ -42,14 +42,10 @@ public class DispatchQueue extends Thread {
     }
 
     public void postRunnable(Runnable runnable) {
-        postRunnable(runnable, 0, false);
+        postRunnable(runnable, 0);
     }
 
-    public void postRunnable(Runnable runnable, boolean inFront) {
-        postRunnable(runnable, 0, true);
-    }
-
-    public void postRunnable(Runnable runnable, int delay, boolean inFront) {
+    public void postRunnable(Runnable runnable, int delay) {
         if (handler == null) {
             try {
                 synchronized (handlerSyncObject) {
@@ -62,11 +58,7 @@ public class DispatchQueue extends Thread {
 
         if (handler != null) {
             if (delay <= 0) {
-                if (inFront) {
-                    handler.postAtFrontOfQueue(runnable);
-                } else {
-                    handler.post(runnable);
-                }
+                handler.post(runnable);
             } else {
                 handler.postDelayed(runnable, delay);
             }

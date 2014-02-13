@@ -27,6 +27,7 @@ public class UserConfig {
     public static int lastSendMessageId = -210000;
     public static int lastLocalId = -210000;
     public static String contactsHash = "";
+    public static String importHash = "";
     private final static Integer sync = 1;
     public static boolean saveIncomingPhotos = false;
 
@@ -48,12 +49,12 @@ public class UserConfig {
             try {
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = preferences.edit();
-                
                 editor.putBoolean("registeredForPush", registeredForPush);
                 editor.putString("pushString", pushString);
                 editor.putInt("lastSendMessageId", lastSendMessageId);
                 editor.putInt("lastLocalId", lastLocalId);
                 editor.putString("contactsHash", contactsHash);
+                editor.putString("importHash", importHash);
                 editor.putBoolean("saveIncomingPhotos", saveIncomingPhotos);
                 
                 if (currentUser == null) {
@@ -97,7 +98,7 @@ public class UserConfig {
                         lastSendMessageId = data.readInt32();
                         lastLocalId = data.readInt32();
                         contactsHash = data.readString();
-                        data.readString();
+                        importHash = data.readString();
                         saveIncomingPhotos = data.readBool();
                         if (currentUser.status != null) {
                             if (currentUser.status.expires != 0) {
@@ -131,6 +132,7 @@ public class UserConfig {
                         lastSendMessageId = preferences.getInt("lastSendMessageId", -210000);
                         lastLocalId = preferences.getInt("lastLocalId", -210000);
                         contactsHash = preferences.getString("contactsHash", "");
+                        importHash = preferences.getString("importHash", "");
                         saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
                     }
                     if (lastLocalId > -210000) {
@@ -155,6 +157,7 @@ public class UserConfig {
                 lastSendMessageId = preferences.getInt("lastSendMessageId", -210000);
                 lastLocalId = preferences.getInt("lastLocalId", -210000);
                 contactsHash = preferences.getString("contactsHash", "");
+                importHash = preferences.getString("importHash", "");
                 saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
                 String user = preferences.getString("user", null);
                 if (user != null) {
@@ -180,6 +183,7 @@ public class UserConfig {
         currentUser = null;
         registeredForPush = false;
         contactsHash = "";
+        importHash = "";
         lastLocalId = -210000;
         lastSendMessageId = -210000;
         saveIncomingPhotos = false;
