@@ -49,32 +49,25 @@ public class UserConfig {
             try {
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = preferences.edit();
-                if (currentUser != null) {
-                    editor.putBoolean("registeredForPush", registeredForPush);
-                    editor.putString("pushString", pushString);
-                    editor.putInt("lastSendMessageId", lastSendMessageId);
-                    editor.putInt("lastLocalId", lastLocalId);
-                    editor.putString("contactsHash", contactsHash);
-                    editor.putString("importHash", importHash);
-                    editor.putBoolean("saveIncomingPhotos", saveIncomingPhotos);
-                    if (withFile) {
-                        SerializedData data = new SerializedData();
-                        currentUser.serializeToStream(data);
-                        clientUserId = currentUser.id;
-                        clientActivated = true;
-                        String userString = Base64.encodeToString(data.toByteArray(), Base64.DEFAULT);
-                        editor.putString("user", userString);
-                    }
-                } else {
-                    editor.putBoolean("registeredForPush", registeredForPush);
-                    editor.putString("pushString", pushString);
-                    editor.putInt("lastSendMessageId", lastSendMessageId);
-                    editor.putInt("lastLocalId", lastLocalId);
-                    editor.putString("contactsHash", contactsHash);
-                    editor.putString("importHash", importHash);
-                    editor.putBoolean("saveIncomingPhotos", saveIncomingPhotos);
+                editor.putBoolean("registeredForPush", registeredForPush);
+                editor.putString("pushString", pushString);
+                editor.putInt("lastSendMessageId", lastSendMessageId);
+                editor.putInt("lastLocalId", lastLocalId);
+                editor.putString("contactsHash", contactsHash);
+                editor.putString("importHash", importHash);
+                editor.putBoolean("saveIncomingPhotos", saveIncomingPhotos);
+                
+                if (currentUser == null) {
                     editor.remove("user");
+                } else if (withFile) {
+                    SerializedData data = new SerializedData();
+                    currentUser.serializeToStream(data);
+                    clientUserId = currentUser.id;
+                    clientActivated = true;
+                    String userString = Base64.encodeToString(data.toByteArray(), Base64.DEFAULT);
+                    editor.putString("user", userString);
                 }
+                
                 editor.commit();
                 if (oldFile != null) {
                     oldFile.delete();
