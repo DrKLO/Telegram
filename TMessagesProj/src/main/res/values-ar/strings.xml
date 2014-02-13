@@ -246,6 +246,8 @@
     <string name="AutomaticPhotoDownloadPrivateChats">المحادثات</string>
     <string name="Events">الأحداث</string>
     <string name="ContactJoined">عندما يشترك صديق في تيليجرام</string>
+    <string name="AddForwardingInfo">ادراج معلومات التوجية</string>
+    <string name="NativeEmoji">ايقونات النظام</string>
 
     <!--media view-->
     <string name="NoMedia">لا توجد وسائط بعد</string>

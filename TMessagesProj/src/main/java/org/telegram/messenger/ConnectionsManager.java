@@ -33,7 +33,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.TcpConnectionDelegate {
-    public static boolean DEBUG_VERSION = true;
+    public static boolean DEBUG_VERSION = false;
     public static int APP_ID = 2458;
     public static String APP_HASH = "5bce48dc7d331e62c955669eb7233217";
     public static String HOCKEY_APP_HASH = "your-hockeyapp-api-key-here";

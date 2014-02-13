@@ -11,6 +11,8 @@ package org.telegram.messenger;
 import java.io.InputStream;
 import java.util.HashMap;
 
+import android.app.Activity;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -539,7 +541,8 @@ public class Emoji {
                     s.setSpan(span, i, i + 1, 0);
                 }
             }
-            if (emojiCount >= 200) {
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+            if (emojiCount >= 200 || preferences.getBoolean("native_emoji", true)) {
                 break;
             }
         }

@@ -1556,7 +1556,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     private void sendMessage(String message, double lat, double lon, TLRPC.TL_photo photo, TLRPC.TL_video video, MessageObject msgObj, TLRPC.FileLocation location, TLRPC.User user, TLRPC.TL_document document, TLRPC.TL_audio audio, long peer) {
 // FAD Code starts ---------------------------------------
         // If a message came as an object change it back as normal
-        if (msgObj != null) {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        if (msgObj != null && !preferences.getBoolean("add_forwarding_info", true)) {
             if (msgObj.messageOwner.media.photo != null) {
                 photo = (TLRPC.TL_photo) msgObj.messageOwner.media.photo;
             } else if (msgObj.messageOwner.media.geo != null) {
