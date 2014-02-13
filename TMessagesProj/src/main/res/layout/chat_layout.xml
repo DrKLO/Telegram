@@ -40,6 +40,7 @@
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:id="@+id/chat_list_view"
+        android:nextFocusDown="@+id/chat_text_edit"
         android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true"
         android:clipToPadding="false"
@@ -124,22 +125,26 @@
             android:src="@drawable/ic_msg_panel_smiles"
             android:layout_width="48dp"
             android:layout_height="48dp"
+            android:nextFocusRight="@+id/chat_text_edit"
             android:layout_marginTop="2dp"
             android:paddingTop="1dp"
             android:scaleType="centerInside"
             android:paddingLeft="4dp"
             android:id="@+id/chat_smile_button"
+            android:contentDescription="@string/Emoticons"
             android:layout_alignBottom="@+id/chat_text_edit"/>
 
         <ImageButton
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_marginTop="2dp"
+            android:nextFocusLeft="@+id/chat_text_edit"
             android:scaleType="centerInside"
             android:id="@+id/chat_send_button"
             android:layout_alignParentRight="true"
             android:layout_alignBottom="@+id/chat_text_edit"
             android:enabled="false"
+            android:contentDescription="@string/SendMessage"
             android:src="@drawable/send_button_states"
             android:background="@android:color/transparent"/>
 
@@ -147,6 +152,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_marginTop="2dp"
+            android:nextFocusLeft="@+id/chat_text_edit"
             android:scaleType="centerInside"
             android:id="@+id/chat_audio_send_button"
             android:layout_alignParentRight="true"
@@ -154,6 +160,7 @@
             android:enabled="false"
             android:src="@drawable/mic_button_states"
             android:paddingRight="4dp"
+            android:contentDescription="@string/SendAudio"
             android:background="@android:color/transparent"/>
 
         <EditText
@@ -162,6 +169,9 @@
             android:id="@+id/chat_text_edit"
             android:layout_toRightOf="@id/chat_smile_button"
             android:layout_toLeftOf="@id/chat_send_button"
+            android:nextFocusLeft="@+id/chat_smile_button"
+            android:nextFocusUp="@+id/chat_list_view"
+            android:nextFocusRight="@+id/chat_audio_send_button"
             android:layout_marginTop="2dp"
             android:maxLines="4"
             android:minHeight="48dp"

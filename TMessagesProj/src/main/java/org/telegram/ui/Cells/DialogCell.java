@@ -642,6 +642,9 @@ public class DialogCell extends BaseCell {
             CharSequence messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - Utilities.dp(12), TextUtils.TruncateAt.END);
             messageLayout = new StaticLayout(messageStringFinal, currentMessagePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 
+            //Set string for Accessibility events to speak contact list
+            setTextAccessibility(nameStringFinal+" "+getResources().getString(R.string.LastMessage)+": "+messageString);
+
             double widthpx = 0;
             float left = 0;
             if (Utilities.isRTL) {

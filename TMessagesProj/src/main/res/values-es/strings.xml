@@ -348,6 +348,17 @@
     <string name="Page7Message">Los mensajes de <![CDATA[<b>Telegram</b>]]> están fuertemente<![CDATA[<br/>]]>cifrados y se pueden autodestruir.</string>
     <string name="StartMessaging">Empieza a conversar</string>
 
+    <!--Accessibility strings-->
+    <string name="ContactUnAllocated">Contacto no asignado</string>
+    <string name="LastMessage">último mensaje</string>
+    <string name="Emoticons">emoticonos</string>
+    <string name="SendMessage">enviar mensaje</string>
+    <string name="RecordAudio">grabar audio</string>
+    <string name="SendAudio">enviar audio</string>
+    <string name="Avatar">avatar</string>
+    <string name="ChangeAvatar">cambiar avatar</string>
+    <string name="EditName">editar nombre</string>
+
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
 </resources>
