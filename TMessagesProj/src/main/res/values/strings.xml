@@ -22,7 +22,7 @@
     <!--signup view-->
     <string name="YourName">Adınız</string>
     <string name="RegisterText">İsim ve Soyisim ayarla</string>
-    <!--<string name="RegisterText">İsim ve Resim ayarla</string>-->
+    <!--<string name="RegisterText">Set up your name and picture</string>-->
     <string name="FirstName">İsim (gerekli)</string>
     <string name="LastName">Soyisim (isteğe bağlı)</string>
     <string name="CancelRegistration">Kaydı iptal et</string>
