@@ -147,12 +147,13 @@
     <string name="SelectContact">Aukeratu kontaktua</string>
     <string name="NoContacts">Ez dago kontakturik oraindik</string>
     <string name="InviteText">Aizu! Telegram-era alda gaitezen: http://telegram.org/dl2</string>
-    <string name="TodayAt">gaur</string>
-    <string name="YesterdayAt">atzo</string>
+    <string name="TodayAt">Gaur</string>
+    <string name="YesterdayAt">Atzo</string>
     <string name="OtherAt"></string>
     <string name="Online">online</string>
     <string name="Offline">offline</string>
-    <string name="LastSeen">Ikusia</string>
+    <string name="LastSeen"></string>
+    <string name="LastSeenDate"></string>
     <string name="InviteFriends">Gonbidatu lagunak</string>
 
     <!--group create view-->
@@ -237,8 +238,8 @@
     <string name="AutomaticPhotoDownload">IRUDI JEITSIERA AUTOMÁTIKOA</string>
     <string name="AutomaticPhotoDownloadGroups">Taldeak</string>
     <string name="AutomaticPhotoDownloadPrivateChats">Ezkutuko txata</string>
-    <string name="Events">EBENTUAK</string>
-    <string name="ContactJoined">Kontaktua Telegram jarri du</string>
+    <string name="Events">GERTAERAK</string>
+    <string name="ContactJoined">KontaktuaK Telegram jarri du</string>
 
     <!--media view-->
     <string name="NoMedia">Ez dago partetatutako multimediarik</string>

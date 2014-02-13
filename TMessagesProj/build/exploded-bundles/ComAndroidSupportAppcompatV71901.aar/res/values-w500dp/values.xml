@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-
-    <!-- From: file:/Volumes/Android/int/klp-dev/frameworks/support/v7/appcompat/res/values-w500dp/dimens.xml -->
-    <integer name="abc_max_action_buttons">4</integer>
-
-</resources>

@@ -54,7 +54,7 @@ public class LaunchActivity extends PausableActivity {
                             }
                             String path = null;
                             if (parcelable instanceof Uri) {
-                                path = Utilities.getPath(this, (Uri)parcelable);
+                                path = Utilities.getPath((Uri)parcelable);
                             } else {
                                 path = intent.getParcelableExtra(Intent.EXTRA_STREAM).toString();
                                 if (path.startsWith("content:")) {
@@ -79,7 +79,7 @@ public class LaunchActivity extends PausableActivity {
                             }
                             String path = null;
                             if (parcelable instanceof Uri) {
-                                path = Utilities.getPath(this, (Uri)parcelable);
+                                path = Utilities.getPath((Uri)parcelable);
                             } else {
                                 path = parcelable.toString();
                                 if (path.startsWith("content:")) {

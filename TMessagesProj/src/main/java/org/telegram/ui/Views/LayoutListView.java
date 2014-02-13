@@ -40,11 +40,19 @@ public class LayoutListView extends ListView {
             post(new Runnable() {
                 @Override
                 public void run() {
-                    setSelectionFromTop(scrollTo, offset - getPaddingTop());
+                    try {
+                        setSelectionFromTop(scrollTo, offset - getPaddingTop());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             });
         } else {
-            super.onLayout(changed, left, top, right, bottom);
+            try {
+                super.onLayout(changed, left, top, right, bottom);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
         height = (bottom - top);
     }

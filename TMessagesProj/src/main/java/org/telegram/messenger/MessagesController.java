@@ -53,12 +53,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
 public class MessagesController implements NotificationCenter.NotificationCenterDelegate {
-    public ConcurrentHashMap<Integer, TLRPC.Chat> chats = new ConcurrentHashMap<Integer, TLRPC.Chat>(100, 1.0f, 1);
-    public ConcurrentHashMap<Integer, TLRPC.EncryptedChat> encryptedChats = new ConcurrentHashMap<Integer, TLRPC.EncryptedChat>(10, 1.0f, 1);
-    public ConcurrentHashMap<Integer, TLRPC.User> users = new ConcurrentHashMap<Integer, TLRPC.User>(100, 1.0f, 1);
+    public ConcurrentHashMap<Integer, TLRPC.Chat> chats = new ConcurrentHashMap<Integer, TLRPC.Chat>(100, 1.0f, 2);
+    public ConcurrentHashMap<Integer, TLRPC.EncryptedChat> encryptedChats = new ConcurrentHashMap<Integer, TLRPC.EncryptedChat>(10, 1.0f, 2);
+    public ConcurrentHashMap<Integer, TLRPC.User> users = new ConcurrentHashMap<Integer, TLRPC.User>(100, 1.0f, 2);
     public ArrayList<TLRPC.TL_dialog> dialogs = new ArrayList<TLRPC.TL_dialog>();
     public ArrayList<TLRPC.TL_dialog> dialogsServerOnly = new ArrayList<TLRPC.TL_dialog>();
-    public ConcurrentHashMap<Long, TLRPC.TL_dialog> dialogs_dict = new ConcurrentHashMap<Long, TLRPC.TL_dialog>(100, 1.0f, 1);
+    public ConcurrentHashMap<Long, TLRPC.TL_dialog> dialogs_dict = new ConcurrentHashMap<Long, TLRPC.TL_dialog>(100, 1.0f, 2);
     public SparseArray<MessageObject> dialogMessage = new SparseArray<MessageObject>();
     public ConcurrentHashMap<Long, ArrayList<PrintingUser>> printingUsers = new ConcurrentHashMap<Long, ArrayList<PrintingUser>>(100, 1.0f, 2);
     public HashMap<Long, CharSequence> printingStrings = new HashMap<Long, CharSequence>();
@@ -137,6 +137,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         public int type;
         public TLRPC.FileLocation location;
         public TLRPC.TL_video videoLocation;
+        public TLRPC.TL_audio audioLocation;
         public TLRPC.TL_document documentLocation;
         public MessageObject obj;
         public TLRPC.EncryptedChat encryptedChat;
@@ -1476,35 +1477,39 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     public void sendMessage(TLRPC.User user, long peer) {
-        sendMessage(null, 0, 0, null, null, null, null, user, null, peer);
+        sendMessage(null, 0, 0, null, null, null, null, user, null, null, peer);
     }
 
     public void sendMessage(MessageObject message, long peer) {
-        sendMessage(null, 0, 0, null, null, message, null, null, null, peer);
+        sendMessage(null, 0, 0, null, null, message, null, null, null, null, peer);
     }
 
     public void sendMessage(TLRPC.TL_document document, long peer) {
-        sendMessage(null, 0, 0, null, null, null, null, null, document, peer);
+        sendMessage(null, 0, 0, null, null, null, null, null, document, null, peer);
     }
 
     public void sendMessage(String message, long peer) {
-        sendMessage(message, 0, 0, null, null, null, null, null, null, peer);
+        sendMessage(message, 0, 0, null, null, null, null, null, null, null, peer);
     }
 
     public void sendMessage(TLRPC.FileLocation location, long peer) {
-        sendMessage(null, 0, 0, null, null, null, location, null, null, peer);
+        sendMessage(null, 0, 0, null, null, null, location, null, null, null, peer);
     }
 
     public void sendMessage(double lat, double lon, long peer) {
-        sendMessage(null, lat, lon, null, null, null, null, null, null, peer);
+        sendMessage(null, lat, lon, null, null, null, null, null, null, null, peer);
     }
 
     public void sendMessage(TLRPC.TL_photo photo, long peer) {
-        sendMessage(null, 0, 0, photo, null, null, null, null, null, peer);
+        sendMessage(null, 0, 0, photo, null, null, null, null, null, null, peer);
     }
 
     public void sendMessage(TLRPC.TL_video video, long peer) {
-        sendMessage(null, 0, 0, null, video, null, null, null, null, peer);
+        sendMessage(null, 0, 0, null, video, null, null, null, null, null, peer);
+    }
+
+    public void sendMessage(TLRPC.TL_audio audio, long peer) {
+        sendMessage(null, 0, 0, null, null, null, null, null, null, audio, peer);
     }
 
     public void sendTTLMessage(TLRPC.EncryptedChat encryptedChat) {
@@ -1548,7 +1553,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         performSendEncryptedRequest(reqSend, newMsgObj, encryptedChat, null);
     }
 
-    private void sendMessage(String message, double lat, double lon, TLRPC.TL_photo photo, TLRPC.TL_video video, MessageObject msgObj, TLRPC.FileLocation location, TLRPC.User user, TLRPC.TL_document document, long peer) {
+    private void sendMessage(String message, double lat, double lon, TLRPC.TL_photo photo, TLRPC.TL_video video, MessageObject msgObj, TLRPC.FileLocation location, TLRPC.User user, TLRPC.TL_document document, TLRPC.TL_audio audio, long peer) {
         TLRPC.Message newMsg = null;
         int type = -1;
         if (message != null) {
@@ -1622,6 +1627,13 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             type = 7;
             newMsg.message = "-1";
             newMsg.attachPath = document.path;
+        } else if (audio != null) {
+            newMsg = new TLRPC.TL_message();
+            newMsg.media = new TLRPC.TL_messageMediaAudio();
+            newMsg.media.audio = audio;
+            type = 8;
+            newMsg.message = "-1";
+            newMsg.attachPath = audio.path;
         }
         if (newMsg == null) {
             return;
@@ -1699,7 +1711,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 reqSend.media = new TLRPC.TL_decryptedMessageMediaEmpty();
                 performSendEncryptedRequest(reqSend, newMsgObj, encryptedChat, null);
             }
-        } else if (type == 1 || type == 2 || type == 3 || type == 5 || type == 6 || type == 7) {
+        } else if (type >= 1 && type <= 3 || type >= 5 && type <= 8) {
             if (encryptedChat == null) {
                 TLRPC.TL_messages_sendMedia reqSend = new TLRPC.TL_messages_sendMedia();
                 reqSend.peer = sendToPeer;
@@ -1752,6 +1764,15 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     delayedMessage.type = 2;
                     delayedMessage.obj = newMsgObj;
                     delayedMessage.documentLocation = document;
+                    performSendDelayedMessage(delayedMessage);
+                } else if (type == 8) {
+                    reqSend.media = new TLRPC.TL_inputMediaUploadedAudio();
+                    reqSend.media.duration = audio.duration;
+                    DelayedMessage delayedMessage = new DelayedMessage();
+                    delayedMessage.sendRequest = reqSend;
+                    delayedMessage.type = 3;
+                    delayedMessage.obj = newMsgObj;
+                    delayedMessage.audioLocation = audio;
                     performSendDelayedMessage(delayedMessage);
                 }
             } else {
@@ -1837,6 +1858,22 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     delayedMessage.encryptedChat = encryptedChat;
                     delayedMessage.documentLocation = document;
                     performSendDelayedMessage(delayedMessage);
+                } else if (type == 8) {
+                    reqSend.media = new TLRPC.TL_decryptedMessageMediaAudio();
+                    reqSend.media.iv = new byte[32];
+                    reqSend.media.key = new byte[32];
+                    random.nextBytes(reqSend.media.iv);
+                    random.nextBytes(reqSend.media.key);
+                    reqSend.media.duration = audio.duration;
+                    reqSend.media.size = audio.size;
+
+                    DelayedMessage delayedMessage = new DelayedMessage();
+                    delayedMessage.sendEncryptedRequest = reqSend;
+                    delayedMessage.type = 3;
+                    delayedMessage.obj = newMsgObj;
+                    delayedMessage.encryptedChat = encryptedChat;
+                    delayedMessage.audioLocation = audio;
+                    performSendDelayedMessage(delayedMessage);
                 }
             }
         } else if (type == 4) {
@@ -1852,10 +1889,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
     }
 
-    private void processSendedMessage(TLRPC.Message newMsg, TLRPC.Message sendedMessage, TLRPC.EncryptedFile file, TLRPC.DecryptedMessage decryptedMessage) {
-        if (sendedMessage != null) {
-            if (sendedMessage.media instanceof TLRPC.TL_messageMediaPhoto && sendedMessage.media.photo != null && newMsg.media instanceof TLRPC.TL_messageMediaPhoto && newMsg.media.photo != null) {
-                for (TLRPC.PhotoSize size : sendedMessage.media.photo.sizes) {
+    private void processSendedMessage(TLRPC.Message newMsg, TLRPC.Message sentMessage, TLRPC.EncryptedFile file, TLRPC.DecryptedMessage decryptedMessage) {
+        if (sentMessage != null) {
+            if (sentMessage.media instanceof TLRPC.TL_messageMediaPhoto && sentMessage.media.photo != null && newMsg.media instanceof TLRPC.TL_messageMediaPhoto && newMsg.media.photo != null) {
+                for (TLRPC.PhotoSize size : sentMessage.media.photo.sizes) {
                     if (size instanceof TLRPC.TL_photoSizeEmpty) {
                         continue;
                     }
@@ -1875,11 +1912,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         }
                     }
                 }
-                sendedMessage.message = newMsg.message;
-                sendedMessage.attachPath = newMsg.attachPath;
-            } else if (sendedMessage.media instanceof TLRPC.TL_messageMediaVideo && sendedMessage.media.video != null && newMsg.media instanceof TLRPC.TL_messageMediaVideo && newMsg.media.video != null) {
+                sentMessage.message = newMsg.message;
+                sentMessage.attachPath = newMsg.attachPath;
+            } else if (sentMessage.media instanceof TLRPC.TL_messageMediaVideo && sentMessage.media.video != null && newMsg.media instanceof TLRPC.TL_messageMediaVideo && newMsg.media.video != null) {
                 TLRPC.PhotoSize size2 = newMsg.media.video.thumb;
-                TLRPC.PhotoSize size = sendedMessage.media.video.thumb;
+                TLRPC.PhotoSize size = sentMessage.media.video.thumb;
                 if (size2.location != null && size.location != null && !(size instanceof TLRPC.TL_photoSizeEmpty) && !(size2 instanceof TLRPC.TL_photoSizeEmpty)) {
                     String fileName = size2.location.volume_id + "_" + size2.location.local_id;
                     String fileName2 = size.location.volume_id + "_" + size.location.local_id;
@@ -1891,12 +1928,26 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     boolean result = cacheFile.renameTo(cacheFile2);
                     FileLoader.Instance.replaceImageInCache(fileName, fileName2);
                     size2.location = size.location;
-                    sendedMessage.message = newMsg.message;
-                    sendedMessage.attachPath = newMsg.attachPath;
+                    sentMessage.message = newMsg.message;
+                    sentMessage.attachPath = newMsg.attachPath;
                 }
-            } else if (sendedMessage.media instanceof TLRPC.TL_messageMediaDocument && sendedMessage.media.document != null && newMsg.media instanceof TLRPC.TL_messageMediaDocument && newMsg.media.document != null) {
-                sendedMessage.message = newMsg.message;
-                sendedMessage.attachPath = newMsg.attachPath;
+            } else if (sentMessage.media instanceof TLRPC.TL_messageMediaDocument && sentMessage.media.document != null && newMsg.media instanceof TLRPC.TL_messageMediaDocument && newMsg.media.document != null) {
+                sentMessage.message = newMsg.message;
+                sentMessage.attachPath = newMsg.attachPath;
+            } else if (sentMessage.media instanceof TLRPC.TL_messageMediaAudio && sentMessage.media.audio != null && newMsg.media instanceof TLRPC.TL_messageMediaAudio && newMsg.media.audio != null) {
+                sentMessage.message = newMsg.message;
+                sentMessage.attachPath = newMsg.attachPath;
+
+                String fileName = newMsg.media.audio.dc_id + "_" + newMsg.media.audio.id + ".m4a";
+                String fileName2 = sentMessage.media.audio.dc_id + "_" + sentMessage.media.audio.id + ".m4a";
+                if (fileName.equals(fileName2)) {
+                    return;
+                }
+                File cacheFile = new File(Utilities.getCacheDir(), fileName);
+                File cacheFile2 = new File(Utilities.getCacheDir(), fileName2);
+                cacheFile.renameTo(cacheFile2);
+                sentMessage.media.audio.dc_id = newMsg.media.audio.dc_id;
+                sentMessage.media.audio.id = newMsg.media.audio.id;
             }
         } else if (file != null) {
             if (newMsg.media instanceof TLRPC.TL_messageMediaPhoto && newMsg.media.photo != null) {
@@ -1953,6 +2004,32 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 newMsg.media.document.path = document.path;
                 newMsg.media.document.thumb = document.thumb;
                 newMsg.media.document.dc_id = file.dc_id;
+                ArrayList<TLRPC.Message> arr = new ArrayList<TLRPC.Message>();
+                arr.add(newMsg);
+                MessagesStorage.Instance.putMessages(arr, false, true);
+            } else if (newMsg.media instanceof TLRPC.TL_messageMediaAudio && newMsg.media.audio != null) {
+                TLRPC.Audio audio = newMsg.media.audio;
+                newMsg.media.audio = new TLRPC.TL_audioEncrypted();
+                newMsg.media.audio.id = file.id;
+                newMsg.media.audio.access_hash = file.access_hash;
+                newMsg.media.audio.user_id = audio.user_id;
+                newMsg.media.audio.date = audio.date;
+                newMsg.media.audio.duration = audio.duration;
+                newMsg.media.audio.size = file.size;
+                newMsg.media.audio.dc_id = file.dc_id;
+                newMsg.media.audio.key = decryptedMessage.media.key;
+                newMsg.media.audio.iv = decryptedMessage.media.iv;
+                newMsg.media.audio.path = audio.path;
+
+                String fileName = audio.dc_id + "_" + audio.id + ".m4a";
+                String fileName2 = newMsg.media.audio.dc_id + "_" + newMsg.media.audio.id + ".m4a";
+                if (fileName.equals(fileName2)) {
+                    return;
+                }
+                File cacheFile = new File(Utilities.getCacheDir(), fileName);
+                File cacheFile2 = new File(Utilities.getCacheDir(), fileName2);
+                cacheFile.renameTo(cacheFile2);
+
                 ArrayList<TLRPC.Message> arr = new ArrayList<TLRPC.Message>();
                 arr.add(newMsg);
                 MessagesStorage.Instance.putMessages(arr, false, true);
@@ -2210,6 +2287,14 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     } else {
                         FileLoader.Instance.uploadFile(location, message.sendEncryptedRequest.media.key, message.sendEncryptedRequest.media.iv);
                     }
+                } else if (message.type == 3) {
+                    String location = message.audioLocation.path;
+                    delayedMessages.put(location, message);
+                    if (message.sendRequest != null) {
+                        FileLoader.Instance.uploadFile(location, null, null);
+                    } else {
+                        FileLoader.Instance.uploadFile(location, message.sendEncryptedRequest.media.key, message.sendEncryptedRequest.media.iv);
+                    }
                 }
             }
         });
@@ -2304,15 +2389,12 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             } else if (message.type == 2) {
                                 message.sendRequest.media.file = file;
                                 performSendMessageRequest(message.sendRequest, message.obj);
+                            } else if (message.type == 3) {
+                                message.sendRequest.media.file = file;
+                                performSendMessageRequest(message.sendRequest, message.obj);
                             }
                         } else if (encryptedFile != null) {
-                            if (message.type == 0) {
-                                performSendEncryptedRequest(message.sendEncryptedRequest, message.obj, message.encryptedChat, encryptedFile);
-                            } else if (message.type == 1) {
-                                performSendEncryptedRequest(message.sendEncryptedRequest, message.obj, message.encryptedChat, encryptedFile);
-                            } else if (message.type == 2) {
-                                performSendEncryptedRequest(message.sendEncryptedRequest, message.obj, message.encryptedChat, encryptedFile);
-                            }
+                            performSendEncryptedRequest(message.sendEncryptedRequest, message.obj, message.encryptedChat, encryptedFile);
                         }
                         delayedMessages.remove(location);
                     }
@@ -2933,6 +3015,21 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         }
                     }
 
+                    Utilities.RunOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            for (TLRPC.User user : res.users) {
+                                users.put(user.id, user);
+                                if (user.id == UserConfig.clientUserId) {
+                                    UserConfig.currentUser = user;
+                                }
+                            }
+                            for (TLRPC.Chat chat : res.chats) {
+                                chats.put(chat.id, chat);
+                            }
+                        }
+                    });
+
                     MessagesStorage.Instance.storageQueue.postRunnable(new Runnable() {
                         @Override
                         public void run() {
@@ -3015,15 +3112,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                         Utilities.RunOnUIThread(new Runnable() {
                                             @Override
                                             public void run() {
-                                                for (TLRPC.User user : res.users) {
-                                                    users.put(user.id, user);
-                                                    if (user.id == UserConfig.clientUserId) {
-                                                        UserConfig.currentUser = user;
-                                                    }
-                                                }
-                                                for (TLRPC.Chat chat : res.chats) {
-                                                    chats.put(chat.id, chat);
-                                                }
                                                 for (HashMap.Entry<Long, ArrayList<MessageObject>> pair : messages.entrySet()) {
                                                     Long key = pair.getKey();
                                                     ArrayList<MessageObject> value = pair.getValue();
@@ -3315,7 +3403,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         final ArrayList<TLRPC.TL_updateEncryptedMessagesRead> tasks = new ArrayList<TLRPC.TL_updateEncryptedMessagesRead>();
         final ArrayList<Integer> contactsIds = new ArrayList<Integer>();
         MessageObject lastMessage = null;
-        boolean usersAdded = false;
 
         boolean checkForUsers = true;
         ConcurrentHashMap<Integer, TLRPC.User> usersDict;
@@ -3337,6 +3424,27 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         } else {
             checkForUsers = false;
             chatsDict = chats;
+        }
+
+        if (usersArr != null || chatsArr != null) {
+            Utilities.RunOnUIThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (usersArr != null) {
+                        for (TLRPC.User user : usersArr) {
+                            users.put(user.id, user);
+                            if (user.id == UserConfig.clientUserId) {
+                                UserConfig.currentUser = user;
+                            }
+                        }
+                    }
+                    if (chatsArr != null) {
+                        for (TLRPC.Chat chat : chatsArr) {
+                            chats.put(chat.id, chat);
+                        }
+                    }
+                }
+            });
         }
 
         int interfaceUpdateMask = 0;
@@ -3629,25 +3737,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     dialog.unread_count = 0;
                     dialog.top_message = 0;
                     dialog.last_message_date = update.date;
-                    usersAdded = true;
+
                     Utilities.RunOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (usersArr != null) {
-                                for (TLRPC.User user : usersArr) {
-                                    users.put(user.id, user);
-                                    if (user.id == UserConfig.clientUserId) {
-                                        UserConfig.currentUser = user;
-                                    }
-                                }
-                            }
-                            if (chatsArr != null) {
-                                for (TLRPC.Chat chat : chatsArr) {
-                                    chats.put(chat.id, chat);
-                                }
-                            }
-
-
                             dialogs_dict.put(dialog.id, dialog);
                             dialogs.add(dialog);
                             dialogsServerOnly.clear();
@@ -3723,27 +3816,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             MessagesStorage.Instance.putMessages(messagesArr, true, true);
         }
 
-        final boolean usersAddedConst = usersAdded;
         if (!messages.isEmpty() || !markAsReadMessages.isEmpty() || !deletedMessages.isEmpty() || !printChanges.isEmpty() || !chatInfoToUpdate.isEmpty() || !updatesOnMainThread.isEmpty() || !markAsReadEncrypted.isEmpty() || !contactsIds.isEmpty()) {
             Utilities.RunOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     int updateMask = interfaceUpdateMaskFinal;
-                    if (!usersAddedConst) {
-                        if (usersArr != null) {
-                            for (TLRPC.User user : usersArr) {
-                                users.put(user.id, user);
-                                if (user.id == UserConfig.clientUserId) {
-                                    UserConfig.currentUser = user;
-                                }
-                            }
-                        }
-                        if (chatsArr != null) {
-                            for (TLRPC.Chat chat : chatsArr) {
-                                chats.put(chat.id, chat);
-                            }
-                        }
-                    }
 
                     boolean avatarsUpdate = false;
                     if (!updatesOnMainThread.isEmpty()) {

@@ -749,9 +749,9 @@ public class Utilities {
         return storageDir;
     }
 
-    public static String getPath(final Context context, final Uri uri) {
+    public static String getPath(final Uri uri) {
         final boolean isKitKat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
-        if (isKitKat && DocumentsContract.isDocumentUri(context, uri)) {
+        if (isKitKat && DocumentsContract.isDocumentUri(ApplicationLoader.applicationContext, uri)) {
             if (isExternalStorageDocument(uri)) {
                 final String docId = DocumentsContract.getDocumentId(uri);
                 final String[] split = docId.split(":");
@@ -762,7 +762,7 @@ public class Utilities {
             } else if (isDownloadsDocument(uri)) {
                 final String id = DocumentsContract.getDocumentId(uri);
                 final Uri contentUri = ContentUris.withAppendedId(Uri.parse("content://downloads/public_downloads"), Long.valueOf(id));
-                return getDataColumn(context, contentUri, null, null);
+                return getDataColumn(ApplicationLoader.applicationContext, contentUri, null, null);
             } else if (isMediaDocument(uri)) {
                 final String docId = DocumentsContract.getDocumentId(uri);
                 final String[] split = docId.split(":");
@@ -782,10 +782,10 @@ public class Utilities {
                         split[1]
                 };
 
-                return getDataColumn(context, contentUri, selection, selectionArgs);
+                return getDataColumn(ApplicationLoader.applicationContext, contentUri, selection, selectionArgs);
             }
         } else if ("content".equalsIgnoreCase(uri.getScheme())) {
-            return getDataColumn(context, uri, null, null);
+            return getDataColumn(ApplicationLoader.applicationContext, uri, null, null);
         } else if ("file".equalsIgnoreCase(uri.getScheme())) {
             return uri.getPath();
         }

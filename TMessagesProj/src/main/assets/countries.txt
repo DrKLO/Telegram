@@ -216,8 +216,8 @@
 40;RO;Romania
 39;IT;Italy
 36;HU;Hungary
-34;ES;EuskalHerria
-33;FR;France
+34;ES;Euskal Herria
+33;FR;Ipar Euskal H.
 32;BE;Belgium
 31;NL;Netherlands
 30;GR;Greece

@@ -391,8 +391,8 @@ public class FileLoader {
         });
     }
 
-    public void cancelLoadFile(final TLRPC.Video video, final TLRPC.PhotoSize photo, final TLRPC.Document document) {
-        if (video == null && photo == null && document == null) {
+    public void cancelLoadFile(final TLRPC.Video video, final TLRPC.PhotoSize photo, final TLRPC.Document document, final TLRPC.Audio audio) {
+        if (video == null && photo == null && document == null && audio == null) {
             return;
         }
         Utilities.fileUploadQueue.postRunnable(new Runnable() {
@@ -405,6 +405,8 @@ public class FileLoader {
                     fileName = MessageObject.getAttachFileName(photo);
                 } else if (document != null) {
                     fileName = MessageObject.getAttachFileName(document);
+                } else if (audio != null) {
+                    fileName = MessageObject.getAttachFileName(audio);
                 }
                 if (fileName == null) {
                     return;
@@ -422,7 +424,7 @@ public class FileLoader {
         return loadOperationPaths.containsKey(fileName);
     }
 
-    public void loadFile(final TLRPC.Video video, final TLRPC.PhotoSize photo, final TLRPC.Document document) {
+    public void loadFile(final TLRPC.Video video, final TLRPC.PhotoSize photo, final TLRPC.Document document, final TLRPC.Audio audio) {
         Utilities.fileUploadQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -433,6 +435,8 @@ public class FileLoader {
                     fileName = MessageObject.getAttachFileName(photo);
                 } else if (document != null) {
                     fileName = MessageObject.getAttachFileName(document);
+                } else if (audio != null) {
+                    fileName = MessageObject.getAttachFileName(audio);
                 }
                 if (fileName == null) {
                     return;
@@ -451,6 +455,9 @@ public class FileLoader {
                 } else if (document != null) {
                     operation = new FileLoadOperation(document);
                     operation.totalBytesCount = document.size;
+                } else if (audio != null) {
+                    operation = new FileLoadOperation(audio);
+                    operation.totalBytesCount = audio.size;
                 }
 
                 final String arg1 = fileName;
@@ -888,7 +895,7 @@ public class FileLoader {
     }
 
     void enqueueImageProcessingOperationWithImage(final Bitmap image, final String filter, final String key, final CacheImage img) {
-        if (image == null || key == null) {
+        if (key == null) {
             return;
         }
 
@@ -907,7 +914,7 @@ public class FileLoader {
             @Override
             public void run() {
                 img.callAndClear(image);
-                if (memCache.get(key) == null) {
+                if (image != null && memCache.get(key) == null) {
                     memCache.put(key, image);
                 }
             }

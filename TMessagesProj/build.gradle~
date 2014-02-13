@@ -1,0 +1,76 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:0.8.+'
+    }
+}
+apply plugin: 'android'
+
+repositories {
+    mavenCentral()
+}
+
+task nativeLibsToJar(
+    type: Zip,
+    description: 'create a jar archive of the native libs') {
+    destinationDir file("$buildDir/native-libs")
+    baseName 'native-libs'
+    extension 'jar'
+    from fileTree(dir: 'libs', include: '**/*.so')
+    into 'lib/'
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
+
+tasks.withType(JavaCompile) {
+    compileTask -> compileTask.dependsOn(nativeLibsToJar)
+}
+
+dependencies {
+    compile 'com.google.android.gms:play-services:4.1.+'
+    compile 'net.hockeyapp.android:HockeySDK:3.0.1'
+    compile 'com.android.support:support-v4:19.0.+'
+    compile 'com.android.support:appcompat-v7:19.0.+'
+    compile fileTree(dir: "$buildDir/native-libs", include: 'native-libs.jar')
+}
+
+android {
+    compileSdkVersion 19
+    buildToolsVersion '19.0.1'
+
+    signingConfigs {
+        /*debug {
+            storeFile file("debug.keystore")
+        }*/
+
+        release {
+            storeFile file("release.keystore")
+            storePassword "h1a0m0t0"
+            keyAlias "release"
+            keyPassword "h1a0m0t0"
+        }
+    }
+
+    buildTypes {
+        /*debug {
+            debuggable true
+            jniDebugBuild true
+            signingConfig signingConfigs.debug
+        }*/
+
+        release {
+            debuggable false
+            jniDebugBuild false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    defaultConfig {
+        minSdkVersion 8
+        targetSdkVersion 19
+    }
+}

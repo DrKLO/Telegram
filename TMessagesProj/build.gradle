@@ -47,13 +47,7 @@ android {
             storeFile file("debug.keystore")
         }
 
-        release {
-            storeFile file("release.keystore")
-<<<<<<< HEAD
-=======
         
->>>>>>> 8dcef438b06234467a0d93c5670786933b4f0c56
-        }
     }
 
     buildTypes {

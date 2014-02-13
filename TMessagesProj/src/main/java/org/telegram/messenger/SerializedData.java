@@ -22,10 +22,21 @@ public class SerializedData {
     private DataOutputStream out;
     private ByteArrayInputStream inbuf;
     private DataInputStream in;
+    private boolean justCalc = false;
+    private int len;
 
     public SerializedData() {
         outbuf = new ByteArrayOutputStream();
         out = new DataOutputStream(outbuf);
+    }
+
+    public SerializedData(boolean calculate) {
+        if (!calculate) {
+            outbuf = new ByteArrayOutputStream();
+            out = new DataOutputStream(outbuf);
+        }
+        justCalc = calculate;
+        len = 0;
     }
 
     public SerializedData(int size) {
@@ -50,13 +61,17 @@ public class SerializedData {
         in = new DataInputStream(inbuf);
     }
 
-    public void writeInt32(int x){
-        writeInt32(x, out);
+    public void writeInt32(int x) {
+        if (!justCalc) {
+            writeInt32(x, out);
+        } else {
+            len += 4;
+        }
     }
 
-    protected void writeInt32(int x, DataOutputStream out){
+    private void writeInt32(int x, DataOutputStream out) {
         try {
-            for(int i = 0; i < 4; i++){
+            for(int i = 0; i < 4; i++) {
                 out.write(x >> (i * 8));
             }
         } catch(IOException gfdsgd) {
@@ -65,10 +80,14 @@ public class SerializedData {
     }
 
     public void writeInt64(long i) {
-        writeInt64(i, out);
+        if (!justCalc) {
+            writeInt64(i, out);
+        } else {
+            len += 8;
+        }
     }
 
-    protected void writeInt64(long x, DataOutputStream out){
+    private void writeInt64(long x, DataOutputStream out) {
         try {
             for(int i = 0; i < 8; i++){
                 out.write((int)(x >> (i * 8)));
@@ -90,10 +109,14 @@ public class SerializedData {
     }
 
     public void writeBool(boolean value) {
-        if (value) {
-            writeInt32(0x997275b5);
+        if (!justCalc) {
+            if (value) {
+                writeInt32(0x997275b5);
+            } else {
+                writeInt32(0xbc799737);
+            }
         } else {
-            writeInt32(0xbc799737);
+            len += 4;
         }
     }
 
@@ -143,9 +166,13 @@ public class SerializedData {
         return 0;
     }
 
-    public void writeRaw(byte[] b){
+    public void writeRaw(byte[] b) {
         try {
-            out.write(b);
+            if (!justCalc) {
+                out.write(b);
+            } else {
+                len += b.length;
+            }
         } catch(Exception x) {
             FileLog.e("tmessages", "write raw error");
         }
@@ -153,7 +180,11 @@ public class SerializedData {
 
     public void writeRaw(byte[] b, int offset, int count) {
         try {
-            out.write(b, offset, count);
+            if (!justCalc) {
+                out.write(b, offset, count);
+            } else {
+                len += count;
+            }
         } catch(Exception x) {
             FileLog.e("tmessages", "write raw error");
         }
@@ -161,7 +192,11 @@ public class SerializedData {
 
     public void writeByte(int i) {
         try {
-            out.writeByte((byte)i);
+            if (!justCalc) {
+                out.writeByte((byte)i);
+            } else {
+                len += 1;
+            }
         } catch (Exception e) {
             FileLog.e("tmessages", "write byte error");
         }
@@ -169,13 +204,17 @@ public class SerializedData {
 
     public void writeByte(byte b) {
         try {
-            out.writeByte(b);
+            if (!justCalc) {
+                out.writeByte(b);
+            } else {
+                len += 1;
+            }
         } catch (Exception e) {
             FileLog.e("tmessages", "write byte error");
         }
     }
 
-    public void readRaw(byte[] b){
+    public void readRaw(byte[] b) {
         try {
             in.read(b);
         } catch(Exception x) {
@@ -189,7 +228,7 @@ public class SerializedData {
         return arr;
     }
 
-    public String readString(){
+    public String readString() {
         try {
             int sl = 1;
             int l = in.read();
@@ -233,20 +272,36 @@ public class SerializedData {
         return null;
     }
 
-    public void writeByteArray(byte[] b){
+    public void writeByteArray(byte[] b) {
         try {
             if (b.length <= 253){
-                out.write(b.length);
+                if (!justCalc) {
+                    out.write(b.length);
+                } else {
+                    len += 1;
+                }
             } else {
-                out.write(254);
-                out.write(b.length);
-                out.write(b.length >> 8);
-                out.write(b.length >> 16);
+                if (!justCalc) {
+                    out.write(254);
+                    out.write(b.length);
+                    out.write(b.length >> 8);
+                    out.write(b.length >> 16);
+                } else {
+                    len += 4;
+                }
             }
-            out.write(b);
+            if (!justCalc) {
+                out.write(b);
+            } else {
+                len += b.length;
+            }
             int i = b.length <= 253 ? 1 : 4;
             while((b.length + i) % 4 != 0){
-                out.write(0);
+                if (!justCalc) {
+                    out.write(0);
+                } else {
+                    len += 1;
+                }
                 i++;
             }
         } catch(Exception x) {
@@ -265,17 +320,33 @@ public class SerializedData {
     public void writeByteArray(byte[] b, int offset, int count) {
         try {
             if(count <= 253){
-                out.write(count);
+                if (!justCalc) {
+                    out.write(count);
+                } else {
+                    len += 1;
+                }
             } else {
-                out.write(254);
-                out.write(count);
-                out.write(count >> 8);
-                out.write(count >> 16);
+                if (!justCalc) {
+                    out.write(254);
+                    out.write(count);
+                    out.write(count >> 8);
+                    out.write(count >> 16);
+                } else {
+                    len += 4;
+                }
             }
-            out.write(b, offset, count);
+            if (!justCalc) {
+                out.write(b, offset, count);
+            } else {
+                len += count;
+            }
             int i = count <= 253 ? 1 : 4;
             while ((count + i) % 4 != 0){
-                out.write(0);
+                if (!justCalc) {
+                    out.write(0);
+                } else {
+                    len += 1;
+                }
                 i++;
             }
         } catch(Exception x) {
@@ -292,7 +363,7 @@ public class SerializedData {
         return 0;
     }
 
-    public void writeDouble(double d){
+    public void writeDouble(double d) {
         try {
             writeInt64(Double.doubleToRawLongBits(d));
         } catch(Exception x) {
@@ -301,7 +372,10 @@ public class SerializedData {
     }
 
     public int length() {
-        return isOut ? outbuf.size() : inbuf.available();
+        if (!justCalc) {
+            return isOut ? outbuf.size() : inbuf.available();
+        }
+        return len;
     }
 
     protected void set(byte[] newData) {

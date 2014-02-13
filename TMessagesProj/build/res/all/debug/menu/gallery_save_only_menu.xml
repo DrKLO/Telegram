@@ -1,8 +1,0 @@
-<menu
-    xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <item
-        android:id="@+id/gallery_menu_save"
-        android:title="@string/SaveToGallery"/>
-
-</menu><!-- From: file:/home/antonio/androidWorkspace/Telegram-master-oficial/TMessagesProj/src/main/res/menu/gallery_save_only_menu.xml -->

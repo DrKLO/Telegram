@@ -78,7 +78,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         if (dialog_id != 0) {
             currentEncryptedChat = MessagesController.Instance.encryptedChats.get((int)(dialog_id >> 32));
         }
-        return true;
+        return MessagesController.Instance.users.get(user_id) != null;
     }
 
     @Override
@@ -471,15 +471,9 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 builder.setPositiveButton(getStringEntry(R.string.OK), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        TLRPC.TL_auth_resetAuthorizations req = new TLRPC.TL_auth_resetAuthorizations();
-                        ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
-                            @Override
-                            public void run(TLObject response, TLRPC.TL_error error) {
-                                ArrayList<TLRPC.User> arrayList = new ArrayList<TLRPC.User>();
-                                arrayList.add(user);
-                                ContactsController.Instance.deleteContact(arrayList);
-                            }
-                        }, null, true, RPCRequest.RPCRequestClassGeneric);
+                        ArrayList<TLRPC.User> arrayList = new ArrayList<TLRPC.User>();
+                        arrayList.add(user);
+                        ContactsController.Instance.deleteContact(arrayList);
                     }
                 });
                 builder.setNegativeButton(getStringEntry(R.string.Cancel), null);
