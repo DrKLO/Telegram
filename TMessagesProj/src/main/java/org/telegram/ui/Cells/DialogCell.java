@@ -251,7 +251,6 @@ public class DialogCell extends BaseCell {
             requestLayout();
         }
 
-        tryInstallAccessibilityDelegate();
         invalidate();
     }
 
@@ -395,18 +394,22 @@ public class DialogCell extends BaseCell {
                         if (encryptedChat instanceof TLRPC.TL_encryptedChatRequested) {
                             messageString = ApplicationLoader.applicationContext.getString(R.string.EncryptionProcessing);
                         } else if (encryptedChat instanceof TLRPC.TL_encryptedChatWaiting) {
-                            messageString = String.format(ApplicationLoader.applicationContext.getString(R.string.AwaitingEncryption), user.first_name);
+                            if (user != null && user.first_name != null) {
+                                messageString = String.format(ApplicationLoader.applicationContext.getString(R.string.AwaitingEncryption), user.first_name);
+                            } else {
+                                messageString = String.format(ApplicationLoader.applicationContext.getString(R.string.AwaitingEncryption), "");
+                            }
                         } else if (encryptedChat instanceof TLRPC.TL_encryptedChatDiscarded) {
                             messageString = ApplicationLoader.applicationContext.getString(R.string.EncryptionRejected);
                         } else if (encryptedChat instanceof TLRPC.TL_encryptedChat) {
                             if (encryptedChat.admin_id == UserConfig.clientUserId) {
-                                if (user != null) {
+                                if (user != null && user.first_name != null) {
                                     messageString = String.format(ApplicationLoader.applicationContext.getString(R.string.EncryptedChatStartedOutgoing), user.first_name);
+                                } else {
+                                    messageString = String.format(ApplicationLoader.applicationContext.getString(R.string.EncryptedChatStartedOutgoing), "");
                                 }
                             } else {
-                                if (user != null) {
-                                    messageString = String.format(ApplicationLoader.applicationContext.getString(R.string.EncryptedChatStartedIncoming), user.first_name);
-                                }
+                                messageString = ApplicationLoader.applicationContext.getString(R.string.EncryptedChatStartedIncoming);
                             }
                         }
                     }
@@ -638,9 +641,6 @@ public class DialogCell extends BaseCell {
 
             CharSequence messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - Utilities.dp(12), TextUtils.TruncateAt.END);
             messageLayout = new StaticLayout(messageStringFinal, currentMessagePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-
-            //Set string for Accessibility events to speak contact list
-            setTextAccessibility(nameStringFinal+" "+getResources().getString(R.string.LastMessage)+": "+messageString);
 
             double widthpx = 0;
             float left = 0;

@@ -37,7 +37,7 @@
             android:layout_marginLeft="36dp"
             android:layout_marginRight="12dp"
             android:layout_gravity="right|center_vertical"
-            android:progressDrawable="@drawable/photo_progress_chat"
+            android:progressDrawable="@drawable/progress_chat"
             android:id="@+id/chat_view_action_progress"
             android:max="100"/>
 

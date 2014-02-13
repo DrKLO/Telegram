@@ -8,7 +8,6 @@
     <org.telegram.ui.Views.BackupImageView
             android:layout_height="48dp"
             android:layout_width="48dp"
-            android:contentDescription="@string/Avatar"
             android:id="@+id/chat_avatar_image"/>
 
 </RelativeLayout>

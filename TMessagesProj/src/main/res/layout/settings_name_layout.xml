@@ -19,7 +19,6 @@
         <ImageButton
             android:id="@+id/settings_change_avatar_button"
             android:background="@drawable/photo_spinner"
-            android:contentDescription="@string/ChangeAvatar"
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"/>
 
@@ -69,7 +68,6 @@
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:src="@drawable/ic_edit"
-        android:contentDescription="@string/EditName"
         android:layout_marginTop="4dp"/>
 
 </LinearLayout>
