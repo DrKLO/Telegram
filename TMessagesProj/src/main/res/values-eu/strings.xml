@@ -152,8 +152,13 @@
     <string name="OtherAt"></string>
     <string name="Online">online</string>
     <string name="Offline">offline</string>
+<<<<<<< HEAD
     <string name="LastSeen"></string>
     <string name="LastSeenDate"></string>
+=======
+    <string name="LastSeen">noiz ikusia:</string>
+    <string name="LastSeenDate">noiz ikusia:</string>
+>>>>>>> d89296c758110097728aed0c7e84ffac1eaa94cd
     <string name="InviteFriends">Gonbidatu lagunak</string>
 
     <!--group create view-->
@@ -233,13 +238,17 @@
     <string name="Support">LAGUNTZA</string>
     <string name="ChatBackground">Txatetarako atzealdea</string>
     <string name="MessagesSettings">MEZUAK</string>
-    <string name="SendByEnter">Bidali enter sakatuta</string>
+    <string name="SendByEnter">Bidali enter teklari sakatuta</string>
     <string name="TerminateAllSessions">Bukatu beste saio guztiak</string>
-    <string name="AutomaticPhotoDownload">IRUDI JEITSIERA AUTOMÁTIKOA</string>
+    <string name="AutomaticPhotoDownload">IRUDI JEITSIERA AUTOMATIKOA</string>
     <string name="AutomaticPhotoDownloadGroups">Taldeak</string>
     <string name="AutomaticPhotoDownloadPrivateChats">Ezkutuko txata</string>
     <string name="Events">GERTAERAK</string>
+<<<<<<< HEAD
     <string name="ContactJoined">KontaktuaK Telegram jarri du</string>
+=======
+    <string name="ContactJoined">Kontaktuak Telegram jarri du</string>
+>>>>>>> d89296c758110097728aed0c7e84ffac1eaa94cd
 
     <!--media view-->
     <string name="NoMedia">Ez dago partetatutako multimediarik</string>
