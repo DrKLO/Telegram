@@ -6,26 +6,26 @@
     <string name="AppName">Telegram</string>
 
     <!--signin view-->
-    <string name="YourPhone">Your phone</string>
-    <string name="StartText">Please confirm your country code\nand enter your phone number.</string>
-    <string name="ChooseCountry">Choose a country</string>
-    <string name="WrongCountry">Wrong country code</string>
+    <string name="YourPhone">Telefonunuz</string>
+    <string name="StartText">Lütfen ülke kodunu onaylayın ve telefon numaranızı girin..</string>
+    <string name="ChooseCountry">Ülke Seçin</string>
+    <string name="WrongCountry">Ülke kodu yanlış</string>
 
     <!--code enter view-->
-    <string name="YourCode">Your code</string>
-    <string name="SentSmsCode">We\'ve sent an SMS with an activation code to your phone</string>
-    <string name="CallText">We will call you in</string>
-    <string name="Calling">Calling you...</string>
-    <string name="Code">Code</string>
-    <string name="WrongNumber">Wrong number?</string>
+    <string name="YourCode">Kod</string>
+    <string name="SentSmsCode">Telefonunuza etkinleştirme kodu içeren bir SMS gönderdik</string>
+    <string name="CallText">Sizi arayacağız</string>
+    <string name="Calling">Arıyor...</string>
+    <string name="Code">Kod</string>
+    <string name="WrongNumber">Numaranız yanlış mı?</string>
 
     <!--signup view-->
-    <string name="YourName">Your name</string>
-    <string name="RegisterText">Set up your first and last name</string>
+    <string name="YourName">Adınız</string>
+    <string name="RegisterText">İsim ve Soyisim ayarla</string>
     <!--<string name="RegisterText">Set up your name and picture</string>-->
-    <string name="FirstName">First name (required)</string>
-    <string name="LastName">Last name (optional)</string>
-    <string name="CancelRegistration">Cancel registration</string>
+    <string name="FirstName">İsim (gerekli)</string>
+    <string name="LastName">Soyisim (isteğe bağlı)</string>
+    <string name="CancelRegistration">Kaydı iptal et</string>
 
     <!--chats view-->
     <string name="Chats">Chats</string>
