@@ -45,8 +45,8 @@
     <string name="AwaitingEncryption">À espera de que %s se conecte...</string>
     <string name="EncryptionRejected">Chat secreto cancelado</string>
     <string name="EncryptionProcessing">A trocar chaves de encriptação...</string>
-    <string name="EncryptedChatStartedOutgoing">%s uniu-se ao teu chat secreto.</string>
-    <string name="EncryptedChatStartedIncoming">Acabas de unir-te ao chat secreto.</string>
+    <string name="EncryptedChatStartedOutgoing">%s entrou no teu chat secreto.</string>
+    <string name="EncryptedChatStartedIncoming">Acabas de entrar no chat secreto.</string>
     <string name="ClearHistory">Limpar histórico</string>
     <string name="DeleteChat">Eliminar e sair</string>
     <string name="HiddenName">Nome oculto</string>
@@ -143,7 +143,7 @@
     <string name="NotificationGroupKickMember">%1$s expulsou %3$s do grupo %2$s</string>
     <string name="NotificationGroupKickYou">%1$s expulsou-te do grupo %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s deixou o grupo %2$s</string>
-    <string name="NotificationContactJoined">%1$s uniu-se a Telegram!</string>
+    <string name="NotificationContactJoined">%1$s aderiu ao Telegram!</string>
     <string name="NotificationUnrecognizedDevice">%1$s,\nDetetámos um acesso à tua conta a partir de um novo dispositivo a %2$s\n\nDispositivo: %3$s\nLocalização: %4$s\n\nSe não foste, podes ir a Definições - Terminar todas as sessões.\n\nObrigado,\nA equipa de Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s atualizou a sua foto de perfil</string>
 
