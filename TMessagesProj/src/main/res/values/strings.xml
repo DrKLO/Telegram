@@ -283,8 +283,8 @@
     <string name="Retry">Retry</string>
     <string name="FromCamera">From camera</string>
     <string name="FromGalley">From gallery</string>
-    <string name="DeletePhoto">Delete photo</string>
-    <string name="OpenPhoto">Open photo</string>
+    <string name="DeletePhoto">Apagar foto</string>
+    <string name="OpenPhoto">Abrir foto</string>
     <string name="Set">Set</string>
     <string name="OK">OK</string>
 
@@ -312,7 +312,7 @@
     <string name="AttachContact">Contact</string>
     <string name="AttachDocument">Document</string>
     <string name="AttachAudio">Audio</string>
-    <string name="FromYou">You</string>
+    <string name="FromYou">Você</string>
 
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Invalid phone number</string>
@@ -333,20 +333,20 @@
 
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
-    <string name="Page2Title">Fast</string>
-    <string name="Page3Title">Free</string>
-    <string name="Page4Title">Secure</string>
-    <string name="Page5Title">Powerful</string>
+    <string name="Page2Title">Rápido</string>
+    <string name="Page3Title">Grátis</string>
+    <string name="Page4Title">Seguro</string>
+    <string name="Page5Title">Podereoso</string>
     <string name="Page6Title">Cloud-Based</string>
-    <string name="Page7Title">Private</string>
-    <string name="Page1Message">Welcome to the era of fast and secure messaging</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> delivers messages faster than<![CDATA[<br/>]]>any other application</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is free forever. No ads.<![CDATA[<br/>]]>No subscription fees</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> keeps your messages safe<![CDATA[<br/>]]>from hacker attacks</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> has no limits on the size of<![CDATA[<br/>]]>your media and chats</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lets you access your messages<![CDATA[<br/>]]>from multiple devices</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> messages are heavily encrypted<![CDATA[<br/>]]>and can self-destruct</string>
-    <string name="StartMessaging">Start Messaging</string>
+    <string name="Page7Title">Privado</string>
+    <string name="Page1Message">Bem-vindo à era das mensagens rápidas e seguras</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> entrega as mensagens mais rápido do que<![CDATA[<br/>]]>qualquer aplicativo.</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> é de graça para sempre. Não existem anúncios.<![CDATA[<br/>]]>Nem tarifas.</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> mantém suas mensagens protegidas<![CDATA[<br/>]]>de ataques hacker.</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> não limita o tamanho<![CDATA[<br/>]]>das suas mídias e conversas.</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> permite você acessar suas mensagens<![CDATA[<br/>]]>de vários dispositivos.</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> mensagens são fortemente criptografadas<![CDATA[<br/>]]>e podem se auto-destruir.</string>
+    <string name="StartMessaging">Começar a Usar</string>
 
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
