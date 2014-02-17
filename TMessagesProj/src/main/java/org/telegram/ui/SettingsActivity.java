@@ -79,6 +79,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     int photoDownloadPrivateRow;
     int AddForwardingInfoRow;
     int NativeEmojiRow;
+    int InvisibleStatusRow;
 
     @Override
     public boolean onFragmentCreate() {
@@ -150,6 +151,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         enableAnimationsRow = rowCount++;
         AddForwardingInfoRow = rowCount++;
         NativeEmojiRow = rowCount++;
+        InvisibleStatusRow = rowCount++;
         notificationRow = rowCount++;
         blockedRow = rowCount++;
         backgroundRow = rowCount++;
@@ -304,9 +306,18 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         }
                     } else if (i == NativeEmojiRow) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                        boolean value = preferences.getBoolean("native_emoji", true);
+                        boolean value = preferences.getBoolean("native_emoji", false);
                         SharedPreferences.Editor editor = preferences.edit();
                         editor.putBoolean("native_emoji", !value);
+                        editor.commit();
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
+                    } else if (i == InvisibleStatusRow) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        boolean value = preferences.getBoolean("invisible_status", false);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        editor.putBoolean("invisible_status", !value);
                         editor.commit();
                         if (listView != null) {
                             listView.invalidateViews();
@@ -449,7 +460,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         public boolean isEnabled(int i) {
             return i == textSizeRow || i == enableAnimationsRow || i == blockedRow || i == notificationRow || i == backgroundRow ||
                     i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == terminateSessionsRow || i == photoDownloadPrivateRow ||
-                    i == photoDownloadChatRow || i == AddForwardingInfoRow || i == NativeEmojiRow;
+                    i == photoDownloadChatRow || i == AddForwardingInfoRow || i == NativeEmojiRow || i == InvisibleStatusRow;
         }
 
         @Override
@@ -705,7 +716,16 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 } else if (i == NativeEmojiRow) {
                     textView.setText(getStringEntry(R.string.NativeEmoji));
                     divider.setVisibility(View.VISIBLE);
-                    boolean enabled = preferences.getBoolean("native_emoji", true);
+                    boolean enabled = preferences.getBoolean("native_emoji", false);
+                    if (enabled) {
+                        checkButton.setImageResource(R.drawable.btn_check_on);
+                    } else {
+                        checkButton.setImageResource(R.drawable.btn_check_off);
+                    }
+                } else if (i == InvisibleStatusRow) {
+                    textView.setText(getStringEntry(R.string.InvisibleStatus));
+                    divider.setVisibility(View.VISIBLE);
+                    boolean enabled = preferences.getBoolean("invisible_status", false);
                     if (enabled) {
                         checkButton.setImageResource(R.drawable.btn_check_on);
                     } else {
@@ -776,7 +796,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 1;
             } else if (i == textSizeRow) {
                 return 5;
-            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == photoDownloadChatRow || i == photoDownloadPrivateRow || i == AddForwardingInfoRow || i== NativeEmojiRow) {
+            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == photoDownloadChatRow || i == photoDownloadPrivateRow || i == AddForwardingInfoRow || i== NativeEmojiRow || i == InvisibleStatusRow) {
                 return 3;
             } else if (i == numberRow || i == notificationRow || i == blockedRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == terminateSessionsRow) {
                 return 2;

@@ -745,7 +745,12 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 if (lastStatusUpdateTime != -1 && (lastStatusUpdateTime == 0 || lastStatusUpdateTime <= System.currentTimeMillis() - 55000 || offlineSended)) {
                     lastStatusUpdateTime = -1;
                     TLRPC.TL_account_updateStatus req = new TLRPC.TL_account_updateStatus();
-                    req.offline = false;
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                    if (preferences.getBoolean("invisible_status", false)){
+                        req.offline = true;
+                    } else {
+                        req.offline = false;
+                    }
                     ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
                         @Override
                         public void run(TLObject response, TLRPC.TL_error error) {

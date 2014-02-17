@@ -503,7 +503,7 @@ public class Emoji {
             if (c == 0xD83C || c == 0xD83D || (buf != 0 && (buf & 0xFFFFFFFF00000000L) == 0 && (c >= 0xDDE6 && c <= 0xDDFA))) {
                 buf <<= 16;
                 buf |= c;
-            } else if (buf > 0 && (c & 0xF000) == 0xD000) {
+            } else if (buf > 0 && ( (c & 0xF000) == 0xD000 || (c & 0xF000) == 0xE000 ) ) {
                 buf <<= 16;
                 buf |= c;
                 Drawable d = Emoji.getEmojiDrawable(buf);
@@ -542,7 +542,7 @@ public class Emoji {
                 }
             }
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-            if (emojiCount >= 200 || preferences.getBoolean("native_emoji", true)) {
+            if (emojiCount >= 200 || preferences.getBoolean("native_emoji", false)) {
                 break;
             }
         }
