@@ -24,7 +24,7 @@
     <string name="RegisterText">Stel uw voor- en achternaam in</string>
     <!--<string name="RegisterText">Set up your name and picture</string>-->
     <string name="FirstName">Voornaam (verplicht)</string>
-    <string name="LastName">Achternaam (verplicht)</string>
+    <string name="LastName">Achternaam (optioneel)</string>
     <string name="CancelRegistration">Registratie annuleren</string>
 
     <!--chats view-->
@@ -37,7 +37,7 @@
     <string name="Yesterday">gisteren</string>
     <string name="NoResult">Geen resultaten</string>
     <string name="NoChats">Nog geen gesprekken...</string>
-    <string name="NoChatsHelp">Start messaging by pressing the\ncompose button in the top right corner\nor go to the Contacts section.</string>
+    <string name="NoChatsHelp">Start met een gesprek\ndoor op de Opstellen-knop rechtsboven te drukken\nof ga naar de contactenlijst.</string>
     <string name="WaitingForNetwork">Wachten op het netwerk...</string>
     <string name="Connecting">Verbinden...</string>
     <string name="Updating">Updaten...</string>
@@ -60,7 +60,7 @@
     <string name="NoFiles">Nog geen bestanden...</string>
     <string name="FileUploadLimit">De bestandsgrootte mag niet groter zijn dan %1$s</string>
     <string name="NotMounted">Geen opslagmedium gevonden</string>
-    <string name="UsbActive">USB overdracht actief</string>
+    <string name="UsbActive">USB-overdracht actief</string>
     <string name="InternalStorage">Interne opslag</string>
     <string name="ExternalStorage">Externe opslag</string>
     <string name="SystemRoot">Systeemroot</string>
