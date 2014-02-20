@@ -63,7 +63,7 @@
     <string name="UsbActive">USB overdracht actief</string>
     <string name="InternalStorage">Interne opslag</string>
     <string name="ExternalStorage">Externe opslag</string>
-    <string name="SystemRoot">Systeem Root</string>
+    <string name="SystemRoot">Systeemroot</string>
     <string name="SdCard">SD-kaart</string>
 
     <!--chat view-->
@@ -95,7 +95,6 @@
     <string name="AddToContacts">VOEG TOE AAN CONTACTEN</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s heeft u uitgenodigd voor een privégesprek.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">U heeft %s uitgenodigd voor een privégesprek.</string>
-    <string name="EncryptedDescriptionTitle">Privé chats:</string>
     <string name="EncryptedDescriptionTitle">Privégesprekken:</string>
     <string name="EncryptedDescription1">Gebruik end-to-end versleuteling</string>
     <string name="EncryptedDescription2">Laat geen sporen achter op onze server</string>
@@ -103,17 +102,17 @@
     <string name="EncryptedDescription4">Doorsturen niet toestaan</string>
     <string name="OneNewMessage">%1$d nieuw bericht</string>
     <string name="FewNewMessages">%1$d nieuwe berichten</string>
-    <string name="YouWereKicked">Je bent uit deze groep gezet</string>
-    <string name="YouLeft">Je hebt deze groep verlaten</string>
+    <string name="YouWereKicked">U bent uit deze groep gezet</string>
+    <string name="YouLeft">U hebt deze groep verlaten</string>
     <string name="DeleteThisGroup">Verwijder deze groep</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Privégesprek aangevraagd</string>
     <string name="EncryptedChatAccepted">Privégesprek geaccepteerd</string>
-    <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
-    <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
-    <string name="MessageLifetimeRemoved">%1$s disabled the self-destruct timer</string>
-    <string name="MessageLifetimeYouRemoved">You disabled the self-destruct timer</string>
+    <string name="MessageLifetimeChanged">%1$s heeft de zelfdestructie-timer ingesteld op %2$s</string>
+    <string name="MessageLifetimeChangedOutgoing">U heeft de zelfdestructie-timer ingesteld op %1$s</string>
+    <string name="MessageLifetimeRemoved">%1$s heeft de zelfdestructie-timer geblokkeerd</string>
+    <string name="MessageLifetimeYouRemoved">U heeft de zelfdestructie-timer geblokkeerd</string>
     <string name="MessageLifetime2s">2 seconden</string>
     <string name="MessageLifetime5s">5 seconden</string>
     <string name="MessageLifetime1m">1 minuut</string>
@@ -145,68 +144,68 @@
     <string name="NotificationGroupKickYou">%1$s heeft u uit de groep %2$s gezet</string>
     <string name="NotificationGroupLeftMember">%1$s heeft de groep %2$s verlaten</string>
     <string name="NotificationContactJoined">%1$s heeft nu Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nWe hebben een nieutwe login op uw account gedetecteerd op 2$s\n\nToestel: %3$s\nLocatie: %4$s\n\nAls u dit niet was, kunt u naar Instellingen - Verwijder alle sessies.\n\nHet Telegram Team</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nWe hebben een nieuwe aanmelding op uw account gedetecteerd van een nieuw apparaat op 2$s\n\nApparaat: %3$s\nLocatie: %4$s\n\nAls u dit niet was, kunt u naar Instellingen - Alle andere sessies beëindigen.\n\nHet Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s heeft zijn profielfoto aangepast</string>
 
     <!--contacts view-->
-    <string name="SelectContact">Select Contact</string>
-    <string name="NoContacts">No contacts yet</string>
-    <string name="InviteText">Hey, let\'s switch to Telegram: http://telegram.org/dl2</string>
-    <string name="TodayAt">today at</string>
-    <string name="YesterdayAt">yesterday at</string>
-    <string name="OtherAt">at</string>
+    <string name="SelectContact">Contactpersoon selecteren</string>
+    <string name="NoContacts">Nog geen contactpersonen</string>
+    <string name="InviteText">He, zullen we overstappen op Telegram: http://telegram.org/dl2</string>
+    <string name="TodayAt">vandaag om</string>
+    <string name="YesterdayAt">gisteren om</string>
+    <string name="OtherAt">om</string>
     <string name="Online">online</string>
     <string name="Offline">offline</string>
-    <string name="LastSeen">last seen</string>
-    <string name="LastSeenDate">last seen</string>
-    <string name="InviteFriends">Invite Friends</string>
+    <string name="LastSeen">laatst gezien</string>
+    <string name="LastSeenDate">laatst gezien</string>
+    <string name="InviteFriends">Vrienden uitnodigen</string>
 
     <!--group create view-->
-    <string name="SendMessageTo">Send message to...</string>
-    <string name="EnterGroupNamePlaceholder">Enter group name</string>
-    <string name="MEMBER">MEMBER</string>
-    <string name="GroupName">Group name</string>
-    <string name="MEMBERS">MEMBERS</string>
-    <string name="AllContacts">ALL CONTACTS</string>
+    <string name="SendMessageTo">Bericht sturen naar...</string>
+    <string name="EnterGroupNamePlaceholder">Groepnaam invullen</string>
+    <string name="MEMBER">LID</string>
+    <string name="GroupName">Groepnaam</string>
+    <string name="MEMBERS">LEDEN</string>
+    <string name="AllContacts">ALLE CONTACTPERSONEN</string>
 
     <!--group info view-->
-    <string name="EnterGroupNameTitle">ENTER GROUP NAME</string>
-    <string name="SharedMedia">Shared Media</string>
-    <string name="GroupInfo">Group Info</string>
-    <string name="SHAREDMEDIA">SHARED MEDIA</string>
-    <string name="SETTINGS">SETTINGS</string>
-    <string name="AddMember">Add member</string>
-    <string name="DeleteAndExit">Delete and leave group</string>
-    <string name="Notifications">Notifications</string>
-    <string name="KickFromGroup">Kick from group</string>
+    <string name="EnterGroupNameTitle">GROEPNAAM INVULLEN</string>
+    <string name="SharedMedia">Gedeelde media</string>
+    <string name="GroupInfo">Groepinformatie</string>
+    <string name="SHAREDMEDIA">GEDEELDE MEDIA</string>
+    <string name="SETTINGS">INSTELLINGEN</string>
+    <string name="AddMember">Lid toevoegen</string>
+    <string name="DeleteAndExit">Verwijderen en groep verlaten</string>
+    <string name="Notifications">Meldingen</string>
+    <string name="KickFromGroup">Uit de groep zetten</string>
 
     <!--contact info view-->
-    <string name="ShareContact">Share</string>
-    <string name="AddContact">Add</string>
-    <string name="BlockContact">Block</string>
-    <string name="EditContact">Edit</string>
-    <string name="DeleteContact">Delete</string>
-    <string name="PhoneHome">HOME</string>
-    <string name="PhoneMobile">MOBILE</string>
-    <string name="PhoneWork">WORK</string>
-    <string name="PhoneOther">OTHER</string>
-    <string name="PhoneMain">MAIN</string>
-    <string name="ContactInfo">Contact Info</string>
-    <string name="PHONE">PHONE</string>
-    <string name="StartEncryptedChat">Start Secret Chat</string>
-    <string name="CreateEncryptedChatError">An error occurred.</string>
-    <string name="CreateEncryptedChatOutdatedError">Cannot create a secret chat with %1$s.\n\n%2$s is using an older version of Telegram and needs to update first.</string>
-    <string name="SecretTitle">Secret Chat</string>
-    <string name="EncryptionKey">Encryption Key</string>
-    <string name="MessageLifetime">Self-Destruct Timer</string>
-    <string name="ShortMessageLifetimeForever">Off</string>
+    <string name="ShareContact">Delen</string>
+    <string name="AddContact">Toevoegen</string>
+    <string name="BlockContact">Blokkeren</string>
+    <string name="EditContact">Bewerken</string>
+    <string name="DeleteContact">Verwijderen</string>
+    <string name="PhoneHome">THUIS</string>
+    <string name="PhoneMobile">MOBIEL</string>
+    <string name="PhoneWork">WERK</string>
+    <string name="PhoneOther">OVERIG</string>
+    <string name="PhoneMain">HOOFD</string>
+    <string name="ContactInfo">Contactgegevens</string>
+    <string name="PHONE">TELEFOON</string>
+    <string name="StartEncryptedChat">Beveiligd gesprek starten</string>
+    <string name="CreateEncryptedChatError">Er trad een fout op.</string>
+    <string name="CreateEncryptedChatOutdatedError">Kan geen beveiligd gesprek starten met %1$s.\n\n%2$s gebruikt een oudere versie van Telegram en moet eerst een update installeren.</string>
+    <string name="SecretTitle">Beveiligd gesprek</string>
+    <string name="EncryptionKey">Encryptiesleutel</string>
+    <string name="MessageLifetime">Zelf-vernietingstimer</string>
+    <string name="ShortMessageLifetimeForever">Uit</string>
     <string name="ShortMessageLifetime2s">2s</string>
     <string name="ShortMessageLifetime5s">5s</string>
     <string name="ShortMessageLifetime1m">1m</string>
-    <string name="ShortMessageLifetime1h">1h</string>
+    <string name="ShortMessageLifetime1h">1u</string>
     <string name="ShortMessageLifetime1d">1d</string>
     <string name="ShortMessageLifetime1w">1w</string>
-    <string name="EncryptionKeyDescription">This image is a visualization of the encryption key for this secret chat with <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>If this image looks the same on <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> phone, your chat is 200%% secure.<![CDATA[<br><br>]]>Learn more at telegram.org</string>
+    <string name="EncryptionKeyDescription">Deze afbeelding is een weergave van de encryptiesleutel for dit beveiligde gesprek met <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Als deze afbeelding er hetzelfde uitziet als op de telefoon van<![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, dan is uw gesprek 200%% veilig.<![CDATA[<br><br>]]>Lees meer op telegram.org</string>
 
     <!--settings view-->
     <string name="ResetNotificationsText">Alle meldingsinstellingen naar standaardinstellingen herstellen</string>
@@ -343,9 +342,9 @@
     <string name="Page1Message">Welkom in het tijdperk van snel en veilig chatten</string>
     <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> bezorgt berichten sneller<![CDATA[<br/>]]>dan elke andere app</string>
     <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is altijd gratis. Geen advertenties.<![CDATA[<br/>]]>Geen abonnementskosten</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> beveiligt je berichten<![CDATA[<br/>]]>tegen hackers</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> heeft geen beperkingen op de grootte<![CDATA[<br/>]]>van je media en gesprekken</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> biedt toegang tot je berichten<![CDATA[<br/>]]>vanaf meerdere apparaten</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> beveiligt uw berichten<![CDATA[<br/>]]>tegen hackers</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> heeft geen beperkingen op de grootte<![CDATA[<br/>]]>van uw media en gesprekken</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> biedt toegang tot uw berichten<![CDATA[<br/>]]>vanaf meerdere apparaten</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> berichten zijn sterk versleuteld<![CDATA[<br/>]]>en kunnen zichzelf vernietigen</string>
     <string name="StartMessaging">Start met chatten</string>
 
