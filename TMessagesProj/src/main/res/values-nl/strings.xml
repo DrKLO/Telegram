@@ -28,7 +28,7 @@
     <string name="CancelRegistration">Registratie annuleren</string>
 
     <!--chats view-->
-    <string name="Chats">Chats</string>
+    <string name="Chats">Gesprekken</string>
     <string name="Search">Zoeken</string>
     <string name="NewMessages">Nieuwe berichten</string>
     <string name="Settings">Instellingen</string>
@@ -41,16 +41,16 @@
     <string name="WaitingForNetwork">Wachten op het netwerk...</string>
     <string name="Connecting">Verbinden...</string>
     <string name="Updating">Updaten...</string>
-    <string name="NewSecretChat">Nieuwe privé chat</string>
+    <string name="NewSecretChat">Nieuw privégesprek</string>
     <string name="AwaitingEncryption">Wacht op %s om online te komen...</string>
-    <string name="EncryptionRejected">Privéchat geannuleerd</string>
+    <string name="EncryptionRejected">Privégesprek geannuleerd</string>
     <string name="EncryptionProcessing">Encryptiesleutels uitwisselen...</string>
-    <string name="EncryptedChatStartedOutgoing">%s heeft de privéchat geopend.</string>
-    <string name="EncryptedChatStartedIncoming">U hebt de privéchat geopend.</string>
+    <string name="EncryptedChatStartedOutgoing">%s heeft de privégesprek geopend.</string>
+    <string name="EncryptedChatStartedIncoming">U hebt het privégesprek geopend.</string>
     <string name="ClearHistory">Verwijder gespreksgeschiedenis</string>
     <string name="DeleteChat">Verwijder en sluit dit gesprek</string>
     <string name="HiddenName">Verborgen naam</string>
-    <string name="SelectChat">Kies chat</string>
+    <string name="SelectChat">Kies gesprek</string>
 
     <!--documents view-->
     <string name="SelectFile">Kies bestand</string>
@@ -96,6 +96,7 @@
     <string name="EncryptedPlaceholderTitleIncoming">%s heeft u uitgenodigd voor een privégesprek.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">U heeft %s uitgenodigd voor een privégesprek.</string>
     <string name="EncryptedDescriptionTitle">Privé chats:</string>
+    <string name="EncryptedDescriptionTitle">Privégesprekken:</string>
     <string name="EncryptedDescription1">Gebruik end-to-end versleuteling</string>
     <string name="EncryptedDescription2">Laat geen sporen achter op onze server</string>
     <string name="EncryptedDescription3">Gebruik een automatische vernietigings time-out</string>
@@ -107,45 +108,45 @@
     <string name="DeleteThisGroup">Verwijder deze groep</string>
 
     <!--notification-->
-    <string name="EncryptedChatRequested">Secret chat requested</string>
-    <string name="EncryptedChatAccepted">Secret chat started</string>
+    <string name="EncryptedChatRequested">Privégesprek aangevraagd</string>
+    <string name="EncryptedChatAccepted">Privégesprek geaccepteerd</string>
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
     <string name="MessageLifetimeRemoved">%1$s disabled the self-destruct timer</string>
     <string name="MessageLifetimeYouRemoved">You disabled the self-destruct timer</string>
-    <string name="MessageLifetime2s">2 seconds</string>
-    <string name="MessageLifetime5s">5 seconds</string>
-    <string name="MessageLifetime1m">1 minute</string>
-    <string name="MessageLifetime1h">1 hour</string>
-    <string name="MessageLifetime1d">1 day</string>
+    <string name="MessageLifetime2s">2 seconden</string>
+    <string name="MessageLifetime5s">5 seconden</string>
+    <string name="MessageLifetime1m">1 minuut</string>
+    <string name="MessageLifetime1h">1 uur</string>
+    <string name="MessageLifetime1d">1 dag</string>
     <string name="MessageLifetime1w">1 week</string>
-    <string name="YouHaveNewMessage">You have a new message</string>
+    <string name="YouHaveNewMessage">U heeft een nieuw bericht</string>
     <string name="NotificationMessageText">%1$s: %2$s</string>
-    <string name="NotificationMessageNoText">%1$s sent you a message</string>
-    <string name="NotificationMessagePhoto">%1$s sent you a photo</string>
-    <string name="NotificationMessageVideo">%1$s sent you a video</string>
-    <string name="NotificationMessageContact">%1$s shared a contact with you</string>
-    <string name="NotificationMessageMap">%1$s sent you a map</string>
-    <string name="NotificationMessageDocument">%1$s sent you a document</string>
-    <string name="NotificationMessageAudio">%1$s sent you an audio</string>
+    <string name="NotificationMessageNoText">%1$s heeft u een bericht gestuurd</string>
+    <string name="NotificationMessagePhoto">%1$s heeft u een foto gestuurd</string>
+    <string name="NotificationMessageVideo">%1$s heeft u een video gestuurd</string>
+    <string name="NotificationMessageContact">%1$s heeft een contact met u gedeeld</string>
+    <string name="NotificationMessageMap">%1$s heeft u een kaart gestuurd</string>
+    <string name="NotificationMessageDocument">%1$s heeft u een document gestuurd</string>
+    <string name="NotificationMessageAudio">%1$s heeft u een geluidsbestand gestuurd</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
-    <string name="NotificationMessageGroupNoText">%1$s sent a message to the group %2$s</string>
-    <string name="NotificationMessageGroupPhoto">%1$s sent a photo to the group %2$s</string>
-    <string name="NotificationMessageGroupVideo">%1$s sent a video to the group %2$s</string>
-    <string name="NotificationMessageGroupContact">%1$s shared a contact in the group %2$s</string>
-    <string name="NotificationMessageGroupMap">%1$s sent a map to the group %2$s</string>
-    <string name="NotificationMessageGroupDocument">%1$s sent a document to the group %2$s</string>
-    <string name="NotificationMessageGroupAudio">%1$s sent an audio to the group %2$s</string>
-    <string name="NotificationInvitedToGroup">%1$s invited you to the group %2$s</string>
-    <string name="NotificationEditedGroupName">%1$s edited the group\'s %2$s name</string>
-    <string name="NotificationEditedGroupPhoto">%1$s edited the group\'s %2$s photo</string>
-    <string name="NotificationGroupAddMember">%1$s invited %3$s to the group %2$s</string>
-    <string name="NotificationGroupKickMember">%1$s kicked %3$s from the group %2$s</string>
-    <string name="NotificationGroupKickYou">%1$s kicked you from the group %2$s</string>
-    <string name="NotificationGroupLeftMember">%1$s has left the group %2$s</string>
-    <string name="NotificationContactJoined">%1$s joined Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nWe detected a login into your account from a new device on %2$s\n\nDevice: %3$s\nLocation: %4$s\n\nIf this wasn’t you, you can go to Settings – Terminate all sessions.\n\nThanks,\nThe Telegram Team</string>
-    <string name="NotificationContactNewPhoto">%1$s updated profile photo</string>
+    <string name="NotificationMessageGroupNoText">%1$s heeft een bericht gestuurd naar de groep %2$s</string>
+    <string name="NotificationMessageGroupPhoto">%1$s heeft een foto gestuurd naar de groep %2$s</string>
+    <string name="NotificationMessageGroupVideo">%1$s heeft een video gestuurd naar de groep %2$s</string>
+    <string name="NotificationMessageGroupContact">%1$s heeft een contact gedeeld met de groep %2$s</string>
+    <string name="NotificationMessageGroupMap">%1$s heeft een kaart gestuurd naar de groep %2$s</string>
+    <string name="NotificationMessageGroupDocument">%1$s heeft een document gestuurd naar de groep %2$s</string>
+    <string name="NotificationMessageGroupAudio">%1$s heeft een audiobestand gestuurd naar de groep %2$s</string>
+    <string name="NotificationInvitedToGroup">%1$s heeft u uitgenodigd voor de groep %2$s</string>
+    <string name="NotificationEditedGroupName">%1$s heeft de naam van de groep %2$s aangepast</string>
+    <string name="NotificationEditedGroupPhoto">%1$s heeft de foto van de groep %2$s aangepast</string>
+    <string name="NotificationGroupAddMember">%1$s nodigt %3$s uit voor de groep %2$s</string>
+    <string name="NotificationGroupKickMember">%1$s zette %3$s uit de groep %2$s</string>
+    <string name="NotificationGroupKickYou">%1$s heeft u uit de groep %2$s gezet</string>
+    <string name="NotificationGroupLeftMember">%1$s heeft de groep %2$s verlaten</string>
+    <string name="NotificationContactJoined">%1$s heeft nu Telegram!</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nWe hebben een nieutwe login op uw account gedetecteerd op 2$s\n\nToestel: %3$s\nLocatie: %4$s\n\nAls u dit niet was, kunt u naar Instellingen - Verwijder alle sessies.\n\nHet Telegram Team</string>
+    <string name="NotificationContactNewPhoto">%1$s heeft zijn profielfoto aangepast</string>
 
     <!--contacts view-->
     <string name="SelectContact">Select Contact</string>
