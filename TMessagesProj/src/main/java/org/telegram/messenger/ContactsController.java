@@ -185,12 +185,19 @@ public class ContactsController {
         HashMap<Integer, Contact> contactsMap = new HashMap<Integer, Contact>();
         try {
             ContentResolver cr = ApplicationLoader.applicationContext.getContentResolver();
+            Locale locale = Locale.getDefault();
+            String country = locale.getCountry();
             String ids = "";
             Cursor pCur = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, projectioPhones, null, null, null);
             if (pCur != null) {
                 if (pCur.getCount() > 0) {
                     while (pCur.moveToNext()) {
                         String number = pCur.getString(1);
+                        
+                        if !(number.startsWith("+")) {
+                            number = country + number;
+                        }
+
                         if (number == null || number.length() == 0) {
                             continue;
                         }
