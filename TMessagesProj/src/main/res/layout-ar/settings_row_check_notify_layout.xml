@@ -18,7 +18,7 @@
         android:id="@+id/settings_row_text"
         android:layout_width="wrap_content"
         android:layout_height="fill_parent"
-        android:layout_marginLeft="8dp"
+        android:layout_marginLeft="104dp"
         android:layout_marginRight="8dp"
         android:gravity="center_vertical|right"
         android:layout_gravity="top|right"/>

@@ -26,6 +26,7 @@ import android.widget.TextView;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -49,7 +50,8 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         NotificationCenter.Instance.addObserver(this, MessagesController.updateInterfaces);
         user_id = getArguments().getInt("user_id", 0);
         phone = getArguments().getString("phone");
-        return true;
+        TLRPC.User user = MessagesController.Instance.users.get(user_id);
+        return user != null;
     }
 
     @Override
@@ -64,8 +66,10 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
             fragmentView = inflater.inflate(R.layout.contact_add_layout, container, false);
 
             TLRPC.User user = MessagesController.Instance.users.get(user_id);
-            if (phone != null) {
-                user.phone = PhoneFormat.stripExceptNumbers(phone);
+            if (user.phone == null) {
+                if (phone != null) {
+                    user.phone = PhoneFormat.stripExceptNumbers(phone);
+                }
             }
 
             onlineText = (TextView)fragmentView.findViewById(R.id.settings_online);
@@ -137,7 +141,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                     if (value == 0) {
                         value = user.status.expires;
                     }
-                    onlineText.setText(String.format("%s %s", getStringEntry(R.string.LastSeen), Utilities.formatDateOnline(value)));
+                    onlineText.setText(Utilities.formatDateOnline(value));
                 }
             }
         }
@@ -151,7 +155,10 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
 
     public void didReceivedNotification(int id, Object... args) {
         if (id == MessagesController.updateInterfaces) {
-            updateAvatarLayout();
+            int mask = (Integer)args[0];
+            if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
+                updateAvatarLayout();
+            }
         }
     }
 
@@ -197,8 +204,9 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                     TLRPC.User user = MessagesController.Instance.users.get(user_id);
                     user.first_name = firstNameField.getText().toString();
                     user.last_name = lastNameField.getText().toString();
-                    MessagesController.Instance.addContact(user);
+                    ContactsController.Instance.addContact(user);
                     finishFragment();
+                    NotificationCenter.Instance.postNotificationName(MessagesController.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
                 }
             }
         });
@@ -212,7 +220,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         }
         ((ApplicationActivity)parentActivity).updateActionBar();
 
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         boolean animations = preferences.getBoolean("view_animations", true);
         if (!animations) {
             firstNameField.requestFocus();

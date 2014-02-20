@@ -190,8 +190,8 @@ public class UserConfig {
         currentUser = null;
         registeredForPush = false;
         contactsHash = "";
-        lastLocalId = -210000;
         importHash = "";
+        lastLocalId = -210000;
         lastSendMessageId = -210000;
         saveIncomingPhotos = false;
         saveConfig(true);

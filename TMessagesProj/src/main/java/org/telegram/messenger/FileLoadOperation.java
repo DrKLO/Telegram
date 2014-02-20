@@ -94,6 +94,24 @@ public class FileLoadOperation {
         ext = ".mp4";
     }
 
+    public FileLoadOperation(TLRPC.Audio audioLocation) {
+        if (audioLocation instanceof TLRPC.TL_audio) {
+            location = new TLRPC.TL_inputAudioFileLocation();
+            datacenter_id = audioLocation.dc_id;
+            location.id = audioLocation.id;
+            location.access_hash = audioLocation.access_hash;
+        } else if (audioLocation instanceof TLRPC.TL_audioEncrypted) {
+            location = new TLRPC.TL_inputEncryptedFileLocation();
+            location.id = audioLocation.id;
+            location.access_hash = audioLocation.access_hash;
+            datacenter_id = audioLocation.dc_id;
+            iv = new byte[32];
+            System.arraycopy(audioLocation.iv, 0, iv, 0, iv.length);
+            key = audioLocation.key;
+        }
+        ext = ".m4a";
+    }
+
     public FileLoadOperation(TLRPC.Document documentLocation) {
         if (documentLocation instanceof TLRPC.TL_document) {
             location = new TLRPC.TL_inputDocumentFileLocation();
@@ -220,14 +238,14 @@ public class FileLoadOperation {
                                 opts.inSampleSize = (int)scaleFactor;
                             }
 
-                            opts.inPreferredConfig = Bitmap.Config.RGB_565;
+                            opts.inPreferredConfig = Bitmap.Config.ARGB_8888;
                             opts.inDither = false;
                             image = BitmapFactory.decodeStream(is, null, opts);
                             is.close();
                             if (image == null) {
-                                if (!dontDelete) {
-                                    cacheFileFinal.delete();
-                                }
+                                //if (!dontDelete) {
+                                //    cacheFileFinal.delete();
+                                //}
                             } else {
                                 if (filter != null && image != null) {
                                     float bitmapW = image.getWidth();
@@ -252,13 +270,17 @@ public class FileLoadOperation {
                         Utilities.stageQueue.postRunnable(new Runnable() {
                             @Override
                             public void run() {
-                                delegate.didFinishLoadingFile(FileLoadOperation.this);
+                                if (image == null) {
+                                    delegate.didFailedLoadingFile(FileLoadOperation.this);
+                                } else {
+                                    delegate.didFinishLoadingFile(FileLoadOperation.this);
+                                }
                             }
                         });
                     } catch (Exception e) {
-                        if (!dontDelete) {
-                            cacheFileFinal.delete();
-                        }
+                        //if (!dontDelete) {
+                        //    cacheFileFinal.delete();
+                        //}
                         FileLog.e("tmessages", e);
                     }
                 }
@@ -414,13 +436,18 @@ public class FileLoadOperation {
                         opts.inSampleSize = (int) scaleFactor;
                     }
 
-                    opts.inPreferredConfig = Bitmap.Config.RGB_565;
+                    opts.inPreferredConfig = Bitmap.Config.ARGB_8888;
                     opts.inDither = false;
                     try {
                         if (renamed) {
                             image = BitmapFactory.decodeStream(new FileInputStream(cacheFileFinal), null, opts);
                         } else {
-                            image = BitmapFactory.decodeStream(new FileInputStream(cacheFileTemp), null, opts);
+                            try {
+                                image = BitmapFactory.decodeStream(new FileInputStream(cacheFileTemp), null, opts);
+                            } catch (Exception e) {
+                                FileLog.e("tmessages", e);
+                                image = BitmapFactory.decodeStream(new FileInputStream(cacheFileFinal), null, opts);
+                            }
                         }
                         if (filter != null && image != null) {
                             float bitmapW = image.getWidth();
@@ -437,13 +464,18 @@ public class FileLoadOperation {
                             }
 
                         }
-                        if (FileLoader.Instance.runtimeHack != null) {
+                        if (image != null && FileLoader.Instance.runtimeHack != null) {
                             FileLoader.Instance.runtimeHack.trackFree(image.getRowBytes() * image.getHeight());
+                        }
+                        if (image != null) {
+                            delegate.didFinishLoadingFile(FileLoadOperation.this);
+                        } else {
+                            delegate.didFailedLoadingFile(FileLoadOperation.this);
                         }
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
+                        delegate.didFailedLoadingFile(FileLoadOperation.this);
                     }
-                    delegate.didFinishLoadingFile(FileLoadOperation.this);
                 }
             });
         } else {

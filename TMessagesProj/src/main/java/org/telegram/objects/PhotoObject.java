@@ -30,7 +30,7 @@ public class PhotoObject {
             opts.outWidth = photo.w;
             opts.outHeight = photo.h;
             image = BitmapFactory.decodeByteArray(photoOwner.bytes, 0, photoOwner.bytes.length, opts);
-            if (FileLoader.Instance.runtimeHack != null) {
+            if (image != null && FileLoader.Instance.runtimeHack != null) {
                 FileLoader.Instance.runtimeHack.trackFree(image.getRowBytes() * image.getHeight());
             }
         }
@@ -46,7 +46,7 @@ public class PhotoObject {
             }
             int diffW = Math.abs(obj.photoOwner.w - width);
             int diffH = Math.abs(obj.photoOwner.h - height);
-            if (closestObject == null || closestWidth > diffW && closestHeight > diffH || closestObject.photoOwner instanceof TLRPC.TL_photoCachedSize) {
+            if (closestObject == null || closestWidth > diffW || closestHeight > diffH || closestObject.photoOwner instanceof TLRPC.TL_photoCachedSize) {
                 closestObject = obj;
                 closestWidth = diffW;
                 closestHeight = diffH;

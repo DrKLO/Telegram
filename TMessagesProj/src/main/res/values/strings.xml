@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+
+<!-- -->
+
 <resources>
     <string name="AppName">Telegram</string>
 
@@ -46,6 +49,8 @@
     <string name="EncryptedChatStartedIncoming">You joined the secret chat.</string>
     <string name="ClearHistory">Clear History</string>
     <string name="DeleteChat">Delete and Exit</string>
+    <string name="HiddenName">Hidden Name</string>
+    <string name="SelectChat">Select Chat</string>
 
     <!--documents view-->
     <string name="SelectFile">Select File</string>
@@ -69,7 +74,7 @@
     <string name="AreTyping">are typing...</string>
     <string name="AndMoreTyping">and %d more people</string>
     <string name="GotAQuestion">Got a question\nabout Telegram?</string>
-    <string name="ChatTakePhoto">Take a photo</string>
+    <string name="ChatTakePhoto">Take photo</string>
     <string name="ChatGallery">Gallery</string>
     <string name="ChatLocation">Location</string>
     <string name="ChatVideo">Video</string>
@@ -107,6 +112,7 @@
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
     <string name="MessageLifetimeRemoved">%1$s disabled the self-destruct timer</string>
+    <string name="MessageLifetimeYouRemoved">You disabled the self-destruct timer</string>
     <string name="MessageLifetime2s">2 seconds</string>
     <string name="MessageLifetime5s">5 seconds</string>
     <string name="MessageLifetime1m">1 minute</string>
@@ -137,8 +143,8 @@
     <string name="NotificationGroupKickMember">%1$s kicked %3$s from the group %2$s</string>
     <string name="NotificationGroupKickYou">%1$s kicked you from the group %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s has left the group %2$s</string>
-    <string name="NotificationContactJoined">%1$s joined the Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">New login from unrecognized device %1$s, location: %2$s</string>
+    <string name="NotificationContactJoined">%1$s joined Telegram!</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nWe detected a login into your account from a new device on %2$s\n\nDevice: %3$s\nLocation: %4$s\n\nIf this wasn’t you, you can go to Settings – Terminate all sessions.\n\nThanks,\nThe Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s updated profile photo</string>
 
     <!--contacts view-->
@@ -151,6 +157,7 @@
     <string name="Online">online</string>
     <string name="Offline">offline</string>
     <string name="LastSeen">last seen</string>
+    <string name="LastSeenDate">last seen</string>
     <string name="InviteFriends">Invite Friends</string>
 
     <!--group create view-->
@@ -173,9 +180,11 @@
     <string name="KickFromGroup">Kick from group</string>
 
     <!--contact info view-->
-    <string name="ShareContact">Share Contact</string>
-    <string name="AddContact">Add Contact</string>
-    <string name="BlockContact">Block Contact</string>
+    <string name="ShareContact">Share</string>
+    <string name="AddContact">Add</string>
+    <string name="BlockContact">Block</string>
+    <string name="EditContact">Edit</string>
+    <string name="DeleteContact">Delete</string>
     <string name="PhoneHome">HOME</string>
     <string name="PhoneMobile">MOBILE</string>
     <string name="PhoneWork">WORK</string>
@@ -229,6 +238,14 @@
     <string name="Default">Default</string>
     <string name="Support">SUPPORT</string>
     <string name="ChatBackground">Chat Background</string>
+    <string name="MessagesSettings">MESSAGES</string>
+    <string name="SendByEnter">Send by Enter</string>
+    <string name="TerminateAllSessions">Terminate All Other Sessions</string>
+    <string name="AutomaticPhotoDownload">AUTOMATIC PHOTO DOWNLOAD</string>
+    <string name="AutomaticPhotoDownloadGroups">Groups</string>
+    <string name="AutomaticPhotoDownloadPrivateChats">Private Chats</string>
+    <string name="Events">EVENTS</string>
+    <string name="ContactJoined">Contact joined Telegram</string>
 
     <!--media view-->
     <string name="NoMedia">No shared media yet</string>
@@ -279,6 +296,15 @@
     <string name="ActionChangedPhoto">un1 changed group photo</string>
     <string name="ActionChangedTitle">un1 changed group name to un2</string>
     <string name="ActionCreateGroup">un1 created the group</string>
+    <string name="ActionYouKickUser">You kicked un2</string>
+    <string name="ActionYouLeftUser">You left group</string>
+    <string name="ActionYouAddUser">You added un2</string>
+    <string name="ActionYouRemovedPhoto">You removed group photo</string>
+    <string name="ActionYouChangedPhoto">You changed group photo</string>
+    <string name="ActionYouChangedTitle">You changed group name to un2</string>
+    <string name="ActionYouCreateGroup">You created the group</string>
+    <string name="ActionKickUserYou">un1 kicked you</string>
+    <string name="ActionAddUserYou">un1 added you</string>
     <string name="UnsuppotedMedia">This message is not supported on your version of Telegram.</string>
     <string name="AttachPhoto">Photo</string>
     <string name="AttachVideo">Video</string>

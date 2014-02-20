@@ -25,6 +25,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import org.telegram.messenger.ConnectionsManager;
@@ -196,7 +197,7 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
                 method.invoke(field.get(getSupportActionBar()), false);
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            e.printStackTrace();
         }
     }
 
@@ -332,6 +333,10 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
         ApplicationLoader.lastPauseTime = System.currentTimeMillis();
         if (notificationView != null) {
             notificationView.hide(false);
+        }
+        View focusView = getCurrentFocus();
+        if (focusView instanceof EditText) {
+            focusView.clearFocus();
         }
     }
 
@@ -581,13 +586,13 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
                 try {
                     if (statusView.getLayoutParams() instanceof android.support.v7.app.ActionBar.LayoutParams) {
                         android.support.v7.app.ActionBar.LayoutParams statusParams = (android.support.v7.app.ActionBar.LayoutParams)statusView.getLayoutParams();
-                        statusText.measure(View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.AT_MOST), 100);
-                        statusParams.width = (int)(statusText.getMeasuredWidth() + Utilities.dp(54));
+                        statusText.measure(View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.AT_MOST));
+                        statusParams.width = (statusText.getMeasuredWidth() + Utilities.dp(54));
                         statusView.setLayoutParams(statusParams);
                     } else if (statusView.getLayoutParams() instanceof android.app.ActionBar.LayoutParams) {
                         android.app.ActionBar.LayoutParams statusParams = (android.app.ActionBar.LayoutParams)statusView.getLayoutParams();
-                        statusText.measure(View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.AT_MOST), 100);
-                        statusParams.width = (int)(statusText.getMeasuredWidth() + Utilities.dp(54));
+                        statusText.measure(View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.AT_MOST));
+                        statusParams.width = (statusText.getMeasuredWidth() + Utilities.dp(54));
                         statusView.setLayoutParams(statusParams);
                     }
                 } catch (Exception e) {
@@ -621,7 +626,7 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
             ApplicationLoader.fragmentsStack.remove(ApplicationLoader.fragmentsStack.size() - 1);
             current.onFragmentDestroy();
         }
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         boolean animations = preferences.getBoolean("view_animations", true);
         if (animations) {
             if (bySwipe) {
@@ -660,7 +665,7 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
         BaseFragment prev = ApplicationLoader.fragmentsStack.get(ApplicationLoader.fragmentsStack.size() - 2);
         FragmentManager fm = getSupportFragmentManager();
         FragmentTransaction fTrans = fm.beginTransaction();
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         boolean animations = preferences.getBoolean("view_animations", true);
         if (animations) {
             if (bySwipe) {

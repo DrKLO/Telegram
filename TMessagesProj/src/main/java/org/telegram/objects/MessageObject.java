@@ -33,6 +33,7 @@ public class MessageObject {
     public PhotoObject previewPhoto;
     public String dateKey;
     public boolean deleted = false;
+    public Object TAG;
 
     public MessageObject(TLRPC.Message message, AbstractMap<Integer, TLRPC.User> users) {
         messageOwner = message;
@@ -45,7 +46,7 @@ public class MessageObject {
                 }
                 if (message.action instanceof TLRPC.TL_messageActionChatCreate) {
                     if (message.from_id == UserConfig.clientUserId) {
-                        messageText = ApplicationLoader.applicationContext.getString(R.string.ActionCreateGroup).replace("un1", ApplicationLoader.applicationContext.getString(R.string.FromYou));
+                        messageText = ApplicationLoader.applicationContext.getString(R.string.ActionYouCreateGroup);
                     } else {
                         if (fromUser != null) {
                             messageText = ApplicationLoader.applicationContext.getString(R.string.ActionCreateGroup).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
@@ -56,7 +57,7 @@ public class MessageObject {
                 } else if (message.action instanceof TLRPC.TL_messageActionChatDeleteUser) {
                     if (message.action.user_id == message.from_id) {
                         if (message.from_id == UserConfig.clientUserId) {
-                            messageText = ApplicationLoader.applicationContext.getString(R.string.ActionLeftUser).replace("un1", ApplicationLoader.applicationContext.getString(R.string.FromYou));
+                            messageText = ApplicationLoader.applicationContext.getString(R.string.ActionYouLeftUser);
                         } else {
                             if (fromUser != null) {
                                 messageText = ApplicationLoader.applicationContext.getString(R.string.ActionLeftUser).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
@@ -69,17 +70,16 @@ public class MessageObject {
                         if (who == null) {
                             MessagesController.Instance.users.get(message.action.user_id);
                         }
-                        String str = ApplicationLoader.applicationContext.getString(R.string.ActionKickUser);
                         if (who != null && fromUser != null) {
                             if (message.from_id == UserConfig.clientUserId) {
-                                messageText = str.replace("un2", Utilities.formatName(who.first_name, who.last_name)).replace("un1", ApplicationLoader.applicationContext.getString(R.string.FromYou));
+                                messageText = ApplicationLoader.applicationContext.getString(R.string.ActionYouKickUser).replace("un2", Utilities.formatName(who.first_name, who.last_name));
                             } else if (message.action.user_id == UserConfig.clientUserId) {
-                                messageText = str.replace("un2", ApplicationLoader.applicationContext.getString(R.string.FromYou)).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                                messageText = ApplicationLoader.applicationContext.getString(R.string.ActionKickUserYou).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
                             } else {
-                                messageText = str.replace("un2", Utilities.formatName(who.first_name, who.last_name)).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                                messageText = ApplicationLoader.applicationContext.getString(R.string.ActionKickUser).replace("un2", Utilities.formatName(who.first_name, who.last_name)).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
                             }
                         } else {
-                            messageText = str.replace("un2", "").replace("un1", "");
+                            messageText = ApplicationLoader.applicationContext.getString(R.string.ActionKickUser).replace("un2", "").replace("un1", "");
                         }
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionChatAddUser) {
@@ -87,17 +87,16 @@ public class MessageObject {
                     if (whoUser == null) {
                         MessagesController.Instance.users.get(message.action.user_id);
                     }
-                    String str = ApplicationLoader.applicationContext.getString(R.string.ActionAddUser);
                     if (whoUser != null && fromUser != null) {
                         if (message.from_id == UserConfig.clientUserId) {
-                            messageText = str.replace("un2", Utilities.formatName(whoUser.first_name, whoUser.last_name)).replace("un1", ApplicationLoader.applicationContext.getString(R.string.FromYou));
+                            messageText = ApplicationLoader.applicationContext.getString(R.string.ActionYouAddUser).replace("un2", Utilities.formatName(whoUser.first_name, whoUser.last_name));
                         } else if (message.action.user_id == UserConfig.clientUserId) {
-                            messageText = str.replace("un2", ApplicationLoader.applicationContext.getString(R.string.FromYou)).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                            messageText = ApplicationLoader.applicationContext.getString(R.string.ActionAddUserYou).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
                         } else {
-                            messageText = str.replace("un2", Utilities.formatName(whoUser.first_name, whoUser.last_name)).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                            messageText = ApplicationLoader.applicationContext.getString(R.string.ActionAddUser).replace("un2", Utilities.formatName(whoUser.first_name, whoUser.last_name)).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
                         }
                     } else {
-                        messageText = str.replace("un2", "").replace("un1", "");
+                        messageText = ApplicationLoader.applicationContext.getString(R.string.ActionAddUser).replace("un2", "").replace("un1", "");
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionChatEditPhoto) {
                     photoThumbs = new ArrayList<PhotoObject>();
@@ -105,7 +104,7 @@ public class MessageObject {
                         photoThumbs.add(new PhotoObject(size));
                     }
                     if (message.from_id == UserConfig.clientUserId) {
-                        messageText = ApplicationLoader.applicationContext.getString(R.string.ActionChangedPhoto).replace("un1", ApplicationLoader.applicationContext.getString(R.string.FromYou));
+                        messageText = ApplicationLoader.applicationContext.getString(R.string.ActionYouChangedPhoto);
                     } else {
                         if (fromUser != null) {
                             messageText = ApplicationLoader.applicationContext.getString(R.string.ActionChangedPhoto).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
@@ -115,7 +114,7 @@ public class MessageObject {
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionChatEditTitle) {
                     if (message.from_id == UserConfig.clientUserId) {
-                        messageText = ApplicationLoader.applicationContext.getString(R.string.ActionChangedTitle).replace("un1", ApplicationLoader.applicationContext.getString(R.string.FromYou)).replace("un2", message.action.title);
+                        messageText = ApplicationLoader.applicationContext.getString(R.string.ActionYouChangedTitle).replace("un2", message.action.title);
                     } else {
                         if (fromUser != null) {
                             messageText = ApplicationLoader.applicationContext.getString(R.string.ActionChangedTitle).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name)).replace("un2", message.action.title);
@@ -125,7 +124,7 @@ public class MessageObject {
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionChatDeletePhoto) {
                     if (message.from_id == UserConfig.clientUserId) {
-                        messageText = ApplicationLoader.applicationContext.getString(R.string.ActionRemovedPhoto).replace("un1", ApplicationLoader.applicationContext.getString(R.string.FromYou));
+                        messageText = ApplicationLoader.applicationContext.getString(R.string.ActionYouRemovedPhoto);
                     } else {
                         if (fromUser != null) {
                             messageText = ApplicationLoader.applicationContext.getString(R.string.ActionRemovedPhoto).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
@@ -162,7 +161,7 @@ public class MessageObject {
                         }
                     } else {
                         if (message.from_id == UserConfig.clientUserId) {
-                            messageText = String.format(ApplicationLoader.applicationContext.getString(R.string.MessageLifetimeRemoved), ApplicationLoader.applicationContext.getString(R.string.FromYou));
+                            messageText = String.format(ApplicationLoader.applicationContext.getString(R.string.MessageLifetimeYouRemoved));
                         } else {
                             if (fromUser != null) {
                                 messageText = String.format(ApplicationLoader.applicationContext.getString(R.string.MessageLifetimeRemoved), fromUser.first_name);
@@ -172,7 +171,8 @@ public class MessageObject {
                         }
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionLoginUnknownLocation) {
-                    messageText = ApplicationLoader.applicationContext.getString(R.string.NotificationUnrecognizedDevice, message.action.title, message.action.address);
+                    String date = String.format("%s %s %s", Utilities.formatterYear.format(((long)message.date) * 1000), ApplicationLoader.applicationContext.getString(R.string.OtherAt), Utilities.formatterDay.format(((long)message.date) * 1000));
+                    messageText = ApplicationLoader.applicationContext.getString(R.string.NotificationUnrecognizedDevice, UserConfig.currentUser.first_name, date, message.action.title, message.action.address);
                 } else if (message.action instanceof TLRPC.TL_messageActionUserJoined) {
                     if (fromUser != null) {
                         messageText = ApplicationLoader.applicationContext.getString(R.string.NotificationContactJoined, Utilities.formatName(fromUser.first_name, fromUser.last_name));
@@ -266,9 +266,17 @@ public class MessageObject {
                 } else {
                     type = 17;
                 }
+            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaAudio) {
+                if (message.from_id == UserConfig.clientUserId) {
+                    type = 0;
+                } else {
+                    type = 1;
+                }
             }
         } else if (message instanceof TLRPC.TL_messageService) {
-            if (message.action instanceof TLRPC.TL_messageActionChatEditPhoto || message.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
+            if (message.action instanceof TLRPC.TL_messageActionLoginUnknownLocation) {
+                type = 1;
+            } else if (message.action instanceof TLRPC.TL_messageActionChatEditPhoto || message.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
                 type = 11;
             } else {
                 type = 10;
@@ -294,6 +302,8 @@ public class MessageObject {
             return getAttachFileName(messageOwner.media.video);
         } else if (messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
             return getAttachFileName(messageOwner.media.document);
+        } else if (messageOwner.media instanceof TLRPC.TL_messageMediaAudio) {
+            return getAttachFileName(messageOwner.media.audio);
         }
         return "";
     }
@@ -319,6 +329,9 @@ public class MessageObject {
         } else if (attach instanceof TLRPC.PhotoSize) {
             TLRPC.PhotoSize photo = (TLRPC.PhotoSize)attach;
             return photo.location.volume_id + "_" + photo.location.local_id + ".jpg";
+        } else if (attach instanceof TLRPC.Audio) {
+            TLRPC.Audio audio = (TLRPC.Audio)attach;
+            return audio.dc_id + "_" + audio.id + ".m4a";
         }
         return "";
     }

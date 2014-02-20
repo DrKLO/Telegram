@@ -15,8 +15,6 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.telephony.SmsMessage;
 
-import org.telegram.messenger.NotificationCenter;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,6 +25,9 @@ public class SmsListener extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if(intent.getAction().equals("android.provider.Telephony.SMS_RECEIVED")) {
+            if (!Utilities.isWaitingForSms()) {
+                return;
+            }
             Bundle bundle = intent.getExtras();
             SmsMessage[] msgs;
             if (bundle != null) {

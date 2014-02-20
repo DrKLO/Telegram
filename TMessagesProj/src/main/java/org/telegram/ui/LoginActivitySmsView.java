@@ -24,6 +24,8 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.TL.TLObject;
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
@@ -47,6 +49,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     private Bundle currentParams;
 
     private Timer timeTimer;
+    private final Integer timerSync = 1;
     private int time = 60000;
     private double lastCurrentTime;
     private boolean waitingForSms = false;
@@ -102,6 +105,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     @Override
     public void setParams(Bundle params) {
         codeField.setText("");
+        Utilities.setWaitingForSms(true);
         NotificationCenter.Instance.addObserver(this, 998);
         currentParams = params;
         waitingForSms = true;
@@ -117,9 +121,15 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         codeField.requestFocus();
 
         time = 60000;
-        if (timeTimer != null) {
-            timeTimer.cancel();
-            timeTimer = null;
+        try {
+            synchronized(timerSync) {
+                if (timeTimer != null) {
+                    timeTimer.cancel();
+                    timeTimer = null;
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
         timeText.setText(String.format("%s 1:00", ApplicationLoader.applicationContext.getResources().getString(R.string.CallText)));
         lastCurrentTime = System.currentTimeMillis();
@@ -140,9 +150,11 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                             timeText.setText(String.format("%s %d:%02d", ApplicationLoader.applicationContext.getResources().getString(R.string.CallText), minutes, seconds));
                         } else {
                             timeText.setText(ApplicationLoader.applicationContext.getResources().getString(R.string.Calling));
-                            if (timeTimer != null) {
-                                timeTimer.cancel();
-                                timeTimer = null;
+                            synchronized(timerSync) {
+                                if (timeTimer != null) {
+                                    timeTimer.cancel();
+                                    timeTimer = null;
+                                }
                             }
                             TLRPC.TL_auth_sendCall req = new TLRPC.TL_auth_sendCall();
                             req.phone_number = requestPhone;
@@ -162,12 +174,25 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     @Override
     public void onNextPressed() {
         waitingForSms = false;
+        Utilities.setWaitingForSms(false);
         NotificationCenter.Instance.removeObserver(this, 998);
         final TLRPC.TL_auth_signIn req = new TLRPC.TL_auth_signIn();
         req.phone_number = requestPhone;
         req.phone_code = codeField.getText().toString();
         req.phone_code_hash = phoneHash;
-        delegate.needShowProgress();
+        try {
+            synchronized(timerSync) {
+                if (timeTimer != null) {
+                    timeTimer.cancel();
+                    timeTimer = null;
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        if (delegate != null) {
+            delegate.needShowProgress();
+        }
         ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
@@ -182,9 +207,15 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                             if (delegate == null) {
                                 return;
                             }
-                            if (timeTimer != null) {
-                                timeTimer.cancel();
-                                timeTimer = null;
+                            try {
+                                synchronized(timerSync) {
+                                    if (timeTimer != null) {
+                                        timeTimer.cancel();
+                                        timeTimer = null;
+                                    }
+                                }
+                            } catch (Exception e) {
+                                FileLog.e("tmessages", e);
                             }
                             UserConfig.clearConfig();
                             MessagesStorage.Instance.cleanUp();
@@ -198,8 +229,10 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                             users.add(UserConfig.currentUser);
                             MessagesStorage.Instance.putUsersAndChats(users, null, true, true);
                             MessagesController.Instance.users.put(res.user.id, res.user);
-                            MessagesController.Instance.checkAppAccount();
-                            delegate.needFinishActivity();
+                            ContactsController.Instance.checkAppAccount();
+                            if (delegate != null) {
+                                delegate.needFinishActivity();
+                            }
                         }
                     });
                 } else {
@@ -212,21 +245,67 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                                 params.putString("phoneHash", phoneHash);
                                 params.putString("code", req.phone_code);
                                 delegate.setPage(2, true, params, false);
-                                if (timeTimer != null) {
-                                    timeTimer.cancel();
-                                    timeTimer = null;
+                                try {
+                                    synchronized(timerSync) {
+                                        if (timeTimer != null) {
+                                            timeTimer.cancel();
+                                            timeTimer = null;
+                                        }
+                                    }
+                                } catch (Exception e) {
+                                    FileLog.e("tmessages", e);
                                 }
                             }
                         });
                     } else {
-                        if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidPhoneNumber));
-                        } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidCode));
-                        } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.CodeExpired));
-                        } else {
-                            delegate.needShowAlert(error.text);
+                        if (timeTimer == null) {
+                            timeTimer = new Timer();
+                            timeTimer.schedule(new TimerTask() {
+                                @Override
+                                public void run() {
+                                    double currentTime = System.currentTimeMillis();
+                                    double diff = currentTime - lastCurrentTime;
+                                    time -= diff;
+                                    lastCurrentTime = currentTime;
+                                    Utilities.RunOnUIThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            if (time >= 1000) {
+                                                int minutes = time / 1000 / 60;
+                                                int seconds = time / 1000 - minutes * 60;
+                                                timeText.setText(String.format("%s %d:%02d", ApplicationLoader.applicationContext.getResources().getString(R.string.CallText), minutes, seconds));
+                                            } else {
+                                                timeText.setText(ApplicationLoader.applicationContext.getResources().getString(R.string.Calling));
+                                                synchronized(timerSync) {
+                                                    if (timeTimer != null) {
+                                                        timeTimer.cancel();
+                                                        timeTimer = null;
+                                                    }
+                                                }
+                                                TLRPC.TL_auth_sendCall req = new TLRPC.TL_auth_sendCall();
+                                                req.phone_number = requestPhone;
+                                                req.phone_code_hash = phoneHash;
+                                                ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                                                    @Override
+                                                    public void run(TLObject response, TLRPC.TL_error error) {
+                                                    }
+                                                }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
+                                            }
+                                        }
+                                    });
+                                }
+                            }, 0, 1000);
+                        }
+                        if (delegate != null) {
+                            if (error.text.contains("PHONE_NUMBER_INVALID")) {
+                                delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidPhoneNumber));
+                            } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
+                                delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidCode));
+                            } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                                delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.CodeExpired));
+                            } else {
+                                delegate.needShowAlert(error.text);
+                            }
                         }
                     }
                 }
@@ -236,11 +315,18 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
 
     @Override
     public void onBackPressed() {
-        if (timeTimer != null) {
-            timeTimer.cancel();
-            timeTimer = null;
+        try {
+            synchronized(timerSync) {
+                if (timeTimer != null) {
+                    timeTimer.cancel();
+                    timeTimer = null;
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
         currentParams = null;
+        Utilities.setWaitingForSms(false);
         NotificationCenter.Instance.removeObserver(this, 998);
         waitingForSms = false;
     }
@@ -248,10 +334,17 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     @Override
     public void onDestroyActivity() {
         super.onDestroyActivity();
+        Utilities.setWaitingForSms(false);
         NotificationCenter.Instance.removeObserver(this, 998);
-        if (timeTimer != null) {
-            timeTimer.cancel();
-            timeTimer = null;
+        try {
+            synchronized(timerSync) {
+                if (timeTimer != null) {
+                    timeTimer.cancel();
+                    timeTimer = null;
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
         waitingForSms = false;
     }

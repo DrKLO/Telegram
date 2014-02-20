@@ -13,7 +13,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
-import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -34,6 +33,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Cells.ChatOrUserCell;
 import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.OnSwipeTouchListener;
 
@@ -118,14 +118,10 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                             if (i == 0) {
                                 TLRPC.TL_contacts_unblock req = new TLRPC.TL_contacts_unblock();
                                 TLRPC.User user = MessagesController.Instance.users.get(selectedUserId);
-                                if (user instanceof TLRPC.TL_userForeign || user instanceof TLRPC.TL_userRequest) {
-                                    req.id = new TLRPC.TL_inputUserForeign();
-                                    req.id.user_id = selectedUserId;
-                                    req.id.access_hash = user.access_hash;
-                                } else {
-                                    req.id = new TLRPC.TL_inputUserContact();
-                                    req.id.user_id = selectedUserId;
+                                if (user == null) {
+                                    return;
                                 }
+                                req.id = MessagesController.getInputUser(user);
                                 TLRPC.TL_contactBlocked blocked = blockedContactsDict.get(selectedUserId);
                                 blockedContactsDict.remove(selectedUserId);
                                 blockedContacts.remove(blocked);
@@ -229,8 +225,22 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
     @Override
     public void didReceivedNotification(int id, Object... args) {
         if (id == MessagesController.updateInterfaces) {
-            if (listView != null) {
-                listView.invalidateViews();
+            int mask = (Integer)args[0];
+            if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
+                updateVisibleRows(mask);
+            }
+        }
+    }
+
+    private void updateVisibleRows(int mask) {
+        if (listView == null) {
+            return;
+        }
+        int count = listView.getChildCount();
+        for (int a = 0; a < count; a++) {
+            View child = listView.getChildAt(a);
+            if (child instanceof ChatOrUserCell) {
+                ((ChatOrUserCell) child).update(mask);
             }
         }
     }
@@ -307,22 +317,14 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
     }
 
     @Override
-    public void didSelectContact(int user_id) {
-        if (blockedContactsDict.containsKey(user_id)) {
+    public void didSelectContact(TLRPC.User user) {
+        if (user == null || blockedContactsDict.containsKey(user.id)) {
             return;
         }
         TLRPC.TL_contacts_block req = new TLRPC.TL_contacts_block();
-        TLRPC.User user = MessagesController.Instance.users.get(selectedUserId);
-        if (user instanceof TLRPC.TL_userForeign || user instanceof TLRPC.TL_userRequest) {
-            req.id = new TLRPC.TL_inputUserForeign();
-            req.id.access_hash = user.access_hash;
-            req.id.user_id = user_id;
-        } else {
-            req.id = new TLRPC.TL_inputUserContact();
-            req.id.user_id = user_id;
-        }
+        req.id = MessagesController.getInputUser(user);
         TLRPC.TL_contactBlocked blocked = new TLRPC.TL_contactBlocked();
-        blocked.user_id = user_id;
+        blocked.user_id = user.id;
         blocked.date = (int)(System.currentTimeMillis() / 1000);
         blockedContactsDict.put(blocked.user_id, blocked);
         blockedContacts.add(blocked);
@@ -380,41 +382,13 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
             int type = getItemViewType(i);
             if (type == 0) {
                 if (view == null) {
-                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = li.inflate(R.layout.messages_search_user_layout, viewGroup, false);
+                    view = new ChatOrUserCell(mContext);
+                    ((ChatOrUserCell)view).useBoldFont = true;
+                    ((ChatOrUserCell)view).usePadding = false;
+                    ((ChatOrUserCell)view).useSeparator = true;
                 }
-                ContactsActivity.ContactListRowHolder holder = (ContactsActivity.ContactListRowHolder)view.getTag();
-                if (holder == null) {
-                    holder = new ContactsActivity.ContactListRowHolder(view);
-                    view.setTag(holder);
-                }
-
-                View divider = view.findViewById(R.id.settings_row_divider);
-                divider.setVisibility(View.VISIBLE);
-
                 TLRPC.User user = MessagesController.Instance.users.get(blockedContacts.get(i).user_id);
-
-                TLRPC.FileLocation photo = null;
-                if (user.first_name.length() != 0 && user.last_name.length() != 0) {
-                    holder.nameTextView.setText(Html.fromHtml(user.first_name + " <b>" + user.last_name + "</b>"));
-                } else if (user.first_name.length() != 0) {
-                    holder.nameTextView.setText(Html.fromHtml("<b>" + user.first_name + "</b>"));
-                } else {
-                    holder.nameTextView.setText(Html.fromHtml("<b>" + user.last_name + "</b>"));
-                }
-                if (user.photo != null) {
-                    photo = user.photo.photo_small;
-                }
-                int placeHolderId = Utilities.getUserAvatarForId(user.id);
-                holder.avatarImage.setImage(photo, "50_50", placeHolderId);
-
-                holder.messageTextView.setTextColor(0xff808080);
-
-                if (user.phone != null && user.phone.length() != 0) {
-                    holder.messageTextView.setText(PhoneFormat.Instance.format("+" + user.phone));
-                } else {
-                    holder.messageTextView.setText("Unknown");
-                }
+                ((ChatOrUserCell)view).setData(user, null, null, null, user.phone != null && user.phone.length() != 0 ? PhoneFormat.Instance.format("+" + user.phone) : "Unknown");
             } else if (type == 1) {
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);

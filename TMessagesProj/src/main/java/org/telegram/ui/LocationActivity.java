@@ -329,7 +329,10 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     @Override
     public void didReceivedNotification(int id, Object... args) {
         if (id == MessagesController.updateInterfaces) {
-            updateUserData();
+            int mask = (Integer)args[0];
+            if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
+                updateUserData();
+            }
         } else if (id == MessagesController.closeChats) {
             removeSelfFromStack();
         }

@@ -44,6 +44,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Cells.ChatOrUserCell;
 import org.telegram.ui.Views.AvatarUpdater;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.BaseFragment;
@@ -239,8 +240,8 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public void didSelectContact(int user_id) {
-        MessagesController.Instance.addUserToChat(chat_id, user_id, info);
+    public void didSelectContact(TLRPC.User user) {
+        MessagesController.Instance.addUserToChat(chat_id, user, info);
     }
 
     @Override
@@ -277,9 +278,12 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
     public void didReceivedNotification(int id, Object... args) {
         if (id == MessagesController.updateInterfaces) {
-            updateOnlineCount();
-            if (listView != null) {
-                listView.invalidateViews();
+            int mask = (Integer)args[0];
+            if ((mask & MessagesController.UPDATE_MASK_CHAT_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_CHAT_NAME) != 0 || (mask & MessagesController.UPDATE_MASK_CHAT_MEMBERS) != 0) {
+                updateOnlineCount();
+            }
+            if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0 || (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
+                updateVisibleRows(mask);
             }
         } else if (id == MessagesController.chatInfoDidLoaded) {
             int chatId = (Integer)args[0];
@@ -353,6 +357,19 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 break;
         }
         return true;
+    }
+
+    private void updateVisibleRows(int mask) {
+        if (listView == null) {
+            return;
+        }
+        int count = listView.getChildCount();
+        for (int a = 0; a < count; a++) {
+            View child = listView.getChildAt(a);
+            if (child instanceof ChatOrUserCell) {
+                ((ChatOrUserCell) child).update(mask);
+            }
+        }
     }
 
     private void updateOnlineCount() {
@@ -451,11 +468,11 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
     private void kickUser(TLRPC.TL_chatParticipant user) {
         if (user != null) {
-            MessagesController.Instance.deleteUserFromChat(chat_id, user.user_id, info);
+            MessagesController.Instance.deleteUserFromChat(chat_id, MessagesController.Instance.users.get(user.user_id), info);
         } else {
             NotificationCenter.Instance.removeObserver(this, MessagesController.closeChats);
             NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
-            MessagesController.Instance.deleteUserFromChat(chat_id, UserConfig.clientUserId, info);
+            MessagesController.Instance.deleteUserFromChat(chat_id, MessagesController.Instance.users.get(UserConfig.clientUserId), info);
             MessagesController.Instance.deleteDialog(-chat_id, 0, false);
             finishFragment();
         }
@@ -674,60 +691,19 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 TLRPC.User user = MessagesController.Instance.users.get(part.user_id);
 
                 if (view == null) {
-                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = li.inflate(R.layout.messages_search_user_layout, viewGroup, false);
-                }
-                ContactsActivity.ContactListRowHolder holder = (ContactsActivity.ContactListRowHolder)view.getTag();
-                if (holder == null) {
-                    holder = new ContactsActivity.ContactListRowHolder(view);
-                    view.setTag(holder);
+                    view = new ChatOrUserCell(mContext);
+                    ((ChatOrUserCell)view).useBoldFont = true;
+                    ((ChatOrUserCell)view).usePadding = false;
+                    ((ChatOrUserCell)view).useSeparator = true;
                 }
 
-                View divider = view.findViewById(R.id.settings_row_divider);
-                divider.setVisibility(View.VISIBLE);
-
-                if (user.first_name.length() != 0 && user.last_name.length() != 0) {
-                    holder.nameTextView.setText(Html.fromHtml(user.first_name + " <b>" + user.last_name + "</b>"));
-                } else if (user.first_name.length() != 0) {
-                    holder.nameTextView.setText(Html.fromHtml("<b>" + user.first_name + "</b>"));
-                } else {
-                    holder.nameTextView.setText(Html.fromHtml("<b>" + user.last_name + "</b>"));
-                }
+                ((ChatOrUserCell)view).setData(user, null, null, null, null);
 
 //                if (info.admin_id != UserConfig.clientUserId && part.inviter_id != UserConfig.clientUserId && part.user_id != UserConfig.clientUserId) {
 //
 //                } else {
 //
 //                }
-
-                TLRPC.FileLocation photo = null;
-                if (user.photo != null) {
-                    photo = user.photo.photo_small;
-                }
-                int placeHolderId = Utilities.getUserAvatarForId(user.id);
-                holder.avatarImage.setImage(photo, "50_50", placeHolderId);
-
-                if (user.status == null) {
-                    holder.messageTextView.setTextColor(0xff808080);
-                    holder.messageTextView.setText(getStringEntry(R.string.Offline));
-                } else {
-                    int currentTime = ConnectionsManager.Instance.getCurrentTime();
-                    if ((user.status.expires > currentTime || user.status.was_online > currentTime || user.id == UserConfig.clientUserId) && user.status.expires != 0) {
-                        holder.messageTextView.setTextColor(0xff357aa8);
-                        holder.messageTextView.setText(getStringEntry(R.string.Online));
-                    } else {
-                        if (user.status.was_online <= 10000 && user.status.expires <= 10000) {
-                            holder.messageTextView.setText(getStringEntry(R.string.Invisible));
-                        } else {
-                            int value = user.status.was_online;
-                            if (value == 0) {
-                                value = user.status.expires;
-                            }
-                            holder.messageTextView.setText(String.format("%s %s", getStringEntry(R.string.LastSeen), Utilities.formatDateOnline(value)));
-                        }
-                        holder.messageTextView.setTextColor(0xff808080);
-                    }
-                }
             } else if (type == 5) {
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);

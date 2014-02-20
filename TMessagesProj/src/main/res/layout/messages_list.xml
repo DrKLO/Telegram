@@ -12,8 +12,8 @@
         android:clipToPadding="false"
         android:fadingEdge="none"
         android:fadingEdgeLength="0dp"
-        android:divider="@null"
-        android:dividerHeight="0dp"
+        android:divider="@drawable/messages_list_divider"
+        android:dividerHeight="1px"
         android:animationCache="false"/>
 
     <TextView android:layout_width="match_parent"
@@ -34,10 +34,12 @@
         android:gravity="center"
         android:visibility="gone">
 
-        <TextView android:layout_width="wrap_content"
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:textColor="#959595"
             android:text="@string/NoChats"
+            android:gravity="center"
             android:textSize="24dp"
             android:id="@+id/list_empty_view_text1"/>
 

@@ -34,6 +34,7 @@ import org.telegram.TL.TLObject;
 import org.telegram.TL.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
@@ -138,7 +139,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
                         }
-                    } else if (i == 15) {
+                    } else if (i == 17) {
                         if (reseting) {
                             return;
                         }
@@ -150,6 +151,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                                 Utilities.RunOnUIThread(new Runnable() {
                                     @Override
                                     public void run() {
+                                        MessagesController.Instance.enableJoined = true;
                                         ActionBarActivity inflaterActivity = parentActivity;
                                         if (inflaterActivity == null) {
                                             inflaterActivity = (ActionBarActivity)getActivity();
@@ -188,6 +190,14 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         SharedPreferences.Editor editor = preferences.edit();
                         boolean enabled = preferences.getBoolean("EnableInAppPreview", true);
                         editor.putBoolean("EnableInAppPreview", !enabled);
+                        editor.commit();
+                        listView.invalidateViews();
+                    } else if (i == 15) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        boolean enabled = preferences.getBoolean("EnableContactJoined", true);
+                        MessagesController.Instance.enableJoined = !enabled;
+                        editor.putBoolean("EnableContactJoined", !enabled);
                         editor.commit();
                         listView.invalidateViews();
                     }
@@ -318,12 +328,15 @@ public class SettingsNotificationsActivity extends BaseFragment {
         public boolean isEnabled(int i) {
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             boolean enabledAll = preferences.getBoolean("EnableAll", true);
-            return !(i != 1 && !enabledAll && i != 13) && (i > 0 && i < 5 || i > 5 && i < 10 || i > 10 && i < 14 || i == 15);
+            if (i == 17 || i == 15) {
+                return true;
+            }
+            return !(i != 1 && !enabledAll && i != 13) && (i > 0 && i < 5 || i > 5 && i < 10 || i > 10 && i < 14);
         }
 
         @Override
         public int getCount() {
-            return 16;
+            return 18;
         }
 
         @Override
@@ -357,6 +370,8 @@ public class SettingsNotificationsActivity extends BaseFragment {
                 } else if (i == 10) {
                     textView.setText(getStringEntry(R.string.InAppNotifications));
                 } else if (i == 14) {
+                    textView.setText(getStringEntry(R.string.Events));
+                } else if (i == 16) {
                     textView.setText(getStringEntry(R.string.Reset));
                 }
             } if (type == 1) {
@@ -408,13 +423,17 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     enabled = preferences.getBoolean("EnableInAppPreview", true);
                     textView.setText(getStringEntry(R.string.InAppPreview));
                     divider.setVisibility(View.INVISIBLE);
+                } else if (i == 15) {
+                    enabled = preferences.getBoolean("EnableContactJoined", true);
+                    textView.setText(getStringEntry(R.string.ContactJoined));
+                    divider.setVisibility(View.INVISIBLE);
                 }
                 if (enabled) {
                     checkButton.setImageResource(R.drawable.btn_check_on);
                 } else {
                     checkButton.setImageResource(R.drawable.btn_check_off);
                 }
-                if (i != 1 && !enabledAll) {
+                if (i != 1 && !enabledAll && i != 15) {
                     view.setEnabled(false);
                     if(android.os.Build.VERSION.SDK_INT >= 11) {
                         checkButton.setAlpha(0.3f);
@@ -455,12 +474,12 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     }
                     textView.setText(getStringEntry(R.string.Sound));
                     divider.setVisibility(View.INVISIBLE);
-                } else if (i == 15) {
+                } else if (i == 17) {
                     textView.setText(getStringEntry(R.string.ResetAllNotifications));
                     textViewDetail.setText(getStringEntry(R.string.UndoAllCustom));
                     divider.setVisibility(View.INVISIBLE);
                 }
-                if (i != 15 && !enabledAll) {
+                if (i != 17 && !enabledAll) {
                     view.setEnabled(false);
                     if(android.os.Build.VERSION.SDK_INT >= 11) {
                         textView.setAlpha(0.3f);
@@ -482,9 +501,9 @@ public class SettingsNotificationsActivity extends BaseFragment {
 
         @Override
         public int getItemViewType(int i) {
-            if (i == 0 || i == 5 || i == 10 || i == 14) {
+            if (i == 0 || i == 5 || i == 10 || i == 14 || i == 16) {
                 return 0;
-            } else if (i > 0 && i < 4 || i > 5 && i < 9 || i > 10 && i < 14) {
+            } else if (i > 0 && i < 4 || i > 5 && i < 9 || i > 10 && i < 14 || i == 15) {
                 return 1;
             } else {
                 return 2;

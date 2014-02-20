@@ -32,7 +32,6 @@ import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.ApplicationLoader;
 
-import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -52,7 +51,7 @@ public class NotificationView extends LinearLayout {
     private int currentUserId = 0;
     private int currentEncId = 0;
     private boolean isVisible;
-    private boolean isRTL = false;
+    private final Integer timerSync = 1;
 
     public NotificationView(Context context) {
         super(context);
@@ -78,9 +77,11 @@ public class NotificationView extends LinearLayout {
             @Override
             public void onClick(View v) {
                 try {
-                    if (hideTimer != null) {
-                        hideTimer.cancel();
-                        hideTimer = null;
+                    synchronized (timerSync) {
+                        if (hideTimer != null) {
+                            hideTimer.cancel();
+                            hideTimer = null;
+                        }
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -89,19 +90,15 @@ public class NotificationView extends LinearLayout {
             }
         });
 
-        Locale locale = Locale.getDefault();
-        String lang = locale.getLanguage();
-        if (lang != null && lang.toLowerCase().equals("ar")) {
-            isRTL = true;
-        }
-
         this.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 try {
-                    if (hideTimer != null) {
-                        hideTimer.cancel();
-                        hideTimer = null;
+                    synchronized (timerSync) {
+                        if (hideTimer != null) {
+                            hideTimer.cancel();
+                            hideTimer = null;
+                        }
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -211,9 +208,11 @@ public class NotificationView extends LinearLayout {
         avatarImage.setImage(photo, "50_50", Utilities.getUserAvatarForId(user.id));
 
         try {
-            if (hideTimer != null) {
-                hideTimer.cancel();
-                hideTimer = null;
+            synchronized (timerSync) {
+                if (hideTimer != null) {
+                    hideTimer.cancel();
+                    hideTimer = null;
+                }
             }
             hideTimer = new Timer();
             hideTimer.schedule(new TimerTask() {
@@ -226,8 +225,12 @@ public class NotificationView extends LinearLayout {
                         }
                     });
                     try {
-                        hideTimer.cancel();
-                        hideTimer = null;
+                        synchronized (timerSync) {
+                            if (hideTimer != null) {
+                                hideTimer.cancel();
+                                hideTimer = null;
+                            }
+                        }
                     } catch (Exception e) {
                 FileLog.e("tmessages", e);
                     }
@@ -251,9 +254,11 @@ public class NotificationView extends LinearLayout {
                 startAnimation(animHide);
             } else {
                 try {
-                    if (hideTimer != null) {
-                        hideTimer.cancel();
-                        hideTimer = null;
+                    synchronized (timerSync) {
+                        if (hideTimer != null) {
+                            hideTimer.cancel();
+                            hideTimer = null;
+                        }
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -300,7 +305,7 @@ public class NotificationView extends LinearLayout {
             messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
             nameTextView.setPadding(0, Utilities.dp(2), 0, 0);
             messageTextView.setPadding(0, Utilities.dp(18), 0, 0);
-            if (isRTL) {
+            if (Utilities.isRTL) {
                 params1.setMargins(Utilities.dp(40), 0, height + Utilities.dp(6), 0);
             } else {
                 params1.setMargins(height + Utilities.dp(6), 0, Utilities.dp(40), 0);
@@ -310,7 +315,7 @@ public class NotificationView extends LinearLayout {
             messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
             nameTextView.setPadding(0, Utilities.dp(4), 0, 0);
             messageTextView.setPadding(0, Utilities.dp(24), 0, 0);
-            if (isRTL) {
+            if (Utilities.isRTL) {
                 params1.setMargins(Utilities.dp(40), 0, height + Utilities.dp(8), 0);
             } else {
                 params1.setMargins(height + Utilities.dp(8), 0, Utilities.dp(40), 0);
