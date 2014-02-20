@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+
+<!-- -->
+
 <resources>
     <string name="AppName">Telegram</string>
 
@@ -11,7 +14,7 @@
     <!--code enter view-->
     <string name="YourCode">Dein Code</string>
     <string name="SentSmsCode">Wir haben dir denn Aktivierungscode per SMS gesendet</string>
-    <string name="CallText">Wir werden dich anrufen in</string>
+    <string name="CallText">Wir rufen dich an in</string>
     <string name="Calling">Rufen dich an...</string>
     <string name="Code">Code</string>
     <string name="WrongNumber">Falsche Nummer?</string>
@@ -46,8 +49,10 @@
     <string name="EncryptedChatStartedIncoming">Du hast den sicheren Chat betreten.</string>
     <string name="ClearHistory">Lösche Verlauf</string>
     <string name="DeleteChat">Löschen und Verlassen</string>
+    <string name="HiddenName">Versteckter Name</string>
+    <string name="SelectChat">Chat auswählen</string>
 
-    <!--documents view--> <!--TODO-->
+    <!--documents view-->
     <string name="SelectFile">Datei auswählen</string>
     <string name="FreeOfTotal">%1$s von %2$s frei</string>
     <string name="UnknownError">Unbekannter Fehler</string>
@@ -102,11 +107,12 @@
     <string name="DeleteThisGroup">Gruppe löschen</string>
 
     <!--notification-->
-    <string name="EncryptedChatRequested">Anfrage für geheimen Chat</string>
+    <string name="EncryptedChatRequested">Geheimer Chat angefragt</string>
     <string name="EncryptedChatAccepted">Geheimer Chat gestartet</string>
     <string name="MessageLifetimeChanged">%1$s legte den Selbstzerstörungstimer auf %2$s fest</string> 
     <string name="MessageLifetimeChangedOutgoing">Du hast den Selbstzerstörungstimer auf %1$s gesetzt</string>
     <string name="MessageLifetimeRemoved">%1$s hat den Selbstzerstörungstimer deaktiviert</string>
+    <string name="MessageLifetimeYouRemoved">Du hast den Selbstzerstörungstimer deaktiviert</string>
     <string name="MessageLifetime2s">2 Sekunden</string>
     <string name="MessageLifetime5s">5 Sekunden</string>
     <string name="MessageLifetime1m">1 Minute</string>
@@ -138,7 +144,7 @@
     <string name="NotificationGroupKickYou">%1$s warf dich aus %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s verließ %2$s</string>
     <string name="NotificationContactJoined">%1$s hat jetzt auch Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">Neuer Login von einem unbekannten Gerät %1$s, Position: %2$s</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nWir haben einen Zugriff von einem neuen Gerät am %2$s festgestellt\n\nGerät: %3$s\nOrt: %4$s\n\nWenn das nicht du warst klicke in den Einstellungen - Alle Sitzungen beenden.\n\nDanke,\nDas Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s hat ein neues Profilbildo</string>
 
     <!--contacts view-->
@@ -151,6 +157,7 @@
     <string name="Online">online</string>
     <string name="Offline">offline</string>
     <string name="LastSeen">zuletzt gesehen</string>
+    <string name="LastSeenDate">zuletzt gesehen</string>
     <string name="InviteFriends">Lade Freunde ein</string>
 
     <!--group create view-->
@@ -173,9 +180,11 @@
     <string name="KickFromGroup">Aus der Gruppe werfen</string>
 
     <!--contact info view-->
-    <string name="ShareContact">Teile Kontakt</string>
-    <string name="AddContact">Kontakt hinzufügen</string>
-    <string name="BlockContact">Blockiere Kontakt</string>
+    <string name="ShareContact">Teilen</string>
+    <string name="AddContact">Hinzufügen</string>
+    <string name="BlockContact">Blockieren</string>
+    <string name="EditContact">Bearbeiten</string>
+    <string name="DeleteContact">Löschen</string>
     <string name="PhoneHome">HOME</string>
     <string name="PhoneMobile">MOBIL</string>
     <string name="PhoneWork">ARBEIT</string>
@@ -229,6 +238,14 @@
     <string name="Default">Default</string>
     <string name="Support">SUPPORT</string>
     <string name="ChatBackground">Chat Hintergrund</string>
+    <string name="MessagesSettings">NACHRICHTEN</string>
+    <string name="SendByEnter">Enter sendet Nachrichten</string>
+    <string name="TerminateAllSessions">Alle Sitzungen beenden</string>
+    <string name="AutomaticPhotoDownload">AUTOMATISCHER FOTODOWNLOAD</string>
+    <string name="AutomaticPhotoDownloadGroups">Gruppen</string>
+    <string name="AutomaticPhotoDownloadPrivateChats">Sichere Chats</string>
+    <string name="Events">EREIGNISSE</string>
+    <string name="ContactJoined">Kontakt ist Telegram beigetreten</string>
 
     <!--media view-->
     <string name="NoMedia">Keine geteilten Medien</string>
@@ -279,6 +296,15 @@
     <string name="ActionChangedPhoto">un1 wechselte Gruppenfoto</string>
     <string name="ActionChangedTitle">un1 wechselte Gruppenname zu un2</string>
     <string name="ActionCreateGroup">un1 gründete GRuppe</string>
+    <string name="ActionYouKickUser">Du warfst un2 raus</string>
+    <string name="ActionYouLeftUser">Du hast die Gruppe verlassen</string>
+    <string name="ActionYouAddUser">Du hast un2 hinzugefügt</string>
+    <string name="ActionYouRemovedPhoto">Du hast das Gruppenfoto gelöscht</string>
+    <string name="ActionYouChangedPhoto">Du hast das Gruppenfoto geändert</string>
+    <string name="ActionYouChangedTitle">Du hast den Gruppennamen zu un2 geändert</string>
+    <string name="ActionYouCreateGroup">Du hast die Gruppe erstellt</string>
+    <string name="ActionKickUserYou">un1 warf dich raus</string>
+    <string name="ActionAddUserYou">un1 fügte dich hinzu</string>
     <string name="UnsuppotedMedia">Diese Nachricht wird auf deiner Version von Telegram nicht unterstützt.</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
@@ -309,7 +335,7 @@
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Schnell</string>
     <string name="Page3Title">Kostenlos</string>
-    <string name="Page4Title">Kraftvoll</string>
+    <string name="Page4Title">Stark</string>
     <string name="Page5Title">Sicher</string>
     <string name="Page6Title">Cloud-Basiert</string>
     <string name="Page7Title">Privat</string>
