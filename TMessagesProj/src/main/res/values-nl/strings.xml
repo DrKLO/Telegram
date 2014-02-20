@@ -209,64 +209,64 @@
     <string name="EncryptionKeyDescription">This image is a visualization of the encryption key for this secret chat with <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>If this image looks the same on <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> phone, your chat is 200%% secure.<![CDATA[<br><br>]]>Learn more at telegram.org</string>
 
     <!--settings view-->
-    <string name="ResetNotificationsText">Reset all notification settings to default</string>
-    <string name="TextSize">Messages Text Size</string>
-    <string name="AskAQuestion">Ask a Question</string>
-    <string name="EnableAnimations">Enable Animations</string>
-    <string name="Unblock">Unblock</string>
-    <string name="UnblockText">Tap and hold on user to unblock.</string>
-    <string name="NoBlocked">No blocked users yet</string>
-    <string name="YourPhoneNumber">YOUR PHONE NUMBER</string>
-    <string name="MessageNotifications">MESSAGE NOTIFICATIONS</string>
-    <string name="Alert">Alert</string>
-    <string name="MessagePreview">Message Preview</string>
-    <string name="GroupNotifications">GROUP NOTIFICATIONS</string>
-    <string name="Sound">Sound</string>
-    <string name="InAppNotifications">IN-APP NOTIFICATIONS</string>
-    <string name="InAppSounds">In-App Sounds</string>
-    <string name="InAppVibrate">In-App Vibrate</string>
-    <string name="Vibrate">Vibrate</string>
-    <string name="InAppPreview">In-App Preview</string>
-    <string name="Reset">RESET</string>
-    <string name="ResetAllNotifications">Reset All Notifications</string>
-    <string name="UndoAllCustom">Undo all custom notification settings for all your contacts and groups</string>
-    <string name="NotificationsAndSounds">Notifications and Sounds</string>
-    <string name="BlockedUsers">Blocked Users</string>
-    <string name="SaveIncomingPhotos">Save Incoming Photos</string>
-    <string name="LogOut">Log Out</string>
-    <string name="YourFirstNameAndLastName">YOUR FIRST AND LAST NAME</string>
-    <string name="NoSound">No sound</string>
-    <string name="Default">Default</string>
-    <string name="Support">SUPPORT</string>
-    <string name="ChatBackground">Chat Background</string>
-    <string name="MessagesSettings">MESSAGES</string>
-    <string name="SendByEnter">Send by Enter</string>
-    <string name="TerminateAllSessions">Terminate All Other Sessions</string>
-    <string name="AutomaticPhotoDownload">AUTOMATIC PHOTO DOWNLOAD</string>
-    <string name="AutomaticPhotoDownloadGroups">Groups</string>
-    <string name="AutomaticPhotoDownloadPrivateChats">Private Chats</string>
-    <string name="Events">EVENTS</string>
-    <string name="ContactJoined">Contact joined Telegram</string>
+    <string name="ResetNotificationsText">Alle meldingsinstellingen naar standaardinstellingen herstellen</string>
+    <string name="TextSize">Tekstgrootte berichten</string>
+    <string name="AskAQuestion">Stel een vraag</string>
+    <string name="EnableAnimations">Animaties inschakelen</string>
+    <string name="Unblock">Deblokkeren</string>
+    <string name="UnblockText">Druk langdurig op een gebruiker om deze te deblokkeren.</string>
+    <string name="NoBlocked">Nog geen geblokkeerde gebruikers</string>
+    <string name="YourPhoneNumber">UW TELEFOONNUMMER</string>
+    <string name="MessageNotifications">BERICHTMELDINGEN</string>
+    <string name="Alert">Melding</string>
+    <string name="MessagePreview">Bericht weergeven</string>
+    <string name="GroupNotifications">GROEPSMELDINGEN</string>
+    <string name="Sound">Geluid</string>
+    <string name="InAppNotifications">IN-APP MELDINGEN</string>
+    <string name="InAppSounds">In-App geluiden</string>
+    <string name="InAppVibrate">In-App trillen</string>
+    <string name="Vibrate">Trillen</string>
+    <string name="InAppPreview">In-App weergave</string>
+    <string name="Reset">HERSTELLEN</string>
+    <string name="ResetAllNotifications">Alle meldingen herstellen</string>
+    <string name="UndoAllCustom">Maak alle aangepaste instellingen voor meldingen ongedaan voor alle contacten en groepen</string>
+    <string name="NotificationsAndSounds">Meldingen en geluiden</string>
+    <string name="BlockedUsers">Geblokkeerde gebruikers</string>
+    <string name="SaveIncomingPhotos">Inkomende foto's bewaren</string>
+    <string name="LogOut">Uitloggen</string>
+    <string name="YourFirstNameAndLastName">UW VOOR- EN ACHTERNAAM</string>
+    <string name="NoSound">Geen geluid</string>
+    <string name="Default">Standaard</string>
+    <string name="Support">ONDERSTEUNING</string>
+    <string name="ChatBackground">Gesprekachtergrond</string>
+    <string name="MessagesSettings">BERICHTEN</string>
+    <string name="SendByEnter">Versturen met Enter</string>
+    <string name="TerminateAllSessions">Alle andere sessies beëindigen</string>
+    <string name="AutomaticPhotoDownload">AUTOMATISCH FOTO'S DOWNLOADEN</string>
+    <string name="AutomaticPhotoDownloadGroups">Groepen</string>
+    <string name="AutomaticPhotoDownloadPrivateChats">Privégesprekken</string>
+    <string name="Events">GEBEURTENISSEN</string>
+    <string name="ContactJoined">Contact aangemeld bij Telegram</string>
 
     <!--media view-->
-    <string name="NoMedia">No shared media yet</string>
-    <string name="CancelDownload">Cancel Download</string>
+    <string name="NoMedia">Nog geen media gedeeld</string>
+    <string name="CancelDownload">Downloaden annuleren</string>
 
     <!--map view-->
     <string name="MyLocation">My location</string>
-    <string name="Map">Map</string>
-    <string name="Satellite">Satellite</string>
-    <string name="Hybrid">Hybrid</string>
-    <string name="MetersAway">m away</string>
-    <string name="KMetersAway">km away</string>
-    <string name="SendLocation">Send Location</string>
-    <string name="ShareLocation">Share Location</string>
+    <string name="Map">Kaart</string>
+    <string name="Satellite">Luchtfoto</string>
+    <string name="Hybrid">Hybride</string>
+    <string name="MetersAway">m verderop</string>
+    <string name="KMetersAway">km verderop</string>
+    <string name="SendLocation">Locatie verzenden</string>
+    <string name="ShareLocation">Locatie delen</string>
 
     <!--photo gallery view-->
-    <string name="ShowAllMedia">Show all media</string>
-    <string name="SaveToGallery">Save to gallery</string>
-    <string name="Of">of</string>
-    <string name="Gallery">Gallery</string>
+    <string name="ShowAllMedia">Alle media tonen</string>
+    <string name="SaveToGallery">Naar galerij opslaan</string>
+    <string name="Of">van</string>
+    <string name="Gallery">Galerij</string>
 
     <!--button titles-->
     <string name="Next">Volgende</string>
@@ -290,22 +290,22 @@
     <string name="OK">OK</string>
 
     <!--messages-->
-    <string name="ActionKickUser">un1 kicked un2</string>
+    <string name="ActionKickUser">un1 heeft un2 verwijderd</string>
     <string name="ActionLeftUser">un1 heeft de groep verlaten</string>
     <string name="ActionAddUser">un1 heeft un2 toegevoegd</string>
     <string name="ActionRemovedPhoto">un1 heeft de groepsfoto verwijderd</string>
     <string name="ActionChangedPhoto">un1 heeft de groepsfoto veranderd</string>
     <string name="ActionChangedTitle">un1 heeft de groepsnaam veranderd naar un2</string>
     <string name="ActionCreateGroup">un1 heeft de groep gemaakt</string>
-    <string name="ActionYouKickUser">You kicked un2</string>
+    <string name="ActionYouKickUser">U hebt un2 verwijderd</string>
     <string name="ActionYouLeftUser">U hebt de groep verlaten</string>
     <string name="ActionYouAddUser">U hebt un2 toegevoegd</string>
     <string name="ActionYouRemovedPhoto">U heeft de groepsafbeelding verwijderd</string>
     <string name="ActionYouChangedPhoto">U heeft de groepsafbeelding veranderd</string>
     <string name="ActionYouChangedTitle">U heeft de groepsnaam veranderd in un2</string>
     <string name="ActionYouCreateGroup">U heeft de groep gemaakt</string>
-    <string name="ActionKickUserYou">un1 kicked you</string>
-    <string name="ActionAddUserYou">un1 added you</string>
+    <string name="ActionKickUserYou">un1 heeft u verwijderd</string>
+    <string name="ActionAddUserYou">un1 heeft u toegevoegd</string>
     <string name="UnsuppotedMedia">Dit bericht wordt niet ondersteund op uw versie van Telegram.</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
