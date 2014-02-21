@@ -54,7 +54,7 @@
 
     <!--documents view-->
     <string name="SelectFile">Seleziona file</string>
-    <string name="FreeOfTotal">Free %1$s of %2$s</string>
+    <string name="FreeOfTotal">Liberi %1$s di %2$s</string>
     <string name="UnknownError">Errore sconosciuto</string>
     <string name="AccessError">Errore di accesso</string>
     <string name="NoFiles">Nessun file presente...</string>
@@ -99,7 +99,7 @@
     <string name="EncryptedDescription1">Usa cifratura end-to-end</string>
     <string name="EncryptedDescription2">Non lascia traccia sui nostri server</string>
     <string name="EncryptedDescription3">Ha un timer di auto-distruzione</string>
-    <string name="EncryptedDescription4">Non permette l'inoltro</string>
+    <string name="EncryptedDescription4">Non permette l\'inoltro</string>
     <string name="OneNewMessage">%1$d nuovo messaggio</string>
     <string name="FewNewMessages">%1$d nuovi messaggi</string>
     <string name="YouWereKicked">Sei stato cacciato da questo gruppo</string>
@@ -205,7 +205,7 @@
     <string name="ShortMessageLifetime1h">1h</string>
     <string name="ShortMessageLifetime1d">1d</string>
     <string name="ShortMessageLifetime1w">1w</string>
-    <string name="EncryptionKeyDescription">Questa immagine è una rappresentazione della chiave di cifratura per questa chat segreta con <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Se questa immagine compare uguale sul dispositivo di <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]>, la tua chat è il 200%% più sicura.<![CDATA[<br><br>]]>Scopri come funziona su telegram.org</string>
+    <string name="EncryptionKeyDescription">Questa immagine è una rappresentazione della chiave di cifratura per questa chat segreta con <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Se questa immagine compare uguale sul dispositivo di <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, la tua chat è il 200%% più sicura.<![CDATA[<br><br>]]>Scopri come funziona su telegram.org</string>
 
     <!--settings view-->
     <string name="ResetNotificationsText">Ripristina tutte le impostazioni di notifica</string>
@@ -213,7 +213,7 @@
     <string name="AskAQuestion">Hai una domanda?</string>
     <string name="EnableAnimations">Abilita Animazioni</string>
     <string name="Unblock">Sblocca</string>
-    <string name="UnblockText">Clicca e tieni premuto sull'utente per sbloccarlo.</string>
+    <string name="UnblockText">Clicca e tieni premuto sull\'utente per sbloccarlo.</string>
     <string name="NoBlocked">Nessun utente bloccato</string>
     <string name="YourPhoneNumber">IL TUO NUMERO DI TELEFONO</string>
     <string name="MessageNotifications">NOTIFICHE MESSAGGI</string>
