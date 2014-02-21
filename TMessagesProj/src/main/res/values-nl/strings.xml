@@ -150,7 +150,7 @@
     <!--contacts view-->
     <string name="SelectContact">Contactpersoon selecteren</string>
     <string name="NoContacts">Nog geen contactpersonen</string>
-    <string name="InviteText">He, zullen we overstappen op Telegram: http://telegram.org/dl2</string>
+    <string name="InviteText">Hey, zullen we overstappen op Telegram: http://telegram.org/dl2</string>
     <string name="TodayAt">vandaag om</string>
     <string name="YesterdayAt">gisteren om</string>
     <string name="OtherAt">om</string>
