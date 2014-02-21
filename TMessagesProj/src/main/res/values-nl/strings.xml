@@ -15,7 +15,7 @@
     <string name="YourCode">Uw code</string>
     <string name="SentSmsCode">We hebben een sms met een activatiecode naar uw telefoon verstuurd</string>
     <string name="CallText">We bellen u over</string>
-    <string name="Calling">We bellen u...</string>
+    <string name="Calling">We bellen u…</string>
     <string name="Code">Code</string>
     <string name="WrongNumber">Verkeerd nummer?</string>
 
@@ -36,15 +36,15 @@
     <string name="NewGroup">Nieuwe groep</string>
     <string name="Yesterday">gisteren</string>
     <string name="NoResult">Geen resultaten</string>
-    <string name="NoChats">Nog geen gesprekken...</string>
+    <string name="NoChats">Nog geen gesprekken…</string>
     <string name="NoChatsHelp">Start met een gesprek\ndoor op de Opstellen-knop rechtsboven te drukken\nof ga naar de contactenlijst.</string>
-    <string name="WaitingForNetwork">Wachten op het netwerk...</string>
-    <string name="Connecting">Verbinden...</string>
-    <string name="Updating">Updaten...</string>
+    <string name="WaitingForNetwork">Wachten op het netwerk…</string>
+    <string name="Connecting">Verbinden…</string>
+    <string name="Updating">Updaten…</string>
     <string name="NewSecretChat">Nieuw privégesprek</string>
-    <string name="AwaitingEncryption">Wacht op %s om online te komen...</string>
+    <string name="AwaitingEncryption">Wacht op %s om online te komen…</string>
     <string name="EncryptionRejected">Privégesprek geannuleerd</string>
-    <string name="EncryptionProcessing">Encryptiesleutels uitwisselen...</string>
+    <string name="EncryptionProcessing">Encryptiesleutels uitwisselen…</string>
     <string name="EncryptedChatStartedOutgoing">%s heeft de privégesprek geopend.</string>
     <string name="EncryptedChatStartedIncoming">U hebt het privégesprek geopend.</string>
     <string name="ClearHistory">Verwijder gespreksgeschiedenis</string>
@@ -57,7 +57,7 @@
     <string name="FreeOfTotal">Vrij: %1$s van %2$s</string>
     <string name="UnknownError">Onbekende fout</string>
     <string name="AccessError">Toegangsfout</string>
-    <string name="NoFiles">Nog geen bestanden...</string>
+    <string name="NoFiles">Nog geen bestanden…</string>
     <string name="FileUploadLimit">De bestandsgrootte mag niet groter zijn dan %1$s</string>
     <string name="NotMounted">Geen opslagmedium gevonden</string>
     <string name="UsbActive">USB-overdracht actief</string>
@@ -68,10 +68,10 @@
 
     <!--chat view-->
     <string name="Invisible">onzichtbaar</string>
-    <string name="Typing">typt...</string>
+    <string name="Typing">typt…</string>
     <string name="Attach">Bijlage</string>
-    <string name="IsTyping">is aan het typen...</string>
-    <string name="AreTyping">zijn aan het typen...</string>
+    <string name="IsTyping">is aan het typen…</string>
+    <string name="AreTyping">zijn aan het typen…</string>
     <string name="AndMoreTyping">en nog %d mensen</string>
     <string name="GotAQuestion">Heeft u een vraag\nover Telegram?</string>
     <string name="ChatTakePhoto">Neem foto</string>
@@ -79,7 +79,7 @@
     <string name="ChatLocation">Locatie</string>
     <string name="ChatVideo">Video</string>
     <string name="ChatDocument">Document</string>
-    <string name="NoMessages">Nog geen berichten hier...</string>
+    <string name="NoMessages">Nog geen berichten hier…</string>
     <string name="ViewPhoto">Bekijk foto</string>
     <string name="ViewLocation">Bekijk locatie</string>
     <string name="ViewVideo">Speel video</string>
@@ -150,7 +150,7 @@
     <!--contacts view-->
     <string name="SelectContact">Contactpersoon selecteren</string>
     <string name="NoContacts">Nog geen contactpersonen</string>
-    <string name="InviteText">He, zullen we overstappen op Telegram: http://telegram.org/dl2</string>
+    <string name="InviteText">Hey, zullen we overstappen op Telegram: http://telegram.org/dl2</string>
     <string name="TodayAt">vandaag om</string>
     <string name="YesterdayAt">gisteren om</string>
     <string name="OtherAt">om</string>
@@ -161,7 +161,7 @@
     <string name="InviteFriends">Vrienden uitnodigen</string>
 
     <!--group create view-->
-    <string name="SendMessageTo">Bericht sturen naar...</string>
+    <string name="SendMessageTo">Bericht sturen naar…</string>
     <string name="EnterGroupNamePlaceholder">Groepnaam invullen</string>
     <string name="MEMBER">LID</string>
     <string name="GroupName">Groepnaam</string>
@@ -231,7 +231,7 @@
     <string name="UndoAllCustom">Maak alle aangepaste instellingen voor meldingen ongedaan voor alle contacten en groepen</string>
     <string name="NotificationsAndSounds">Meldingen en geluiden</string>
     <string name="BlockedUsers">Geblokkeerde gebruikers</string>
-    <string name="SaveIncomingPhotos">Inkomende foto's bewaren</string>
+    <string name="SaveIncomingPhotos">Inkomende foto\’s bewaren</string>
     <string name="LogOut">Uitloggen</string>
     <string name="YourFirstNameAndLastName">UW VOOR- EN ACHTERNAAM</string>
     <string name="NoSound">Geen geluid</string>
@@ -241,7 +241,7 @@
     <string name="MessagesSettings">BERICHTEN</string>
     <string name="SendByEnter">Versturen met Enter</string>
     <string name="TerminateAllSessions">Alle andere sessies beëindigen</string>
-    <string name="AutomaticPhotoDownload">AUTOMATISCH FOTO'S DOWNLOADEN</string>
+    <string name="AutomaticPhotoDownload">AUTOMATISCH FOTO\’S DOWNLOADEN</string>
     <string name="AutomaticPhotoDownloadGroups">Groepen</string>
     <string name="AutomaticPhotoDownloadPrivateChats">Privégesprekken</string>
     <string name="Events">GEBEURTENISSEN</string>
@@ -321,9 +321,9 @@
     <string name="InvalidCode">Ongeldige code</string>
     <string name="InvalidFirstName">Ongeldige voornaam</string>
     <string name="InvalidLastName">Ongeldige achternaam</string>
-    <string name="Loading">Laden...</string>
+    <string name="Loading">Laden…</string>
     <string name="NoPlayerInstalled">U heeft geen videospeler, installeer een videospeler om verder te gaan</string>
-    <string name="NoHandleAppInstalled">U heeft geen enkele applicatie die MIME type \'%1$s\' kan verwerken, installeer hier een applicatie voor om verder te gaan</string>
+    <string name="NoHandleAppInstalled">U heeft geen enkele applicatie die MIME type \‘%1$s\’ kan verwerken, installeer hier een applicatie voor om verder te gaan</string>
     <string name="InviteUser">Deze gebruiker heeft nog geen Telegram, uitnodiging sturen?</string>
     <string name="AreYouSure">Weet u het zeker?</string>
     <string name="AddContactQ">Contactpersoon toevoegen?</string>
