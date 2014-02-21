@@ -231,7 +231,7 @@
     <string name="UndoAllCustom">Maak alle aangepaste instellingen voor meldingen ongedaan voor alle contacten en groepen</string>
     <string name="NotificationsAndSounds">Meldingen en geluiden</string>
     <string name="BlockedUsers">Geblokkeerde gebruikers</string>
-    <string name="SaveIncomingPhotos">Inkomende foto's bewaren</string>
+    <string name="SaveIncomingPhotos">Inkomende foto\'s bewaren</string>
     <string name="LogOut">Uitloggen</string>
     <string name="YourFirstNameAndLastName">UW VOOR- EN ACHTERNAAM</string>
     <string name="NoSound">Geen geluid</string>
@@ -241,7 +241,7 @@
     <string name="MessagesSettings">BERICHTEN</string>
     <string name="SendByEnter">Versturen met Enter</string>
     <string name="TerminateAllSessions">Alle andere sessies beëindigen</string>
-    <string name="AutomaticPhotoDownload">AUTOMATISCH FOTO'S DOWNLOADEN</string>
+    <string name="AutomaticPhotoDownload">AUTOMATISCH FOTO\'S DOWNLOADEN</string>
     <string name="AutomaticPhotoDownloadGroups">Groepen</string>
     <string name="AutomaticPhotoDownloadPrivateChats">Privégesprekken</string>
     <string name="Events">GEBEURTENISSEN</string>
