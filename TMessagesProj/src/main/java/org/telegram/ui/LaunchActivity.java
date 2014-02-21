@@ -25,6 +25,8 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.PausableActivity;
 
+import java.util.Enumeration;
+
 public class LaunchActivity extends PausableActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -117,6 +119,39 @@ public class LaunchActivity extends PausableActivity {
                         }
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
+                    }
+                } else if (Intent.ACTION_SENDTO.equals(intent.getAction())) {
+                    String phone = intent.getData().toString();
+                    if(phone.startsWith("smsto:")) {
+                        phone = phone.replace("smsto:","");
+                    } else if (phone.startsWith("sms:")) {
+                        phone = phone.replace("sms:","");
+                    }
+                    if( phone.startsWith("%2B")) { // IF STARTSWITH +
+                        phone = phone.replace("%2B","");
+                    } else {
+                        TLRPC.User user = MessagesController.Instance.users.get(UserConfig.clientUserId);
+                        if (user == null) {
+                            user = UserConfig.currentUser;
+                        }
+                        if(user != null) {
+                            phone = user.phone.substring(0,2) + phone;
+                        }
+                    }
+
+                    int user_id = 0;
+                    Enumeration<TLRPC.User> users = MessagesController.Instance.users.elements();
+                    while (users.hasMoreElements()) {
+                        TLRPC.User u = users.nextElement();
+                        if(u.phone.equals(phone)) {
+                            user_id = u.id;
+                        }
+                    }
+                    if(user_id == 0) {
+                        NotificationCenter.Instance.addToMemCache("phone_ntg",phone);
+                    } else {
+                        NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
+                        NotificationCenter.Instance.addToMemCache("push_user_id", user_id);
                     }
                 } else if (intent.getAction().equals("org.telegram.messenger.OPEN_ACCOUNT")) {
                     NotificationCenter.Instance.addToMemCache("open_settings", 1);

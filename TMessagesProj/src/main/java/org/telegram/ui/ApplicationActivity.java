@@ -9,11 +9,14 @@
 package org.telegram.ui;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.PixelFormat;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
@@ -117,6 +120,28 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
         photoPath = (String)NotificationCenter.Instance.getFromMemCache(533);
         videoPath = (String)NotificationCenter.Instance.getFromMemCache(534);
         sendingText = (String)NotificationCenter.Instance.getFromMemCache(535);
+
+        String phone_ntg = (String)NotificationCenter.Instance.getFromMemCache("phone_ntg", null);
+        if( phone_ntg != null){
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage(ApplicationLoader.applicationContext.getString(R.string.InviteUser));
+            builder.setTitle(ApplicationLoader.applicationContext.getString(R.string.AppName));
+            final String arg1 = phone_ntg;
+            builder.setPositiveButton(ApplicationLoader.applicationContext.getString(R.string.OK), new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromParts("sms", arg1, null));
+                        intent.putExtra("sms_body", ApplicationLoader.applicationContext.getString(R.string.InviteText));
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                }
+            });
+            builder.setNegativeButton(ApplicationLoader.applicationContext.getString(R.string.Cancel), null);
+            builder.show().setCanceledOnTouchOutside(true);
+        }
 
         if (push_user_id != 0) {
             if (push_user_id == UserConfig.clientUserId) {
