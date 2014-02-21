@@ -156,8 +156,8 @@
     <string name="OtherAt">om</string>
     <string name="Online">online</string>
     <string name="Offline">offline</string>
-    <string name="LastSeen">laatst gezien</string>
-    <string name="LastSeenDate">laatst gezien</string>
+    <string name="LastSeen">laatst gezien:</string>
+    <string name="LastSeenDate">laatst gezien:</string>
     <string name="InviteFriends">Vrienden uitnodigen</string>
 
     <!--group create view-->
