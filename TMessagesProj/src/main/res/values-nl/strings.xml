@@ -45,8 +45,8 @@
     <string name="AwaitingEncryption">Wacht op %s om online te komen…</string>
     <string name="EncryptionRejected">Privégesprek geannuleerd</string>
     <string name="EncryptionProcessing">Encryptiesleutels uitwisselen…</string>
-    <string name="EncryptedChatStartedOutgoing">%s heeft de privégesprek geopend.</string>
-    <string name="EncryptedChatStartedIncoming">U hebt het privégesprek geopend.</string>
+    <string name="EncryptedChatStartedOutgoing">%s neemt nu deel aan het privégesprek.</string>
+    <string name="EncryptedChatStartedIncoming">U neemt nu deel aan het privégesprek.</string>
     <string name="ClearHistory">Verwijder gespreksgeschiedenis</string>
     <string name="DeleteChat">Verwijder en sluit dit gesprek</string>
     <string name="HiddenName">Verborgen naam</string>
@@ -98,7 +98,7 @@
     <string name="EncryptedDescriptionTitle">Privégesprekken:</string>
     <string name="EncryptedDescription1">Gebruik end-to-end versleuteling</string>
     <string name="EncryptedDescription2">Laat geen sporen achter op onze server</string>
-    <string name="EncryptedDescription3">Gebruik een automatische vernietigings time-out</string>
+    <string name="EncryptedDescription3">Gebruik een automatische zelfdestructie-timer</string>
     <string name="EncryptedDescription4">Doorsturen niet toestaan</string>
     <string name="OneNewMessage">%1$d nieuw bericht</string>
     <string name="FewNewMessages">%1$d nieuwe berichten</string>
@@ -111,8 +111,8 @@
     <string name="EncryptedChatAccepted">Privégesprek geaccepteerd</string>
     <string name="MessageLifetimeChanged">%1$s heeft de zelfdestructie-timer ingesteld op %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">U heeft de zelfdestructie-timer ingesteld op %1$s</string>
-    <string name="MessageLifetimeRemoved">%1$s heeft de zelfdestructie-timer geblokkeerd</string>
-    <string name="MessageLifetimeYouRemoved">U heeft de zelfdestructie-timer geblokkeerd</string>
+    <string name="MessageLifetimeRemoved">%1$s heeft de zelfdestructie-timer uitgeschakeld</string>
+    <string name="MessageLifetimeYouRemoved">U heeft de zelfdestructie-timer uitgeschakeld</string>
     <string name="MessageLifetime2s">2 seconden</string>
     <string name="MessageLifetime5s">5 seconden</string>
     <string name="MessageLifetime1m">1 minuut</string>
@@ -162,16 +162,16 @@
 
     <!--group create view-->
     <string name="SendMessageTo">Bericht sturen naar…</string>
-    <string name="EnterGroupNamePlaceholder">Groepnaam invullen</string>
+    <string name="EnterGroupNamePlaceholder">Groepsnaam invullen</string>
     <string name="MEMBER">LID</string>
-    <string name="GroupName">Groepnaam</string>
+    <string name="GroupName">Groepsnaam</string>
     <string name="MEMBERS">LEDEN</string>
     <string name="AllContacts">ALLE CONTACTPERSONEN</string>
 
     <!--group info view-->
-    <string name="EnterGroupNameTitle">GROEPNAAM INVULLEN</string>
+    <string name="EnterGroupNameTitle">GROEPSNAAM INVULLEN</string>
     <string name="SharedMedia">Gedeelde media</string>
-    <string name="GroupInfo">Groepinformatie</string>
+    <string name="GroupInfo">Groepsinformatie</string>
     <string name="SHAREDMEDIA">GEDEELDE MEDIA</string>
     <string name="SETTINGS">INSTELLINGEN</string>
     <string name="AddMember">Lid toevoegen</string>
@@ -192,12 +192,12 @@
     <string name="PhoneMain">HOOFD</string>
     <string name="ContactInfo">Contactgegevens</string>
     <string name="PHONE">TELEFOON</string>
-    <string name="StartEncryptedChat">Beveiligd gesprek starten</string>
-    <string name="CreateEncryptedChatError">Er trad een fout op.</string>
-    <string name="CreateEncryptedChatOutdatedError">Kan geen beveiligd gesprek starten met %1$s.\n\n%2$s gebruikt een oudere versie van Telegram en moet eerst een update installeren.</string>
-    <string name="SecretTitle">Beveiligd gesprek</string>
+    <string name="StartEncryptedChat">Privégesprek starten</string>
+    <string name="CreateEncryptedChatError">Er is een fout opgetreden.</string>
+    <string name="CreateEncryptedChatOutdatedError">Kan geen privégesprek starten met %1$s.\n\n%2$s gebruikt een oudere versie van Telegram en moet eerst een update installeren.</string>
+    <string name="SecretTitle">Privégesprek</string>
     <string name="EncryptionKey">Encryptiesleutel</string>
-    <string name="MessageLifetime">Zelf-vernietingstimer</string>
+    <string name="MessageLifetime">Zelfdestructie-timer</string>
     <string name="ShortMessageLifetimeForever">Uit</string>
     <string name="ShortMessageLifetime2s">2s</string>
     <string name="ShortMessageLifetime5s">5s</string>
@@ -205,7 +205,7 @@
     <string name="ShortMessageLifetime1h">1u</string>
     <string name="ShortMessageLifetime1d">1d</string>
     <string name="ShortMessageLifetime1w">1w</string>
-    <string name="EncryptionKeyDescription">Deze afbeelding is een weergave van de encryptiesleutel for dit beveiligde gesprek met <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Als deze afbeelding er hetzelfde uitziet als op de telefoon van<![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, dan is uw gesprek 200%% veilig.<![CDATA[<br><br>]]>Lees meer op telegram.org</string>
+    <string name="EncryptionKeyDescription">Deze afbeelding is een weergave van de encryptiesleutel van het privégesprek met <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Als deze afbeelding er hetzelfde uitziet als op de telefoon van<![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, dan is uw gesprek 200%% veilig.<![CDATA[<br><br>]]>Lees meer op telegram.org</string>
 
     <!--settings view-->
     <string name="ResetNotificationsText">Alle meldingsinstellingen naar standaardinstellingen herstellen</string>
@@ -237,7 +237,7 @@
     <string name="NoSound">Geen geluid</string>
     <string name="Default">Standaard</string>
     <string name="Support">ONDERSTEUNING</string>
-    <string name="ChatBackground">Gesprekachtergrond</string>
+    <string name="ChatBackground">Gespreksachtergrond</string>
     <string name="MessagesSettings">BERICHTEN</string>
     <string name="SendByEnter">Versturen met Enter</string>
     <string name="TerminateAllSessions">Alle andere sessies beëindigen</string>
@@ -252,7 +252,7 @@
     <string name="CancelDownload">Downloaden annuleren</string>
 
     <!--map view-->
-    <string name="MyLocation">My location</string>
+    <string name="MyLocation">Mijn locatie</string>
     <string name="Map">Kaart</string>
     <string name="Satellite">Luchtfoto</string>
     <string name="Hybrid">Hybride</string>
