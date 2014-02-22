@@ -346,7 +346,7 @@
     <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> non ha limiti per le dimensioni dei<![CDATA[<br/>]]>tuoi media e chat</string>
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> ti permette di accedere ai tuoi messaggi<![CDATA[<br/>]]>da più dispositivi contemporaneamente</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> invia messaggi cifrati<![CDATA[<br/>]]>e possono auto-distruggersi</string>
-    <string name="StartMessaging">Inizia ad usare Telegram</string>
+    <string name="StartMessaging">Inizia</string>
 
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
