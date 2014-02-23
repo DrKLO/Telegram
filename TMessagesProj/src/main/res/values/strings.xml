@@ -247,6 +247,23 @@
     <string name="Events">EVENTS</string>
     <string name="ContactJoined">Contact joined Telegram</string>
 
+    <string name="Light">Light</string>
+    <string name="ChooseColor">Choose color</string>
+
+    <string-array name="choose_color">
+        <item>none</item>
+        <item>white</item>
+        <item>red</item>
+        <item>orange</item>
+        <item>yellow</item>
+        <item>green</item>
+        <item>cyan</item>
+        <item>azure</item>
+        <item>blue</item>
+        <item>violet</item>
+        <item>magenta</item>
+    </string-array>
+
     <!--media view-->
     <string name="NoMedia">No shared media yet</string>
     <string name="CancelDownload">Cancel Download</string>

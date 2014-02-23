@@ -65,6 +65,21 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     private long dialog_id;
     private TLRPC.EncryptedChat currentEncryptedChat;
 
+
+    private final int[] colors = {
+            0x00000000,
+            0xFFFFFFFF,
+            0xFFFF0000,
+            0xFFFF7F00,
+            0xFFFFFF00,
+            0xFF00FF00,
+            0xFF00FFFF,
+            0xFF007FFF,
+            0xFF0000FF,
+            0xFF7F00FF,
+            0xFFFF00FF
+    };
+
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
@@ -167,9 +182,40 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
                         }
-                    } else if (i == 7 && dialog_id == 0 ||
-                            dialog_id != 0 && (i == 9 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat ||
-                                    i == 7 && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat))) {
+                    } else if (i == 6 && dialog_id == 0 ||
+                            dialog_id != 0 && (i == 8 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat ||
+                                    i == 6 && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat))) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                        builder.setTitle(getStringEntry(R.string.ChooseColor));
+
+                        final String userLightSetting = "light_" + user_id;
+
+                        builder.setItems(R.array.choose_color, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+
+                                int globalLight = preferences.getInt("GlobalLight", 0xAA000000);
+
+                                SharedPreferences.Editor editor = preferences.edit();
+
+                                int color = colors[i];
+
+                                if(color == globalLight) {
+                                    editor.remove(userLightSetting);
+                                } else {
+                                    editor.putInt(userLightSetting, color);
+                                }
+                                editor.commit();
+                                listView.invalidateViews();
+                            }
+                        });
+
+                        AlertDialog alertDialog = builder.create();
+                        alertDialog.show();
+                    } else if (i == 8 && dialog_id == 0 ||
+                            dialog_id != 0 && (i == 10 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat ||
+                                    i == 8 && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat))) {
                         MediaActivity fragment = new MediaActivity();
                         Bundle bundle = new Bundle();
                         if (dialog_id != 0) {
@@ -555,12 +601,12 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         @Override
         public boolean isEnabled(int i) {
             if (dialog_id == 0) {
-                return i == 2 || i == 4 || i == 5 || i == 7;
+                return i == 2 || i == 4 || i == 5 || i == 6 || i == 8;
             } else {
                 if (currentEncryptedChat instanceof TLRPC.TL_encryptedChat) {
-                    return i == 2 || i == 4 || i == 5 || i == 6 || i == 7 || i == 9;
+                    return i == 2 || i == 4 || i == 5 || i == 6 || i == 7 || i == 8 || i == 10;
                 } else {
-                    return i == 2 || i == 4 || i == 5 || i == 9;
+                    return i == 2 || i == 4 || i == 5 || i == 6 || i == 10;
                 }
             }
         }
@@ -568,12 +614,12 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         @Override
         public int getCount() {
             if (dialog_id == 0) {
-                return 8;
+                return 9;
             } else {
                 if (currentEncryptedChat instanceof TLRPC.TL_encryptedChat) {
-                    return 10;
+                    return 11;
                 } else {
-                    return 8;
+                    return 9;
                 }
             }
         }
@@ -663,9 +709,9 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     textView.setText(getStringEntry(R.string.PHONE));
                 } else if (i == 3) {
                     textView.setText(getStringEntry(R.string.SETTINGS));
-                } else if (i == 6 && dialog_id == 0 ||
-                        dialog_id != 0 && (i == 8 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat ||
-                                i == 6 && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat))) {
+                } else if (i == 7 && dialog_id == 0 ||
+                        dialog_id != 0 && (i == 9 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat ||
+                                i == 7 && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat))) {
                     textView.setText(getStringEntry(R.string.SHAREDMEDIA));
                 }
             } else if (type == 2) {
@@ -794,9 +840,24 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     }
                     textView.setText(R.string.Sound);
                     divider.setVisibility(View.INVISIBLE);
-                } else if (i == 7 && dialog_id == 0 ||
-                        dialog_id != 0 && (i == 9 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat ||
-                                i == 7 && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat))) {
+                }
+                else if (i == 6 && dialog_id == 0 ||
+                        dialog_id != 0 && (i == 8 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat ||
+                                i == 6 && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat))) {
+                    SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    int color = preferences.getInt("light_" + user_id, 0xAA000000);
+
+                    if (color == 0xAA000000) {
+                        detailTextView.setText(getStringEntry(R.string.Default));
+                    } else {
+                        detailTextView.setText(intToColor(color));
+                    }
+                    textView.setText(R.string.Light);
+                    divider.setVisibility(View.INVISIBLE);
+                }
+                else if (i == 8 && dialog_id == 0 ||
+                        dialog_id != 0 && (i == 10 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat ||
+                                i == 8 && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat))) {
                     textView.setText(R.string.SharedMedia);
                     if (totalMediaCount == -1) {
                         detailTextView.setText(getStringEntry(R.string.Loading));
@@ -849,13 +910,13 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 if (currentEncryptedChat instanceof TLRPC.TL_encryptedChat) {
                     if (i == 0) {
                         return 0;
-                    } else if (i == 1 || i == 3 || i == 8) {
+                    } else if (i == 1 || i == 3 || i == 9) {
                         return 1;
                     } else if (i == 2) {
                         return 2;
                     } else if (i == 6) {
                         return 3;
-                    } else if (i == 7 || i == 9 || i == 4) {
+                    } else if (i == 7 || i == 8 || i == 10 || i == 4) {
                         return 4;
                     } else if (i == 5) {
                         return 5;
@@ -863,26 +924,26 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 } else {
                     if (i == 0) {
                         return 0;
-                    } else if (i == 1 || i == 3 || i == 6) {
+                    } else if (i == 1 || i == 3 || i == 7) {
                         return 1;
                     } else if (i == 2) {
                         return 2;
                     } else if (i == 4) {
                         return 3;
-                    } else if (i == 5 || i == 7) {
+                    } else if (i == 5 || i == 6 || i == 8) {
                         return 4;
                     }
                 }
             } else {
                 if (i == 0) {
                     return 0;
-                } else if (i == 1 || i == 3 || i == 6) {
+                } else if (i == 1 || i == 3 || i == 7) {
                     return 1;
                 } else if (i == 2) {
                     return 2;
                 } else if (i == 4) {
                     return 3;
-                } else if (i == 5 || i == 7) {
+                } else if (i == 5 || i == 6 || i == 8) {
                     return 4;
                 }
             }
@@ -897,6 +958,28 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         @Override
         public boolean isEmpty() {
             return false;
+        }
+
+        private String intToColor(int value) {
+            String colorText = "unknown";
+
+            int pos=-1;
+
+            for(int i=0;i<colors.length; i++)
+            {
+                if(value == colors[i]) {
+                    pos = i;
+                    break;
+                }
+            }
+
+            if(pos>= 0) {
+                String[] allColors = getResources().getStringArray(R.array.choose_color);
+
+                colorText = allColors[pos];
+            }
+
+            return colorText;
         }
     }
 }

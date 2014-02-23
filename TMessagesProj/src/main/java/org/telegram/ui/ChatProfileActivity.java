@@ -67,6 +67,21 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
     private int onlineCount = -1;
     private ArrayList<Integer> sortedUsers = new ArrayList<Integer>();
 
+
+    private final int[] colors = {
+            0x00000000,
+            0xFFFFFFFF,
+            0xFFFF0000,
+            0xFFFF7F00,
+            0xFFFFFF00,
+            0xFF00FF00,
+            0xFF00FFFF,
+            0xFF007FFF,
+            0xFF0000FF,
+            0xFF7F00FF,
+            0xFFFF00FF
+    };
+
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
@@ -121,8 +136,8 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     if (info != null) {
                         size += info.participants.size();
                     }
-                    if (i > 6 && i < size + 7) {
-                        TLRPC.TL_chatParticipant user = info.participants.get(sortedUsers.get(i - 7));
+                    if (i > 7 && i < size + 8) {
+                        TLRPC.TL_chatParticipant user = info.participants.get(sortedUsers.get(i - 8));
                         if (user.user_id == UserConfig.clientUserId) {
                             return false;
                         }
@@ -189,7 +204,37 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
                         }
-                    } else if (i == 5) {
+                    } else if (i == 4) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                        builder.setTitle(getStringEntry(R.string.ChooseColor));
+
+                        final String userLightSetting = "light_chat_" + chat_id;
+
+                        builder.setItems(R.array.choose_color, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+
+                                int globalLight = preferences.getInt("GlobalLight", 0xAA000000);
+
+                                SharedPreferences.Editor editor = preferences.edit();
+
+                                int color = colors[i];
+
+                                if(color == globalLight) {
+                                    editor.remove(userLightSetting);
+                                } else {
+                                    editor.putInt(userLightSetting, color);
+                                }
+                                editor.commit();
+                                listView.invalidateViews();
+                            }
+                        });
+
+                        AlertDialog alertDialog = builder.create();
+                        alertDialog.show();
+
+                    } else if (i == 6) {
                         MediaActivity fragment = new MediaActivity();
                         Bundle bundle = new Bundle();
                         bundle.putLong("dialog_id", -chat_id);
@@ -200,8 +245,8 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         if (info != null) {
                             size += info.participants.size();
                         }
-                        if (i > 6 && i < size + 7) {
-                            int user_id = info.participants.get(sortedUsers.get(i - 7)).user_id;
+                        if (i > 7 && i < size + 8) {
+                            int user_id = info.participants.get(sortedUsers.get(i - 8)).user_id;
                             if (user_id == UserConfig.clientUserId) {
                                 return;
                             }
@@ -211,13 +256,13 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                             fragment.setArguments(args);
                             ((ApplicationActivity)parentActivity).presentFragment(fragment, "user_" + user_id, false);
                         } else {
-                            if (size + 7 == i) {
+                            if (size + 8 == i) {
                                 if (info.participants.size() < 200) {
                                     openAddMenu();
                                 } else {
                                     kickUser(null);
                                 }
-                            } else if (size + 7 == i + 1) {
+                            } else if (size + 8 == i + 1) {
                                 kickUser(null);
                             }
                         }
@@ -505,12 +550,12 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
         @Override
         public boolean isEnabled(int i) {
-            return (i == 2 || i == 3 || i == 5 || i > 6) && i != getCount() - 1;
+            return (i == 2 || i == 3 || i == 4 || i == 6 || i > 7) && i != getCount() - 1;
         }
 
         @Override
         public int getCount() {
-            int count = 6;
+            int count = 7;
             if (info != null && !(info instanceof TLRPC.TL_chatParticipantsForbidden)) {
                 count += info.participants.size() + 2;
                 if (info.participants.size() < 200) {
@@ -633,9 +678,9 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 TextView textView = (TextView)view.findViewById(R.id.settings_section_text);
                 if (i == 1) {
                     textView.setText(getStringEntry(R.string.SETTINGS));
-                } else if (i == 4) {
+                } else if (i == 5) {
                     textView.setText(getStringEntry(R.string.SHAREDMEDIA));
-                } else if (i == 6) {
+                } else if (i == 7) {
                     TLRPC.Chat chat = MessagesController.Instance.chats.get(chat_id);
                     textView.setText(String.format("%d %s", chat.participants_count, getStringEntry(R.string.MEMBERS)));
                 }
@@ -677,7 +722,18 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     }
                     textView.setText(R.string.Sound);
                     divider.setVisibility(View.INVISIBLE);
-                } else if (i == 5) {
+                } else if (i == 4) {
+                    SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    int color = preferences.getInt("light_chat_" + chat_id, 0xAA000000);
+
+                    if (color == 0xAA000000) {
+                        detailTextView.setText(getStringEntry(R.string.Default));
+                    } else {
+                        detailTextView.setText(intToColor(color));
+                    }
+                    textView.setText(R.string.Light);
+                    divider.setVisibility(View.INVISIBLE);
+                } else if (i == 6) {
                     textView.setText(R.string.SharedMedia);
                     if (totalMediaCount == -1) {
                         detailTextView.setText(getStringEntry(R.string.Loading));
@@ -687,7 +743,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     divider.setVisibility(View.INVISIBLE);
                 }
             } else if (type == 4) {
-                TLRPC.TL_chatParticipant part = info.participants.get(sortedUsers.get(i - 7));
+                TLRPC.TL_chatParticipant part = info.participants.get(sortedUsers.get(i - 8));
                 TLRPC.User user = MessagesController.Instance.users.get(part.user_id);
 
                 if (view == null) {
@@ -742,27 +798,27 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         public int getItemViewType(int i) {
             if (i == 0) {
                 return 0;
-            } else if (i == 1 || i == 4 || i == 6) {
+            } else if (i == 1 || i == 5 || i == 7) {
                 return 1;
             } else if (i == 2) {
                 return 2;
-            } else if (i == 3 || i == 5) {
+            } else if (i == 3 || i ==4 || i == 6) {
                 return 3;
-            } else if (i > 6) {
+            } else if (i > 7) {
                 int size = 0;
                 if (info != null) {
                     size += info.participants.size();
                 }
-                if (i > 6 && i < size + 7) {
+                if (i > 7 && i < size + 8) {
                     return 4;
                 } else {
-                    if (size + 7 == i) {
+                    if (size + 8 == i) {
                         if (info != null && info.participants.size() < 200) {
                             return 5;
                         } else {
                             return 6;
                         }
-                    } else if (size + 8 == i) {
+                    } else if (size + 9 == i) {
                         return 6;
                     }
                 }
@@ -778,6 +834,28 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         @Override
         public boolean isEmpty() {
             return false;
+        }
+
+        private String intToColor(int value) {
+            String colorText = "unknown";
+
+            int pos=-1;
+
+            for(int i=0;i<colors.length; i++)
+            {
+                if(value == colors[i]) {
+                    pos = i;
+                    break;
+                }
+            }
+
+            if(pos>= 0) {
+                String[] allColors = getResources().getStringArray(R.array.choose_color);
+
+                colorText = allColors[pos];
+            }
+
+            return colorText;
         }
     }
 }
