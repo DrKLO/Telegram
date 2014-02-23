@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!--Translation by Borja Campina, Edited by Victor Espinoza-->
+<!--Translation by Jonas Luthi -->
 
 <resources>
     <string name="AppName">Telegram</string>
 
     <!--signin view-->
     <string name="YourPhone">Votre numéro</string>
-    <string name="StartText">Merci de confirmer votre </string>
+    <string name="StartText">Merci de confirmer votre code pays\net de saisir votre numéro de téléphone.</string>
     <string name="ChooseCountry">Sélectionnez votre pays</string>
     <string name="WrongCountry">Code pays incorrect</string>
 
     <!--code enter view-->
     <string name="YourCode">Votre code</string>
-    <string name="SentSmsCode">Un code d\'activation vous a été envoyé par SMS sur votre mobile</string>
-    <string name="CallText">Nous allons vous appeler</string>
+    <string name="SentSmsCode">Un code d\'activation vous a été envoyé par SMS</string>
+    <string name="CallText">Nous allons vous appeler dans</string>
     <string name="Calling">Appel en cours...</string>
     <string name="Code">Code</string>
     <string name="WrongNumber">Numéro erroné</string>
@@ -22,7 +22,7 @@
     <!--signup view-->
     <string name="YourName">Votre nom</string>
     <string name="RegisterText">Saisissez votre prénom et nom de famille</string>
-    <!--<string name="RegisterText">Ingresa tu nombre y foto</string>-->
+    <!--<string name="RegisterText">Définissez votre nom et photo</string>-->
     <string name="FirstName">Prénom (requis)</string>
     <string name="LastName">Nom (facultatif)</string>
     <string name="CancelRegistration">Annuler l\'enregistrement</string>
@@ -44,22 +44,22 @@
     <string name="NewSecretChat">Nouvelle conversation secrète</string>
     <string name="AwaitingEncryption">En attente de la connexion de %s...</string>
     <string name="EncryptionRejected">Conversation secrète annulée</string>
-    <string name="EncryptionProcessing">Échange des clés d\'encryption...</string>
+    <string name="EncryptionProcessing">Échange des clés de chiffrement...</string>
     <string name="EncryptedChatStartedOutgoing">%s a rejoint votre conversation secrète.</string>
-    <string name="EncryptedChatStartedIncoming">Vous avez rejoint la conversation secriète.</string>
+    <string name="EncryptedChatStartedIncoming">Vous avez rejoint la conversation secrète.</string>
     <string name="ClearHistory">Supprimer l\'historique</string>
     <string name="DeleteChat">Supprimer et quitter</string>
     <string name="HiddenName">Cacher le nom</string>
-    <string name="SelectChat">Conversation sélectionnée</string>
+    <string name="SelectChat">Sélectionnez une conversation</string>
 
     <!--documents view-->
     <string name="SelectFile">Sélectionnez un fichier</string>
     <string name="FreeOfTotal">%1$s sur %2$s disponible</string>
     <string name="UnknownError">Erreur inconnue</string>
     <string name="AccessError">Erreur d\'accès</string>
-    <string name="NoFiles">Actuellement aucun fichier...</string>
+    <string name="NoFiles">Aucun fichier pour l\'instant...</string>
     <string name="FileUploadLimit">La taille du fichier ne devrait pas dépasser %1$s</string>
-    <string name="NotMounted">Stockagen non-monté</string>
+    <string name="NotMounted">Stockage non-monté</string>
     <string name="UsbActive">Transfert USB activé</string>
     <string name="InternalStorage">Stockage interne</string>
     <string name="ExternalStorage">Stockage externe</string>
@@ -96,7 +96,7 @@
     <string name="EncryptedPlaceholderTitleIncoming">%s vous a invité à une discussion privée.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">Vous avez invité %s a rejoindre une discussion privée.</string>
     <string name="EncryptedDescriptionTitle">Discussions privées :</string>
-    <string name="EncryptedDescription1">Utiliser le cryptage entre mobiles</string>
+    <string name="EncryptedDescription1">Utiliser le chiffrement entre mobiles</string>
     <string name="EncryptedDescription2">Ne pas laisser de traces sur nos serveurs</string>
     <string name="EncryptedDescription3">Auto-destruction de vos messages dans un temps donné</string>
     <string name="EncryptedDescription4">Ne pas autoriser le transfert</string>
@@ -109,8 +109,8 @@
     <!--notification-->
     <string name="EncryptedChatRequested">Demande de conversation secrète reçue</string>
     <string name="EncryptedChatAccepted">Conversation secrète démarrée</string>
-    <string name="MessageLifetimeChanged">%1$s a défini la destruction des messages à %2$s</string>
-    <string name="MessageLifetimeChangedOutgoing">Vous avez défini la destruction des messages à %1$s</string>
+    <string name="MessageLifetimeChanged">%1$s a défini l'auto-destruction des messages à %2$s</string>
+    <string name="MessageLifetimeChangedOutgoing">Vous avez défini l'auto-destruction des messages à %1$s</string>
     <string name="MessageLifetimeRemoved">%1$s a désactivé la destruction automatique des messages</string>
     <string name="MessageLifetimeYouRemoved">Vous avez désactivé la destruction automatique des messages</string>
     <string name="MessageLifetime2s">2 secondes</string>
@@ -126,7 +126,7 @@
     <string name="NotificationMessageVideo">%1$s vous a envoyé une vidéo</string>
     <string name="NotificationMessageContact">%1$s a partagé un contact avec vous</string>
     <string name="NotificationMessageMap">%1$s vous a envoyé une carte</string>
-    <string name="NotificationMessageDocument">%1$s vous a envoy un fichier</string>
+    <string name="NotificationMessageDocument">%1$s vous a envoyé un fichier</string>
     <string name="NotificationMessageAudio">%1$s vous a envoyé un fichier audio</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s a envoyé un message au groupe %2$s</string>
@@ -143,7 +143,7 @@
     <string name="NotificationGroupKickMember">%1$s a expulsé %3$s du groupe %2$s</string>
     <string name="NotificationGroupKickYou">%1$s vous a expulsé du groupe %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s a quitté le groupe %2$s</string>
-    <string name="NotificationContactJoined">¡%1$s a rejoint Telegram!</string>
+    <string name="NotificationContactJoined">%1$s a rejoint Telegram!</string>
     <string name="NotificationUnrecognizedDevice">%1$s,\nNous avons détecté une nouvelle connexion sur votre compte depuis un nouvel appareil sur %2$s\n\nModèle: %3$s\nLocalisation: %4$s\n\nSi ce n\'était pas vous, rendez-vous dans les paramètres - Terminer toutes les sessions.\n\n,Merci\nL\'équipe de Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s a actualisé sa photo de profil</string>
 
@@ -196,7 +196,7 @@
     <string name="CreateEncryptedChatError">Une erreur est survenue.</string>
     <string name="CreateEncryptedChatOutdatedError">Impossible de démarrer une conversation secrète avec %1$s.\n\n%2$s utilise une ancienne version de Telegram et devrait effectuer une mise à jour en premier lieu.</string>
     <string name="SecretTitle">Conversation secrète</string>
-    <string name="EncryptionKey">Clé d\'encryption</string>
+    <string name="EncryptionKey">Clé de chiffrement</string>
     <string name="MessageLifetime">Temps d\'auto-destruction</string>
     <string name="ShortMessageLifetimeForever">Désactiver</string>
     <string name="ShortMessageLifetime2s">2s</string>
@@ -205,7 +205,7 @@
     <string name="ShortMessageLifetime1h">1h</string>
     <string name="ShortMessageLifetime1d">1j</string>
     <string name="ShortMessageLifetime1w">1sem</string>
-    <string name="EncryptionKeyDescription">Cette image est la visualisation de la clé d\'encryption pour cette conversation secriète avec <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Si l\'image semble similaire sur le téléphone de <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, votre conversation est sécurisée à 200%%.<![CDATA[<br><br>]]>Apprenez en plus sur telegram.org</string>
+    <string name="EncryptionKeyDescription">Cette image est la prévisualisation de la clé de chiffrement pour cette conversation secrète avec <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Si l\'image semble similaire sur le téléphone de <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, votre conversation est sécurisée à 200%%.<![CDATA[<br><br>]]>Apprenez en plus sur telegram.org</string>
 
     <!--settings view-->
     <string name="ResetNotificationsText">Rétablir tous les paramètres de notifications par défaut</string>
@@ -227,8 +227,8 @@
     <string name="Vibrate">Vibrer</string>
     <string name="InAppPreview">Prévisualisation dans l\'app</string>
     <string name="Reset">RÉINITIALISER</string>
-    <string name="ResetAllNotifications">Réinitialiser tous les paramètres de notifications pour tous les contacts et groupes</string>
-    <string name="UndoAllCustom">Deshacer todas las notificaciones personalizadas para todos tus usuarios y grupos</string>
+    <string name="ResetAllNotifications">Réinitialiser toutes les notifications</string>
+    <string name="UndoAllCustom">Réinitialiser tous les paramètres de notifications pour tous les contacts et groupes</string>
     <string name="NotificationsAndSounds">Notifications et sons</string>
     <string name="BlockedUsers">Utilisateurs bloqués</string>
     <string name="SaveIncomingPhotos">Sauvegarder la photo</string>
@@ -323,13 +323,13 @@
     <string name="InvalidLastName">Nom invalide</string>
     <string name="Loading">Chargement...</string>
     <string name="NoPlayerInstalled">Vous ne disposez pas d\'un lecteur vidéo. Merci d\'en installer un pour continuer.</string>
-    <string name="NoHandleAppInstalled">Vous ne disposez pas d'une application compatible \'%1$s\'. Merci d\'en installer une pour continuer</string>
+    <string name="NoHandleAppInstalled">Vous ne disposez pas d\'une application compatible \'%1$s\'. Merci d\'en installer une pour continuer</string>
     <string name="InviteUser">Cet utilisateur ne dispose pas de Telegram, souhaitez-vous lui envoyer une invitation ?</string>
     <string name="AreYouSure">Êtes-vous sûr ?</string>
     <string name="AddContactQ">Ajouter le contact ?</string>
     <string name="AddToTheGroup">Ajouter %1$s au groupe ?</string>
-    <string name="ForwardMessagesTo">Transférer le message à %1$s?</string>
-    <string name="DeleteChatQuestion">Supprime cette conversation ?</string>
+    <string name="ForwardMessagesTo">Transférer le message à %1$s ?</string>
+    <string name="DeleteChatQuestion">Supprimer cette conversation ?</string>
 
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
@@ -345,7 +345,7 @@
     <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> garde vos message en sécurité<![CDATA[<br/>]]>des attaques des pirates.</string>
     <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> n\'a pas de limite de taille<![CDATA[<br/>]]>pour vos médias et conversations.</string>
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> vous permet d\'accéder à vos messages<![CDATA[<br/>]]>depuis plusieurs appareils.</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> vous permet d\'encrypter vos messages<![CDATA[<br/>]]>et de les détruires automatiquement.</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> vous permet de chiffrer vos messages<![CDATA[<br/>]]>et de les détruires automatiquement.</string>
     <string name="StartMessaging">Commencer une conversation</string>
 
     <!--Don't change this! Not for localization!-->
