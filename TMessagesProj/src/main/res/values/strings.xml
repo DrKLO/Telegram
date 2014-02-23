@@ -1,6 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 
-<!-- Translated by Rafael França (beta) (20140207) -->
+<!-- Translated by Rafael França (beta) (20140222) -->
 
 <resources>
     <string name="AppName">Telegram</string>
@@ -73,7 +73,7 @@
     <string name="IsTyping">está digitando...</string>
     <string name="AreTyping">estão digitando...</string>
     <string name="AndMoreTyping">e %d mais pessoas</string>
-    <string name="GotAQuestion">Tem uma perguntan\nsobre p Telegram?</string>
+    <string name="GotAQuestion">Tem uma perguntan\nsobre o Telegram?</string>
     <string name="ChatTakePhoto">Tirar uma foto</string>
     <string name="ChatGallery">Galeria</string>
     <string name="ChatLocation">Localização</string>
@@ -153,11 +153,11 @@
     <string name="InviteText">Ei, vamos mudar para Telegram: http://telegram.org/dl2</string>
     <string name="TodayAt">hoje em</string>
     <string name="YesterdayAt">ontem no</string>
-    <string name="OtherAt">at</string>
+    <string name="OtherAt">em</string>
     <string name="Online">online</string>
     <string name="Offline">offline</string>
     <string name="LastSeen">visto pela última vez</string>
-    <string name="LastSeenDate">last seen</string>
+    <string name="LastSeenDate">visto pela última vez em</string>
     <string name="InviteFriends">Convidar amigos</string>
 
     <!--group create view-->
@@ -194,7 +194,7 @@
     <string name="PHONE">TELEFONE</string>
     <string name="StartEncryptedChat">Iniciar Conversa Secreta</string>
     <string name="CreateEncryptedChatError">Ocorreu um erro.</string>
-    <string name="CreateEncryptedChatOutdatedError">Não é possível iniciar uma conversa secreta com %1$s.\n\n%2$s está usando uma versão antiga do Telegram e precisa atualizar primeiro.</string>
+    <string name="CreateEncryptedChatOutdatedError">Não é possível iniciar uma conversa secreta com %1$s.\n\n%2$s está usando uma versão antiga do Telegram e precisa atualizar antes.</string>
     <string name="SecretTitle">Conversa Secreta</string>
     <string name="EncryptionKey">Chave de Criptografia</string>
     <string name="MessageLifetime">Temporizador de Autodestruição</string>
@@ -337,11 +337,11 @@
     <string name="Page3Title">Grátis</string>
     <string name="Page4Title">Seguro</string>
     <string name="Page5Title">Poderoso</string>
-    <string name="Page6Title">Baseado na Núvem</string>
+    <string name="Page6Title">Baseado na nuvem</string>
     <string name="Page7Title">Privado</string>
     <string name="Page1Message">Bem-vindo à era das mensagens rápidas e seguras</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> entrega mensagens mais rapidamente do que<![CDATA[<br/>]]>qualquer outra aplicação</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> é livre para sempre. Não existem anúncios.<![CDATA[<br/>]]>Nenhuma taxas de inscrição</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> entrega mensagens mais rapido do que<![CDATA[<br/>]]>qualquer outra aplicação</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> é livre para sempre. Não existem anúncios.<![CDATA[<br/>]]>Nenhuma taxa de inscrição</string>
     <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> 
 mantém suas mensagens seguras<![CDATA[<br/>]]>contra ataques de hackers</string>
     <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> 
