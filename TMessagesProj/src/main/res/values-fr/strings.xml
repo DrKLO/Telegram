@@ -94,7 +94,7 @@
     <string name="ShareMyContactInfo">PARTAGER MES INFORMATIONS DE CONTACT</string>
     <string name="AddToContacts">AJOUTER AUX CONTACTS</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s vous a invité à une discussion privée.</string>
-    <string name="EncryptedPlaceholderTitleOutgoing">Vous avez invité %s a rejoindre une discussion privée.</string>
+    <string name="EncryptedPlaceholderTitleOutgoing">Vous avez invité %s à rejoindre une discussion privée.</string>
     <string name="EncryptedDescriptionTitle">Discussions privées :</string>
     <string name="EncryptedDescription1">Utiliser le chiffrement entre mobiles</string>
     <string name="EncryptedDescription2">Ne pas laisser de traces sur nos serveurs</string>
