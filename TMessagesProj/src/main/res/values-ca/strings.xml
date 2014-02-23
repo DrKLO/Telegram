@@ -34,7 +34,7 @@
     <string name="Yesterday">ahir</string>
     <string name="NoResult">Sense resultats</string>
     <string name="NoChats">Encara no teniu xats...</string>
-    <string name="NoChatsHelp">Per començar a enviar missatges premeu el\nbotó per a redactar de la cantonada de dalt a la dreta\no aneu a la secció de «Contactes».</string>
+    <string name="NoChatsHelp">Per començar a enviar missatges premeu el\nbotó per redactar de la cantonada de dalt a la dreta\no aneu a la secció de «Contactes».</string>
     <string name="WaitingForNetwork">S\'està esperant una connexió a la xarxa...</string>
     <string name="Connecting">S\'està connectant...</string>
     <string name="Updating">S\'està actualitzant...</string>
@@ -138,7 +138,7 @@
     <string name="NotificationGroupKickYou">%1$s us ha fet fora del grup %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s ha deixat el grup %2$s</string>
     <string name="NotificationContactJoined">%1$s s\'ha unit a Telegram.</string>
-    <string name="NotificationUnrecognizedDevice">%1$s ha iniciat la sessió des d\'un dispositiu desconegut, localització: %2$s</string>
+    <string name="NotificationUnrecognizedDevice">%1$s ha iniciat la sessió des d\'un dispositiu desconegut, ubicació: %2$s</string>
     <string name="NotificationContactNewPhoto">%1$s ha actualitzat la fotografia del perfil</string>
 
     <!--contacts view-->
