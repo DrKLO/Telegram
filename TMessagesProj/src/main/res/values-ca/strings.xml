@@ -34,7 +34,7 @@
     <string name="Yesterday">ahir</string>
     <string name="NoResult">Sense resultats</string>
     <string name="NoChats">Encara no teniu xats...</string>
-    <string name="NoChatsHelp">Per començar a enviar missatges premeu el\nbotó per redactar de la cantonada de dalt a la dreta\no aneu a la secció de «Contactes».</string>
+    <string name="NoChatsHelp">Per començar a enviar missatges premeu el\nbotó per a redactar de la cantonada de dalt a la dreta\no aneu a la secció de «Contactes».</string>
     <string name="WaitingForNetwork">S\'està esperant una connexió a la xarxa...</string>
     <string name="Connecting">S\'està connectant...</string>
     <string name="Updating">S\'està actualitzant...</string>
@@ -279,7 +279,7 @@
     <string name="ActionChangedPhoto">un1 ha canviat la foto de grup</string>
     <string name="ActionChangedTitle">un1 ha canviat el nom de grup a un2</string>
     <string name="ActionCreateGroup">un1 ha creat el grup</string>
-    <string name="UnsuppotedMedia">Aquest missatge no és compatible amb la vostra versió de Telegram.</string>
+    <string name="UnsuppotedMedia">Aquest missatge no és compatible amb la vostra versió del Telegram.</string>
     <string name="AttachPhoto">Fotografia</string>
     <string name="AttachVideo">Vídeo</string>
     <string name="AttachLocation">Ubicació</string>
