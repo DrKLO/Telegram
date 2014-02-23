@@ -18,6 +18,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.provider.BaseColumns;
 import android.provider.ContactsContract;
+import android.util.Log;
 import android.util.SparseArray;
 
 import org.telegram.PhoneFormat.PhoneFormat;
@@ -194,6 +195,7 @@ public class ContactsController {
                         if (number == null || number.length() == 0) {
                             continue;
                         }
+                        number = PhoneFormat.Instance.fixLocalCallingCodes(number);
                         number = PhoneFormat.stripExceptNumbers(number);
                         if (number.length() == 0) {
                             continue;
