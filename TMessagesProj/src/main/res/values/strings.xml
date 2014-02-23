@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 
-<!-- Translated by Rafael França (beta) (20140222) -->
+<!-- Translated by Rafael França (beta) (20140222/2) -->
 
 <resources>
     <string name="AppName">Telegram</string>
@@ -22,7 +22,6 @@
     <!--signup view-->
     <string name="YourName">Seu nome</string>
     <string name="RegisterText">Configure seu nome e sobrenome</string>
-    <!--<string name="RegisterText">Configure seu nome e foto</string>-->
     <string name="FirstName">Nome (obrigatório)</string>
     <string name="LastName">Sobrenome (opcional)</string>
     <string name="CancelRegistration">Cancelar registro</string>
@@ -43,9 +42,9 @@
     <string name="Updating">Atualizando...</string>
     <string name="NewSecretChat">Nova Conversa Secreta</string>
     <string name="AwaitingEncryption">Aguardando por %s para ficarem online...</string>
-    <string name="EncryptionRejected">Conversa secreta cancelado</string>
+    <string name="EncryptionRejected">Conversa secreta cancelada</string>
     <string name="EncryptionProcessing">Trocando chaves de criptografia...</string>
-    <string name="EncryptedChatStartedOutgoing">%s entrou em sua conversa privada.</string>
+    <string name="EncryptedChatStartedOutgoing">%s entrou em sua conversa secreta.</string>
     <string name="EncryptedChatStartedIncoming">Você juntou-se à conversa secreta.</string>
     <string name="ClearHistory">Limpar Histórico</string>
     <string name="DeleteChat">Apagar e Sair</string>
@@ -73,7 +72,7 @@
     <string name="IsTyping">está digitando...</string>
     <string name="AreTyping">estão digitando...</string>
     <string name="AndMoreTyping">e %d mais pessoas</string>
-    <string name="GotAQuestion">Tem uma perguntan\nsobre o Telegram?</string>
+    <string name="GotAQuestion">Tem uma pergunta\nsobre o Telegram?</string>
     <string name="ChatTakePhoto">Tirar uma foto</string>
     <string name="ChatGallery">Galeria</string>
     <string name="ChatLocation">Localização</string>
@@ -82,7 +81,7 @@
     <string name="NoMessages">Ainda não há mensagem aqui...</string>
     <string name="ViewPhoto">Ver Foto</string>
     <string name="ViewLocation">Ver Localização</string>
-    <string name="ViewVideo">Tocar Vídeo</string>
+    <string name="ViewVideo">Ver Vídeo</string>
     <string name="ForwardedMessage">Mensagem encaminhada</string>
     <string name="From">De</string>
     <string name="NoRecent">Nada recente</string>
@@ -175,7 +174,7 @@
     <string name="SHAREDMEDIA">MÍDIA COMPARTILHADA</string>
     <string name="SETTINGS">CONFIGURAÇÕES</string>
     <string name="AddMember">Adicionar membro</string>
-    <string name="DeleteAndExit">Excluir e deixar grupo</string>
+    <string name="DeleteAndExit">Excluir e sair do grupo</string>
     <string name="Notifications">Notificações</string>
     <string name="KickFromGroup">Expulsar do grupo</string>
 
@@ -221,11 +220,11 @@
     <string name="MessagePreview">Visualização de Mensagem</string>
     <string name="GroupNotifications">NOTIFICAÇÕES DE GRUPO</string>
     <string name="Sound">Som</string>
-    <string name="InAppNotifications">NOTIFICAÇÕES DENTRO DO APP</string>
-    <string name="InAppSounds">Sons dentro do app</string>
-    <string name="InAppVibrate">Vibrar dentro do app</string>
+    <string name="InAppNotifications">NOTIFICAÇÕES DENTRO DO APLICATIVO</string>
+    <string name="InAppSounds">Sons dentro do aplicativo</string>
+    <string name="InAppVibrate">Vibrar dentro do aplicativo</string>
     <string name="Vibrate">Vibrar</string>
-    <string name="InAppPreview">Visualização dentro do app</string>
+    <string name="InAppPreview">Visualização dentro do aplicativo</string>
     <string name="Reset">REDEFINIR</string>
     <string name="ResetAllNotifications">Redefinir todas as Notificações</string>
     <string name="UndoAllCustom">Desfazer todas as configurações de notificação personalizada para todos os seus contatos e grupos</string>
@@ -245,10 +244,10 @@
     <string name="AutomaticPhotoDownloadGroups">Grupos</string>
     <string name="AutomaticPhotoDownloadPrivateChats">Conversas Privadas</string>
     <string name="Events">EVENTOS</string>
-    <string name="ContactJoined">Contato juntou ao Telegram</string>
+    <string name="ContactJoined">Contato está no Telegram</string>
 
     <!--media view-->
-    <string name="NoMedia">Ainda não há mídia compartilhadas</string>
+    <string name="NoMedia">Ainda não há mídia compartilhada</string>
     <string name="CancelDownload">Cancelar Download</string>
 
     <!--map view-->
@@ -263,7 +262,7 @@
 
     <!--photo gallery view-->
     <string name="ShowAllMedia">Mostrar todas as mídias</string>
-    <string name="SaveToGallery">Salve a galeria</string>
+    <string name="SaveToGallery">Salve na galeria</string>
     <string name="Of">de</string>
     <string name="Gallery">Galeria</string>
 
@@ -323,7 +322,7 @@
     <string name="InvalidLastName">Sobrenome inválido</string>
     <string name="Loading">Carregando...</string>
     <string name="NoPlayerInstalled">Você não tem um player de vídeo, instale um para continuar</string>
-    <string name="NoHandleAppInstalled">Você não tem qualquer aplicação que pode lidar com esse mime type \'%1$s\', instale um para continuar</string>
+    <string name="NoHandleAppInstalled">Você não tem algum aplicativo que pode lidar com esse mime type \'%1$s\', instale um para continuar</string>
     <string name="InviteUser">Este usuário não tem Telegram ainda, enviar um convite?</string>
     <string name="AreYouSure">Você tem certeza?</string>
     <string name="AddContactQ">Adicionar contato?</string>
