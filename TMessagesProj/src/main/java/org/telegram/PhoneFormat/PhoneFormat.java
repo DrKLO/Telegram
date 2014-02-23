@@ -24,8 +24,6 @@
 
 package org.telegram.PhoneFormat;
 
-import android.util.Log;
-
 import org.telegram.ui.ApplicationLoader;
 
 import java.io.ByteArrayOutputStream;
