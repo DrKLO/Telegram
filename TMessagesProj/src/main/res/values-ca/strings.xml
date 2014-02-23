@@ -138,7 +138,7 @@
     <string name="NotificationGroupKickYou">%1$s us ha fet fora del grup %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s ha deixat el grup %2$s</string>
     <string name="NotificationContactJoined">%1$s s\'ha unit a Telegram.</string>
-    <string name="NotificationUnrecognizedDevice">%1$s ha iniciat la sessió des d\'un dispositiu desconegut, ubicació: %2$s</string>
+    <string name="NotificationUnrecognizedDevice">S\'ha iniciat la sessió des d\'un dispositiu desconegut %1$s, ubicació: %2$s</string>
     <string name="NotificationContactNewPhoto">%1$s ha actualitzat la fotografia del perfil</string>
 
     <!--contacts view-->
@@ -319,7 +319,7 @@
     <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> manté els vostres missatges protegits<![CDATA[<br/>]]>d'atacs hackers</string>
     <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> no posa límits a la mida<![CDATA[<br/>]]>dels vostres fitxers i xats</string>
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> us permet accedir als vostres missatges<![CDATA[<br/>]]>des de múltiples dispositius</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> encripta els vostres missatges fortament<![CDATA[<br/>]]>i permet que s\'autodestrueixin</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> encripta de forma més segura els vostres missatges<![CDATA[<br/>]]>i permet que s\'autodestrueixin</string>
     <string name="StartMessaging">Comenceu a enviar missatges</string>
 
     <!--Don't change this! Not for localization!-->
