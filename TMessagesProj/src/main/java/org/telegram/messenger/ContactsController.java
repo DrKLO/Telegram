@@ -194,6 +194,7 @@ public class ContactsController {
                         if (number == null || number.length() == 0) {
                             continue;
                         }
+                        number = PhoneFormat.Instance.fixLocalCallingCodes(number);
                         number = PhoneFormat.stripExceptNumbers(number);
                         if (number.length() == 0) {
                             continue;

@@ -371,4 +371,16 @@ public class PhoneFormat {
             callingCodeInfo(defaultCallingCode);
         }
     }
+
+    /**
+     * If phone number starts with local calling code 0,
+     * replace with defaultCallingCode
+     * @return number with default code
+     */
+    public String fixLocalCallingCodes(String number) {
+        if(number.startsWith("0")) {
+            return defaultCallingCode() + number.substring(1);
+        }
+        return number;
+    }
 }
