@@ -347,7 +347,4 @@
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> erlaub dir Zugriff auf deine Nachrichten<![CDATA[<br/>]]>von mehreren Geräten aus</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> Nachrichten sind stark verschlüsselt<![CDATA[<br/>]]>und können sich selbst zerstören</string>
     <string name="StartMessaging">Unterhaltung starten</string>
-
-    <!--Don't change this! Not for localization!-->
-    <string name="CacheTag">CACHE_TAG</string>
 </resources>
