@@ -96,10 +96,10 @@
     <string name="EncryptedPlaceholderTitleIncoming">%s hat dich zu einer geheimen Unterhaltung eingeladen.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">Du hast %s zu einer geheimen Unterhaltung eingeladen.</string>
     <string name="EncryptedDescriptionTitle">Geheime Unterhaltungen:</string>
-    <string name="EncryptedDescription1">Verwende End-to-End Verschlüsselung</string>
-    <string name="EncryptedDescription2">Hinterlasse keine Spuren auf unseren Servern</string>
-    <string name="EncryptedDescription3">Nutze den Selbstzerstörungs-Timer</string>
-    <string name="EncryptedDescription4">Verbiete die Weiterleitung von Nachrichten</string>
+    <string name="EncryptedDescription1">Verwenden End-to-End Verschlüsselung</string>
+    <string name="EncryptedDescription2">Hinterlassen keine Spuren auf unseren Servern</string>
+    <string name="EncryptedDescription3">Haben einen Selbstzerstörungs-Timer</string>
+    <string name="EncryptedDescription4">Erlauben keine Weiterleitung von Nachrichten</string>
     <string name="OneNewMessage">%1$d neue Nachricht</string>
     <string name="FewNewMessages">%1$d neue Nachrichten</string>
     <string name="YouWereKicked">Du wurdest aus der Gruppe entfernt</string>
@@ -337,14 +337,14 @@
     <string name="Page3Title">Kostenlos</string>
     <string name="Page4Title">Sicher</string>
     <string name="Page5Title">Leistungsstark</string>
-    <string name="Page6Title">Cloud-Basierend</string>
+    <string name="Page6Title">Cloud-Basiert</string>
     <string name="Page7Title">Privat</string>
     <string name="Page1Message">Willkommen in der Ära der sicheren und schnellen Kommunikation</string>
     <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> stellt Nachrichten schneller<![CDATA[<br/>]]>zu als andere Anwendungen</string>
     <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> ist für immer kostenlos.<![CDATA[<br/>]]>Keine Werbung. Keine wiederkehrenden Kosten.</string>
     <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> schützt deine Nachrichten<![CDATA[<br/>]]>vor Hacker-Angriffen</string>
     <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> hat keine Grenzen in Sachen<![CDATA[<br/>]]>Größe deiner Unterhaltungen und Medien</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lässt dich von verschiedenen Geräten<![CDATA[<br/>]]>auf deine Nachrichten zugreifen</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lässt sich von verschiedenen<![CDATA[<br/>]]>Geräten gleichzeitig nutzen</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> Nachrichten sind gründlich<![CDATA[<br/>]]>verschlüsselt und können sich selbst zerstören</string>
     <string name="StartMessaging">Jetzt starten</string>
 
