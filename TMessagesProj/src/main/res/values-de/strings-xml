@@ -41,12 +41,12 @@
     <string name="WaitingForNetwork">Warte auf Netzwerk...</string>
     <string name="Connecting">Verbinde...</string>
     <string name="Updating">Update...</string>
-    <string name="NewSecretChat">Neuer Geheimchat</string>
+    <string name="NewSecretChat">Neuer sichererchat</string>
     <string name="AwaitingEncryption">Warte auf Onlinestatus von %s ...</string>
-    <string name="EncryptionRejected">Geheimchat abgebrochen</string>
+    <string name="EncryptionRejected">Sichererchat abgebrochen</string>
     <string name="EncryptionProcessing">Tausche Verschlüsselung aus...</string>
-    <string name="EncryptedChatStartedOutgoing">%s trat dem Geheimchat bei.</string>
-    <string name="EncryptedChatStartedIncoming">Du bist dem Geheimchat begetreten.</string>
+    <string name="EncryptedChatStartedOutgoing">%s trat dem Sichererchat bei.</string>
+    <string name="EncryptedChatStartedIncoming">Du bist dem Sichererchat begetreten.</string>
     <string name="ClearHistory">Lösche Verlauf</string>
     <string name="DeleteChat">Löschen und verlassen</string>
     <string name="HiddenName">Versteckter Name</string>
@@ -93,9 +93,9 @@
     <string name="Selected">Gewählt:</string>
     <string name="ShareMyContactInfo">TEILE MEINE KONTAKTINFO</string>
     <string name="AddToContacts">ZU KONTAKTEN HINZUFÜGEN</string>
-    <string name="EncryptedPlaceholderTitleIncoming">%s hat dich in einen geheimchat eingeladen.</string>
-    <string name="EncryptedPlaceholderTitleOutgoing">Du hast %s in einen Geheimchat eingeladen.</string>
-    <string name="EncryptedDescriptionTitle">Geheimchats:</string>
+    <string name="EncryptedPlaceholderTitleIncoming">%s hat dich in einen sicherenchat eingeladen.</string>
+    <string name="EncryptedPlaceholderTitleOutgoing">Du hast %s in einen sicherenmchat eingeladen.</string>
+    <string name="EncryptedDescriptionTitle">Sichere chats:</string>
     <string name="EncryptedDescription1">Verwende End-to-End Verschlüsselung</string>
     <string name="EncryptedDescription2">Hinterlasse kein Spur auf unserem Server</string>
     <string name="EncryptedDescription3">Verwende den Selbstlösch-Timer</string>
@@ -107,8 +107,8 @@
     <string name="DeleteThisGroup">Diese Gruppe löschen</string>
 
     <!--notification-->
-    <string name="EncryptedChatRequested">Anfrage für Geheimchat</string>
-    <string name="EncryptedChatAccepted">Geheimchat gestartet</string>
+    <string name="EncryptedChatRequested">Anfrage für sicherenchat</string>
+    <string name="EncryptedChatAccepted">Sichernchat gestartet</string>
     <string name="MessageLifetimeChanged">%1$s hat den Selbstlösch-Timer auf %2$s gesetzt</string>
     <string name="MessageLifetimeChangedOutgoing">Du hast den Selbstlösch-Timer auf %1$s gesetzt</string>
     <string name="MessageLifetimeRemoved">%1$s hat den Selbstlösch-Timer abgebrochen</string>
@@ -192,10 +192,10 @@
     <string name="PhoneMain">PRIMÄR</string>
     <string name="ContactInfo">Kontakt Info</string>
     <string name="PHONE">Handy</string>
-    <string name="StartEncryptedChat">Geheimchat beginnen</string>
+    <string name="StartEncryptedChat">Sicherenchat beginnen</string>
     <string name="CreateEncryptedChatError">Es ist ein Fehler aufgetreten.</string>
-    <string name="CreateEncryptedChatOutdatedError">Geheimchat mit %1$s fehlgeschlagen.\n\n%2$s verwendet eine ältere Version und muss erst Updaten.</string>
-    <string name="SecretTitle">Geheimchat</string>
+    <string name="CreateEncryptedChatOutdatedError">Scihernchat mit %1$s fehlgeschlagen.\n\n%2$s verwendet eine ältere Version und muss erst Updaten.</string>
+    <string name="SecretTitle">Sichernchat</string>
     <string name="EncryptionKey">Verschlüsselung</string>
     <string name="MessageLifetime">Selbstlösch-Timer</string>
     <string name="ShortMessageLifetimeForever">Aus</string>
@@ -205,7 +205,7 @@
     <string name="ShortMessageLifetime1h">1h</string>
     <string name="ShortMessageLifetime1d">1t</string>
     <string name="ShortMessageLifetime1w">1w</string>
-    <string name="EncryptionKeyDescription">Dieses Bild ist eine Visualisierung der Verschlüsselung des Geheimchats mit <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Wenn das Bild auf <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> Gerät genaus so aussieht, ist der Chat zu 200%% sicher.<![CDATA[<br><br>]]>Mehr auf telegram.org</string>
+    <string name="EncryptionKeyDescription">Dieses Bild ist eine Visualisierung der Verschlüsselung des Sichernchats mit <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Wenn das Bild auf <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> Gerät genaus so aussieht, ist der Chat zu 200%% sicher.<![CDATA[<br><br>]]>Mehr auf telegram.org</string>
 
     <!--settings view-->
     <string name="ResetNotificationsText">Alle Ben. Einst. zurücksetzen</string>
