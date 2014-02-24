@@ -7,7 +7,7 @@
 
     <!--signin view-->
     <string name="YourPhone">Dein Telefon</string>
-    <string name="StartText">Bitte bestätige dein Land und deine Telefonnummer.</string>
+    <string name="StartText">Bitte bestätige deine Landesvorwahl und deine Telefonnummer.</string>
     <string name="ChooseCountry">Wähle dein Land</string>
     <string name="WrongCountry">Falscher Ländercode</string>
 
