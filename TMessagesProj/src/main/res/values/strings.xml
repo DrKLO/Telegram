@@ -348,6 +348,18 @@
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> messages are heavily encrypted<![CDATA[<br/>]]>and can self-destruct</string>
     <string name="StartMessaging">Start Messaging</string>
 
+    <!--Accessibility strings-->
+    <string name="ContactUnAllocated">Contact unallocated</string>
+    <string name="LastMessage">last message</string>
+    <string name="Emoticons">emoticons</string>
+    <string name="SendMessage">send message</string>
+    <string name="RecordAudio">record audio</string>
+    <string name="SendAudio">send audio</string>
+    <string name="Avatar">avatar</string>
+    <string name="ChangeAvatar">change avatar</string>
+    <string name="EditName">edit name</string>
+
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
+
 </resources>
