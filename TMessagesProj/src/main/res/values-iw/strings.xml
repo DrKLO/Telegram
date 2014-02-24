@@ -313,7 +313,7 @@
     <string name="AttachContact">איש קשר</string>
     <string name="AttachDocument">מסמך</string>
     <string name="AttachAudio">קובץ שמע</string>
-    <string name="FromYou">מך</string>
+    <string name="FromYou">אני</string>
 
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">מספר הטלפון שגוי</string>
