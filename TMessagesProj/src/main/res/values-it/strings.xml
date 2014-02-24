@@ -42,7 +42,7 @@
     <string name="Connecting">Collegamento...</string>
     <string name="Updating">Aggiornamento...</string>
     <string name="NewSecretChat">Nuova conversazione segreta</string>
-    <string name="AwaitingEncryption">In attesa di %s per andare online...</string>
+    <string name="AwaitingEncryption">Attendi che %s sia online...</string>
     <string name="EncryptionRejected">Conversazione segreta annullata</string>
     <string name="EncryptionProcessing">Scambio delle chiavi di crittografia...</string>
     <string name="EncryptedChatStartedOutgoing">%s è entrato nella tua conversazione segreta.</string>
@@ -50,14 +50,14 @@
     <string name="ClearHistory">Cancella cronologia</string>
     <string name="DeleteChat">Elimina ed esci</string>
     <string name="HiddenName">Nome nascosto</string>
-    <string name="SelectChat">Seleziona chat</string>
+    <string name="SelectChat">Seleziona conversazione</string>
 
     <!--documents view-->
     <string name="SelectFile">Seleziona file</string>
     <string name="FreeOfTotal">Liberi %1$s di %2$s</string>
     <string name="UnknownError">Errore sconosciuto</string>
     <string name="AccessError">Errore di accesso</string>
-    <string name="NoFiles">Nessun file ancora...</string>
+    <string name="NoFiles">Nessun file qui...</string>
     <string name="FileUploadLimit">Il file non dovrebbe essere più grande di %1$s</string>
     <string name="NotMounted">Memoria non montata</string>
     <string name="UsbActive">Trasferimento USB attivo</string>
@@ -89,7 +89,7 @@
     <string name="Members">membri</string>
     <string name="Message">Messaggio</string>
     <string name="TypeMessage">Componi messaggio</string>
-    <string name="DOWNLOAD">Download</string>
+    <string name="DOWNLOAD">Scarica</string>
     <string name="Selected">Selezionato:</string>
     <string name="ShareMyContactInfo">CONDIVIDI LE MIE INFORMAZIONI DI CONTATTO</string>
     <string name="AddToContacts">AGGIUNGI AI CONTATTI</string>
@@ -97,7 +97,7 @@
     <string name="EncryptedPlaceholderTitleOutgoing">Hai invitato %s ad entrare in una conversazione segreta.</string>
     <string name="EncryptedDescriptionTitle">Conversazioni segrete:</string>
     <string name="EncryptedDescription1">Utilizzano crittografia end-to-end</string>
-    <string name="EncryptedDescription2">Non lasciano traccia nei nostri server</string>
+    <string name="EncryptedDescription2">Non lasciano traccia nei server</string>
     <string name="EncryptedDescription3">Hanno un tempo di auto distruzione</string>
     <string name="EncryptedDescription4">Non consentono l\'inoltro</string>
     <string name="OneNewMessage">%1$d nuovo messaggio</string>
@@ -205,7 +205,7 @@
     <string name="ShortMessageLifetime1h">1 ora</string>
     <string name="ShortMessageLifetime1d">1 giorno</string>
     <string name="ShortMessageLifetime1w">1 settimana</string>
-    <string name="EncryptionKeyDescription">Questa immagine è una rappresentazione della chiave crittografica per questa conversazione segreta con <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Se questa immagine è uguale anche sul telefono di <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]>, la tua conversazione è protetta al 200%%.<![CDATA[<br><br>]]>Ulteriori informazioni su telegram.org</string>
+    <string name="EncryptionKeyDescription">Questa immagine è una rappresentazione della chiave crittografica per questa conversazione segreta con <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Se questa immagine è uguale anche sul telefono di <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, la tua conversazione è protetta al 200%%.<![CDATA[<br><br>]]>Ulteriori informazioni su telegram.org</string>
 
     <!--settings view-->
     <string name="ResetNotificationsText">Ripristina tutte le impostazioni di notifica ai valori predefiniti</string>
@@ -213,7 +213,7 @@
     <string name="AskAQuestion">Poni una domanda</string>
     <string name="EnableAnimations">Attiva animazioni</string>
     <string name="Unblock">Sblocca</string>
-    <string name="UnblockText">Mantieni premuto sull\'utente pr sbloccarlo.</string>
+    <string name="UnblockText">Mantieni premuto sull\'utente per sbloccarlo.</string>
     <string name="NoBlocked">Nessun utente bloccato al momento</string>
     <string name="YourPhoneNumber">NUMERO TELEFONICO</string>
     <string name="MessageNotifications">NOTIFICHE MESSAGGIO</string>
@@ -227,11 +227,11 @@
     <string name="Vibrate">Vibrazione</string>
     <string name="InAppPreview">ANTEPRIMA In-App</string>
     <string name="Reset">RESET</string>
-    <string name="ResetAllNotifications">Reimposta tutte le notifiche</string>
-    <string name="UndoAllCustom">Undo all custom notification settings for all your contacts and groups</string>
+    <string name="ResetAllNotifications">Reimposta le notifiche</string>
+    <string name="UndoAllCustom">Ripristina tutte le impostazioni di notifica di tutti i contatti e gruppi</string>
     <string name="NotificationsAndSounds">Notifiche e suonerie</string>
     <string name="BlockedUsers">Utenti bloccati</string>
-    <string name="SaveIncomingPhotos">Save Incoming Photos</string>
+    <string name="SaveIncomingPhotos">Salva foto in entrata</string>
     <string name="LogOut">Scollegati</string>
     <string name="YourFirstNameAndLastName">NOME E COGNOME</string>
     <string name="NoSound">Nessuna suoneria</string>
@@ -343,7 +343,7 @@
     <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> recapita i messaggi più velocemente di<![CDATA[<br/>]]>ogni altra applicazione</string>
     <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> è gratuito per sempre. Nessuna pubblicità.<![CDATA[<br/>]]>Nessun canone di abbonamento</string>
     <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> mantiene al sicuro i messaggi<![CDATA[<br/>]]>dagli attacchi di hackers</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> non ha limiti sulle dimensioni<![CDATA[<br/>]]>delle conversazioni e dei media</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> non pone limiti alle dimensioni<![CDATA[<br/>]]>delle conversazioni e dei media</string>
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> consente di accedere ai messaggi<![CDATA[<br/>]]>da più dispositivi</string>
     <string name="Page7Message">I messaggi <![CDATA[<b>Telegram</b>]]> sono crittografati<![CDATA[<br/>]]>e si possono auto distruggere</string>
     <string name="StartMessaging">Inizia a messaggiare</string>
