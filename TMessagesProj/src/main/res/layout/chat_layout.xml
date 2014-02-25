@@ -111,71 +111,62 @@
     </FrameLayout>
 
     <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/compose_panel"
         android:id="@+id/chat_compose_panel"
+        android:background="@drawable/compose_panel"
         android:focusable="true"
         android:focusableInTouchMode="true"
         android:gravity="bottom"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:layout_alignParentBottom="true">
 
         <ImageView
-            android:src="@drawable/ic_msg_panel_smiles"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginTop="2dp"
-            android:paddingTop="1dp"
-            android:scaleType="centerInside"
-            android:paddingLeft="4dp"
             android:id="@+id/chat_smile_button"
-            android:layout_alignBottom="@+id/chat_text_edit"/>
-
-        <ImageButton
+            android:src="@drawable/ic_msg_panel_smiles"
+            android:scaleType="centerInside"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:layout_marginTop="2dp"
-            android:scaleType="centerInside"
+            android:layout_centerVertical="true"/>
+
+        <ImageButton
             android:id="@+id/chat_send_button"
-            android:layout_alignParentRight="true"
-            android:layout_alignBottom="@+id/chat_text_edit"
-            android:enabled="false"
             android:src="@drawable/send_button_states"
-            android:background="@android:color/transparent"/>
-
-        <ImageButton
+            android:enabled="false"
+            android:background="@android:color/transparent"
+            android:scaleType="centerInside"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:layout_marginTop="2dp"
-            android:scaleType="centerInside"
-            android:id="@+id/chat_audio_send_button"
             android:layout_alignParentRight="true"
-            android:layout_alignBottom="@+id/chat_text_edit"
-            android:enabled="false"
+            android:layout_centerVertical="true"/>
+
+        <ImageButton
+            android:id="@+id/chat_audio_send_button"
             android:src="@drawable/mic_button_states"
-            android:paddingRight="4dp"
-            android:background="@android:color/transparent"/>
+            android:enabled="false"
+            android:background="@android:color/transparent"
+            android:scaleType="centerInside"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"/>
 
         <EditText
+            android:id="@+id/chat_text_edit"
+            android:inputType="textCapSentences|textMultiLine"
+            android:maxLines="4"
+            android:maxLength="16384"
+            android:ems="10"
+            android:textSize="18dp"
+            android:textColor="#000000"
+            android:textCursorDrawable="@null"
+            android:hint="@string/TypeMessage"
+            android:textColorHint="#909090"
+            android:imeOptions="flagNoExtractUi"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/chat_text_edit"
+            android:layout_centerVertical="true"
             android:layout_toRightOf="@id/chat_smile_button"
-            android:layout_toLeftOf="@id/chat_send_button"
-            android:layout_marginTop="2dp"
-            android:maxLines="4"
-            android:minHeight="48dp"
-            android:textSize="18dp"
-            android:textColorHint="#909090"
-            android:ems="10"
-            android:imeOptions="flagNoExtractUi"
-            android:hint="@string/TypeMessage"
-            android:inputType="textCapSentences|textMultiLine"
-            android:layout_alignParentTop="true"
-            android:paddingBottom="12dp"
-            android:maxLength="16384"
-            android:textCursorDrawable="@null"
-            android:textColor="#000000"/>
+            android:layout_toLeftOf="@id/chat_send_button"/>
 
     </RelativeLayout>
 
