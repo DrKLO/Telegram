@@ -138,21 +138,7 @@ public class LaunchActivity extends PausableActivity {
                             phone = user.phone.substring(0,2) + phone;
                         }
                     }
-
-                    int user_id = 0;
-                    Enumeration<TLRPC.User> users = MessagesController.Instance.users.elements();
-                    while (users.hasMoreElements()) {
-                        TLRPC.User u = users.nextElement();
-                        if(u.phone.equals(phone)) {
-                            user_id = u.id;
-                        }
-                    }
-                    if(user_id == 0) {
-                        NotificationCenter.Instance.addToMemCache("phone_ntg",phone);
-                    } else {
-                        NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
-                        NotificationCenter.Instance.addToMemCache("push_user_id", user_id);
-                    }
+                    NotificationCenter.Instance.addToMemCache("phone",phone);
                 } else if (intent.getAction().equals("org.telegram.messenger.OPEN_ACCOUNT")) {
                     NotificationCenter.Instance.addToMemCache("open_settings", 1);
                 }
