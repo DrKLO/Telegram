@@ -589,11 +589,9 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
                 } else {
                     NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
                     NotificationCenter.Instance.addToMemCache("push_user_id", user_id);
-                    Intent intent2 = new Intent(this, ApplicationActivity.class);
-                    startActivity(intent2);
+                    Intent intent = new Intent(this, ApplicationActivity.class);
+                    startActivity(intent);
                 }
-
-
             }
         }
     }
