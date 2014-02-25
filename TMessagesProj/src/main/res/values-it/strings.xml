@@ -49,8 +49,8 @@
     <string name="Attach">Allega</string>
     <string name="IsTyping">sta scrivendo…</string>
     <string name="AreTyping">stanno scrivendo…</string>
-    <string name="AndMoreTyping">e %d altre persone</string>
-    <string name="GotAQuestion">Hai una domandan\n su Telegram?</string>
+    <string name="AndMoreTyping">e altre %d persone</string>
+    <string name="GotAQuestion">Hai una domanda\n su Telegram?</string>
     <string name="ChatTakePhoto">Scatta una foto</string>
     <string name="ChatGallery">Galleria</string>
     <string name="ChatLocation">Posizione</string>
