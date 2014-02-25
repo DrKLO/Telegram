@@ -41,7 +41,7 @@
     <string name="WaitingForNetwork">Warte auf eine Internetverbindung &#8230;</string>
     <string name="Connecting">Verbinde &#8230;</string>
     <string name="Updating">Aktualisiere &#8230;</string>
-    <string name="NewSecretChat">Neuen geheimen Chat</string>
+    <string name="NewSecretChat">Neuer geheimer Chat</string>
     <string name="AwaitingEncryption">Warte, bis %s online geht &#8230;</string>
     <string name="EncryptionRejected">Geheimen Chat abgebrochen</string>
     <string name="EncryptionProcessing">Tausche Schlüssel aus &#8230;</string>
@@ -58,7 +58,7 @@
     <string name="UnknownError">Unbekannter Fehler</string>
     <string name="AccessError">Zugriffsfehler</string>
     <string name="NoFiles">Noch keine Dateien &#8230;</string>
-    <string name="FileUploadLimit">Die Dateigröße darf nicht größer als %1$s sein</string>
+    <string name="FileUploadLimit">Die Datei darf nicht größer als %1$s sein</string>
     <string name="NotMounted">Speicher nicht eingebunden</string>
     <string name="UsbActive">USB-Transfer aktiv</string>
     <string name="InternalStorage">Interner Speicher</string>
@@ -213,7 +213,7 @@
     <string name="AskAQuestion">Eine Frage stellen</string>
     <string name="EnableAnimations">Animationen aktiveren</string>
     <string name="Unblock">Entsperren</string>
-    <string name="UnblockText">Tippe und Halte auf einen Benutzer um ihn zu entsperren.</string>
+    <string name="UnblockText">Tippe und halte einen Benutzer um ihn zu entsperren.</string>
     <string name="NoBlocked">Keine blockierten Benutzer</string>
     <string name="YourPhoneNumber">DEINE TELEFONNUMMER</string>
     <string name="MessageNotifications">BENACHRICHTIGUNGEN FÜR NACHRICHTEN</string>
@@ -317,7 +317,7 @@
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Ungültige Telefonnummer</string>
     <string name="CodeExpired">Code ist abgelaufen, bitte melde dich erneut an</string>
-    <string name="FloodWait">Zu viele Versuche in zu kurzer Zeit, bitte später versuchen</string>
+    <string name="FloodWait">Zu viele Versuche in zu kurzer Zeit, versuche es bitte später erneut.</string>
     <string name="InvalidCode">Ungültiger Code</string>
     <string name="InvalidFirstName">Ungültiger Vorname</string>
     <string name="InvalidLastName">Ungültiger Nachname</string>
