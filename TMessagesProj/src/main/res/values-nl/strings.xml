@@ -68,7 +68,7 @@
 
     <!--chat view-->
     <string name="Invisible">onzichtbaar</string>
-    <string name="Typing">typt…</string>
+    <string name="Typing">aan het typen…</string>
     <string name="Attach">Bijlage</string>
     <string name="IsTyping">is aan het typen…</string>
     <string name="AreTyping">zijn aan het typen…</string>
