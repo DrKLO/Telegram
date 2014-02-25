@@ -4297,10 +4297,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 if(specificLight != 0xAA000000) {
                     chosenLight = specificLight;
                 } else {
-                    chosenLight = globalLight;
+                    chosenLight = groupLight;
                 }
-
-                chosenLight = groupLight;
             } else {
                 choosenSoundPath = globalSound;
 
