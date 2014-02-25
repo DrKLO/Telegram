@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!--Translation by Jonas Luthi -->
+<!--Translation by Jonas Luthi, Edited by Marc Demierre -->
 
 <resources>
     <string name="AppName">Telegram</string>
@@ -109,8 +109,8 @@
     <!--notification-->
     <string name="EncryptedChatRequested">Demande de conversation secrète reçue</string>
     <string name="EncryptedChatAccepted">Conversation secrète démarrée</string>
-    <string name="MessageLifetimeChanged">%1$s a défini l'auto-destruction des messages à %2$s</string>
-    <string name="MessageLifetimeChangedOutgoing">Vous avez défini l'auto-destruction des messages à %1$s</string>
+    <string name="MessageLifetimeChanged">%1$s a défini l\'auto-destruction des messages à %2$s</string>
+    <string name="MessageLifetimeChangedOutgoing">Vous avez défini l\'auto-destruction des messages à %1$s</string>
     <string name="MessageLifetimeRemoved">%1$s a désactivé la destruction automatique des messages</string>
     <string name="MessageLifetimeYouRemoved">Vous avez désactivé la destruction automatique des messages</string>
     <string name="MessageLifetime2s">2 secondes</string>
@@ -340,13 +340,13 @@
     <string name="Page6Title">Basé sur le cloud</string>
     <string name="Page7Title">Privé</string>
     <string name="Page1Message">Bienvenue dans l\'air de la messagerie rapide et sécurisée.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> délivre vos messages plus rapidement qu\'<![CDATA[<br/>]]>aucune autre application.</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> est gratuit pour toujours. Sans publicité.<![CDATA[<br/>]]>Aucune inscription n\'est requise.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> garde vos message en sécurité<![CDATA[<br/>]]>des attaques des pirates.</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> délivre vos messages plus rapidement <![CDATA[<br/>]]>qu\'aucune autre application.</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> est gratuit pour toujours. Sans publicité.<![CDATA[<br/>]]>Aucune inscription requise.</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> protège vos messages<![CDATA[<br/>]]>des attaques des pirates.</string>
     <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> n\'a pas de limite de taille<![CDATA[<br/>]]>pour vos médias et conversations.</string>
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> vous permet d\'accéder à vos messages<![CDATA[<br/>]]>depuis plusieurs appareils.</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> vous permet de chiffrer vos messages<![CDATA[<br/>]]>et de les détruires automatiquement.</string>
-    <string name="StartMessaging">Commencer une conversation</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> vous permet de chiffrer vos messages<![CDATA[<br/>]]>et de les détruire automatiquement.</string>
+    <string name="StartMessaging">Démarrer une conversation</string>
 
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
