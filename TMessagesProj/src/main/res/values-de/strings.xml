@@ -13,7 +13,7 @@
 
     <!--code enter view-->
     <string name="YourCode">Dein Code</string>
-    <string name="SentSmsCode">Wir haben dir eine SMS mit einem Aktivierungscode zugeschickt</string>
+    <string name="SentSmsCode">Wir haben dir eine SMS mit einem Aktivierungscode zugeschickt: </string>
     <string name="CallText">Wir rufen dich an in</string>
     <string name="Calling">Wir rufen dich an &#8230;</string>
     <string name="Code">Code</string>
@@ -339,7 +339,7 @@
     <string name="Page5Title">Leistungsstark</string>
     <string name="Page6Title">Cloud-Basiert</string>
     <string name="Page7Title">Privat</string>
-    <string name="Page1Message">Willkommen in der Ära der sicheren und schnellen Kommunikation</string>
+    <string name="Page1Message">Willkommen in der Ära der sicheren und schnellen Kommunikation.</string>
     <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> stellt Nachrichten schneller<![CDATA[<br/>]]>zu als andere Anwendungen</string>
     <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> ist für immer kostenlos.<![CDATA[<br/>]]>Keine Werbung. Keine wiederkehrenden Kosten.</string>
     <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> schützt deine Nachrichten<![CDATA[<br/>]]>vor Hacker-Angriffen</string>
