@@ -1705,9 +1705,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         });
     }
 
-    public TLRPC.TL_photo generatePhotoSizes(String path) {
-        long time = System.currentTimeMillis();
-        Bitmap bitmap = FileLoader.loadBitmap(path, 800, 800);
+    public TLRPC.TL_photo generatePhotoSizes(Bitmap bitmap){
         ArrayList<TLRPC.PhotoSize> sizes = new ArrayList<TLRPC.PhotoSize>();
         TLRPC.PhotoSize size = FileLoader.scaleAndSaveImage(bitmap, 90, 90, 55, true);
         if (size != null) {
@@ -1739,6 +1737,12 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             photo.geo = new TLRPC.TL_geoPointEmpty();
             return photo;
         }
+    }
+
+    public TLRPC.TL_photo generatePhotoSizes(String path) {
+        long time = System.currentTimeMillis();
+        Bitmap bitmap = FileLoader.loadBitmap(path, 800, 800);
+        return generatePhotoSizes(bitmap);
     }
 
     public void markDialogAsRead(final long dialog_id, final int max_id, final int offset, final int max_date, final boolean was) {

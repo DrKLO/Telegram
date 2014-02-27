@@ -17,8 +17,10 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -44,7 +46,10 @@ import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.HorizontalListView;
 
 import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -208,16 +213,36 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 currentPicturePath = null;
             } else if (requestCode == 1) {
                 Uri imageUri = data.getData();
-                Cursor cursor = parentActivity.getContentResolver().query(imageUri, new String[]{android.provider.MediaStore.Images.ImageColumns.DATA}, null, null, null);
-                if (cursor == null) {
-                    return;
+                Bitmap bitmap = null;
+                if(imageUri.getScheme().contains("content")){
+                    ParcelFileDescriptor parcelFD = null;
+                    try {
+                        parcelFD = parentActivity.getContentResolver().openFileDescriptor(imageUri, "r");
+                        FileDescriptor fileDescriptor = parcelFD.getFileDescriptor();
+                        bitmap = BitmapFactory.decodeFileDescriptor(fileDescriptor);
+                    } catch (FileNotFoundException e) {
+                        return;
+                    } catch (IOException e) {
+                        return;
+                    } finally {
+                        if (parcelFD != null)
+                            try {
+                                parcelFD.close();
+                            } catch (IOException e) {
+                            }
+                    }
+                } else {
+                    Cursor cursor = parentActivity.getContentResolver().query(imageUri, new String[]{android.provider.MediaStore.Images.ImageColumns.DATA}, null, null, null);
+                    if (cursor == null) {
+                        return;
+                    }
+                    cursor.moveToFirst();
+                    final String imageFilePath = cursor.getString(0);
+                    cursor.close();
+                    bitmap = FileLoader.loadBitmap(imageFilePath, (int)(320 * density), (int)(480 * density));
                 }
-                cursor.moveToFirst();
-                final String imageFilePath = cursor.getString(0);
-                cursor.close();
 
                 try {
-                    Bitmap bitmap = FileLoader.loadBitmap(imageFilePath, (int)(320 * density), (int)(480 * density));
                     File toFile = new File(Utilities.applicationContext.getFilesDir(), "wallpaper.jpg");
                     FileOutputStream stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);

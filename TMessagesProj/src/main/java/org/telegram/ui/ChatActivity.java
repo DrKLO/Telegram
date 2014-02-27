@@ -18,6 +18,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.Typeface;
@@ -27,6 +28,7 @@ import android.media.MediaPlayer;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.Html;
@@ -69,8 +71,6 @@ import com.actionbarsherlock.view.MenuItem;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.TL.TLRPC;
-import org.telegram.objects.MessageObject;
-import org.telegram.objects.PhotoObject;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
@@ -79,6 +79,8 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.objects.MessageObject;
+import org.telegram.objects.PhotoObject;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.EmojiView;
@@ -89,6 +91,9 @@ import org.telegram.ui.Views.OnSwipeTouchListener;
 import org.telegram.ui.Views.SizeNotifierRelativeLayout;
 
 import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -947,6 +952,25 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 String imageFilePath;
                 if (imageUri.getScheme().contains("file")) {
                     imageFilePath = imageUri.getPath();
+                    processSendingPhoto(imageFilePath);
+                } else if(imageUri.getScheme().contains("content")){
+                    ParcelFileDescriptor parcelFD = null;
+                    try {
+                        parcelFD = parentActivity.getContentResolver().openFileDescriptor(imageUri, "r");
+                        FileDescriptor fileDescriptor = parcelFD.getFileDescriptor();
+                        Bitmap bitmap = BitmapFactory.decodeFileDescriptor(fileDescriptor);
+                        processSendingPhoto(bitmap);
+                    } catch (FileNotFoundException e) {
+                        return;
+                    } catch (IOException e) {
+                        return;
+                    } finally {
+                        if (parcelFD != null)
+                            try {
+                                parcelFD.close();
+                            } catch (IOException e) {
+                            }
+                    }
                 } else {
                     SherlockFragmentActivity inflaterActivity = parentActivity;
                     if (inflaterActivity == null) {
@@ -962,8 +986,8 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     cursor.moveToFirst();
                     imageFilePath = cursor.getString(0);
                     cursor.close();
+                    processSendingPhoto(imageFilePath);
                 }
-                processSendingPhoto(imageFilePath);
             } else if (requestCode == 2) {
                 String videoPath = null;
                 if (data != null) {
@@ -1030,6 +1054,20 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             return;
         }
         TLRPC.TL_photo photo = MessagesController.Instance.generatePhotoSizes(imageFilePath);
+        if (photo != null) {
+            MessagesController.Instance.sendMessage(photo, dialog_id);
+            if (chatListView != null) {
+                chatListView.setSelection(messages.size() + 1);
+            }
+            scrollToTopOnResume = true;
+        }
+    }
+
+    public void processSendingPhoto(Bitmap bitmap) {
+        if (bitmap == null) {
+            return;
+        }
+        TLRPC.TL_photo photo = MessagesController.Instance.generatePhotoSizes(bitmap);
         if (photo != null) {
             MessagesController.Instance.sendMessage(photo, dialog_id);
             if (chatListView != null) {
