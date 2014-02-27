@@ -43,7 +43,7 @@
     <string name="Updating">מתבצע עדכון...</string>
     <string name="NewSecretChat">שיחה סודית חדשה</string>
     <string name="AwaitingEncryption">בהמתנה להתחברות מצד %s...</string>
-    <string name="EncryptionRejected">השיחה הסודית בוטל</string>
+    <string name="EncryptionRejected">השיחה הסודית בוטלה</string>
     <string name="EncryptionProcessing">מפתחות ההצפנה מועברים ביניכם...</string>
     <string name="EncryptedChatStartedOutgoing">%s הצטרף/ה לשיחה הסודית שלך.</string>
     <string name="EncryptedChatStartedIncoming">הצטרפת לשיחה הסודית.</string>
@@ -141,7 +141,7 @@
     <string name="NotificationEditedGroupPhoto">תמונת הקבוצה (%2$s) נערכה על־ידי %1$s</string>
     <string name="NotificationGroupAddMember">%1$s הזמין/ה את %3$s לקבוצה %2$s
 </string>
-    <string name="NotificationGroupKickMember">%1$s kicked %3$s from the group %2$s</string>
+    <string name="NotificationGroupKickMember">%1$s בעט/ה את %3$s מהקבוצה %2$s</string>
     <string name="NotificationGroupKickYou">%1$s בעט/ה את %3$s מהקבוצה %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s עזב/ה את הקבוצה %2$s</string>
     <string name="NotificationContactJoined">%1$s מעכשיו בטלגרם!</string>
@@ -214,7 +214,7 @@
     <string name="AskAQuestion">אני רק שאלה</string>
     <string name="EnableAnimations">הפעלת הנפשות</string>
     <string name="Unblock">שחרור</string>
-    <string name="UnblockText">יש לגעת ולהחזיק שם משתמ כדי לשחרר.</string>
+    <string name="UnblockText">יש לגעת ולהחזיק שם משתמש כדי לשחרר.</string>
     <string name="NoBlocked">אין משתמשים חסומים עדיין</string>
     <string name="YourPhoneNumber">מספר הטלפון שלך</string>
     <string name="MessageNotifications">התרעות על הודעות</string>
@@ -317,7 +317,7 @@
 
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">מספר הטלפון שגוי</string>
-    <string name="CodeExpired">הקוד פג נא להיכנס שוב</string>
+    <string name="CodeExpired">הקוד פג, נא להיכנס שוב</string>
     <string name="FloodWait">יותר מדי נסיונות, נא לנסות שוב</string>
     <string name="InvalidCode">הקוד שגוי</string>
     <string name="InvalidFirstName">השם הפרטי שגוי</string>
