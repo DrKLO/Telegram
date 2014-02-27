@@ -250,7 +250,7 @@
 
     <!--media view-->
     <string name="NoMedia">Encara no hi ha fotos ni vídeos compartits</string>
-    <string name="CancelDownload">Cancel·la descàrrega</string>
+    <string name="CancelDownload">Cancel·la la descàrrega</string>
 
     <!--map view-->
     <string name="MyLocation">La meva ubicació</string>
