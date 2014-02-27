@@ -17,8 +17,10 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -45,7 +47,10 @@ import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.HorizontalListView;
 
 import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -95,9 +100,9 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
             fragmentView = inflater.inflate(R.layout.settings_wallpapers_layout, container, false);
             listAdapter = new ListAdapter(parentActivity);
 
-            progressBar = (ProgressBar)fragmentView.findViewById(R.id.action_progress);
-            backgroundImage = (ImageView)fragmentView.findViewById(R.id.background_image);
-            listView = (HorizontalListView)fragmentView.findViewById(R.id.listView);
+            progressBar = (ProgressBar) fragmentView.findViewById(R.id.action_progress);
+            backgroundImage = (ImageView) fragmentView.findViewById(R.id.background_image);
+            listView = (HorizontalListView) fragmentView.findViewById(R.id.listView);
             listView.setAdapter(listAdapter);
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
@@ -105,7 +110,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                     if (i == 0) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
 
-                        CharSequence[] items = new CharSequence[] {getStringEntry(R.string.FromCamera), getStringEntry(R.string.FromGalley), getStringEntry(R.string.Cancel)};
+                        CharSequence[] items = new CharSequence[]{getStringEntry(R.string.FromCamera), getStringEntry(R.string.FromGalley), getStringEntry(R.string.Cancel)};
 
                         builder.setItems(items, new DialogInterface.OnClickListener() {
                             @Override
@@ -178,7 +183,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
 
             processSelectedBackground();
         } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
+            ViewGroup parent = (ViewGroup) fragmentView.getParent();
             if (parent != null) {
                 parent.removeView(fragmentView);
             }
@@ -206,19 +211,43 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 currentPicturePath = null;
             } else if (requestCode == 1) {
                 Uri imageUri = data.getData();
-                Cursor cursor = parentActivity.getContentResolver().query(imageUri, new String[]{android.provider.MediaStore.Images.ImageColumns.DATA}, null, null, null);
-                if (cursor == null) {
-                    return;
-                }
-
-                try {
-                    String imageFilePath = null;
-                    if (cursor.moveToFirst()) {
-                        imageFilePath = cursor.getString(0);
+                Bitmap bitmap = null;
+                if (imageUri.getScheme().contains("content")) {
+                    ParcelFileDescriptor parcelFD = null;
+                    try {
+                        parcelFD = parentActivity.getContentResolver().openFileDescriptor(imageUri, "r");
+                        FileDescriptor fileDescriptor = parcelFD.getFileDescriptor();
+                        bitmap = BitmapFactory.decodeFileDescriptor(fileDescriptor);
+                    } catch (FileNotFoundException e) {
+                        return;
+                    } catch (IOException e) {
+                        return;
+                    } finally {
+                        if (parcelFD != null)
+                            try {
+                                parcelFD.close();
+                            } catch (IOException e) {
+                            }
                     }
-                    cursor.close();
+                } else {
+                    Cursor cursor = parentActivity.getContentResolver().query(imageUri, new String[]{android.provider.MediaStore.Images.ImageColumns.DATA}, null, null, null);
+                    if (cursor == null) {
+                        return;
+                    }
 
-                    Bitmap bitmap = FileLoader.loadBitmap(imageFilePath, Utilities.dp(320), Utilities.dp(480));
+                    try {
+                        String imageFilePath = null;
+                        if (cursor.moveToFirst()) {
+                            imageFilePath = cursor.getString(0);
+                        }
+                        cursor.close();
+
+                        bitmap = FileLoader.loadBitmap(imageFilePath, Utilities.dp(320), Utilities.dp(480));
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                }
+                try {
                     File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
                     FileOutputStream stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
@@ -299,7 +328,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
     @Override
     public void didReceivedNotification(int id, final Object... args) {
         if (id == FileLoader.FileDidFailedLoad) {
-            String location = (String)args[0];
+            String location = (String) args[0];
             if (loadingFile != null && loadingFile.equals(location)) {
                 loadingFileObject = null;
                 loadingFile = null;
@@ -308,7 +337,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 doneButton.setEnabled(false);
             }
         } else if (id == FileLoader.FileDidLoaded) {
-            String location = (String)args[0];
+            String location = (String) args[0];
             if (loadingFile != null && loadingFile.equals(location)) {
                 backgroundImage.setImageURI(Uri.fromFile(loadingFileObject));
                 progressBar.setVisibility(View.GONE);
@@ -319,16 +348,16 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 loadingSize = null;
             }
         } else if (id == FileLoader.FileLoadProgressChanged) {
-            String location = (String)args[0];
+            String location = (String) args[0];
             if (loadingFile != null && loadingFile.equals(location)) {
-                Float progress = (Float)args[1];
-                progressBar.setProgress((int)(progress * 100));
+                Float progress = (Float) args[1];
+                progressBar.setProgress((int) (progress * 100));
             }
         } else if (id == MessagesStorage.wallpapersDidLoaded) {
             Utilities.RunOnUIThread(new Runnable() {
                 @Override
                 public void run() {
-                    wallPapers = (ArrayList<TLRPC.WallPaper>)args[0];
+                    wallPapers = (ArrayList<TLRPC.WallPaper>) args[0];
                     wallpappersByIds.clear();
                     for (TLRPC.WallPaper wallPaper : wallPapers) {
                         wallpappersByIds.put(wallPaper.id, wallPaper);
@@ -360,11 +389,11 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                     @Override
                     public void run() {
                         wallPapers.clear();
-                        TLRPC.Vector res = (TLRPC.Vector)response;
+                        TLRPC.Vector res = (TLRPC.Vector) response;
                         wallpappersByIds.clear();
                         for (Object obj : res.objects) {
-                            wallPapers.add((TLRPC.WallPaper)obj);
-                            wallpappersByIds.put(((TLRPC.WallPaper)obj).id, (TLRPC.WallPaper)obj);
+                            wallPapers.add((TLRPC.WallPaper) obj);
+                            wallpappersByIds.put(((TLRPC.WallPaper) obj).id, (TLRPC.WallPaper) obj);
                         }
                         listAdapter.notifyDataSetChanged();
                         if (backgroundImage != null) {
@@ -470,11 +499,11 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
             int type = getItemViewType(i);
             if (type == 0) {
                 if (view == null) {
-                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                    LayoutInflater li = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.settings_wallpapers_my_row, viewGroup, false);
                 }
                 View parentView = view.findViewById(R.id.parent);
-                ImageView imageView = (ImageView)view.findViewById(R.id.image);
+                ImageView imageView = (ImageView) view.findViewById(R.id.image);
                 View selection = view.findViewById(R.id.selection);
                 if (i == 0) {
                     if (selectedBackground == -1 || selectedColor != 0 || selectedBackground == 1000001) {
@@ -501,10 +530,10 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
 
             } else if (type == 1) {
                 if (view == null) {
-                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                    LayoutInflater li = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.settings_wallpapers_other_row, viewGroup, false);
                 }
-                BackupImageView image = (BackupImageView)view.findViewById(R.id.image);
+                BackupImageView image = (BackupImageView) view.findViewById(R.id.image);
                 View selection = view.findViewById(R.id.selection);
                 TLRPC.WallPaper wallPaper = wallPapers.get(i - 1);
                 TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, Utilities.dp(100), Utilities.dp(100));
