@@ -246,6 +246,7 @@
     <string name="AutomaticPhotoDownloadPrivateChats">Private Chats</string>
     <string name="Events">EVENTS</string>
     <string name="ContactJoined">Contact joined Telegram</string>
+    <string name="SendLogs">Send Logs</string>
 
     <!--media view-->
     <string name="NoMedia">No shared media yet</string>

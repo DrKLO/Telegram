@@ -617,7 +617,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     textView.setText(getStringEntry(R.string.ChatBackground));
                     divider.setVisibility(View.VISIBLE);
                 } else if (i == sendLogsRow) {
-                    textView.setText("Send Logs");
+                    textView.setText(getStringEntry(R.string.SendLogs));
                     divider.setVisibility(View.VISIBLE);
                 } else if (i == askQuestionRow) {
                     textView.setText(getStringEntry(R.string.AskAQuestion));
