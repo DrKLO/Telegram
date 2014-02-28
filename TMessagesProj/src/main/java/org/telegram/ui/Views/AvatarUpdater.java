@@ -11,8 +11,10 @@ package org.telegram.ui.Views;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 
 import org.telegram.TL.TLRPC;
@@ -25,9 +27,10 @@ import org.telegram.ui.ApplicationActivity;
 import org.telegram.ui.PhotoCropActivity;
 
 import java.io.File;
+import java.io.FileDescriptor;
 
 public class AvatarUpdater implements NotificationCenter.NotificationCenterDelegate, PhotoCropActivity.PhotoCropActivityDelegate {
-    public String currentPicturePath;
+    public Uri currentPicture;
     private TLRPC.PhotoSize smallPhoto;
     private TLRPC.PhotoSize bigPhoto;
     public String uploadingAvatar = null;
@@ -57,8 +60,8 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
             Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
             File image = Utilities.generatePicturePath();
             if (image != null) {
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
-                currentPicturePath = image.getAbsolutePath();
+                currentPicture = Uri.fromFile(image);
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, currentPicture);
             }
             if (parentFragment != null) {
                 parentFragment.startActivityForResult(takePictureIntent, 0);
@@ -84,9 +87,13 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
         }
     }
 
-    private void startCrop(String path) {
+    private void startCrop(Uri uri) {
         try {
+            ParcelFileDescriptor parcelFileDescriptor = null;
             if (parentFragment != null) {
+                parcelFileDescriptor = parentFragment.parentActivity.getContentResolver().openFileDescriptor(uri, "r");
+                FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
+                Bitmap image = BitmapFactory.decodeFileDescriptor(fileDescriptor);
                 ApplicationActivity activity = (ApplicationActivity)parentFragment.parentActivity;
                 if (activity == null) {
                     activity = (ApplicationActivity)parentFragment.getActivity();
@@ -95,14 +102,14 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
                     return;
                 }
                 Bundle params = new Bundle();
-                params.putString("photoPath", path);
+                params.putParcelable("bitmap", image);
                 PhotoCropActivity photoCropActivity = new PhotoCropActivity();
                 photoCropActivity.delegate = this;
                 photoCropActivity.setArguments(params);
                 activity.presentFragment(photoCropActivity, "crop", false);
             } else {
                 Intent cropIntent = new Intent("com.android.camera.action.CROP");
-                cropIntent.setDataAndType(Uri.fromFile(new File(path)), "image/*");
+                cropIntent.setDataAndType(uri, "image/*");
                 cropIntent.putExtra("crop", "true");
                 cropIntent.putExtra("aspectX", 1);
                 cropIntent.putExtra("aspectY", 1);
@@ -121,7 +128,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
-            Bitmap bitmap = FileLoader.loadBitmap(path, 800, 800);
+            Bitmap bitmap = FileLoader.loadBitmap("", 800, 800);
             processBitmap(bitmap);
         }
     }
@@ -129,10 +136,10 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == 0) {
-                Utilities.addMediaToGallery(currentPicturePath);
-                startCrop(currentPicturePath);
+                Utilities.addMediaToGallery(currentPicture);
+                startCrop(currentPicture);
 
-                currentPicturePath = null;
+                currentPicture = null;
             } else if (requestCode == 1) {
                 if (data == null) {
                     return;
@@ -140,8 +147,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
                 try {
                     Uri imageUri = data.getData();
                     if (imageUri != null) {
-                        String imageFilePath = Utilities.getPath(imageUri);
-                        startCrop(imageFilePath);
+                        startCrop(imageUri);
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);

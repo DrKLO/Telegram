@@ -15,11 +15,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.ParcelFileDescriptor;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.text.Html;
@@ -37,7 +40,9 @@ import org.telegram.ui.ApplicationLoader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -812,6 +817,28 @@ public class Utilities {
                 cursor.close();
         }
         return null;
+    }
+
+    public static Bitmap getBitmap(final Uri uri){
+        Bitmap result = null;
+        ParcelFileDescriptor parcelFD = null;
+        try {
+            parcelFD = ApplicationLoader.applicationContext.getContentResolver().openFileDescriptor(uri, "r");
+            FileDescriptor fileDescriptor = parcelFD.getFileDescriptor();
+            result = BitmapFactory.decodeFileDescriptor(fileDescriptor);
+        } catch (FileNotFoundException e) {
+            FileLog.e("tmessages", e);
+        } catch (IOException e) {
+            FileLog.e("tmessages", e);
+        } finally {
+            if (parcelFD != null)
+                try {
+                    parcelFD.close();
+                } catch (IOException e) {
+                }
+        }
+
+        return result;
     }
 
     public static boolean isExternalStorageDocument(Uri uri) {

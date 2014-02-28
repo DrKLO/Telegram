@@ -13,6 +13,7 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.graphics.PixelFormat;
 import android.os.Build;
 import android.os.Bundle;
@@ -49,6 +50,7 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
     private boolean finished = false;
     private NotificationView notificationView;
     private String photoPath = null;
+    private Bitmap sendingBitmap = null;
     private String videoPath = null;
     private String sendingText = null;
     private int currentConnectionState;
@@ -217,7 +219,8 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
         photoPath = (String)NotificationCenter.Instance.getFromMemCache(533);
         videoPath = (String)NotificationCenter.Instance.getFromMemCache(534);
         sendingText = (String)NotificationCenter.Instance.getFromMemCache(535);
-        if (videoPath != null || photoPath != null || sendingText != null) {
+        sendingBitmap = (Bitmap)NotificationCenter.Instance.getFromMemCache(536);
+        if (videoPath != null || photoPath != null || sendingText != null || sendingBitmap != null) {
             MessagesActivity fragment = new MessagesActivity();
             fragment.selectAlertString = R.string.ForwardMessagesTo;
             fragment.animationType = 1;
@@ -310,10 +313,13 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
                 fragment.processSendingVideo(videoPath);
             } else if (sendingText != null) {
                 fragment.processSendingText(sendingText);
+            } else if (sendingBitmap != null) {
+                fragment.processSendingPhoto(sendingBitmap);
             }
             photoPath = null;
             videoPath = null;
             sendingText = null;
+            sendingBitmap = null;
         }
     }
 
