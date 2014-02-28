@@ -276,12 +276,8 @@ public class PhotoCropActivity extends BaseFragment {
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        String photoPath = getArguments().getString("photoPath");
-        if (photoPath == null) {
-            return false;
-        }
-        File f = new File(photoPath);
-        if (!f.exists()) {
+        imageToCrop = getArguments().getParcelable("bitmap");
+        if (imageToCrop == null) {
             return false;
         }
         Point displaySize = new Point();
@@ -292,10 +288,6 @@ public class PhotoCropActivity extends BaseFragment {
             display.getSize(displaySize);
         }
         int size = Math.max(displaySize.x, displaySize.y);
-        imageToCrop = FileLoader.loadBitmap(photoPath, size, size);
-        if (imageToCrop == null) {
-            return false;
-        }
         drawable = new BitmapDrawable(imageToCrop);
         return true;
     }
