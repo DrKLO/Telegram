@@ -12,6 +12,7 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -52,25 +53,14 @@ public class LaunchActivity extends PausableActivity {
                             if (parcelable == null) {
                                 return;
                             }
-                            String path = null;
+                            Bitmap bitmap = null;
                             if (parcelable instanceof Uri) {
-                                path = Utilities.getPath((Uri)parcelable);
+                                bitmap = Utilities.getBitmap((Uri) parcelable);
                             } else {
-                                path = intent.getParcelableExtra(Intent.EXTRA_STREAM).toString();
-                                if (path.startsWith("content:")) {
-                                    Cursor cursor = getContentResolver().query(Uri.parse(path), new String[]{android.provider.MediaStore.Images.ImageColumns.DATA}, null, null, null);
-                                    if (cursor != null) {
-                                        cursor.moveToFirst();
-                                        path = cursor.getString(0);
-                                        cursor.close();
-                                    }
-                                }
+
                             }
-                            if (path != null) {
-                                if (path.startsWith("file:")) {
-                                    path = path.replace("file://", "");
-                                }
-                                NotificationCenter.Instance.addToMemCache(533, path);
+                            if (bitmap != null) {
+                                NotificationCenter.Instance.addToMemCache(536, bitmap);
                             }
                         } else if (intent.getType().startsWith("video/")) {
                             Parcelable parcelable = intent.getParcelableExtra(Intent.EXTRA_STREAM);

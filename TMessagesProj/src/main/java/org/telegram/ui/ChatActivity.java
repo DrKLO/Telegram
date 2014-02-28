@@ -1242,34 +1242,8 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     return;
                 }
                 String imageFilePath = null;
-                if (imageUri.getScheme().contains("file")) {
-                    imageFilePath = imageUri.getPath();
-                    processSendingPhoto(imageFilePath);
-                } else if(imageUri.getScheme().contains("content")){
-                    ParcelFileDescriptor parcelFD = null;
-                    try {
-                        parcelFD = parentActivity.getContentResolver().openFileDescriptor(imageUri, "r");
-                        FileDescriptor fileDescriptor = parcelFD.getFileDescriptor();
-                        Bitmap bitmap = BitmapFactory.decodeFileDescriptor(fileDescriptor);
-                        processSendingPhoto(bitmap);
-                    } catch (FileNotFoundException e) {
-                        return;
-                    } catch (IOException e) {
-                        return;
-                    } finally {
-                        if (parcelFD != null)
-                            try {
-                                parcelFD.close();
-                            } catch (IOException e) {
-                            }
-                    }
-                } else {
-                    try {
-                        imageFilePath = Utilities.getPath(imageUri);
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                }
+                Bitmap bitmap = Utilities.getBitmap(imageUri);
+                processSendingPhoto(bitmap);
             } else if (requestCode == 2) {
                 String videoPath = null;
                 if (data != null) {
