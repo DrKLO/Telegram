@@ -16,7 +16,7 @@ import android.graphics.drawable.NinePatchDrawable;
 import android.os.Build;
 import android.widget.ImageView;
 
-import org.telegram.TL.TLRPC;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;

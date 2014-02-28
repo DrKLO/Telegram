@@ -29,8 +29,8 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 
-import org.telegram.TL.TLObject;
-import org.telegram.TL.TLRPC;
+import org.telegram.messenger.TLObject;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -356,6 +356,9 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
         long reqId = ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(final TLObject response, TLRPC.TL_error error) {
+                if (error != null) {
+                    return;
+                }
                 Utilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {

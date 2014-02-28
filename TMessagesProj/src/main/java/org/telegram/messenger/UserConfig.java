@@ -12,8 +12,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Base64;
 
-import org.telegram.TL.TLClassStore;
-import org.telegram.TL.TLRPC;
 import org.telegram.ui.ApplicationLoader;
 
 import java.io.File;
@@ -30,6 +28,7 @@ public class UserConfig {
     public static String importHash = "";
     private final static Integer sync = 1;
     public static boolean saveIncomingPhotos = false;
+    public static int contactsVersion = 1;
 
     public static int getNewMessageId() {
         int id;
@@ -49,14 +48,15 @@ public class UserConfig {
             try {
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = preferences.edit();
+                editor.putBoolean("registeredForPush", registeredForPush);
+                editor.putString("pushString", pushString);
+                editor.putInt("lastSendMessageId", lastSendMessageId);
+                editor.putInt("lastLocalId", lastLocalId);
+                editor.putString("contactsHash", contactsHash);
+                editor.putString("importHash", importHash);
+                editor.putBoolean("saveIncomingPhotos", saveIncomingPhotos);
+                editor.putInt("contactsVersion", contactsVersion);
                 if (currentUser != null) {
-                    editor.putBoolean("registeredForPush", registeredForPush);
-                    editor.putString("pushString", pushString);
-                    editor.putInt("lastSendMessageId", lastSendMessageId);
-                    editor.putInt("lastLocalId", lastLocalId);
-                    editor.putString("contactsHash", contactsHash);
-                    editor.putString("importHash", importHash);
-                    editor.putBoolean("saveIncomingPhotos", saveIncomingPhotos);
                     if (withFile) {
                         SerializedData data = new SerializedData();
                         currentUser.serializeToStream(data);
@@ -66,13 +66,6 @@ public class UserConfig {
                         editor.putString("user", userString);
                     }
                 } else {
-                    editor.putBoolean("registeredForPush", registeredForPush);
-                    editor.putString("pushString", pushString);
-                    editor.putInt("lastSendMessageId", lastSendMessageId);
-                    editor.putInt("lastLocalId", lastLocalId);
-                    editor.putString("contactsHash", contactsHash);
-                    editor.putString("importHash", importHash);
-                    editor.putBoolean("saveIncomingPhotos", saveIncomingPhotos);
                     editor.remove("user");
                 }
                 editor.commit();
@@ -107,13 +100,7 @@ public class UserConfig {
                         contactsHash = data.readString();
                         importHash = data.readString();
                         saveIncomingPhotos = data.readBool();
-                        if (currentUser.status != null) {
-                            if (currentUser.status.expires != 0) {
-                                currentUser.status.was_online = currentUser.status.expires;
-                            } else {
-                                currentUser.status.expires = currentUser.status.was_online;
-                            }
-                        }
+                        contactsVersion = 0;
                         MessagesStorage.lastQtsValue = data.readInt32();
                         MessagesStorage.lastSecretVersion = data.readInt32();
                         int val = data.readInt32();
@@ -141,6 +128,7 @@ public class UserConfig {
                         contactsHash = preferences.getString("contactsHash", "");
                         importHash = preferences.getString("importHash", "");
                         saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
+                        contactsVersion = preferences.getInt("contactsVersion", 0);
                     }
                     if (lastLocalId > -210000) {
                         lastLocalId = -210000;
@@ -166,6 +154,7 @@ public class UserConfig {
                 contactsHash = preferences.getString("contactsHash", "");
                 importHash = preferences.getString("importHash", "");
                 saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
+                contactsVersion = preferences.getInt("contactsVersion", 0);
                 String user = preferences.getString("user", null);
                 if (user != null) {
                     byte[] userBytes = Base64.decode(user, Base64.DEFAULT);
@@ -193,6 +182,7 @@ public class UserConfig {
         importHash = "";
         lastLocalId = -210000;
         lastSendMessageId = -210000;
+        contactsVersion = 1;
         saveIncomingPhotos = false;
         saveConfig(true);
         MessagesController.Instance.deleteAllAppAccounts();

@@ -21,8 +21,6 @@ package jawnae.pyronet;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import jawnae.pyronet.PyroClient;
-
 public interface PyroClientListener {
     public void connectedClient(PyroClient client);
 

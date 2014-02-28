@@ -36,7 +36,7 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import org.telegram.TL.TLRPC;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
@@ -279,7 +279,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
     public void didReceivedNotification(int id, Object... args) {
         if (id == MessagesController.updateInterfaces) {
             int mask = (Integer)args[0];
-            if ((mask & MessagesController.UPDATE_MASK_CHAT_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_CHAT_NAME) != 0 || (mask & MessagesController.UPDATE_MASK_CHAT_MEMBERS) != 0) {
+            if ((mask & MessagesController.UPDATE_MASK_CHAT_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_CHAT_NAME) != 0 || (mask & MessagesController.UPDATE_MASK_CHAT_MEMBERS) != 0 || (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
                 updateOnlineCount();
             }
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0 || (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
@@ -382,7 +382,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         int i = 0;
         for (TLRPC.TL_chatParticipant participant : info.participants) {
             TLRPC.User user = MessagesController.Instance.users.get(participant.user_id);
-            if (user != null && user.status != null && (user.status.expires > currentTime || user.status.was_online > currentTime || user.id == UserConfig.clientUserId) && (user.status.expires > 10000 || user.status.was_online > 10000)) {
+            if (user != null && user.status != null && (user.status.expires > currentTime || user.id == UserConfig.clientUserId) && user.status.expires > 10000) {
                 onlineCount++;
             }
             sortedUsers.add(i);
@@ -401,9 +401,6 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         status1 = ConnectionsManager.Instance.getCurrentTime() + 50000;
                     } else {
                         status1 = user1.status.expires;
-                        if (status1 == 0) {
-                            status1 = user1.status.was_online;
-                        }
                     }
                 }
                 if (user2 != null && user2.status != null) {
@@ -411,9 +408,6 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         status2 = ConnectionsManager.Instance.getCurrentTime() + 50000;
                     } else {
                         status2 = user2.status.expires;
-                        if (status2 == 0) {
-                            status2 = user2.status.was_online;
-                        }
                     }
                 }
                 return status1.compareTo(status2);

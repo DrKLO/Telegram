@@ -30,8 +30,8 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import org.telegram.TL.TLObject;
-import org.telegram.TL.TLRPC;
+import org.telegram.messenger.TLObject;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
@@ -121,6 +121,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         if (fragmentView == null) {
+            searching = false;
+            searchWas = false;
+
             fragmentView = inflater.inflate(R.layout.messages_list, container, false);
 
             messagesListViewAdapter = new MessagesAdapter(parentActivity);

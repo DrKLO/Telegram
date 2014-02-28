@@ -15,8 +15,9 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.widget.Toast;
 
-import org.telegram.TL.TLRPC;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -24,6 +25,8 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.PausableActivity;
+
+import java.util.ArrayList;
 
 public class LaunchActivity extends PausableActivity {
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,63 +49,77 @@ public class LaunchActivity extends PausableActivity {
             Intent intent = getIntent();
             if (intent != null && intent.getAction() != null) {
                 if (Intent.ACTION_SEND.equals(intent.getAction())) {
-                    if (intent.getType() != null) {
-                        if (intent.getType().startsWith("image/")) {
-                            Parcelable parcelable = intent.getParcelableExtra(Intent.EXTRA_STREAM);
-                            if (parcelable == null) {
-                                return;
-                            }
-                            String path = null;
-                            if (parcelable instanceof Uri) {
-                                path = Utilities.getPath((Uri)parcelable);
-                            } else {
-                                path = intent.getParcelableExtra(Intent.EXTRA_STREAM).toString();
-                                if (path.startsWith("content:")) {
-                                    Cursor cursor = getContentResolver().query(Uri.parse(path), new String[]{android.provider.MediaStore.Images.ImageColumns.DATA}, null, null, null);
-                                    if (cursor != null) {
-                                        cursor.moveToFirst();
-                                        path = cursor.getString(0);
-                                        cursor.close();
-                                    }
-                                }
-                            }
-                            if (path != null) {
-                                if (path.startsWith("file:")) {
-                                    path = path.replace("file://", "");
-                                }
-                                NotificationCenter.Instance.addToMemCache(533, path);
-                            }
-                        } else if (intent.getType().startsWith("video/")) {
-                            Parcelable parcelable = intent.getParcelableExtra(Intent.EXTRA_STREAM);
-                            if (parcelable == null) {
-                                return;
-                            }
-                            String path = null;
-                            if (parcelable instanceof Uri) {
-                                path = Utilities.getPath((Uri)parcelable);
-                            } else {
-                                path = parcelable.toString();
-                                if (path.startsWith("content:")) {
-                                    Cursor cursor = getContentResolver().query(Uri.parse(path), new String[]{android.provider.MediaStore.Images.ImageColumns.DATA}, null, null, null);
-                                    if (cursor != null) {
-                                        cursor.moveToFirst();
-                                        path = cursor.getString(0);
-                                        cursor.close();
-                                    }
-                                }
-                            }
-                            if (path != null) {
-                                if (path.startsWith("file:")) {
-                                    path = path.replace("file://", "");
-                                }
-                                NotificationCenter.Instance.addToMemCache(534, path);
-                            }
-                        } else if (intent.getType().equals("text/plain")) {
-                            String text = intent.getStringExtra(Intent.EXTRA_TEXT);
-                            if (text != null && text.length() != 0) {
-                                NotificationCenter.Instance.addToMemCache(535, text);
-                            }
+                    boolean error = false;
+                    String type = intent.getType();
+                    if (type != null && type.equals("text/plain")) {
+                        String text = intent.getStringExtra(Intent.EXTRA_TEXT);
+                        if (text != null && text.length() != 0) {
+                            NotificationCenter.Instance.addToMemCache(535, text);
+                        } else {
+                            error = true;
                         }
+                    } else {
+                        Parcelable parcelable = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+                        if (parcelable == null) {
+                            return;
+                        }
+                        String path = null;
+                        if (!(parcelable instanceof Uri)) {
+                            parcelable = Uri.parse(parcelable.toString());
+                        }
+                        path = Utilities.getPath((Uri)parcelable);
+                        if (path != null) {
+                            if (path.startsWith("file:")) {
+                                path = path.replace("file://", "");
+                            }
+                            if (type != null && type.startsWith("image/")) {
+                                NotificationCenter.Instance.addToMemCache(533, path);
+                            } else if (type != null && type.startsWith("video/")) {
+                                NotificationCenter.Instance.addToMemCache(534, path);
+                            } else {
+                                NotificationCenter.Instance.addToMemCache(536, path);
+                            }
+                        } else {
+                            error = true;
+                        }
+                        if (error) {
+                            Toast.makeText(this, "Unsupported content", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                } else if (intent.getAction().equals(Intent.ACTION_SEND_MULTIPLE)) {
+                    boolean error = false;
+                    try {
+                        ArrayList<Parcelable> uris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
+                        String type = intent.getType();
+                        if (uris != null) {
+                            String[] uris2 = new String[uris.size()];
+                            for (int i = 0; i < uris2.length; i++) {
+                                Parcelable parcelable = uris.get(i);
+                                if (!(parcelable instanceof Uri)) {
+                                    parcelable = Uri.parse(parcelable.toString());
+                                }
+                                String path = Utilities.getPath((Uri)parcelable);
+                                if (path != null) {
+                                    if (path.startsWith("file:")) {
+                                        path = path.replace("file://", "");
+                                    }
+                                    uris2[i] = path;
+                                }
+                            }
+                            if (type != null && type.startsWith("image/")) {
+                                NotificationCenter.Instance.addToMemCache(537, uris2);
+                            } else {
+                                NotificationCenter.Instance.addToMemCache(538, uris2);
+                            }
+                        } else {
+                            error = true;
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                        error = true;
+                    }
+                    if (error) {
+                        Toast.makeText(this, "Unsupported content", Toast.LENGTH_SHORT).show();
                     }
                 } else if (Intent.ACTION_VIEW.equals(intent.getAction())) {
                     try {

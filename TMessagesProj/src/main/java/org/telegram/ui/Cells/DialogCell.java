@@ -16,11 +16,10 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.util.AttributeSet;
 import android.view.View;
 
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.TL.TLRPC;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.MessagesController;
@@ -140,16 +139,6 @@ public class DialogCell extends BaseCell {
 
     public DialogCell(Context context) {
         super(context);
-        init();
-    }
-
-    public DialogCell(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        init();
-    }
-
-    public DialogCell(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
         init();
     }
 
@@ -525,7 +514,7 @@ public class DialogCell extends BaseCell {
             if (chat != null) {
                 nameString = chat.title;
             } else if (user != null) {
-                if (user.id != 333000 && ContactsController.Instance.contactsDict.get(user.id) == null) {
+                if (user.id / 1000 != 333 && ContactsController.Instance.contactsDict.get(user.id) == null) {
                     if (ContactsController.Instance.contactsDict.size() == 0 && (!ContactsController.Instance.contactsLoaded || ContactsController.Instance.loadingContacts)) {
                         nameString = Utilities.formatName(user.first_name, user.last_name);
                     } else {

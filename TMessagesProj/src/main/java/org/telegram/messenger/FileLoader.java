@@ -16,7 +16,6 @@ import android.graphics.Matrix;
 import android.media.ExifInterface;
 import android.os.Build;
 
-import org.telegram.TL.TLRPC;
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Views.BackupImageView;
@@ -45,6 +44,7 @@ public class FileLoader {
     private final int maxConcurentLoadingOpertaionsCount = 2;
     private Queue<FileUploadOperation> uploadOperationQueue;
     private ConcurrentHashMap<String, FileUploadOperation> uploadOperationPaths;
+    private ConcurrentHashMap<String, FileUploadOperation> uploadOperationPathsEnc;
     private int currentUploadOperationsCount = 0;
     private Queue<FileLoadOperation> loadOperationQueue;
     private ConcurrentHashMap<String, FileLoadOperation> loadOperationPaths;
@@ -294,18 +294,27 @@ public class FileLoader {
         runningOperation = new LinkedList<FileLoadOperation>();
         uploadOperationQueue = new LinkedList<FileUploadOperation>();
         uploadOperationPaths = new ConcurrentHashMap<String, FileUploadOperation>();
+        uploadOperationPathsEnc = new ConcurrentHashMap<String, FileUploadOperation>();
         loadOperationPaths = new ConcurrentHashMap<String, FileLoadOperation>();
         loadOperationQueue = new LinkedList<FileLoadOperation>();
     }
 
-    public void cancelUploadFile(final String location) {
+    public void cancelUploadFile(final String location, final boolean enc) {
         Utilities.fileUploadQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
-                FileUploadOperation operation = uploadOperationPaths.get(location);
-                if (operation != null) {
-                    uploadOperationQueue.remove(operation);
-                    operation.cancel();
+                if (!enc) {
+                    FileUploadOperation operation = uploadOperationPaths.get(location);
+                    if (operation != null) {
+                        uploadOperationQueue.remove(operation);
+                        operation.cancel();
+                    }
+                } else {
+                    FileUploadOperation operation = uploadOperationPathsEnc.get(location);
+                    if (operation != null) {
+                        uploadOperationQueue.remove(operation);
+                        operation.cancel();
+                    }
                 }
             }
         });
@@ -319,17 +328,39 @@ public class FileLoader {
         Utilities.fileUploadQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
+                if (key != null) {
+                    if (uploadOperationPathsEnc.containsKey(location)) {
+                        return;
+                    }
+                } else {
+                    if (uploadOperationPaths.containsKey(location)) {
+                        return;
+                    }
+                }
                 FileUploadOperation operation = new FileUploadOperation(location, key, iv);
-                uploadOperationPaths.put(location, operation);
+                if (key != null) {
+                    uploadOperationPathsEnc.put(location, operation);
+                } else {
+                    uploadOperationPaths.put(location, operation);
+                }
                 operation.delegate = new FileUploadOperation.FileUploadOperationDelegate() {
                     @Override
                     public void didFinishUploadingFile(FileUploadOperation operation, final TLRPC.InputFile inputFile, final TLRPC.InputEncryptedFile inputEncryptedFile) {
-                        NotificationCenter.Instance.postNotificationName(FileDidUpload, location, inputFile, inputEncryptedFile);
-                        fileProgresses.remove(location);
                         Utilities.fileUploadQueue.postRunnable(new Runnable() {
                             @Override
                             public void run() {
-                                uploadOperationPaths.remove(location);
+                                Utilities.stageQueue.postRunnable(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        NotificationCenter.Instance.postNotificationName(FileDidUpload, location, inputFile, inputEncryptedFile);
+                                        fileProgresses.remove(location);
+                                    }
+                                });
+                                if (key != null) {
+                                    uploadOperationPathsEnc.remove(location);
+                                } else {
+                                    uploadOperationPaths.remove(location);
+                                }
                                 currentUploadOperationsCount--;
                                 if (currentUploadOperationsCount < 2) {
                                     FileUploadOperation operation = uploadOperationQueue.poll();
@@ -343,15 +374,24 @@ public class FileLoader {
                     }
 
                     @Override
-                    public void didFailedUploadingFile(FileUploadOperation operation) {
-                        fileProgresses.remove(location);
-                        if (operation.state != 2) {
-                            NotificationCenter.Instance.postNotificationName(FileDidFailUpload, location);
-                        }
+                    public void didFailedUploadingFile(final FileUploadOperation operation) {
                         Utilities.fileUploadQueue.postRunnable(new Runnable() {
                             @Override
                             public void run() {
-                                uploadOperationPaths.remove(location);
+                                Utilities.stageQueue.postRunnable(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        fileProgresses.remove(location);
+                                        if (operation.state != 2) {
+                                            NotificationCenter.Instance.postNotificationName(FileDidFailUpload, location, key != null);
+                                        }
+                                    }
+                                });
+                                if (key != null) {
+                                    uploadOperationPathsEnc.remove(location);
+                                } else {
+                                    uploadOperationPaths.remove(location);
+                                }
                                 currentUploadOperationsCount--;
                                 if (currentUploadOperationsCount < 2) {
                                     FileUploadOperation operation = uploadOperationQueue.poll();
@@ -375,7 +415,7 @@ public class FileLoader {
                             Utilities.RunOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    NotificationCenter.Instance.postNotificationName(FileUploadProgressChanged, location, progress);
+                                    NotificationCenter.Instance.postNotificationName(FileUploadProgressChanged, location, progress, key != null);
                                 }
                             });
                         }

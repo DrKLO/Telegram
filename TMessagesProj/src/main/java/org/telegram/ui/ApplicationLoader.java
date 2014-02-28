@@ -11,7 +11,6 @@ package org.telegram.ui;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -26,7 +25,6 @@ import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.messenger.BackgroundService;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
@@ -45,7 +43,6 @@ public class ApplicationLoader extends Application {
     private GoogleCloudMessaging gcm;
     private AtomicInteger msgId = new AtomicInteger();
     private String regid;
-    private String SENDER_ID = "760348033672";
     public static final String EXTRA_MESSAGE = "message";
     public static final String PROPERTY_REG_ID = "registration_id";
     private static final String PROPERTY_APP_VERSION = "appVersion";
@@ -133,8 +130,6 @@ public class ApplicationLoader extends Application {
 
         lastPauseTime = System.currentTimeMillis();
         FileLog.e("tmessages", "start application with time " + lastPauseTime);
-
-        startService(new Intent(this, BackgroundService.class));
     }
 
     @Override
@@ -149,6 +144,7 @@ public class ApplicationLoader extends Application {
             }
             currentLocale = newLocale;
         }
+        Utilities.checkDisplaySize();
     }
 
     public static void resetLastPauseTime() {
@@ -210,7 +206,7 @@ public class ApplicationLoader extends Application {
                 while (count < 1000) {
                     try {
                         count++;
-                        regid = gcm.register(SENDER_ID);
+                        regid = gcm.register(ConnectionsManager.GCM_SENDER_ID);
                         sendRegistrationIdToBackend(true);
                         storeRegistrationId(applicationContext, regid);
                         return true;

@@ -10,6 +10,7 @@ package org.telegram.ui;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -19,6 +20,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -32,8 +34,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.TL.TLObject;
-import org.telegram.TL.TLRPC;
+import org.telegram.messenger.SerializedData;
+import org.telegram.messenger.TLClassStore;
+import org.telegram.messenger.TLObject;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
@@ -70,6 +74,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     int askQuestionRow;
     int logoutRow;
     int sendLogsRow;
+    int clearLogsRow;
     int rowCount;
     int messagesSectionRow;
     int sendByEnterRow;
@@ -159,6 +164,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         supportSectionRow = rowCount++;
         if (ConnectionsManager.DEBUG_VERSION) {
             sendLogsRow = rowCount++;
+            clearLogsRow = rowCount++;
         }
         askQuestionRow = rowCount++;
         logoutRow = rowCount++;
@@ -198,6 +204,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                                 SharedPreferences.Editor editor = preferences.edit();
                                 editor.putInt("fons_size", 12 + which);
+                                MessagesController.Instance.fontSize = 12 + which;
                                 editor.commit();
                                 if (listView != null) {
                                     listView.invalidateViews();
@@ -222,13 +229,92 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else if (i == backgroundRow) {
                         ((ApplicationActivity)parentActivity).presentFragment(new SettingsWallpapersActivity(), "settings_wallpapers", false);
                     } else if (i == askQuestionRow) {
-                        ChatActivity fragment = new ChatActivity();
-                        Bundle bundle = new Bundle();
-                        bundle.putInt("user_id", 333000);
-                        fragment.setArguments(bundle);
-                        ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), false);
+                        final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        int uid = preferences.getInt("support_id", 0);
+                        TLRPC.User supportUser = null;
+                        if (uid != 0) {
+                            supportUser = MessagesController.Instance.users.get(uid);
+                            if (supportUser == null) {
+                                String userString = preferences.getString("support_user", null);
+                                if (userString != null) {
+                                    try {
+                                        byte[] datacentersBytes = Base64.decode(userString, Base64.DEFAULT);
+                                        if (datacentersBytes != null) {
+                                            SerializedData data = new SerializedData(datacentersBytes);
+                                            supportUser = (TLRPC.User)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+
+                                        }
+                                    } catch (Exception e) {
+                                        FileLog.e("tmessages", e);
+                                        supportUser = null;
+                                    }
+                                }
+                            }
+                        }
+                        if (supportUser == null) {
+                            if (parentActivity == null) {
+                                return;
+                            }
+                            final ProgressDialog progressDialog = new ProgressDialog(parentActivity);
+                            progressDialog.setMessage(parentActivity.getString(R.string.Loading));
+                            progressDialog.setCanceledOnTouchOutside(false);
+                            progressDialog.setCancelable(false);
+                            progressDialog.show();
+                            TLRPC.TL_help_getSupport req = new TLRPC.TL_help_getSupport();
+                            ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                                @Override
+                                public void run(TLObject response, TLRPC.TL_error error) {
+                                    if (error == null) {
+
+                                        final TLRPC.TL_help_support res = (TLRPC.TL_help_support)response;
+                                        Utilities.RunOnUIThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                SharedPreferences.Editor editor = preferences.edit();
+                                                editor.putInt("support_id", res.user.id);
+                                                SerializedData data = new SerializedData();
+                                                res.user.serializeToStream(data);
+                                                editor.putString("support_user", Base64.encodeToString(data.toByteArray(), Base64.DEFAULT));
+                                                editor.commit();
+                                                try {
+                                                    progressDialog.dismiss();
+                                                } catch (Exception e) {
+                                                    FileLog.e("tmessages", e);
+                                                }
+                                                MessagesController.Instance.users.put(res.user.id, res.user);
+                                                ChatActivity fragment = new ChatActivity();
+                                                Bundle bundle = new Bundle();
+                                                bundle.putInt("user_id", res.user.id);
+                                                fragment.setArguments(bundle);
+                                                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), false);
+                                            }
+                                        });
+                                    } else {
+                                        Utilities.RunOnUIThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                try {
+                                                    progressDialog.dismiss();
+                                                } catch (Exception e) {
+                                                    FileLog.e("tmessages", e);
+                                                }
+                                            }
+                                        });
+                                    }
+                                }
+                            }, null, true, RPCRequest.RPCRequestClassGeneric);
+                        } else {
+                            MessagesController.Instance.users.putIfAbsent(supportUser.id, supportUser);
+                            ChatActivity fragment = new ChatActivity();
+                            Bundle bundle = new Bundle();
+                            bundle.putInt("user_id", supportUser.id);
+                            fragment.setArguments(bundle);
+                            ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), false);
+                        }
                     } else if (i == sendLogsRow) {
                         sendLogs();
+                    } else if (i == clearLogsRow) {
+                        FileLog.cleanupLogs();
                     } else if (i == sendByEnterRow) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                         boolean send = preferences.getBoolean("send_by_enter", false);
@@ -314,11 +400,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 232) {
-            FileLog.cleanupLogs();
-        } else {
-            avatarUpdater.onActivityResult(requestCode, resultCode, data);
-        }
+        avatarUpdater.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
@@ -377,7 +459,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             i.putExtra(Intent.EXTRA_EMAIL, new String[]{"drklo.2kb@gmail.com"});
             i.putExtra(Intent.EXTRA_SUBJECT, "last logs");
             i.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris);
-            startActivityForResult(Intent.createChooser(i, "Select email application."), 232);
+            startActivity(Intent.createChooser(i, "Select email application."));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -427,7 +509,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         public boolean isEnabled(int i) {
             return i == textSizeRow || i == enableAnimationsRow || i == blockedRow || i == notificationRow || i == backgroundRow ||
                     i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == terminateSessionsRow || i == photoDownloadPrivateRow ||
-                    i == photoDownloadChatRow;
+                    i == photoDownloadChatRow || i == clearLogsRow;
         }
 
         @Override
@@ -619,6 +701,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 } else if (i == sendLogsRow) {
                     textView.setText("Send Logs");
                     divider.setVisibility(View.VISIBLE);
+                } else if (i == clearLogsRow) {
+                    textView.setText("Clear Logs");
+                    divider.setVisibility(View.VISIBLE);
                 } else if (i == askQuestionRow) {
                     textView.setText(getStringEntry(R.string.AskAQuestion));
                     divider.setVisibility(View.INVISIBLE);
@@ -738,7 +823,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 5;
             } else if (i == enableAnimationsRow || i == sendByEnterRow || i == photoDownloadChatRow || i == photoDownloadPrivateRow) {
                 return 3;
-            } else if (i == numberRow || i == notificationRow || i == blockedRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == terminateSessionsRow) {
+            } else if (i == numberRow || i == notificationRow || i == blockedRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == terminateSessionsRow || i == clearLogsRow) {
                 return 2;
             } else if (i == logoutRow) {
                 return 4;
