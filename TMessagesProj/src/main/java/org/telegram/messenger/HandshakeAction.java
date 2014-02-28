@@ -8,12 +8,9 @@
 
 package org.telegram.messenger;
 
-import org.telegram.TL.TLClassStore;
-import org.telegram.TL.TLObject;
-import org.telegram.TL.TLRPC;
-
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -28,7 +25,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
     private byte[] authNewNonce;
 
     private byte[] authKey;
-    private byte[] authKeyId;
+    private long authKeyId;
 
     private boolean processedPQRes;
 
@@ -64,7 +61,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
         authServerNonce = null;
         authNewNonce = null;
         authKey = null;
-        authKeyId = null;
+        authKeyId = 0;
         processedPQRes = false;
         reqPQMsgData = null;
         reqDHMsgData = null;
@@ -325,7 +322,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 System.arraycopy(authNewNonce, 0, newNonce0_4, 0, 4);
                 tmpAesIv.writeRaw(newNonce0_4);
 
-                byte[] answerWithHash = Utilities.aesIgeEncryption(serverDhParams.encrypted_answer, tmpAesKey.toByteArray(), tmpAesIv.toByteArray(), false, false);
+                byte[] answerWithHash = Utilities.aesIgeEncryption(serverDhParams.encrypted_answer, tmpAesKey.toByteArray(), tmpAesIv.toByteArray(), false, false, 0);
                 byte[] answerHash = new byte[20];
                 System.arraycopy(answerWithHash, 0, answerHash, 0, 20);
 
@@ -401,8 +398,11 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                     authKey = correctedAuth;
                 }
                 byte[] authKeyHash = Utilities.computeSHA1(authKey);
-                authKeyId = new byte[8];
-                System.arraycopy(authKeyHash, authKeyHash.length - 8, authKeyId, 0, 8);
+                byte[] authKeyArr = new byte[8];
+                System.arraycopy(authKeyHash, authKeyHash.length - 8, authKeyArr, 0, 8);
+                ByteBuffer buffer = ByteBuffer.wrap(authKeyArr);
+                buffer.order(ByteOrder.LITTLE_ENDIAN);
+                authKeyId = buffer.getLong();
 
                 SerializedData serverSaltData = new SerializedData();
                 for (int i = 7; i >= 0; i--) {
@@ -443,7 +443,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 TLRPC.TL_set_client_DH_params setClientDhParams = new TLRPC.TL_set_client_DH_params();
                 setClientDhParams.nonce = authNonce;
                 setClientDhParams.server_nonce = authServerNonce;
-                setClientDhParams.encrypted_data = Utilities.aesIgeEncryption(clientDataWithHash.toByteArray(), tmpAesKey.toByteArray(), tmpAesIv.toByteArray(), true, false);
+                setClientDhParams.encrypted_data = Utilities.aesIgeEncryption(clientDataWithHash.toByteArray(), tmpAesKey.toByteArray(), tmpAesIv.toByteArray(), true, false, 0);
 
                 TLRPC.TL_msgs_ack msgsAck = new TLRPC.TL_msgs_ack();
                 msgsAck.msg_ids = new ArrayList<Long>();
@@ -590,21 +590,20 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
     }
 
     @Override
-    public void tcpConnectionReceivedData(TcpConnection connection, byte[] data) {
-        SerializedData is = new SerializedData(data);
+    public void tcpConnectionReceivedData(TcpConnection connection, ByteBufferDesc data, int length) {
 
-        long keyId = is.readInt64();
+        long keyId = data.readInt64();
 
         if (keyId == 0) {
-            long messageId = is.readInt64();
+            long messageId = data.readInt64();
             if (processedMessageIds.contains(messageId)) {
                 FileLog.d("tmessages", String.format("===== Duplicate message id %d received, ignoring", messageId));
                 return;
             }
-            int messageLength = is.readInt32();
+            int messageLength = data.readInt32();
 
-            int constructor = is.readInt32();
-            TLObject object = TLClassStore.Instance().TLdeserialize(is, constructor);
+            int constructor = data.readInt32();
+            TLObject object = TLClassStore.Instance().TLdeserialize(data, constructor);
 
             if (object != null) {
                 processedMessageIds.add(messageId);

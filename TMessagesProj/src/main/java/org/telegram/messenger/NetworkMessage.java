@@ -8,8 +8,6 @@
 
 package org.telegram.messenger;
 
-import org.telegram.TL.TLRPC;
-
 public class NetworkMessage {
     public TLRPC.TL_protoMessage protoMessage;
     public Object rawRequest;

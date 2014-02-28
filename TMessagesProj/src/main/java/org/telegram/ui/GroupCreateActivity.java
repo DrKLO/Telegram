@@ -35,7 +35,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.telegram.TL.TLRPC;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
@@ -106,6 +106,10 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         if (fragmentView == null) {
+
+            searching = false;
+            searchWas = false;
+
             fragmentView = inflater.inflate(R.layout.group_create_layout, container, false);
 
             epmtyTextView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
@@ -546,18 +550,14 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 holder.messageTextView.setTextColor(0xff808080);
             } else {
                 int currentTime = ConnectionsManager.Instance.getCurrentTime();
-                if (user.status.expires > currentTime || user.status.was_online > currentTime) {
+                if (user.status.expires > currentTime) {
                     holder.messageTextView.setTextColor(0xff357aa8);
                     holder.messageTextView.setText(getStringEntry(R.string.Online));
                 } else {
-                    if (user.status.was_online <= 10000 && user.status.expires <= 10000) {
+                    if (user.status.expires <= 10000) {
                         holder.messageTextView.setText(getStringEntry(R.string.Invisible));
                     } else {
-                        int value = user.status.was_online;
-                        if (value == 0) {
-                            value = user.status.expires;
-                        }
-                        holder.messageTextView.setText(Utilities.formatDateOnline(value));
+                        holder.messageTextView.setText(Utilities.formatDateOnline(user.status.expires));
                     }
                     holder.messageTextView.setTextColor(0xff808080);
                 }

@@ -105,6 +105,7 @@
     <string name="YouWereKicked">You were kicked from this group</string>
     <string name="YouLeft">You left this group</string>
     <string name="DeleteThisGroup">Delete this Group</string>
+    <string name="SlideToCancel">SLIDE TO CANCEL</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Secret chat requested</string>

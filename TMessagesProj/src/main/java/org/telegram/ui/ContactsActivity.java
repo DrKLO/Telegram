@@ -10,7 +10,6 @@ package org.telegram.ui;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -20,7 +19,6 @@ import android.support.v4.internal.view.SupportMenuItem;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.widget.SearchView;
-import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -28,12 +26,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.telegram.TL.TLObject;
-import org.telegram.TL.TLRPC;
+import org.telegram.messenger.TLObject;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
@@ -43,6 +40,8 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Adapters.ContactsActivityAdapter;
+import org.telegram.ui.Adapters.ContactsActivitySearchAdapter;
 import org.telegram.ui.Cells.ChatOrUserCell;
 import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.OnSwipeTouchListener;
@@ -54,13 +53,11 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class ContactsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private SectionedBaseAdapter listViewAdapter;
     private PinnedHeaderListView listView;
-    private BaseAdapter searchListViewAdapter;
+    private ContactsActivitySearchAdapter searchListViewAdapter;
     private boolean searchWas;
     private boolean searching;
     private boolean onlyUsers;
@@ -75,11 +72,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private HashMap<Integer, TLRPC.User> ignoreUsers;
     private SupportMenuItem searchItem;
 
-    private Timer searchDialogsTimer;
     private String inviteText;
     private boolean updatingInviteText = false;
-    public ArrayList<TLRPC.User> searchResult;
-    public ArrayList<CharSequence> searchResultNames;
     public ContactsActivityDelegate delegate;
 
     public static interface ContactsActivityDelegate {
@@ -144,22 +138,26 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         if (fragmentView == null) {
 
+            searching = false;
+            searchWas = false;
+
             fragmentView = inflater.inflate(R.layout.contacts_layout, container, false);
 
             epmtyTextView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
-            searchListViewAdapter = new SearchAdapter(parentActivity);
+            searchListViewAdapter = new ContactsActivitySearchAdapter(parentActivity, ignoreUsers);
 
             listView = (PinnedHeaderListView)fragmentView.findViewById(R.id.listView);
             listView.setEmptyView(epmtyTextView);
             listView.setVerticalScrollBarEnabled(false);
 
-            listView.setAdapter(listViewAdapter = new ListAdapter(parentActivity));
+            listViewAdapter = new ContactsActivityAdapter(parentActivity, onlyUsers, usersAsSections, ignoreUsers);
+            listView.setAdapter(listViewAdapter);
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                     if (searching && searchWas) {
-                        TLRPC.User user = searchResult.get(i);
-                        if (user.id == UserConfig.clientUserId) {
+                        TLRPC.User user = searchListViewAdapter.getItem(i);
+                        if (user == null || user.id == UserConfig.clientUserId) {
                             return;
                         }
                         if (returnAsResult) {
@@ -379,75 +377,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         ((ApplicationActivity)parentActivity).updateActionBar();
     }
 
-    public void searchDialogs(final String query) {
-        if (query == null) {
-            searchResult = null;
-            searchResultNames = null;
-        } else {
-            try {
-                if (searchDialogsTimer != null) {
-                    searchDialogsTimer.cancel();
-                }
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
-            }
-            searchDialogsTimer = new Timer();
-            searchDialogsTimer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    try {
-                        searchDialogsTimer.cancel();
-                        searchDialogsTimer = null;
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                    processSearch(query);
-                }
-            }, 100, 300);
-        }
-    }
-
-    private void processSearch(final String query) {
-        Utilities.globalQueue.postRunnable(new Runnable() {
-            @Override
-            public void run() {
-
-                String q = query.trim().toLowerCase();
-                if (q.length() == 0) {
-                    updateSearchResults(new ArrayList<TLRPC.User>(), new ArrayList<CharSequence>());
-                    return;
-                }
-                long time = System.currentTimeMillis();
-                ArrayList<TLRPC.User> resultArray = new ArrayList<TLRPC.User>();
-                ArrayList<CharSequence> resultArrayNames = new ArrayList<CharSequence>();
-
-                for (TLRPC.TL_contact contact : ContactsController.Instance.contacts) {
-                    TLRPC.User user = MessagesController.Instance.users.get(contact.user_id);
-                    if (user.first_name != null && user.first_name.toLowerCase().startsWith(q) || user.last_name != null && user.last_name.toLowerCase().startsWith(q)) {
-                        if (user.id == UserConfig.clientUserId) {
-                            continue;
-                        }
-                        resultArrayNames.add(Utilities.generateSearchName(user.first_name, user.last_name, q));
-                        resultArray.add(user);
-                    }
-                }
-
-                updateSearchResults(resultArray, resultArrayNames);
-            }
-        });
-    }
-
-    private void updateSearchResults(final ArrayList<TLRPC.User> users, final ArrayList<CharSequence> names) {
-        Utilities.RunOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                searchResult = users;
-                searchResultNames = names;
-                searchListViewAdapter.notifyDataSetChanged();
-            }
-        });
-    }
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int itemId = item.getItemId();
@@ -497,7 +426,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
             @Override
             public boolean onQueryTextChange(String s) {
-                searchDialogs(s);
+                if (searchListViewAdapter == null) {
+                    return true;
+                }
+                searchListViewAdapter.searchDialogs(s);
                 if (s.length() != 0) {
                     searchWas = true;
                     if (listView != null) {
@@ -531,7 +463,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             @Override
             public boolean onMenuItemActionCollapse(MenuItem menuItem) {
                 searchView.setQuery("", false);
-                searchDialogs(null);
+                searchListViewAdapter.searchDialogs(null);
                 searching = false;
                 searchWas = false;
                 ViewGroup group = (ViewGroup) listView.getParent();
@@ -578,331 +510,46 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     }
 
     private void updateInviteText() {
-        if (updatingInviteText) {
-            return;
-        }
-        updatingInviteText = true;
-        TLRPC.TL_help_getInviteText req = new TLRPC.TL_help_getInviteText();
-        req.lang_code = Locale.getDefault().getCountry();
-        if (req.lang_code == null || req.lang_code.length() == 0) {
-            req.lang_code = "en";
-        }
-        ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
-            @Override
-            public void run(TLObject response, TLRPC.TL_error error) {
-                if (error != null) {
-                    return;
-                }
-                final TLRPC.TL_help_inviteText res = (TLRPC.TL_help_inviteText)response;
-                if (res.message.length() == 0) {
-                    return;
-                }
-                Utilities.RunOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        updatingInviteText = false;
-                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                        SharedPreferences.Editor editor = preferences.edit();
-                        editor.putString("invitetext", res.message);
-                        editor.putInt("invitetexttime", (int) (System.currentTimeMillis() / 1000));
-                        editor.commit();
-                    }
-                });
+        if (!updatingInviteText) {
+            updatingInviteText = true;
+            TLRPC.TL_help_getInviteText req = new TLRPC.TL_help_getInviteText();
+            req.lang_code = Locale.getDefault().getCountry();
+            if (req.lang_code == null || req.lang_code.length() == 0) {
+                req.lang_code = "en";
             }
-        }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
+            ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                @Override
+                public void run(TLObject response, TLRPC.TL_error error) {
+                    if (error == null) {
+                        final TLRPC.TL_help_inviteText res = (TLRPC.TL_help_inviteText)response;
+                        if (res.message.length() != 0) {
+                            Utilities.RunOnUIThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    updatingInviteText = false;
+                                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                                    SharedPreferences.Editor editor = preferences.edit();
+                                    editor.putString("invitetext", res.message);
+                                    editor.putInt("invitetexttime", (int) (System.currentTimeMillis() / 1000));
+                                    editor.commit();
+                                }
+                            });
+                        }
+                    }
+                }
+            }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
+        }
     }
 
     private void updateVisibleRows(int mask) {
-        if (listView == null) {
-            return;
-        }
-        int count = listView.getChildCount();
-        for (int a = 0; a < count; a++) {
-            View child = listView.getChildAt(a);
-            if (child instanceof ChatOrUserCell) {
-                ((ChatOrUserCell) child).update(mask);
-            }
-        }
-    }
-
-    private class SearchAdapter extends BaseAdapter {
-        private Context mContext;
-
-        public SearchAdapter(Context context) {
-            mContext = context;
-        }
-
-        @Override
-        public boolean areAllItemsEnabled() {
-            return true;
-        }
-
-        @Override
-        public boolean isEnabled(int i) {
-            return true;
-        }
-
-        @Override
-        public int getCount() {
-            if (searchResult == null) {
-                return 0;
-            }
-            return searchResult.size();
-        }
-
-        @Override
-        public Object getItem(int i) {
-            return null;
-        }
-
-        @Override
-        public long getItemId(int i) {
-            return i;
-        }
-
-        @Override
-        public boolean hasStableIds() {
-            return false;
-        }
-
-        @Override
-        public View getView(int i, View view, ViewGroup viewGroup) {
-            if (view == null) {
-                view = new ChatOrUserCell(mContext);
-                ((ChatOrUserCell)view).usePadding = false;
-            }
-
-            ((ChatOrUserCell) view).useSeparator = i != searchResult.size() - 1;
-
-            Object obj = searchResult.get(i);
-            TLRPC.User user = MessagesController.Instance.users.get(((TLRPC.User)obj).id);
-
-            if (user != null) {
-                ((ChatOrUserCell)view).setData(user, null, null, searchResultNames.get(i), null);
-
-                if (ignoreUsers != null) {
-                    if (ignoreUsers.containsKey(user.id)) {
-                        ((ChatOrUserCell)view).drawAlpha = 0.5f;
-                    } else {
-                        ((ChatOrUserCell)view).drawAlpha = 1.0f;
-                    }
+        if (listView != null) {
+            int count = listView.getChildCount();
+            for (int a = 0; a < count; a++) {
+                View child = listView.getChildAt(a);
+                if (child instanceof ChatOrUserCell) {
+                    ((ChatOrUserCell) child).update(mask);
                 }
             }
-            return view;
-        }
-
-        @Override
-        public int getItemViewType(int i) {
-            return 0;
-        }
-
-        @Override
-        public int getViewTypeCount() {
-            return 1;
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return searchResult == null || searchResult.size() == 0;
-        }
-    }
-
-    private class ListAdapter extends SectionedBaseAdapter {
-        private Context mContext;
-
-        public ListAdapter(Context context) {
-            mContext = context;
-        }
-
-        @Override
-        public Object getItem(int section, int position) {
-            return null;
-        }
-
-        @Override
-        public long getItemId(int section, int position) {
-            return 0;
-        }
-
-        @Override
-        public int getSectionCount() {
-            int count = 0;
-            if (usersAsSections) {
-                count += ContactsController.Instance.sortedUsersSectionsArray.size();
-            } else {
-                count++;
-            }
-            if (!onlyUsers) {
-                count += ContactsController.Instance.sortedContactsSectionsArray.size();
-            }
-            return count;
-        }
-
-        @Override
-        public int getCountForSection(int section) {
-            if (usersAsSections) {
-                if (section < ContactsController.Instance.sortedUsersSectionsArray.size()) {
-                    ArrayList<TLRPC.TL_contact> arr = ContactsController.Instance.usersSectionsDict.get(ContactsController.Instance.sortedUsersSectionsArray.get(section));
-                    return arr.size();
-                }
-            } else {
-                if (section == 0) {
-                    return ContactsController.Instance.contacts.size() + 1;
-                }
-            }
-            ArrayList<ContactsController.Contact> arr = ContactsController.Instance.contactsSectionsDict.get(ContactsController.Instance.sortedContactsSectionsArray.get(section - 1));
-            return arr.size();
-        }
-
-        @Override
-        public View getItemView(int section, int position, View convertView, ViewGroup parent) {
-
-            TLRPC.User user = null;
-            int count = 0;
-            if (usersAsSections) {
-                if (section < ContactsController.Instance.sortedUsersSectionsArray.size()) {
-                    ArrayList<TLRPC.TL_contact> arr = ContactsController.Instance.usersSectionsDict.get(ContactsController.Instance.sortedUsersSectionsArray.get(section));
-                    user = MessagesController.Instance.users.get(arr.get(position).user_id);
-                    count = arr.size();
-                }
-            } else {
-                if (section == 0) {
-                    if (position == 0) {
-                        if (convertView == null) {
-                            LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                            convertView = li.inflate(R.layout.contacts_invite_row_layout, parent, false);
-                        }
-                        View divider = convertView.findViewById(R.id.settings_row_divider);
-                        if (ContactsController.Instance.contacts.isEmpty()) {
-                            divider.setVisibility(View.INVISIBLE);
-                        } else {
-                            divider.setVisibility(View.VISIBLE);
-                        }
-                        return convertView;
-                    }
-                    user = MessagesController.Instance.users.get(ContactsController.Instance.contacts.get(position - 1).user_id);
-                    count = ContactsController.Instance.contacts.size();
-                }
-            }
-            if (user != null) {
-                if (convertView == null) {
-                    convertView = new ChatOrUserCell(mContext);
-                    ((ChatOrUserCell)convertView).useBoldFont = true;
-                    ((ChatOrUserCell)convertView).usePadding = false;
-                }
-
-                ((ChatOrUserCell)convertView).setData(user, null, null, null, null);
-
-                if (ignoreUsers != null) {
-                    if (ignoreUsers.containsKey(user.id)) {
-                        ((ChatOrUserCell)convertView).drawAlpha = 0.5f;
-                    } else {
-                        ((ChatOrUserCell)convertView).drawAlpha = 1.0f;
-                    }
-                }
-
-                ((ChatOrUserCell) convertView).useSeparator = position != count - 1;
-
-                return convertView;
-            }
-
-            TextView textView;
-            if (convertView == null) {
-                LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                convertView = li.inflate(R.layout.settings_row_button_layout, parent, false);
-                textView = (TextView)convertView.findViewById(R.id.settings_row_text);
-            } else {
-                textView = (TextView)convertView.findViewById(R.id.settings_row_text);
-            }
-
-            View divider = convertView.findViewById(R.id.settings_row_divider);
-            ArrayList<ContactsController.Contact> arr = ContactsController.Instance.contactsSectionsDict.get(ContactsController.Instance.sortedContactsSectionsArray.get(section - 1));
-            ContactsController.Contact contact = arr.get(position);
-            if (divider != null) {
-                if (position == arr.size() - 1) {
-                    divider.setVisibility(View.INVISIBLE);
-                } else {
-                    divider.setVisibility(View.VISIBLE);
-                }
-            }
-            if (contact.first_name != null && contact.last_name != null) {
-                textView.setText(Html.fromHtml(contact.first_name + " <b>" + contact.last_name + "</b>"));
-            } else if (contact.first_name != null && contact.last_name == null) {
-                textView.setText(Html.fromHtml("<b>" + contact.first_name + "</b>"));
-            } else {
-                textView.setText(Html.fromHtml("<b>" + contact.last_name + "</b>"));
-            }
-            return convertView;
-        }
-
-        @Override
-        public int getItemViewType(int section, int position) {
-            if (usersAsSections) {
-                if (section < ContactsController.Instance.sortedUsersSectionsArray.size()) {
-                    return 0;
-                }
-            } else if (section == 0) {
-                if (position == 0) {
-                    return 2;
-                }
-                return 0;
-            }
-            return 1;
-        }
-
-        @Override
-        public int getItemViewTypeCount() {
-            return 3;
-        }
-
-        @Override
-        public int getSectionHeaderViewType(int section) {
-            if (usersAsSections) {
-                if (section < ContactsController.Instance.sortedUsersSectionsArray.size()) {
-                    return 1;
-                }
-            } else if (section == 0) {
-                return 0;
-            }
-            return 1;
-        }
-
-        @Override
-        public int getSectionHeaderViewTypeCount() {
-            return 2;
-        }
-
-        @Override
-        public View getSectionHeaderView(int section, View convertView, ViewGroup parent) {
-            if (usersAsSections) {
-                if (section < ContactsController.Instance.sortedUsersSectionsArray.size()) {
-                    if (convertView == null) {
-                        LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                        convertView = li.inflate(R.layout.settings_section_layout, parent, false);
-                        convertView.setBackgroundColor(0xffffffff);
-                    }
-                    TextView textView = (TextView)convertView.findViewById(R.id.settings_section_text);
-                    textView.setText(ContactsController.Instance.sortedUsersSectionsArray.get(section));
-                    return convertView;
-                }
-            } else {
-                if (section == 0) {
-                    if (convertView == null) {
-                        LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                        convertView = li.inflate(R.layout.empty_layout, parent, false);
-                    }
-                    return convertView;
-                }
-            }
-
-            if (convertView == null) {
-                LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                convertView = li.inflate(R.layout.settings_section_layout, parent, false);
-                convertView.setBackgroundColor(0xffffffff);
-            }
-            TextView textView = (TextView)convertView.findViewById(R.id.settings_section_text);
-            textView.setText(ContactsController.Instance.sortedContactsSectionsArray.get(section - 1));
-            return convertView;
         }
     }
 }

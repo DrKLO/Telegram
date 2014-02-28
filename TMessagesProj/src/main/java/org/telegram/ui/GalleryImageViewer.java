@@ -35,7 +35,7 @@ import org.telegram.objects.PhotoObject;
 import org.telegram.ui.Views.AbstractGalleryActivity;
 import org.telegram.ui.Views.GalleryViewPager;
 import org.telegram.ui.Views.PZSImageView;
-import org.telegram.TL.TLRPC;
+import org.telegram.messenger.TLRPC;
 import org.telegram.objects.MessageObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.MessagesController;
@@ -479,7 +479,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
     }
 
     private TLRPC.FileLocation getCurrentFile() {
-        if (mViewPager == null) {
+        if (mViewPager == null || localPagerAdapter == null) {
             return null;
         }
         int item = mViewPager.getCurrentItem();
@@ -497,7 +497,16 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                     }
                 }
             } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
-                TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, 800, 800);
+                int width = (int)(Math.min(displaySize.x, displaySize.y) * 0.7f);
+                int height = width + Utilities.dp(100);
+                if (width > 800) {
+                    width = 800;
+                }
+                if (height > 800) {
+                    height = 800;
+                }
+
+                TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, width, height);
                 if (sizeFull != null) {
                     return sizeFull.location;
                 }
@@ -538,7 +547,16 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
             } else {
                 ArrayList<TLRPC.PhotoSize> sizes = obj.messageOwner.action.photo.sizes;
                 if (sizes.size() > 0) {
-                    TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(sizes, 800, 800);
+                    int width = (int)(Math.min(displaySize.x, displaySize.y) * 0.7f);
+                    int height = width + Utilities.dp(100);
+                    if (width > 800) {
+                        width = 800;
+                    }
+                    if (height > 800) {
+                        height = 800;
+                    }
+
+                    TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(sizes, width, height);
                     if (sizeFull != null) {
                         currentFileName = sizeFull.location.volume_id + "_" + sizeFull.location.local_id + ".jpg";
                     }
@@ -634,10 +652,14 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
             obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
                 @Override
                 public boolean onPreDraw() {
-                    mViewPager.beginFakeDrag();
-                    if (mViewPager.isFakeDragging()) {
-                        mViewPager.fakeDragBy(1);
-                        mViewPager.endFakeDrag();
+                    try {
+                        mViewPager.beginFakeDrag();
+                        if (mViewPager.isFakeDragging()) {
+                            mViewPager.fakeDragBy(1);
+                            mViewPager.endFakeDrag();
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
                     }
                     mViewPager.getViewTreeObserver().removeOnPreDrawListener(this);
                     return false;
@@ -660,7 +682,9 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
         switch (itemId) {
             case android.R.id.home:
                 cancelRunning = true;
-                mViewPager.setAdapter(null);
+                if (mViewPager != null) {
+                    mViewPager.setAdapter(null);
+                }
                 localPagerAdapter = null;
                 finish();
                 System.gc();

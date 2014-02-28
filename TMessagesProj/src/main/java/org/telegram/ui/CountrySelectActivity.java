@@ -69,6 +69,9 @@ public class CountrySelectActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        searching = false;
+        searchWas = false;
+
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(getResources().getAssets().open("countries.txt")));
             String line;

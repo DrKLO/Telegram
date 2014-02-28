@@ -25,8 +25,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.TL.TLObject;
-import org.telegram.TL.TLRPC;
+import org.telegram.messenger.TLObject;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;

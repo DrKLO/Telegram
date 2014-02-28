@@ -8,9 +8,6 @@
 
 package org.telegram.messenger;
 
-import org.telegram.TL.TLObject;
-import org.telegram.TL.TLRPC;
-
 import java.util.ArrayList;
 
 public class RPCRequest {

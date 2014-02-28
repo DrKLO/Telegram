@@ -107,6 +107,7 @@ public class PyroClient {
      * set
      */
 
+    @SuppressWarnings("unchecked")
     public <T> T attachment() {
         return (T) this.attachment;
     }
@@ -154,12 +155,6 @@ public class PyroClient {
 
         ((SocketChannel) key.channel()).socket().setKeepAlive(enabled);
     }
-
-    //
-
-    //
-
-    //
 
     private boolean doEagerWrite = false;
 
@@ -320,7 +315,7 @@ public class PyroClient {
             public void run() {
                 try {
                     if (key.channel().isOpen()) {
-                        ((SocketChannel) key.channel()).close();
+                        (key.channel()).close();
                     }
                 } catch (Exception exc) {
                     selector().scheduleTask(this);
@@ -340,7 +335,7 @@ public class PyroClient {
     public boolean isDisconnected() {
         this.selector.checkThread();
 
-        return !((SocketChannel) this.key.channel()).isOpen();
+        return !this.key.channel().isOpen();
     }
 
     //
@@ -368,9 +363,7 @@ public class PyroClient {
     private long lastEventTime;
 
     boolean didTimeout(long now) {
-        if (this.timeout == 0)
-            return false; // never timeout
-        return (now - this.lastEventTime) > this.timeout;
+        return this.timeout != 0 && (now - this.lastEventTime) > this.timeout;
     }
 
     private void onReadyToConnect(long now) throws IOException {
@@ -442,7 +435,7 @@ public class PyroClient {
 
         try {
             // if the key is invalid, the channel may remain open!!
-            ((SocketChannel) this.key.channel()).close();
+            this.key.channel().close();
         } catch (Exception exc) {
             // type: java.io.IOException
             // message:
@@ -488,7 +481,7 @@ public class PyroClient {
                 + "]";
     }
 
-    private final String getAddressText() {
+    private String getAddressText() {
         if (!this.key.channel().isOpen())
             return "closed";
 
@@ -510,7 +503,7 @@ public class PyroClient {
                 interested);
     }
 
-    static final SelectionKey bindAndConfigure(PyroSelector selector,
+    static SelectionKey bindAndConfigure(PyroSelector selector,
             SocketChannel channel, InetSocketAddress bind) throws IOException {
         selector.checkThread();
 
@@ -519,7 +512,7 @@ public class PyroClient {
         return configure(selector, channel, true);
     }
 
-    static final SelectionKey configure(PyroSelector selector,
+    static SelectionKey configure(PyroSelector selector,
             SocketChannel channel, boolean connect) throws IOException {
         selector.checkThread();
 

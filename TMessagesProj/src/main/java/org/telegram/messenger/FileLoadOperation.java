@@ -12,15 +12,13 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
 
-import org.telegram.TL.TLObject;
-import org.telegram.TL.TLRPC;
-
 import java.io.RandomAccessFile;
 import java.net.URL;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.net.URLConnection;
+import java.nio.channels.FileChannel;
 import java.util.Scanner;
 
 public class FileLoadOperation {
@@ -238,14 +236,18 @@ public class FileLoadOperation {
                                 opts.inSampleSize = (int)scaleFactor;
                             }
 
-                            opts.inPreferredConfig = Bitmap.Config.ARGB_8888;
+                            if (filter == null) {
+                                opts.inPreferredConfig = Bitmap.Config.ARGB_8888;
+                            } else {
+                                opts.inPreferredConfig = Bitmap.Config.RGB_565;
+                            }
                             opts.inDither = false;
                             image = BitmapFactory.decodeStream(is, null, opts);
                             is.close();
                             if (image == null) {
-                                //if (!dontDelete) {
-                                //    cacheFileFinal.delete();
-                                //}
+                                if (!dontDelete && cacheFileFinal.length() == 0) {
+                                   cacheFileFinal.delete();
+                                }
                             } else {
                                 if (filter != null && image != null) {
                                     float bitmapW = image.getWidth();
@@ -278,9 +280,9 @@ public class FileLoadOperation {
                             }
                         });
                     } catch (Exception e) {
-                        //if (!dontDelete) {
-                        //    cacheFileFinal.delete();
-                        //}
+                        if (!dontDelete && cacheFileFinal.length() == 0) {
+                            cacheFileFinal.delete();
+                        }
                         FileLog.e("tmessages", e);
                     }
                 }
@@ -436,7 +438,12 @@ public class FileLoadOperation {
                         opts.inSampleSize = (int) scaleFactor;
                     }
 
-                    opts.inPreferredConfig = Bitmap.Config.ARGB_8888;
+                    if (filter == null) {
+                        opts.inPreferredConfig = Bitmap.Config.ARGB_8888;
+                    } else {
+                        opts.inPreferredConfig = Bitmap.Config.RGB_565;
+                    }
+
                     opts.inDither = false;
                     try {
                         if (renamed) {
@@ -558,13 +565,13 @@ public class FileLoadOperation {
         }
         TLRPC.TL_upload_getFile req = new TLRPC.TL_upload_getFile();
         req.location = location;
-        if (totalBytesCount == -1) {
-            req.offset = 0;
-            req.limit = 0;
-        } else {
+        //if (totalBytesCount == -1) {
+        //    req.offset = 0;
+        //    req.limit = 0;
+        //} else {
             req.offset = downloadedBytes;
             req.limit = downloadChunkSize;
-        }
+        //}
         requestToken = ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
@@ -572,22 +579,22 @@ public class FileLoadOperation {
                 if (error == null) {
                     TLRPC.TL_upload_file res = (TLRPC.TL_upload_file)response;
                     try {
-                        if (res.bytes.length == 0) {
+                        if (res.bytes.limit() == 0) {
                             onFinishLoadingFile();
                             return;
                         }
                         if (key != null) {
-                            res.bytes = Utilities.aesIgeEncryption(res.bytes, key, iv, false, true);
+                            Utilities.aesIgeEncryption2(res.bytes.buffer, key, iv, false, true, res.bytes.limit());
                         }
                         if (fileOutputStream != null) {
-                            fileOutputStream.write(res.bytes);
+                            FileChannel channel = fileOutputStream.getChannel();
+                            channel.write(res.bytes.buffer);
                         }
                         if (fiv != null) {
                             fiv.seek(0);
                             fiv.write(iv);
                         }
-                        downloadedBytes += res.bytes.length;
-                        res.bytes = null;
+                        downloadedBytes += res.bytes.limit();
                         if (totalBytesCount > 0) {
                             delegate.didChangedLoadProgress(FileLoadOperation.this,  Math.min(1.0f, (float)downloadedBytes / (float)totalBytesCount));
                         }

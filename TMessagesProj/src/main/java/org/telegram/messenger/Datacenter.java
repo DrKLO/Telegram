@@ -11,7 +11,6 @@ package org.telegram.messenger;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-import org.telegram.TL.TLRPC;
 import org.telegram.ui.ApplicationLoader;
 
 import java.util.ArrayList;
@@ -20,7 +19,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 
 public class Datacenter {
-    private final int DATA_VERSION = 3;
+    private static final int DATA_VERSION = 4;
 
     public int datacenterId;
     public ArrayList<String> addresses = new ArrayList<String>();
@@ -31,7 +30,7 @@ public class Datacenter {
     public long authDownloadSessionId;
     public long authUploadSessionId;
     public byte[] authKey;
-    public byte[] authKeyId;
+    public long authKeyId;
     public int lastInitVersion = 0;
     private volatile int currentPortNum = 0;
     private volatile int currentAddressNum = 0;
@@ -59,7 +58,7 @@ public class Datacenter {
             }
             len = data.readInt32();
             if (len != 0) {
-                authKeyId = data.readData(len);
+                authKeyId = data.readInt64();
             }
             authorized = data.readInt32() != 0;
             len = data.readInt32();
@@ -75,9 +74,9 @@ public class Datacenter {
             }
         } else if (version == 1) {
             int currentVersion = data.readInt32();
-            if (currentVersion == 2 || currentVersion == 3) {
+            if (currentVersion == 2 || currentVersion == 3 || currentVersion == 4) {
                 datacenterId = data.readInt32();
-                if (currentVersion == 3) {
+                if (currentVersion >= 3) {
                     lastInitVersion = data.readInt32();
                 }
                 int len = data.readInt32();
@@ -91,9 +90,13 @@ public class Datacenter {
                 if (len != 0) {
                     authKey = data.readData(len);
                 }
-                len = data.readInt32();
-                if (len != 0) {
-                    authKeyId = data.readData(len);
+                if (currentVersion == 4) {
+                    authKeyId = data.readInt64();
+                } else {
+                    len = data.readInt32();
+                    if (len != 0) {
+                        authKeyId = data.readInt64();
+                    }
                 }
                 authorized = data.readInt32() != 0;
                 len = data.readInt32();
@@ -108,6 +111,8 @@ public class Datacenter {
                     authServerSaltSet.add(salt);
                 }
             }
+        } else if (version == 2) {
+
         }
         readCurrentAddressAndPortNum();
     }
@@ -198,12 +203,7 @@ public class Datacenter {
         } else {
             stream.writeInt32(0);
         }
-        if (authKeyId != null) {
-            stream.writeInt32(authKeyId.length);
-            stream.writeRaw(authKeyId);
-        } else {
-            stream.writeInt32(0);
-        }
+        stream.writeInt64(authKeyId);
         stream.writeInt32(authorized ? 1 : 0);
         stream.writeInt32(authServerSaltSet.size());
         for (ServerSalt salt : authServerSaltSet) {
@@ -215,7 +215,7 @@ public class Datacenter {
 
     public void clear() {
         authKey = null;
-        authKeyId = null;
+        authKeyId = 0;
         authorized = false;
         authServerSaltSet.clear();
     }

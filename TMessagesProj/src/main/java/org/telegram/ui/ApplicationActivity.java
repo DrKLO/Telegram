@@ -51,6 +51,9 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
     private String photoPath = null;
     private String videoPath = null;
     private String sendingText = null;
+    private String documentPath = null;
+    private String[] imagesPathArray = null;
+    private String[] documentsPathArray = null;
     private int currentConnectionState;
     private View statusView;
     private View backStatusButton;
@@ -117,6 +120,9 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
         photoPath = (String)NotificationCenter.Instance.getFromMemCache(533);
         videoPath = (String)NotificationCenter.Instance.getFromMemCache(534);
         sendingText = (String)NotificationCenter.Instance.getFromMemCache(535);
+        documentPath = (String)NotificationCenter.Instance.getFromMemCache(536);
+        imagesPathArray = (String[])NotificationCenter.Instance.getFromMemCache(537);
+        documentsPathArray = (String[])NotificationCenter.Instance.getFromMemCache(538);
 
         if (push_user_id != 0) {
             if (push_user_id == UserConfig.clientUserId) {
@@ -153,7 +159,7 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
                 getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
             }
         }
-        if (videoPath != null || photoPath != null || sendingText != null) {
+        if (videoPath != null || photoPath != null || sendingText != null || documentPath != null || documentsPathArray != null || imagesPathArray != null) {
             MessagesActivity fragment = new MessagesActivity();
             fragment.selectAlertString = R.string.ForwardMessagesTo;
             fragment.animationType = 1;
@@ -217,7 +223,10 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
         photoPath = (String)NotificationCenter.Instance.getFromMemCache(533);
         videoPath = (String)NotificationCenter.Instance.getFromMemCache(534);
         sendingText = (String)NotificationCenter.Instance.getFromMemCache(535);
-        if (videoPath != null || photoPath != null || sendingText != null) {
+        documentPath = (String)NotificationCenter.Instance.getFromMemCache(536);
+        imagesPathArray = (String[])NotificationCenter.Instance.getFromMemCache(537);
+        documentsPathArray = (String[])NotificationCenter.Instance.getFromMemCache(538);
+        if (videoPath != null || photoPath != null || sendingText != null || documentPath != null || imagesPathArray != null || documentsPathArray != null) {
             MessagesActivity fragment = new MessagesActivity();
             fragment.selectAlertString = R.string.ForwardMessagesTo;
             fragment.animationType = 1;
@@ -310,10 +319,23 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
                 fragment.processSendingVideo(videoPath);
             } else if (sendingText != null) {
                 fragment.processSendingText(sendingText);
+            } else if (documentPath != null) {
+                fragment.processSendingDocument(documentPath);
+            } else if (imagesPathArray != null) {
+                for (String path : imagesPathArray) {
+                    fragment.processSendingPhoto(path);
+                }
+            } else if (documentsPathArray != null) {
+                for (String path : documentsPathArray) {
+                    fragment.processSendingDocument(path);
+                }
             }
             photoPath = null;
             videoPath = null;
             sendingText = null;
+            documentPath = null;
+            imagesPathArray = null;
+            documentsPathArray = null;
         }
     }
 
@@ -387,6 +409,7 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
     @Override
     public void onConfigurationChanged(android.content.res.Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+        Utilities.checkDisplaySize();
         fixLayout();
     }
 

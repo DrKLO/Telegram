@@ -7,7 +7,7 @@
 #include "aes.h"
 #include "log.h"
 
-JNIEXPORT jbyteArray Java_org_telegram_messenger_Utilities_aesIgeEncryption(JNIEnv *env, jclass class, jbyteArray _what, jbyteArray _key, jbyteArray _iv, jboolean encrypt, jboolean changeIv) {
+JNIEXPORT jbyteArray Java_org_telegram_messenger_Utilities_aesIgeEncryption(JNIEnv *env, jclass class, jbyteArray _what, jbyteArray _key, jbyteArray _iv, jboolean encrypt, jboolean changeIv, jint l) {
     unsigned char *what = (unsigned char *)(*env)->GetByteArrayElements(env, _what, NULL);
     unsigned char *key = (unsigned char *)(*env)->GetByteArrayElements(env, _key, NULL);
     unsigned char *__iv = (unsigned char *)(*env)->GetByteArrayElements(env, _iv, NULL);
@@ -20,7 +20,7 @@ JNIEXPORT jbyteArray Java_org_telegram_messenger_Utilities_aesIgeEncryption(JNIE
         iv = __iv;
     }
     
-    int len = (*env)->GetArrayLength(env, _what);
+    int len = l == 0 ? (*env)->GetArrayLength(env, _what) : l;
     AES_KEY akey;
     if (!encrypt) {
         AES_set_decrypt_key(key, (*env)->GetArrayLength(env, _key) * 8, &akey);
@@ -38,6 +38,36 @@ JNIEXPORT jbyteArray Java_org_telegram_messenger_Utilities_aesIgeEncryption(JNIE
         (*env)->ReleaseByteArrayElements(env, _iv, __iv, 0);
     }
     return _what;
+}
+
+JNIEXPORT void Java_org_telegram_messenger_Utilities_aesIgeEncryption2(JNIEnv *env, jclass class, jobject _what, jbyteArray _key, jbyteArray _iv, jboolean encrypt, jboolean changeIv, jint l) {
+    jbyte *what = (*env)->GetDirectBufferAddress(env, _what);
+    unsigned char *key = (unsigned char *)(*env)->GetByteArrayElements(env, _key, NULL);
+    unsigned char *__iv = (unsigned char *)(*env)->GetByteArrayElements(env, _iv, NULL);
+    unsigned char *iv = 0;
+    
+    if (!changeIv) {
+        iv = (unsigned char *)malloc((*env)->GetArrayLength(env, _iv));
+        memcpy(iv, __iv, (*env)->GetArrayLength(env, _iv));
+    } else {
+        iv = __iv;
+    }
+    
+    AES_KEY akey;
+    if (!encrypt) {
+        AES_set_decrypt_key(key, (*env)->GetArrayLength(env, _key) * 8, &akey);
+        AES_ige_encrypt(what, what, l, &akey, iv, AES_DECRYPT);
+    } else {
+        AES_set_encrypt_key(key, (*env)->GetArrayLength(env, _key) * 8, &akey);
+        AES_ige_encrypt(what, what, l, &akey, iv, AES_ENCRYPT);
+    }
+    (*env)->ReleaseByteArrayElements(env, _key, key, JNI_ABORT);
+    if (!changeIv) {
+        (*env)->ReleaseByteArrayElements(env, _iv, __iv, JNI_ABORT);
+        free(iv);
+    } else {
+        (*env)->ReleaseByteArrayElements(env, _iv, __iv, 0);
+    }
 }
 
 uint64_t gcd(uint64_t a, uint64_t b){
