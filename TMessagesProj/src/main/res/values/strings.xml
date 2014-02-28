@@ -3,7 +3,7 @@
 <!-- -->
 
 <resources>
-    <string name="AppName">Telegram</string>
+    <string name="AppName">Telegram</string> EDIT!!1!
 
     <!--signin view-->
     <string name="YourPhone">Your phone</string>
