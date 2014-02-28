@@ -741,29 +741,29 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 scheduleContactsReload = 0;
             }
 
-            if (ApplicationLoader.lastPauseTime == 0) {
-                if (lastStatusUpdateTime != -1 && (lastStatusUpdateTime == 0 || lastStatusUpdateTime <= System.currentTimeMillis() - 55000 || offlineSended)) {
-                    lastStatusUpdateTime = -1;
-                    TLRPC.TL_account_updateStatus req = new TLRPC.TL_account_updateStatus();
-                    req.offline = false;
-                    ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
-                        @Override
-                        public void run(TLObject response, TLRPC.TL_error error) {
-                            lastStatusUpdateTime = System.currentTimeMillis();
-                        }
-                    }, null, true, RPCRequest.RPCRequestClassGeneric);
-                    offlineSended = false;
-                }
-            } else if (!offlineSended && ApplicationLoader.lastPauseTime <= System.currentTimeMillis() - 2000) {
-                TLRPC.TL_account_updateStatus req = new TLRPC.TL_account_updateStatus();
-                req.offline = true;
-                ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
-                    @Override
-                    public void run(TLObject response, TLRPC.TL_error error) {
-                    }
-                }, null, true, RPCRequest.RPCRequestClassGeneric);
-                offlineSended = true;
-            }
+//            if (ApplicationLoader.lastPauseTime == 0) {
+//                if (lastStatusUpdateTime != -1 && (lastStatusUpdateTime == 0 || lastStatusUpdateTime <= System.currentTimeMillis() - 55000 || offlineSended)) {
+//                    lastStatusUpdateTime = -1;
+//                    TLRPC.TL_account_updateStatus req = new TLRPC.TL_account_updateStatus();
+//                    req.offline = false;
+//                    ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+//                        @Override
+//                        public void run(TLObject response, TLRPC.TL_error error) {
+//                            lastStatusUpdateTime = System.currentTimeMillis();
+//                        }
+//                    }, null, true, RPCRequest.RPCRequestClassGeneric);
+//                    offlineSended = false;
+//                }
+//            } else if (!offlineSended && ApplicationLoader.lastPauseTime <= System.currentTimeMillis() - 2000) {
+//                TLRPC.TL_account_updateStatus req = new TLRPC.TL_account_updateStatus();
+//                req.offline = true;
+//                ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+//                    @Override
+//                    public void run(TLObject response, TLRPC.TL_error error) {
+//                    }
+//                }, null, true, RPCRequest.RPCRequestClassGeneric);
+//                offlineSended = true;
+//            }
 
             if (updatesStartWaitTime != 0 && updatesStartWaitTime + 1500 < currentTime) {
                 FileLog.e("tmessages", "UPDATES WAIT TIMEOUT - CHECK QUEUE");
@@ -837,7 +837,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         } else {
                             newPrintingStrings.put(key, Html.fromHtml(String.format("%s %s", label, ApplicationLoader.applicationContext.getString(R.string.AreTyping))));
                         }
-                    } else {
+                    }
+                    else {
                         newPrintingStrings.put(key, Html.fromHtml(String.format("%s %s", label, ApplicationLoader.applicationContext.getString(R.string.IsTyping))));
                     }
                 }
