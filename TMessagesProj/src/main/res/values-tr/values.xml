@@ -14,7 +14,7 @@ do<?xml version="1.0" encoding="utf-8"?>
     <!--code enter view-->
     <string name="YourCode">Kodunuz</string>
     <string name="SentSmsCode">Telefonunuza bir etkinleştirme SMS mesajı gönderdik</string>
-    <string name="CallText">Sizi şu süre sonund arayacağız:</string>
+    <string name="CallText">Sizi şu süre sonunda arayacağız:</string>
     <string name="Calling">Sizi arıyoruz...</string>
     <string name="Code">Kod</string>
     <string name="WrongNumber">Numara yanlış mı?</string>
@@ -44,7 +44,7 @@ do<?xml version="1.0" encoding="utf-8"?>
     <string name="NewSecretChat">Yeni Gizli Sohbet</string>
     <string name="AwaitingEncryption">%s kişisinin çevrimiçi olması bekleniyor...</string>
     <string name="EncryptionRejected">Gizli sohbet iptal edildi</string>
-    <string name="EncryptionProcessing">Şifreleme anahtarlı değiştiriliyor...</string>
+    <string name="EncryptionProcessing">Şifreleme anahtarları değiştiriliyor...</string>
     <string name="EncryptedChatStartedOutgoing">%s gizli sohbetinize katıldı.</string>
     <string name="EncryptedChatStartedIncoming">Gizli sohbete katıldınız.</string>
     <string name="ClearHistory">Geçmişi Temizle</string>
@@ -54,7 +54,7 @@ do<?xml version="1.0" encoding="utf-8"?>
 
     <!--documents view-->
     <string name="SelectFile">Dosya Seç</string>
-    <string name="FreeOfTotal">%2$s içinde %1$s boş</string>
+    <string name="FreeOfTotal">%1$s boş, %2$s toplam</string>
     <string name="UnknownError">Bilinmeyen hata</string>
     <string name="AccessError">Erişim hatası</string>
     <string name="NoFiles">Henüz dosya yok...</string>
@@ -149,7 +149,7 @@ do<?xml version="1.0" encoding="utf-8"?>
     <string name="NotificationContactNewPhoto">%1$s profil fotoğrafını güncelledi</string>
 
     <!--contacts view-->
-    <string name="SelectContact">Kişi Seçt</string>
+    <string name="SelectContact">Kişi Seç</string>
     <string name="NoContacts">Henüz kişi yok</string>
     <string name="InviteText">Hey, haydi Telegram\'a geçelim: http://telegram.org/dl2</string>
     <string name="TodayAt">bugün şu zamanda</string>
@@ -240,7 +240,7 @@ do<?xml version="1.0" encoding="utf-8"?>
     <string name="Support">DESTEK</string>
     <string name="ChatBackground">Sohbet Arka Planı</string>
     <string name="MessagesSettings">MESAJLAR</string>
-    <string name="SendByEnter">Enter (Yeni satır) ile Gönder</string>
+    <string name="SendByEnter">Giriş (Yeni satır) Tuşu ile Gönder</string>
     <string name="TerminateAllSessions">Diğer tüm oturumları kapat</string>
     <string name="AutomaticPhotoDownload">FOTOĞRAFLARI OTOMATİK İNDİR</string>
     <string name="AutomaticPhotoDownloadGroups">Gruplar</string>
@@ -306,7 +306,7 @@ do<?xml version="1.0" encoding="utf-8"?>
     <string name="ActionYouCreateGroup">Grubu oluşturdunuz</string>
     <string name="ActionKickUserYou">un1 sizi attı</string>
     <string name="ActionAddUserYou">un1 sizi ekledi</string>
-    <string name="UnsuppotedMedia">Bu mesaj sizin Telegram sürümünüz tarafından desteklenmiyor.</string>
+    <string name="UnsuppotedMedia">Bu mesaj Telegram sürümünüz tarafından desteklenmiyor.</string>
     <string name="AttachPhoto">Fotoğraf</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Konum</string>
