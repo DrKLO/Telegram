@@ -21,8 +21,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.TL.TLObject;
-import org.telegram.TL.TLRPC;
+import org.telegram.messenger.TLObject;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
@@ -53,6 +53,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     private int time = 60000;
     private double lastCurrentTime;
     private boolean waitingForSms = false;
+    private int callTime = 60000;
 
     public LoginActivitySmsView(Context context) {
         super(context);
@@ -113,6 +114,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         requestPhone = params.getString("phoneFormated");
         phoneHash = params.getString("phoneHash");
         registered = params.getString("registered");
+        callTime = params.getInt("calltime");
 
         String number = PhoneFormat.Instance.format(phone);
         confirmTextView.setText(Html.fromHtml(String.format(ApplicationLoader.applicationContext.getResources().getString(R.string.SentSmsCode) + " <b>%s</b>", number)));
@@ -120,7 +122,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         Utilities.showKeyboard(codeField);
         codeField.requestFocus();
 
-        time = 60000;
+        time = callTime;
         try {
             synchronized(timerSync) {
                 if (timeTimer != null) {

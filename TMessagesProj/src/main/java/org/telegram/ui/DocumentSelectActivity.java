@@ -79,10 +79,14 @@ public class DocumentSelectActivity extends BaseFragment {
         public void onReceive(Context arg0, Intent intent) {
             Runnable r = new Runnable() {
                 public void run() {
-                    if (currentDir == null){
-                        listRoots();
-                    } else {
-                        listFiles(currentDir);
+                    try {
+                        if (currentDir == null){
+                            listRoots();
+                        } else {
+                            listFiles(currentDir);
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
                     }
                 }
             };

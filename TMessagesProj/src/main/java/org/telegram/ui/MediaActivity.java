@@ -27,7 +27,7 @@ import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.TextView;
 
-import org.telegram.TL.TLRPC;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.messenger.MessagesController;
@@ -288,24 +288,27 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
                 @Override
                 public boolean onPreDraw() {
-                    WindowManager manager = (WindowManager)parentActivity.getSystemService(Activity.WINDOW_SERVICE);
-                    int rotation = manager.getDefaultDisplay().getRotation();
+                    if (parentActivity != null) {
+                        WindowManager manager = (WindowManager)parentActivity.getSystemService(Activity.WINDOW_SERVICE);
+                        int rotation = manager.getDefaultDisplay().getRotation();
 
-                    if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                        orientation = 1;
-                        listView.setNumColumns(6);
-                        itemWidth = getResources().getDisplayMetrics().widthPixels / 6 - Utilities.dp(2) * 5;
-                        listView.setColumnWidth(itemWidth);
-                    } else {
-                        orientation = 0;
-                        listView.setNumColumns(4);
-                        itemWidth = getResources().getDisplayMetrics().widthPixels / 4 - Utilities.dp(2) * 3;
-                        listView.setColumnWidth(itemWidth);
+                        if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
+                            orientation = 1;
+                            listView.setNumColumns(6);
+                            itemWidth = getResources().getDisplayMetrics().widthPixels / 6 - Utilities.dp(2) * 5;
+                            listView.setColumnWidth(itemWidth);
+                        } else {
+                            orientation = 0;
+                            listView.setNumColumns(4);
+                            itemWidth = getResources().getDisplayMetrics().widthPixels / 4 - Utilities.dp(2) * 3;
+                            listView.setColumnWidth(itemWidth);
+                        }
+                        listView.setPadding(listView.getPaddingLeft(), Utilities.dp(4), listView.getPaddingRight(), listView.getPaddingBottom());
+                        listAdapter.notifyDataSetChanged();
                     }
-                    listView.setPadding(listView.getPaddingLeft(), Utilities.dp(4), listView.getPaddingRight(), listView.getPaddingBottom());
-                    listAdapter.notifyDataSetChanged();
-
-                    listView.getViewTreeObserver().removeOnPreDrawListener(this);
+                    if (listView != null) {
+                        listView.getViewTreeObserver().removeOnPreDrawListener(this);
+                    }
 
                     return false;
                 }

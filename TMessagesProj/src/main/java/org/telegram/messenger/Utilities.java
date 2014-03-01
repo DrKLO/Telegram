@@ -15,6 +15,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.graphics.Point;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Build;
@@ -27,11 +28,11 @@ import android.text.SpannableStringBuilder;
 import android.text.format.DateFormat;
 import android.util.AttributeSet;
 import android.util.Base64;
+import android.view.Display;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 
-import org.telegram.TL.TLClassStore;
-import org.telegram.TL.TLObject;
 import org.telegram.ui.ApplicationLoader;
 
 import java.io.ByteArrayInputStream;
@@ -65,6 +66,7 @@ public class Utilities {
     public static Handler applicationHandler;
     public static int statusBarHeight = 0;
     public static float density = 1;
+    public static Point displaySize = new Point();
     public static boolean isRTL = false;
     public static Pattern pattern = Pattern.compile("[0-9]+");
     private final static Integer lock = 1;
@@ -85,7 +87,8 @@ public class Utilities {
     public static DispatchQueue fileUploadQueue = new DispatchQueue("fileUploadQueue");
 
     public native static long doPQNative(long _what);
-    public native static byte[] aesIgeEncryption(byte[] _what, byte[] _key, byte[] _iv, boolean encrypt, boolean changeIv);
+    public native static byte[] aesIgeEncryption(byte[] _what, byte[] _key, byte[] _iv, boolean encrypt, boolean changeIv, int len);
+    public native static void aesIgeEncryption2(ByteBuffer _what, byte[] _key, byte[] _iv, boolean encrypt, boolean changeIv, int len);
 
     public static boolean isWaitingForSms() {
         boolean value = false;
@@ -109,6 +112,14 @@ public class Utilities {
             val = Integer.parseInt(num);
         }
         return val;
+    }
+
+    public static String parseIntToString(String value) {
+        Matcher matcher = pattern.matcher(value);
+        if (matcher.find()) {
+            return matcher.group(0);
+        }
+        return null;
     }
 
     static {
@@ -162,6 +173,10 @@ public class Utilities {
 
     public static int dp(int value) {
         return (int)(density * value);
+    }
+
+    public static int dpf(float value) {
+        return (int)Math.ceil(density * value);
     }
 
     public static boolean isGoodPrime(byte[] prime, int g) {
@@ -275,6 +290,23 @@ public class Utilities {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
             md.update(convertme, offset, len);
+            return md.digest();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return null;
+    }
+
+    public static byte[] computeSHA1(ByteBuffer convertme, int offset, int len) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-1");
+            int oldp = convertme.position();
+            int oldl = convertme.limit();
+            convertme.position(offset);
+            convertme.limit(len);
+            md.update(convertme);
+            convertme.position(oldp);
+            convertme.limit(oldl);
             return md.digest();
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -533,8 +565,28 @@ public class Utilities {
         }
     }
 
+    public static void checkDisplaySize() {
+        try {
+            WindowManager manager = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+            if (manager != null) {
+                Display display = manager.getDefaultDisplay();
+                if (display != null) {
+                    if(android.os.Build.VERSION.SDK_INT < 13) {
+                        displaySize.set(display.getWidth(), display.getHeight());
+                    } else {
+                        display.getSize(displaySize);
+                    }
+                    FileLog.e("tmessages", "display size = " + displaySize.x + " " + displaySize.y);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
     static {
         recreateFormatters();
+        Utilities.checkDisplaySize();
     }
 
     public static String formatDateChat(long date) {
@@ -678,14 +730,14 @@ public class Utilities {
     }
 
     public static int getColorForId(int id) {
-        if (id == 333000) {
+        if (id / 1000 == 333) {
             return 0xff0f94ed;
         }
         return arrColors[getColorIndex(id)];
     }
 
     public static int getUserAvatarForId(int id) {
-        if (id == 333000) {
+        if (id / 1000 == 333) {
             return R.drawable.telegram_avatar;
         }
         return arrUsersAvatars[getColorIndex(id)];
@@ -807,9 +859,12 @@ public class Utilities {
                 final int column_index = cursor.getColumnIndexOrThrow(column);
                 return cursor.getString(column_index);
             }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         } finally {
-            if (cursor != null)
+            if (cursor != null) {
                 cursor.close();
+            }
         }
         return null;
     }

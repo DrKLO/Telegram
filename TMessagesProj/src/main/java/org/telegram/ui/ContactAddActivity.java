@@ -24,7 +24,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.TL.TLRPC;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.MessagesController;
@@ -131,17 +131,13 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
             onlineText.setText(getStringEntry(R.string.Offline));
         } else {
             int currentTime = ConnectionsManager.Instance.getCurrentTime();
-            if (user.status.expires > currentTime || user.status.was_online > currentTime) {
+            if (user.status.expires > currentTime) {
                 onlineText.setText(getStringEntry(R.string.Online));
             } else {
-                if (user.status.was_online <= 10000 && user.status.expires <= 10000) {
+                if (user.status.expires <= 10000) {
                     onlineText.setText(getStringEntry(R.string.Invisible));
                 } else {
-                    int value = user.status.was_online;
-                    if (value == 0) {
-                        value = user.status.expires;
-                    }
-                    onlineText.setText(Utilities.formatDateOnline(value));
+                    onlineText.setText(Utilities.formatDateOnline(user.status.expires));
                 }
             }
         }

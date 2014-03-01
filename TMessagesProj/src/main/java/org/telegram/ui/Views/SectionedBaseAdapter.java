@@ -13,7 +13,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 
-public abstract class SectionedBaseAdapter extends BaseAdapter implements PinnedHeaderListView.PinnedSectionedHeaderAdapter {
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
+
+public abstract class SectionedBaseAdapter extends BaseFragmentAdapter implements PinnedHeaderListView.PinnedSectionedHeaderAdapter {
 
     /**
      * Holds the calculated values of @{link getPositionInSectionForPosition}

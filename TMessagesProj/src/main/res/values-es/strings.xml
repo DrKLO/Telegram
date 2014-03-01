@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!--Translation by Borja Campina, Edited by Victor Espinoza-->
+<!--Translation by Borja Campina, Edited by Victor Espinoza and Francisco Vila-->
 
 <resources>
     <string name="AppName">Telegram</string>
@@ -95,7 +95,7 @@
     <string name="AddToContacts">AÑADIR A CONTACTOS</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s te ha invitado a un chat secreto.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">Has invitado a %s a un chat secreto.</string>
-    <string name="EncryptedDescriptionTitle">Los Chats Secretos:</string>
+    <string name="EncryptedDescriptionTitle">Los chats secretos:</string>
     <string name="EncryptedDescription1">Usan cifrado de móvil-a-móvil</string>
     <string name="EncryptedDescription2">No dejan rastro en nuestros servidores</string>
     <string name="EncryptedDescription3">Tienen autodestrucción de mensajes</string>
@@ -105,6 +105,7 @@
     <string name="YouWereKicked">Has sido expulsado de este grupo</string>
     <string name="YouLeft">Has abandonado este grupo</string>
     <string name="DeleteThisGroup">Eliminar este grupo</string>
+    <string name="SlideToCancel">DESLIZA PARA CANCELAR</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Chat secreto solicitado</string>
@@ -150,7 +151,7 @@
     <!--contacts view-->
     <string name="SelectContact">Seleccionar contacto</string>
     <string name="NoContacts">No hay contactos aún</string>
-    <string name="InviteText">Hey, cambiémonos a Telegram: http://telegram.org/dl2</string>
+    <string name="InviteText">Oye, cambiémonos a Telegram: http://telegram.org/dl2</string>
     <string name="TodayAt">hoy a las</string>
     <string name="YesterdayAt">ayer a las</string>
     <string name="OtherAt">a las</string>
@@ -291,7 +292,7 @@
     <!--messages-->
     <string name="ActionKickUser">un1 expulsó a un2</string>
     <string name="ActionLeftUser">un1 dejó el grupo</string>
-    <string name="ActionAddUser">un1 agregó a un2</string>
+    <string name="ActionAddUser">un1 añadió a un2</string>
     <string name="ActionRemovedPhoto">un1 eliminó la foto del grupo</string>
     <string name="ActionChangedPhoto">un1 cambió la foto del grupo</string>
     <string name="ActionChangedTitle">un1 cambió el nombre del grupo a un2</string>

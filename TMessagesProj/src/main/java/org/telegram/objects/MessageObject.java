@@ -9,9 +9,16 @@
 package org.telegram.objects;
 
 import android.graphics.Bitmap;
+import android.graphics.Paint;
+import android.text.Layout;
+import android.text.Spannable;
+import android.text.StaticLayout;
+import android.text.TextPaint;
+import android.text.util.Linkify;
 
-import org.telegram.TL.TLObject;
-import org.telegram.TL.TLRPC;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.TLObject;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -33,9 +40,33 @@ public class MessageObject {
     public PhotoObject previewPhoto;
     public String dateKey;
     public boolean deleted = false;
-    public Object TAG;
+    public float audioProgress;
+    public int audioProgressSec;
+
+    private static TextPaint textPaint;
+    public int lastLineWidth;
+    public int textWidth;
+    public int textHeight;
+    public int blockHeight = Integer.MAX_VALUE;
+
+    public static class TextLayoutBlock {
+        public StaticLayout textLayout;
+        public float textXOffset = 0;
+        public float textYOffset = 0;
+        public int charactersOffset = 0;
+    }
+
+    private static final int LINES_PER_BLOCK = 10;
+
+    public ArrayList<TextLayoutBlock> textLayoutBlocks;
 
     public MessageObject(TLRPC.Message message, AbstractMap<Integer, TLRPC.User> users) {
+        if (textPaint == null) {
+            textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            textPaint.setColor(0xff000000);
+            textPaint.linkColor = 0xff316f9f;
+        }
+
         messageOwner = message;
 
         if (message instanceof TLRPC.TL_messageService) {
@@ -222,7 +253,6 @@ public class MessageObject {
         }
         messageText = Emoji.replaceEmoji(messageText);
 
-
         if (message instanceof TLRPC.TL_message || (message instanceof TLRPC.TL_messageForwarded && (message.media == null || !(message.media instanceof TLRPC.TL_messageMediaEmpty)))) {
             if (message.media == null || message.media instanceof TLRPC.TL_messageMediaEmpty) {
                 if (message.from_id == UserConfig.clientUserId) {
@@ -268,9 +298,9 @@ public class MessageObject {
                 }
             } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaAudio) {
                 if (message.from_id == UserConfig.clientUserId) {
-                    type = 0;
+                    type = 18;
                 } else {
-                    type = 1;
+                    type = 19;
                 }
             }
         } else if (message instanceof TLRPC.TL_messageService) {
@@ -295,6 +325,8 @@ public class MessageObject {
         int dateYear = rightNow.get(Calendar.YEAR);
         int dateMonth = rightNow.get(Calendar.MONTH);
         dateKey = String.format("%d_%02d_%02d", dateYear, dateMonth, dateDay);
+
+        generateLayout();
     }
 
     public String getFileName() {
@@ -334,5 +366,123 @@ public class MessageObject {
             return audio.dc_id + "_" + audio.id + ".m4a";
         }
         return "";
+    }
+
+    private void generateLayout() {
+        if (type != 0 && type != 1 && type != 8 && type != 9 || messageOwner.to_id == null || messageText == null || messageText.length() == 0 || !(messageOwner.media instanceof TLRPC.TL_messageMediaEmpty) && !(messageOwner.media instanceof TLRPC.TL_messageMediaUnsupported) && !(messageOwner.media == null)) {
+            return;
+        }
+
+        textLayoutBlocks = new ArrayList<TextLayoutBlock>();
+
+        if (messageText instanceof Spannable) {
+            if (messageOwner.message != null && messageOwner.message.contains(".")) {
+                Linkify.addLinks((Spannable)messageText, Linkify.WEB_URLS);
+            } else if (messageText.length() < 400) {
+                Linkify.addLinks((Spannable)messageText, Linkify.WEB_URLS | Linkify.EMAIL_ADDRESSES | Linkify.PHONE_NUMBERS);
+            }
+        }
+
+        textPaint.setTextSize(Utilities.dp(MessagesController.Instance.fontSize));
+
+        int maxWidth;
+        if (messageOwner.to_id.chat_id != 0) {
+            maxWidth = Math.min(Utilities.displaySize.x, Utilities.displaySize.y) - Utilities.dp(122);
+        } else {
+            maxWidth = Math.min(Utilities.displaySize.x, Utilities.displaySize.y) - Utilities.dp(80);
+        }
+
+        StaticLayout textLayout = new StaticLayout(messageText, textPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+        textHeight = textLayout.getHeight();
+        int linesCount = textLayout.getLineCount();
+
+        int blocksCount = (int)Math.ceil((float)linesCount / LINES_PER_BLOCK);
+        int linesOffset = 0;
+
+        for (int a = 0; a < blocksCount; a++) {
+
+            int currentBlockLinesCount = Math.min(LINES_PER_BLOCK, linesCount - linesOffset);
+            TextLayoutBlock block = new TextLayoutBlock();
+
+            if (blocksCount == 1) {
+                block.textLayout = textLayout;
+                block.textYOffset = 0;
+                block.charactersOffset = 0;
+                blockHeight = textHeight;
+            } else {
+                int startCharacter = textLayout.getLineStart(linesOffset);
+                int endCharacter = textLayout.getLineEnd(linesOffset + currentBlockLinesCount - 1);
+                if (endCharacter < startCharacter) {
+                    continue;
+                }
+                block.charactersOffset = startCharacter;
+                CharSequence str = messageText.subSequence(startCharacter, endCharacter);
+                block.textLayout = new StaticLayout(str, textPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                block.textYOffset = textLayout.getLineTop(linesOffset);
+                if (a != blocksCount - 1) {
+                    blockHeight = Math.min(blockHeight, block.textLayout.getHeight());
+                }
+            }
+
+            textLayoutBlocks.add(block);
+
+            float lastLeft = block.textXOffset = block.textLayout.getLineLeft(currentBlockLinesCount - 1);
+            float lastLine = block.textLayout.getLineWidth(currentBlockLinesCount - 1);
+            int linesMaxWidth;
+            int lastLineWidthWithLeft;
+            int linesMaxWidthWithLeft;
+            boolean hasNonRTL = false;
+
+            linesMaxWidth = (int)Math.ceil(lastLine);
+
+            if (a == blocksCount - 1) {
+                lastLineWidth = linesMaxWidth;
+            }
+
+            linesMaxWidthWithLeft = lastLineWidthWithLeft = (int)Math.ceil(lastLine + lastLeft);
+            if (lastLeft == 0) {
+                hasNonRTL = true;
+            }
+
+            if (currentBlockLinesCount > 1) {
+                float textRealMaxWidth = 0, textRealMaxWidthWithLeft = 0, lineWidth, lineLeft;
+                for (int n = 0; n < currentBlockLinesCount; ++n) {
+                    try {
+                        lineWidth = block.textLayout.getLineWidth(n);
+                        lineLeft = block.textLayout.getLineLeft(n);
+                        block.textXOffset = Math.min(block.textXOffset, lineLeft);
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                        return;
+                    }
+
+                    if (lineLeft == 0) {
+                        hasNonRTL = true;
+                    }
+                    textRealMaxWidth = Math.max(textRealMaxWidth, lineWidth);
+                    textRealMaxWidthWithLeft = Math.max(textRealMaxWidthWithLeft, lineWidth + lineLeft);
+                    linesMaxWidth = Math.max(linesMaxWidth, (int)Math.ceil(lineWidth));
+                    linesMaxWidthWithLeft = Math.max(linesMaxWidthWithLeft, (int)Math.ceil(lineWidth + lineLeft));
+                }
+                if (hasNonRTL) {
+                    textRealMaxWidth = textRealMaxWidthWithLeft;
+                    if (a == blocksCount - 1) {
+                        lastLineWidth = lastLineWidthWithLeft;
+                    }
+                    linesMaxWidth = linesMaxWidthWithLeft;
+                } else if (a == blocksCount - 1) {
+                    lastLineWidth = linesMaxWidth;
+                }
+                textWidth = Math.max(textWidth, (int)Math.ceil(textRealMaxWidth));
+            } else {
+                textWidth = Math.max(textWidth, Math.min(maxWidth, linesMaxWidth));
+            }
+
+            if (hasNonRTL) {
+                block.textXOffset = 0;
+            }
+
+            linesOffset += currentBlockLinesCount;
+        }
     }
 }

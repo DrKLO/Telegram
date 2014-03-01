@@ -143,19 +143,6 @@
             android:src="@drawable/send_button_states"
             android:background="@android:color/transparent"/>
 
-        <ImageButton
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginTop="2dp"
-            android:scaleType="centerInside"
-            android:id="@+id/chat_audio_send_button"
-            android:layout_alignParentRight="true"
-            android:layout_alignBottom="@+id/chat_text_edit"
-            android:enabled="false"
-            android:src="@drawable/mic_button_states"
-            android:paddingRight="4dp"
-            android:background="@android:color/transparent"/>
-
         <EditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -176,6 +163,81 @@
             android:maxLength="16384"
             android:textCursorDrawable="@null"
             android:textColor="#000000"/>
+
+        <org.telegram.ui.Views.FrameLayoutFixed
+            android:layout_height="48dp"
+            android:layout_width="fill_parent"
+            android:layout_marginTop="2dp"
+            android:layout_marginRight="48dp"
+            android:background="#ffffff"
+            android:id="@+id/record_panel"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginLeft="13dp"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"
+                    android:src="@drawable/rec"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginTop="1dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/recording_time_text"
+                    android:text="00:00"
+                    android:textColor="#4d4c4b"
+                    android:textSize="20dp"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginLeft="6dp"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginLeft="43dp"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"
+                    android:src="@drawable/slidearrow"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginTop="1dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/SlideToCancel"
+                    android:textColor="#999999"
+                    android:textSize="15dp"
+                    android:layout_marginLeft="6dp"
+                    android:layout_gravity="center_vertical"/>
+
+            </LinearLayout>
+
+        </org.telegram.ui.Views.FrameLayoutFixed>
+
+        <ImageButton
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="2dp"
+            android:scaleType="centerInside"
+            android:id="@+id/chat_audio_send_button"
+            android:layout_alignParentRight="true"
+            android:layout_alignBottom="@+id/chat_text_edit"
+            android:enabled="false"
+            android:src="@drawable/mic_button_states"
+            android:paddingRight="4dp"
+            android:background="@android:color/white"/>
 
     </RelativeLayout>
 

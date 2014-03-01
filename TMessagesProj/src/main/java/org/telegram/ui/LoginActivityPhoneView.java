@@ -26,8 +26,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.TL.TLObject;
-import org.telegram.TL.TLRPC;
+import org.telegram.messenger.TLObject;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
@@ -327,6 +327,7 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
                 if (error == null) {
                     final TLRPC.TL_auth_sentCode res = (TLRPC.TL_auth_sentCode)response;
                     params.putString("phoneHash", res.phone_code_hash);
+                    params.putInt("calltime", res.send_call_timeout * 1000);
                     if (res.phone_registered) {
                         params.putString("registered", "true");
                     }

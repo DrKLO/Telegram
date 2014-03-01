@@ -32,9 +32,6 @@ import android.support.v7.app.ActionBarActivity;
 import android.text.Html;
 import android.util.SparseArray;
 
-import org.telegram.TL.TLClassStore;
-import org.telegram.TL.TLObject;
-import org.telegram.TL.TLRPC;
 import org.telegram.objects.MessageObject;
 import org.telegram.objects.PhotoObject;
 import org.telegram.ui.ApplicationLoader;
@@ -63,7 +60,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     public ConcurrentHashMap<Long, ArrayList<PrintingUser>> printingUsers = new ConcurrentHashMap<Long, ArrayList<PrintingUser>>(100, 1.0f, 2);
     public HashMap<Long, CharSequence> printingStrings = new HashMap<Long, CharSequence>();
 
-    private HashMap<String, DelayedMessage> delayedMessages = new HashMap<String, DelayedMessage>();
+    private HashMap<String, ArrayList<DelayedMessage>> delayedMessages = new HashMap<String, ArrayList<DelayedMessage>>();
     public SparseArray<MessageObject> sendingMessages = new SparseArray<MessageObject>();
     public SparseArray<TLRPC.User> hidenAddToContacts = new SparseArray<TLRPC.User>();
     private SparseArray<TLRPC.EncryptedChat> acceptingChats = new SparseArray<TLRPC.EncryptedChat>();
@@ -85,12 +82,15 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     public boolean registeringForPush = false;
     private long lastSoundPlay = 0;
     private long lastStatusUpdateTime = 0;
-    private boolean offlineSended = false;
+    private long statusRequest = 0;
+    private int statusSettingState = 0;
+    private boolean offlineSent = false;
     private String uploadingAvatar = null;
     private SoundPool soundPool;
     private int sound;
     public static SecureRandom random = new SecureRandom();
     public boolean enableJoined = true;
+    public int fontSize = Utilities.dp(16);
     public long scheduleContactsReload = 0;
 
     private class UserActionUpdates extends TLRPC.Updates {
@@ -183,6 +183,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         addSupportUser();
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
         enableJoined = preferences.getBoolean("EnableContactJoined", true);
+        preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        fontSize = preferences.getInt("fons_size", 16);
 
         try {
             soundPool = new SoundPool(1, AudioManager.STREAM_NOTIFICATION, 0);
@@ -226,7 +228,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         if (id == FileLoader.FileDidUpload) {
             fileDidUploaded((String)args[0], (TLRPC.InputFile)args[1], (TLRPC.InputEncryptedFile)args[2]);
         } else if (id == FileLoader.FileDidFailUpload) {
-            fileDidFailedUpload((String) args[0]);
+            fileDidFailedUpload((String) args[0], (Boolean) args[1]);
         } else if (id == messageReceivedByServer) {
             Integer msgId = (Integer)args[0];
             MessageObject obj = dialogMessage.get(msgId);
@@ -268,6 +270,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
     public void cleanUp() {
         ContactsController.Instance.cleanup();
+        MediaController.Instance.cleanup();
 
         dialogs_dict.clear();
         dialogs.clear();
@@ -297,9 +300,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         firstGettingTask = false;
         updatingState = false;
         lastStatusUpdateTime = 0;
-        offlineSended = false;
+        offlineSent = false;
         registeringForPush = false;
         uploadingAvatar = null;
+        statusRequest = 0;
+        statusSettingState = 0;
         addSupportUser();
     }
 
@@ -737,32 +742,56 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
         if (UserConfig.clientUserId != 0) {
             if (scheduleContactsReload != 0 && currentTime > scheduleContactsReload) {
-                ContactsController.Instance.performSyncPhoneBook(ContactsController.Instance.getContactsCopy(ContactsController.Instance.contactsBook), true, false);
+                ContactsController.Instance.performSyncPhoneBook(ContactsController.Instance.getContactsCopy(ContactsController.Instance.contactsBook), true, false, true);
                 scheduleContactsReload = 0;
             }
 
             if (ApplicationLoader.lastPauseTime == 0) {
-                if (lastStatusUpdateTime != -1 && (lastStatusUpdateTime == 0 || lastStatusUpdateTime <= System.currentTimeMillis() - 55000 || offlineSended)) {
-                    lastStatusUpdateTime = -1;
+                if (statusSettingState != 1 && (lastStatusUpdateTime == 0 || lastStatusUpdateTime <= System.currentTimeMillis() - 55000 || offlineSent)) {
+                    statusSettingState = 1;
+
+                    if (statusRequest != 0) {
+                        ConnectionsManager.Instance.cancelRpc(statusRequest, true);
+                    }
+
                     TLRPC.TL_account_updateStatus req = new TLRPC.TL_account_updateStatus();
                     req.offline = false;
-                    ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                    statusRequest = ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
                         @Override
                         public void run(TLObject response, TLRPC.TL_error error) {
-                            lastStatusUpdateTime = System.currentTimeMillis();
+                            if (error == null) {
+                                lastStatusUpdateTime = System.currentTimeMillis();
+                                offlineSent = false;
+                                statusSettingState = 0;
+                            } else {
+                                if (lastStatusUpdateTime != 0) {
+                                    lastStatusUpdateTime += 5000;
+                                }
+                            }
+                            statusRequest = 0;
                         }
                     }, null, true, RPCRequest.RPCRequestClassGeneric);
-                    offlineSended = false;
                 }
-            } else if (!offlineSended && ApplicationLoader.lastPauseTime <= System.currentTimeMillis() - 2000) {
+            } else if (statusSettingState != 2 && !offlineSent && ApplicationLoader.lastPauseTime <= System.currentTimeMillis() - 2000) {
+                statusSettingState = 2;
+                if (statusRequest != 0) {
+                    ConnectionsManager.Instance.cancelRpc(statusRequest, true);
+                }
                 TLRPC.TL_account_updateStatus req = new TLRPC.TL_account_updateStatus();
                 req.offline = true;
-                ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                statusRequest = ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
                     @Override
                     public void run(TLObject response, TLRPC.TL_error error) {
+                        if (error == null) {
+                            offlineSent = true;
+                        } else {
+                            if (lastStatusUpdateTime != 0) {
+                                lastStatusUpdateTime += 5000;
+                            }
+                        }
+                        statusRequest = 0;
                     }
                 }, null, true, RPCRequest.RPCRequestClassGeneric);
-                offlineSended = true;
             }
 
             if (updatesStartWaitTime != 0 && updatesStartWaitTime + 1500 < currentTime) {
@@ -972,7 +1001,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     public void run() {
                         for (TLRPC.User u : messagesRes.users) {
                             if (isCache) {
-                                if (u.id == UserConfig.clientUserId || u.id == 333000) {
+                                if (u.id == UserConfig.clientUserId || u.id / 1000 == 333) {
                                     users.put(u.id, u);
                                 } else {
                                     users.putIfAbsent(u.id, u);
@@ -1020,6 +1049,21 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
             }, null, true, RPCRequest.RPCRequestClassGeneric);
         }
+    }
+
+    public void processDialogsUpdateRead(final HashMap<Long, Integer>dialogsToUpdate) {
+        Utilities.RunOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                for (HashMap.Entry<Long, Integer> entry : dialogsToUpdate.entrySet()) {
+                    TLRPC.TL_dialog currentDialog = dialogs_dict.get(entry.getKey());
+                    if (currentDialog != null) {
+                        currentDialog.unread_count = entry.getValue();
+                    }
+                }
+                NotificationCenter.Instance.postNotificationName(dialogsNeedReload);
+            }
+        });
     }
 
     public void processDialogsUpdate(final TLRPC.messages_Dialogs dialogsRes, ArrayList<TLRPC.EncryptedChat> encChats) {
@@ -1130,7 +1174,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         public void run() {
                             for (TLRPC.User u : dialogsRes.users) {
                                 if (isCache) {
-                                    if (u.id == UserConfig.clientUserId || u.id == 333000) {
+                                    if (u.id == UserConfig.clientUserId || u.id / 1000 == 333) {
                                         users.put(u.id, u);
                                     } else {
                                         users.putIfAbsent(u.id, u);
@@ -1198,7 +1242,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     public void run() {
                         for (TLRPC.User u : dialogsRes.users) {
                             if (isCache) {
-                                if (u.id == UserConfig.clientUserId || u.id == 333000) {
+                                if (u.id == UserConfig.clientUserId || u.id / 1000 == 333) {
                                     users.put(u.id, u);
                                 } else {
                                     users.putIfAbsent(u.id, u);
@@ -1454,18 +1498,29 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
     public void cancelSendingMessage(MessageObject object) {
         String keyToRemvoe = null;
-        for (HashMap.Entry<String, DelayedMessage> entry : delayedMessages.entrySet()) {
-            if (entry.getValue().obj.messageOwner.id == object.messageOwner.id) {
-                keyToRemvoe = entry.getKey();
-                break;
+        boolean enc = false;
+        for (HashMap.Entry<String, ArrayList<DelayedMessage>> entry : delayedMessages.entrySet()) {
+            ArrayList<DelayedMessage> messages = entry.getValue();
+            for (int a = 0; a < messages.size(); a++) {
+                DelayedMessage message = messages.get(a);
+                if (message.obj.messageOwner.id == object.messageOwner.id) {
+                    messages.remove(a);
+                    if (messages.size() == 0) {
+                        keyToRemvoe = entry.getKey();
+                        if (message.sendEncryptedRequest != null) {
+                            enc = true;
+                        }
+                    }
+                    break;
+                }
             }
         }
         if (keyToRemvoe != null) {
-            ArrayList<Integer> messages = new ArrayList<Integer>();
-            messages.add(object.messageOwner.id);
-            FileLoader.Instance.cancelUploadFile(keyToRemvoe);
-            deleteMessages(messages);
+            FileLoader.Instance.cancelUploadFile(keyToRemvoe, enc);
         }
+        ArrayList<Integer> messages = new ArrayList<Integer>();
+        messages.add(object.messageOwner.id);
+        deleteMessages(messages);
     }
 
     private long getNextRandomId() {
@@ -1592,6 +1647,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 newMsg.media = msgObj.messageOwner.media;
                 newMsg.message = msgObj.messageOwner.message;
                 newMsg.fwd_msg_id = msgObj.messageOwner.id;
+                newMsg.attachPath = msgObj.messageOwner.attachPath;
                 type = 4;
             } else if (msgObj.type == 11) {
                 newMsg.fwd_from_id = msgObj.messageOwner.from_id;
@@ -1607,6 +1663,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 newMsg.media = msgObj.messageOwner.media;
                 newMsg.message = msgObj.messageOwner.message;
                 newMsg.fwd_msg_id = msgObj.messageOwner.id;
+                newMsg.attachPath = msgObj.messageOwner.attachPath;
                 type = 4;
             }
         } else if (location != null) {
@@ -1889,7 +1946,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
     }
 
-    private void processSendedMessage(TLRPC.Message newMsg, TLRPC.Message sentMessage, TLRPC.EncryptedFile file, TLRPC.DecryptedMessage decryptedMessage) {
+    private void processSentMessage(TLRPC.Message newMsg, TLRPC.Message sentMessage, TLRPC.EncryptedFile file, TLRPC.DecryptedMessage decryptedMessage) {
         if (sentMessage != null) {
             if (sentMessage.media instanceof TLRPC.TL_messageMediaPhoto && sentMessage.media.photo != null && newMsg.media instanceof TLRPC.TL_messageMediaPhoto && newMsg.media.photo != null) {
                 for (TLRPC.PhotoSize size : sentMessage.media.photo.sizes) {
@@ -1946,8 +2003,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 File cacheFile = new File(Utilities.getCacheDir(), fileName);
                 File cacheFile2 = new File(Utilities.getCacheDir(), fileName2);
                 cacheFile.renameTo(cacheFile2);
-                sentMessage.media.audio.dc_id = newMsg.media.audio.dc_id;
-                sentMessage.media.audio.id = newMsg.media.audio.id;
+                newMsg.media.audio.dc_id = sentMessage.media.audio.dc_id;
+                newMsg.media.audio.id = sentMessage.media.audio.id;
             }
         } else if (file != null) {
             if (newMsg.media instanceof TLRPC.TL_messageMediaPhoto && newMsg.media.photo != null) {
@@ -2067,7 +2124,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             dataForEncryption.writeByte(b[0]);
         }
 
-        byte[] encryptedData = Utilities.aesIgeEncryption(dataForEncryption.toByteArray(), keyData.aesKey, keyData.aesIv, true, false);
+        byte[] encryptedData = Utilities.aesIgeEncryption(dataForEncryption.toByteArray(), keyData.aesKey, keyData.aesIv, true, false, 0);
 
         data = new SerializedData();
         data.writeInt64(chat.key_fingerprint);
@@ -2101,7 +2158,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     TLRPC.messages_SentEncryptedMessage res = (TLRPC.messages_SentEncryptedMessage)response;
                     newMsgObj.messageOwner.date = res.date;
                     if (res.file instanceof TLRPC.TL_encryptedFile) {
-                        processSendedMessage(newMsgObj.messageOwner, null, res.file, req);
+                        processSentMessage(newMsgObj.messageOwner, null, res.file, req);
                     }
                     MessagesStorage.Instance.updateMessageStateAndId(newMsgObj.messageOwner.random_id, newMsgObj.messageOwner.id, newMsgObj.messageOwner.id, res.date, true);
                     Utilities.RunOnUIThread(new Runnable() {
@@ -2132,7 +2189,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             public void run(TLObject response, TLRPC.TL_error error) {
                 if (error == null) {
                     final int oldId = newMsgObj.messageOwner.id;
-                    ArrayList<TLRPC.Message> sendedMessages = new ArrayList<TLRPC.Message>();
+                    ArrayList<TLRPC.Message> sentMessages = new ArrayList<TLRPC.Message>();
 
                     if (response instanceof TLRPC.TL_messages_sentMessage) {
                         TLRPC.TL_messages_sentMessage res = (TLRPC.TL_messages_sentMessage)response;
@@ -2158,9 +2215,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         }
                     } else if (response instanceof TLRPC.messages_StatedMessage) {
                         TLRPC.messages_StatedMessage res = (TLRPC.messages_StatedMessage)response;
-                        sendedMessages.add(res.message);
+                        sentMessages.add(res.message);
                         newMsgObj.messageOwner.id = res.message.id;
-                        processSendedMessage(newMsgObj.messageOwner, res.message, null, null);
+                        processSentMessage(newMsgObj.messageOwner, res.message, null, null);
                         if(MessagesStorage.lastSeqValue + 1 == res.seq) {
                             MessagesStorage.lastSeqValue = res.seq;
                             MessagesStorage.lastPtsValue = res.pts;
@@ -2185,8 +2242,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         if (!res.messages.isEmpty()) {
                             TLRPC.Message message = res.messages.get(0);
                             newMsgObj.messageOwner.id = message.id;
-                            sendedMessages.add(message);
-                            processSendedMessage(newMsgObj.messageOwner, message, null, null);
+                            sentMessages.add(message);
+                            processSentMessage(newMsgObj.messageOwner, message, null, null);
                         }
                         if (MessagesStorage.lastSeqValue + 1 == res.seq) {
                             MessagesStorage.lastSeqValue = res.seq;
@@ -2208,8 +2265,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         }
                     }
                     MessagesStorage.Instance.updateMessageStateAndId(newMsgObj.messageOwner.random_id, oldId, newMsgObj.messageOwner.id, 0, true);
-                    if (!sendedMessages.isEmpty()) {
-                        MessagesStorage.Instance.putMessages(sendedMessages, true, true);
+                    if (!sentMessages.isEmpty()) {
+                        MessagesStorage.Instance.putMessages(sentMessages, true, true);
                     }
                     Utilities.RunOnUIThread(new Runnable() {
                         @Override
@@ -2245,74 +2302,87 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }), true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassCanCompress, ConnectionsManager.DEFAULT_DATACENTER_ID);
     }
 
-    private void performSendDelayedMessage(final DelayedMessage message) {
-        Utilities.stageQueue.postRunnable(new Runnable() {
-            @Override
-            public void run() {
-                if (message.type == 0) {
-                    String location = Utilities.getCacheDir() + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
-                    delayedMessages.put(location, message);
-                    if (message.sendRequest != null) {
-                        FileLoader.Instance.uploadFile(location, null, null);
-                    } else {
-                        FileLoader.Instance.uploadFile(location, message.sendEncryptedRequest.media.key, message.sendEncryptedRequest.media.iv);
-                    }
-                } else if (message.type == 1) {
-                    if (message.sendRequest != null) {
-                        if (message.sendRequest.media.thumb == null) {
-                            String location = Utilities.getCacheDir() + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
-                            delayedMessages.put(location, message);
-                            FileLoader.Instance.uploadFile(location, null, null);
-                        } else {
-                            String location = message.videoLocation.path;
-                            if (location == null) {
-                                location = Utilities.getCacheDir() + "/" + message.videoLocation.id + ".mp4";
-                            }
-                            delayedMessages.put(location, message);
-                            FileLoader.Instance.uploadFile(location, null, null);
-                        }
-                    } else {
-                        String location = message.videoLocation.path;
-                        if (location == null) {
-                            location = Utilities.getCacheDir() + "/" + message.videoLocation.id + ".mp4";
-                        }
-                        delayedMessages.put(location, message);
-                        FileLoader.Instance.uploadFile(location, message.sendEncryptedRequest.media.key, message.sendEncryptedRequest.media.iv);
-                    }
-                } else if (message.type == 2) {
-                    String location = message.documentLocation.path;
-                    delayedMessages.put(location, message);
-                    if (message.sendRequest != null) {
-                        FileLoader.Instance.uploadFile(location, null, null);
-                    } else {
-                        FileLoader.Instance.uploadFile(location, message.sendEncryptedRequest.media.key, message.sendEncryptedRequest.media.iv);
-                    }
-                } else if (message.type == 3) {
-                    String location = message.audioLocation.path;
-                    delayedMessages.put(location, message);
-                    if (message.sendRequest != null) {
-                        FileLoader.Instance.uploadFile(location, null, null);
-                    } else {
-                        FileLoader.Instance.uploadFile(location, message.sendEncryptedRequest.media.key, message.sendEncryptedRequest.media.iv);
-                    }
-                }
-            }
-        });
+    private void putToDelayedMessages(String location, DelayedMessage message) {
+        ArrayList<DelayedMessage> arrayList = delayedMessages.get(location);
+        if (arrayList == null) {
+            arrayList = new ArrayList<DelayedMessage>();
+            delayedMessages.put(location, arrayList);
+        }
+        arrayList.add(message);
     }
 
-    public void fileDidFailedUpload(final String location) {
+    private void performSendDelayedMessage(final DelayedMessage message) {
+        if (message.type == 0) {
+            String location = Utilities.getCacheDir() + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
+            putToDelayedMessages(location, message);
+            if (message.sendRequest != null) {
+                FileLoader.Instance.uploadFile(location, null, null);
+            } else {
+                FileLoader.Instance.uploadFile(location, message.sendEncryptedRequest.media.key, message.sendEncryptedRequest.media.iv);
+            }
+        } else if (message.type == 1) {
+            if (message.sendRequest != null) {
+                if (message.sendRequest.media.thumb == null) {
+                    String location = Utilities.getCacheDir() + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
+                    putToDelayedMessages(location, message);
+                    FileLoader.Instance.uploadFile(location, null, null);
+                } else {
+                    String location = message.videoLocation.path;
+                    if (location == null) {
+                        location = Utilities.getCacheDir() + "/" + message.videoLocation.id + ".mp4";
+                    }
+                    putToDelayedMessages(location, message);
+                    FileLoader.Instance.uploadFile(location, null, null);
+                }
+            } else {
+                String location = message.videoLocation.path;
+                if (location == null) {
+                    location = Utilities.getCacheDir() + "/" + message.videoLocation.id + ".mp4";
+                }
+                putToDelayedMessages(location, message);
+                FileLoader.Instance.uploadFile(location, message.sendEncryptedRequest.media.key, message.sendEncryptedRequest.media.iv);
+            }
+        } else if (message.type == 2) {
+            String location = message.documentLocation.path;
+            putToDelayedMessages(location, message);
+            if (message.sendRequest != null) {
+                FileLoader.Instance.uploadFile(location, null, null);
+            } else {
+                FileLoader.Instance.uploadFile(location, message.sendEncryptedRequest.media.key, message.sendEncryptedRequest.media.iv);
+            }
+        } else if (message.type == 3) {
+            String location = message.audioLocation.path;
+            putToDelayedMessages(location, message);
+            if (message.sendRequest != null) {
+                FileLoader.Instance.uploadFile(location, null, null);
+            } else {
+                FileLoader.Instance.uploadFile(location, message.sendEncryptedRequest.media.key, message.sendEncryptedRequest.media.iv);
+            }
+        }
+    }
+
+    public void fileDidFailedUpload(final String location, final boolean enc) {
         if (uploadingAvatar != null && uploadingAvatar.equals(location)) {
             uploadingAvatar = null;
         } else {
             Utilities.RunOnUIThread(new Runnable() {
                 @Override
                 public void run() {
-                    DelayedMessage obj = delayedMessages.get(location);
-                    if (obj != null) {
-                        obj.obj.messageOwner.send_state = MESSAGE_SEND_STATE_SEND_ERROR;
-                        sendingMessages.remove(obj.obj.messageOwner.id);
-                        NotificationCenter.Instance.postNotificationName(messageSendError, obj.obj.messageOwner.id);
-                        delayedMessages.remove(location);
+                    ArrayList<DelayedMessage> arr = delayedMessages.get(location);
+                    if (arr != null) {
+                        for (int a = 0; a < arr.size(); a++) {
+                            DelayedMessage obj = arr.get(a);
+                            if (enc && obj.sendEncryptedRequest != null || !enc && obj.sendRequest != null) {
+                                obj.obj.messageOwner.send_state = MESSAGE_SEND_STATE_SEND_ERROR;
+                                sendingMessages.remove(obj.obj.messageOwner.id);
+                                arr.remove(a);
+                                a--;
+                                NotificationCenter.Instance.postNotificationName(messageSendError, obj.obj.messageOwner.id);
+                            }
+                        }
+                        if (arr.isEmpty()) {
+                            delayedMessages.remove(location);
+                        }
                     }
                 }
             });
@@ -2372,31 +2442,40 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             Utilities.RunOnUIThread(new Runnable() {
                 @Override
                 public void run() {
-                    DelayedMessage message = delayedMessages.get(location);
-                    if (message != null) {
-                        if (file != null) {
-                            if (message.type == 0) {
-                                message.sendRequest.media.file = file;
-                                performSendMessageRequest(message.sendRequest, message.obj);
-                            } else if (message.type == 1) {
-                                if (message.sendRequest.media.thumb == null) {
-                                    message.sendRequest.media.thumb = file;
-                                    performSendDelayedMessage(message);
-                                } else {
+                    ArrayList<DelayedMessage> arr = delayedMessages.get(location);
+                    if (arr != null) {
+                        for (int a = 0; a < arr.size(); a++) {
+                            DelayedMessage message = arr.get(a);
+                            if (file != null && message.sendRequest != null) {
+                                if (message.type == 0) {
+                                    message.sendRequest.media.file = file;
+                                    performSendMessageRequest(message.sendRequest, message.obj);
+                                } else if (message.type == 1) {
+                                    if (message.sendRequest.media.thumb == null) {
+                                        message.sendRequest.media.thumb = file;
+                                        performSendDelayedMessage(message);
+                                    } else {
+                                        message.sendRequest.media.file = file;
+                                        performSendMessageRequest(message.sendRequest, message.obj);
+                                    }
+                                } else if (message.type == 2) {
+                                    message.sendRequest.media.file = file;
+                                    performSendMessageRequest(message.sendRequest, message.obj);
+                                } else if (message.type == 3) {
                                     message.sendRequest.media.file = file;
                                     performSendMessageRequest(message.sendRequest, message.obj);
                                 }
-                            } else if (message.type == 2) {
-                                message.sendRequest.media.file = file;
-                                performSendMessageRequest(message.sendRequest, message.obj);
-                            } else if (message.type == 3) {
-                                message.sendRequest.media.file = file;
-                                performSendMessageRequest(message.sendRequest, message.obj);
+                                arr.remove(a);
+                                a--;
+                            } else if (encryptedFile != null && message.sendEncryptedRequest != null) {
+                                performSendEncryptedRequest(message.sendEncryptedRequest, message.obj, message.encryptedChat, encryptedFile);
+                                arr.remove(a);
+                                a--;
                             }
-                        } else if (encryptedFile != null) {
-                            performSendEncryptedRequest(message.sendEncryptedRequest, message.obj, message.encryptedChat, encryptedFile);
                         }
-                        delayedMessages.remove(location);
+                        if (arr.isEmpty()) {
+                            delayedMessages.remove(location);
+                        }
                     }
                 }
             });
@@ -2768,21 +2847,20 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     public void unregistedPush() {
+        if (UserConfig.registeredForPush && UserConfig.pushString.length() == 0) {
+            TLRPC.TL_account_unregisterDevice req = new TLRPC.TL_account_unregisterDevice();
+            req.token = UserConfig.pushString;
+            req.token_type = 2;
+            ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                @Override
+                public void run(TLObject response, TLRPC.TL_error error) {
+
+                }
+            },  null, true, RPCRequest.RPCRequestClassGeneric);
+        }
+
         TLRPC.TL_auth_logOut req2 = new TLRPC.TL_auth_logOut();
         ConnectionsManager.Instance.performRpc(req2, new RPCRequest.RPCRequestDelegate() {
-            @Override
-            public void run(TLObject response, TLRPC.TL_error error) {
-
-            }
-        },  null, true, RPCRequest.RPCRequestClassGeneric);
-
-        if (!UserConfig.registeredForPush || UserConfig.pushString.length() == 0) {
-            return;
-        }
-        TLRPC.TL_account_unregisterDevice req = new TLRPC.TL_account_unregisterDevice();
-        req.token = UserConfig.pushString;
-        req.token_type = 2;
-        ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
 
@@ -3831,22 +3909,12 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             toDbUser.id = update.user_id;
                             TLRPC.User currentUser = users.get(update.user_id);
                             if (update instanceof TLRPC.TL_updateUserStatus) {
-                                if (!(update.status instanceof TLRPC.TL_userStatusEmpty)) {
-                                    if (currentUser != null) {
-                                        currentUser.id = update.user_id;
-                                        currentUser.status = update.status;
-                                        if (update.status instanceof TLRPC.TL_userStatusOnline) {
-                                            currentUser.status.was_online = update.status.expires;
-                                        } else if (update.status instanceof TLRPC.TL_userStatusOffline) {
-                                            currentUser.status.expires = update.status.was_online;
-                                        } else {
-                                            currentUser.status.was_online = 0;
-                                            currentUser.status.expires = 0;
-                                        }
-                                    }
-                                    toDbUser.status = update.status;
-                                    dbUsersStatus.add(toDbUser);
+                                if (currentUser != null) {
+                                    currentUser.id = update.user_id;
+                                    currentUser.status = update.status;
                                 }
+                                toDbUser.status = update.status;
+                                dbUsersStatus.add(toDbUser);
                             } else if (update instanceof TLRPC.TL_updateUserName) {
                                 if (currentUser != null) {
                                     currentUser.first_name = update.first_name;
@@ -3931,6 +3999,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
 
         if (!markAsReadMessages.isEmpty() || !markAsReadEncrypted.isEmpty()) {
+            if (!markAsReadMessages.isEmpty()) {
+                MessagesStorage.Instance.updateDialogsWithReadedMessages(markAsReadMessages, true);
+            }
             MessagesStorage.Instance.markMessagesAsRead(markAsReadMessages, markAsReadEncrypted, true);
         }
         if (!deletedMessages.isEmpty()) {
@@ -3938,9 +4009,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
         if (!deletedMessages.isEmpty()) {
             MessagesStorage.Instance.updateDialogsWithDeletedMessages(deletedMessages, true);
-        }
-        if (!markAsReadMessages.isEmpty()) {
-            MessagesStorage.Instance.updateDialogsWithReadedMessages(markAsReadMessages, true);
         }
         if (!tasks.isEmpty()) {
             for (TLRPC.TL_updateEncryptedMessagesRead update : tasks) {
@@ -4426,7 +4494,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             MessageKeyData keyData = Utilities.generateMessageKeyData(chat.auth_key, messageKey, false);
 
             byte[] messageData = is.readData(message.bytes.length - 24);
-            messageData = Utilities.aesIgeEncryption(messageData, keyData.aesKey, keyData.aesIv, false, false);
+            messageData = Utilities.aesIgeEncryption(messageData, keyData.aesKey, keyData.aesIv, false, false, 0);
 
             is = new SerializedData(messageData);
             int len = is.readInt32();

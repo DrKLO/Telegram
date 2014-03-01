@@ -8,9 +8,6 @@
 
 package org.telegram.messenger;
 
-import org.telegram.TL.TLObject;
-import org.telegram.TL.TLRPC;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.math.BigInteger;
@@ -134,7 +131,7 @@ public class FileUploadOperation {
             }
             System.arraycopy(readBuffer, 0, sendBuffer, 0, readed);
             if (key != null) {
-                sendBuffer = Utilities.aesIgeEncryption(sendBuffer, key, iv, true, true);
+                sendBuffer = Utilities.aesIgeEncryption(sendBuffer, key, iv, true, true, 0);
             }
             mdEnc.update(sendBuffer, 0, readed + toAdd);
             if (isBigFile) {

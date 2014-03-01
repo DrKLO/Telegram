@@ -14,9 +14,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 
-public class SerializedData {
+public class SerializedData extends AbsSerializedData {
     protected boolean isOut = true;
     private ByteArrayOutputStream outbuf;
     private DataOutputStream out;
@@ -44,13 +43,13 @@ public class SerializedData {
         out = new DataOutputStream(outbuf);
     }
 
-    public SerializedData(byte[] data){
+    public SerializedData(byte[] data) {
         isOut = false;
         inbuf = new ByteArrayInputStream(data);
         in = new DataInputStream(inbuf);
     }
 
-    public SerializedData(File file) throws IOException {
+    public SerializedData(File file) throws Exception {
         FileInputStream is = new FileInputStream(file);
         byte[] data = new byte[(int)file.length()];
         new DataInputStream(is).readFully(data);
@@ -74,7 +73,7 @@ public class SerializedData {
             for(int i = 0; i < 4; i++) {
                 out.write(x >> (i * 8));
             }
-        } catch(IOException gfdsgd) {
+        } catch(Exception e) {
             FileLog.e("tmessages", "write int32 error");
         }
     }
@@ -89,10 +88,10 @@ public class SerializedData {
 
     private void writeInt64(long x, DataOutputStream out) {
         try {
-            for(int i = 0; i < 8; i++){
+            for(int i = 0; i < 8; i++) {
                 out.write((int)(x >> (i * 8)));
             }
-        } catch(IOException gfdsgd) {
+        } catch(Exception e) {
             FileLog.e("tmessages", "write int64 error");
         }
     }
@@ -127,14 +126,14 @@ public class SerializedData {
     public int readInt32(boolean[] error) {
         try {
             int i = 0;
-            for(int j = 0; j < 4; j++){
+            for(int j = 0; j < 4; j++) {
                 i |= (in.read() << (j * 8));
             }
             if (error != null) {
                 error[0] = false;
             }
             return i;
-        } catch(IOException x) {
+        } catch(Exception x) {
             if (error != null) {
                 error[0] = true;
             }
@@ -150,14 +149,14 @@ public class SerializedData {
     public long readInt64(boolean[] error) {
         try {
             long i = 0;
-            for(int j = 0; j < 8; j++){
+            for(int j = 0; j < 8; j++) {
                 i |= ((long)in.read() << (j * 8));
             }
             if (error != null) {
                 error[0] = false;
             }
             return i;
-        } catch(IOException x) {
+        } catch (Exception x) {
             if (error != null) {
                 error[0] = true;
             }
@@ -173,7 +172,7 @@ public class SerializedData {
             } else {
                 len += b.length;
             }
-        } catch(Exception x) {
+        } catch (Exception x) {
             FileLog.e("tmessages", "write raw error");
         }
     }
@@ -185,7 +184,7 @@ public class SerializedData {
             } else {
                 len += count;
             }
-        } catch(Exception x) {
+        } catch (Exception x) {
             FileLog.e("tmessages", "write raw error");
         }
     }
@@ -217,7 +216,7 @@ public class SerializedData {
     public void readRaw(byte[] b) {
         try {
             in.read(b);
-        } catch(Exception x) {
+        } catch (Exception x) {
             FileLog.e("tmessages", "read raw error");
         }
     }
@@ -232,7 +231,7 @@ public class SerializedData {
         try {
             int sl = 1;
             int l = in.read();
-            if(l >= 254){
+            if(l >= 254) {
                 l = in.read() | (in.read() << 8) | (in.read() << 16);
                 sl = 4;
             }
@@ -244,7 +243,7 @@ public class SerializedData {
                 i++;
             }
             return new String(b, "UTF-8");
-        } catch(Exception x) {
+        } catch (Exception x) {
             FileLog.e("tmessages", "read string error");
         }
         return null;
@@ -254,27 +253,31 @@ public class SerializedData {
         try {
             int sl = 1;
             int l = in.read();
-            if (l >= 254){
+            if (l >= 254) {
                 l = in.read() | (in.read() << 8) | (in.read() << 16);
                 sl = 4;
             }
             byte[] b = new byte[l];
             in.read(b);
             int i = sl;
-            while((l + i) % 4 != 0){
+            while((l + i) % 4 != 0) {
                 in.read();
                 i++;
             }
             return b;
-        } catch(Exception x) {
+        } catch (Exception x) {
             FileLog.e("tmessages", "read byte array error");
         }
         return null;
     }
 
+    public ByteBufferDesc readByteBuffer() {
+        throw new RuntimeException("SerializedData don't support readByteBuffer");
+    }
+
     public void writeByteArray(byte[] b) {
         try {
-            if (b.length <= 253){
+            if (b.length <= 253) {
                 if (!justCalc) {
                     out.write(b.length);
                 } else {
@@ -296,7 +299,7 @@ public class SerializedData {
                 len += b.length;
             }
             int i = b.length <= 253 ? 1 : 4;
-            while((b.length + i) % 4 != 0){
+            while((b.length + i) % 4 != 0) {
                 if (!justCalc) {
                     out.write(0);
                 } else {
@@ -304,12 +307,12 @@ public class SerializedData {
                 }
                 i++;
             }
-        } catch(Exception x) {
+        } catch (Exception x) {
             FileLog.e("tmessages", "write byte array error");
         }
     }
 
-    public void writeString(String s){
+    public void writeString(String s) {
         try {
             writeByteArray(s.getBytes("UTF-8"));
         } catch(Exception x) {
@@ -319,7 +322,7 @@ public class SerializedData {
 
     public void writeByteArray(byte[] b, int offset, int count) {
         try {
-            if(count <= 253){
+            if(count <= 253) {
                 if (!justCalc) {
                     out.write(count);
                 } else {
@@ -341,7 +344,7 @@ public class SerializedData {
                 len += count;
             }
             int i = count <= 253 ? 1 : 4;
-            while ((count + i) % 4 != 0){
+            while ((count + i) % 4 != 0) {
                 if (!justCalc) {
                     out.write(0);
                 } else {
@@ -349,7 +352,7 @@ public class SerializedData {
                 }
                 i++;
             }
-        } catch(Exception x) {
+        } catch (Exception x) {
             FileLog.e("tmessages", "write byte array error");
         }
     }
