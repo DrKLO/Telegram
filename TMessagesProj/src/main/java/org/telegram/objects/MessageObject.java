@@ -376,9 +376,9 @@ public class MessageObject {
         textLayoutBlocks = new ArrayList<TextLayoutBlock>();
 
         if (messageText instanceof Spannable) {
-            if (messageOwner.message != null && messageOwner.message.contains(".")) {
+            if (messageOwner.message != null && messageOwner.message.contains(".") && (messageOwner.message.contains(".com") || messageOwner.message.contains("http") || messageOwner.message.contains(".ru") || messageOwner.message.contains(".org") || messageOwner.message.contains(".net"))) {
                 Linkify.addLinks((Spannable)messageText, Linkify.WEB_URLS);
-            } else if (messageText.length() < 400) {
+            } else if (messageText.length() < 100) {
                 Linkify.addLinks((Spannable)messageText, Linkify.WEB_URLS | Linkify.EMAIL_ADDRESSES | Linkify.PHONE_NUMBERS);
             }
         }

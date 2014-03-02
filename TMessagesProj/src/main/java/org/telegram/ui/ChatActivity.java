@@ -2897,6 +2897,8 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     view.setBackgroundColor(0);
                 }
 
+                cell.setMessageObject(cell.getMessageObject());
+
                 cell.setCheckPressed(!disableSelection, disableSelection && selected);
             }
         }
