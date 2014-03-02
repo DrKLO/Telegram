@@ -3892,12 +3892,22 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             }
             if (message != null) {
                 if (message.type == 4 || message.type == 5) {
+                    // open location in map view
+                    double lat = message.messageOwner.media.geo.lat;
+                    double lng = message.messageOwner.media.geo._long;
+                    Uri geo_uri = Uri.parse(String.format(Locale.ENGLISH, "geo:%f,%f?q=%f,%f",
+                            lat, lng, lat, lng));
+                    Intent sendIntent = new Intent(Intent.ACTION_VIEW, geo_uri);
+                    startActivity(sendIntent);
+
+                    // also start internal view if possible
                     if (!isGoogleMapsInstalled()) {
                         return;
                     }
                     NotificationCenter.Instance.addToMemCache(0, message);
                     LocationActivity fragment = new LocationActivity();
                     ((ApplicationActivity)parentActivity).presentFragment(fragment, "location_view", false);
+
                 } else if (message.type == 2 || message.type == 3) {
                     if (photoFile == null || photoObjectToSet == null || photoFile != null && photoFile.exists()) {
                         NotificationCenter.Instance.addToMemCache(51, message);
