@@ -106,7 +106,8 @@ public class SettingsNotificationsActivity extends BaseFragment {
                             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                             Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
-                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false);
+                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
+                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
                             Uri currentSound = null;
 
                             String defaultPath = null;
@@ -227,7 +228,9 @@ public class SettingsNotificationsActivity extends BaseFragment {
             if (ringtone != null && parentActivity != null) {
                 Ringtone rng = RingtoneManager.getRingtone(parentActivity, ringtone);
                 if (rng != null) {
-                    name = rng.getTitle(parentActivity);
+                    if(ringtone.equals(Settings.System.DEFAULT_NOTIFICATION_URI))
+                        name = getStringEntry(R.string.Default);
+                    else name = rng.getTitle(parentActivity);
                     rng.stop();
                 }
             }
