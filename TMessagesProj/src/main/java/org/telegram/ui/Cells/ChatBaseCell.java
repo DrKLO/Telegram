@@ -68,6 +68,7 @@ public class ChatBaseCell extends BaseCell {
 
     private StaticLayout nameLayout;
     protected int nameWidth;
+    private float nameOffsetX = 0;
     protected boolean drawName = false;
 
     private StaticLayout forwardedNameLayout;
@@ -75,6 +76,7 @@ public class ChatBaseCell extends BaseCell {
     protected boolean drawForwardedName = false;
     private int forwardNameX;
     private int forwardNameY;
+    private float forwardNameOffsetX = 0;
 
     private StaticLayout timeLayout;
     protected int timeWidth;
@@ -218,6 +220,7 @@ public class ChatBaseCell extends BaseCell {
             if (nameLayout.getLineCount() > 0) {
                 nameWidth = (int)Math.ceil(nameLayout.getLineWidth(0));
                 namesOffset += Utilities.dp(18);
+                nameOffsetX = nameLayout.getLineLeft(0);
             } else {
                 nameWidth = 0;
             }
@@ -240,6 +243,7 @@ public class ChatBaseCell extends BaseCell {
                 if (forwardedNameLayout.getLineCount() > 1) {
                     forwardedNameWidth = Math.max((int) Math.ceil(forwardedNameLayout.getLineWidth(0)), (int) Math.ceil(forwardedNameLayout.getLineWidth(1)));
                     namesOffset += Utilities.dp(36);
+                    forwardNameOffsetX = Math.min(forwardedNameLayout.getLineLeft(0), forwardedNameLayout.getLineLeft(1));
                 } else {
                     forwardedNameWidth = 0;
                 }
@@ -381,7 +385,7 @@ public class ChatBaseCell extends BaseCell {
 
         if (drawName && nameLayout != null) {
             canvas.save();
-            canvas.translate(currentBackgroundDrawable.getBounds().left + Utilities.dp(19), Utilities.dp(10));
+            canvas.translate(currentBackgroundDrawable.getBounds().left + Utilities.dp(19) - nameOffsetX, Utilities.dp(10));
             namePaint.setColor(Utilities.getColorForId(currentUser.id));
             nameLayout.draw(canvas);
             canvas.restore();
@@ -398,7 +402,7 @@ public class ChatBaseCell extends BaseCell {
                 forwardNameX = currentBackgroundDrawable.getBounds().left + Utilities.dp(19);
                 forwardNameY = Utilities.dp(10 + (drawName ? 18 : 0));
             }
-            canvas.translate(forwardNameX, forwardNameY);
+            canvas.translate(forwardNameX - forwardNameOffsetX, forwardNameY);
             forwardedNameLayout.draw(canvas);
             canvas.restore();
         }

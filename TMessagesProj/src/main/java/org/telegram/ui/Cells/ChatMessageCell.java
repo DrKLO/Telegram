@@ -12,7 +12,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.text.Spannable;
 import android.text.style.ClickableSpan;
-import android.util.Log;
 import android.view.MotionEvent;
 
 import org.telegram.messenger.Utilities;
@@ -29,6 +28,8 @@ public class ChatMessageCell extends ChatBaseCell {
     private int lastVisibleBlockNum = 0;
     private int firstVisibleBlockNum = 0;
     private int totalVisibleBlocksCount = 0;
+
+    private boolean wasLayout = false;
 
     public ChatMessageCell(Context context, boolean isChat) {
         super(context, isChat);
@@ -88,9 +89,6 @@ public class ChatMessageCell extends ChatBaseCell {
     public void setVisiblePart(int position, int height) {
         visibleY = position;
         visibleHeight = height;
-        if (visibleY < 0) {
-            Log.e("tmessages", "vis = " + visibleY);
-        }
 
         int newFirst = -1, newLast = -1, newCount = 0;
 
@@ -126,6 +124,7 @@ public class ChatMessageCell extends ChatBaseCell {
     @Override
     public void setMessageObject(MessageObject messageObject) {
         if (currentMessageObject != messageObject || isUserDataChanged()) {
+            wasLayout = false;
             pressedLink = null;
             int maxWidth;
             if (chat) {
@@ -173,7 +172,7 @@ public class ChatMessageCell extends ChatBaseCell {
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
 
-        if (changed) {
+        if (changed || !wasLayout) {
             if (currentMessageObject.messageOwner.out) {
                 textX = layoutWidth - backgroundWidth + Utilities.dp(10);
                 textY = Utilities.dp(10) + namesOffset;
@@ -181,6 +180,7 @@ public class ChatMessageCell extends ChatBaseCell {
                 textX = Utilities.dp(19) + (chat ? Utilities.dp(52) : 0);
                 textY = Utilities.dp(10) + namesOffset;
             }
+            wasLayout = true;
         }
     }
 

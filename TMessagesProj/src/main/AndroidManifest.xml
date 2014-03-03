@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.telegram.messenger"
-    android:versionCode="175"
+    android:versionCode="177"
     android:versionName="1.3.26">
 
     <supports-screens android:anyDensity="true"
