@@ -350,5 +350,5 @@
     <string name="StartMessaging">Empieza a conversar</string>
 
     <!--Don't change this! Not for localization!-->
-    <string name="CacheTag">CACHE_TAG</string>
+    <string name="CacheTag" translate="false">CACHE_TAG</string>
 </resources>
