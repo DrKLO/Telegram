@@ -10,6 +10,7 @@ package org.telegram.objects;
 
 import android.graphics.Bitmap;
 import android.graphics.Paint;
+import android.text.Html;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.StaticLayout;
@@ -260,6 +261,10 @@ public class MessageObject {
                 } else {
                     type = 1;
                 }
+                // Text between two * will be in RED and text between two ^ will be BIG size
+                messageText = messageText.toString().replace("\n", "<br>");
+                messageText = messageText.toString().replaceAll("\\^(.+?)\\^", "<big>$1</big>");
+                messageText = Html.fromHtml(messageText.toString().replaceAll("\\*(.+?)\\*", "<font color='blue'>$1</font>"));
             } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaPhoto) {
                 if (message.from_id == UserConfig.clientUserId) {
                     type = 2;
