@@ -226,8 +226,8 @@
     <string name="InAppSounds">In-App Sounds</string>
     <string name="InAppVibrate">In-App Vibrate</string>
     <string name="Vibrate">Vibrate</string>
-    <string name="InAppPreview">In-App Preview</string>
-    <string name="Reset">RESET</string>
+    <string name="InAppPreview">程序内预览</string>
+    <string name="Reset">重置</string>
     <string name="ResetAllNotifications">Reset All Notifications</string>
     <string name="UndoAllCustom">Undo all custom notification settings for all your contacts and groups</string>
     <string name="NotificationsAndSounds">Notifications and Sounds</string>
