@@ -1,0 +1,9 @@
+[main]
+host = https://www.transifex.com
+
+[telegram.stringsxml-48]
+file_filter = TMessagesProj/src/main/res/values-<lang>/string.xml
+source_file = TMessagesProj/src/main/res/values/strings.xml
+source_lang = en
+type = ANDROID
+
