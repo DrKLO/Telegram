@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="background_tab_pressed">#6633B5E5</color>
+    <color name="chat_background_color">#ffd6e4ef</color>
+    <color name="gallery_background_color">#ff000000</color>
+    <color name="settings_background_color">#ffffffff</color>
+    <color name="divider">#dcdcdc</color>
+</resources>
