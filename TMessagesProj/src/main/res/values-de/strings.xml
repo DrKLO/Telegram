@@ -106,7 +106,7 @@
     <string name="YouLeft">Du hast die Gruppe verlassen</string>
     <string name="DeleteThisGroup">Diese Gruppe löschen</string>
     <string name="SlideToCancel">WISCHEN UM ABZUBRECHEN</string>
-    
+
     <!--notification-->
     <string name="EncryptedChatRequested">Geheimen Chat angefordert</string>
     <string name="EncryptedChatAccepted">Geheimen Chat angenommen</string>

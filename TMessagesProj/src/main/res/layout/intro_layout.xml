@@ -35,8 +35,8 @@
             android:layout_height="fill_parent"
             android:id="@+id/intro_view_pager"/>
 
-        <TextView android:layout_width="192dp"
-            android:layout_height="44dp"
+        <TextView android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginTop="336dp"
             android:background="@drawable/regbtn_states"
             android:text="@string/StartMessaging"
@@ -44,8 +44,13 @@
             android:textSize="18dp"
             android:textColor="#ffffff"
             android:gravity="center"
-            android:id="@+id/start_messaging_button"
-            android:paddingBottom="2dp"/>
+            android:paddingLeft="20dp"
+            android:paddingRight="20dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:id="@+id/start_messaging_button"/>
 
         <LinearLayout
             android:layout_width="wrap_content"

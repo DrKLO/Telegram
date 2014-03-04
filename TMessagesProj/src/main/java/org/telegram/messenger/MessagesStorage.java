@@ -69,7 +69,7 @@ public class MessagesStorage {
         }
         try {
             database = new SQLiteDatabase(cacheFile.getPath());
-            database.execute("PRAGMA secure_delete = ON");
+            database.executeFast("PRAGMA secure_delete = ON").stepThis().dispose();
             if (createTable) {
                 database.executeFast("CREATE TABLE users(uid INTEGER PRIMARY KEY, name TEXT, status INTEGER, data BLOB)").stepThis().dispose();
                 database.executeFast("CREATE TABLE messages(mid INTEGER PRIMARY KEY, uid INTEGER, read_state INTEGER, send_state INTEGER, date INTEGER, data BLOB, out INTEGER, ttl INTEGER)").stepThis().dispose();

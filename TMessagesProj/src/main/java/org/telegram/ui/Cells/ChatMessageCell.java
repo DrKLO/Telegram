@@ -187,11 +187,11 @@ public class ChatMessageCell extends ChatBaseCell {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if (currentMessageObject == null || currentMessageObject.textLayoutBlocks == null || currentMessageObject.textLayoutBlocks.isEmpty()) {
+        if (currentMessageObject == null || currentMessageObject.textLayoutBlocks == null || currentMessageObject.textLayoutBlocks.isEmpty() || firstVisibleBlockNum < 0) {
             return;
         }
 
-        for (int a = Math.max(0, (visibleY - textY) / currentMessageObject.blockHeight); a < currentMessageObject.textLayoutBlocks.size(); a++) {
+        for (int a = firstVisibleBlockNum; a <= lastVisibleBlockNum; a++) {
             MessageObject.TextLayoutBlock block = currentMessageObject.textLayoutBlocks.get(a);
             float y = textY + block.textYOffset;
             if (intersect(y, y + currentMessageObject.blockHeight, visibleY, visibleY + visibleHeight)) {

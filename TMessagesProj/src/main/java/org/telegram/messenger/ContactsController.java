@@ -369,7 +369,7 @@ public class ContactsController {
             @Override
             public void run() {
 
-                boolean disableDeletion = false;
+                boolean disableDeletion = true; //disable contacts deletion, because phone numbers can't be compared due to different numbers format
                 if (schedule) {
                     try {
                         AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
@@ -385,7 +385,6 @@ public class ContactsController {
                         }
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
-                        disableDeletion = true;
                     }
                 }
 
