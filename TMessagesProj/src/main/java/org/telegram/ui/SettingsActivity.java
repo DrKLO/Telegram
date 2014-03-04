@@ -82,6 +82,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     int photoDownloadSection;
     int photoDownloadChatRow;
     int photoDownloadPrivateRow;
+    int AddForwardingInfoRow;
+    int InvisibleStatusRow;
 
     @Override
     public boolean onFragmentCreate() {
@@ -151,6 +153,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         numberRow = rowCount++;
         settingsSectionRow = rowCount++;
         enableAnimationsRow = rowCount++;
+        AddForwardingInfoRow = rowCount++;
+        InvisibleStatusRow = rowCount++;
         notificationRow = rowCount++;
         blockedRow = rowCount++;
         backgroundRow = rowCount++;
@@ -375,6 +379,24 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         if (listView != null) {
                             listView.invalidateViews();
                         }
+                    } else if (i == AddForwardingInfoRow) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        boolean value = preferences.getBoolean("add_forwarding_info", true);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        editor.putBoolean("add_forwarding_info", !value);
+                        editor.commit();
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
+                    } else if (i == InvisibleStatusRow) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        boolean value = preferences.getBoolean("invisible_status", false);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        editor.putBoolean("invisible_status", !value);
+                        editor.commit();
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
                     }
 //                else if (i == 6) {
 //                    UserConfig.saveIncomingPhotos = !UserConfig.saveIncomingPhotos;
@@ -509,7 +531,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         public boolean isEnabled(int i) {
             return i == textSizeRow || i == enableAnimationsRow || i == blockedRow || i == notificationRow || i == backgroundRow ||
                     i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == terminateSessionsRow || i == photoDownloadPrivateRow ||
-                    i == photoDownloadChatRow || i == clearLogsRow;
+                    i == photoDownloadChatRow || i == AddForwardingInfoRow || i == InvisibleStatusRow || i == clearLogsRow;
         }
 
         @Override
@@ -756,6 +778,24 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else {
                         checkButton.setImageResource(R.drawable.btn_check_off);
                     }
+                } else if (i == AddForwardingInfoRow) {
+                    textView.setText(getStringEntry(R.string.AddForwardingInfo));
+                    divider.setVisibility(View.VISIBLE);
+                    boolean enabled = preferences.getBoolean("add_forwarding_info", true);
+                    if (enabled) {
+                        checkButton.setImageResource(R.drawable.btn_check_on);
+                    } else {
+                        checkButton.setImageResource(R.drawable.btn_check_off);
+                    }
+                } else if (i == InvisibleStatusRow) {
+                    textView.setText(getStringEntry(R.string.InvisibleStatus));
+                    divider.setVisibility(View.VISIBLE);
+                    boolean enabled = preferences.getBoolean("invisible_status", false);
+                    if (enabled) {
+                        checkButton.setImageResource(R.drawable.btn_check_on);
+                    } else {
+                        checkButton.setImageResource(R.drawable.btn_check_off);
+                    }
                 }
 //                if (i == 7) {
 //                    textView.setText(getStringEntry(R.string.SaveIncomingPhotos));
@@ -821,7 +861,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 1;
             } else if (i == textSizeRow) {
                 return 5;
-            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == photoDownloadChatRow || i == photoDownloadPrivateRow) {
+            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == photoDownloadChatRow || i == photoDownloadPrivateRow || i == AddForwardingInfoRow || i == InvisibleStatusRow) {
                 return 3;
             } else if (i == numberRow || i == notificationRow || i == blockedRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == terminateSessionsRow || i == clearLogsRow) {
                 return 2;

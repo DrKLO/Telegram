@@ -539,7 +539,7 @@ public class Emoji {
                     s.setSpan(span, i, i + 1, 0);
                 }
             }
-            if (emojiCount >= 50) {
+            if (emojiCount >= 200) {
                 break;
             }
         }

@@ -28,7 +28,7 @@
     <string name="CancelRegistration">إلغاء التسجيل</string>
 
     <!--chats view-->
-    <string name="Chats">الدردشات</string>
+    <string name="Chats">المحادثات</string>
     <string name="Search">بحث</string>
     <string name="NewMessages">الرسائل الجديدة</string>
     <string name="Settings">الإعدادات</string>
@@ -238,7 +238,7 @@
     <string name="NoSound">لا يوجد صوت</string>
     <string name="Default">افتراضي</string>
     <string name="Support">الدعم</string>
-    <string name="ChatBackground">خلفية الدردشة</string>
+    <string name="ChatBackground">خلفية المحادثة</string>
     <string name="MessagesSettings">الرسائل</string>
     <string name="SendByEnter">أرسل بزر الإدخال</string>
     <string name="TerminateAllSessions">سجل الخروج من كافة الأجهزة الأخرى</string>
@@ -246,6 +246,8 @@
     <string name="AutomaticPhotoDownloadGroups">المجموعات</string>
     <string name="AutomaticPhotoDownloadPrivateChats">المحادثات</string>
     <string name="Events">الأحداث</string>
+    <string name="AddForwardingInfo">ادراج معلومات التوجية</string>
+    <string name="InvisibleStatus">اخفاء الحالة</string>
     <string name="ContactJoined">اشترك صديق في تيليجرام</string>
 
     <!--media view-->
@@ -327,7 +329,7 @@
     <string name="NoHandleAppInstalled">لا يوجد لديك تطبيق يمكنه فتح \'%1$s\'، يرجى تنزيل تطبيق مناسب للإستمرار</string>
     <string name="InviteUser">هذا المستخدم ليس لديه تيليجرام بعد ، هل ترغب في دعوته الآن؟</string>
     <string name="AreYouSure">هل أنت متأكد؟</string>
-    <string name="DeleteChatQuestion">هل تريد حذف هذه الدردشة؟</string>
+    <string name="DeleteChatQuestion">هل تريد حذف هذه المحادثة؟</string>
     <string name="AddContactQ">هل تريد إضافة جهة اتصال؟</string>
     <string name="AddToTheGroup">إلى المجموعة؟ %1$s هل تريد إضافة</string>
     <string name="ForwardMessagesTo">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>

@@ -755,8 +755,13 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     }
 
                     TLRPC.TL_account_updateStatus req = new TLRPC.TL_account_updateStatus();
-                    req.offline = false;
-                    statusRequest = ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                    if (preferences.getBoolean("invisible_status", false)){
+                        req.offline = true;
+                    } else {
+                        req.offline = false;
+                    }
+                    ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
                         @Override
                         public void run(TLObject response, TLRPC.TL_error error) {
                             if (error == null) {
@@ -1609,6 +1614,27 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     private void sendMessage(String message, double lat, double lon, TLRPC.TL_photo photo, TLRPC.TL_video video, MessageObject msgObj, TLRPC.FileLocation location, TLRPC.User user, TLRPC.TL_document document, TLRPC.TL_audio audio, long peer) {
+// FAD Code starts ---------------------------------------
+        // If a message came as an object change it back as normal
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        if (msgObj != null && !preferences.getBoolean("add_forwarding_info", true)) {
+            if (msgObj.messageOwner.media.photo != null) {
+                photo = (TLRPC.TL_photo) msgObj.messageOwner.media.photo;
+            } else if (msgObj.messageOwner.media.geo != null) {
+                lat = msgObj.messageOwner.media.geo.lat;
+                lon = msgObj.messageOwner.media.geo._long;
+            } else if (msgObj.messageOwner.media.video != null) {
+                video = (TLRPC.TL_video) msgObj.messageOwner.media.video;
+                video.path = msgObj.messageOwner.attachPath;
+            } else if (msgObj.messageOwner.media.document != null) {
+                document = (TLRPC.TL_document) msgObj.messageOwner.media.document;
+            } else if (msgObj.messageOwner.message != null) {
+                message = msgObj.messageOwner.message;
+            } else {
+                // Unknown type, let it continue unchanged [ Maybe show an error to update the code! ]
+            }
+        }
+// FAD Changes ends ---------------------------------------
         TLRPC.Message newMsg = null;
         int type = -1;
         if (message != null) {
