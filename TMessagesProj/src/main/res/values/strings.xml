@@ -248,7 +248,6 @@
     <string name="Events">EVENTS</string>
     <string name="ContactJoined">Contact joined Telegram</string>
     <string name="AddForwardingInfo">Add Forwarding Info</string>
-    <string name="NativeEmoji">Native Emoji</string>
     <string name="InvisibleStatus">Invisible status</string>
 
     <!--media view-->

@@ -11,8 +11,6 @@ package org.telegram.messenger;
 import java.io.InputStream;
 import java.util.HashMap;
 
-import android.app.Activity;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -503,7 +501,7 @@ public class Emoji {
             if (c == 0xD83C || c == 0xD83D || (buf != 0 && (buf & 0xFFFFFFFF00000000L) == 0 && (c >= 0xDDE6 && c <= 0xDDFA))) {
                 buf <<= 16;
                 buf |= c;
-            } else if (buf > 0 && ( (c & 0xF000) == 0xD000 ) ) {
+            } else if (buf > 0 && (c & 0xF000) == 0xD000) {
                 buf <<= 16;
                 buf |= c;
                 Drawable d = Emoji.getEmojiDrawable(buf);
@@ -541,8 +539,7 @@ public class Emoji {
                     s.setSpan(span, i, i + 1, 0);
                 }
             }
-            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-            if (emojiCount >= 200 || preferences.getBoolean("native_emoji", false)) {
+            if (emojiCount >= 200) {
                 break;
             }
         }
