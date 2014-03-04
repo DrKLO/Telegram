@@ -294,8 +294,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         if (getActivity() == null) {
             return;
         }
-        ((ApplicationActivity)parentActivity).showActionBar();
-        ((ApplicationActivity)parentActivity).updateActionBar();
+        ((LaunchActivity)parentActivity).showActionBar();
+        ((LaunchActivity)parentActivity).updateActionBar();
     }
 
     public Emoji.XImageSpan createAndPutChipForUser(TLRPC.User user) {
@@ -426,7 +426,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 } else {
                     return;
                 }
-                ((ApplicationActivity)parentActivity).presentFragment(new GroupCreateFinalActivity(), "group_craate_final", false);
+                ((LaunchActivity)parentActivity).presentFragment(new GroupCreateFinalActivity(), "group_craate_final", false);
             }
         });
     }

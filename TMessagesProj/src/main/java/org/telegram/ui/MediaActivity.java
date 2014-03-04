@@ -271,8 +271,8 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             listAdapter.notifyDataSetChanged();
         }
         firstStart = false;
-        ((ApplicationActivity)parentActivity).showActionBar();
-        ((ApplicationActivity)parentActivity).updateActionBar();
+        ((LaunchActivity)parentActivity).showActionBar();
+        ((LaunchActivity)parentActivity).updateActionBar();
         fixLayout();
     }
 

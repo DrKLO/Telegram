@@ -21,7 +21,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ApplicationActivity;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PhotoCropActivity;
 
 import java.io.File;
@@ -76,9 +76,9 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
 
     private void startCrop(String path, Uri uri) {
         try {
-            ApplicationActivity activity = (ApplicationActivity)parentFragment.parentActivity;
+            LaunchActivity activity = (LaunchActivity)parentFragment.parentActivity;
             if (activity == null) {
-                activity = (ApplicationActivity)parentFragment.getActivity();
+                activity = (LaunchActivity)parentFragment.getActivity();
             }
             if (activity == null) {
                 return;

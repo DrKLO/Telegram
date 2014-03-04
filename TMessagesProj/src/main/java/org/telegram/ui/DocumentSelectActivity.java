@@ -240,8 +240,8 @@ public class DocumentSelectActivity extends BaseFragment {
             listAdapter.notifyDataSetChanged();
         }
         firstStart = false;
-        ((ApplicationActivity)parentActivity).showActionBar();
-        ((ApplicationActivity)parentActivity).updateActionBar();
+        ((LaunchActivity)parentActivity).showActionBar();
+        ((LaunchActivity)parentActivity).updateActionBar();
     }
 
     @Override

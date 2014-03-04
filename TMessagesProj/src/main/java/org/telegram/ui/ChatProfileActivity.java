@@ -194,7 +194,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         Bundle bundle = new Bundle();
                         bundle.putLong("dialog_id", -chat_id);
                         fragment.setArguments(bundle);
-                        ((ApplicationActivity)parentActivity).presentFragment(fragment, "media_chat_" + chat_id, false);
+                        ((LaunchActivity)parentActivity).presentFragment(fragment, "media_chat_" + chat_id, false);
                     } else {
                         int size = 0;
                         if (info != null) {
@@ -209,7 +209,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                             Bundle args = new Bundle();
                             args.putInt("user_id", user_id);
                             fragment.setArguments(args);
-                            ((ApplicationActivity)parentActivity).presentFragment(fragment, "user_" + user_id, false);
+                            ((LaunchActivity)parentActivity).presentFragment(fragment, "user_" + user_id, false);
                         } else {
                             if (size + 7 == i) {
                                 if (info.participants.size() < 200) {
@@ -332,7 +332,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
             title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
             title.setCompoundDrawablePadding(0);
         }
-        ((ApplicationActivity)parentActivity).fixBackButton();
+        ((LaunchActivity)parentActivity).fixBackButton();
     }
 
     @Override
@@ -344,8 +344,8 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         if (listViewAdapter != null) {
             listViewAdapter.notifyDataSetChanged();
         }
-        ((ApplicationActivity)parentActivity).showActionBar();
-        ((ApplicationActivity)parentActivity).updateActionBar();
+        ((LaunchActivity)parentActivity).showActionBar();
+        ((LaunchActivity)parentActivity).updateActionBar();
     }
 
     @Override
@@ -457,7 +457,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
             NotificationCenter.Instance.addToMemCache(7, users);
         }
         fragment.setArguments(bundle);
-        ((ApplicationActivity)parentActivity).presentFragment(fragment, "contacts_block", false);
+        ((LaunchActivity)parentActivity).presentFragment(fragment, "contacts_block", false);
     }
 
     private void kickUser(TLRPC.TL_chatParticipant user) {
@@ -549,7 +549,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                             Bundle bundle = new Bundle();
                             bundle.putInt("chat_id", chat_id);
                             fragment.setArguments(bundle);
-                            ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat_name_" + chat_id, false);
+                            ((LaunchActivity)parentActivity).presentFragment(fragment, "chat_name_" + chat_id, false);
                         }
                     });
 

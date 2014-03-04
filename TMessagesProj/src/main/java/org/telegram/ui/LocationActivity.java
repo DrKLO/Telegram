@@ -207,8 +207,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         if (getActivity() == null) {
             return;
         }
-        ((ApplicationActivity)parentActivity).showActionBar();
-        ((ApplicationActivity)parentActivity).updateActionBar();
+        ((LaunchActivity)parentActivity).showActionBar();
+        ((LaunchActivity)parentActivity).updateActionBar();
     }
 
     @Override

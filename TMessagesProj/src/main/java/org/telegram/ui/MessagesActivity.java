@@ -193,17 +193,17 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                             if (lower_part > 0) {
                                 bundle.putInt("user_id", lower_part);
                                 fragment.setArguments(bundle);
-                                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), false);
+                                ((LaunchActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), false);
                             } else if (lower_part < 0) {
                                 bundle.putInt("chat_id", -lower_part);
                                 fragment.setArguments(bundle);
-                                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), false);
+                                ((LaunchActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), false);
                             }
                         } else {
                             int id = (int)(dialog_id >> 32);
                             bundle.putInt("enc_id", id);
                             fragment.setArguments(bundle);
-                            ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), false);
+                            ((LaunchActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), false);
                         }
                     }
                 }
@@ -306,7 +306,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             actionBar.setSubtitle(null);
             actionBar.setCustomView(null);
             actionBar.setTitle(getStringEntry(R.string.SelectChat));
-            ((ApplicationActivity)parentActivity).fixBackButton();
+            ((LaunchActivity)parentActivity).fixBackButton();
         } else {
             ImageView view = (ImageView)parentActivity.findViewById(16908332);
             if (view == null) {
@@ -349,8 +349,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         if (messagesListViewAdapter != null) {
             messagesListViewAdapter.notifyDataSetChanged();
         }
-        ((ApplicationActivity)parentActivity).showActionBar();
-        ((ApplicationActivity)parentActivity).updateActionBar();
+        ((LaunchActivity)parentActivity).showActionBar();
+        ((LaunchActivity)parentActivity).updateActionBar();
     }
 
     @Override
@@ -607,7 +607,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     messagesListViewAdapter.notifyDataSetChanged();
                 }
                 if (onlySelect) {
-                    ((ApplicationActivity)parentActivity).fixBackButton();
+                    ((LaunchActivity)parentActivity).fixBackButton();
                 }
                 return true;
             }
@@ -629,11 +629,11 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         switch (itemId) {
 
             case R.id.messages_list_menu_settings: {
-                ((ApplicationActivity)inflaterActivity).presentFragment(new SettingsActivity(), "settings", false);
+                ((LaunchActivity)inflaterActivity).presentFragment(new SettingsActivity(), "settings", false);
                 break;
             }
             case R.id.messages_list_menu_contacts: {
-                ((ApplicationActivity)inflaterActivity).presentFragment(new ContactsActivity(), "contacts", false);
+                ((LaunchActivity)inflaterActivity).presentFragment(new ContactsActivity(), "contacts", false);
                 break;
             }
             case R.id.messages_list_menu_new_messages: {
@@ -644,7 +644,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 bundle.putBoolean("usersAsSections", true);
                 fragment.animationType = 1;
                 fragment.setArguments(bundle);
-                ((ApplicationActivity)inflaterActivity).presentFragment(fragment, "contacts_chat", false);
+                ((LaunchActivity)inflaterActivity).presentFragment(fragment, "contacts_chat", false);
                 break;
             }
             case R.id.messages_list_menu_new_secret_chat: {
@@ -656,11 +656,11 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 bundle.putBoolean("createSecretChat", true);
                 fragment.animationType = 1;
                 fragment.setArguments(bundle);
-                ((ApplicationActivity)inflaterActivity).presentFragment(fragment, "contacts_chat", false);
+                ((LaunchActivity)inflaterActivity).presentFragment(fragment, "contacts_chat", false);
                 break;
             }
             case R.id.messages_list_menu_new_chat: {
-                ((ApplicationActivity)inflaterActivity).presentFragment(new GroupCreateActivity(), "group_create", false);
+                ((LaunchActivity)inflaterActivity).presentFragment(new GroupCreateActivity(), "group_create", false);
                 break;
             }
             case android.R.id.home:

@@ -17,7 +17,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 
 import org.telegram.messenger.ConnectionsManager;
-import org.telegram.ui.ApplicationActivity;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.ApplicationLoader;
 
 public class BaseFragment extends Fragment {
@@ -55,7 +55,7 @@ public class BaseFragment extends Fragment {
             onFragmentDestroy();
             return;
         }
-        ((ApplicationActivity)parentActivity).finishFragment(bySwipe);
+        ((LaunchActivity)parentActivity).finishFragment(bySwipe);
         if (getActivity() == null) {
             if (fragmentView != null) {
                 ViewGroup parent = (ViewGroup)fragmentView.getParent();
@@ -80,7 +80,7 @@ public class BaseFragment extends Fragment {
             onFragmentDestroy();
             return;
         }
-        ((ApplicationActivity)parentActivity).removeFromStack(this);
+        ((LaunchActivity)parentActivity).removeFromStack(this);
         if (getActivity() == null) {
             if (fragmentView != null) {
                 ViewGroup parent = (ViewGroup)fragmentView.getParent();

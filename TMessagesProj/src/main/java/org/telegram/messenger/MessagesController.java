@@ -34,7 +34,7 @@ import android.util.SparseArray;
 
 import org.telegram.objects.MessageObject;
 import org.telegram.objects.PhotoObject;
-import org.telegram.ui.ApplicationActivity;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.ApplicationLoader;
 
 import java.io.File;
@@ -4188,7 +4188,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             String chatSoundPath = null;
 
             NotificationManager mNotificationManager = (NotificationManager)ApplicationLoader.applicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
-            Intent intent = new Intent(ApplicationLoader.applicationContext, ApplicationActivity.class);
+            Intent intent = new Intent(ApplicationLoader.applicationContext, LaunchActivity.class);
             String msg = null;
 
             if ((int)dialog_id != 0) {

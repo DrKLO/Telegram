@@ -380,6 +380,6 @@ public class PhotoCropActivity extends BaseFragment {
         if (getActivity() == null) {
             return;
         }
-        ((ApplicationActivity)parentActivity).updateActionBar();
+        ((LaunchActivity)parentActivity).updateActionBar();
     }
 }

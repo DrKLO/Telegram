@@ -111,8 +111,8 @@ public class IdenticonActivity extends BaseFragment {
         if (getActivity() == null) {
             return;
         }
-        ((ApplicationActivity)parentActivity).showActionBar();
-        ((ApplicationActivity)parentActivity).updateActionBar();
+        ((LaunchActivity)parentActivity).showActionBar();
+        ((LaunchActivity)parentActivity).updateActionBar();
         fixLayout();
     }
 

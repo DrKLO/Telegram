@@ -178,13 +178,13 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                             bundle.putLong("dialog_id", user_id);
                         }
                         fragment.setArguments(bundle);
-                        ((ApplicationActivity)parentActivity).presentFragment(fragment, "media_user_" + user_id, false);
+                        ((LaunchActivity)parentActivity).presentFragment(fragment, "media_user_" + user_id, false);
                     } else if (i == 5 && dialog_id != 0 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat) {
                         IdenticonActivity fragment = new IdenticonActivity();
                         Bundle bundle = new Bundle();
                         bundle.putInt("chat_id", (int)(dialog_id >> 32));
                         fragment.setArguments(bundle);
-                        ((ApplicationActivity)parentActivity).presentFragment(fragment, "key_" + dialog_id, false);
+                        ((LaunchActivity)parentActivity).presentFragment(fragment, "key_" + dialog_id, false);
                     } else if (i == 4 && dialog_id != 0 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
                         builder.setTitle(getStringEntry(R.string.MessageLifetime));
@@ -312,7 +312,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 Bundle bundle = new Bundle();
                 bundle.putInt("enc_id", encryptedChat.id);
                 fragment.setArguments(bundle);
-                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
+                ((LaunchActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
             }
         } else if (id == MessagesController.encryptedChatUpdated) {
             TLRPC.EncryptedChat chat = (TLRPC.EncryptedChat)args[0];
@@ -373,8 +373,8 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             listAdapter.notifyDataSetChanged();
         }
         firstStart = false;
-        ((ApplicationActivity)parentActivity).showActionBar();
-        ((ApplicationActivity)parentActivity).updateActionBar();
+        ((LaunchActivity)parentActivity).showActionBar();
+        ((LaunchActivity)parentActivity).updateActionBar();
         fixLayout();
     }
 
@@ -439,7 +439,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 Bundle args = new Bundle();
                 args.putInt("user_id", user.id);
                 fragment.setArguments(args);
-                ((ApplicationActivity)parentActivity).presentFragment(fragment, "add_contact_" + user.id, false);
+                ((LaunchActivity)parentActivity).presentFragment(fragment, "add_contact_" + user.id, false);
                 break;
             }
             case R.id.share_contact: {
@@ -449,7 +449,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 args.putBoolean("serverOnly", true);
                 fragment.setArguments(args);
                 fragment.delegate = this;
-                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat_select", false);
+                ((LaunchActivity)parentActivity).presentFragment(fragment, "chat_select", false);
                 break;
             }
             case R.id.edit_contact: {
@@ -457,7 +457,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 Bundle args = new Bundle();
                 args.putInt("user_id", user_id);
                 fragment.setArguments(args);
-                ((ApplicationActivity)parentActivity).presentFragment(fragment, "add_contact_" + user_id, false);
+                ((LaunchActivity)parentActivity).presentFragment(fragment, "add_contact_" + user_id, false);
                 break;
             }
             case R.id.delete_contact: {
@@ -513,7 +513,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     bundle.putInt("user_id", lower_part);
                     fragment.setArguments(bundle);
                     fragment.scrollToTopOnResume = true;
-                    ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
+                    ((LaunchActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
                     removeSelfFromStack();
                     messageFragment.removeSelfFromStack();
                 } else if (lower_part < 0) {
@@ -521,7 +521,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     bundle.putInt("chat_id", -lower_part);
                     fragment.setArguments(bundle);
                     fragment.scrollToTopOnResume = true;
-                    ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
+                    ((LaunchActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
                     messageFragment.removeSelfFromStack();
                     removeSelfFromStack();
                 }
@@ -531,7 +531,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 bundle.putInt("enc_id", id);
                 fragment.setArguments(bundle);
                 fragment.scrollToTopOnResume = true;
-                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), false);
+                ((LaunchActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), false);
                 messageFragment.removeSelfFromStack();
                 removeSelfFromStack();
             }
@@ -730,7 +730,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         Bundle bundle = new Bundle();
                         bundle.putInt("user_id", user_id);
                         fragment.setArguments(bundle);
-                        ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
+                        ((LaunchActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
                     }
                 });
                 TextView textView = (TextView)view.findViewById(R.id.settings_row_text);

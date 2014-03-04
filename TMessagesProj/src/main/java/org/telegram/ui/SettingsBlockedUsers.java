@@ -95,7 +95,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                         Bundle args = new Bundle();
                         args.putInt("user_id", blockedContacts.get(i).user_id);
                         fragment.setArguments(args);
-                        ((ApplicationActivity)parentActivity).presentFragment(fragment, "user_" + blockedContacts.get(i).user_id, false);
+                        ((LaunchActivity)parentActivity).presentFragment(fragment, "user_" + blockedContacts.get(i).user_id, false);
                     }
                 }
             });
@@ -269,7 +269,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
             title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
             title.setCompoundDrawablePadding(0);
         }
-        ((ApplicationActivity)parentActivity).fixBackButton();
+        ((LaunchActivity)parentActivity).fixBackButton();
     }
 
     @Override
@@ -285,8 +285,8 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
             listViewAdapter.notifyDataSetChanged();
         }
         firstStart = false;
-        ((ApplicationActivity)parentActivity).showActionBar();
-        ((ApplicationActivity)parentActivity).updateActionBar();
+        ((LaunchActivity)parentActivity).showActionBar();
+        ((LaunchActivity)parentActivity).updateActionBar();
     }
 
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
@@ -310,7 +310,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                 bundle.putBoolean("returnAsResult", true);
                 fragment.delegate = this;
                 fragment.setArguments(bundle);
-                ((ApplicationActivity)parentActivity).presentFragment(fragment, "contacts_block", false);
+                ((LaunchActivity)parentActivity).presentFragment(fragment, "contacts_block", false);
                 break;
         }
         return true;

@@ -174,7 +174,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 Bundle bundle = new Bundle();
                                 bundle.putInt("user_id", user.id);
                                 fragment.setArguments(bundle);
-                                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), destroyAfterSelect, false);
+                                ((LaunchActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), destroyAfterSelect, false);
                             }
                         }
                     } else {
@@ -235,7 +235,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                     Bundle bundle = new Bundle();
                                     bundle.putInt("user_id", user.id);
                                     fragment.setArguments(bundle);
-                                    ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), destroyAfterSelect, false);
+                                    ((LaunchActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), destroyAfterSelect, false);
                                 }
                             }
                         } else {
@@ -357,7 +357,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             actionBar.setTitle(getStringEntry(R.string.Contacts));
         }
 
-        ((ApplicationActivity)parentActivity).fixBackButton();
+        ((LaunchActivity)parentActivity).fixBackButton();
     }
 
     @Override
@@ -373,8 +373,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             listViewAdapter.notifyDataSetChanged();
         }
         firstStart = false;
-        ((ApplicationActivity)parentActivity).showActionBar();
-        ((ApplicationActivity)parentActivity).updateActionBar();
+        ((LaunchActivity)parentActivity).showActionBar();
+        ((LaunchActivity)parentActivity).updateActionBar();
     }
 
     @Override
@@ -478,7 +478,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 }
                 listView.setFastScrollEnabled(true);
                 listView.setVerticalScrollBarEnabled(false);
-                ((ApplicationActivity)parentActivity).updateActionBar();
+                ((LaunchActivity)parentActivity).updateActionBar();
 
                 epmtyTextView.setText(getStringEntry(R.string.NoContacts));
                 return true;
@@ -504,7 +504,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 Bundle bundle = new Bundle();
                 bundle.putInt("enc_id", encryptedChat.id);
                 fragment.setArguments(bundle);
-                ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
+                ((LaunchActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
             }
         }
     }

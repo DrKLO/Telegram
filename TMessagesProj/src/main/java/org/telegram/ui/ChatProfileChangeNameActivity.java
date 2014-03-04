@@ -129,7 +129,7 @@ public class ChatProfileChangeNameActivity extends BaseFragment {
         if (getActivity() == null) {
             return;
         }
-        ((ApplicationActivity)parentActivity).updateActionBar();
+        ((LaunchActivity)parentActivity).updateActionBar();
 
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         boolean animations = preferences.getBoolean("view_animations", true);

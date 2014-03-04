@@ -424,7 +424,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
             listAdapter.notifyDataSetChanged();
         }
 
-        ((ApplicationActivity) parentActivity).hideActionBar();
+        ((LaunchActivity) parentActivity).hideActionBar();
 
         processSelectedBackground();
 

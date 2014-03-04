@@ -162,8 +162,8 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         if (getActivity() == null) {
             return;
         }
-        ((ApplicationActivity)parentActivity).showActionBar();
-        ((ApplicationActivity)parentActivity).updateActionBar();
+        ((LaunchActivity)parentActivity).showActionBar();
+        ((LaunchActivity)parentActivity).updateActionBar();
     }
 
     @Override
@@ -244,7 +244,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                     Bundle bundle = new Bundle();
                     bundle.putInt("chat_id", (Integer)args[0]);
                     fragment.setArguments(bundle);
-                    ((ApplicationActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
+                    ((LaunchActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
                 }
             });
         }

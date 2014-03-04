@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.telegram.messenger"
-    android:versionCode="181"
+    android:versionCode="182"
     android:versionName="1.3.26">
 
     <supports-screens android:anyDensity="true"
@@ -71,25 +71,7 @@
         <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
 
         <activity
-            android:name="org.telegram.ui.LoginActivity"
-            android:windowSoftInputMode="adjustResize"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
-            android:screenOrientation="portrait">
-        </activity>
-        <activity
-            android:name="org.telegram.ui.CountrySelectActivity"
-            android:windowSoftInputMode="adjustResize"
-            android:theme="@style/Theme.TMessages"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
-            android:screenOrientation="portrait">
-        </activity>
-        <activity
-            android:name="org.telegram.ui.IntroActivity"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
-            android:screenOrientation="portrait">
-        </activity>
-        <activity
-            android:name="org.telegram.ui.ApplicationActivity"
+            android:name="org.telegram.ui.LaunchActivity"
             android:windowSoftInputMode="adjustResize"
             android:hardwareAccelerated="true"
             android:launchMode="singleTask"
@@ -133,6 +115,24 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="vnd.android.cursor.item/vnd.org.telegram.messenger.android.profile"/>
             </intent-filter>
+        </activity>
+        <activity
+            android:name="org.telegram.ui.LoginActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:screenOrientation="portrait">
+        </activity>
+        <activity
+            android:name="org.telegram.ui.CountrySelectActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.TMessages"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:screenOrientation="portrait">
+        </activity>
+        <activity
+            android:name="org.telegram.ui.IntroActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:screenOrientation="portrait">
         </activity>
         <activity
             android:name="org.telegram.ui.GalleryImageViewer"
