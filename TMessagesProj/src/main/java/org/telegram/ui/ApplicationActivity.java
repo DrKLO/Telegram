@@ -13,9 +13,12 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.graphics.PixelFormat;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBar;
@@ -27,12 +30,14 @@ import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
@@ -44,15 +49,16 @@ import net.hockeyapp.android.UpdateManager;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 
 public class ApplicationActivity extends ActionBarActivity implements NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate {
     private boolean finished = false;
     private NotificationView notificationView;
-    private String photoPath = null;
+    private Uri photoPath = null;
     private String videoPath = null;
     private String sendingText = null;
     private String documentPath = null;
-    private String[] imagesPathArray = null;
+    private Uri[] imagesPathArray = null;
     private String[] documentsPathArray = null;
     private int currentConnectionState;
     private View statusView;
@@ -64,6 +70,21 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        this.setTheme(R.style.Theme_TMessages);
+        getWindow().setBackgroundDrawableResource(R.drawable.transparent);
+        getWindow().setFormat(PixelFormat.RGB_565);
+
+        if (!UserConfig.clientActivated) {
+            Intent intent = getIntent();
+            if (intent != null && intent.getAction() != null && Intent.ACTION_SEND.equals(intent.getAction()) || intent.getAction().equals(Intent.ACTION_SEND_MULTIPLE)) {
+                finish();
+                return;
+            }
+            Intent intent2 = new Intent(this, IntroActivity.class);
+            startActivity(intent2);
+            finish();
+            return;
+        }
 
         int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
         if (resourceId > 0) {
@@ -111,18 +132,180 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
             ApplicationLoader.fragmentsStack.add(fragment);
         }
 
+        handleIntent(getIntent(), false);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void prepareForHideShowActionBar() {
+        try {
+            Class firstClass = getSupportActionBar().getClass();
+            Class aClass = firstClass.getSuperclass();
+            if (aClass == android.support.v7.app.ActionBar.class) {
+                Method method = firstClass.getDeclaredMethod("setShowHideAnimationEnabled", boolean.class);
+                method.invoke(getSupportActionBar(), false);
+            } else {
+                Field field = aClass.getDeclaredField("mActionBar");
+                field.setAccessible(true);
+                Method method = field.get(getSupportActionBar()).getClass().getDeclaredMethod("setShowHideAnimationEnabled", boolean.class);
+                method.invoke(field.get(getSupportActionBar()), false);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void showActionBar() {
+        prepareForHideShowActionBar();
+        getSupportActionBar().show();
+    }
+
+    public void hideActionBar() {
+        prepareForHideShowActionBar();
+        getSupportActionBar().hide();
+    }
+
+    private void handleIntent(Intent intent, boolean isNew) {
         boolean pushOpened = false;
 
-        Integer push_user_id = (Integer)NotificationCenter.Instance.getFromMemCache("push_user_id", 0);
-        Integer push_chat_id = (Integer)NotificationCenter.Instance.getFromMemCache("push_chat_id", 0);
-        Integer push_enc_id = (Integer)NotificationCenter.Instance.getFromMemCache("push_enc_id", 0);
-        Integer open_settings = (Integer)NotificationCenter.Instance.getFromMemCache("open_settings", 0);
-        photoPath = (String)NotificationCenter.Instance.getFromMemCache(533);
-        videoPath = (String)NotificationCenter.Instance.getFromMemCache(534);
-        sendingText = (String)NotificationCenter.Instance.getFromMemCache(535);
-        documentPath = (String)NotificationCenter.Instance.getFromMemCache(536);
-        imagesPathArray = (String[])NotificationCenter.Instance.getFromMemCache(537);
-        documentsPathArray = (String[])NotificationCenter.Instance.getFromMemCache(538);
+        Integer push_user_id = 0;
+        Integer push_chat_id = 0;
+        Integer push_enc_id = 0;
+        Integer open_settings = 0;
+
+        photoPath = null;
+        videoPath = null;
+        sendingText = null;
+        documentPath = null;
+        imagesPathArray = null;
+        documentsPathArray = null;
+
+        if (intent != null && intent.getAction() != null) {
+            if (Intent.ACTION_SEND.equals(intent.getAction())) {
+                boolean error = false;
+                String type = intent.getType();
+                if (type != null && type.equals("text/plain")) {
+                    String text = intent.getStringExtra(Intent.EXTRA_TEXT);
+                    if (text != null && text.length() != 0) {
+                        sendingText = text;
+                    } else {
+                        error = true;
+                    }
+                } else {
+                    Parcelable parcelable = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+                    if (parcelable == null) {
+                        return;
+                    }
+                    String path = null;
+                    if (!(parcelable instanceof Uri)) {
+                        parcelable = Uri.parse(parcelable.toString());
+                    }
+                    if (parcelable != null && type != null && type.startsWith("image/")) {
+                        photoPath = (Uri)parcelable;
+                    } else {
+                        path = Utilities.getPath((Uri)parcelable);
+                        if (path != null) {
+                            if (path.startsWith("file:")) {
+                                path = path.replace("file://", "");
+                            }
+                            if (type != null && type.startsWith("video/")) {
+                                videoPath = path;
+                            } else {
+                                documentPath = path;
+                            }
+                        } else {
+                            error = true;
+                        }
+                    }
+                    if (error) {
+                        Toast.makeText(this, "Unsupported content", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            } else if (intent.getAction().equals(Intent.ACTION_SEND_MULTIPLE)) {
+                boolean error = false;
+                try {
+                    ArrayList<Parcelable> uris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
+                    String type = intent.getType();
+                    if (uris != null) {
+                        if (type != null && type.startsWith("image/")) {
+                            Uri[] uris2 = new Uri[uris.size()];
+                            for (int i = 0; i < uris2.length; i++) {
+                                Parcelable parcelable = uris.get(i);
+                                if (!(parcelable instanceof Uri)) {
+                                    parcelable = Uri.parse(parcelable.toString());
+                                }
+                                uris2[i] = (Uri)parcelable;
+                            }
+                            imagesPathArray = uris2;
+                        } else {
+                            String[] uris2 = new String[uris.size()];
+                            for (int i = 0; i < uris2.length; i++) {
+                                Parcelable parcelable = uris.get(i);
+                                if (!(parcelable instanceof Uri)) {
+                                    parcelable = Uri.parse(parcelable.toString());
+                                }
+                                String path = Utilities.getPath((Uri)parcelable);
+                                if (path != null) {
+                                    if (path.startsWith("file:")) {
+                                        path = path.replace("file://", "");
+                                    }
+                                    uris2[i] = path;
+                                }
+                            }
+                            documentsPathArray = uris2;
+                        }
+                    } else {
+                        error = true;
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                    error = true;
+                }
+                if (error) {
+                    Toast.makeText(this, "Unsupported content", Toast.LENGTH_SHORT).show();
+                }
+            } else if (Intent.ACTION_VIEW.equals(intent.getAction())) {
+                try {
+                    Cursor cursor = getContentResolver().query(intent.getData(), null, null, null, null);
+                    if (cursor != null) {
+                        if (cursor.moveToFirst()) {
+                            int userId = cursor.getInt(cursor.getColumnIndex("DATA4"));
+                            NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
+                            push_user_id = userId;
+                        }
+                        cursor.close();
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            } else if (intent.getAction().equals("org.telegram.messenger.OPEN_ACCOUNT")) {
+                open_settings = 1;
+            }
+        }
+
+        if ((getIntent().getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0) {
+            int chatId = getIntent().getIntExtra("chatId", 0);
+            int userId = getIntent().getIntExtra("userId", 0);
+            int encId = getIntent().getIntExtra("encId", 0);
+            if (chatId != 0) {
+                TLRPC.Chat chat = MessagesController.Instance.chats.get(chatId);
+                if (chat != null) {
+                    NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
+                    push_chat_id = chatId;
+                }
+            } else if (userId != 0) {
+                TLRPC.User user = MessagesController.Instance.users.get(userId);
+                if (user != null) {
+                    NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
+                    push_user_id = userId;
+                }
+            } else if (encId != 0) {
+                TLRPC.EncryptedChat chat = MessagesController.Instance.encryptedChats.get(encId);
+                if (chat != null) {
+                    NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
+                    push_enc_id = encId;
+                }
+            }
+        }
 
         if (push_user_id != 0) {
             if (push_user_id == UserConfig.clientUserId) {
@@ -179,109 +362,18 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
             getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "settings").commitAllowingStateLoss();
             pushOpened = true;
         }
-        if (!pushOpened) {
+        if (!pushOpened && !isNew) {
             BaseFragment fragment = ApplicationLoader.fragmentsStack.get(ApplicationLoader.fragmentsStack.size() - 1);
             getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, fragment.getTag()).commitAllowingStateLoss();
         }
 
-        getWindow().setBackgroundDrawableResource(R.drawable.transparent);
-        getWindow().setFormat(PixelFormat.RGB_565);
-    }
-
-    @SuppressWarnings("unchecked")
-    private void prepareForHideShowActionBar() {
-        try {
-            Class firstClass = getSupportActionBar().getClass();
-            Class aClass = firstClass.getSuperclass();
-            if (aClass == android.support.v7.app.ActionBar.class) {
-                Method method = firstClass.getDeclaredMethod("setShowHideAnimationEnabled", boolean.class);
-                method.invoke(getSupportActionBar(), false);
-            } else {
-                Field field = aClass.getDeclaredField("mActionBar");
-                field.setAccessible(true);
-                Method method = field.get(getSupportActionBar()).getClass().getDeclaredMethod("setShowHideAnimationEnabled", boolean.class);
-                method.invoke(field.get(getSupportActionBar()), false);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void showActionBar() {
-        prepareForHideShowActionBar();
-        getSupportActionBar().show();
-    }
-
-    public void hideActionBar() {
-        prepareForHideShowActionBar();
-        getSupportActionBar().hide();
+        getIntent().setAction(null);
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        photoPath = (String)NotificationCenter.Instance.getFromMemCache(533);
-        videoPath = (String)NotificationCenter.Instance.getFromMemCache(534);
-        sendingText = (String)NotificationCenter.Instance.getFromMemCache(535);
-        documentPath = (String)NotificationCenter.Instance.getFromMemCache(536);
-        imagesPathArray = (String[])NotificationCenter.Instance.getFromMemCache(537);
-        documentsPathArray = (String[])NotificationCenter.Instance.getFromMemCache(538);
-        if (videoPath != null || photoPath != null || sendingText != null || documentPath != null || imagesPathArray != null || documentsPathArray != null) {
-            MessagesActivity fragment = new MessagesActivity();
-            fragment.selectAlertString = R.string.ForwardMessagesTo;
-            fragment.animationType = 1;
-            Bundle args = new Bundle();
-            args.putBoolean("onlySelect", true);
-            fragment.setArguments(args);
-            fragment.delegate = this;
-            ApplicationLoader.fragmentsStack.add(fragment);
-            fragment.onFragmentCreate();
-            getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, fragment.getTag()).commitAllowingStateLoss();
-        }
-
-        Integer push_user_id = (Integer)NotificationCenter.Instance.getFromMemCache("push_user_id", 0);
-        Integer push_chat_id = (Integer)NotificationCenter.Instance.getFromMemCache("push_chat_id", 0);
-        Integer push_enc_id = (Integer)NotificationCenter.Instance.getFromMemCache("push_enc_id", 0);
-        Integer open_settings = (Integer)NotificationCenter.Instance.getFromMemCache("open_settings", 0);
-
-        if (push_user_id != 0) {
-            if (push_user_id == UserConfig.clientUserId) {
-                open_settings = 1;
-            } else {
-                ChatActivity fragment = new ChatActivity();
-                Bundle bundle = new Bundle();
-                bundle.putInt("user_id", push_user_id);
-                fragment.setArguments(bundle);
-                if (fragment.onFragmentCreate()) {
-                    ApplicationLoader.fragmentsStack.add(fragment);
-                    getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
-                }
-            }
-        } else if (push_chat_id != 0) {
-            ChatActivity fragment = new ChatActivity();
-            Bundle bundle = new Bundle();
-            bundle.putInt("chat_id", push_chat_id);
-            fragment.setArguments(bundle);
-            if (fragment.onFragmentCreate()) {
-                ApplicationLoader.fragmentsStack.add(fragment);
-                getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
-            }
-        } else if (push_enc_id != 0) {
-            ChatActivity fragment = new ChatActivity();
-            Bundle bundle = new Bundle();
-            bundle.putInt("enc_id", push_enc_id);
-            fragment.setArguments(bundle);
-            if (fragment.onFragmentCreate()) {
-                ApplicationLoader.fragmentsStack.add(fragment);
-                getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
-            }
-        }
-        if (open_settings != 0) {
-            SettingsActivity fragment = new SettingsActivity();
-            ApplicationLoader.fragmentsStack.add(fragment);
-            fragment.onFragmentCreate();
-            getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "settings").commitAllowingStateLoss();
-        }
+        handleIntent(intent, true);
     }
 
     @Override
@@ -314,7 +406,7 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
                 presentFragment(fragment, "chat" + Math.random(), true, false);
             }
             if (photoPath != null) {
-                fragment.processSendingPhoto(photoPath);
+                fragment.processSendingPhoto(null, photoPath);
             } else if (videoPath != null) {
                 fragment.processSendingVideo(videoPath);
             } else if (sendingText != null) {
@@ -322,8 +414,8 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
             } else if (documentPath != null) {
                 fragment.processSendingDocument(documentPath);
             } else if (imagesPathArray != null) {
-                for (String path : imagesPathArray) {
-                    fragment.processSendingPhoto(path);
+                for (Uri path : imagesPathArray) {
+                    fragment.processSendingPhoto(null, path);
                 }
             } else if (documentsPathArray != null) {
                 for (String path : documentsPathArray) {
@@ -455,7 +547,7 @@ public class ApplicationActivity extends ActionBarActivity implements Notificati
                 fragment.onFragmentDestroy();
             }
             ApplicationLoader.fragmentsStack.clear();
-            Intent intent2 = new Intent(this, LaunchActivity.class);
+            Intent intent2 = new Intent(this, IntroActivity.class);
             startActivity(intent2);
             processOnFinish();
             finish();

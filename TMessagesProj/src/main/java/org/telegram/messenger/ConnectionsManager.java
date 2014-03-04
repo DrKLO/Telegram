@@ -484,7 +484,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     long getNewSessionId() {
-        long newSessionId = (long)(MessagesController.random.nextDouble() * Long.MAX_VALUE);
+        long newSessionId = MessagesController.random.nextLong();
         return isDebugSession ? (0xabcd000000000000L | (newSessionId & 0x0000ffffffffffffL)) : newSessionId;
     }
 
@@ -612,7 +612,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                         if (existing == null) {
                             existing = new Datacenter();
                             existing.datacenterId = datacenterDesc.id;
-                            existing.authSessionId = (long)(MessagesController.random.nextDouble() * Long.MAX_VALUE);
+                            existing.authSessionId = MessagesController.random.nextLong();
                             datacentersArr.add(existing);
                             datacenterMap.put(existing.datacenterId, existing);
                         }

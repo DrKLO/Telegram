@@ -379,9 +379,9 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         } else {
             audioRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
         }
-        audioRecorder.setAudioSamplingRate(24000);
+        audioRecorder.setAudioSamplingRate(16000);
         audioRecorder.setAudioChannels(1);
-        audioRecorder.setAudioEncodingBitRate(16000);
+        audioRecorder.setAudioEncodingBitRate(16000*4*1);
 
         try {
             audioRecorder.prepare();

@@ -193,7 +193,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             } else {
                 inflater.inflate(R.menu.messages_encrypted_menu, menu);
             }
-            menu.findItem(R.id.copy).setVisible(selectedMessagesCanCopyIds.size() == 1);
+            menu.findItem(R.id.copy).setVisible(selectedMessagesCanCopyIds.size() != 0);
             return true;
         }
 
@@ -206,14 +206,25 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         public boolean onActionItemClicked(ActionMode actionMode, MenuItem menuItem) {
             switch (menuItem.getItemId()) {
                 case R.id.copy: {
-                    MessageObject messageObject = (MessageObject)selectedMessagesCanCopyIds.values().toArray()[0];
-                    if(android.os.Build.VERSION.SDK_INT < 11) {
-                        android.text.ClipboardManager clipboard = (android.text.ClipboardManager)parentActivity.getSystemService(Context.CLIPBOARD_SERVICE);
-                        clipboard.setText(messageObject.messageOwner.message);
-                    } else {
-                        android.content.ClipboardManager clipboard = (android.content.ClipboardManager)parentActivity.getSystemService(Context.CLIPBOARD_SERVICE);
-                        android.content.ClipData clip = android.content.ClipData.newPlainText("label", messageObject.messageOwner.message);
-                        clipboard.setPrimaryClip(clip);
+                    String str = "";
+                    ArrayList<Integer> ids = new ArrayList<Integer>(selectedMessagesCanCopyIds.keySet());
+                    Collections.sort(ids);
+                    for (Integer id : ids) {
+                        MessageObject messageObject = selectedMessagesCanCopyIds.get(id);
+                        if (str.length() != 0) {
+                            str += "\n";
+                        }
+                        str += messageObject.messageOwner.message;
+                    }
+                    if (str.length() != 0) {
+                        if(android.os.Build.VERSION.SDK_INT < 11) {
+                            android.text.ClipboardManager clipboard = (android.text.ClipboardManager)parentActivity.getSystemService(Context.CLIPBOARD_SERVICE);
+                            clipboard.setText(str);
+                        } else {
+                            android.content.ClipboardManager clipboard = (android.content.ClipboardManager)parentActivity.getSystemService(Context.CLIPBOARD_SERVICE);
+                            android.content.ClipData clip = android.content.ClipData.newPlainText("label", str);
+                            clipboard.setPrimaryClip(clip);
+                        }
                     }
                     break;
                 }
@@ -1007,25 +1018,14 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             if (messageObject.type == 0 || messageObject.type == 1 || messageObject.type == 8 || messageObject.type == 9) {
                 selectedMessagesCanCopyIds.remove(messageObject.messageOwner.id);
             }
-            if (selectedMessagesIds.size() == 1) {
-                if (mActionMode != null && mActionMode.getMenu() != null) {
-                    mActionMode.getMenu().findItem(R.id.copy).setVisible(selectedMessagesCanCopyIds.size() == 1);
-                }
-            }
         } else {
-            boolean update = false;
-            if (selectedMessagesIds.size() == 1) {
-                update = true;
-            }
             selectedMessagesIds.put(messageObject.messageOwner.id, messageObject);
             if (messageObject.type == 0 || messageObject.type == 1 || messageObject.type == 8 || messageObject.type == 9) {
                 selectedMessagesCanCopyIds.put(messageObject.messageOwner.id, messageObject);
             }
-            if (update) {
-                if (mActionMode != null && mActionMode.getMenu() != null) {
-                    mActionMode.getMenu().findItem(R.id.copy).setVisible(false);
-                }
-            }
+        }
+        if (mActionMode != null && mActionMode.getMenu() != null) {
+            mActionMode.getMenu().findItem(R.id.copy).setVisible(selectedMessagesCanCopyIds.size() != 0);
         }
     }
 
@@ -1220,27 +1220,13 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == 0) {
                 Utilities.addMediaToGallery(currentPicturePath);
-                processSendingPhoto(currentPicturePath);
+                processSendingPhoto(currentPicturePath, null);
                 currentPicturePath = null;
             } else if (requestCode == 1) {
                 if (data == null) {
                     return;
                 }
-                Uri imageUri = data.getData();
-                if (imageUri == null || imageUri.getScheme() == null) {
-                    return;
-                }
-                String imageFilePath = null;
-                if (imageUri.getScheme().contains("file")) {
-                    imageFilePath = imageUri.getPath();
-                } else {
-                    try {
-                        imageFilePath = Utilities.getPath(imageUri);
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                }
-                processSendingPhoto(imageFilePath);
+                processSendingPhoto(null, data.getData());
             } else if (requestCode == 2) {
                 String videoPath = null;
                 if (data != null) {
@@ -1293,11 +1279,11 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         return false;
     }
 
-    public void processSendingPhoto(String imageFilePath) {
-        if (imageFilePath == null || imageFilePath.length() == 0) {
+    public void processSendingPhoto(String imageFilePath, Uri imageUri) {
+        if ((imageFilePath == null || imageFilePath.length() == 0) && imageUri == null) {
             return;
         }
-        TLRPC.TL_photo photo = MessagesController.Instance.generatePhotoSizes(imageFilePath);
+        TLRPC.TL_photo photo = MessagesController.Instance.generatePhotoSizes(imageFilePath, imageUri);
         if (photo != null) {
             MessagesController.Instance.sendMessage(photo, dialog_id);
             if (chatListView != null) {

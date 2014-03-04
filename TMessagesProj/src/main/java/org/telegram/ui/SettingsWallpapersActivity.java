@@ -193,7 +193,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
             if (requestCode == 0) {
                 Utilities.addMediaToGallery(currentPicturePath);
                 try {
-                    Bitmap bitmap = FileLoader.loadBitmap(currentPicturePath, Utilities.dp(320), Utilities.dp(480));
+                    Bitmap bitmap = FileLoader.loadBitmap(currentPicturePath, null, Utilities.dp(320), Utilities.dp(480));
                     File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
                     FileOutputStream stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
@@ -218,7 +218,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                     }
                     cursor.close();
 
-                    Bitmap bitmap = FileLoader.loadBitmap(imageFilePath, Utilities.dp(320), Utilities.dp(480));
+                    Bitmap bitmap = FileLoader.loadBitmap(imageFilePath, null, Utilities.dp(320), Utilities.dp(480));
                     File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
                     FileOutputStream stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);

@@ -239,7 +239,7 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
 
     @Override
     public void needFinishActivity() {
-        Intent intent2 = new Intent(this, LaunchActivity.class);
+        Intent intent2 = new Intent(this, ApplicationActivity.class);
         startActivity(intent2);
         finish();
     }
