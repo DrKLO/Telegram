@@ -56,6 +56,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private long recordStartTime;
     private long recordDialogId;
 
+    private int audioBitDepth = 4;
+
     private final Integer sync = 1;
 
     private int lastTag = 0;
@@ -379,9 +381,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         } else {
             audioRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
         }
-        audioRecorder.setAudioSamplingRate(24000);
+        audioRecorder.setAudioSamplingRate(16000);
         audioRecorder.setAudioChannels(1);
-        audioRecorder.setAudioEncodingBitRate(16000);
+        // formula : Bit rate = (sampling rate) × (bit depth) × (number of channels)
+        audioRecorder.setAudioEncodingBitRate(16000*audioBitDepth*1);
 
         try {
             audioRecorder.prepare();
