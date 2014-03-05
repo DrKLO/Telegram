@@ -62,7 +62,7 @@ public class PhotoObject {
         for (TLRPC.PhotoSize obj : sizes) {
             int diffW = Math.abs(obj.w - width);
             int diffH = Math.abs(obj.h - height);
-            if (closestObject == null || closestWidth > diffW || closestHeight > diffH) {
+            if (closestObject == null || closestObject instanceof TLRPC.TL_photoCachedSize || closestWidth > diffW || closestHeight > diffH) {
                 closestObject = obj;
                 closestWidth = diffW;
                 closestHeight = diffH;
