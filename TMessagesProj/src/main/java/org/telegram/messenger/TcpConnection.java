@@ -439,7 +439,7 @@ public class TcpConnection extends PyroClientAdapter {
             }
 
             if (currentPacketLength % 4 != 0 || currentPacketLength > 2 * 1024 * 1024) {
-                //FileLog.e("tmessages", "Invalid packet length");
+                FileLog.e("tmessages", "Invalid packet length");
                 reconnect();
                 return;
             }

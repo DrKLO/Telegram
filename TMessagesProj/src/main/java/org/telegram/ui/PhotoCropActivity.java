@@ -232,6 +232,12 @@ public class PhotoCropActivity extends BaseFragment {
             int x = (int)(percX * imageToCrop.getWidth());
             int y = (int)(percY * imageToCrop.getHeight());
             int size = (int)(percSize * imageToCrop.getWidth());
+            if (x + size > imageToCrop.getWidth()) {
+                size = imageToCrop.getWidth() - x;
+            }
+            if (y + size > imageToCrop.getHeight()) {
+                size = imageToCrop.getHeight() - y;
+            }
             try {
                 return Bitmap.createBitmap(imageToCrop, x, y, size, size);
             } catch (Exception e) {

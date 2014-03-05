@@ -919,20 +919,16 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         final ArrayList<Integer> unauthorizedDatacenterIds = new ArrayList<Integer>();
 
         int currentTime = (int)(System.currentTimeMillis() / 1000);
-        for (RPCRequest request : runningRequests) {
+        for (int i = 0; i < runningRequests.size(); i++) {
+            RPCRequest request = runningRequests.get(i);
+
             if (updatingDcSettings && datacenters.size() > 1 && request.rawRequest instanceof TLRPC.TL_help_getConfig) {
                 if (updatingDcStartTime < currentTime - 60) {
-                    updatingDcStartTime = currentTime;
-                    ArrayList<Datacenter> allDc = new ArrayList<Datacenter>(datacenters.values());
-                    for (int a = 0; a < allDc.size(); a++) {
-                        Datacenter dc = allDc.get(a);
-                        if (dc.datacenterId == request.runningDatacenterId) {
-                            allDc.remove(a);
-                            break;
-                        }
-                    }
-                    Datacenter newDc = allDc.get(Math.abs(MessagesController.random.nextInt()) % allDc.size());
-                    request.runningDatacenterId = newDc.datacenterId;
+                    FileLog.e("tmessages", "move TL_help_getConfig to requestQueue");
+                    requestQueue.add(request);
+                    runningRequests.remove(i);
+                    i--;
+                    continue;
                 }
             }
 

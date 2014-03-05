@@ -48,6 +48,8 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
     private EditText phoneField;
     private TextView countryButton;
 
+    private int countryState = 0;
+
     private ArrayList<String> countriesArray = new ArrayList<String>();
     private HashMap<String, String> countriesMap = new HashMap<String, String>();
     private HashMap<String, String> codesMap = new HashMap<String, String>();
@@ -104,17 +106,29 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
                 ignoreOnTextChange = true;
                 String text = PhoneFormat.stripExceptNumbers(codeField.getText().toString());
                 codeField.setText(text);
-                String country = codesMap.get(text);
-                if (country != null) {
-                    int index = countriesArray.indexOf(country);
-                    if (index != -1) {
-                        ignoreSelection = true;
-                        countryButton.setText(countriesArray.get(index));
+                if (text.length() == 0) {
+                    countryButton.setText(R.string.ChooseCountry);
+                    countryState = 1;
+                } else {
+                    String country = codesMap.get(text);
+                    if (country != null) {
+                        int index = countriesArray.indexOf(country);
+                        if (index != -1) {
+                            ignoreSelection = true;
+                            countryButton.setText(countriesArray.get(index));
 
-                        updatePhoneField();
+                            updatePhoneField();
+                            countryState = 0;
+                        } else {
+                            countryButton.setText(R.string.WrongCountry);
+                            countryState = 2;
+                        }
+                    } else {
+                        countryButton.setText(R.string.WrongCountry);
+                        countryState = 2;
                     }
+                    codeField.setSelection(codeField.getText().length());
                 }
-                codeField.setSelection(codeField.getText().length());
             }
         });
         codeField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -198,56 +212,50 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
                 }
             });
 
-            boolean codeProceed = false;
+            String country = null;
 
-            if (!codeProceed) {
-                String country = "RU";
-
-                try {
-                    TelephonyManager telephonyManager = (TelephonyManager)ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
-                    if (telephonyManager != null) {
-                        country = telephonyManager.getSimCountryIso().toUpperCase();
-                    }
-                } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+            try {
+                TelephonyManager telephonyManager = (TelephonyManager)ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+                if (telephonyManager != null) {
+                    country = telephonyManager.getSimCountryIso().toUpperCase();
                 }
-
-                if (country == null || country.length() == 0) {
-                    try {
-                        Locale current = ApplicationLoader.applicationContext.getResources().getConfiguration().locale;
-                        country = current.getCountry().toUpperCase();
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                }
-                if (country == null || country.length() == 0) {
-                    country = "RU";
-                }
-
-                String countryName = languageMap.get(country);
-                if (countryName == null) {
-                    countryName = "Russia";
-                }
-
-                int index = countriesArray.indexOf(countryName);
-                if (index != -1) {
-                    codeField.setText(countriesMap.get(countryName));
-                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
             }
 
+            if (country != null) {
+                String countryName = languageMap.get(country);
+                if (countryName != null) {
+                    int index = countriesArray.indexOf(countryName);
+                    if (index != -1) {
+                        codeField.setText(countriesMap.get(countryName));
+                        countryState = 0;
+                    }
+                }
+            }
+            if (codeField.length() == 0) {
+                countryButton.setText(R.string.ChooseCountry);
+                countryState = 1;
+            }
+        }
+
+        if (codeField.length() != 0) {
             Utilities.showKeyboard(phoneField);
             phoneField.requestFocus();
-            phoneField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-                @Override
-                public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                    if (i == EditorInfo.IME_ACTION_NEXT) {
-                        delegate.onNextAction();
-                        return true;
-                    }
-                    return false;
-                }
-            });
+        } else {
+            Utilities.showKeyboard(codeField);
+            codeField.requestFocus();
         }
+        phoneField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                if (i == EditorInfo.IME_ACTION_NEXT) {
+                    delegate.onNextAction();
+                    return true;
+                }
+                return false;
+            }
+        });
     }
 
     public void selectCountry(String name) {
@@ -301,6 +309,13 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
 
     @Override
     public void onNextPressed() {
+        if (countryState == 1) {
+            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.ChooseCountry));
+            return;
+        } else if (countryState == 2) {
+            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.WrongCountry));
+            return;
+        }
         if (codeField.length() == 0 || phoneField.length() == 0) {
             delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidPhoneNumber));
             return;

@@ -4418,17 +4418,19 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
     private void updateInterfaceWithMessages(long uid, ArrayList<MessageObject> messages) {
         MessageObject lastMessage = null;
-        int lastDate = 0;
         TLRPC.TL_dialog dialog = dialogs_dict.get(uid);
+
+        boolean isEncryptedChat = ((int)uid) == 0;
 
         NotificationCenter.Instance.postNotificationName(didReceivedNewMessages, uid, messages);
 
         for (MessageObject message : messages) {
-            if (lastMessage == null || message.messageOwner.date > lastDate) {
+            if (lastMessage == null || (!isEncryptedChat && message.messageOwner.id > lastMessage.messageOwner.id || isEncryptedChat && message.messageOwner.id < lastMessage.messageOwner.id) || message.messageOwner.date > lastMessage.messageOwner.date) {
                 lastMessage = message;
-                lastDate = message.messageOwner.date;
             }
         }
+
+        boolean changed = false;
 
         if (dialog == null) {
             dialog = new TLRPC.TL_dialog();
@@ -4439,33 +4441,37 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             dialogs_dict.put(uid, dialog);
             dialogs.add(dialog);
             dialogMessage.put(lastMessage.messageOwner.id, lastMessage);
+            changed = true;
         } else {
-            dialogMessage.remove(dialog.top_message);
             if (dialog.top_message > 0 && lastMessage.messageOwner.id > 0 && lastMessage.messageOwner.id > dialog.top_message ||
                     dialog.top_message < 0 && lastMessage.messageOwner.id < 0 && lastMessage.messageOwner.id < dialog.top_message ||
                     dialog.last_message_date < lastMessage.messageOwner.date) {
+                dialogMessage.remove(dialog.top_message);
                 dialog.top_message = lastMessage.messageOwner.id;
                 dialog.last_message_date = lastMessage.messageOwner.date;
                 dialogMessage.put(lastMessage.messageOwner.id, lastMessage);
+                changed = true;
             }
         }
 
-        dialogsServerOnly.clear();
-        Collections.sort(dialogs, new Comparator<TLRPC.TL_dialog>() {
-            @Override
-            public int compare(TLRPC.TL_dialog tl_dialog, TLRPC.TL_dialog tl_dialog2) {
-                if (tl_dialog.last_message_date == tl_dialog2.last_message_date) {
-                    return 0;
-                } else if (tl_dialog.last_message_date < tl_dialog2.last_message_date) {
-                    return 1;
-                } else {
-                    return -1;
+        if (changed) {
+            dialogsServerOnly.clear();
+            Collections.sort(dialogs, new Comparator<TLRPC.TL_dialog>() {
+                @Override
+                public int compare(TLRPC.TL_dialog tl_dialog, TLRPC.TL_dialog tl_dialog2) {
+                    if (tl_dialog.last_message_date == tl_dialog2.last_message_date) {
+                        return 0;
+                    } else if (tl_dialog.last_message_date < tl_dialog2.last_message_date) {
+                        return 1;
+                    } else {
+                        return -1;
+                    }
                 }
-            }
-        });
-        for (TLRPC.TL_dialog d : dialogs) {
-            if ((int)d.id != 0) {
-                dialogsServerOnly.add(d);
+            });
+            for (TLRPC.TL_dialog d : dialogs) {
+                if ((int)d.id != 0) {
+                    dialogsServerOnly.add(d);
+                }
             }
         }
     }
