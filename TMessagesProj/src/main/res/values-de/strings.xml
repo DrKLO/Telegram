@@ -157,8 +157,8 @@
     <string name="OtherAt">um</string>
     <string name="Online">Online</string>
     <string name="Offline">Offline</string>
-    <string name="LastSeen">Zuletzt online</string>
-    <string name="LastSeenDate">Zuletzt online</string>
+    <string name="LastSeen">Zul. online</string>
+    <string name="LastSeenDate">Zul. online</string>
     <string name="InviteFriends">Freunde einladen</string>
 
     <!--group create view-->
