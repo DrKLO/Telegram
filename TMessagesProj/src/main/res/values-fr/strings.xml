@@ -225,29 +225,27 @@
     </string>
 
     <!--settings view-->
-    <string name="ResetNotificationsText">Reset all notification settings to default</string>
-    <string name="TextSize">Messages Text Size</string>
-    <string name="AskAQuestion">Ask a Question</string>
-    <string name="EnableAnimations">Enable Animations</string>
-    <string name="Unblock">Unblock</string>
-    <string name="UnblockText">Tap and hold on user to unblock.</string>
-    <string name="NoBlocked">No blocked users yet</string>
-    <string name="YourPhoneNumber">YOUR PHONE NUMBER</string>
-    <string name="MessageNotifications">MESSAGE NOTIFICATIONS</string>
-    <string name="Alert">Alert</string>
-    <string name="MessagePreview">Message Preview</string>
-    <string name="GroupNotifications">GROUP NOTIFICATIONS</string>
-    <string name="Sound">Sound</string>
-    <string name="InAppNotifications">IN-APP NOTIFICATIONS</string>
+    <string name="ResetNotificationsText">Rétablir les paramètres par défaut de notifications.</string>
+    <string name="TextSize">Taille des messages textes</string>
+    <string name="AskAQuestion">Poser une question</string>
+    <string name="EnableAnimations">Activer les animations</string>
+    <string name="Unblock">Débloquer</string>
+    <string name="UnblockText">Laisser appuyé sur un utilisateur pour le débloquer.</string>
+    <string name="NoBlocked">Aucun utilisateur bloqué.</string>
+    <string name="YourPhoneNumber">VOTRE NUMERO DE TELEPHONE</string>
+    <string name="MessageNotifications">NOTIFICATIONS</string>
+    <string name="Alert">Alerte</string>
+    <string name="MessagePreview">Prévisualisation de messages</string>
+    <string name="GroupNotifications">NOTIFICATIONS DE GROUPE</string>
+    <string name="Sound">Son</string>
+    <string name="InAppNotifications">NOTIFICATIONS PUSH</string>
     <string name="InAppSounds">In-App Sounds</string>
     <string name="InAppVibrate">In-App Vibrate</string>
-    <string name="Vibrate">Vibrate</string>
+    <string name="Vibrate">Vibreur</string>
     <string name="InAppPreview">In-App Preview</string>
     <string name="Reset">RESET</string>
-    <string name="ResetAllNotifications">Reset All Notifications</string>
-    <string name="UndoAllCustom">Undo all custom notification settings for all your contacts and
-        groups
-    </string>
+    <string name="ResetAllNotifications">Réinitialiser toutes les notifications</string>
+    <string name="UndoAllCustom">Annuler tous les paramètres de notifications personnalisés pour tous les groupes et contacts</string>
     <string name="NotificationsAndSounds">Notifications and Sounds</string>
     <string name="BlockedUsers">Blocked Users</string>
     <string name="SaveIncomingPhotos">Save Incoming Photos</string>
