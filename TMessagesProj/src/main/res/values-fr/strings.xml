@@ -154,7 +154,7 @@
     <string name="NotificationContactJoined">%1$s a rejoint Telegram!</string>
     <string name="NotificationUnrecognizedDevice">%1$s,\nNous avons détecté une connexion à votre compte depuis
         un nouveau terminal %2$s\n\nTerminal: %3$s\nEmplacement: %4$s\n\nSi ce n'est pas vous, utilisez l'option
-        Paramètres – Terminez toutes les sessions.\n\nMerci,\nL'équipe Telegram
+        Paramètres – Terminer toutes les sessions.\n\nMerci,\nL'équipe Telegram
     </string>
     <string name="NotificationContactNewPhoto">%1$s a mis à jour sa photo de profil</string>
 
@@ -245,142 +245,138 @@
     <string name="InAppPreview">In-App Preview</string>
     <string name="Reset">RESET</string>
     <string name="ResetAllNotifications">Réinitialiser toutes les notifications</string>
-    <string name="UndoAllCustom">Annuler tous les paramètres de notifications personnalisés pour tous les groupes et contacts</string>
-    <string name="NotificationsAndSounds">Notifications and Sounds</string>
-    <string name="BlockedUsers">Blocked Users</string>
-    <string name="SaveIncomingPhotos">Save Incoming Photos</string>
-    <string name="LogOut">Log Out</string>
-    <string name="YourFirstNameAndLastName">YOUR FIRST AND LAST NAME</string>
-    <string name="NoSound">No sound</string>
-    <string name="Default">Default</string>
+    <string name="UndoAllCustom">Annuler tous les paramètres de notifications personnalisées pour tous les groupes et contacts</string>
+    <string name="NotificationsAndSounds">Sons et Notifications</string>
+    <string name="BlockedUsers">Utilisateurs bloqués</string>
+    <string name="SaveIncomingPhotos">Sauvegarde des photos</string>
+    <string name="LogOut">Déconnexion</string>
+    <string name="YourFirstNameAndLastName">VOS NOMS ET PRENOMS</string>
+    <string name="NoSound">Pas de son</string>
+    <string name="Default">Défaut</string>
     <string name="Support">SUPPORT</string>
-    <string name="ChatBackground">Chat Background</string>
+    <string name="ChatBackground">Fond d'écran</string>
     <string name="MessagesSettings">MESSAGES</string>
-    <string name="SendByEnter">Send by Enter</string>
-    <string name="TerminateAllSessions">Terminate All Other Sessions</string>
-    <string name="AutomaticPhotoDownload">AUTOMATIC PHOTO DOWNLOAD</string>
-    <string name="AutomaticPhotoDownloadGroups">Groups</string>
-    <string name="AutomaticPhotoDownloadPrivateChats">Private Chats</string>
-    <string name="Events">EVENTS</string>
-    <string name="ContactJoined">Contact joined Telegram</string>
+    <string name="SendByEnter">Entrée envoie le message</string>
+    <string name="TerminateAllSessions">Terminer toutes les sessions</string>
+    <string name="AutomaticPhotoDownload">TELECHARGEMENT AUTOMATIQUE DES PHOTOS</string>
+    <string name="AutomaticPhotoDownloadGroups">Groupes</string>
+    <string name="AutomaticPhotoDownloadPrivateChats">Discussion privées</string>
+    <string name="Events">EVENEMENTS</string>
+    <string name="ContactJoined">Un contact a rejoint Telegram</string>
 
     <!--media view-->
-    <string name="NoMedia">No shared media yet</string>
-    <string name="CancelDownload">Cancel Download</string>
+    <string name="NoMedia">Pas de media partagé pour l'instant</string>
+    <string name="CancelDownload">Annuler le téléchargement</string>
 
     <!--map view-->
-    <string name="MyLocation">My location</string>
-    <string name="Map">Map</string>
+    <string name="MyLocation">Mes emplacements</string>
+    <string name="Map">Carte</string>
     <string name="Satellite">Satellite</string>
-    <string name="Hybrid">Hybrid</string>
-    <string name="MetersAway">m away</string>
-    <string name="KMetersAway">km away</string>
-    <string name="SendLocation">Send Location</string>
-    <string name="ShareLocation">Share Location</string>
+    <string name="Hybrid">Hybride</string>
+    <string name="MetersAway">m</string>
+    <string name="KMetersAway">kms</string>
+    <string name="SendLocation">Envoyer l'emplacement</string>
+    <string name="ShareLocation">Partager l'emplacement</string>
 
     <!--photo gallery view-->
-    <string name="ShowAllMedia">Show all media</string>
-    <string name="SaveToGallery">Save to gallery</string>
-    <string name="Of">of</string>
-    <string name="Gallery">Gallery</string>
+    <string name="ShowAllMedia">Afficher les médias</string>
+    <string name="SaveToGallery">Sauvegarder dans la Gallerie</string>
+    <string name="Of">de</string>
+    <string name="Gallery">Gallerie</string>
 
     <!--button titles-->
-    <string name="Next">Next</string>
-    <string name="Back">Back</string>
-    <string name="Done">Done</string>
-    <string name="Open">Open</string>
-    <string name="Cancel">Cancel</string>
-    <string name="Add">Add</string>
-    <string name="Edit">Edit</string>
-    <string name="Send">Send</string>
-    <string name="Call">Call</string>
-    <string name="Copy">Copy</string>
-    <string name="Delete">Delete</string>
-    <string name="Forward">Forward</string>
-    <string name="Retry">Retry</string>
-    <string name="FromCamera">From camera</string>
-    <string name="FromGalley">From gallery</string>
-    <string name="DeletePhoto">Delete photo</string>
-    <string name="OpenPhoto">Open photo</string>
+    <string name="Next">Suivant</string>
+    <string name="Back">Précédent</string>
+    <string name="Done">Terminer</string>
+    <string name="Open">Ouvrir</string>
+    <string name="Cancel">Annuler</string>
+    <string name="Add">Ajouter</string>
+    <string name="Edit">Editer</string>
+    <string name="Send">Envoyer</string>
+    <string name="Call">Appeler</string>
+    <string name="Copy">Copier</string>
+    <string name="Delete">Effacer</string>
+    <string name="Forward">Transférer</string>
+    <string name="Retry">Réessayer</string>
+    <string name="FromCamera">Depuis l'appareil photo</string>
+    <string name="FromGalley">Depuis la gallerie</string>
+    <string name="DeletePhoto">Supprimer la photo</string>
+    <string name="OpenPhoto">Ouvrir</string>
     <string name="Set">Set</string>
     <string name="OK">OK</string>
 
     <!--messages-->
-    <string name="ActionKickUser">un1 kicked un2</string>
-    <string name="ActionLeftUser">un1 left group</string>
-    <string name="ActionAddUser">un1 added un2</string>
-    <string name="ActionRemovedPhoto">un1 removed group photo</string>
-    <string name="ActionChangedPhoto">un1 changed group photo</string>
-    <string name="ActionChangedTitle">un1 changed group name to un2</string>
-    <string name="ActionCreateGroup">un1 created the group</string>
-    <string name="ActionYouKickUser">You kicked un2</string>
-    <string name="ActionYouLeftUser">You left group</string>
-    <string name="ActionYouAddUser">You added un2</string>
-    <string name="ActionYouRemovedPhoto">You removed group photo</string>
-    <string name="ActionYouChangedPhoto">You changed group photo</string>
-    <string name="ActionYouChangedTitle">You changed group name to un2</string>
-    <string name="ActionYouCreateGroup">You created the group</string>
-    <string name="ActionKickUserYou">un1 kicked you</string>
-    <string name="ActionAddUserYou">un1 added you</string>
-    <string name="UnsuppotedMedia">This message is not supported on your version of Telegram.
-    </string>
+    <string name="ActionKickUser">un1 a éjecté un2</string>
+    <string name="ActionLeftUser">un1 a quitté le groupe</string>
+    <string name="ActionAddUser">un1 a ajouté un2</string>
+    <string name="ActionRemovedPhoto">un1 a supprimé l'icône du groupe</string>
+    <string name="ActionChangedPhoto">un1 a modifié l'icône du groupe</string>
+    <string name="ActionChangedTitle">un1 a renommé le nom du groupe un2</string>
+    <string name="ActionCreateGroup">un1 a créé le groupe</string>
+    <string name="ActionYouKickUser">Vous avez ejecté un2</string>
+    <string name="ActionYouLeftUser">Vous avez quitté le groupe</string>
+    <string name="ActionYouAddUser">Vous avez ajouté un2</string>
+    <string name="ActionYouRemovedPhoto">Vous avez supprimé l'icône du groupe</string>
+    <string name="ActionYouChangedPhoto">Vous avez modifié l'icône du groupe</string>
+    <string name="ActionYouChangedTitle">Vous avez renommé le groupe un2</string>
+    <string name="ActionYouCreateGroup">Vous avez créé le groupe</string>
+    <string name="ActionKickUserYou">un1 vous a ejecté</string>
+    <string name="ActionAddUserYou">un1 vous a ajouté</string>
+    <string name="UnsuppotedMedia">Ce type de message n'est pas supporté par votre version de Telegram.</string>
     <string name="AttachPhoto">Photo</string>
-    <string name="AttachVideo">Video</string>
-    <string name="AttachLocation">Location</string>
+    <string name="AttachVideo">Vidéo</string>
+    <string name="AttachLocation">Emplacement</string>
     <string name="AttachContact">Contact</string>
     <string name="AttachDocument">Document</string>
     <string name="AttachAudio">Audio</string>
-    <string name="FromYou">You</string>
+    <string name="FromYou">Vous</string>
 
     <!--Alert messages-->
-    <string name="InvalidPhoneNumber">Invalid phone number</string>
-    <string name="CodeExpired">Code expired, please login again</string>
-    <string name="FloodWait">Too many attempts, please try again later</string>
-    <string name="InvalidCode">Invalid code</string>
-    <string name="InvalidFirstName">Invalid first name</string>
-    <string name="InvalidLastName">Invalid last name</string>
-    <string name="Loading">Loading...</string>
-    <string name="NoPlayerInstalled">You don\'t have a video player, please install one to
-        continue
+    <string name="InvalidPhoneNumber">Numéro de téléphone invalide</string>
+    <string name="CodeExpired">Code expiré, essayez de vous reconnecter</string>
+    <string name="FloodWait">Nombre maximum d'essais atteints, merci de réessayer plus tard</string>
+    <string name="InvalidCode">Code invalide</string>
+    <string name="InvalidFirstName">Prénom invalide</string>
+    <string name="InvalidLastName">Nom invalide</string>
+    <string name="Loading">Chargement...</string>
+    <string name="NoPlayerInstalled">Vous n'avez pas de lecteur vidéo sur cet appareil, merci d'en installer un pour continuer.</string>
+    <string name="NoHandleAppInstalled">Aucune application ne prend en charge le type MIME \'%1$s\', merci d'en installer une pour continuer.
     </string>
-    <string name="NoHandleAppInstalled">You don\'t have any application that can handle with mime
-        type \'%1$s\', please install one to continue
-    </string>
-    <string name="InviteUser">This user does not have Telegram yet, send an invitation?</string>
-    <string name="AreYouSure">Are you sure?</string>
-    <string name="AddContactQ">Add contact?</string>
-    <string name="AddToTheGroup">Add %1$s to the group?</string>
-    <string name="ForwardMessagesTo">Forward messages to %1$s?</string>
-    <string name="DeleteChatQuestion">Delete this chat?</string>
+    <string name="InviteUser">Cet utilisateur n'a pas Telegram, voulez-vous lui envoyer une invitation ?</string>
+    <string name="AreYouSure">Etes-vous sûr ?</string>
+    <string name="AddContactQ">Ajouter le contact ?</string>
+    <string name="AddToTheGroup">Ajouter %1$s au groupe ?</string>
+    <string name="ForwardMessagesTo">Transférer les messages à %1$s?</string>
+    <string name="DeleteChatQuestion">Supprimer cette conversation ?</string>
 
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
-    <string name="Page2Title">Fast</string>
-    <string name="Page3Title">Free</string>
-    <string name="Page4Title">Secure</string>
-    <string name="Page5Title">Powerful</string>
-    <string name="Page6Title">Cloud-Based</string>
-    <string name="Page7Title">Private</string>
-    <string name="Page1Message">Welcome to the era of fast and secure messaging</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> delivers messages faster than
-        <![CDATA[<br/>]]>any other application
+    <string name="Page2Title">Rapide</string>
+    <string name="Page3Title">Gratuit</string>
+    <string name="Page4Title">Sécurisé</string>
+    <string name="Page5Title">Puissant</string>
+    <string name="Page6Title">Utilise le Cloud</string>
+    <string name="Page7Title">Respecte votre vie privée</string>
+    <string name="Page1Message">Bienvenue dans l'ère de la messagerie rapide et sécurisée</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> distribue vos messages plus vite
+        <![CDATA[<br/>]]>qu'aucune autre application
     </string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is free forever. No ads.
-        <![CDATA[<br/>]]>No subscription fees
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> est gratuit pour toujours. Pas de publicités.
+        <![CDATA[<br/>]]>Aucun frais d'abonnement.
     </string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> keeps your messages safe
-        <![CDATA[<br/>]]>from hacker attacks
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> conserve vos messages à l'abri
+        <![CDATA[<br/>]]>des attaques de hackers.
     </string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> has no limits on the size of
-        <![CDATA[<br/>]]>your media and chats
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> n'a pas de restrictions sur la taille
+        <![CDATA[<br/>]]>des media échangés et des conversations.
     </string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lets you access your messages
-        <![CDATA[<br/>]]>from multiple devices
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> vous permet d'accéder à vos messages
+        <![CDATA[<br/>]]>depuis plusieurs terminaux.
     </string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> messages are heavily encrypted
-        <![CDATA[<br/>]]>and can self-destruct
+    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> chiffre fortement vos messages
+        <![CDATA[<br/>]]>et ils peuvent s'auto détruire.
     </string>
-    <string name="StartMessaging">Start Messaging</string>
+    <string name="StartMessaging">Commencer à discuter</string>
 
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
