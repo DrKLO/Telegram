@@ -36,6 +36,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     public static String HOCKEY_APP_HASH = "your-hockeyapp-api-key-here";
     public static String GCM_SENDER_ID = "760348033672";
     public static String SEND_LOGS_EMAIL = "email@gmail.com";
+    public static final boolean enableAudio = DEBUG_VERSION;
 
     private HashMap<Integer, Datacenter> datacenters = new HashMap<Integer, Datacenter>();
     private HashMap<Long, ArrayList<Long>> processedMessageIdsSet = new HashMap<Long, ArrayList<Long>>();
