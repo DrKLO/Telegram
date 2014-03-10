@@ -240,7 +240,7 @@
     <string name="Support">SUPPORT</string>
     <string name="ChatBackground">Chat-Hintergrundbild</string>
     <string name="MessagesSettings">NACHRICHTEN</string>
-    <string name="SendByEnter">Mit <![CDATA[<b>Enter</b>]]> senden</string>
+    <string name="SendByEnter">Mit Enter senden</string>
     <string name="TerminateAllSessions">Alle anderen Sitzungen beenden</string>
     <string name="AutomaticPhotoDownload">AUTOMATISCHER BILDERDOWNLOAD</string>
     <string name="AutomaticPhotoDownloadGroups">Gruppen</string>

@@ -65,37 +65,39 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         NotificationCenter.Instance.addObserver(this, FileLoader.FileDidLoaded);
         NotificationCenter.Instance.addObserver(this, FileLoader.FileLoadProgressChanged);
 
-        Timer progressTimer = new Timer();
-        progressTimer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                synchronized (sync) {
-                    Utilities.RunOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (playingMessageObject != null && audioPlayer != null && !isPaused) {
-                                try {
-                                    int progress = audioPlayer.getCurrentPosition();
-                                    if (progress <= lastProgress) {
-                                        return;
+        if (ConnectionsManager.enableAudio) {
+            Timer progressTimer = new Timer();
+            progressTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    synchronized (sync) {
+                        Utilities.RunOnUIThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (playingMessageObject != null && audioPlayer != null && !isPaused) {
+                                    try {
+                                        int progress = audioPlayer.getCurrentPosition();
+                                        if (progress <= lastProgress) {
+                                            return;
+                                        }
+                                        lastProgress = progress;
+                                        final float value = (float)lastProgress / (float)audioPlayer.getDuration();
+                                        playingMessageObject.audioProgress = value;
+                                        playingMessageObject.audioProgressSec = lastProgress / 1000;
+                                        NotificationCenter.Instance.postNotificationName(audioProgressDidChanged, playingMessageObject.messageOwner.id, value);
+                                    } catch (Exception e) {
+                                        FileLog.e("tmessages", e);
                                     }
-                                    lastProgress = progress;
-                                    final float value = (float)lastProgress / (float)audioPlayer.getDuration();
-                                    playingMessageObject.audioProgress = value;
-                                    playingMessageObject.audioProgressSec = lastProgress / 1000;
-                                    NotificationCenter.Instance.postNotificationName(audioProgressDidChanged, playingMessageObject.messageOwner.id, value);
-                                } catch (Exception e) {
-                                    FileLog.e("tmessages", e);
+                                }
+                                if (audioRecorder != null) {
+                                    NotificationCenter.Instance.postNotificationName(recordProgressChanged, System.currentTimeMillis() - recordStartTime);
                                 }
                             }
-                            if (audioRecorder != null) {
-                                NotificationCenter.Instance.postNotificationName(recordProgressChanged, System.currentTimeMillis() - recordStartTime);
-                            }
-                        }
-                    });
+                        });
+                    }
                 }
-            }
-        }, 100, 17);
+            }, 100, 17);
+        }
     }
 
     public void cleanup() {

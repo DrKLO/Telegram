@@ -132,7 +132,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             ApplicationLoader.fragmentsStack.add(fragment);
         }
 
-        handleIntent(getIntent(), false);
+        handleIntent(getIntent(), false, savedInstanceState != null);
     }
 
     @SuppressWarnings("unchecked")
@@ -164,7 +164,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         getSupportActionBar().hide();
     }
 
-    private void handleIntent(Intent intent, boolean isNew) {
+    private void handleIntent(Intent intent, boolean isNew, boolean restore) {
         boolean pushOpened = false;
 
         Integer push_user_id = 0;
@@ -179,7 +179,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         imagesPathArray = null;
         documentsPathArray = null;
 
-        if (intent != null && intent.getAction() != null) {
+        if (intent != null && intent.getAction() != null && !restore) {
             if (Intent.ACTION_SEND.equals(intent.getAction())) {
                 boolean error = false;
                 String type = intent.getType();
@@ -282,7 +282,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             }
         }
 
-        if ((getIntent().getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0) {
+        if ((getIntent().getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0 && !restore) {
             int chatId = getIntent().getIntExtra("chatId", 0);
             int userId = getIntent().getIntExtra("userId", 0);
             int encId = getIntent().getIntExtra("encId", 0);
@@ -373,7 +373,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        handleIntent(intent, true);
+        handleIntent(intent, true, false);
     }
 
     @Override
@@ -750,8 +750,12 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                 fTrans.setCustomAnimations(R.anim.scale_in, R.anim.no_anim);
             }
         }
-        fTrans.replace(R.id.container, fragment, tag);
-        fTrans.commitAllowingStateLoss();
+        try {
+            fTrans.replace(R.id.container, fragment, tag);
+            fTrans.commitAllowingStateLoss();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
         ApplicationLoader.fragmentsStack.add(fragment);
     }
 

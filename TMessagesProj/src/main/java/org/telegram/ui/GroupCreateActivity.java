@@ -361,30 +361,37 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     }
 
     private void processSearch(final String query) {
-        Utilities.globalQueue.postRunnable(new Runnable() {
+        Utilities.RunOnUIThread(new Runnable() {
             @Override
             public void run() {
-                if (query.length() == 0) {
-                    updateSearchResults(new ArrayList<TLRPC.User>(), new ArrayList<CharSequence>());
-                    return;
-                }
-                long time = System.currentTimeMillis();
-                ArrayList<TLRPC.User> resultArray = new ArrayList<TLRPC.User>();
-                ArrayList<CharSequence> resultArrayNames = new ArrayList<CharSequence>();
-                String q = query.toLowerCase();
-
-                for (TLRPC.TL_contact contact : ContactsController.Instance.contacts) {
-                    TLRPC.User user = MessagesController.Instance.users.get(contact.user_id);
-                    if (user.first_name.toLowerCase().startsWith(q) || user.last_name.toLowerCase().startsWith(q)) {
-                        if (user.id == UserConfig.clientUserId) {
-                            continue;
+                final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<TLRPC.TL_contact>();
+                contactsCopy.addAll(ContactsController.Instance.contacts);
+                Utilities.globalQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (query.length() == 0) {
+                            updateSearchResults(new ArrayList<TLRPC.User>(), new ArrayList<CharSequence>());
+                            return;
                         }
-                        resultArrayNames.add(Utilities.generateSearchName(user.first_name, user.last_name, q));
-                        resultArray.add(user);
-                    }
-                }
+                        long time = System.currentTimeMillis();
+                        ArrayList<TLRPC.User> resultArray = new ArrayList<TLRPC.User>();
+                        ArrayList<CharSequence> resultArrayNames = new ArrayList<CharSequence>();
+                        String q = query.toLowerCase();
 
-                updateSearchResults(resultArray, resultArrayNames);
+                        for (TLRPC.TL_contact contact : contactsCopy) {
+                            TLRPC.User user = MessagesController.Instance.users.get(contact.user_id);
+                            if (user.first_name.toLowerCase().startsWith(q) || user.last_name.toLowerCase().startsWith(q)) {
+                                if (user.id == UserConfig.clientUserId) {
+                                    continue;
+                                }
+                                resultArrayNames.add(Utilities.generateSearchName(user.first_name, user.last_name, q));
+                                resultArray.add(user);
+                            }
+                        }
+
+                        updateSearchResults(resultArray, resultArrayNames);
+                    }
+                });
             }
         });
     }

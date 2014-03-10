@@ -68,6 +68,7 @@ import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
@@ -91,6 +92,7 @@ import org.telegram.ui.Views.LayoutListView;
 import org.telegram.ui.Views.MessageActionLayout;
 import org.telegram.ui.Views.OnSwipeTouchListener;
 import org.telegram.ui.Views.SizeNotifierRelativeLayout;
+import org.telegram.ui.Views.TimerButton;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -128,6 +130,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     private MessageObject selectedObject;
     private MessageObject forwaringMessage;
     private TextView secretViewStatusTextView;
+    private TimerButton timerButton;
     private Point displaySize = new Point();
     private boolean paused = true;
     private boolean readWhenResume = false;
@@ -777,14 +780,17 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     }
 
     private void checkSendButton() {
-//        sendButton.setVisibility(View.VISIBLE);
-//        audioSendButton.setVisibility(View.INVISIBLE);
-        if (messsageEditText.length() > 0) {
+        if (ConnectionsManager.enableAudio) {
+            if (messsageEditText.length() > 0) {
+                sendButton.setVisibility(View.VISIBLE);
+                audioSendButton.setVisibility(View.INVISIBLE);
+            } else {
+                sendButton.setVisibility(View.INVISIBLE);
+                audioSendButton.setVisibility(View.VISIBLE);
+            }
+        } else {
             sendButton.setVisibility(View.VISIBLE);
             audioSendButton.setVisibility(View.INVISIBLE);
-        } else {
-            sendButton.setVisibility(View.INVISIBLE);
-            audioSendButton.setVisibility(View.VISIBLE);
         }
     }
 
@@ -1172,6 +1178,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         parentActivity.getWindow().getDecorView().getWindowVisibleDisplayFrame(localRect);
 
         WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
+        if (manager == null || manager.getDefaultDisplay() == null) {
+            return;
+        }
         int rotation = manager.getDefaultDisplay().getRotation();
 
         if (height > Emoji.scale(50)) {
@@ -1638,6 +1647,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     boolean currentMarkAsRead = false;
 
                     for (MessageObject obj : arr) {
+                        if (currentEncryptedChat != null && obj.messageOwner.action != null && obj.messageOwner.action instanceof TLRPC.TL_messageActionTTLChange && timerButton != null) {
+                            timerButton.setTime(obj.messageOwner.action.ttl);
+                        }
                         if (messagesDict.containsKey(obj.messageOwner.id)) {
                             continue;
                         }
@@ -1673,6 +1685,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     boolean markAsRead = false;
                     int oldCount = messages.size();
                     for (MessageObject obj : arr) {
+                        if (currentEncryptedChat != null && obj.messageOwner.action != null && obj.messageOwner.action instanceof TLRPC.TL_messageActionTTLChange && timerButton != null) {
+                            timerButton.setTime(obj.messageOwner.action.ttl);
+                        }
                         if (messagesDict.containsKey(obj.messageOwner.id)) {
                             continue;
                         }
@@ -2356,10 +2371,69 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         menu.clear();
-        inflater.inflate(R.menu.chat_menu, menu);
+        if (currentEncryptedChat != null) {
+            inflater.inflate(R.menu.chat_enc_menu, menu);
+        } else {
+            inflater.inflate(R.menu.chat_menu, menu);
+        }
+        SupportMenuItem timeItem = (SupportMenuItem)menu.findItem(R.id.chat_enc_timer);
         if (currentEncryptedChat != null && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat) || currentChat != null && (currentChat instanceof TLRPC.TL_chatForbidden || currentChat.left)) {
             SupportMenuItem item = (SupportMenuItem)menu.findItem(R.id.chat_menu_attach);
-            item.setVisible(false);
+            if (item != null) {
+                item.setVisible(false);
+            }
+
+            if (timeItem != null) {
+                timeItem.setVisible(false);
+            }
+        }
+
+        if (timeItem != null && timeItem.getActionView() != null) {
+            timerButton = (TimerButton)timeItem.getActionView().findViewById(R.id.chat_timer);
+            timerButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                    builder.setTitle(getStringEntry(R.string.MessageLifetime));
+                    builder.setItems(new CharSequence[]{
+                            getStringEntry(R.string.ShortMessageLifetimeForever),
+                            getStringEntry(R.string.ShortMessageLifetime2s),
+                            getStringEntry(R.string.ShortMessageLifetime5s),
+                            getStringEntry(R.string.ShortMessageLifetime1m),
+                            getStringEntry(R.string.ShortMessageLifetime1h),
+                            getStringEntry(R.string.ShortMessageLifetime1d),
+                            getStringEntry(R.string.ShortMessageLifetime1w)
+
+                    }, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            int oldValue = currentEncryptedChat.ttl;
+                            if (which == 0) {
+                                currentEncryptedChat.ttl = 0;
+                            } else if (which == 1) {
+                                currentEncryptedChat.ttl = 2;
+                            } else if (which == 2) {
+                                currentEncryptedChat.ttl = 5;
+                            } else if (which == 3) {
+                                currentEncryptedChat.ttl = 60;
+                            } else if (which == 4) {
+                                currentEncryptedChat.ttl = 60 * 60;
+                            } else if (which == 5) {
+                                currentEncryptedChat.ttl = 60 * 60 * 24;
+                            } else if (which == 6) {
+                                currentEncryptedChat.ttl = 60 * 60 * 24 * 7;
+                            }
+                            if (oldValue != currentEncryptedChat.ttl) {
+                                MessagesController.Instance.sendTTLMessage(currentEncryptedChat);
+                                MessagesStorage.Instance.updateEncryptedChat(currentEncryptedChat);
+                            }
+                        }
+                    });
+                    builder.setNegativeButton(getStringEntry(R.string.Cancel), null);
+                    builder.show().setCanceledOnTouchOutside(true);
+                }
+            });
+            timerButton.setTime(currentEncryptedChat.ttl);
         }
 
         SupportMenuItem avatarItem = (SupportMenuItem)menu.findItem(R.id.chat_menu_avatar);

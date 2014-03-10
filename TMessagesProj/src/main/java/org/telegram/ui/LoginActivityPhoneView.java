@@ -264,6 +264,7 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
             ignoreOnTextChange = true;
             codeField.setText(countriesMap.get(name));
             countryButton.setText(name);
+            countryState = 0;
         }
     }
 

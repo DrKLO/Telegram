@@ -141,6 +141,9 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
 
     @Override
     public void needShowAlert(String text) {
+        if (text == null) {
+            return;
+        }
         ShowAlertDialog(LoginActivity.this, text);
     }
 

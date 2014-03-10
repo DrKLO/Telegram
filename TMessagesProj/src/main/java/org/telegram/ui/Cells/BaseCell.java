@@ -13,6 +13,7 @@ import android.graphics.drawable.Drawable;
 import android.view.View;
 
 public class BaseCell extends View {
+
     public BaseCell(Context context) {
         super(context);
     }

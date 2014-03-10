@@ -691,6 +691,9 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                 break;
             case R.id.gallery_menu_save:
                 TLRPC.FileLocation file = getCurrentFile();
+                if (file == null) {
+                    return;
+                }
                 File f = new File(Utilities.getCacheDir(), file.volume_id + "_" + file.local_id + ".jpg");
                 File dstFile = Utilities.generatePicturePath();
                 try {
@@ -710,7 +713,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                 if (fromAll) {
                     finish();
                 } else {
-                    if (!localPagerAdapter.imagesArr.isEmpty() && currentDialog != 0) {
+                    if (localPagerAdapter != null && localPagerAdapter.imagesArr != null && !localPagerAdapter.imagesArr.isEmpty() && currentDialog != 0) {
                         finish();
                         NotificationCenter.Instance.postNotificationName(needShowAllMedia, currentDialog);
                     }

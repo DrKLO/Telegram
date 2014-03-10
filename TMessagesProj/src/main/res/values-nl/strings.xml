@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--https://www.transifex.com/projects/p/telegram/language/nl/members/-->
+
+<resources>
+    <string name="AppName">Telegram</string>
+
+    <!--signin view-->
+    <string name="YourPhone">Uw telefoon</string>
+    <string name="StartText">Bevestig uw landcode\nen voer uw telefoonnummer in.</string>
+    <string name="ChooseCountry">Kies een land</string>
+    <string name="WrongCountry">Onjuist landcode</string>
+
+    <!--code enter view-->
+    <string name="YourCode">Uw code</string>
+    <string name="SentSmsCode">We hebben een sms met een activatiecode verzonden naar uw telefoon</string>
+    <string name="CallText">We bellen u over</string>
+    <string name="Calling">We bellen u…</string>
+    <string name="Code">Code</string>
+    <string name="WrongNumber">Verkeerde nummer?</string>
+
+    <!--signup view-->
+    <string name="YourName">Uw naam</string>
+    <string name="RegisterText">Voer uw voor- en achternaam in</string>
+    <!--<string name="RegisterText">Set up your name and picture</string>-->
+    <string name="FirstName">Voornaam (verplicht)</string>
+    <string name="LastName">Achternaam (optioneel)</string>
+    <string name="CancelRegistration">Registratie annuleren</string>
+
+    <!--chats view-->
+    <string name="Chats">Gesprekken</string>
+    <string name="Search">Zoeken</string>
+    <string name="NewMessages">Nieuwe berichten</string>
+    <string name="Settings">Instellingen</string>
+    <string name="Contacts">Contacten</string>
+    <string name="NewGroup">Nieuwe groep</string>
+    <string name="Yesterday">gisteren</string>
+    <string name="NoResult">Geen resultaten</string>
+    <string name="NoChats">Nog geen gesprekken…</string>
+    <string name="NoChatsHelp">Tik op de opstelknop rechtsbovenin\nom een gesprek te beginnen\nof ga naar de contactenlijst.</string>
+    <string name="WaitingForNetwork">Wachten op netwerk…</string>
+    <string name="Connecting">Bezig met verbinden…</string>
+    <string name="Updating">Bezig met bijwerken…</string>
+    <string name="NewSecretChat">Nieuw privégesprek</string>
+    <string name="AwaitingEncryption">Wachten tot %s online komt…</string>
+    <string name="EncryptionRejected">Privégesprek geannuleerd</string>
+    <string name="EncryptionProcessing">Encryptiesleutels uitwisselen…</string>
+    <string name="EncryptedChatStartedOutgoing">%s neemt nu deel aan het privégesprek.</string>
+    <string name="EncryptedChatStartedIncoming">U neemt nu deel aan het privégesprek.</string>
+    <string name="ClearHistory">Geschiedenis wissen</string>
+    <string name="DeleteChat">Verwijderen en verlaten</string>
+    <string name="HiddenName">Verborgen naam</string>
+    <string name="SelectChat">Kies een gesprek</string>
+
+    <!--documents view-->
+    <string name="SelectFile">Kies een bestand</string>
+    <string name="FreeOfTotal">Vrij: %1$s van %2$s</string>
+    <string name="UnknownError">Onbekende fout</string>
+    <string name="AccessError">Toegangsfout</string>
+    <string name="NoFiles">Nog geen bestanden…</string>
+    <string name="FileUploadLimit">Bestanden mogen maximaal %1$s zijn</string>
+    <string name="NotMounted">Geen opslagmedium gevonden</string>
+    <string name="UsbActive">USB-overdracht actief</string>
+    <string name="InternalStorage">Interne opslag</string>
+    <string name="ExternalStorage">Externe opslag</string>
+    <string name="SystemRoot">Systeemmap</string>
+    <string name="SdCard">SD-kaart</string>
+
+    <!--chat view-->
+    <string name="Invisible">onzichtbaar</string>
+    <string name="Typing">aan het typen…</string>
+    <string name="Attach">Bijvoegen</string>
+    <string name="IsTyping">is aan het typen…</string>
+    <string name="AreTyping">zijn aan het typen…</string>
+    <string name="AndMoreTyping">en nog %d personen</string>
+    <string name="GotAQuestion">Hebt u een vraag\nover Telegram?</string>
+    <string name="ChatTakePhoto">Foto maken</string>
+    <string name="ChatGallery">Galerij</string>
+    <string name="ChatLocation">Locatie</string>
+    <string name="ChatVideo">Video</string>
+    <string name="ChatDocument">Document</string>
+    <string name="NoMessages">Nog geen berichten hier…</string>
+    <string name="ViewPhoto">Foto bekijken</string>
+    <string name="ViewLocation">Locatie bekijken</string>
+    <string name="ViewVideo">Video afspelen</string>
+    <string name="ForwardedMessage">Doorgestuurd bericht</string>
+    <string name="From">Van</string>
+    <string name="NoRecent">Niets recents</string>
+    <string name="Members">deelnemers</string>
+    <string name="Message">Bericht</string>
+    <string name="TypeMessage">Typ een bericht</string>
+    <string name="DOWNLOAD">Downloaden</string>
+    <string name="Selected">Geselecteerd:</string>
+    <string name="ShareMyContactInfo">MIJN CONTACTGEGEVENS DELEN</string>
+    <string name="AddToContacts">TOEVOEGEN AAN CONTACTEN</string>
+    <string name="EncryptedPlaceholderTitleIncoming">%s heeft u uitgenodigd voor een privégesprek.</string>
+    <string name="EncryptedPlaceholderTitleOutgoing">U hebt %s uitgenodigd voor een privégesprek.</string>
+    <string name="EncryptedDescriptionTitle">Privégesprekken:</string>
+    <string name="EncryptedDescription1">gebruiken end-to-endversleuteling</string>
+    <string name="EncryptedDescription2">laten geen sporen achter op onze server</string>
+    <string name="EncryptedDescription3">verlopen automatisch</string>
+    <string name="EncryptedDescription4">staan doorsturen niet toe</string>
+    <string name="OneNewMessage">%1$d nieuw bericht</string>
+    <string name="FewNewMessages">%1$d nieuwe berichten</string>
+    <string name="YouWereKicked">U bent verwijderd uit deze groep</string>
+    <string name="YouLeft">U hebt deze groep verlaten</string>
+    <string name="DeleteThisGroup">Deze groep verwijderen</string>
+    <string name="SlideToCancel">SLEEP OM TE ANNULEREN</string>
+
+    <!--notification-->
+    <string name="EncryptedChatRequested">Privégesprek aangevraagd</string>
+    <string name="EncryptedChatAccepted">Privégesprek gestart</string>
+    <string name="MessageLifetimeChanged">%1$s heeft de verlooptijd ingesteld op %2$s</string>
+    <string name="MessageLifetimeChangedOutgoing">U hebt de verlooptijd ingesteld op %1$s</string>
+    <string name="MessageLifetimeRemoved">%1$s heeft de verlooptijd uitgeschakeld</string>
+    <string name="MessageLifetimeYouRemoved">U hebt de verlooptijd uitgeschakeld</string>
+    <string name="MessageLifetime2s">2 seconden</string>
+    <string name="MessageLifetime5s">5 seconden</string>
+    <string name="MessageLifetime1m">1 minuut</string>
+    <string name="MessageLifetime1h">1 uur</string>
+    <string name="MessageLifetime1d">1 dag</string>
+    <string name="MessageLifetime1w">1 week</string>
+    <string name="YouHaveNewMessage">U hebt een nieuw bericht</string>
+    <string name="NotificationMessageText">%1$s: %2$s</string>
+    <string name="NotificationMessageNoText">%1$s heeft u een bericht gestuurd</string>
+    <string name="NotificationMessagePhoto">%1$s heeft u een foto gestuurd</string>
+    <string name="NotificationMessageVideo">%1$s heeft u een video gestuurd</string>
+    <string name="NotificationMessageContact">%1$s heeft een contact met u gedeeld</string>
+    <string name="NotificationMessageMap">%1$s heeft u een locatie gestuurd</string>
+    <string name="NotificationMessageDocument">%1$s heeft u een document gestuurd</string>
+    <string name="NotificationMessageAudio">%1$s heeft u een geluidsbestand gestuurd</string>
+    <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
+    <string name="NotificationMessageGroupNoText">%1$s heeft een bericht gestuurd naar de groep %2$s</string>
+    <string name="NotificationMessageGroupPhoto">%1$s heeft een foto gestuurd naar de groep %2$s</string>
+    <string name="NotificationMessageGroupVideo">%1$s heeft een video gestuurd naar de groep %2$s</string>
+    <string name="NotificationMessageGroupContact">%1$s heeft een contact gedeeld met de groep %2$s</string>
+    <string name="NotificationMessageGroupMap">%1$s heeft een locatie gestuurd naar de groep %2$s</string>
+    <string name="NotificationMessageGroupDocument">%1$s heeft een document gestuurd naar de groep %2$s</string>
+    <string name="NotificationMessageGroupAudio">%1$s heeft een geluidsbestand gestuurd naar de groep %2$s</string>
+    <string name="NotificationInvitedToGroup">%1$s heeft u uitgenodigd voor de groep %2$s</string>
+    <string name="NotificationEditedGroupName">%1$s heeft de naam van de groep %2$s gewijzigd</string>
+    <string name="NotificationEditedGroupPhoto">%1$s heeft de afbeelding van de groep %2$s gewijzigd</string>
+    <string name="NotificationGroupAddMember">%1$s heeft %3$s uitgenodigd voor de groep %2$s</string>
+    <string name="NotificationGroupKickMember">%1$s heeft %3$s verwijderd uit de groep %2$s</string>
+    <string name="NotificationGroupKickYou">%1$s heeft u verwijderd uit de groep %2$s</string>
+    <string name="NotificationGroupLeftMember">%1$s heeft de groep %2$s verlaten</string>
+    <string name="NotificationContactJoined">%1$s heeft nu Telegram!</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nEr is op uw account ingelogd vanaf een nieuw apparaat op %2$s\n\nApparaat: %3$s\nLocatie: %4$s\n\nAls u dit niet was, kunt u alle sessies beëindigen via de instellingen.\n\nHet Telegram-team</string>
+    <string name="NotificationContactNewPhoto">%1$s heeft zijn/haar profielfoto gewijzigd</string>
+
+    <!--contacts view-->
+    <string name="SelectContact">Kies een contact</string>
+    <string name="NoContacts">Nog geen contacten</string>
+    <string name="InviteText">Hoi, zullen we overstappen op Telegram? http://telegram.org/dl2</string>
+    <string name="TodayAt">vandaag om</string>
+    <string name="YesterdayAt">gisteren om</string>
+    <string name="OtherAt">om</string>
+    <string name="Online">online</string>
+    <string name="Offline">offline</string>
+    <string name="LastSeen">laatst gezien:</string>
+    <string name="LastSeenDate">laatst gezien:</string>
+    <string name="InviteFriends">Vrienden uitnodigen</string>
+
+    <!--group create view-->
+    <string name="SendMessageTo">Bericht verzenden naar…</string>
+    <string name="EnterGroupNamePlaceholder">Groepsnaam...</string>
+    <string name="MEMBER">DEELNEMER</string>
+    <string name="GroupName">Groepsnaam</string>
+    <string name="MEMBERS">DEELNEMERS</string>
+    <string name="AllContacts">ALLE CONTACTEN</string>
+
+    <!--group info view-->
+    <string name="EnterGroupNameTitle">GROEPSNAAM INSTELLEN</string>
+    <string name="SharedMedia">Gedeelde media</string>
+    <string name="GroupInfo">Groepsinformatie</string>
+    <string name="SHAREDMEDIA">GEDEELDE MEDIA</string>
+    <string name="SETTINGS">INSTELLINGEN</string>
+    <string name="AddMember">Deelnemer toevoegen</string>
+    <string name="DeleteAndExit">Groep verwijderen en verlaten</string>
+    <string name="Notifications">Meldingen</string>
+    <string name="KickFromGroup">Verwijderen uit groep</string>
+
+    <!--contact info view-->
+    <string name="ShareContact">Delen</string>
+    <string name="AddContact">Toevoegen</string>
+    <string name="BlockContact">Blokkeren</string>
+    <string name="EditContact">Bewerken</string>
+    <string name="DeleteContact">Verwijderen</string>
+    <string name="PhoneHome">THUIS</string>
+    <string name="PhoneMobile">MOBIEL</string>
+    <string name="PhoneWork">WERK</string>
+    <string name="PhoneOther">OVERIG</string>
+    <string name="PhoneMain">ALGEMEEN</string>
+    <string name="ContactInfo">Contactinformatie</string>
+    <string name="PHONE">TELEFOON</string>
+    <string name="StartEncryptedChat">Privégesprek starten</string>
+    <string name="CreateEncryptedChatError">Er is een fout opgetreden.</string>
+    <string name="CreateEncryptedChatOutdatedError">Kan geen privégesprek starten met %1$s.\n\n%2$s gebruikt een oudere versie van Telegram en moet eerst een update installeren.</string>
+    <string name="SecretTitle">Privégesprek</string>
+    <string name="EncryptionKey">Encryptiesleutel</string>
+    <string name="MessageLifetime">Verlooptijd</string>
+    <string name="ShortMessageLifetimeForever">Uit</string>
+    <string name="ShortMessageLifetime2s">2s</string>
+    <string name="ShortMessageLifetime5s">5s</string>
+    <string name="ShortMessageLifetime1m">1m</string>
+    <string name="ShortMessageLifetime1h">1u</string>
+    <string name="ShortMessageLifetime1d">1d</string>
+    <string name="ShortMessageLifetime1w">1w</string>
+    <string name="EncryptionKeyDescription">Deze afbeelding is een weergave van de encryptiesleutel voor dit privégesprek met <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Als deze afbeelding er hetzelfde uitziet als op de telefoon van <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, is uw gesprek 200%% beveiligd.<![CDATA[<br><br>]]>Bezoek telegram.org voor meer informatie.</string>
+
+    <!--settings view-->
+    <string name="ResetNotificationsText">Alle meldingsinstellingen herstellen</string>
+    <string name="TextSize">Tekstgrootte berichten</string>
+    <string name="AskAQuestion">Een vraag stellen</string>
+    <string name="EnableAnimations">Animaties inschakelen</string>
+    <string name="Unblock">Deblokkeren</string>
+    <string name="UnblockText">Houd een gebruiker ingedrukt om hem/haar te deblokkeren.</string>
+    <string name="NoBlocked">Nog geen geblokkeerde gebruikers</string>
+    <string name="YourPhoneNumber">UW TELEFOONNUMMER</string>
+    <string name="MessageNotifications">BERICHTMELDINGEN</string>
+    <string name="Alert">Waarschuwing</string>
+    <string name="MessagePreview">Voorbeeld van berichten</string>
+    <string name="GroupNotifications">GROEPSMELDINGEN</string>
+    <string name="Sound">Geluid</string>
+    <string name="InAppNotifications">IN-APP MELDINGEN</string>
+    <string name="InAppSounds">In-app geluiden</string>
+    <string name="InAppVibrate">In-app trillen</string>
+    <string name="Vibrate">Trillen</string>
+    <string name="InAppPreview">In-app voorbeelden</string>
+    <string name="Reset">RESETTEN</string>
+    <string name="ResetAllNotifications">Alle meldingen resetten</string>
+    <string name="UndoAllCustom">Alle aangepaste meldingsinstellingen ongedaan maken voor alle contacten en groepen</string>
+    <string name="NotificationsAndSounds">Meldingen en geluiden</string>
+    <string name="BlockedUsers">Geblokkeerde gebruikers</string>
+    <string name="SaveIncomingPhotos">Inkomende foto\'s opslaan</string>
+    <string name="LogOut">Uitloggen</string>
+    <string name="YourFirstNameAndLastName">UW VOOR- EN ACHTERNAAM</string>
+    <string name="NoSound">Geen geluid</string>
+    <string name="Default">Standaard</string>
+    <string name="Support">ONDERSTEUNING</string>
+    <string name="ChatBackground">Achtergrond gesprekken</string>
+    <string name="MessagesSettings">BERICHTEN</string>
+    <string name="SendByEnter">Verzenden met Enter</string>
+    <string name="TerminateAllSessions">Alle andere sessies beëindigen</string>
+    <string name="AutomaticPhotoDownload">FOTO\'S AUTOMATISCH DOWNLOADEN</string>
+    <string name="AutomaticPhotoDownloadGroups">Groepen</string>
+    <string name="AutomaticPhotoDownloadPrivateChats">Privégesprekken</string>
+    <string name="Events">GEBEURTENISSEN</string>
+    <string name="ContactJoined">Contact lid geworden van Telegram</string>
+
+    <!--media view-->
+    <string name="NoMedia">Nog geen media gedeeld</string>
+    <string name="CancelDownload">Downloaden annuleren</string>
+
+    <!--map view-->
+    <string name="MyLocation">Mijn locatie</string>
+    <string name="Map">Kaart</string>
+    <string name="Satellite">Satelliet</string>
+    <string name="Hybrid">Hybride</string>
+    <string name="MetersAway">m hiervandaan</string>
+    <string name="KMetersAway">km hiervandaan</string>
+    <string name="SendLocation">Locatie verzenden</string>
+    <string name="ShareLocation">Locatie delen</string>
+
+    <!--photo gallery view-->
+    <string name="ShowAllMedia">Alle media weergeven</string>
+    <string name="SaveToGallery">Opslaan in galerij</string>
+    <string name="Of">van</string>
+    <string name="Gallery">Galerij</string>
+
+    <!--button titles-->
+    <string name="Next">Volgende</string>
+    <string name="Back">Vorige</string>
+    <string name="Done">Gereed</string>
+    <string name="Open">Openen</string>
+    <string name="Cancel">Annuleren</string>
+    <string name="Add">Toevoegen</string>
+    <string name="Edit">Bewerken</string>
+    <string name="Send">Verzenden</string>
+    <string name="Call">Bellen</string>
+    <string name="Copy">Kopiëren</string>
+    <string name="Delete">Verwijderen</string>
+    <string name="Forward">Doorsturen</string>
+    <string name="Retry">Opnieuw proberen</string>
+    <string name="FromCamera">Van camera</string>
+    <string name="FromGalley">Uit galerij</string>
+    <string name="DeletePhoto">Foto verwijderen</string>
+    <string name="OpenPhoto">Foto openen</string>
+    <string name="Set">Instellen</string>
+    <string name="OK">OK</string>
+
+    <!--messages-->
+    <string name="ActionKickUser">un1 heeft un2 verwijderd</string>
+    <string name="ActionLeftUser">un1 heeft de groep verlaten</string>
+    <string name="ActionAddUser">un1 heeft un2 toegevoegd</string>
+    <string name="ActionRemovedPhoto">un1 heeft de groepsafbeelding verwijderd</string>
+    <string name="ActionChangedPhoto">un1 heeft de groepsafbeelding gewijzigd</string>
+    <string name="ActionChangedTitle">un1 heeft de groepsnaam gewijzigd naar un2</string>
+    <string name="ActionCreateGroup">un1 heeft de groep gemaakt</string>
+    <string name="ActionYouKickUser">U hebt un2 verwijderd</string>
+    <string name="ActionYouLeftUser">U hebt de groep verlaten</string>
+    <string name="ActionYouAddUser">U hebt un2 toegevoegd</string>
+    <string name="ActionYouRemovedPhoto">U hebt de groepsafbeelding verwijderd</string>
+    <string name="ActionYouChangedPhoto">U hebt de groepsafbeelding gewijzigd</string>
+    <string name="ActionYouChangedTitle">U hebt de groepsnaam gewijzigd naar un2</string>
+    <string name="ActionYouCreateGroup">U hebt de groep gemaakt</string>
+    <string name="ActionKickUserYou">un1 heeft u verwijderd</string>
+    <string name="ActionAddUserYou">un1 heeft u toegevoegd</string>
+    <string name="UnsuppotedMedia">Dit bericht wordt niet ondersteund in uw versie van Telegram.</string>
+    <string name="AttachPhoto">Foto</string>
+    <string name="AttachVideo">Video</string>
+    <string name="AttachLocation">Locatie</string>
+    <string name="AttachContact">Contact</string>
+    <string name="AttachDocument">Document</string>
+    <string name="AttachAudio">Geluidsbestand</string>
+    <string name="FromYou">U</string>
+
+    <!--Alert messages-->
+    <string name="InvalidPhoneNumber">Ongeldig telefoonnummer</string>
+    <string name="CodeExpired">Code verlopen. Log opnieuw in.</string>
+    <string name="FloodWait">Te veel pogingen. Probeer het later opnieuw.</string>
+    <string name="InvalidCode">Ongeldige code</string>
+    <string name="InvalidFirstName">Ongeldige voornaam</string>
+    <string name="InvalidLastName">Ongeldige achternaam</string>
+    <string name="Loading">Bezig met laden…</string>
+    <string name="NoPlayerInstalled">U hebt geen mediaspeler. Installeer een mediaspeler om door te gaan.</string>
+    <string name="NoHandleAppInstalled">U hebt geen applicaties die het MIME-type \'%1$s\' ondersteunen. Installeer een geschikte applicatie om door te gaan.</string>
+    <string name="InviteUser">Deze gebruiker heeft nog geen Telegram. Wilt u een uitnodiging sturen?</string>
+    <string name="AreYouSure">Weet u het zeker?</string>
+    <string name="AddContactQ">Contact toevoegen?</string>
+    <string name="AddToTheGroup">%1$s toevoegen aan de groep?</string>
+    <string name="ForwardMessagesTo">Berichten doorsturen naar %1$s?</string>
+    <string name="DeleteChatQuestion">Dit gesprek verwijderen?</string>
+
+    <!--Intro view-->
+    <string name="Page1Title">Telegram</string>
+    <string name="Page2Title">Snel</string>
+    <string name="Page3Title">Gratis</string>
+    <string name="Page4Title">Veilig</string>
+    <string name="Page5Title">Krachtig</string>
+    <string name="Page6Title">In de cloud</string>
+    <string name="Page7Title">Privé</string>
+    <string name="Page1Message">Welkom in het tijdperk van snel en veilig chatten</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> bezorgt berichten sneller<![CDATA[<br/>]]>dan elke andere app</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is altijd gratis. Geen advertenties.<![CDATA[<br/>]]>Geen abonnementskosten</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> beveiligt uw berichten<![CDATA[<br/>]]>tegen hackers</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> heeft geen beperkingen op de grootte<![CDATA[<br/>]]>van uw media en gesprekken</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> biedt toegang tot uw berichten<![CDATA[<br/>]]>vanaf meerdere apparaten</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> berichten zijn sterk versleuteld<![CDATA[<br/>]]>en kunnen zichzelf vernietigen</string>
+    <string name="StartMessaging">Begin nu met chatten</string>
+
+    <!--Don't change this! Not for localization!-->
+    <string name="CacheTag">CACHE_TAG</string>
+</resources>

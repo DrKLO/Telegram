@@ -270,6 +270,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                         Utilities.RunOnUIThread(new Runnable() {
                                             @Override
                                             public void run() {
+                                                if (parentActivity == null) {
+                                                    return;
+                                                }
                                                 SharedPreferences.Editor editor = preferences.edit();
                                                 editor.putInt("support_id", res.user.id);
                                                 SerializedData data = new SerializedData();

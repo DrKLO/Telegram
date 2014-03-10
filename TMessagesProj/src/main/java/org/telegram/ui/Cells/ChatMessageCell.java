@@ -14,6 +14,7 @@ import android.text.Spannable;
 import android.text.style.ClickableSpan;
 import android.view.MotionEvent;
 
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 
@@ -34,7 +35,7 @@ public class ChatMessageCell extends ChatBaseCell {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (currentMessageObject != null && currentMessageObject.messageText instanceof Spannable && !isPressed) {
+        if (currentMessageObject != null && currentMessageObject.textLayoutBlocks != null && !currentMessageObject.textLayoutBlocks.isEmpty() && currentMessageObject.messageText instanceof Spannable && !isPressed) {
             if (event.getAction() == MotionEvent.ACTION_DOWN || pressedLink != null && event.getAction() == MotionEvent.ACTION_UP) {
                 int x = (int)event.getX();
                 int y = (int)event.getY();
@@ -59,7 +60,11 @@ public class ChatMessageCell extends ChatBaseCell {
                                     return true;
                                 } else {
                                     if (link[0] == pressedLink) {
-                                        pressedLink.onClick(this);
+                                        try {
+                                            pressedLink.onClick(this);
+                                        } catch (Exception e) {
+                                            FileLog.e("tmessages", e);
+                                        }
                                         return true;
                                     }
                                 }
@@ -83,6 +88,9 @@ public class ChatMessageCell extends ChatBaseCell {
     }
 
     public void setVisiblePart(int position, int height) {
+        if (currentMessageObject == null || currentMessageObject.textLayoutBlocks == null) {
+            return;
+        }
         int newFirst = -1, newLast = -1, newCount = 0;
 
         for (int a = Math.max(0, (position - textY) / currentMessageObject.blockHeight); a < currentMessageObject.textLayoutBlocks.size(); a++) {
@@ -117,6 +125,10 @@ public class ChatMessageCell extends ChatBaseCell {
     @Override
     public void setMessageObject(MessageObject messageObject) {
         if (currentMessageObject != messageObject || isUserDataChanged()) {
+            if (currentMessageObject != messageObject) {
+                firstVisibleBlockNum = 0;
+                lastVisibleBlockNum = 0;
+            }
             pressedLink = null;
             int maxWidth;
             if (chat) {
@@ -161,6 +173,19 @@ public class ChatMessageCell extends ChatBaseCell {
     }
 
     @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+
+        if (currentMessageObject.messageOwner.out) {
+            textX = layoutWidth - backgroundWidth + Utilities.dp(10);
+            textY = Utilities.dp(10) + namesOffset;
+        } else {
+            textX = Utilities.dp(19) + (chat ? Utilities.dp(52) : 0);
+            textY = Utilities.dp(10) + namesOffset;
+        }
+    }
+
+    @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (currentMessageObject == null || currentMessageObject.textLayoutBlocks == null || currentMessageObject.textLayoutBlocks.isEmpty() || firstVisibleBlockNum < 0) {
@@ -176,10 +201,17 @@ public class ChatMessageCell extends ChatBaseCell {
         }
 
         for (int a = firstVisibleBlockNum; a <= lastVisibleBlockNum; a++) {
+            if (a >= currentMessageObject.textLayoutBlocks.size()) {
+                break;
+            }
             MessageObject.TextLayoutBlock block = currentMessageObject.textLayoutBlocks.get(a);
             canvas.save();
             canvas.translate(textX - (int)Math.ceil(block.textXOffset), textY + block.textYOffset);
-            block.textLayout.draw(canvas);
+            try {
+                block.textLayout.draw(canvas);
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
             canvas.restore();
         }
     }

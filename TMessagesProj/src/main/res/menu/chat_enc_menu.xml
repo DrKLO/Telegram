@@ -1,0 +1,50 @@
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:sabd="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/chat_enc_timer"
+        sabd:showAsAction="always"
+        sabd:actionLayout="@layout/chat_header_enc_layout"/>
+
+    <item
+        android:id="@+id/chat_menu_attach"
+        android:icon="@drawable/ic_ab_attach"
+        android:title="@string/Attach"
+        sabd:showAsAction="always">
+
+        <menu>
+            <item
+                android:icon="@drawable/ic_attach_photo"
+                android:title="@string/ChatTakePhoto"
+                android:id="@+id/attach_photo"/>
+
+            <item
+                android:icon="@drawable/ic_attach_gallery"
+                android:title="@string/ChatGallery"
+                android:id="@+id/attach_gallery"/>
+
+            <item
+                android:icon="@drawable/ic_attach_video"
+                android:title="@string/ChatVideo"
+                android:id="@+id/attach_video"/>
+
+            <item
+                android:icon="@drawable/ic_ab_doc"
+                android:title="@string/ChatDocument"
+                android:id="@+id/attach_document"/>
+
+            <item
+                android:icon="@drawable/ic_attach_location"
+                android:title="@string/ChatLocation"
+                android:id="@+id/attach_location"/>
+        </menu>
+
+    </item>
+
+    <item
+        android:id="@+id/chat_menu_avatar"
+        sabd:showAsAction="always"
+        sabd:actionLayout="@layout/chat_header_layout"/>
+
+</menu>

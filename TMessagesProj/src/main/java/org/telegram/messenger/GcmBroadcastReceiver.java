@@ -17,15 +17,34 @@ import android.os.PowerManager;
 public class GcmBroadcastReceiver extends BroadcastReceiver {
 
     public static final int NOTIFICATION_ID = 1;
+    private static PowerManager.WakeLock wakeLock = null;
+    private static final Integer sync = 1;
 
     @Override
     public void onReceive(final Context context, final Intent intent) {
         FileLog.d("tmessages", "GCM received intent: " + intent);
 
         if (intent.getAction().equals("com.google.android.c2dm.intent.RECEIVE")) {
-            PowerManager pm = (PowerManager)context.getSystemService(Context.POWER_SERVICE);
-            final PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "lock");
-            wl.acquire();
+            synchronized (sync) {
+                try {
+                    if (wakeLock == null) {
+                        PowerManager pm = (PowerManager)context.getSystemService(Context.POWER_SERVICE);
+                        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "lock");
+                    }
+                    if (!wakeLock.isHeld()) {
+                        wakeLock.acquire(5000);
+                    }
+                } catch (Exception e) {
+                    try {
+                        if (wakeLock != null) {
+                            wakeLock.release();
+                        }
+                    } catch (Exception e2) {
+                        FileLog.e("tmessages", e2);
+                    }
+                    FileLog.e("tmessages", e);
+                }
+            }
 
 //            SharedPreferences preferences = context.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
 //            boolean globalEnabled = preferences.getBoolean("EnableAll", true);
@@ -34,14 +53,7 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
 //                return;
 //            }
 
-            Thread thread = new Thread(new Runnable() {
-                public void run() {
-                    ConnectionsManager.Instance.resumeNetworkMaybe();
-                    wl.release();
-                }
-            });
-            thread.setPriority(Thread.MAX_PRIORITY);
-            thread.start();
+            ConnectionsManager.Instance.resumeNetworkMaybe();
         } else if (intent.getAction().equals("com.google.android.c2dm.intent.REGISTRATION")) {
             String registration = intent.getStringExtra("registration_id");
             if (intent.getStringExtra("error") != null) {

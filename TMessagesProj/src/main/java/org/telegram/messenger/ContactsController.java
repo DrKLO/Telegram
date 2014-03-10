@@ -501,16 +501,16 @@ public class ContactsController {
                             Utilities.RunOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
-//                                    if (ConnectionsManager.DEBUG_VERSION) {
-//                                        FileLog.e("tmessages", "need delete contacts");
-//                                        for (HashMap.Entry<Integer, Contact> c : contactHashMap.entrySet()) {
-//                                            Contact contact = c.getValue();
-//                                            FileLog.e("tmessages", "delete contact " + contact.first_name + " " + contact.last_name);
-//                                            for (String phone : contact.phones) {
-//                                                FileLog.e("tmessages", phone);
-//                                            }
-//                                        }
-//                                    }
+                                    if (ConnectionsManager.DEBUG_VERSION) {
+                                        FileLog.e("tmessages", "need delete contacts");
+                                        for (HashMap.Entry<Integer, Contact> c : contactHashMap.entrySet()) {
+                                            Contact contact = c.getValue();
+                                            FileLog.e("tmessages", "delete contact " + contact.first_name + " " + contact.last_name);
+                                            for (String phone : contact.phones) {
+                                                FileLog.e("tmessages", phone);
+                                            }
+                                        }
+                                    }
 
                                     final ArrayList<TLRPC.User> toDelete = new ArrayList<TLRPC.User>();
                                     if (contactHashMap != null && !contactHashMap.isEmpty()) {
@@ -577,12 +577,12 @@ public class ContactsController {
 
                 if (request) {
                     if (!toImport.isEmpty()) {
-//                        if (ConnectionsManager.DEBUG_VERSION) {
-//                            FileLog.e("tmessages", "start import contacts");
-//                            for (TLRPC.TL_inputPhoneContact contact : toImport) {
-//                                FileLog.e("tmessages", "add contact " + contact.first_name + " " + contact.last_name + " " + contact.phone);
-//                            }
-//                        }
+                        if (ConnectionsManager.DEBUG_VERSION) {
+                            FileLog.e("tmessages", "start import contacts");
+                            for (TLRPC.TL_inputPhoneContact contact : toImport) {
+                                FileLog.e("tmessages", "add contact " + contact.first_name + " " + contact.last_name + " " + contact.phone);
+                            }
+                        }
                         final int count = (int)Math.ceil(toImport.size() / 500.0f);
                         for (int a = 0; a < count; a++) {
                             ArrayList<TLRPC.TL_inputPhoneContact> finalToImport = new ArrayList<TLRPC.TL_inputPhoneContact>();
@@ -600,6 +600,11 @@ public class ContactsController {
                                             MessagesStorage.Instance.putCachedPhoneBook(contactsMap);
                                         }
                                         TLRPC.TL_contacts_importedContacts res = (TLRPC.TL_contacts_importedContacts)response;
+                                        if (ConnectionsManager.DEBUG_VERSION) {
+                                            for (TLRPC.User user : res.users) {
+                                                FileLog.e("tmessages", "received user " + user.first_name + " " + user.last_name + " " + user.phone);
+                                            }
+                                        }
                                         MessagesStorage.Instance.putUsersAndChats(res.users, null, true, true);
                                         ArrayList<TLRPC.TL_contact> cArr = new ArrayList<TLRPC.TL_contact>();
                                         for (TLRPC.TL_importedContact c : res.imported) {
@@ -740,6 +745,8 @@ public class ContactsController {
                     }
                 }
 
+                final HashMap<Integer, TLRPC.User> usersDict = new HashMap<Integer, TLRPC.User>();
+
                 if (!contacts.isEmpty()) {
                     for (int a = 0; a < contactsArr.size(); a++) {
                         TLRPC.TL_contact contact = contactsArr.get(a);
@@ -751,6 +758,17 @@ public class ContactsController {
                     contactsArr.addAll(contacts);
                 }
 
+                for (TLRPC.TL_contact contact : contactsArr) {
+                    TLRPC.User user = MessagesController.Instance.users.get(contact.user_id);
+                    if (user != null) {
+                        usersDict.put(user.id, user);
+
+                        if (ConnectionsManager.DEBUG_VERSION) {
+                            FileLog.e("tmessages", "loaded user contact " + user.first_name + " " + user.last_name + " " + user.phone);
+                        }
+                    }
+                }
+
                 Utilities.stageQueue.postRunnable(new Runnable() {
                     @Override
                     public void run() {
@@ -760,15 +778,15 @@ public class ContactsController {
                             return;
                         }
 
-                        if (from == 1) {
-                            for (TLRPC.TL_contact contact : contactsArr) {
-                                if (MessagesController.Instance.users.get(contact.user_id) == null && contact.user_id != UserConfig.clientUserId) {
-                                    loadContacts(false, true);
-                                    FileLog.e("tmessages", "contacts are broken, load from server");
-                                    return;
-                                }
+                        for (TLRPC.TL_contact contact : contactsArr) {
+                            if (usersDict.get(contact.user_id) == null && contact.user_id != UserConfig.clientUserId) {
+                                loadContacts(false, true);
+                                FileLog.e("tmessages", "contacts are broken, load from server");
+                                return;
                             }
-                        } else {
+                        }
+
+                        if (from != 1) {
                             MessagesStorage.Instance.putUsersAndChats(usersArr, null, true, true);
                             MessagesStorage.Instance.putContacts(contactsArr, from != 2);
                             Collections.sort(contactsArr, new Comparator<TLRPC.TL_contact>() {
@@ -796,8 +814,8 @@ public class ContactsController {
                         Collections.sort(contactsArr, new Comparator<TLRPC.TL_contact>() {
                             @Override
                             public int compare(TLRPC.TL_contact tl_contact, TLRPC.TL_contact tl_contact2) {
-                                TLRPC.User user1 = MessagesController.Instance.users.get(tl_contact.user_id);
-                                TLRPC.User user2 = MessagesController.Instance.users.get(tl_contact2.user_id);
+                                TLRPC.User user1 = usersDict.get(tl_contact.user_id);
+                                TLRPC.User user2 = usersDict.get(tl_contact2.user_id);
                                 String name1 = user1.first_name;
                                 if (name1 == null || name1.length() == 0) {
                                     name1 = user1.last_name;
@@ -822,7 +840,7 @@ public class ContactsController {
                         final HashMap<String, TLRPC.TL_contact> contactsByPhonesDictFinal = contactsByPhonesDict;
 
                         for (TLRPC.TL_contact value : contactsArr) {
-                            TLRPC.User user = MessagesController.Instance.users.get(value.user_id);
+                            TLRPC.User user = usersDict.get(value.user_id);
                             if (user == null) {
                                 continue;
                             }
@@ -1350,7 +1368,7 @@ public class ContactsController {
     }
 
     public void addContact(TLRPC.User user) {
-        if (user == null) {
+        if (user == null || user.phone == null) {
             return;
         }
 
@@ -1358,12 +1376,18 @@ public class ContactsController {
         ArrayList<TLRPC.TL_inputPhoneContact> contactsParams = new ArrayList<TLRPC.TL_inputPhoneContact>();
         TLRPC.TL_inputPhoneContact c = new TLRPC.TL_inputPhoneContact();
         c.phone = user.phone;
+        if (!c.phone.startsWith("+")) {
+            c.phone = "+" + c.phone;
+        }
         c.first_name = user.first_name;
         c.last_name = user.last_name;
         c.client_id = 0;
         contactsParams.add(c);
         req.contacts = contactsParams;
         req.replace = false;
+        if (ConnectionsManager.DEBUG_VERSION) {
+            FileLog.e("tmessages", "add contact " + user.first_name + " " + user.last_name + " " + user.phone);
+        }
         ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
@@ -1372,6 +1396,12 @@ public class ContactsController {
                 }
                 final TLRPC.TL_contacts_importedContacts res = (TLRPC.TL_contacts_importedContacts)response;
                 MessagesStorage.Instance.putUsersAndChats(res.users, null, true, true);
+
+                if (ConnectionsManager.DEBUG_VERSION) {
+                    for (TLRPC.User user : res.users) {
+                        FileLog.e("tmessages", "received user " + user.first_name + " " + user.last_name + " " + user.phone);
+                    }
+                }
 
                 for (final TLRPC.User u : res.users) {
                     Utilities.globalQueue.postRunnable(new Runnable() {

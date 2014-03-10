@@ -16,6 +16,7 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.util.Linkify;
 
+import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
@@ -26,6 +27,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ApplicationLoader;
 
+import java.io.File;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -298,9 +300,17 @@ public class MessageObject {
                 }
             } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaAudio) {
                 if (message.from_id == UserConfig.clientUserId) {
-                    type = 18;
+                    if (ConnectionsManager.enableAudio) {
+                        type = 18;
+                    } else {
+                        type = 0;
+                    }
                 } else {
-                    type = 19;
+                    if (ConnectionsManager.enableAudio) {
+                        type = 19;
+                    } else {
+                        type = 1;
+                    }
                 }
             }
         } else if (message instanceof TLRPC.TL_messageService) {
@@ -369,7 +379,7 @@ public class MessageObject {
     }
 
     private void generateLayout() {
-        if (type != 0 && type != 1 && type != 8 && type != 9 || messageOwner.to_id == null || messageText == null || messageText.length() == 0 || !(messageOwner.media instanceof TLRPC.TL_messageMediaEmpty) && !(messageOwner.media instanceof TLRPC.TL_messageMediaUnsupported) && !(messageOwner.media == null)) {
+        if (type != 0 && type != 1 && type != 8 && type != 9 || messageOwner.to_id == null || messageText == null || messageText.length() == 0) {
             return;
         }
 
@@ -392,7 +402,15 @@ public class MessageObject {
             maxWidth = Math.min(Utilities.displaySize.x, Utilities.displaySize.y) - Utilities.dp(80);
         }
 
-        StaticLayout textLayout = new StaticLayout(messageText, textPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+        StaticLayout textLayout = null;
+
+        try {
+            textLayout = new StaticLayout(messageText, textPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+            return;
+        }
+
         textHeight = textLayout.getHeight();
         int linesCount = textLayout.getLineCount();
 
@@ -416,18 +434,35 @@ public class MessageObject {
                     continue;
                 }
                 block.charactersOffset = startCharacter;
-                CharSequence str = messageText.subSequence(startCharacter, endCharacter);
-                block.textLayout = new StaticLayout(str, textPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-                block.textYOffset = textLayout.getLineTop(linesOffset);
-                if (a != blocksCount - 1) {
-                    blockHeight = Math.min(blockHeight, block.textLayout.getHeight());
+                try {
+                    CharSequence str = messageText.subSequence(startCharacter, endCharacter);
+                    block.textLayout = new StaticLayout(str, textPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                    block.textYOffset = textLayout.getLineTop(linesOffset);
+                    if (a != blocksCount - 1) {
+                        blockHeight = Math.min(blockHeight, block.textLayout.getHeight());
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                    continue;
                 }
             }
 
             textLayoutBlocks.add(block);
 
-            float lastLeft = block.textXOffset = block.textLayout.getLineLeft(currentBlockLinesCount - 1);
-            float lastLine = block.textLayout.getLineWidth(currentBlockLinesCount - 1);
+            float lastLeft = block.textXOffset = 0;
+            try {
+                lastLeft = block.textXOffset = block.textLayout.getLineLeft(currentBlockLinesCount - 1);
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+
+            float lastLine = 0;
+            try {
+                lastLine = block.textLayout.getLineWidth(currentBlockLinesCount - 1);
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+
             int linesMaxWidth;
             int lastLineWidthWithLeft;
             int linesMaxWidthWithLeft;
@@ -449,12 +484,19 @@ public class MessageObject {
                 for (int n = 0; n < currentBlockLinesCount; ++n) {
                     try {
                         lineWidth = block.textLayout.getLineWidth(n);
-                        lineLeft = block.textLayout.getLineLeft(n);
-                        block.textXOffset = Math.min(block.textXOffset, lineLeft);
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
-                        return;
+                        lineWidth = 0;
                     }
+
+                    try {
+                        lineLeft = block.textLayout.getLineLeft(n);
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                        lineLeft = 0;
+                    }
+
+                    block.textXOffset = Math.min(block.textXOffset, lineLeft);
 
                     if (lineLeft == 0) {
                         hasNonRTL = true;
