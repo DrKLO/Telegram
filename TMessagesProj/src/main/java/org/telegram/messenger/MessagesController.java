@@ -4187,6 +4187,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             String userSoundPath = null;
             String chatSoundPath = null;
 
+            int globalLight = preferences.getInt("GlobalLight", 0xff00ff00);
+            int groupLight = preferences.getInt("GroupLight", 0xff0000ff);
+
             NotificationManager mNotificationManager = (NotificationManager)ApplicationLoader.applicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
             Intent intent = new Intent(ApplicationLoader.applicationContext, LaunchActivity.class);
             String msg = null;
@@ -4334,11 +4337,21 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
             String choosenSoundPath = null;
 
+            int chosenLight = 0;
+
             if (user_id != 0) {
                 if (userSoundPath != null) {
                     choosenSoundPath = userSoundPath;
                 } else if (globalSound != null) {
                     choosenSoundPath = globalSound;
+                }
+
+                int userLight = preferences.getInt("light_"+user_id, 0xAA000000);
+
+                if(userLight != 0xAA000000) {
+                    chosenLight = userLight;
+                } else {
+                    chosenLight = globalLight;
                 }
             } else if (chat_id != 0) {
                 if (chatSoundPath != null) {
@@ -4346,8 +4359,18 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 } else if (chatSound != null) {
                     choosenSoundPath = chatSound;
                 }
+
+                int specificLight = preferences.getInt("light_chat_"+chat_id, 0xAA000000);
+
+                if(specificLight != 0xAA000000) {
+                    chosenLight = specificLight;
+                } else {
+                    chosenLight = groupLight;
+                }
             } else {
                 choosenSoundPath = globalSound;
+
+                chosenLight = globalLight;
             }
 
             intent.setAction("com.tmessages.openchat" + Math.random() + Integer.MAX_VALUE);
@@ -4389,7 +4412,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             mBuilder.setContentIntent(contentIntent);
             mNotificationManager.cancel(1);
             Notification notification = mBuilder.build();
-            notification.ledARGB = 0xff00ff00;
+            notification.ledARGB = chosenLight;
             notification.ledOnMS = 1000;
             notification.ledOffMS = 1000;
             notification.flags |= Notification.FLAG_SHOW_LIGHTS;
