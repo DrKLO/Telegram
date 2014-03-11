@@ -317,7 +317,7 @@
 
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Numero di telefono non valido</string>
-    <string name="CodeExpired">Codice scaduto, ripetere l'accesso</string>
+    <string name="CodeExpired">Codice scaduto, ripetere l\'accesso</string>
     <string name="FloodWait">Troppi tentativi, riprovare più tardi</string>
     <string name="InvalidCode">Codice non valido</string>
     <string name="InvalidFirstName">Nome non valido</string>
