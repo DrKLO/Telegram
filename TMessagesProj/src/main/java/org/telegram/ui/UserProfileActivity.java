@@ -143,7 +143,8 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         try {
                             Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
-                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false);
+                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
+                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
                             SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                             Uri currentSound = null;
 
@@ -261,8 +262,10 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             String name = null;
             if (ringtone != null) {
                 Ringtone rng = RingtoneManager.getRingtone(ApplicationLoader.applicationContext, ringtone);
-                if (rng != null) {
-                    name = rng.getTitle(ApplicationLoader.applicationContext);
+               if (rng != null) {
+                   if(ringtone.equals(Settings.System.DEFAULT_NOTIFICATION_URI))
+                       name = getStringEntry(R.string.Default);
+                    else name = rng.getTitle(ApplicationLoader.applicationContext);
                     rng.stop();
                 }
             }
@@ -775,7 +778,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             } else if (type == 4) {
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = li.inflate(R.layout.user_profile_leftright_row_layout, viewGroup, false);
+                    view = li.inflate(R.layout.settings_row_detail_layout, viewGroup, false);
                 }
                 TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
                 TextView detailTextView = (TextView)view.findViewById(R.id.settings_row_text_detail);
