@@ -4322,14 +4322,17 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             }
 
             boolean needVibrate = false;
+            int ledColor = 0xff00ff00;
 
             if (user_id != 0) {
                 userSoundPath = preferences.getString("sound_path_" + user_id, null);
                 needVibrate = globalVibrate;
+                ledColor = preferences.getInt("NotificationLEDColor", 0xff00ff00);
             }
             if (chat_id != 0) {
                 chatSoundPath = preferences.getString("sound_chat_path_" + chat_id, null);
                 needVibrate = groupVibrate;
+                ledColor = preferences.getInt("NotificationGroupLEDColor", 0xff00ff00);
             }
 
             String choosenSoundPath = null;
@@ -4389,7 +4392,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             mBuilder.setContentIntent(contentIntent);
             mNotificationManager.cancel(1);
             Notification notification = mBuilder.build();
-            notification.ledARGB = 0xff00ff00;
+            notification.ledARGB = ledColor;
             notification.ledOnMS = 1000;
             notification.ledOffMS = 1000;
             notification.flags |= Notification.FLAG_SHOW_LIGHTS;
