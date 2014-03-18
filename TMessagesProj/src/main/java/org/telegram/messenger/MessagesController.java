@@ -32,6 +32,8 @@ import android.support.v7.app.ActionBarActivity;
 import android.text.Html;
 import android.util.SparseArray;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.telegram.objects.MessageObject;
 import org.telegram.objects.PhotoObject;
 import org.telegram.ui.LaunchActivity;
@@ -46,6 +48,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
@@ -4395,10 +4398,28 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             notification.flags |= Notification.FLAG_SHOW_LIGHTS;
             try {
                 mNotificationManager.notify(1, notification);
+                sendAlertToPebble(msg);
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
         }
+    }
+
+    public void sendAlertToPebble(String message) {
+        final Intent i = new Intent("com.getpebble.action.SEND_NOTIFICATION");
+
+        final Map data = new HashMap();
+        data.put("title", ApplicationLoader.applicationContext.getString(R.string.AppName));
+        data.put("body", message);
+        final JSONObject jsonData = new JSONObject(data);
+        final String notificationData = new JSONArray().put(jsonData).toString();
+
+        i.putExtra("messageType", "PEBBLE_ALERT");
+        i.putExtra("sender", "MyAndroidApp");
+        i.putExtra("notificationData", notificationData);
+
+        //Log.d(TAG, "About to send a modal alert to Pebble: " %2B notificationData);
+        ApplicationLoader.applicationContext.sendBroadcast(i);
     }
 
     public void dialogsUnreadCountIncr(final HashMap<Long, Integer> values) {
