@@ -684,7 +684,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                                 public void onClick(DialogInterface dialogInterface, int i) {
                                     if (i == 1) {
                                         try {
-                                            Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:+" + selectedPhone));
+                                            Intent intent = new Intent(Intent.ACTION_CALL, Uri.parse("tel:+" + selectedPhone));
                                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                             startActivity(intent);
                                         } catch (Exception e) {
