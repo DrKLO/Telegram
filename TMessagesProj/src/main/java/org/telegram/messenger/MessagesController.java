@@ -4398,7 +4398,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             notification.flags |= Notification.FLAG_SHOW_LIGHTS;
             try {
                 mNotificationManager.notify(1, notification);
-                sendAlertToPebble(msg);
+                if (preferences.getBoolean("EnablePebbleNotifications", true)) {
+                    sendAlertToPebble(msg);
+                }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }

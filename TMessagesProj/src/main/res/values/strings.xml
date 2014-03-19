@@ -227,6 +227,8 @@
     <string name="InAppVibrate">In-App Vibrate</string>
     <string name="Vibrate">Vibrate</string>
     <string name="InAppPreview">In-App Preview</string>
+    <string name="Pebble">PEBBLE</string>
+    <string name="PebbleNotifications">Pebble Notifications</string>
     <string name="Reset">RESET</string>
     <string name="ResetAllNotifications">Reset All Notifications</string>
     <string name="UndoAllCustom">Undo all custom notification settings for all your contacts and groups</string>
