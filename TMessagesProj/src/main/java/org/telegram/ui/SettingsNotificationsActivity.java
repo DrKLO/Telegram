@@ -204,7 +204,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     else if (i == 17) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
-                        boolean enabled = preferences.getBoolean("EnablePebbleNotifications", true);
+                        boolean enabled = preferences.getBoolean("EnablePebbleNotifications", false);
                         MessagesController.Instance.enableJoined = !enabled;
                         editor.putBoolean("EnablePebbleNotifications", !enabled);
                         editor.commit();
@@ -439,7 +439,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     textView.setText(getStringEntry(R.string.ContactJoined));
                     divider.setVisibility(View.INVISIBLE);
                 } else if (i == 17) {
-                    enabled = preferences.getBoolean("EnablePebbleNotifications", true);
+                    enabled = preferences.getBoolean("EnablePebbleNotifications", false);
                     textView.setText(getStringEntry(R.string.PebbleNotifications));
                     divider.setVisibility(View.INVISIBLE);
                 }
