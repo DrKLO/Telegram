@@ -4417,7 +4417,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         final String notificationData = new JSONArray().put(jsonData).toString();
 
         i.putExtra("messageType", "PEBBLE_ALERT");
-        i.putExtra("sender", "MyAndroidApp");
+        i.putExtra("sender", ApplicationLoader.applicationContext.getString(R.string.AppName));
         i.putExtra("notificationData", notificationData);
 
         //Log.d(TAG, "About to send a modal alert to Pebble: " %2B notificationData);
