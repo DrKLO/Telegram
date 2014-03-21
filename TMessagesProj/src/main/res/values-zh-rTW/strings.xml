@@ -145,8 +145,8 @@
     <string name="NotificationGroupKickYou">%1$s 把你从群 %2$s 中删除</string>
     <string name="NotificationGroupLeftMember">%1$s 已经离开群 %2$s</string>
     <string name="NotificationContactJoined">%1$s 加入密聊!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nWe detected a login into your account from a new device on %2$s\n\nDevice: %3$s\nLocation: %4$s\n\nIf this wasn’t you, you can go to Settings – Terminate all sessions.\n\nThanks,\nThe Telegram Team</string>
-    <string name="NotificationContactNewPhoto">%1$s updated profile photo</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\n我们检测到您的账号在%2$s登录\n\n设备: %3$s\n位置: %4$s\n\n如果不是你自己，你可以到设置中终止所有会话。\n\n谢谢，\n密聊（Telegram）团队</string>
+    <string name="NotificationContactNewPhoto">%1$s 更新了个人头像</string>
 
     <!--contacts view-->
     <string name="SelectContact">选择联系人</string>
@@ -343,7 +343,7 @@
     <string name="Page1Message">欢迎的快速，安全的通讯时代</string>
     <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> 消息发送比其他任何应用快速<![CDATA[<br/>]]></string>
     <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> 永久免费无广告<![CDATA[<br/>]]></string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> 保证你消息通信安全，不给黑客留任何机会<![CDATA[<br/>]]></string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> 保证消息通信安全，不给黑客留任何机会<![CDATA[<br/>]]></string>
     <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> 对聊天媒体文件和内容无大小限制<![CDATA[<br/>]]></string>
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> 完全支持多个设备同时登录<![CDATA[<br/>]]></string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> 聊天严格加密并且具有阅后即焚功能<![CDATA[<br/>]]></string>
