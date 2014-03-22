@@ -31,12 +31,12 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/StartEncryptedChat"
             android:textSize="18dp"
             android:textColor="#444444"
             android:layout_gravity="center"
             android:drawableLeft="@drawable/bigtimer"
-            android:gravity="center"/>
+            android:gravity="center"
+            android:id="@+id/start_secret_button_text"/>
 
     </FrameLayout>
 

@@ -26,9 +26,12 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
@@ -68,25 +71,25 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
 
-        NotificationCenter.Instance.addObserver(this, FileLoader.FileDidFailedLoad);
-        NotificationCenter.Instance.addObserver(this, FileLoader.FileDidLoaded);
-        NotificationCenter.Instance.addObserver(this, FileLoader.FileLoadProgressChanged);
-        NotificationCenter.Instance.addObserver(this, MessagesStorage.wallpapersDidLoaded);
+        NotificationCenter.getInstance().addObserver(this, FileLoader.FileDidFailedLoad);
+        NotificationCenter.getInstance().addObserver(this, FileLoader.FileDidLoaded);
+        NotificationCenter.getInstance().addObserver(this, FileLoader.FileLoadProgressChanged);
+        NotificationCenter.getInstance().addObserver(this, MessagesStorage.wallpapersDidLoaded);
 
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         selectedBackground = preferences.getInt("selectedBackground", 1000001);
         selectedColor = preferences.getInt("selectedColor", 0);
-        MessagesStorage.Instance.getWallpapers();
+        MessagesStorage.getInstance().getWallpapers();
         return true;
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.Instance.removeObserver(this, FileLoader.FileDidFailedLoad);
-        NotificationCenter.Instance.removeObserver(this, FileLoader.FileDidLoaded);
-        NotificationCenter.Instance.removeObserver(this, FileLoader.FileLoadProgressChanged);
-        NotificationCenter.Instance.removeObserver(this, MessagesStorage.wallpapersDidLoaded);
+        NotificationCenter.getInstance().removeObserver(this, FileLoader.FileDidFailedLoad);
+        NotificationCenter.getInstance().removeObserver(this, FileLoader.FileDidLoaded);
+        NotificationCenter.getInstance().removeObserver(this, FileLoader.FileLoadProgressChanged);
+        NotificationCenter.getInstance().removeObserver(this, MessagesStorage.wallpapersDidLoaded);
     }
 
     @Override
@@ -105,7 +108,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                     if (i == 0) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
 
-                        CharSequence[] items = new CharSequence[] {getStringEntry(R.string.FromCamera), getStringEntry(R.string.FromGalley), getStringEntry(R.string.Cancel)};
+                        CharSequence[] items = new CharSequence[] {LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley), LocaleController.getString("Cancel", R.string.Cancel)};
 
                         builder.setItems(items, new DialogInterface.OnClickListener() {
                             @Override
@@ -135,7 +138,11 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 }
             });
 
-            View cancelButton = fragmentView.findViewById(R.id.cancel_button);
+            TextView textView = (TextView)fragmentView.findViewById(R.id.done_button_text);
+            textView.setText(LocaleController.getString("Set", R.string.Set));
+
+            Button cancelButton = (Button)fragmentView.findViewById(R.id.cancel_button);
+            cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel));
             cancelButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -246,11 +253,11 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 progressBar.setVisibility(View.VISIBLE);
                 loadingSize = size;
                 selectedColor = 0;
-                FileLoader.Instance.loadFile(null, size, null, null);
+                FileLoader.getInstance().loadFile(null, size, null, null);
                 backgroundImage.setBackgroundColor(0);
             } else {
                 if (loadingFile != null) {
-                    FileLoader.Instance.cancelLoadFile(null, loadingSize, null, null);
+                    FileLoader.getInstance().cancelLoadFile(null, loadingSize, null, null);
                 }
                 loadingFileObject = null;
                 loadingFile = null;
@@ -263,7 +270,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
             }
         } else {
             if (loadingFile != null) {
-                FileLoader.Instance.cancelLoadFile(null, loadingSize, null, null);
+                FileLoader.getInstance().cancelLoadFile(null, loadingSize, null, null);
             }
             if (selectedBackground == 1000001) {
                 backgroundImage.setImageResource(R.drawable.background_hd);
@@ -353,7 +360,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
 
     private void loadWallpapers() {
         TLRPC.TL_account_getWallPapers req = new TLRPC.TL_account_getWallPapers();
-        long reqId = ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+        long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(final TLObject response, TLRPC.TL_error error) {
                 if (error != null) {
@@ -373,12 +380,12 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                         if (backgroundImage != null) {
                             processSelectedBackground();
                         }
-                        MessagesStorage.Instance.putWallpapers(wallPapers);
+                        MessagesStorage.getInstance().putWallpapers(wallPapers);
                     }
                 });
             }
         }, null, true, RPCRequest.RPCRequestClassGeneric);
-        ConnectionsManager.Instance.bindRequestToGuid(reqId, classGuid);
+        ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
     }
 
     private void fixLayout() {

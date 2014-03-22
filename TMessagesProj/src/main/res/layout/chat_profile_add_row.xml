@@ -22,7 +22,6 @@
         android:layout_marginLeft="61dp"
         android:ellipsize="end"
         android:textColor="#000000"
-        android:text="@string/AddMember"
         android:maxLines="1"
         android:layout_gravity="center_vertical"/>
 

@@ -348,7 +348,7 @@ public class ByteBufferDesc extends AbsSerializedData {
                 l = getIntFromByte(buffer.get()) | (getIntFromByte(buffer.get()) << 8) | (getIntFromByte(buffer.get()) << 16);
                 sl = 4;
             }
-            ByteBufferDesc b = BuffersStorage.Instance.getFreeBuffer(l);
+            ByteBufferDesc b = BuffersStorage.getInstance().getFreeBuffer(l);
             int old = buffer.limit();
             buffer.limit(buffer.position() + l);
             b.buffer.put(buffer);

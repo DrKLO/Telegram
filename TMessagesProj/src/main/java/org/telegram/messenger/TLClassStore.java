@@ -408,6 +408,8 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_upload_saveBigFilePart.constructor, TLRPC.TL_upload_saveBigFilePart.class);
         classStore.put(TLRPC.TL_help_support.constructor, TLRPC.TL_help_support.class);
         classStore.put(TLRPC.TL_help_getSupport.constructor, TLRPC.TL_help_getSupport.class);
+        classStore.put(TLRPC.TL_decryptedMessageActionDeleteMessages.constructor, TLRPC.TL_decryptedMessageActionDeleteMessages.class);
+        classStore.put(TLRPC.TL_decryptedMessageActionFlushHistory.constructor, TLRPC.TL_decryptedMessageActionFlushHistory.class);
 
         classStore.put(TLRPC.TL_msg_container.constructor, TLRPC.TL_msg_container.class);
         classStore.put(TLRPC.TL_fileEncryptedLocation.constructor, TLRPC.TL_fileEncryptedLocation.class);

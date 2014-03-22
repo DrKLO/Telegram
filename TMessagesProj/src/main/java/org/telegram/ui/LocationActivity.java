@@ -28,6 +28,8 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.objects.MessageObject;
 import org.telegram.messenger.MessagesController;
@@ -83,7 +85,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 sendButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        NotificationCenter.Instance.postNotificationName(997, userLocation.getLatitude(), userLocation.getLongitude());
+                        NotificationCenter.getInstance().postNotificationName(997, userLocation.getLatitude(), userLocation.getLongitude());
                         finishFragment();
                     }
                 });
@@ -125,7 +127,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 if (messageObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
                     fromId = messageObject.messageOwner.fwd_from_id;
                 }
-                TLRPC.User user = MessagesController.Instance.users.get(fromId);
+                TLRPC.User user = MessagesController.getInstance().users.get(fromId);
                 if (user != null) {
                     avatarImageView.setImage(user.photo.photo_small, "50_50", Utilities.getUserAvatarForId(user.id));
                     nameTextView.setText(Utilities.formatName(user.first_name, user.last_name));
@@ -150,10 +152,10 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        messageObject = (MessageObject)NotificationCenter.Instance.getFromMemCache(0);
-        NotificationCenter.Instance.addObserver(this, MessagesController.closeChats);
+        messageObject = (MessageObject)NotificationCenter.getInstance().getFromMemCache(0);
+        NotificationCenter.getInstance().addObserver(this, MessagesController.closeChats);
         if (messageObject != null) {
-            NotificationCenter.Instance.addObserver(this, MessagesController.updateInterfaces);
+            NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
         }
         return true;
     }
@@ -161,8 +163,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.Instance.removeObserver(this, MessagesController.updateInterfaces);
-        NotificationCenter.Instance.removeObserver(this, MessagesController.closeChats);
+        NotificationCenter.getInstance().removeObserver(this, MessagesController.updateInterfaces);
+        NotificationCenter.getInstance().removeObserver(this, MessagesController.closeChats);
     }
 
     @Override
@@ -185,9 +187,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         actionBar.setDisplayShowCustomEnabled(false);
         actionBar.setCustomView(null);
         if (messageObject != null) {
-            actionBar.setTitle(getStringEntry(R.string.ChatLocation));
+            actionBar.setTitle(LocaleController.getString("ChatLocation", R.string.ChatLocation));
         } else {
-            actionBar.setTitle(getStringEntry(R.string.ShareLocation));
+            actionBar.setTitle(LocaleController.getString("ShareLocation", R.string.ShareLocation));
         }
 
         TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
@@ -225,6 +227,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             distanceTextView = (TextView)fragmentView.findViewById(R.id.location_distance_label);
             bottomView = fragmentView.findViewById(R.id.location_bottom_view);
             sendButton = (TextView)fragmentView.findViewById(R.id.location_send_button);
+            if (sendButton != null) {
+                sendButton.setText(LocaleController.getString("SendLocation", R.string.SendLocation));
+            }
 
             getChildFragmentManager().beginTransaction().replace(R.id.map_view, mapFragment).commit();
         } else {
@@ -242,7 +247,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             if (messageObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
                 fromId = messageObject.messageOwner.fwd_from_id;
             }
-            TLRPC.User user = MessagesController.Instance.users.get(fromId);
+            TLRPC.User user = MessagesController.getInstance().users.get(fromId);
             if (user != null) {
                 TLRPC.FileLocation photo = null;
                 if (user.photo != null) {
@@ -303,9 +308,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             if (userLocation != null && distanceTextView != null) {
                 float distance = location.distanceTo(userLocation);
                 if (distance < 1000) {
-                    distanceTextView.setText(String.format("%d %s", (int)(distance), ApplicationLoader.applicationContext.getString(R.string.MetersAway)));
+                    distanceTextView.setText(String.format("%d %s", (int)(distance), LocaleController.getString("MetersAway", R.string.MetersAway)));
                 } else {
-                    distanceTextView.setText(String.format("%.2f %s", distance / 1000.0f, ApplicationLoader.applicationContext.getString(R.string.KMetersAway)));
+                    distanceTextView.setText(String.format("%.2f %s", distance / 1000.0f, LocaleController.getString("KMetersAway", R.string.KMetersAway)));
                 }
             }
         } else {

@@ -26,7 +26,7 @@
         android:textColor="#ffffff"
         android:textSize="15dp"
         android:layout_gravity="right"
-        android:text="@string/EncryptedDescriptionTitle"/>
+        android:id="@+id/secret_title"/>
 
     <TextView android:layout_height="wrap_content"
         android:layout_width="wrap_content"
@@ -37,7 +37,6 @@
         android:textSize="15dp"
         android:layout_gravity="right"
         android:id="@+id/secret_description1"
-        android:text="@string/EncryptedDescription1"
         android:drawableRight="@drawable/ic_lock_white"
         android:drawablePadding="8dp"/>
 
@@ -50,7 +49,6 @@
         android:textSize="15dp"
         android:layout_gravity="right"
         android:id="@+id/secret_description2"
-        android:text="@string/EncryptedDescription2"
         android:drawableRight="@drawable/ic_lock_white"
         android:drawablePadding="8dp"/>
 
@@ -63,7 +61,6 @@
         android:textSize="15dp"
         android:layout_gravity="right"
         android:id="@+id/secret_description3"
-        android:text="@string/EncryptedDescription3"
         android:drawableRight="@drawable/ic_lock_white"
         android:drawablePadding="8dp"/>
 
@@ -76,7 +73,6 @@
         android:textSize="15dp"
         android:layout_gravity="right"
         android:id="@+id/secret_description4"
-        android:text="@string/EncryptedDescription4"
         android:drawableRight="@drawable/ic_lock_white"
         android:drawablePadding="8dp" />
 

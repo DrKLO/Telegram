@@ -21,7 +21,6 @@
             android:layout_marginRight="5dp"
             android:minHeight="52dp"
             android:gravity="right|center_vertical"
-            android:hint="@string/SendMessageTo"
             android:maxLines="3"
             android:paddingTop="3dp"
             android:layout_marginTop="0dp"
@@ -72,7 +71,6 @@
             android:layout_height="match_parent"
             android:textColor="#808080"
             android:gravity="center"
-            android:text="@string/NoContacts"
             android:textSize="24dp"
             android:id="@+id/searchEmptyView"
             android:visibility="invisible"/>

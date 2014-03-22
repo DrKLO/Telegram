@@ -46,7 +46,6 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/DOWNLOAD"
         android:textColor="#54759e"
         android:background="@drawable/chat_incoming_media_states"
         android:paddingLeft="12dp"

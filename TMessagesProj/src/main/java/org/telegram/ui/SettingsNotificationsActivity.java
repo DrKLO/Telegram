@@ -30,6 +30,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
@@ -106,7 +107,8 @@ public class SettingsNotificationsActivity extends BaseFragment {
                             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                             Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
-                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false);
+                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
+                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
                             Uri currentSound = null;
 
                             String defaultPath = null;
@@ -145,13 +147,13 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         }
                         reseting = true;
                         TLRPC.TL_account_resetNotifySettings req = new TLRPC.TL_account_resetNotifySettings();
-                        ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                             @Override
                             public void run(TLObject response, TLRPC.TL_error error) {
                                 Utilities.RunOnUIThread(new Runnable() {
                                     @Override
                                     public void run() {
-                                        MessagesController.Instance.enableJoined = true;
+                                        MessagesController.getInstance().enableJoined = true;
                                         ActionBarActivity inflaterActivity = parentActivity;
                                         if (inflaterActivity == null) {
                                             inflaterActivity = (ActionBarActivity)getActivity();
@@ -196,7 +198,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
                         boolean enabled = preferences.getBoolean("EnableContactJoined", true);
-                        MessagesController.Instance.enableJoined = !enabled;
+                        MessagesController.getInstance().enableJoined = !enabled;
                         editor.putBoolean("EnableContactJoined", !enabled);
                         editor.commit();
                         listView.invalidateViews();
@@ -227,7 +229,11 @@ public class SettingsNotificationsActivity extends BaseFragment {
             if (ringtone != null && parentActivity != null) {
                 Ringtone rng = RingtoneManager.getRingtone(parentActivity, ringtone);
                 if (rng != null) {
-                    name = rng.getTitle(parentActivity);
+                    if(ringtone.equals(Settings.System.DEFAULT_NOTIFICATION_URI)) {
+                        name = LocaleController.getString("Default", R.string.Default);
+                    } else {
+                        name = rng.getTitle(parentActivity);
+                    }
                     rng.stop();
                 }
             }
@@ -270,7 +276,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
         actionBar.setDisplayUseLogoEnabled(false);
         actionBar.setDisplayShowCustomEnabled(false);
         actionBar.setCustomView(null);
-        actionBar.setTitle(getStringEntry(R.string.NotificationsAndSounds));
+        actionBar.setTitle(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds));
 
         TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
         if (title == null) {
@@ -364,15 +370,15 @@ public class SettingsNotificationsActivity extends BaseFragment {
                 }
                 TextView textView = (TextView)view.findViewById(R.id.settings_section_text);
                 if (i == 0) {
-                    textView.setText(getStringEntry(R.string.MessageNotifications));
+                    textView.setText(LocaleController.getString("MessageNotifications", R.string.MessageNotifications));
                 } else if (i == 5) {
-                    textView.setText(getStringEntry(R.string.GroupNotifications));
+                    textView.setText(LocaleController.getString("GroupNotifications", R.string.GroupNotifications));
                 } else if (i == 10) {
-                    textView.setText(getStringEntry(R.string.InAppNotifications));
+                    textView.setText(LocaleController.getString("InAppNotifications", R.string.InAppNotifications));
                 } else if (i == 14) {
-                    textView.setText(getStringEntry(R.string.Events));
+                    textView.setText(LocaleController.getString("Events", R.string.Events));
                 } else if (i == 16) {
-                    textView.setText(getStringEntry(R.string.Reset));
+                    textView.setText(LocaleController.getString("Reset", R.string.Reset));
                 }
             } if (type == 1) {
                 if (view == null) {
@@ -393,7 +399,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     } else if (i == 6) {
                         enabled = preferences.getBoolean("EnableGroup", true);
                     }
-                    textView.setText(getStringEntry(R.string.Alert));
+                    textView.setText(LocaleController.getString("Alert", R.string.Alert));
                     divider.setVisibility(View.VISIBLE);
                 } else if (i == 2 || i == 7) {
                     if (i == 2) {
@@ -401,7 +407,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     } else if (i == 7) {
                         enabled = preferences.getBoolean("EnablePreviewGroup", true);
                     }
-                    textView.setText(getStringEntry(R.string.MessagePreview));
+                    textView.setText(LocaleController.getString("MessagePreview", R.string.MessagePreview));
                     divider.setVisibility(View.VISIBLE);
                 } else if (i == 3 || i == 8) {
                     if (i == 3) {
@@ -409,23 +415,23 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     } else if (i == 8) {
                         enabled = preferences.getBoolean("EnableVibrateGroup", true);
                     }
-                    textView.setText(getStringEntry(R.string.Vibrate));
+                    textView.setText(LocaleController.getString("Vibrate", R.string.Vibrate));
                     divider.setVisibility(View.VISIBLE);
                 } else if (i == 11) {
                     enabled = preferences.getBoolean("EnableInAppSounds", true);
-                    textView.setText(getStringEntry(R.string.InAppSounds));
+                    textView.setText(LocaleController.getString("InAppSounds", R.string.InAppSounds));
                     divider.setVisibility(View.VISIBLE);
                 } else if (i == 12) {
                     enabled = preferences.getBoolean("EnableInAppVibrate", true);
-                    textView.setText(getStringEntry(R.string.InAppVibrate));
+                    textView.setText(LocaleController.getString("InAppVibrate", R.string.InAppVibrate));
                     divider.setVisibility(View.VISIBLE);
                 } else if (i == 13) {
                     enabled = preferences.getBoolean("EnableInAppPreview", true);
-                    textView.setText(getStringEntry(R.string.InAppPreview));
+                    textView.setText(LocaleController.getString("InAppPreview", R.string.InAppPreview));
                     divider.setVisibility(View.INVISIBLE);
                 } else if (i == 15) {
                     enabled = preferences.getBoolean("EnableContactJoined", true);
-                    textView.setText(getStringEntry(R.string.ContactJoined));
+                    textView.setText(LocaleController.getString("ContactJoined", R.string.ContactJoined));
                     divider.setVisibility(View.INVISIBLE);
                 }
                 if (enabled) {
@@ -458,25 +464,25 @@ public class SettingsNotificationsActivity extends BaseFragment {
                 boolean enabledAll = preferences.getBoolean("EnableAll", true);
                 if (i == 4 || i == 9) {
                     if (i == 4) {
-                        String name = preferences.getString("GlobalSound", getStringEntry(R.string.Default));
+                        String name = preferences.getString("GlobalSound", LocaleController.getString("Default", R.string.Default));
                         if (name.equals("NoSound")) {
-                            textViewDetail.setText(getStringEntry(R.string.NoSound));
+                            textViewDetail.setText(LocaleController.getString("NoSound", R.string.NoSound));
                         } else {
                             textViewDetail.setText(name);
                         }
                     } else if (i == 9) {
-                        String name = preferences.getString("GroupSound", getStringEntry(R.string.Default));
+                        String name = preferences.getString("GroupSound", LocaleController.getString("Default", R.string.Default));
                         if (name.equals("NoSound")) {
-                            textViewDetail.setText(getStringEntry(R.string.NoSound));
+                            textViewDetail.setText(LocaleController.getString("NoSound", R.string.NoSound));
                         } else {
                             textViewDetail.setText(name);
                         }
                     }
-                    textView.setText(getStringEntry(R.string.Sound));
+                    textView.setText(LocaleController.getString("Sound", R.string.Sound));
                     divider.setVisibility(View.INVISIBLE);
                 } else if (i == 17) {
-                    textView.setText(getStringEntry(R.string.ResetAllNotifications));
-                    textViewDetail.setText(getStringEntry(R.string.UndoAllCustom));
+                    textView.setText(LocaleController.getString("ResetAllNotifications", R.string.ResetAllNotifications));
+                    textViewDetail.setText(LocaleController.getString("UndoAllCustom", R.string.UndoAllCustom));
                     divider.setVisibility(View.INVISIBLE);
                 }
                 if (i != 17 && !enabledAll) {

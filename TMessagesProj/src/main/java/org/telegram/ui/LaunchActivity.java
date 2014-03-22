@@ -10,6 +10,7 @@ package org.telegram.ui;
 
 import android.app.Activity;
 import android.app.NotificationManager;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -19,6 +20,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.provider.ContactsContract;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBar;
@@ -32,6 +34,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
@@ -47,6 +50,9 @@ import org.telegram.ui.Views.NotificationView;
 import net.hockeyapp.android.CrashManager;
 import net.hockeyapp.android.UpdateManager;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -60,6 +66,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     private String documentPath = null;
     private Uri[] imagesPathArray = null;
     private String[] documentsPathArray = null;
+    private ArrayList<TLRPC.User> contactsToSend = null;
     private int currentConnectionState;
     private View statusView;
     private View backStatusButton;
@@ -70,6 +77,8 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ApplicationLoader.postInitApplication();
+
         this.setTheme(R.style.Theme_TMessages);
         getWindow().setBackgroundDrawableResource(R.drawable.transparent);
         getWindow().setFormat(PixelFormat.RGB_565);
@@ -91,8 +100,8 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             Utilities.statusBarHeight = getResources().getDimensionPixelSize(resourceId);
         }
 
-        NotificationCenter.Instance.postNotificationName(702, this);
-        currentConnectionState = ConnectionsManager.Instance.connectionState;
+        NotificationCenter.getInstance().postNotificationName(702, this);
+        currentConnectionState = ConnectionsManager.getInstance().connectionState;
         for (BaseFragment fragment : ApplicationLoader.fragmentsStack) {
             if (fragment.fragmentView != null) {
                 ViewGroup parent = (ViewGroup)fragment.fragmentView.getParent();
@@ -104,12 +113,12 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             fragment.parentActivity = this;
         }
         setContentView(R.layout.application_layout);
-        NotificationCenter.Instance.addObserver(this, 1234);
-        NotificationCenter.Instance.addObserver(this, 658);
-        NotificationCenter.Instance.addObserver(this, 701);
-        NotificationCenter.Instance.addObserver(this, 702);
-        NotificationCenter.Instance.addObserver(this, 703);
-        NotificationCenter.Instance.addObserver(this, GalleryImageViewer.needShowAllMedia);
+        NotificationCenter.getInstance().addObserver(this, 1234);
+        NotificationCenter.getInstance().addObserver(this, 658);
+        NotificationCenter.getInstance().addObserver(this, 701);
+        NotificationCenter.getInstance().addObserver(this, 702);
+        NotificationCenter.getInstance().addObserver(this, 703);
+        NotificationCenter.getInstance().addObserver(this, GalleryImageViewer.needShowAllMedia);
         getSupportActionBar().setLogo(R.drawable.ab_icon_fixed2);
 
         statusView = getLayoutInflater().inflate(R.layout.updating_state_layout, null);
@@ -185,9 +194,88 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                 String type = intent.getType();
                 if (type != null && type.equals("text/plain")) {
                     String text = intent.getStringExtra(Intent.EXTRA_TEXT);
+                    String subject = intent.getStringExtra(Intent.EXTRA_SUBJECT);
+
                     if (text != null && text.length() != 0) {
+                        if ((text.startsWith("http://") || text.startsWith("https://")) && subject != null && subject.length() != 0) {
+                            text = subject + "\n" + text;
+                        }
                         sendingText = text;
                     } else {
+                        error = true;
+                    }
+                } else if (type != null && type.equals(ContactsContract.Contacts.CONTENT_VCARD_TYPE)) {
+                    try {
+                        Uri uri = (Uri)intent.getExtras().get(Intent.EXTRA_STREAM);
+                        if (uri != null) {
+                            ContentResolver cr = getContentResolver();
+                            InputStream stream = cr.openInputStream(uri);
+
+                            String name = null;
+                            String nameEncoding = null;
+                            String nameCharset = null;
+                            ArrayList<String> phones = new ArrayList<String>();
+                            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
+                            String line = null;
+                            while ((line = bufferedReader.readLine()) != null) {
+                                String[] args = line.split(":");
+                                if (args.length != 2) {
+                                    continue;
+                                }
+                                if (args[0].startsWith("FN")) {
+                                    String[] params = args[0].split(";");
+                                    for (String param : params) {
+                                        String[] args2 = param.split("=");
+                                        if (args2.length != 2) {
+                                            continue;
+                                        }
+                                        if (args2[0].equals("CHARSET")) {
+                                            nameCharset = args2[1];
+                                        } else if (args2[0].equals("ENCODING")) {
+                                            nameEncoding = args2[1];
+                                        }
+                                    }
+                                    name = args[1];
+                                    if (nameEncoding != null && nameEncoding.equalsIgnoreCase("QUOTED-PRINTABLE")) {
+                                        while (name.endsWith("=") && nameEncoding != null) {
+                                            name = name.substring(0, name.length() - 1);
+                                            line = bufferedReader.readLine();
+                                            if (line == null) {
+                                                break;
+                                            }
+                                            name += line;
+                                        }
+                                        byte[] bytes = Utilities.decodeQuotedPrintable(name.getBytes());
+                                        if (bytes != null && bytes.length != 0) {
+                                            String decodedName = new String(bytes, nameCharset);
+                                            if (decodedName != null) {
+                                                name = decodedName;
+                                            }
+                                        }
+                                    }
+                                } else if (args[0].startsWith("TEL")) {
+                                    String phone = PhoneFormat.stripExceptNumbers(args[1], true);
+                                    if (phone.length() > 0) {
+                                        phones.add(phone);
+                                    }
+                                }
+                            }
+                            if (name != null && !phones.isEmpty()) {
+                                contactsToSend = new ArrayList<TLRPC.User>();
+                                for (String phone : phones) {
+                                    TLRPC.User user = new TLRPC.TL_userContact();
+                                    user.phone = phone;
+                                    user.first_name = name;
+                                    user.last_name = "";
+                                    user.id = 0;
+                                    contactsToSend.add(user);
+                                }
+                            }
+                        } else {
+                            error = true;
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
                         error = true;
                     }
                 } else {
@@ -269,7 +357,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                     if (cursor != null) {
                         if (cursor.moveToFirst()) {
                             int userId = cursor.getInt(cursor.getColumnIndex("DATA4"));
-                            NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
+                            NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
                             push_user_id = userId;
                         }
                         cursor.close();
@@ -282,26 +370,26 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             }
         }
 
-        if ((getIntent().getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0 && !restore) {
+        if (getIntent().getAction() != null && getIntent().getAction().startsWith("com.tmessages.openchat") && (getIntent().getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0 && !restore) {
             int chatId = getIntent().getIntExtra("chatId", 0);
             int userId = getIntent().getIntExtra("userId", 0);
             int encId = getIntent().getIntExtra("encId", 0);
             if (chatId != 0) {
-                TLRPC.Chat chat = MessagesController.Instance.chats.get(chatId);
+                TLRPC.Chat chat = MessagesController.getInstance().chats.get(chatId);
                 if (chat != null) {
-                    NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
+                    NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
                     push_chat_id = chatId;
                 }
             } else if (userId != 0) {
-                TLRPC.User user = MessagesController.Instance.users.get(userId);
+                TLRPC.User user = MessagesController.getInstance().users.get(userId);
                 if (user != null) {
-                    NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
+                    NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
                     push_user_id = userId;
                 }
             } else if (encId != 0) {
-                TLRPC.EncryptedChat chat = MessagesController.Instance.encryptedChats.get(encId);
+                TLRPC.EncryptedChat chat = MessagesController.getInstance().encryptedChats.get(encId);
                 if (chat != null) {
-                    NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
+                    NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
                     push_enc_id = encId;
                 }
             }
@@ -342,9 +430,10 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                 getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
             }
         }
-        if (videoPath != null || photoPath != null || sendingText != null || documentPath != null || documentsPathArray != null || imagesPathArray != null) {
+        if (videoPath != null || photoPath != null || sendingText != null || documentPath != null || documentsPathArray != null || imagesPathArray != null || contactsToSend != null) {
             MessagesActivity fragment = new MessagesActivity();
             fragment.selectAlertString = R.string.ForwardMessagesTo;
+            fragment.selectAlertStringDesc = "ForwardMessagesTo";
             fragment.animationType = 1;
             Bundle args = new Bundle();
             args.putBoolean("onlySelect", true);
@@ -385,20 +474,20 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             Bundle bundle = new Bundle();
             if (lower_part != 0) {
                 if (lower_part > 0) {
-                    NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
+                    NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
                     bundle.putInt("user_id", lower_part);
                     fragment.setArguments(bundle);
                     fragment.scrollToTopOnResume = true;
                     presentFragment(fragment, "chat" + Math.random(), true, false);
                 } else if (lower_part < 0) {
-                    NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
+                    NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
                     bundle.putInt("chat_id", -lower_part);
                     fragment.setArguments(bundle);
                     fragment.scrollToTopOnResume = true;
                     presentFragment(fragment, "chat" + Math.random(), true, false);
                 }
             } else {
-                NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
+                NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
                 int chat_id = (int)(dialog_id >> 32);
                 bundle.putInt("enc_id", chat_id);
                 fragment.setArguments(bundle);
@@ -421,6 +510,10 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                 for (String path : documentsPathArray) {
                     fragment.processSendingDocument(path);
                 }
+            } else if (contactsToSend != null && !contactsToSend.isEmpty()) {
+                for (TLRPC.User user : contactsToSend) {
+                    MessagesController.getInstance().sendMessage(user, dialog_id);
+                }
             }
             photoPath = null;
             videoPath = null;
@@ -428,6 +521,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             documentPath = null;
             imagesPathArray = null;
             documentsPathArray = null;
+            contactsToSend = null;
         }
     }
 
@@ -475,6 +569,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         try {
             NotificationManager mNotificationManager = (NotificationManager)this.getSystemService(Context.NOTIFICATION_SERVICE);
             mNotificationManager.cancel(1);
+            MessagesController.getInstance().currentPushMessage = null;
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
@@ -485,12 +580,12 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             return;
         }
         finished = true;
-        NotificationCenter.Instance.removeObserver(this, 1234);
-        NotificationCenter.Instance.removeObserver(this, 658);
-        NotificationCenter.Instance.removeObserver(this, 701);
-        NotificationCenter.Instance.removeObserver(this, 702);
-        NotificationCenter.Instance.removeObserver(this, 703);
-        NotificationCenter.Instance.removeObserver(this, GalleryImageViewer.needShowAllMedia);
+        NotificationCenter.getInstance().removeObserver(this, 1234);
+        NotificationCenter.getInstance().removeObserver(this, 658);
+        NotificationCenter.getInstance().removeObserver(this, 701);
+        NotificationCenter.getInstance().removeObserver(this, 702);
+        NotificationCenter.getInstance().removeObserver(this, 703);
+        NotificationCenter.getInstance().removeObserver(this, GalleryImageViewer.needShowAllMedia);
         if (notificationView != null) {
             notificationView.hide(false);
             notificationView.destroy();
@@ -561,12 +656,12 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                 presentFragment(fragment, "media_" + dialog_id, false);
             }
         } else if (id == 658) {
-            Integer push_user_id = (Integer)NotificationCenter.Instance.getFromMemCache("push_user_id", 0);
-            Integer push_chat_id = (Integer)NotificationCenter.Instance.getFromMemCache("push_chat_id", 0);
-            Integer push_enc_id = (Integer)NotificationCenter.Instance.getFromMemCache("push_enc_id", 0);
+            Integer push_user_id = (Integer)NotificationCenter.getInstance().getFromMemCache("push_user_id", 0);
+            Integer push_chat_id = (Integer)NotificationCenter.getInstance().getFromMemCache("push_chat_id", 0);
+            Integer push_enc_id = (Integer)NotificationCenter.getInstance().getFromMemCache("push_enc_id", 0);
 
             if (push_user_id != 0) {
-                NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
+                NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
                 ChatActivity fragment = new ChatActivity();
                 Bundle bundle = new Bundle();
                 bundle.putInt("user_id", push_user_id);
@@ -580,7 +675,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                     getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
                 }
             } else if (push_chat_id != 0) {
-                NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
+                NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
                 ChatActivity fragment = new ChatActivity();
                 Bundle bundle = new Bundle();
                 bundle.putInt("chat_id", push_chat_id);
@@ -594,7 +689,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                     getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
                 }
             }  else if (push_enc_id != 0) {
-                NotificationCenter.Instance.postNotificationName(MessagesController.closeChats);
+                NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
                 ChatActivity fragment = new ChatActivity();
                 Bundle bundle = new Bundle();
                 bundle.putInt("enc_id", push_enc_id);
@@ -672,6 +767,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         }
         if (canApplyLoading) {
             if (statusView != null) {
+                statusView.setVisibility(View.VISIBLE);
                 actionBar.setDisplayShowTitleEnabled(false);
                 actionBar.setDisplayShowHomeEnabled(false);
                 actionBar.setDisplayHomeAsUpEnabled(false);
@@ -703,11 +799,27 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                         android.support.v7.app.ActionBar.LayoutParams statusParams = (android.support.v7.app.ActionBar.LayoutParams)statusView.getLayoutParams();
                         statusText.measure(View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.AT_MOST));
                         statusParams.width = (statusText.getMeasuredWidth() + Utilities.dp(54));
+                        if (statusParams.height == 0) {
+                            statusParams.height = actionBar.getHeight();
+                        }
+                        if (statusParams.width <= 0) {
+                            statusParams.width = Utilities.dp(100);
+                        }
+                        statusParams.topMargin = 0;
+                        statusParams.leftMargin = 0;
                         statusView.setLayoutParams(statusParams);
                     } else if (statusView.getLayoutParams() instanceof android.app.ActionBar.LayoutParams) {
                         android.app.ActionBar.LayoutParams statusParams = (android.app.ActionBar.LayoutParams)statusView.getLayoutParams();
                         statusText.measure(View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.AT_MOST));
                         statusParams.width = (statusText.getMeasuredWidth() + Utilities.dp(54));
+                        if (statusParams.height == 0) {
+                            statusParams.height = actionBar.getHeight();
+                        }
+                        if (statusParams.width <= 0) {
+                            statusParams.width = Utilities.dp(100);
+                        }
+                        statusParams.topMargin = 0;
+                        statusParams.leftMargin = 0;
                         statusView.setLayoutParams(statusParams);
                     }
                 } catch (Exception e) {

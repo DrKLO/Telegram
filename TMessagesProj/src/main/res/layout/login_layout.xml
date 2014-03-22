@@ -99,7 +99,6 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/StartText"
                 android:id="@+id/login_confirm_text"
                 android:layout_marginTop="28dp"
                 android:textColor="#808080"
@@ -144,7 +143,6 @@
                 android:editable="true"
                 android:textSize="18dp"
                 android:imeOptions="actionNext|flagNoExtractUi"
-                android:hint="@string/Code"
                 android:textCursorDrawable="@null"
                 android:layout_gravity="center_horizontal"
                 android:textColor="#000000"
@@ -176,7 +174,6 @@
                     android:textSize="16dp"
                     android:textColor="#316f9f"
                     android:lineSpacingExtra="2dp"
-                    android:text="@string/WrongNumber"
                     android:layout_gravity="bottom|center_horizontal"
                     android:paddingTop="24dp"
                     android:layout_marginBottom="10dp"/>
@@ -199,7 +196,6 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/RegisterText"
                 android:id="@+id/login_register_info"
                 android:layout_marginTop="8dp"
                 android:textColor="#808080"
@@ -217,7 +213,6 @@
                 android:layout_marginLeft="40dp"
                 android:layout_marginRight="40dp"
                 android:layout_marginTop="34dp"
-                android:hint="@string/FirstName"
                 android:lines="1"
                 android:capitalize="words"
                 android:textCursorDrawable="@null"
@@ -232,7 +227,6 @@
                 android:imeOptions="actionNext|flagNoExtractUi"
                 android:layout_marginLeft="40dp"
                 android:layout_marginRight="40dp"
-                android:hint="@string/LastName"
                 android:lines="1"
                 android:maxLines="1"
                 android:capitalize="words"
@@ -277,7 +271,6 @@
                     android:textSize="16dp"
                     android:textColor="#316f9f"
                     android:lineSpacingExtra="2dp"
-                    android:text="@string/CancelRegistration"
                     android:layout_gravity="bottom|center_horizontal"
                     android:layout_marginTop="-40dp"
                     android:layout_marginBottom="20dp"/>

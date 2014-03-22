@@ -25,6 +25,7 @@ import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.SlideView;
@@ -63,9 +64,9 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
             public void run() {
                 if (!isFinishing()) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-                    builder.setTitle(LoginActivity.this.getString(R.string.AppName));
+                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                     builder.setMessage(message);
-                    builder.setPositiveButton(ApplicationLoader.applicationContext.getString(R.string.OK), null);
+                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
                     builder.show().setCanceledOnTouchOutside(true);
                 }
             }
@@ -116,6 +117,7 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
         inflater.inflate(R.menu.group_create_menu, menu);
         SupportMenuItem doneItem = (SupportMenuItem)menu.findItem(R.id.done_menu_item);
         TextView doneTextView = (TextView)doneItem.getActionView().findViewById(R.id.done_button);
+        doneTextView.setText(LocaleController.getString("Done", R.string.Done));
         doneTextView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

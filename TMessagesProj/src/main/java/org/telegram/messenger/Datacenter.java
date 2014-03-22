@@ -24,7 +24,8 @@ public class Datacenter {
     public int datacenterId;
     public ArrayList<String> addresses = new ArrayList<String>();
     public HashMap<String, Integer> ports = new HashMap<String, Integer>();
-    public int[] defaultPorts = new int[] {-1, 80, -1, 443, -1, 443, -1, 80, -1, 443, -1};
+    public int[] defaultPorts =   new int[] {-1, 80, -1, 443, -1, 443, -1, 80, -1, 443, -1};
+    public int[] defaultPorts14 = new int[] {-1, 14, -1, 443, -1, 14,  -1, 80, -1, 14,  -1};
     public boolean authorized;
     public long authSessionId;
     public long authDownloadSessionId;
@@ -32,6 +33,7 @@ public class Datacenter {
     public byte[] authKey;
     public long authKeyId;
     public int lastInitVersion = 0;
+    public int overridePort = -1;
     private volatile int currentPortNum = 0;
     private volatile int currentAddressNum = 0;
 
@@ -129,14 +131,23 @@ public class Datacenter {
 
     public int getCurrentPort() {
         if (ports.isEmpty()) {
-            return 443;
+            return overridePort == -1 ? 443 : overridePort;
+        }
+
+        int[] portsArray = defaultPorts;
+
+        if (overridePort == 14) {
+            portsArray = defaultPorts14;
         }
 
         if (currentPortNum >= defaultPorts.length) {
             currentPortNum = 0;
         }
-        int port = defaultPorts[currentPortNum];
+        int port = portsArray[currentPortNum];
         if (port == -1) {
+            if (overridePort != -1) {
+                return overridePort;
+            }
             String address = getCurrentAddress();
             return ports.get(address);
         }

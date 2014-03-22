@@ -185,6 +185,6 @@ public class UserConfig {
         contactsVersion = 1;
         saveIncomingPhotos = false;
         saveConfig(true);
-        MessagesController.Instance.deleteAllAppAccounts();
+        MessagesController.getInstance().deleteAllAppAccounts();
     }
 }

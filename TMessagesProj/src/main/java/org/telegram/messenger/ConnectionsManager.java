@@ -36,7 +36,6 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     public static String HOCKEY_APP_HASH = "your-hockeyapp-api-key-here";
     public static String GCM_SENDER_ID = "760348033672";
     public static String SEND_LOGS_EMAIL = "email@gmail.com";
-    public static final boolean enableAudio = DEBUG_VERSION;
 
     private HashMap<Integer, Datacenter> datacenters = new HashMap<Integer, Datacenter>();
     private HashMap<Long, ArrayList<Long>> processedMessageIdsSet = new HashMap<Long, ArrayList<Long>>();
@@ -72,14 +71,26 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     private int lastDcUpdateTime = 0;
     private int currentAppVersion = 0;
 
-    public static ConnectionsManager Instance = new ConnectionsManager();
-
     private boolean paused = false;
     private Runnable stageRunnable;
     private Runnable pingRunnable;
     private long lastPingTime = System.currentTimeMillis();
     private int nextWakeUpTimeout = 60000;
     private int nextSleepTimeout = 60000;
+
+    private static volatile ConnectionsManager Instance = null;
+    public static ConnectionsManager getInstance() {
+        ConnectionsManager localInstance = Instance;
+        if (localInstance == null) {
+            synchronized (ConnectionsManager.class) {
+                localInstance = Instance;
+                if (localInstance == null) {
+                    Instance = localInstance = new ConnectionsManager();
+                }
+            }
+        }
+        return localInstance;
+    }
 
     public ConnectionsManager() {
         currentAppVersion = ApplicationLoader.getAppVersion();
@@ -157,14 +168,14 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                         }
 
                         if (datacenters != null) {
-                            MessagesController.Instance.updateTimerProc();
+                            MessagesController.getInstance().updateTimerProc();
                             if (datacenterWithId(currentDatacenterId).authKey != null) {
                                 if (lastPingTime < System.currentTimeMillis() - 19000) {
                                     lastPingTime = System.currentTimeMillis();
                                     generatePing();
                                 }
                                 if (!updatingDcSettings && lastDcUpdateTime < (int)(System.currentTimeMillis() / 1000) - DC_UPDATE_TIME) {
-                                    updateDcSettings();
+                                    updateDcSettings(0);
                                 }
                                 processRequestQueue(0, 0);
                             }
@@ -315,7 +326,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
                         datacenter = new Datacenter();
                         datacenter.datacenterId = 2;
-                        datacenter.addAddressAndPort("95.142.192.66", 443);
+                        datacenter.addAddressAndPort("109.239.131.193", 443);
                         datacenters.put(datacenter.datacenterId, datacenter);
 
                         datacenter = new Datacenter();
@@ -340,7 +351,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
                         datacenter = new Datacenter();
                         datacenter.datacenterId = 2;
-                        datacenter.addAddressAndPort("95.142.192.65", 443);
+                        datacenter.addAddressAndPort("109.239.131.195", 443);
                         datacenters.put(datacenter.datacenterId, datacenter);
 
                         datacenter = new Datacenter();
@@ -351,7 +362,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 } else if (datacenters.size() == 1) {
                     Datacenter datacenter = new Datacenter();
                     datacenter.datacenterId = 2;
-                    datacenter.addAddressAndPort("95.142.192.66", 443);
+                    datacenter.addAddressAndPort("109.239.131.193", 443);
                     datacenters.put(datacenter.datacenterId, datacenter);
 
                     datacenter = new Datacenter();
@@ -589,7 +600,66 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         });
     }
 
-    public void updateDcSettings() {
+    public void applyDcPushUpdate(final int dc, final String ip_address, final int port) {
+        Utilities.stageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                Datacenter exist = datacenterWithId(dc);
+                if (exist != null) {
+                    ArrayList<String> addresses = new ArrayList<String>();
+                    HashMap<String, Integer> ports = new HashMap<String, Integer>();
+                    addresses.add(ip_address);
+                    ports.put(ip_address, port);
+                    exist.replaceAddressesAndPorts(addresses, ports);
+                    if (exist.connection != null) {
+                        exist.connection.suspendConnection(true);
+                    }
+                    if (exist.uploadConnection != null) {
+                        exist.uploadConnection.suspendConnection(true);
+                    }
+                    if (exist.downloadConnection != null) {
+                        exist.downloadConnection.suspendConnection(true);
+                    }
+                    if (dc == 1) {
+                        updateDcSettings(1);
+                    }
+                }
+            }
+        });
+    }
+
+    public void applyCountryPortNumber(final String phone) {
+        if (phone == null || phone.length() == 0) {
+            return;
+        }
+        Utilities.stageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                if (phone.startsWith("968")) {
+                    for (HashMap.Entry<Integer, Datacenter> entry : datacenters.entrySet()) {
+                        Datacenter datacenter = entry.getValue();
+                        datacenter.overridePort = 14;
+                        if (datacenter.connection != null) {
+                            datacenter.connection.suspendConnection(true);
+                        }
+                        if (datacenter.uploadConnection != null) {
+                            datacenter.uploadConnection.suspendConnection(true);
+                        }
+                        if (datacenter.downloadConnection != null) {
+                            datacenter.downloadConnection.suspendConnection(true);
+                        }
+                    }
+                } else {
+                    for (HashMap.Entry<Integer, Datacenter> entry : datacenters.entrySet()) {
+                        Datacenter datacenter = entry.getValue();
+                        datacenter.overridePort = -1;
+                    }
+                }
+            }
+        });
+    }
+
+    public void updateDcSettings(int dcNum) {
         if (updatingDcSettings) {
             return;
         }
@@ -597,7 +667,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         updatingDcSettings = true;
         TLRPC.TL_help_getConfig getConfig = new TLRPC.TL_help_getConfig();
 
-        ConnectionsManager.Instance.performRpc(getConfig, new RPCRequest.RPCRequestDelegate() {
+        ConnectionsManager.getInstance().performRpc(getConfig, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
                 if (!updatingDcSettings) {
@@ -640,7 +710,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 }
                 updatingDcSettings = false;
             }
-        }, null, true, RPCRequest.RPCRequestClassEnableUnauthorized | RPCRequest.RPCRequestClassGeneric, currentDatacenterId);
+        }, null, true, RPCRequest.RPCRequestClassEnableUnauthorized | RPCRequest.RPCRequestClassGeneric, dcNum == 0 ? currentDatacenterId : dcNum);
     }
 
     public long performRpc(final TLObject rpc, final RPCRequest.RPCRequestDelegate completionBlock, final RPCRequest.RPCProgressDelegate progressBlock, boolean requiresCompletion, int requestClass) {
@@ -1074,7 +1144,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             }
         }
 
-        boolean updatingState = MessagesController.Instance.updatingState;
+        boolean updatingState = MessagesController.getInstance().updatingState;
 
         if (activeTransportTokens.get(currentDatacenterId) != null) {
             if (!updatingState) {
@@ -1385,7 +1455,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         }
 
         if (!unknownDatacenterIds.isEmpty() && !updatingDcSettings) {
-            updateDcSettings();
+            updateDcSettings(0);
         }
 
         for (int num : neededDatacenterIds) {
@@ -1790,7 +1860,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 saveSession();
 
                 if (sessionId == datacenter.authSessionId && datacenter.datacenterId == currentDatacenterId && UserConfig.clientActivated) {
-                    MessagesController.Instance.getDifference();
+                    MessagesController.getInstance().getDifference();
                 }
                 arr.add(newSession.unique_id);
             }
@@ -2032,7 +2102,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                             Utilities.RunOnUIThread(new Runnable() {
                                                 @Override
                                                 public void run() {
-                                                    NotificationCenter.Instance.postNotificationName(1234);
+                                                    NotificationCenter.getInstance().postNotificationName(1234);
                                                 }
                                             });
                                         }
@@ -2176,7 +2246,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             TLObject result = Utilities.decompress(packet.packed_data, getRequestWithMessageId(messageId));
             processMessage(result, messageId, messageSeqNo, messageSalt, connection, sessionId, innerMsgId, containerMessageId);
         } else if (message instanceof TLRPC.Updates) {
-            MessagesController.Instance.processUpdates((TLRPC.Updates)message, false);
+            MessagesController.getInstance().processUpdates((TLRPC.Updates)message, false);
         } else {
             FileLog.e("tmessages", "***** Error: unknown message class " + message);
         }
@@ -2397,7 +2467,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             Utilities.RunOnUIThread(new Runnable() {
                 @Override
                 public void run() {
-                    NotificationCenter.Instance.postNotificationName(703, stateCopy);
+                    NotificationCenter.getInstance().postNotificationName(703, stateCopy);
                 }
             });
         }
@@ -2428,13 +2498,13 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
     private void finishUpdatingState(TcpConnection connection) {
         if (connection.getDatacenterId() == currentDatacenterId && (connection.transportRequestClass & RPCRequest.RPCRequestClassGeneric) != 0) {
-            if (ConnectionsManager.Instance.connectionState == 3 && !MessagesController.Instance.gettingDifference && !MessagesController.Instance.gettingDifferenceAgain) {
-                ConnectionsManager.Instance.connectionState = 0;
-                final int stateCopy = ConnectionsManager.Instance.connectionState;
+            if (ConnectionsManager.getInstance().connectionState == 3 && !MessagesController.getInstance().gettingDifference && !MessagesController.getInstance().gettingDifferenceAgain) {
+                ConnectionsManager.getInstance().connectionState = 0;
+                final int stateCopy = ConnectionsManager.getInstance().connectionState;
                 Utilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        NotificationCenter.Instance.postNotificationName(703, stateCopy);
+                        NotificationCenter.getInstance().postNotificationName(703, stateCopy);
                     }
                 });
             }
@@ -2450,7 +2520,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 Utilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        NotificationCenter.Instance.postNotificationName(703, stateCopy);
+                        NotificationCenter.getInstance().postNotificationName(703, stateCopy);
                     }
                 });
             }
@@ -2610,7 +2680,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         Datacenter datacenter = datacenterWithId(movingToDatacenterId);
         if (datacenter == null) {
             if (!updatingDcSettings) {
-                updateDcSettings();
+                updateDcSettings(0);
             }
             return;
         }

@@ -39,8 +39,8 @@
     <string name="NoChats">Nog geen gesprekken…</string>
     <string name="NoChatsHelp">Tik op de opstelknop rechtsbovenin\nom een gesprek te beginnen\nof ga naar de contactenlijst.</string>
     <string name="WaitingForNetwork">Wachten op netwerk…</string>
-    <string name="Connecting">Bezig met verbinden…</string>
-    <string name="Updating">Bezig met bijwerken…</string>
+    <string name="Connecting">Verbinden…</string>
+    <string name="Updating">Bijwerken…</string>
     <string name="NewSecretChat">Nieuw privégesprek</string>
     <string name="AwaitingEncryption">Wachten tot %s online komt…</string>
     <string name="EncryptionRejected">Privégesprek geannuleerd</string>
@@ -88,7 +88,7 @@
     <string name="NoRecent">Niets recents</string>
     <string name="Members">deelnemers</string>
     <string name="Message">Bericht</string>
-    <string name="TypeMessage">Typ een bericht</string>
+    <string name="TypeMessage">Typ een bericht...</string>
     <string name="DOWNLOAD">Downloaden</string>
     <string name="Selected">Geselecteerd:</string>
     <string name="ShareMyContactInfo">MIJN CONTACTGEGEVENS DELEN</string>
@@ -106,6 +106,7 @@
     <string name="YouLeft">U hebt deze groep verlaten</string>
     <string name="DeleteThisGroup">Deze groep verwijderen</string>
     <string name="SlideToCancel">SLEEP OM TE ANNULEREN</string>
+    <string name="SaveToDownloads">Opslaan in downloads</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Privégesprek aangevraagd</string>
@@ -157,8 +158,8 @@
     <string name="OtherAt">om</string>
     <string name="Online">online</string>
     <string name="Offline">offline</string>
-    <string name="LastSeen">laatst gezien:</string>
-    <string name="LastSeenDate">laatst gezien:</string>
+    <string name="LastSeen">laatst gez.:</string>
+    <string name="LastSeenDate">laatst gez.:</string>
     <string name="InviteFriends">Vrienden uitnodigen</string>
 
     <!--group create view-->
@@ -206,13 +207,13 @@
     <string name="ShortMessageLifetime1h">1u</string>
     <string name="ShortMessageLifetime1d">1d</string>
     <string name="ShortMessageLifetime1w">1w</string>
-    <string name="EncryptionKeyDescription">Deze afbeelding is een weergave van de encryptiesleutel voor dit privégesprek met <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Als deze afbeelding er hetzelfde uitziet als op de telefoon van <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, is uw gesprek 200%% beveiligd.<![CDATA[<br><br>]]>Bezoek telegram.org voor meer informatie.</string>
+    <string name="EncryptionKeyDescription">Dit is een weergave van de encryptiesleutel voor dit privégesprek met <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Als deze afbeelding er bij <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> hetzelfde uitziet, is uw gesprek 200%% beveiligd.<![CDATA[<br><br>]]>Lees meer op telegram.org.</string>
 
     <!--settings view-->
     <string name="ResetNotificationsText">Alle meldingsinstellingen herstellen</string>
     <string name="TextSize">Tekstgrootte berichten</string>
     <string name="AskAQuestion">Een vraag stellen</string>
-    <string name="EnableAnimations">Animaties inschakelen</string>
+    <string name="EnableAnimations">Animaties</string>
     <string name="Unblock">Deblokkeren</string>
     <string name="UnblockText">Houd een gebruiker ingedrukt om hem/haar te deblokkeren.</string>
     <string name="NoBlocked">Nog geen geblokkeerde gebruikers</string>
@@ -229,7 +230,7 @@
     <string name="InAppPreview">In-app voorbeelden</string>
     <string name="Reset">RESETTEN</string>
     <string name="ResetAllNotifications">Alle meldingen resetten</string>
-    <string name="UndoAllCustom">Alle aangepaste meldingsinstellingen ongedaan maken voor alle contacten en groepen</string>
+    <string name="UndoAllCustom">Alle aangepaste meldingsinstellingen ongedaan maken voor alle contacten en groepen.</string>
     <string name="NotificationsAndSounds">Meldingen en geluiden</string>
     <string name="BlockedUsers">Geblokkeerde gebruikers</string>
     <string name="SaveIncomingPhotos">Inkomende foto\'s opslaan</string>
@@ -243,6 +244,7 @@
     <string name="SendByEnter">Verzenden met Enter</string>
     <string name="TerminateAllSessions">Alle andere sessies beëindigen</string>
     <string name="AutomaticPhotoDownload">FOTO\'S AUTOMATISCH DOWNLOADEN</string>
+    <string name="AutomaticAudioDownload">GELUIDSBESTANDEN AUTOMATISCH DOWNLOADEN</string>
     <string name="AutomaticPhotoDownloadGroups">Groepen</string>
     <string name="AutomaticPhotoDownloadPrivateChats">Privégesprekken</string>
     <string name="Events">GEBEURTENISSEN</string>
@@ -341,12 +343,12 @@
     <string name="Page6Title">In de cloud</string>
     <string name="Page7Title">Privé</string>
     <string name="Page1Message">Welkom in het tijdperk van snel en veilig chatten</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> bezorgt berichten sneller<![CDATA[<br/>]]>dan elke andere app</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is altijd gratis. Geen advertenties.<![CDATA[<br/>]]>Geen abonnementskosten</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> beveiligt uw berichten<![CDATA[<br/>]]>tegen hackers</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> heeft geen beperkingen op de grootte<![CDATA[<br/>]]>van uw media en gesprekken</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> biedt toegang tot uw berichten<![CDATA[<br/>]]>vanaf meerdere apparaten</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> berichten zijn sterk versleuteld<![CDATA[<br/>]]>en kunnen zichzelf vernietigen</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> bezorgt berichten sneller dan elke andere app</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is altijd gratis. Geen advertenties. Geen abonnementskosten</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> beveiligt uw berichten tegen hackers</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> heeft geen beperkingen op de grootte van uw media en gesprekken</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> biedt toegang tot uw berichten vanaf meerdere apparaten</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> berichten zijn sterk versleuteld en kunnen zichzelf vernietigen</string>
     <string name="StartMessaging">Begin nu met chatten</string>
 
     <!--Don't change this! Not for localization!-->

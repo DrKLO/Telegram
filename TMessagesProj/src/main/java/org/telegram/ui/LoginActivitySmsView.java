@@ -21,6 +21,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
@@ -53,7 +54,6 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     private int time = 60000;
     private double lastCurrentTime;
     private boolean waitingForSms = false;
-    private int callTime = 60000;
 
     public LoginActivitySmsView(Context context) {
         super(context);
@@ -73,8 +73,10 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
 
         confirmTextView = (TextView)findViewById(R.id.login_sms_confirm_text);
         codeField = (EditText)findViewById(R.id.login_sms_code_field);
+        codeField.setHint(LocaleController.getString("Code", R.string.Code));
         timeText = (TextView)findViewById(R.id.login_time_text);
         TextView wrongNumber = (TextView) findViewById(R.id.wrong_number);
+        wrongNumber.setText(LocaleController.getString("WrongNumber", R.string.WrongNumber));
 
         wrongNumber.setOnClickListener(new OnClickListener() {
             @Override
@@ -107,22 +109,21 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     public void setParams(Bundle params) {
         codeField.setText("");
         Utilities.setWaitingForSms(true);
-        NotificationCenter.Instance.addObserver(this, 998);
+        NotificationCenter.getInstance().addObserver(this, 998);
         currentParams = params;
         waitingForSms = true;
         String phone = params.getString("phone");
         requestPhone = params.getString("phoneFormated");
         phoneHash = params.getString("phoneHash");
         registered = params.getString("registered");
-        callTime = params.getInt("calltime");
+        time = params.getInt("calltime");
 
-        String number = PhoneFormat.Instance.format(phone);
+        String number = PhoneFormat.getInstance().format(phone);
         confirmTextView.setText(Html.fromHtml(String.format(ApplicationLoader.applicationContext.getResources().getString(R.string.SentSmsCode) + " <b>%s</b>", number)));
 
         Utilities.showKeyboard(codeField);
         codeField.requestFocus();
 
-        time = callTime;
         try {
             synchronized(timerSync) {
                 if (timeTimer != null) {
@@ -161,7 +162,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                             TLRPC.TL_auth_sendCall req = new TLRPC.TL_auth_sendCall();
                             req.phone_number = requestPhone;
                             req.phone_code_hash = phoneHash;
-                            ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                                 @Override
                                 public void run(TLObject response, TLRPC.TL_error error) {
                                 }
@@ -177,7 +178,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     public void onNextPressed() {
         waitingForSms = false;
         Utilities.setWaitingForSms(false);
-        NotificationCenter.Instance.removeObserver(this, 998);
+        NotificationCenter.getInstance().removeObserver(this, 998);
         final TLRPC.TL_auth_signIn req = new TLRPC.TL_auth_signIn();
         req.phone_number = requestPhone;
         req.phone_code = codeField.getText().toString();
@@ -195,7 +196,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         if (delegate != null) {
             delegate.needShowProgress();
         }
-        ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
                 if (delegate != null) {
@@ -220,18 +221,18 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                                 FileLog.e("tmessages", e);
                             }
                             UserConfig.clearConfig();
-                            MessagesStorage.Instance.cleanUp();
-                            MessagesController.Instance.cleanUp();
-                            ConnectionsManager.Instance.cleanUp();
+                            MessagesStorage.getInstance().cleanUp();
+                            MessagesController.getInstance().cleanUp();
+                            ConnectionsManager.getInstance().cleanUp();
                             UserConfig.currentUser = res.user;
                             UserConfig.clientActivated = true;
                             UserConfig.clientUserId = res.user.id;
                             UserConfig.saveConfig(true);
                             ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
                             users.add(UserConfig.currentUser);
-                            MessagesStorage.Instance.putUsersAndChats(users, null, true, true);
-                            MessagesController.Instance.users.put(res.user.id, res.user);
-                            ContactsController.Instance.checkAppAccount();
+                            MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
+                            MessagesController.getInstance().users.put(res.user.id, res.user);
+                            ContactsController.getInstance().checkAppAccount();
                             if (delegate != null) {
                                 delegate.needFinishActivity();
                             }
@@ -287,7 +288,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                                                 TLRPC.TL_auth_sendCall req = new TLRPC.TL_auth_sendCall();
                                                 req.phone_number = requestPhone;
                                                 req.phone_code_hash = phoneHash;
-                                                ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                                                ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                                                     @Override
                                                     public void run(TLObject response, TLRPC.TL_error error) {
                                                     }
@@ -300,11 +301,11 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                         }
                         if (delegate != null) {
                             if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                                delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidPhoneNumber));
+                                delegate.needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
                             } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                                delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidCode));
+                                delegate.needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
                             } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                                delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.CodeExpired));
+                                delegate.needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
                             } else {
                                 delegate.needShowAlert(error.text);
                             }
@@ -329,7 +330,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         }
         currentParams = null;
         Utilities.setWaitingForSms(false);
-        NotificationCenter.Instance.removeObserver(this, 998);
+        NotificationCenter.getInstance().removeObserver(this, 998);
         waitingForSms = false;
     }
 
@@ -337,7 +338,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     public void onDestroyActivity() {
         super.onDestroyActivity();
         Utilities.setWaitingForSms(false);
-        NotificationCenter.Instance.removeObserver(this, 998);
+        NotificationCenter.getInstance().removeObserver(this, 998);
         try {
             synchronized(timerSync) {
                 if (timeTimer != null) {

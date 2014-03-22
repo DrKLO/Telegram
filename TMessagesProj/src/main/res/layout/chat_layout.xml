@@ -20,7 +20,6 @@
             android:layout_height="wrap_content"
             android:textColor="#ffffff"
             android:gravity="center"
-            android:text="@string/NoMessages"
             android:paddingTop="2dp"
             android:paddingBottom="2dp"
             android:paddingLeft="7dp"
@@ -156,7 +155,6 @@
             android:textColorHint="#909090"
             android:ems="10"
             android:imeOptions="flagNoExtractUi"
-            android:hint="@string/TypeMessage"
             android:inputType="textCapSentences|textMultiLine"
             android:layout_alignParentTop="true"
             android:paddingBottom="12dp"
@@ -176,9 +174,36 @@
             <LinearLayout
                 android:layout_height="wrap_content"
                 android:layout_width="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginLeft="30dp"
+                android:orientation="horizontal"
+                android:id="@+id/slideText">
+
+                <ImageView
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"
+                    android:src="@drawable/slidearrow"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginTop="1dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#999999"
+                    android:textSize="12dp"
+                    android:layout_marginLeft="6dp"
+                    android:id="@+id/slideToCancelTextView"
+                    android:layout_gravity="center_vertical"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
                 android:layout_gravity="center_vertical"
-                android:layout_marginLeft="13dp"
-                android:orientation="horizontal">
+                android:paddingLeft="13dp"
+                android:orientation="horizontal"
+                android:background="#ffffffff">
 
                 <ImageView
                     android:layout_height="wrap_content"
@@ -193,34 +218,9 @@
                     android:id="@+id/recording_time_text"
                     android:text="00:00"
                     android:textColor="#4d4c4b"
-                    android:textSize="20dp"
+                    android:textSize="16dp"
                     android:layout_gravity="center_vertical"
                     android:layout_marginLeft="6dp"/>
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_height="wrap_content"
-                android:layout_width="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginLeft="43dp"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:layout_height="wrap_content"
-                    android:layout_width="wrap_content"
-                    android:src="@drawable/slidearrow"
-                    android:layout_gravity="center_vertical"
-                    android:layout_marginTop="1dp"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/SlideToCancel"
-                    android:textColor="#999999"
-                    android:textSize="15dp"
-                    android:layout_marginLeft="6dp"
-                    android:layout_gravity="center_vertical"/>
 
             </LinearLayout>
 
@@ -279,7 +279,6 @@
             android:id="@+id/bottom_overlay_chat_text"
             android:textColor="#3e6fa1"
             android:textSize="18dp"
-            android:text="@string/DeleteThisGroup"
             android:layout_gravity="center"/>
 
     </FrameLayout>

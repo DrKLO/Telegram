@@ -79,7 +79,7 @@ public class BackupImageView extends ImageView {
             last_size = 0;
             last_placeholderBitmap = null;
 
-            FileLoader.Instance.cancelLoadingForImageView(this);
+            FileLoader.getInstance().cancelLoadingForImageView(this);
             if (placeholder != 0) {
                 setImageResourceMy(placeholder);
             } else if (placeholderBitmap != null) {
@@ -101,11 +101,11 @@ public class BackupImageView extends ImageView {
             if (currentPath.equals(key)) {
                 return;
             } else {
-                img = FileLoader.Instance.getImageFromMemory(path, httpUrl, this, filter, true);
+                img = FileLoader.getInstance().getImageFromMemory(path, httpUrl, this, filter, true);
                 recycleBitmap(img);
             }
         } else {
-            img = FileLoader.Instance.getImageFromMemory(path, httpUrl, this, filter, true);
+            img = FileLoader.getInstance().getImageFromMemory(path, httpUrl, this, filter, true);
         }
         currentPath = key;
         last_path = path;
@@ -121,7 +121,7 @@ public class BackupImageView extends ImageView {
             } else if (placeholderBitmap != null) {
                 setImageBitmapMy(placeholderBitmap);
             }
-            FileLoader.Instance.loadImage(path, httpUrl, this, filter, true, size);
+            FileLoader.getInstance().loadImage(path, httpUrl, this, filter, true, size);
         } else {
             setImageBitmap(img, currentPath);
         }
@@ -132,7 +132,7 @@ public class BackupImageView extends ImageView {
             return;
         }
         isPlaceholder = false;
-        FileLoader.Instance.incrementUseCount(currentPath);
+        FileLoader.getInstance().incrementUseCount(currentPath);
         if (ignoreLayout) {
             makeRequest = false;
         }
@@ -155,10 +155,10 @@ public class BackupImageView extends ImageView {
             Bitmap bitmap = ((BitmapDrawable)drawable).getBitmap();
             if (bitmap != null && bitmap != newBitmap) {
                 if (currentPath != null) {
-                    boolean canDelete = FileLoader.Instance.decrementUseCount(currentPath);
-                    if (!FileLoader.Instance.isInCache(currentPath)) {
-                        if (FileLoader.Instance.runtimeHack != null) {
-                            FileLoader.Instance.runtimeHack.trackAlloc(bitmap.getRowBytes() * bitmap.getHeight());
+                    boolean canDelete = FileLoader.getInstance().decrementUseCount(currentPath);
+                    if (!FileLoader.getInstance().isInCache(currentPath)) {
+                        if (FileLoader.getInstance().runtimeHack != null) {
+                            FileLoader.getInstance().runtimeHack.trackAlloc(bitmap.getRowBytes() * bitmap.getHeight());
                         }
                         if (canDelete) {
                             setImageBitmap(null);
@@ -181,7 +181,7 @@ public class BackupImageView extends ImageView {
         try {
             super.onDraw(canvas);
         } catch (Exception e) {
-            FileLoader.Instance.removeImage(currentPath);
+            FileLoader.getInstance().removeImage(currentPath);
             currentPath = null;
             setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_placeholderBitmap, last_size);
             FileLog.e("tmessages", e);

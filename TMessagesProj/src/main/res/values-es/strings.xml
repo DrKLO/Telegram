@@ -22,7 +22,7 @@
     <!--signup view-->
     <string name="YourName">Tu nombre</string>
     <string name="RegisterText">Ingresa tu nombre y apellidos</string>
-    <!--<string name="RegisterText">Ingresa tu nombre y foto</string>-->
+    <!--<string name="RegisterText">Set up your name and picture</string>-->
     <string name="FirstName">Nombre (requerido)</string>
     <string name="LastName">Apellido(s) (opcional)</string>
     <string name="CancelRegistration">Cancelar registro</string>
@@ -106,6 +106,7 @@
     <string name="YouLeft">Has abandonado este grupo</string>
     <string name="DeleteThisGroup">Eliminar este grupo</string>
     <string name="SlideToCancel">DESLIZA PARA CANCELAR</string>
+    <string name="SaveToDownloads">Guardar en descargas</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Chat secreto solicitado</string>
@@ -126,7 +127,7 @@
     <string name="NotificationMessagePhoto">%1$s te envió una foto</string>
     <string name="NotificationMessageVideo">%1$s te envió un vídeo</string>
     <string name="NotificationMessageContact">%1$s compartió un contacto contigo</string>
-    <string name="NotificationMessageMap">%1$s te envió un mapa</string>
+    <string name="NotificationMessageMap">%1$s te envió una ubicación</string>
     <string name="NotificationMessageDocument">%1$s te envió un archivo</string>
     <string name="NotificationMessageAudio">%1$s te envió un audio</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
@@ -134,7 +135,7 @@
     <string name="NotificationMessageGroupPhoto">%1$s envió una foto al grupo %2$s</string>
     <string name="NotificationMessageGroupVideo">%1$s envió un vídeo al grupo %2$s</string>
     <string name="NotificationMessageGroupContact">%1$s compartió un contacto en el grupo %2$s</string>
-    <string name="NotificationMessageGroupMap">%1$s envió un mapa al grupo %2$s</string>
+    <string name="NotificationMessageGroupMap">%1$s envió una ubicación al grupo %2$s</string>
     <string name="NotificationMessageGroupDocument">%1$s envió un archivo al grupo %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s envió un audio al grupo %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s te ha invitado al grupo %2$s</string>
@@ -243,6 +244,7 @@
     <string name="SendByEnter">Enviar con ‘Enter’</string>
     <string name="TerminateAllSessions">Cerrar todas las otras sesiones</string>
     <string name="AutomaticPhotoDownload">DESCARGA AUTOMÁTICA DE FOTOS</string>
+    <string name="AutomaticAudioDownload">DESCARGA AUTOMÁTICA DE AUDIO</string>
     <string name="AutomaticPhotoDownloadGroups">Grupos</string>
     <string name="AutomaticPhotoDownloadPrivateChats">Chats</string>
     <string name="Events">EVENTOS</string>
@@ -341,12 +343,12 @@
     <string name="Page6Title">Basada en la nube</string>
     <string name="Page7Title">Privada</string>
     <string name="Page1Message">Bienvenidos a la era de la mensajería rápida y segura.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> entrega mensajes más rápido que<![CDATA[<br/>]]>cualquier otra aplicación.</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> es gratis para siempre. Sin publicidad.<![CDATA[<br/>]]>Sin cuotas de suscripción.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> mantiene tus mensajes<![CDATA[<br/>]]>a salvo del ataque de hackers.</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> no tiene límites en el tamaño de tus<![CDATA[<br/>]]>chats y archivos.</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> te permite acceder a tus mensajes<![CDATA[<br/>]]>desde múltiples dispositivos.</string>
-    <string name="Page7Message">Los mensajes de <![CDATA[<b>Telegram</b>]]> están fuertemente<![CDATA[<br/>]]>cifrados y se pueden autodestruir.</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> entrega mensajes más rápido que cualquier otra aplicación.</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> es gratis para siempre. Sin publicidad. Sin cuotas de suscripción.</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> mantiene tus mensajes a salvo del ataque de hackers.</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> no tiene límites en el tamaño de tus chats y archivos.</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> te permite acceder a tus mensajes desde múltiples dispositivos.</string>
+    <string name="Page7Message">Los mensajes de <![CDATA[<b>Telegram</b>]]> están fuertemente cifrados y se pueden autodestruir.</string>
     <string name="StartMessaging">Empieza a conversar</string>
 
     <!--Don't change this! Not for localization!-->

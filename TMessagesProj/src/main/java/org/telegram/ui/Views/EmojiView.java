@@ -24,6 +24,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 
 import java.util.ArrayList;
@@ -136,7 +137,7 @@ public class EmojiView extends LinearLayout {
                 this.recentsWrap = new FrameLayout(getContext());
                 this.recentsWrap.addView(this.views.get(0));
                 TextView localTextView = new TextView(getContext());
-                localTextView.setText(R.string.NoRecent);
+                localTextView.setText(LocaleController.getString("NoRecent", R.string.NoRecent));
                 localTextView.setTextSize(18.0F);
                 localTextView.setTextColor(-7829368);
                 localTextView.setGravity(17);

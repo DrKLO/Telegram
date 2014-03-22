@@ -3,7 +3,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:0.8.+'
+        classpath 'com.android.tools.build:gradle:0.9.+'
     }
 }
 apply plugin: 'android'
@@ -12,50 +12,40 @@ repositories {
     mavenCentral()
 }
 
-task nativeLibsToJar(
-    type: Zip,
-    description: 'create a jar archive of the native libs') {
-    destinationDir file("$buildDir/native-libs")
-    baseName 'native-libs'
-    extension 'jar'
-    from fileTree(dir: 'libs', include: '**/*.so')
-    into 'lib/'
-}
-
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
 
-tasks.withType(JavaCompile) {
-    compileTask -> compileTask.dependsOn(nativeLibsToJar)
-}
-
 dependencies {
-    compile 'com.google.android.gms:play-services:4.1.+'
-    compile 'net.hockeyapp.android:HockeySDK:3.0.1'
     compile 'com.android.support:support-v4:19.0.+'
     compile 'com.android.support:appcompat-v7:19.0.+'
-    compile fileTree(dir: "$buildDir/native-libs", include: 'native-libs.jar')
+    compile 'com.google.android.gms:play-services:4.1.+'
+    compile 'net.hockeyapp.android:HockeySDK:3.0.1'
 }
 
 android {
     compileSdkVersion 19
-    buildToolsVersion '19.0.1'
+    buildToolsVersion '19.0.3'
+
+    aaptOptions.useAaptPngCruncher = true
 
     signingConfigs {
         debug {
-            storeFile file("debug.keystore")
+            storeFile file("config/debug.keystore")
         }
 
         release {
-            storeFile file("release.keystore")
+            storeFile file("config/release.keystore")
+            storePassword RELEASE_STORE_PASSWORD
+            keyAlias RELEASE_KEY_ALIAS
+            keyPassword RELEASE_KEY_PASSWORD
         }
     }
 
     buildTypes {
         debug {
             debuggable true
-            jniDebugBuild true
+            jniDebugBuild false
             signingConfig signingConfigs.debug
         }
 
@@ -64,10 +54,35 @@ android {
             jniDebugBuild false
             signingConfig signingConfigs.release
         }
+
+        foss {
+            debuggable false
+            jniDebugBuild false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    sourceSets.main {
+        jniLibs.srcDir 'libs'
+        jni.srcDirs = [] //disable automatic ndk-build call
+    }
+
+    sourceSets {
+        debug {
+            manifest.srcFile 'config/debug/AndroidManifest.xml'
+        }
+        release {
+            manifest.srcFile 'config/release/AndroidManifest.xml'
+        }
+        foss {
+            manifest.srcFile 'config/foss/AndroidManifest.xml'
+        }
     }
 
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 19
+        versionCode 207
+        versionName "1.4.6"
     }
 }

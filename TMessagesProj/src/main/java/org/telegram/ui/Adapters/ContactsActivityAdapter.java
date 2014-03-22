@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.MessagesController;
@@ -52,12 +53,12 @@ public class ContactsActivityAdapter extends SectionedBaseAdapter {
     public int getSectionCount() {
         int count = 0;
         if (usersAsSections) {
-            count += ContactsController.Instance.sortedUsersSectionsArray.size();
+            count += ContactsController.getInstance().sortedUsersSectionsArray.size();
         } else {
             count++;
         }
         if (!onlyUsers) {
-            count += ContactsController.Instance.sortedContactsSectionsArray.size();
+            count += ContactsController.getInstance().sortedContactsSectionsArray.size();
         }
         return count;
     }
@@ -65,16 +66,16 @@ public class ContactsActivityAdapter extends SectionedBaseAdapter {
     @Override
     public int getCountForSection(int section) {
         if (usersAsSections) {
-            if (section < ContactsController.Instance.sortedUsersSectionsArray.size()) {
-                ArrayList<TLRPC.TL_contact> arr = ContactsController.Instance.usersSectionsDict.get(ContactsController.Instance.sortedUsersSectionsArray.get(section));
+            if (section < ContactsController.getInstance().sortedUsersSectionsArray.size()) {
+                ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
                 return arr.size();
             }
         } else {
             if (section == 0) {
-                return ContactsController.Instance.contacts.size() + 1;
+                return ContactsController.getInstance().contacts.size() + 1;
             }
         }
-        ArrayList<ContactsController.Contact> arr = ContactsController.Instance.contactsSectionsDict.get(ContactsController.Instance.sortedContactsSectionsArray.get(section - 1));
+        ArrayList<ContactsController.Contact> arr = ContactsController.getInstance().contactsSectionsDict.get(ContactsController.getInstance().sortedContactsSectionsArray.get(section - 1));
         return arr.size();
     }
 
@@ -84,9 +85,9 @@ public class ContactsActivityAdapter extends SectionedBaseAdapter {
         TLRPC.User user = null;
         int count = 0;
         if (usersAsSections) {
-            if (section < ContactsController.Instance.sortedUsersSectionsArray.size()) {
-                ArrayList<TLRPC.TL_contact> arr = ContactsController.Instance.usersSectionsDict.get(ContactsController.Instance.sortedUsersSectionsArray.get(section));
-                user = MessagesController.Instance.users.get(arr.get(position).user_id);
+            if (section < ContactsController.getInstance().sortedUsersSectionsArray.size()) {
+                ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
+                user = MessagesController.getInstance().users.get(arr.get(position).user_id);
                 count = arr.size();
             }
         } else {
@@ -95,17 +96,19 @@ public class ContactsActivityAdapter extends SectionedBaseAdapter {
                     if (convertView == null) {
                         LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                         convertView = li.inflate(R.layout.contacts_invite_row_layout, parent, false);
+                        TextView textView = (TextView)convertView.findViewById(R.id.messages_list_row_name);
+                        textView.setText(LocaleController.getString("InviteFriends", R.string.InviteFriends));
                     }
                     View divider = convertView.findViewById(R.id.settings_row_divider);
-                    if (ContactsController.Instance.contacts.isEmpty()) {
+                    if (ContactsController.getInstance().contacts.isEmpty()) {
                         divider.setVisibility(View.INVISIBLE);
                     } else {
                         divider.setVisibility(View.VISIBLE);
                     }
                     return convertView;
                 }
-                user = MessagesController.Instance.users.get(ContactsController.Instance.contacts.get(position - 1).user_id);
-                count = ContactsController.Instance.contacts.size();
+                user = MessagesController.getInstance().users.get(ContactsController.getInstance().contacts.get(position - 1).user_id);
+                count = ContactsController.getInstance().contacts.size();
             }
         }
         if (user != null) {
@@ -140,7 +143,7 @@ public class ContactsActivityAdapter extends SectionedBaseAdapter {
         }
 
         View divider = convertView.findViewById(R.id.settings_row_divider);
-        ArrayList<ContactsController.Contact> arr = ContactsController.Instance.contactsSectionsDict.get(ContactsController.Instance.sortedContactsSectionsArray.get(section - 1));
+        ArrayList<ContactsController.Contact> arr = ContactsController.getInstance().contactsSectionsDict.get(ContactsController.getInstance().sortedContactsSectionsArray.get(section - 1));
         ContactsController.Contact contact = arr.get(position);
         if (divider != null) {
             if (position == arr.size() - 1) {
@@ -162,7 +165,7 @@ public class ContactsActivityAdapter extends SectionedBaseAdapter {
     @Override
     public int getItemViewType(int section, int position) {
         if (usersAsSections) {
-            if (section < ContactsController.Instance.sortedUsersSectionsArray.size()) {
+            if (section < ContactsController.getInstance().sortedUsersSectionsArray.size()) {
                 return 0;
             }
         } else if (section == 0) {
@@ -182,7 +185,7 @@ public class ContactsActivityAdapter extends SectionedBaseAdapter {
     @Override
     public int getSectionHeaderViewType(int section) {
         if (usersAsSections) {
-            if (section < ContactsController.Instance.sortedUsersSectionsArray.size()) {
+            if (section < ContactsController.getInstance().sortedUsersSectionsArray.size()) {
                 return 1;
             }
         } else if (section == 0) {
@@ -199,14 +202,14 @@ public class ContactsActivityAdapter extends SectionedBaseAdapter {
     @Override
     public View getSectionHeaderView(int section, View convertView, ViewGroup parent) {
         if (usersAsSections) {
-            if (section < ContactsController.Instance.sortedUsersSectionsArray.size()) {
+            if (section < ContactsController.getInstance().sortedUsersSectionsArray.size()) {
                 if (convertView == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     convertView = li.inflate(R.layout.settings_section_layout, parent, false);
                     convertView.setBackgroundColor(0xffffffff);
                 }
                 TextView textView = (TextView)convertView.findViewById(R.id.settings_section_text);
-                textView.setText(ContactsController.Instance.sortedUsersSectionsArray.get(section));
+                textView.setText(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
                 return convertView;
             }
         } else {
@@ -225,7 +228,7 @@ public class ContactsActivityAdapter extends SectionedBaseAdapter {
             convertView.setBackgroundColor(0xffffffff);
         }
         TextView textView = (TextView)convertView.findViewById(R.id.settings_section_text);
-        textView.setText(ContactsController.Instance.sortedContactsSectionsArray.get(section - 1));
+        textView.setText(ContactsController.getInstance().sortedContactsSectionsArray.get(section - 1));
         return convertView;
     }
 }

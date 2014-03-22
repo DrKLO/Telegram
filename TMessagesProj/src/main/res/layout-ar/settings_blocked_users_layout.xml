@@ -26,7 +26,6 @@
         android:layout_height="match_parent"
         android:textColor="#808080"
         android:gravity="center"
-        android:text="@string/NoBlocked"
         android:textSize="24dp"
         android:id="@+id/searchEmptyView"/>
 

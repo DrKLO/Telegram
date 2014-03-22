@@ -19,9 +19,11 @@ import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -60,9 +62,10 @@ public class ChatProfileChangeNameActivity extends BaseFragment {
         if (fragmentView == null) {
             fragmentView = inflater.inflate(R.layout.chat_profile_change_name_layout, container, false);
 
-            TLRPC.Chat currentChat = MessagesController.Instance.chats.get(chat_id);
+            TLRPC.Chat currentChat = MessagesController.getInstance().chats.get(chat_id);
 
             firstNameField = (EditText)fragmentView.findViewById(R.id.first_name_field);
+            firstNameField.setHint(LocaleController.getString("GroupName", R.string.GroupName));
             firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
@@ -77,7 +80,7 @@ public class ChatProfileChangeNameActivity extends BaseFragment {
             firstNameField.setSelection(firstNameField.length());
 
             TextView headerLabel = (TextView)fragmentView.findViewById(R.id.settings_section_text);
-            headerLabel.setText(getStringEntry(R.string.EnterGroupNameTitle));
+            headerLabel.setText(LocaleController.getString("EnterGroupNameTitle", R.string.EnterGroupNameTitle));
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
             if (parent != null) {
@@ -104,7 +107,7 @@ public class ChatProfileChangeNameActivity extends BaseFragment {
         actionBar.setDisplayHomeAsUpEnabled(false);
 
         actionBar.setCustomView(R.layout.settings_do_action_layout);
-        View cancelButton = actionBar.getCustomView().findViewById(R.id.cancel_button);
+        Button cancelButton = (Button)actionBar.getCustomView().findViewById(R.id.cancel_button);
         cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -121,6 +124,10 @@ public class ChatProfileChangeNameActivity extends BaseFragment {
                 }
             }
         });
+
+        cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel));
+        TextView textView = (TextView)doneButton.findViewById(R.id.done_button_text);
+        textView.setText(LocaleController.getString("Done", R.string.Done));
     }
 
     @Override
@@ -168,6 +175,6 @@ public class ChatProfileChangeNameActivity extends BaseFragment {
     }
 
     private void saveName() {
-        MessagesController.Instance.changeChatTitle(chat_id, firstNameField.getText().toString());
+        MessagesController.getInstance().changeChatTitle(chat_id, firstNameField.getText().toString());
     }
 }

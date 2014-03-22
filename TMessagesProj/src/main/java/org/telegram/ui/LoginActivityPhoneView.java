@@ -26,6 +26,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
@@ -75,6 +76,9 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
     protected void onFinishInflate() {
         super.onFinishInflate();
 
+        TextView textView = (TextView)findViewById(R.id.login_confirm_text);
+        textView.setText(LocaleController.getString("StartText", R.string.StartText));
+
         countryButton = (TextView)findViewById(R.id.login_coutry_textview);
         countryButton.setOnClickListener(new OnClickListener() {
             @Override
@@ -107,7 +111,7 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
                 String text = PhoneFormat.stripExceptNumbers(codeField.getText().toString());
                 codeField.setText(text);
                 if (text.length() == 0) {
-                    countryButton.setText(R.string.ChooseCountry);
+                    countryButton.setText(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
                     countryState = 1;
                 } else {
                     String country = codesMap.get(text);
@@ -120,11 +124,11 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
                             updatePhoneField();
                             countryState = 0;
                         } else {
-                            countryButton.setText(R.string.WrongCountry);
+                            countryButton.setText(LocaleController.getString("WrongCountry", R.string.WrongCountry));
                             countryState = 2;
                         }
                     } else {
-                        countryButton.setText(R.string.WrongCountry);
+                        countryButton.setText(LocaleController.getString("WrongCountry", R.string.WrongCountry));
                         countryState = 2;
                     }
                     codeField.setSelection(codeField.getText().length());
@@ -234,7 +238,7 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
                 }
             }
             if (codeField.length() == 0) {
-                countryButton.setText(R.string.ChooseCountry);
+                countryButton.setText(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
                 countryState = 1;
             }
         }
@@ -271,12 +275,12 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
     private void updatePhoneField() {
         ignoreOnPhoneChange = true;
         String codeText = codeField.getText().toString();
-        String phone = PhoneFormat.Instance.format("+" + codeText + phoneField.getText().toString());
+        String phone = PhoneFormat.getInstance().format("+" + codeText + phoneField.getText().toString());
         int idx = phone.indexOf(" ");
         if (idx != -1) {
             String resultCode = PhoneFormat.stripExceptNumbers(phone.substring(0, idx));
             if (!codeText.equals(resultCode)) {
-                phone = PhoneFormat.Instance.format(phoneField.getText().toString()).trim();
+                phone = PhoneFormat.getInstance().format(phoneField.getText().toString()).trim();
                 phoneField.setText(phone);
                 int len = phoneField.length();
                 phoneField.setSelection(phoneField.length());
@@ -311,18 +315,19 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
     @Override
     public void onNextPressed() {
         if (countryState == 1) {
-            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.ChooseCountry));
+            delegate.needShowAlert(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
             return;
         } else if (countryState == 2) {
-            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.WrongCountry));
+            delegate.needShowAlert(LocaleController.getString("WrongCountry", R.string.WrongCountry));
             return;
         }
         if (codeField.length() == 0 || phoneField.length() == 0) {
-            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidPhoneNumber));
+            delegate.needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
             return;
         }
         TLRPC.TL_auth_sendCode req = new TLRPC.TL_auth_sendCode();
         String phone = PhoneFormat.stripExceptNumbers("" + codeField.getText() + phoneField.getText());
+        ConnectionsManager.getInstance().applyCountryPortNumber(phone);
         req.api_hash = ConnectionsManager.APP_HASH;
         req.api_id = ConnectionsManager.APP_ID;
         req.sms_type = 0;
@@ -337,7 +342,7 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
         params.putString("phoneFormated", phone);
 
         delegate.needShowProgress();
-        ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
                 if (error == null) {
@@ -359,13 +364,13 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
                     if (delegate != null) {
                         if (error.text != null) {
                             if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                                delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidPhoneNumber));
+                                delegate.needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
                             } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                                delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidCode));
+                                delegate.needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
                             } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                                delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.CodeExpired));
+                                delegate.needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
                             } else if (error.text.contains("FLOOD_WAIT")) {
-                                delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.FloodWait));
+                                delegate.needShowAlert(LocaleController.getString("FloodWait", R.string.FloodWait));
                             } else {
                                 delegate.needShowAlert(error.text);
                             }

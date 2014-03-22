@@ -22,6 +22,7 @@ import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -55,11 +56,11 @@ public class IdenticonActivity extends BaseFragment {
             fragmentView = inflater.inflate(R.layout.identicon_layout, container, false);
             IdenticonView identiconView = (IdenticonView) fragmentView.findViewById(R.id.identicon_view);
             TextView textView = (TextView)fragmentView.findViewById(R.id.identicon_text);
-            TLRPC.EncryptedChat encryptedChat = MessagesController.Instance.encryptedChats.get(chat_id);
+            TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().encryptedChats.get(chat_id);
             if (encryptedChat != null) {
                 identiconView.setBytes(encryptedChat.auth_key);
-                TLRPC.User user = MessagesController.Instance.users.get(encryptedChat.user_id);
-                textView.setText(Html.fromHtml(String.format(getStringEntry(R.string.EncryptionKeyDescription), user.first_name, user.first_name)));
+                TLRPC.User user = MessagesController.getInstance().users.get(encryptedChat.user_id);
+                textView.setText(Html.fromHtml(LocaleController.formatString("EncryptionKeyDescription", R.string.EncryptionKeyDescription, user.first_name, user.first_name)));
             }
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
@@ -83,7 +84,7 @@ public class IdenticonActivity extends BaseFragment {
         actionBar.setDisplayShowCustomEnabled(false);
         actionBar.setSubtitle(null);
         actionBar.setCustomView(null);
-        actionBar.setTitle(getStringEntry(R.string.EncryptionKey));
+        actionBar.setTitle(LocaleController.getString("EncryptionKey", R.string.EncryptionKey));
 
         TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
         if (title == null) {

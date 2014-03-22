@@ -45,7 +45,19 @@ public class PhoneFormat {
     public HashMap<String, CallingCodeInfo> callingCodeData;
     public HashMap<String, String> countryCallingCode;
 
-    public static PhoneFormat Instance = new PhoneFormat();
+    private static volatile PhoneFormat Instance = null;
+    public static PhoneFormat getInstance() {
+        PhoneFormat localInstance = Instance;
+        if (localInstance == null) {
+            synchronized (PhoneFormat.class) {
+                localInstance = Instance;
+                if (localInstance == null) {
+                    Instance = localInstance = new PhoneFormat();
+                }
+            }
+        }
+        return localInstance;
+    }
 
     public static String strip(String str) {
         StringBuilder res = new StringBuilder(str);

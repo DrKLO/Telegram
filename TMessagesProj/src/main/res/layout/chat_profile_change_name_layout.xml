@@ -23,7 +23,6 @@
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="15dp"
-            android:hint="@string/GroupName"
             android:maxLines="3"
             android:inputType="textCapSentences|textAutoCorrect|textMultiLine"
             android:imeOptions="actionDone"

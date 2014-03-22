@@ -106,6 +106,7 @@
     <string name="YouLeft">لقد قمت بمغادرة المجموعة</string>
     <string name="DeleteThisGroup">حذف المجموعة</string>
     <string name="SlideToCancel">قم بالسحب للإلغاء</string>
+    <string name="SaveToDownloads">حفظ في الجهاز</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">تم طلب محادثة سرية</string>
@@ -243,6 +244,7 @@
     <string name="SendByEnter">أرسل بزر الإدخال</string>
     <string name="TerminateAllSessions">سجل الخروج من كافة الأجهزة الأخرى</string>
     <string name="AutomaticPhotoDownload">تنزيل الصور تلقائيًا</string>
+    <string name="AutomaticAudioDownload">تنزيل رسائل الصوت تلقائيا</string>
     <string name="AutomaticPhotoDownloadGroups">المجموعات</string>
     <string name="AutomaticPhotoDownloadPrivateChats">المحادثات</string>
     <string name="Events">الأحداث</string>

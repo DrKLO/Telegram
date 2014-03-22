@@ -24,7 +24,6 @@
         android:ellipsize="end"
         android:maxLines="1"
         android:gravity="right"
-        android:text="@string/InviteFriends"
         android:textColor="#006fc8"
         android:layout_gravity="center_vertical|right"/>
 

@@ -36,7 +36,6 @@
             android:layout_marginLeft="16dp"
             android:layout_marginRight="96dp"
             android:minHeight="52dp"
-            android:hint="@string/EnterGroupNamePlaceholder"
             android:maxLines="4"
             android:paddingTop="0dp"
             android:layout_marginTop="0dp"

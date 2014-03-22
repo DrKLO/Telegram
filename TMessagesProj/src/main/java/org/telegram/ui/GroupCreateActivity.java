@@ -35,6 +35,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.ContactsController;
@@ -83,18 +84,18 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        NotificationCenter.Instance.addObserver(this, MessagesController.contactsDidLoaded);
-        NotificationCenter.Instance.addObserver(this, MessagesController.updateInterfaces);
-        NotificationCenter.Instance.addObserver(this, MessagesController.chatDidCreated);
+        NotificationCenter.getInstance().addObserver(this, MessagesController.contactsDidLoaded);
+        NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
+        NotificationCenter.getInstance().addObserver(this, MessagesController.chatDidCreated);
         return true;
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.Instance.removeObserver(this, MessagesController.contactsDidLoaded);
-        NotificationCenter.Instance.removeObserver(this, MessagesController.updateInterfaces);
-        NotificationCenter.Instance.removeObserver(this, MessagesController.chatDidCreated);
+        NotificationCenter.getInstance().removeObserver(this, MessagesController.contactsDidLoaded);
+        NotificationCenter.getInstance().removeObserver(this, MessagesController.updateInterfaces);
+        NotificationCenter.getInstance().removeObserver(this, MessagesController.chatDidCreated);
     }
 
     @Override
@@ -113,7 +114,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             fragmentView = inflater.inflate(R.layout.group_create_layout, container, false);
 
             epmtyTextView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
+            epmtyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
             userSelectEditText = (EditText)fragmentView.findViewById(R.id.bubble_input_text);
+            userSelectEditText.setHint(LocaleController.getString("SendMessageTo", R.string.SendMessageTo));
             countTextView = (TextView)fragmentView.findViewById(R.id.bubble_counter_text);
             if (Build.VERSION.SDK_INT >= 11) {
                 userSelectEditText.setTextIsSelectable(false);
@@ -157,9 +160,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                     }
                                 }
                                 if (selectedContacts.isEmpty()) {
-                                    doneTextView.setText(getStringEntry(R.string.Done));
+                                    doneTextView.setText(LocaleController.getString("Done", R.string.Done));
                                 } else {
-                                    doneTextView.setText(getStringEntry(R.string.Done) + " (" + selectedContacts.size() + ")");
+                                    doneTextView.setText(LocaleController.getString("Done", R.string.Done) + " (" + selectedContacts.size() + ")");
                                 }
                                 countTextView.setText(selectedContacts.size() + "/200");
                                 listView.invalidateViews();
@@ -175,14 +178,14 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                 searchDialogs(text);
                                 searching = true;
                                 searchWas = true;
-                                epmtyTextView.setText(getStringEntry(R.string.NoResult));
+                                epmtyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
                                 listViewAdapter.notifyDataSetChanged();
                             } else {
                                 searchResult = null;
                                 searchResultNames = null;
                                 searching = false;
                                 searchWas = false;
-                                epmtyTextView.setText(getStringEntry(R.string.NoContacts));
+                                epmtyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
                                 listViewAdapter.notifyDataSetChanged();
                             }
                         }
@@ -204,8 +207,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     if (searching && searchWas) {
                         user = searchResult.get(row);
                     } else {
-                        ArrayList<TLRPC.TL_contact> arr = ContactsController.Instance.usersSectionsDict.get(ContactsController.Instance.sortedUsersSectionsArray.get(section));
-                        user = MessagesController.Instance.users.get(arr.get(row).user_id);
+                        ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
+                        user = MessagesController.getInstance().users.get(arr.get(row).user_id);
                         listView.invalidateViews();
                     }
                     if (selectedContacts.containsKey(user.id)) {
@@ -228,15 +231,15 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         ignoreChange = false;
                     }
                     if (selectedContacts.isEmpty()) {
-                        doneTextView.setText(getStringEntry(R.string.Done));
+                        doneTextView.setText(LocaleController.getString("Done", R.string.Done));
                     } else {
-                        doneTextView.setText(getStringEntry(R.string.Done) + " (" + selectedContacts.size() + ")");
+                        doneTextView.setText(LocaleController.getString("Done", R.string.Done) + " (" + selectedContacts.size() + ")");
                     }
                     countTextView.setText(selectedContacts.size() + "/200");
                     if (searching || searchWas) {
                         searching = false;
                         searchWas = false;
-                        epmtyTextView.setText(getStringEntry(R.string.NoContacts));
+                        epmtyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
 
                         ignoreChange = true;
                         SpannableStringBuilder ssb = new SpannableStringBuilder("");
@@ -275,7 +278,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         actionBar.setDisplayUseLogoEnabled(false);
         actionBar.setDisplayShowCustomEnabled(false);
         actionBar.setCustomView(null);
-        actionBar.setTitle(getStringEntry(R.string.NewGroup));
+        actionBar.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
 
         TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
         if (title == null) {
@@ -365,7 +368,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             @Override
             public void run() {
                 final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<TLRPC.TL_contact>();
-                contactsCopy.addAll(ContactsController.Instance.contacts);
+                contactsCopy.addAll(ContactsController.getInstance().contacts);
                 Utilities.globalQueue.postRunnable(new Runnable() {
                     @Override
                     public void run() {
@@ -379,7 +382,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         String q = query.toLowerCase();
 
                         for (TLRPC.TL_contact contact : contactsCopy) {
-                            TLRPC.User user = MessagesController.Instance.users.get(contact.user_id);
+                            TLRPC.User user = MessagesController.getInstance().users.get(contact.user_id);
                             if (user.first_name.toLowerCase().startsWith(q) || user.last_name.toLowerCase().startsWith(q)) {
                                 if (user.id == UserConfig.clientUserId) {
                                     continue;
@@ -423,13 +426,14 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         inflater.inflate(R.menu.group_create_menu, menu);
         SupportMenuItem doneItem = (SupportMenuItem)menu.findItem(R.id.done_menu_item);
         doneTextView = (TextView)doneItem.getActionView().findViewById(R.id.done_button);
+        doneTextView.setText(LocaleController.getString("Done", R.string.Done));
         doneTextView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (!selectedContacts.isEmpty()) {
                     ArrayList<Integer> result = new ArrayList<Integer>();
                     result.addAll(selectedContacts.keySet());
-                    NotificationCenter.Instance.addToMemCache(2, result);
+                    NotificationCenter.getInstance().addToMemCache(2, result);
                 } else {
                     return;
                 }
@@ -483,7 +487,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             if (searching && searchWas) {
                 return searchResult == null || searchResult.isEmpty() ? 0 : 1;
             }
-            return ContactsController.Instance.sortedUsersSectionsArray.size();
+            return ContactsController.getInstance().sortedUsersSectionsArray.size();
         }
 
         @Override
@@ -491,7 +495,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             if (searching && searchWas) {
                 return searchResult == null ? 0 : searchResult.size();
             }
-            ArrayList<TLRPC.TL_contact> arr = ContactsController.Instance.usersSectionsDict.get(ContactsController.Instance.sortedUsersSectionsArray.get(section));
+            ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
             return arr.size();
         }
 
@@ -501,11 +505,11 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             int size;
 
             if (searchWas && searching) {
-                user = MessagesController.Instance.users.get(searchResult.get(position).id);
+                user = MessagesController.getInstance().users.get(searchResult.get(position).id);
                 size = searchResult.size();
             } else {
-                ArrayList<TLRPC.TL_contact> arr = ContactsController.Instance.usersSectionsDict.get(ContactsController.Instance.sortedUsersSectionsArray.get(section));
-                user = MessagesController.Instance.users.get(arr.get(position).user_id);
+                ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
+                user = MessagesController.getInstance().users.get(arr.get(position).user_id);
                 size = arr.size();
             }
 
@@ -553,16 +557,16 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             holder.avatarImage.setImage(photo, "50_50", placeHolderId);
 
             if (user.status == null) {
-                holder.messageTextView.setText(getStringEntry(R.string.Offline));
+                holder.messageTextView.setText(LocaleController.getString("Offline", R.string.Offline));
                 holder.messageTextView.setTextColor(0xff808080);
             } else {
-                int currentTime = ConnectionsManager.Instance.getCurrentTime();
+                int currentTime = ConnectionsManager.getInstance().getCurrentTime();
                 if (user.status.expires > currentTime) {
                     holder.messageTextView.setTextColor(0xff357aa8);
-                    holder.messageTextView.setText(getStringEntry(R.string.Online));
+                    holder.messageTextView.setText(LocaleController.getString("Online", R.string.Online));
                 } else {
                     if (user.status.expires <= 10000) {
-                        holder.messageTextView.setText(getStringEntry(R.string.Invisible));
+                        holder.messageTextView.setText(LocaleController.getString("Invisible", R.string.Invisible));
                     } else {
                         holder.messageTextView.setText(Utilities.formatDateOnline(user.status.expires));
                     }
@@ -602,9 +606,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             }
             TextView textView = (TextView)convertView.findViewById(R.id.settings_section_text);
             if (searching && searchWas) {
-                textView.setText(getStringEntry(R.string.AllContacts));
+                textView.setText(LocaleController.getString("AllContacts", R.string.AllContacts));
             } else {
-                textView.setText(ContactsController.Instance.sortedUsersSectionsArray.get(section));
+                textView.setText(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
             }
             return convertView;
         }

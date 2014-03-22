@@ -11,8 +11,8 @@
         android:id="@+id/settings_row_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="8dp"
         android:layout_marginRight="8dp"
+        android:paddingLeft="8dp"
         android:gravity="center_vertical"
         android:layout_marginTop="10dp"
         android:layout_gravity="top"/>
@@ -23,7 +23,7 @@
         android:id="@+id/settings_row_text_detail"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="8dp"
+        android:paddingLeft="8dp"
         android:layout_marginRight="8dp"
         android:gravity="center_vertical"
         android:layout_marginBottom="12dp"

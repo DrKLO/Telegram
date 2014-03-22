@@ -20,11 +20,24 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 public class FileLog {
-    public static FileLog Instance = new FileLog();
     private OutputStreamWriter streamWriter = null;
     private FastDateFormat dateFormat = null;
     private DispatchQueue logQueue = null;
     private File currentFile = null;
+
+    private static volatile FileLog Instance = null;
+    public static FileLog getInstance() {
+        FileLog localInstance = Instance;
+        if (localInstance == null) {
+            synchronized (FileLog.class) {
+                localInstance = Instance;
+                if (localInstance == null) {
+                    Instance = localInstance = new FileLog();
+                }
+            }
+        }
+        return localInstance;
+    }
 
     public FileLog() {
         if (!ConnectionsManager.DEBUG_VERSION) {
@@ -61,14 +74,14 @@ public class FileLog {
             return;
         }
         Log.e(tag, message, exception);
-        if (Instance.streamWriter != null) {
-            Instance.logQueue.postRunnable(new Runnable() {
+        if (getInstance().streamWriter != null) {
+            getInstance().logQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        Instance.streamWriter.write(Instance.dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + message + "\n");
-                        Instance.streamWriter.write(exception.toString());
-                        Instance.streamWriter.flush();
+                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + message + "\n");
+                        getInstance().streamWriter.write(exception.toString());
+                        getInstance().streamWriter.flush();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -82,13 +95,13 @@ public class FileLog {
             return;
         }
         Log.e(tag, message);
-        if (Instance.streamWriter != null) {
-            Instance.logQueue.postRunnable(new Runnable() {
+        if (getInstance().streamWriter != null) {
+            getInstance().logQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        Instance.streamWriter.write(Instance.dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + message + "\n");
-                        Instance.streamWriter.flush();
+                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + message + "\n");
+                        getInstance().streamWriter.flush();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -102,17 +115,17 @@ public class FileLog {
             return;
         }
         e.printStackTrace();
-        if (Instance.streamWriter != null) {
-            Instance.logQueue.postRunnable(new Runnable() {
+        if (getInstance().streamWriter != null) {
+            getInstance().logQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        Instance.streamWriter.write(Instance.dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + e + "\n");
+                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + e + "\n");
                         StackTraceElement[] stack = e.getStackTrace();
                         for (StackTraceElement el : stack) {
-                            Instance.streamWriter.write(Instance.dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + el + "\n");
+                            getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + el + "\n");
                         }
-                        Instance.streamWriter.flush();
+                        getInstance().streamWriter.flush();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -128,13 +141,13 @@ public class FileLog {
             return;
         }
         Log.d(tag, message);
-        if (Instance.streamWriter != null) {
-            Instance.logQueue.postRunnable(new Runnable() {
+        if (getInstance().streamWriter != null) {
+            getInstance().logQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        Instance.streamWriter.write(Instance.dateFormat.format(System.currentTimeMillis()) + " D/" + tag + "﹕ " + message + "\n");
-                        Instance.streamWriter.flush();
+                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " D/" + tag + "﹕ " + message + "\n");
+                        getInstance().streamWriter.flush();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -149,7 +162,7 @@ public class FileLog {
         File dir = new File (sdCard.getAbsolutePath() + "/logs");
         File[] files = dir.listFiles();
         for (File file : files) {
-            if (Instance.currentFile != null && file.getAbsolutePath().equals(Instance.currentFile.getAbsolutePath())) {
+            if (getInstance().currentFile != null && file.getAbsolutePath().equals(getInstance().currentFile.getAbsolutePath())) {
                 continue;
             }
             file.delete();

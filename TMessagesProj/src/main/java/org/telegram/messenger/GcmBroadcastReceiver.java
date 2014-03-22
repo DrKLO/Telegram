@@ -14,6 +14,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.PowerManager;
 
+import org.json.JSONObject;
+import org.telegram.ui.ApplicationLoader;
+
 public class GcmBroadcastReceiver extends BroadcastReceiver {
 
     public static final int NOTIFICATION_ID = 1;
@@ -46,14 +49,42 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
                 }
             }
 
-//            SharedPreferences preferences = context.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
-//            boolean globalEnabled = preferences.getBoolean("EnableAll", true);
-//            if (!globalEnabled) {
-//                FileLog.d("tmessages", "GCM disabled");
-//                return;
-//            }
+            Utilities.RunOnUIThread(new Runnable() {
+                @Override
+                public void run() {
+                    ApplicationLoader.postInitApplication();
 
-            ConnectionsManager.Instance.resumeNetworkMaybe();
+                    AwakeService.startService();
+
+                    try {
+                        String key = intent.getStringExtra("loc_key");
+                        if ("DC_UPDATE".equals(key)) {
+                            String data = intent.getStringExtra("custom");
+                            JSONObject object = new JSONObject(data);
+                            int dc = object.getInt("dc");
+                            String addr = object.getString("addr");
+                            String[] parts = addr.split(":");
+                            if (parts.length != 2) {
+                                return;
+                            }
+                            String ip = parts[0];
+                            int port = Integer.parseInt(parts[1]);
+                            ConnectionsManager.getInstance().applyDcPushUpdate(dc, ip, port);
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+
+                    /*SharedPreferences preferences = context.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
+                    boolean globalEnabled = preferences.getBoolean("EnableAll", true);
+                    if (!globalEnabled) {
+                        FileLog.d("tmessages", "GCM disabled");
+                        return;
+                    }*/
+
+                    ConnectionsManager.getInstance().resumeNetworkMaybe();
+                }
+            });
         } else if (intent.getAction().equals("com.google.android.c2dm.intent.REGISTRATION")) {
             String registration = intent.getStringExtra("registration_id");
             if (intent.getStringExtra("error") != null) {

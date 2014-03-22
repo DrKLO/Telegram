@@ -96,18 +96,14 @@ public class BaseFragment extends Fragment {
     }
 
     public boolean onFragmentCreate() {
-        classGuid = ConnectionsManager.Instance.generateClassGuid();
+        classGuid = ConnectionsManager.getInstance().generateClassGuid();
         return true;
     }
 
     public void onFragmentDestroy() {
-        ConnectionsManager.Instance.cancelRpcsForClassGuid(classGuid);
+        ConnectionsManager.getInstance().cancelRpcsForClassGuid(classGuid);
         removeParentOnDestroy = true;
         isFinish = true;
-    }
-
-    public String getStringEntry(int res) {
-        return ApplicationLoader.applicationContext.getString(res);
     }
 
     public void onAnimationStart() {

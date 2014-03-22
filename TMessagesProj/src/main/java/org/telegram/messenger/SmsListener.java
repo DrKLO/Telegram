@@ -46,7 +46,7 @@ public class SmsListener extends BroadcastReceiver {
                         if (matcher.find()) {
                             String str = matcher.group(0);
                             if (str.length() >= 3) {
-                                NotificationCenter.Instance.postNotificationName(998, matcher.group(0));
+                                NotificationCenter.getInstance().postNotificationName(998, matcher.group(0));
                             }
                         }
                     } catch (Exception e) {

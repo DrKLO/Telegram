@@ -16,7 +16,6 @@
             android:layout_marginBottom="15dp"
             android:layout_marginRight="15dp"
             android:layout_marginLeft="15dp"
-            android:text="@string/SendLocation"
             android:gravity="center"
             android:textSize="18dp"
             android:textColor="#316f9f"

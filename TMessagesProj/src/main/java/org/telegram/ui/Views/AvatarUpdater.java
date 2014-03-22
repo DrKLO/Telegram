@@ -130,9 +130,9 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
             } else {
                 UserConfig.saveConfig(false);
                 uploadingAvatar = Utilities.getCacheDir() + "/" + bigPhoto.location.volume_id + "_" + bigPhoto.location.local_id + ".jpg";
-                NotificationCenter.Instance.addObserver(AvatarUpdater.this, FileLoader.FileDidUpload);
-                NotificationCenter.Instance.addObserver(AvatarUpdater.this, FileLoader.FileDidFailUpload);
-                FileLoader.Instance.uploadFile(uploadingAvatar, null, null);
+                NotificationCenter.getInstance().addObserver(AvatarUpdater.this, FileLoader.FileDidUpload);
+                NotificationCenter.getInstance().addObserver(AvatarUpdater.this, FileLoader.FileDidFailUpload);
+                FileLoader.getInstance().uploadFile(uploadingAvatar, null, null);
             }
         }
     }
@@ -150,8 +150,8 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
                 Utilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        NotificationCenter.Instance.removeObserver(AvatarUpdater.this, FileLoader.FileDidUpload);
-                        NotificationCenter.Instance.removeObserver(AvatarUpdater.this, FileLoader.FileDidFailUpload);
+                        NotificationCenter.getInstance().removeObserver(AvatarUpdater.this, FileLoader.FileDidUpload);
+                        NotificationCenter.getInstance().removeObserver(AvatarUpdater.this, FileLoader.FileDidFailUpload);
                         if (delegate != null) {
                             delegate.didUploadedPhoto((TLRPC.InputFile)args[1], smallPhoto, bigPhoto);
                         }
@@ -169,8 +169,8 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
                 Utilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        NotificationCenter.Instance.removeObserver(AvatarUpdater.this, FileLoader.FileDidUpload);
-                        NotificationCenter.Instance.removeObserver(AvatarUpdater.this, FileLoader.FileDidFailUpload);
+                        NotificationCenter.getInstance().removeObserver(AvatarUpdater.this, FileLoader.FileDidUpload);
+                        NotificationCenter.getInstance().removeObserver(AvatarUpdater.this, FileLoader.FileDidFailUpload);
                         uploadingAvatar = null;
                         if (clearAfterUpdate) {
                             parentFragment = null;

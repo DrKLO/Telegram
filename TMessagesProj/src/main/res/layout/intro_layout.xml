@@ -39,7 +39,6 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="336dp"
             android:background="@drawable/regbtn_states"
-            android:text="@string/StartMessaging"
             android:layout_gravity="center_horizontal"
             android:textSize="18dp"
             android:textColor="#ffffff"

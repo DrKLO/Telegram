@@ -20,7 +20,6 @@
         android:layout_height="match_parent"
         android:textColor="#808080"
         android:gravity="center"
-        android:text="@string/NoResult"
         android:textSize="24dp"
         android:id="@+id/searchEmptyView"
         android:visibility="invisible"/>
@@ -38,7 +37,6 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:textColor="#959595"
-            android:text="@string/NoChats"
             android:gravity="center"
             android:textSize="24dp"
             android:id="@+id/list_empty_view_text1"/>
@@ -46,7 +44,6 @@
         <TextView android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:textColor="#959595"
-            android:text="@string/NoChatsHelp"
             android:gravity="center"
             android:textSize="15dp"
             android:paddingTop="6dp"

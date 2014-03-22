@@ -19,7 +19,6 @@
         android:layout_height="match_parent"
         android:textColor="#808080"
         android:gravity="center"
-        android:text="@string/NoFiles"
         android:textSize="24dp"
         android:id="@+id/searchEmptyView"
         android:visibility="gone"

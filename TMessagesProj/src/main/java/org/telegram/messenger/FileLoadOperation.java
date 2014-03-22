@@ -203,7 +203,7 @@ public class FileLoadOperation {
                 public void run() {
                     try {
                         int delay = 20;
-                        if (FileLoader.Instance.runtimeHack != null) {
+                        if (FileLoader.getInstance().runtimeHack != null) {
                             delay = 60;
                         }
                         if (FileLoader.lastCacheOutTime != 0 && FileLoader.lastCacheOutTime > System.currentTimeMillis() - delay) {
@@ -245,7 +245,7 @@ public class FileLoadOperation {
                             image = BitmapFactory.decodeStream(is, null, opts);
                             is.close();
                             if (image == null) {
-                                if (!dontDelete && cacheFileFinal.length() == 0) {
+                                if (!dontDelete && (cacheFileFinal.length() == 0 || filter == null)) {
                                    cacheFileFinal.delete();
                                 }
                             } else {
@@ -264,8 +264,8 @@ public class FileLoadOperation {
                                     }
 
                                 }
-                                if (FileLoader.Instance.runtimeHack != null) {
-                                    FileLoader.Instance.runtimeHack.trackFree(image.getRowBytes() * image.getHeight());
+                                if (FileLoader.getInstance().runtimeHack != null) {
+                                    FileLoader.getInstance().runtimeHack.trackFree(image.getRowBytes() * image.getHeight());
                                 }
                             }
                         }
@@ -354,7 +354,7 @@ public class FileLoadOperation {
         state = 2;
         cleanup();
         if (httpUrl == null && requestToken != 0) {
-            ConnectionsManager.Instance.cancelRpc(requestToken, true);
+            ConnectionsManager.getInstance().cancelRpc(requestToken, true);
         }
         delegate.didFailedLoadingFile(FileLoadOperation.this);
     }
@@ -407,7 +407,7 @@ public class FileLoadOperation {
                 @Override
                 public void run() {
                     int delay = 20;
-                    if (FileLoader.Instance.runtimeHack != null) {
+                    if (FileLoader.getInstance().runtimeHack != null) {
                         delay = 60;
                     }
                     if (FileLoader.lastCacheOutTime != 0 && FileLoader.lastCacheOutTime > System.currentTimeMillis() - delay) {
@@ -471,8 +471,8 @@ public class FileLoadOperation {
                             }
 
                         }
-                        if (image != null && FileLoader.Instance.runtimeHack != null) {
-                            FileLoader.Instance.runtimeHack.trackFree(image.getRowBytes() * image.getHeight());
+                        if (image != null && FileLoader.getInstance().runtimeHack != null) {
+                            FileLoader.getInstance().runtimeHack.trackFree(image.getRowBytes() * image.getHeight());
                         }
                         if (image != null) {
                             delegate.didFinishLoadingFile(FileLoadOperation.this);
@@ -572,7 +572,7 @@ public class FileLoadOperation {
             req.offset = downloadedBytes;
             req.limit = downloadChunkSize;
         //}
-        requestToken = ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+        requestToken = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
                 requestToken = 0;

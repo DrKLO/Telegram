@@ -19,6 +19,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
@@ -76,10 +77,16 @@ public class LoginActivityRegisterView extends SlideView {
 
         //ImageButton avatarButton = (ImageButton)findViewById(R.id.settings_change_avatar_button);
         firstNameField = (EditText)findViewById(R.id.login_first_name_field);
+        firstNameField.setHint(LocaleController.getString("FirstName", R.string.FirstName));
         lastNameField = (EditText)findViewById(R.id.login_last_name_field);
+        lastNameField.setHint(LocaleController.getString("LastName", R.string.LastName));
         //avatarImage = (BackupImageView)findViewById(R.id.settings_avatar_image);
 
+        TextView textView = (TextView)findViewById(R.id.login_register_info);
+        textView.setText(LocaleController.getString("RegisterText", R.string.RegisterText));
+
         TextView wrongNumber = (TextView) findViewById(R.id.changed_mind);
+        wrongNumber.setText(LocaleController.getString("CancelRegistration", R.string.CancelRegistration));
 
         wrongNumber.setOnClickListener(new OnClickListener() {
             @Override
@@ -189,7 +196,7 @@ public class LoginActivityRegisterView extends SlideView {
         req.first_name = firstNameField.getText().toString();
         req.last_name = lastNameField.getText().toString();
         delegate.needShowProgress();
-        ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
                 if (delegate != null) {
@@ -202,19 +209,19 @@ public class LoginActivityRegisterView extends SlideView {
                         public void run() {
                             TLRPC.TL_userSelf user = (TLRPC.TL_userSelf)res.user;
                             UserConfig.clearConfig();
-                            MessagesStorage.Instance.cleanUp();
-                            MessagesController.Instance.cleanUp();
-                            ConnectionsManager.Instance.cleanUp();
+                            MessagesStorage.getInstance().cleanUp();
+                            MessagesController.getInstance().cleanUp();
+                            ConnectionsManager.getInstance().cleanUp();
                             UserConfig.currentUser = user;
                             UserConfig.clientActivated = true;
                             UserConfig.clientUserId = user.id;
                             UserConfig.saveConfig(true);
                             ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
                             users.add(user);
-                            MessagesStorage.Instance.putUsersAndChats(users, null, true, true);
-                            //MessagesController.Instance.uploadAndApplyUserAvatar(avatarPhotoBig);
-                            MessagesController.Instance.users.put(res.user.id, res.user);
-                            ContactsController.Instance.checkAppAccount();
+                            MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
+                            //MessagesController.getInstance().uploadAndApplyUserAvatar(avatarPhotoBig);
+                            MessagesController.getInstance().users.put(res.user.id, res.user);
+                            ContactsController.getInstance().checkAppAccount();
                             if (delegate != null) {
                                 delegate.needFinishActivity();
                             }
@@ -223,15 +230,15 @@ public class LoginActivityRegisterView extends SlideView {
                 } else {
                     if (delegate != null) {
                         if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidPhoneNumber));
+                            delegate.needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
                         } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidCode));
+                            delegate.needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
                         } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.CodeExpired));
+                            delegate.needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
                         } else if (error.text.contains("FIRSTNAME_INVALID")) {
-                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidFirstName));
+                            delegate.needShowAlert(LocaleController.getString("InvalidFirstName", R.string.InvalidFirstName));
                         } else if (error.text.contains("LASTNAME_INVALID")) {
-                            delegate.needShowAlert(ApplicationLoader.applicationContext.getString(R.string.InvalidLastName));
+                            delegate.needShowAlert(LocaleController.getString("InvalidLastName", R.string.InvalidLastName));
                         } else {
                             delegate.needShowAlert(error.text);
                         }

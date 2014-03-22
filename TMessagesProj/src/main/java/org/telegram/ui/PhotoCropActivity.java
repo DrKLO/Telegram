@@ -24,10 +24,13 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.BaseFragment;
@@ -356,7 +359,7 @@ public class PhotoCropActivity extends BaseFragment {
         actionBar.setDisplayHomeAsUpEnabled(false);
 
         actionBar.setCustomView(R.layout.settings_do_action_layout);
-        View cancelButton = actionBar.getCustomView().findViewById(R.id.cancel_button);
+        Button cancelButton = (Button)actionBar.getCustomView().findViewById(R.id.cancel_button);
         cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -378,6 +381,10 @@ public class PhotoCropActivity extends BaseFragment {
                 finishFragment();
             }
         });
+
+        cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel));
+        TextView textView = (TextView)doneButton.findViewById(R.id.done_button_text);
+        textView.setText(LocaleController.getString("Done", R.string.Done));
     }
 
     @Override

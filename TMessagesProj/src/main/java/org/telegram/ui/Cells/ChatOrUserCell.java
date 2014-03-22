@@ -20,6 +20,7 @@ import android.text.TextUtils;
 import android.view.View;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.ContactsController;
@@ -27,7 +28,6 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Views.ImageReceiver;
 
 import java.lang.ref.WeakReference;
@@ -309,12 +309,12 @@ public class ChatOrUserCell extends BaseCell {
                     if (chat != null) {
                         nameString2 = chat.title;
                     } else if (user != null) {
-                        if (user.id / 1000 != 333 && ContactsController.Instance.contactsDict.get(user.id) == null) {
-                            if (ContactsController.Instance.contactsDict.size() == 0 && ContactsController.Instance.loadingContacts) {
+                        if (user.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(user.id) == null) {
+                            if (ContactsController.getInstance().contactsDict.size() == 0 && ContactsController.getInstance().loadingContacts) {
                                 nameString2 = Utilities.formatName(user.first_name, user.last_name);
                             } else {
                                 if (user.phone != null && user.phone.length() != 0) {
-                                    nameString2 = PhoneFormat.Instance.format("+" + user.phone);
+                                    nameString2 = PhoneFormat.getInstance().format("+" + user.phone);
                                 } else {
                                     nameString2 = Utilities.formatName(user.first_name, user.last_name);
                                 }
@@ -327,7 +327,7 @@ public class ChatOrUserCell extends BaseCell {
                 }
             }
             if (nameString.length() == 0) {
-                nameString = ApplicationLoader.applicationContext.getString(R.string.HiddenName);
+                nameString = LocaleController.getString("HiddenName", R.string.HiddenName);
             }
             if (encryptedChat != null) {
                 currentNamePaint = nameEncryptedPaint;
@@ -364,7 +364,7 @@ public class ChatOrUserCell extends BaseCell {
                         if (user.status == null) {
                             onlineString = getResources().getString(R.string.Offline);
                         } else {
-                            int currentTime = ConnectionsManager.Instance.getCurrentTime();
+                            int currentTime = ConnectionsManager.getInstance().getCurrentTime();
                             if (user.id == UserConfig.clientUserId || user.status.expires > currentTime) {
                                 currentOnlinePaint = onlinePaint;
                                 onlineString = getResources().getString(R.string.Online);

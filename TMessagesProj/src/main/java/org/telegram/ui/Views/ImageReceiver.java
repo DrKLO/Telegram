@@ -58,7 +58,7 @@ public class ImageReceiver {
             last_placeholder = placeholder;
             last_size = 0;
             currentImage = null;
-            FileLoader.Instance.cancelLoadingForImageView(this);
+            FileLoader.getInstance().cancelLoadingForImageView(this);
             return;
         }
         String key;
@@ -75,11 +75,11 @@ public class ImageReceiver {
             if (currentPath.equals(key)) {
                 return;
             } else {
-                img = FileLoader.Instance.getImageFromMemory(path, httpUrl, this, filter, true);
+                img = FileLoader.getInstance().getImageFromMemory(path, httpUrl, this, filter, true);
                 recycleBitmap(img);
             }
         } else {
-            img = FileLoader.Instance.getImageFromMemory(path, httpUrl, this, filter, true);
+            img = FileLoader.getInstance().getImageFromMemory(path, httpUrl, this, filter, true);
         }
         currentPath = key;
         last_path = path;
@@ -89,7 +89,7 @@ public class ImageReceiver {
         last_size = size;
         if (img == null) {
             isPlaceholder = true;
-            FileLoader.Instance.loadImage(path, httpUrl, this, filter, true, size);
+            FileLoader.getInstance().loadImage(path, httpUrl, this, filter, true, size);
         } else {
             setImageBitmap(img, currentPath);
         }
@@ -100,7 +100,7 @@ public class ImageReceiver {
             return;
         }
         isPlaceholder = false;
-        FileLoader.Instance.incrementUseCount(currentPath);
+        FileLoader.getInstance().incrementUseCount(currentPath);
         currentImage = new BitmapDrawable(null, bitmap);
         if (parentView.get() != null) {
             if (imageW != 0) {
@@ -123,10 +123,10 @@ public class ImageReceiver {
             Bitmap bitmap = ((BitmapDrawable)currentImage).getBitmap();
             if (bitmap != null && bitmap != newBitmap) {
                 if (currentPath != null) {
-                    boolean canDelete = FileLoader.Instance.decrementUseCount(currentPath);
-                    if (!FileLoader.Instance.isInCache(currentPath)) {
-                        if (FileLoader.Instance.runtimeHack != null) {
-                            FileLoader.Instance.runtimeHack.trackAlloc(bitmap.getRowBytes() * bitmap.getHeight());
+                    boolean canDelete = FileLoader.getInstance().decrementUseCount(currentPath);
+                    if (!FileLoader.getInstance().isInCache(currentPath)) {
+                        if (FileLoader.getInstance().runtimeHack != null) {
+                            FileLoader.getInstance().runtimeHack.trackAlloc(bitmap.getRowBytes() * bitmap.getHeight());
                         }
                         if (canDelete) {
                             currentImage = null;
@@ -153,7 +153,7 @@ public class ImageReceiver {
             }
         } catch (Exception e) {
             if (currentPath != null) {
-                FileLoader.Instance.removeImage(currentPath);
+                FileLoader.getInstance().removeImage(currentPath);
                 currentPath = null;
             }
             setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size);

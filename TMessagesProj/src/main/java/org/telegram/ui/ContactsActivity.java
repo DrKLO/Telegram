@@ -29,6 +29,7 @@ import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
@@ -67,6 +68,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private boolean createSecretChat;
     private boolean creatingChat = false;
     public int selectAlertString = 0;
+    public String selectAlertStringDesc = null;
     private SearchView searchView;
     private TextView epmtyTextView;
     private HashMap<Integer, TLRPC.User> ignoreUsers;
@@ -84,9 +86,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        NotificationCenter.Instance.addObserver(this, MessagesController.contactsDidLoaded);
-        NotificationCenter.Instance.addObserver(this, MessagesController.updateInterfaces);
-        NotificationCenter.Instance.addObserver(this, MessagesController.encryptedChatCreated);
+        NotificationCenter.getInstance().addObserver(this, MessagesController.contactsDidLoaded);
+        NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
+        NotificationCenter.getInstance().addObserver(this, MessagesController.encryptedChatCreated);
         if (getArguments() != null) {
             onlyUsers = getArguments().getBoolean("onlyUsers", false);
             destroyAfterSelect = getArguments().getBoolean("destroyAfterSelect", false);
@@ -94,7 +96,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             returnAsResult = getArguments().getBoolean("returnAsResult", false);
             createSecretChat = getArguments().getBoolean("createSecretChat", false);
             if (destroyAfterSelect) {
-                ignoreUsers = (HashMap<Integer, TLRPC.User>)NotificationCenter.Instance.getFromMemCache(7);
+                ignoreUsers = (HashMap<Integer, TLRPC.User>)NotificationCenter.getInstance().getFromMemCache(7);
             }
         }
 
@@ -112,9 +114,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.Instance.removeObserver(this, MessagesController.contactsDidLoaded);
-        NotificationCenter.Instance.removeObserver(this, MessagesController.updateInterfaces);
-        NotificationCenter.Instance.removeObserver(this, MessagesController.encryptedChatCreated);
+        NotificationCenter.getInstance().removeObserver(this, MessagesController.contactsDidLoaded);
+        NotificationCenter.getInstance().removeObserver(this, MessagesController.updateInterfaces);
+        NotificationCenter.getInstance().removeObserver(this, MessagesController.encryptedChatCreated);
         delegate = null;
     }
 
@@ -144,6 +146,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             fragmentView = inflater.inflate(R.layout.contacts_layout, container, false);
 
             epmtyTextView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
+            epmtyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
             searchListViewAdapter = new ContactsActivitySearchAdapter(parentActivity, ignoreUsers);
 
             listView = (PinnedHeaderListView)fragmentView.findViewById(R.id.listView);
@@ -168,7 +171,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         } else {
                             if (createSecretChat) {
                                 creatingChat = true;
-                                MessagesController.Instance.startSecretChat(parentActivity, user);
+                                MessagesController.getInstance().startSecretChat(parentActivity, user);
                             } else {
                                 ChatActivity fragment = new ChatActivity();
                                 Bundle bundle = new Bundle();
@@ -185,11 +188,11 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         }
                         TLRPC.User user = null;
                         if (usersAsSections) {
-                            if (section < ContactsController.Instance.sortedUsersSectionsArray.size()) {
-                                ArrayList<TLRPC.TL_contact> arr = ContactsController.Instance.usersSectionsDict.get(ContactsController.Instance.sortedUsersSectionsArray.get(section));
+                            if (section < ContactsController.getInstance().sortedUsersSectionsArray.size()) {
+                                ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
                                 if (row < arr.size()) {
                                     TLRPC.TL_contact contact = arr.get(row);
-                                    user = MessagesController.Instance.users.get(contact.user_id);
+                                    user = MessagesController.getInstance().users.get(contact.user_id);
                                 } else {
                                     return;
                                 }
@@ -201,15 +204,15 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                     try {
                                         Intent intent = new Intent(Intent.ACTION_SEND);
                                         intent.setType("text/plain");
-                                        intent.putExtra(Intent.EXTRA_TEXT, inviteText != null ? inviteText : getStringEntry(R.string.InviteText));
+                                        intent.putExtra(Intent.EXTRA_TEXT, inviteText != null ? inviteText : LocaleController.getString("InviteText", R.string.InviteText));
                                         startActivity(intent);
                                     } catch (Exception e) {
                                         FileLog.e("tmessages", e);
                                     }
                                     return;
                                 } else {
-                                    if (row - 1 < ContactsController.Instance.contacts.size()) {
-                                        user = MessagesController.Instance.users.get(ContactsController.Instance.contacts.get(row - 1).user_id);
+                                    if (row - 1 < ContactsController.getInstance().contacts.size()) {
+                                        user = MessagesController.getInstance().users.get(ContactsController.getInstance().contacts.get(row - 1).user_id);
                                     } else {
                                         return;
                                     }
@@ -229,7 +232,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                             } else {
                                 if (createSecretChat) {
                                     creatingChat = true;
-                                    MessagesController.Instance.startSecretChat(parentActivity, user);
+                                    MessagesController.getInstance().startSecretChat(parentActivity, user);
                                 } else {
                                     ChatActivity fragment = new ChatActivity();
                                     Bundle bundle = new Bundle();
@@ -239,7 +242,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 }
                             }
                         } else {
-                            ArrayList<ContactsController.Contact> arr = ContactsController.Instance.contactsSectionsDict.get(ContactsController.Instance.sortedContactsSectionsArray.get(section - 1));
+                            ArrayList<ContactsController.Contact> arr = ContactsController.getInstance().contactsSectionsDict.get(ContactsController.getInstance().sortedContactsSectionsArray.get(section - 1));
                             ContactsController.Contact contact = arr.get(row);
                             String usePhone = null;
                             if (!contact.phones.isEmpty()) {
@@ -249,22 +252,22 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 return;
                             }
                             AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
-                            builder.setMessage(getStringEntry(R.string.InviteUser));
-                            builder.setTitle(getStringEntry(R.string.AppName));
+                            builder.setMessage(LocaleController.getString("InviteUser", R.string.InviteUser));
+                            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                             final String arg1 = usePhone;
-                            builder.setPositiveButton(getStringEntry(R.string.OK), new DialogInterface.OnClickListener() {
+                            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialogInterface, int i) {
                                     try {
                                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromParts("sms", arg1, null));
-                                        intent.putExtra("sms_body", getStringEntry(R.string.InviteText));
+                                        intent.putExtra("sms_body", LocaleController.getString("InviteText", R.string.InviteText));
                                         startActivity(intent);
                                     } catch (Exception e) {
                                         FileLog.e("tmessages", e);
                                     }
                                 }
                             });
-                            builder.setNegativeButton(getStringEntry(R.string.Cancel), null);
+                            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                             builder.show().setCanceledOnTouchOutside(true);
                         }
                     }
@@ -304,7 +307,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         if (useAlert && selectAlertString != 0) {
             AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
             builder.setTitle(R.string.AppName);
-            builder.setMessage(String.format(getStringEntry(selectAlertString), Utilities.formatName(user.first_name, user.last_name)));
+            builder.setMessage(LocaleController.formatString(selectAlertStringDesc, selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
             builder.setPositiveButton(R.string.OK, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
@@ -352,9 +355,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         }
 
         if (destroyAfterSelect) {
-            actionBar.setTitle(getStringEntry(R.string.SelectContact));
+            actionBar.setTitle(LocaleController.getString("SelectContact", R.string.SelectContact));
         } else {
-            actionBar.setTitle(getStringEntry(R.string.Contacts));
+            actionBar.setTitle(LocaleController.getString("Contacts", R.string.Contacts));
         }
 
         ((LaunchActivity)parentActivity).fixBackButton();
@@ -442,7 +445,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         listView.setVerticalScrollBarEnabled(true);
                     }
                     if (epmtyTextView != null) {
-                        epmtyTextView.setText(getStringEntry(R.string.NoResult));
+                        epmtyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
                     }
                 }
                 return true;
@@ -462,6 +465,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
             @Override
             public boolean onMenuItemActionCollapse(MenuItem menuItem) {
+                if (parentActivity == null) {
+                    return true;
+                }
                 searchView.setQuery("", false);
                 searchListViewAdapter.searchDialogs(null);
                 searching = false;
@@ -480,7 +486,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 listView.setVerticalScrollBarEnabled(false);
                 ((LaunchActivity)parentActivity).updateActionBar();
 
-                epmtyTextView.setText(getStringEntry(R.string.NoContacts));
+                epmtyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
                 return true;
             }
         });
@@ -517,7 +523,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             if (req.lang_code == null || req.lang_code.length() == 0) {
                 req.lang_code = "en";
             }
-            ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                 @Override
                 public void run(TLObject response, TLRPC.TL_error error) {
                     if (error == null) {

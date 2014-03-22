@@ -13,8 +13,6 @@ import java.util.HashMap;
 
 public class NotificationCenter {
 
-    public static NotificationCenter Instance = new NotificationCenter();
-
     final private HashMap<Integer, ArrayList<Object>> observers = new HashMap<Integer, ArrayList<Object>>();
 
     final private HashMap<String, Object> memCache = new HashMap<String, Object>();
@@ -23,6 +21,20 @@ public class NotificationCenter {
     final private HashMap<Integer, Object> addAfterBroadcast = new HashMap<Integer, Object>();
 
     private boolean broadcasting = false;
+
+    private static volatile NotificationCenter Instance = null;
+    public static NotificationCenter getInstance() {
+        NotificationCenter localInstance = Instance;
+        if (localInstance == null) {
+            synchronized (NotificationCenter.class) {
+                localInstance = Instance;
+                if (localInstance == null) {
+                    Instance = localInstance = new NotificationCenter();
+                }
+            }
+        }
+        return localInstance;
+    }
 
     public interface NotificationCenterDelegate {
         public abstract void didReceivedNotification(int id, Object... args);

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.telegram.messenger">
+
+    <application
+        android:allowBackup="false"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/AppName"
+        android:theme="@style/Theme.TMessages.Start"
+        android:name="org.telegram.ui.ApplicationLoader"
+        android:hardwareAccelerated="true"
+        android:largeHeap="true">
+
+    </application>
+
+</manifest>

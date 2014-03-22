@@ -106,6 +106,7 @@
     <string name="YouLeft">You left this group</string>
     <string name="DeleteThisGroup">Delete this group</string>
     <string name="SlideToCancel">SLIDE TO CANCEL</string>
+    <string name="SaveToDownloads">Save to downloads</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Secret chat requested</string>
@@ -243,6 +244,7 @@
     <string name="SendByEnter">Send by Enter</string>
     <string name="TerminateAllSessions">Terminate All Other Sessions</string>
     <string name="AutomaticPhotoDownload">AUTOMATIC PHOTO DOWNLOAD</string>
+    <string name="AutomaticAudioDownload">AUTOMATIC AUDIO DOWNLOAD</string>
     <string name="AutomaticPhotoDownloadGroups">Groups</string>
     <string name="AutomaticPhotoDownloadPrivateChats">Private Chats</string>
     <string name="Events">EVENTS</string>
@@ -306,7 +308,7 @@
     <string name="ActionYouCreateGroup">You created the group</string>
     <string name="ActionKickUserYou">un1 removed you</string>
     <string name="ActionAddUserYou">un1 added you</string>
-    <string name="UnsuppotedMedia">This message is not supported on your version of Telegram.</string>
+    <string name="UnsuppotedMedia">This message is not supported on your version of Telegram. Update the app to view: http://telegram.org/update</string>
     <string name="AttachPhoto">Photo</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Location</string>

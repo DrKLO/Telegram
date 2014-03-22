@@ -31,7 +31,7 @@ public class ExportAuthorizationAction extends Action {
         TLRPC.TL_auth_exportAuthorization exportAuthorization = new TLRPC.TL_auth_exportAuthorization();
         exportAuthorization.dc_id = datacenter.datacenterId;
 
-        ConnectionsManager.Instance.performRpc(exportAuthorization, new RPCRequest.RPCRequestDelegate() {
+        ConnectionsManager.getInstance().performRpc(exportAuthorization, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
                 if (delegate == null) {
@@ -62,7 +62,7 @@ public class ExportAuthorizationAction extends Action {
         importAuthorization.bytes = exportedAuthorization.bytes;
         importAuthorization.id = exportedAuthorization.id;
 
-        ConnectionsManager.Instance.performRpc(importAuthorization, new RPCRequest.RPCRequestDelegate() {
+        ConnectionsManager.getInstance().performRpc(importAuthorization, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
                 if (delegate == null) {

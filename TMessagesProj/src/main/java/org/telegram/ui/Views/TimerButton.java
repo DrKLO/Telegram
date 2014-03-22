@@ -66,17 +66,17 @@ public class TimerButton extends View {
 
         String timeString = null;
         if (time == 2) {
-            timeString = getResources().getString(R.string.ShortMessageLifetime2s);
+            timeString = "2s";
         } else if (time == 5) {
-            timeString = getResources().getString(R.string.ShortMessageLifetime5s);
+            timeString = "5s";
         } else if (time == 60) {
-            timeString = getResources().getString(R.string.ShortMessageLifetime1m);
+            timeString = "1m";
         } else if (time == 60 * 60) {
-            timeString = getResources().getString(R.string.ShortMessageLifetime1h);
+            timeString = "1h";
         } else if (time == 60 * 60 * 24) {
-            timeString = getResources().getString(R.string.ShortMessageLifetime1d);
+            timeString = "1d";
         } else if (time == 60 * 60 * 24 * 7) {
-            timeString = getResources().getString(R.string.ShortMessageLifetime1w);
+            timeString = "1w";
         } else {
             timeString = "c";
         }

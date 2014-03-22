@@ -20,10 +20,12 @@ import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.ContactsController;
@@ -47,17 +49,17 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        NotificationCenter.Instance.addObserver(this, MessagesController.updateInterfaces);
+        NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
         user_id = getArguments().getInt("user_id", 0);
         phone = getArguments().getString("phone");
-        TLRPC.User user = MessagesController.Instance.users.get(user_id);
+        TLRPC.User user = MessagesController.getInstance().users.get(user_id);
         return user != null;
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.Instance.removeObserver(this, MessagesController.updateInterfaces);
+        NotificationCenter.getInstance().removeObserver(this, MessagesController.updateInterfaces);
     }
 
     @Override
@@ -65,7 +67,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         if (fragmentView == null) {
             fragmentView = inflater.inflate(R.layout.contact_add_layout, container, false);
 
-            TLRPC.User user = MessagesController.Instance.users.get(user_id);
+            TLRPC.User user = MessagesController.getInstance().users.get(user_id);
             if (user.phone == null) {
                 if (phone != null) {
                     user.phone = PhoneFormat.stripExceptNumbers(phone);
@@ -79,6 +81,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
             phoneText.setTypeface(typeface);
 
             firstNameField = (EditText)fragmentView.findViewById(R.id.first_name_field);
+            firstNameField.setHint(LocaleController.getString("FirstName", R.string.FirstName));
             firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
@@ -91,6 +94,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                 }
             });
             lastNameField = (EditText)fragmentView.findViewById(R.id.last_name_field);
+            lastNameField.setHint(LocaleController.getString("LastName", R.string.LastName));
             lastNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
@@ -122,20 +126,20 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         if (phoneText == null) {
             return;
         }
-        TLRPC.User user = MessagesController.Instance.users.get(user_id);
+        TLRPC.User user = MessagesController.getInstance().users.get(user_id);
         if (user == null) {
             return;
         }
-        phoneText.setText(PhoneFormat.Instance.format("+" + user.phone));
+        phoneText.setText(PhoneFormat.getInstance().format("+" + user.phone));
         if (user.status == null) {
-            onlineText.setText(getStringEntry(R.string.Offline));
+            onlineText.setText(LocaleController.getString("Offline", R.string.Offline));
         } else {
-            int currentTime = ConnectionsManager.Instance.getCurrentTime();
+            int currentTime = ConnectionsManager.getInstance().getCurrentTime();
             if (user.status.expires > currentTime) {
-                onlineText.setText(getStringEntry(R.string.Online));
+                onlineText.setText(LocaleController.getString("Online", R.string.Online));
             } else {
                 if (user.status.expires <= 10000) {
-                    onlineText.setText(getStringEntry(R.string.Invisible));
+                    onlineText.setText(LocaleController.getString("Invisible", R.string.Invisible));
                 } else {
                     onlineText.setText(Utilities.formatDateOnline(user.status.expires));
                 }
@@ -185,7 +189,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         }
 
         actionBar.setCustomView(R.layout.settings_do_action_layout);
-        View cancelButton = actionBar.getCustomView().findViewById(R.id.cancel_button);
+        Button cancelButton = (Button)actionBar.getCustomView().findViewById(R.id.cancel_button);
         cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -197,15 +201,19 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
             @Override
             public void onClick(View view) {
                 if (firstNameField.getText().length() != 0) {
-                    TLRPC.User user = MessagesController.Instance.users.get(user_id);
+                    TLRPC.User user = MessagesController.getInstance().users.get(user_id);
                     user.first_name = firstNameField.getText().toString();
                     user.last_name = lastNameField.getText().toString();
-                    ContactsController.Instance.addContact(user);
+                    ContactsController.getInstance().addContact(user);
                     finishFragment();
-                    NotificationCenter.Instance.postNotificationName(MessagesController.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
+                    NotificationCenter.getInstance().postNotificationName(MessagesController.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
                 }
             }
         });
+
+        cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel));
+        TextView textView = (TextView)doneButton.findViewById(R.id.done_button_text);
+        textView.setText(LocaleController.getString("Done", R.string.Done));
     }
 
     @Override

@@ -2426,7 +2426,7 @@ public class TLRPC {
     public static class DecryptedMessage extends TLObject {
         public long random_id;
         public byte[] random_bytes;
-        public TL_decryptedMessageActionSetMessageTTL action;
+        public DecryptedMessageAction action;
         public String message;
         public DecryptedMessageMedia media;
     }
@@ -2438,7 +2438,7 @@ public class TLRPC {
         public void readParams(AbsSerializedData stream) {
             random_id = stream.readInt64();
             random_bytes = stream.readByteArray();
-            action = (TL_decryptedMessageActionSetMessageTTL)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+            action = (DecryptedMessageAction)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
         }
 
         public void serializeToStream(AbsSerializedData stream) {
@@ -3854,10 +3854,13 @@ public class TLRPC {
         }
     }
 
-    public static class TL_decryptedMessageActionSetMessageTTL extends TLObject {
-        public static int constructor = 0xa1733aec;
-
+    public static class DecryptedMessageAction extends TLObject {
         public int ttl_seconds;
+        public ArrayList<Long> random_ids = new ArrayList<Long>();
+    }
+
+    public static class TL_decryptedMessageActionSetMessageTTL extends DecryptedMessageAction {
+        public static int constructor = 0xa1733aec;
 
         public void readParams(AbsSerializedData stream) {
             ttl_seconds = stream.readInt32();
@@ -3866,6 +3869,14 @@ public class TLRPC {
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(ttl_seconds);
+        }
+    }
+
+    public static class TL_decryptedMessageActionFlushHistory extends DecryptedMessageAction {
+        public static int constructor = 0x6719e45c;
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
         }
     }
 
@@ -8187,7 +8198,7 @@ public class TLRPC {
         @Override
         public void freeResources() {
             if (bytes != null) {
-                BuffersStorage.Instance.reuseFreeBuffer(bytes);
+                BuffersStorage.getInstance().reuseFreeBuffer(bytes);
                 bytes = null;
             }
         }
@@ -8298,7 +8309,7 @@ public class TLRPC {
                 message.seqno = stream.readInt32();
                 message.bytes = stream.readInt32();
                 int constructor = stream.readInt32();
-                TLObject request = ConnectionsManager.Instance.getRequestWithMessageId(message.msg_id);
+                TLObject request = ConnectionsManager.getInstance().getRequestWithMessageId(message.msg_id);
                 message.body = TLClassStore.Instance().TLdeserialize(stream, constructor, request);
                 messages.add(message);
             }
@@ -8325,7 +8336,7 @@ public class TLRPC {
 
         public void readParams(AbsSerializedData stream) {
             req_msg_id = stream.readInt64();
-            TLObject request = ConnectionsManager.Instance.getRequestWithMessageId(req_msg_id);
+            TLObject request = ConnectionsManager.getInstance().getRequestWithMessageId(req_msg_id);
             result = TLClassStore.Instance().TLdeserialize(stream, stream.readInt32(), request);
         }
 
@@ -9116,6 +9127,39 @@ public class TLRPC {
             stream.writeInt32(admin_id);
             stream.writeInt32(participant_id);
             stream.writeByteArray(g_a);
+        }
+    }
+
+    public static class TL_decryptedMessageActionDeleteMessages extends DecryptedMessageAction {
+        public static int constructor = 0x65614304;
+
+
+        public void readParams(AbsSerializedData stream) {
+            boolean[] error = new boolean[1];
+            stream.readInt32(error);
+            if (error[0]) {
+                return;
+            }
+            int count = stream.readInt32(error);
+            if (error[0]) {
+                return;
+            }
+            for (long a = 0; a < count; a++) {
+                random_ids.add(stream.readInt64(error));
+                if (error[0]) {
+                    return;
+                }
+            }
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(0x1cb5c415);
+            int count = random_ids.size();
+            stream.writeInt32(count);
+            for (Long value : random_ids) {
+                stream.writeInt64(value);
+            }
         }
     }
 }

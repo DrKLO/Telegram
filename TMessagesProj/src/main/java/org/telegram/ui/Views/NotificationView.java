@@ -106,15 +106,15 @@ public class NotificationView extends LinearLayout {
                 hide(true);
 
                 if (currentChatId != 0) {
-                    NotificationCenter.Instance.addToMemCache("push_chat_id", currentChatId);
+                    NotificationCenter.getInstance().addToMemCache("push_chat_id", currentChatId);
                 }
                 if (currentUserId != 0) {
-                    NotificationCenter.Instance.addToMemCache("push_user_id", currentUserId);
+                    NotificationCenter.getInstance().addToMemCache("push_user_id", currentUserId);
                 }
                 if (currentEncId != 0) {
-                    NotificationCenter.Instance.addToMemCache("push_enc_id", currentEncId);
+                    NotificationCenter.getInstance().addToMemCache("push_enc_id", currentEncId);
                 }
-                NotificationCenter.Instance.postNotificationName(658);
+                NotificationCenter.getInstance().postNotificationName(658);
             }
         });
 
@@ -170,11 +170,11 @@ public class NotificationView extends LinearLayout {
     }
 
     public void show(MessageObject object) {
-        TLRPC.User user = MessagesController.Instance.users.get(object.messageOwner.from_id);
+        TLRPC.User user = MessagesController.getInstance().users.get(object.messageOwner.from_id);
         TLRPC.Chat chat = null;
         long dialog_id = object.messageOwner.dialog_id;
         if (object.messageOwner.to_id.chat_id != 0) {
-            chat = MessagesController.Instance.chats.get(object.messageOwner.to_id.chat_id);
+            chat = MessagesController.getInstance().chats.get(object.messageOwner.to_id.chat_id);
             if (chat == null) {
                 return;
             }

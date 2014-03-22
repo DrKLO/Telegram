@@ -21,12 +21,12 @@ import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 import android.view.View;
 
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
-import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Views.ImageReceiver;
 
 import java.lang.ref.WeakReference;
@@ -148,7 +148,7 @@ public class ChatBaseCell extends BaseCell {
         if (currentMessageObject == null || currentUser == null) {
             return false;
         }
-        TLRPC.User newUser = MessagesController.Instance.users.get(currentMessageObject.messageOwner.from_id);
+        TLRPC.User newUser = MessagesController.getInstance().users.get(currentMessageObject.messageOwner.from_id);
         TLRPC.FileLocation newPhoto = null;
 
         if (avatarImage != null && newUser != null && newUser.photo != null) {
@@ -168,7 +168,7 @@ public class ChatBaseCell extends BaseCell {
             return true;
         }
 
-        newUser = MessagesController.Instance.users.get(currentMessageObject.messageOwner.fwd_from_id);
+        newUser = MessagesController.getInstance().users.get(currentMessageObject.messageOwner.fwd_from_id);
         newNameString = null;
         if (drawForwardedName && currentMessageObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
             newNameString = Utilities.formatName(newUser.first_name, newUser.last_name);
@@ -183,12 +183,12 @@ public class ChatBaseCell extends BaseCell {
         wasLayout = false;
 
         if (currentMessageObject.messageOwner.id < 0 && currentMessageObject.messageOwner.send_state != MessagesController.MESSAGE_SEND_STATE_SEND_ERROR && currentMessageObject.messageOwner.send_state != MessagesController.MESSAGE_SEND_STATE_SENT) {
-            if (MessagesController.Instance.sendingMessages.get(currentMessageObject.messageOwner.id) == null) {
+            if (MessagesController.getInstance().sendingMessages.get(currentMessageObject.messageOwner.id) == null) {
                 currentMessageObject.messageOwner.send_state = MessagesController.MESSAGE_SEND_STATE_SEND_ERROR;
             }
         }
 
-        currentUser = MessagesController.Instance.users.get(messageObject.messageOwner.from_id);
+        currentUser = MessagesController.getInstance().users.get(messageObject.messageOwner.from_id);
         if (avatarImage != null) {
             if (currentUser != null) {
                 if (currentUser.photo != null) {
@@ -231,14 +231,14 @@ public class ChatBaseCell extends BaseCell {
         }
 
         if (drawForwardedName && messageObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
-            currentForwardUser = MessagesController.Instance.users.get(messageObject.messageOwner.fwd_from_id);
+            currentForwardUser = MessagesController.getInstance().users.get(messageObject.messageOwner.fwd_from_id);
             if (currentForwardUser != null) {
                 currentForwardNameString = Utilities.formatName(currentForwardUser.first_name, currentForwardUser.last_name);
 
                 forwardedNameWidth = getMaxNameWidth();
 
                 CharSequence str = TextUtils.ellipsize(currentForwardNameString.replace("\n", " "), forwardNamePaint, forwardedNameWidth - Utilities.dp(40), TextUtils.TruncateAt.END);
-                str = Html.fromHtml(String.format("%s<br>%s <b>%s</b>", ApplicationLoader.applicationContext.getString(R.string.ForwardedMessage), ApplicationLoader.applicationContext.getString(R.string.From), str));
+                str = Html.fromHtml(String.format("%s<br>%s <b>%s</b>", LocaleController.getString("ForwardedMessage", R.string.ForwardedMessage), LocaleController.getString("From", R.string.From), str));
                 forwardedNameLayout = new StaticLayout(str, forwardNamePaint, forwardedNameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                 if (forwardedNameLayout.getLineCount() > 1) {
                     forwardedNameWidth = Math.max((int) Math.ceil(forwardedNameLayout.getLineWidth(0)), (int) Math.ceil(forwardedNameLayout.getLineWidth(1)));

@@ -25,6 +25,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
@@ -36,6 +37,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.ui.Cells.ChatOrUserCell;
 import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.OnSwipeTouchListener;
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,7 +47,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
     private ListAdapter listViewAdapter;
     private boolean loading;
     private View progressView;
-    private View emptyView;
+    private TextView emptyView;
     private ArrayList<TLRPC.TL_contactBlocked> blockedContacts = new ArrayList<TLRPC.TL_contactBlocked>();
     private HashMap<Integer, TLRPC.TL_contactBlocked> blockedContactsDict = new HashMap<Integer, TLRPC.TL_contactBlocked>();
     private int selectedUserId;
@@ -53,7 +55,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        NotificationCenter.Instance.addObserver(this, MessagesController.updateInterfaces);
+        NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
         loadBlockedContacts(0, 200);
         return true;
     }
@@ -61,7 +63,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.Instance.removeObserver(this, MessagesController.updateInterfaces);
+        NotificationCenter.getInstance().removeObserver(this, MessagesController.updateInterfaces);
     }
 
     @Override
@@ -77,7 +79,8 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
             listViewAdapter = new ListAdapter(parentActivity);
             listView = (ListView)fragmentView.findViewById(R.id.listView);
             progressView = fragmentView.findViewById(R.id.progressLayout);
-            emptyView = fragmentView.findViewById(R.id.searchEmptyView);
+            emptyView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
+            emptyView.setText(LocaleController.getString("NoBlocked", R.string.NoBlocked));
             if (loading) {
                 progressView.setVisibility(View.VISIBLE);
                 emptyView.setVisibility(View.GONE);
@@ -110,14 +113,14 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
 
                     AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
 
-                    CharSequence[] items = new CharSequence[] {getStringEntry(R.string.Unblock)};
+                    CharSequence[] items = new CharSequence[] {LocaleController.getString("Unblock", R.string.Unblock)};
 
                     builder.setItems(items, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
                             if (i == 0) {
                                 TLRPC.TL_contacts_unblock req = new TLRPC.TL_contacts_unblock();
-                                TLRPC.User user = MessagesController.Instance.users.get(selectedUserId);
+                                TLRPC.User user = MessagesController.getInstance().users.get(selectedUserId);
                                 if (user == null) {
                                     return;
                                 }
@@ -126,7 +129,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                                 blockedContactsDict.remove(selectedUserId);
                                 blockedContacts.remove(blocked);
                                 listViewAdapter.notifyDataSetChanged();
-                                ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                                ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                                     @Override
                                     public void run(TLObject response, TLRPC.TL_error error) {
 
@@ -168,7 +171,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
         TLRPC.TL_contacts_getBlocked req = new TLRPC.TL_contacts_getBlocked();
         req.offset = offset;
         req.limit = count;
-        long requestId = ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+        long requestId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
                 if (error != null) {
@@ -196,7 +199,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                     public void run() {
                         loading = false;
                         for (TLRPC.User user : res.users) {
-                            MessagesController.Instance.users.put(user.id, user);
+                            MessagesController.getInstance().users.put(user.id, user);
                         }
                         for (TLRPC.TL_contactBlocked blocked : res.blocked) {
                             if (!blockedContactsDict.containsKey(blocked.user_id)) {
@@ -219,7 +222,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                 });
             }
         }, null, true, RPCRequest.RPCRequestClassGeneric);
-        ConnectionsManager.Instance.bindRequestToGuid(requestId, classGuid);
+        ConnectionsManager.getInstance().bindRequestToGuid(requestId, classGuid);
     }
 
     @Override
@@ -258,7 +261,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
         actionBar.setDisplayShowCustomEnabled(false);
         actionBar.setSubtitle(null);
         actionBar.setCustomView(null);
-        actionBar.setTitle(getStringEntry(R.string.BlockedUsers));
+        actionBar.setTitle(LocaleController.getString("BlockedUsers", R.string.BlockedUsers));
 
         TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
         if (title == null) {
@@ -329,7 +332,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
         blockedContactsDict.put(blocked.user_id, blocked);
         blockedContacts.add(blocked);
         listViewAdapter.notifyDataSetChanged();
-        ConnectionsManager.Instance.performRpc(req, new RPCRequest.RPCRequestDelegate() {
+        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
 
@@ -387,12 +390,14 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                     ((ChatOrUserCell)view).usePadding = false;
                     ((ChatOrUserCell)view).useSeparator = true;
                 }
-                TLRPC.User user = MessagesController.Instance.users.get(blockedContacts.get(i).user_id);
-                ((ChatOrUserCell)view).setData(user, null, null, null, user.phone != null && user.phone.length() != 0 ? PhoneFormat.Instance.format("+" + user.phone) : "Unknown");
+                TLRPC.User user = MessagesController.getInstance().users.get(blockedContacts.get(i).user_id);
+                ((ChatOrUserCell)view).setData(user, null, null, null, user.phone != null && user.phone.length() != 0 ? PhoneFormat.getInstance().format("+" + user.phone) : "Unknown");
             } else if (type == 1) {
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.settings_unblock_info_row_layout, viewGroup, false);
+                    TextView textView = (TextView)view.findViewById(R.id.info_text_view);
+                    textView.setText(LocaleController.getString("UnblockText", R.string.UnblockText));
                     registerForContextMenu(view);
                 }
             }

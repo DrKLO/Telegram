@@ -1,24 +1,24 @@
 <FrameLayout
-        android:layout_width="wrap_content"
-        android:layout_height="fill_parent"
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        android:layout_gravity="right|center_vertical"
+    android:layout_width="wrap_content"
+    android:layout_height="fill_parent"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_gravity="right|center_vertical"
     android:minHeight="60dp">
 
-    <TextView android:layout_height="fill_parent"
-            android:layout_width="wrap_content"
-            android:text="@string/Done"
-            android:drawableLeft="@drawable/ic_done"
-            android:textColor="#ffffff"
-            android:textSize="14dp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:layout_gravity="center"
-            android:id="@+id/done_button"
-            android:drawablePadding="8dp"
-            android:paddingRight="16dp"
-            android:paddingLeft="16dp"
-            android:background="@drawable/bar_selector"
+    <TextView
+        android:layout_height="fill_parent"
+        android:layout_width="wrap_content"
+        android:drawableLeft="@drawable/ic_done"
+        android:textColor="#ffffff"
+        android:textSize="14dp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_gravity="center"
+        android:id="@+id/done_button"
+        android:drawablePadding="8dp"
+        android:paddingRight="16dp"
+        android:paddingLeft="16dp"
+        android:background="@drawable/bar_selector"
         android:minHeight="60dp"/>
 
 </FrameLayout>

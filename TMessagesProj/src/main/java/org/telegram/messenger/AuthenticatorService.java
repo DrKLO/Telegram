@@ -33,37 +33,11 @@ public class AuthenticatorService extends Service {
         public Bundle addAccount(AccountAuthenticatorResponse response, String accountType, String authTokenType, String[] requiredFeatures, Bundle options)
                 throws NetworkErrorException {
             return null;
-            /*Log.e(TAG, "addAccount");
-
-            // check if an account already exists; we only allow one
-            QuillAccount account = new QuillAccount(context);
-            if (account.exists())
-                return null;
-
-            // ok, go ahead and create new account
-            Intent intent = new Intent(context, LoginActivity.class);
-            intent.setAction(LoginActivity.ACTION_LOGIN);
-            intent.putExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE, response);
-            Bundle reply = new Bundle();
-            reply.putParcelable(AccountManager.KEY_INTENT, intent);
-            return reply;*/
         }
 
         @Override
         public Bundle getAccountRemovalAllowed(AccountAuthenticatorResponse response, Account account) throws NetworkErrorException {
-            Bundle result = super.getAccountRemovalAllowed(response, account);
-
-            /*if (result != null && result.containsKey(AccountManager.KEY_BOOLEAN_RESULT)
-                    && !result.containsKey(AccountManager.KEY_INTENT)) {
-                final boolean removalAllowed = result.getBoolean(AccountManager.KEY_BOOLEAN_RESULT);
-
-                if (removalAllowed) {
-                    context.sendBroadcast(new Intent("com.stels.messenger.LOGOUT"));
-                    //((StelsApplication) mContext.getApplicationContext()).dropLogin();
-                }
-            }*/
-
-            return result;
+            return super.getAccountRemovalAllowed(response, account);
         }
 
         @Override

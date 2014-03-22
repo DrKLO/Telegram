@@ -8,7 +8,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:textColor="#9a9a9a"
-        android:text="@string/UnblockText"
         android:textSize="15dp"
         android:id="@+id/info_text_view"/>
 
