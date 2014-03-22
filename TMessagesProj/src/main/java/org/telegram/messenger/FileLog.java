@@ -40,7 +40,7 @@ public class FileLog {
     }
 
     public FileLog() {
-        if (!ConnectionsManager.DEBUG_VERSION) {
+        if (!BuildVars.DEBUG_VERSION) {
             return;
         }
         dateFormat = FastDateFormat.getInstance("dd_MM_yyyy_HH_mm_ss", Locale.US);
@@ -70,7 +70,7 @@ public class FileLog {
     }
 
     public static void e(final String tag, final String message, final Throwable exception) {
-        if (!ConnectionsManager.DEBUG_VERSION) {
+        if (!BuildVars.DEBUG_VERSION) {
             return;
         }
         Log.e(tag, message, exception);
@@ -91,7 +91,7 @@ public class FileLog {
     }
 
     public static void e(final String tag, final String message) {
-        if (!ConnectionsManager.DEBUG_VERSION) {
+        if (!BuildVars.DEBUG_VERSION) {
             return;
         }
         Log.e(tag, message);
@@ -111,7 +111,7 @@ public class FileLog {
     }
 
     public static void e(final String tag, final Exception e) {
-        if (!ConnectionsManager.DEBUG_VERSION) {
+        if (!BuildVars.DEBUG_VERSION) {
             return;
         }
         e.printStackTrace();
@@ -137,7 +137,7 @@ public class FileLog {
     }
 
     public static void d(final String tag, final String message) {
-        if (!ConnectionsManager.DEBUG_VERSION) {
+        if (!BuildVars.DEBUG_VERSION) {
             return;
         }
         Log.d(tag, message);

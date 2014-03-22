@@ -514,7 +514,7 @@ public class ContactsController {
                             Utilities.RunOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    if (ConnectionsManager.DEBUG_VERSION) {
+                                    if (BuildVars.DEBUG_VERSION) {
                                         FileLog.e("tmessages", "need delete contacts");
                                         for (HashMap.Entry<Integer, Contact> c : contactHashMap.entrySet()) {
                                             Contact contact = c.getValue();
@@ -590,7 +590,7 @@ public class ContactsController {
 
                 if (request) {
                     if (!toImport.isEmpty()) {
-                        if (ConnectionsManager.DEBUG_VERSION) {
+                        if (BuildVars.DEBUG_VERSION) {
                             FileLog.e("tmessages", "start import contacts");
                             for (TLRPC.TL_inputPhoneContact contact : toImport) {
                                 FileLog.e("tmessages", "add contact " + contact.first_name + " " + contact.last_name + " " + contact.phone);
@@ -613,7 +613,7 @@ public class ContactsController {
                                             MessagesStorage.getInstance().putCachedPhoneBook(contactsMap);
                                         }
                                         TLRPC.TL_contacts_importedContacts res = (TLRPC.TL_contacts_importedContacts)response;
-                                        if (ConnectionsManager.DEBUG_VERSION) {
+                                        if (BuildVars.DEBUG_VERSION) {
                                             for (TLRPC.User user : res.users) {
                                                 FileLog.e("tmessages", "received user " + user.first_name + " " + user.last_name + " " + user.phone);
                                             }
@@ -776,7 +776,7 @@ public class ContactsController {
                     if (user != null) {
                         usersDict.put(user.id, user);
 
-                        if (ConnectionsManager.DEBUG_VERSION) {
+                        if (BuildVars.DEBUG_VERSION) {
                             FileLog.e("tmessages", "loaded user contact " + user.first_name + " " + user.last_name + " " + user.phone);
                         }
                     }
@@ -1398,7 +1398,7 @@ public class ContactsController {
         contactsParams.add(c);
         req.contacts = contactsParams;
         req.replace = false;
-        if (ConnectionsManager.DEBUG_VERSION) {
+        if (BuildVars.DEBUG_VERSION) {
             FileLog.e("tmessages", "add contact " + user.first_name + " " + user.last_name + " " + user.phone);
         }
         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
@@ -1410,7 +1410,7 @@ public class ContactsController {
                 final TLRPC.TL_contacts_importedContacts res = (TLRPC.TL_contacts_importedContacts)response;
                 MessagesStorage.getInstance().putUsersAndChats(res.users, null, true, true);
 
-                if (ConnectionsManager.DEBUG_VERSION) {
+                if (BuildVars.DEBUG_VERSION) {
                     for (TLRPC.User user : res.users) {
                         FileLog.e("tmessages", "received user " + user.first_name + " " + user.last_name + " " + user.phone);
                     }

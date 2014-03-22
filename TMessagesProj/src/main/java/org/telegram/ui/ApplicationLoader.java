@@ -27,6 +27,7 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
@@ -228,7 +229,7 @@ public class ApplicationLoader extends Application {
                 while (count < 1000) {
                     try {
                         count++;
-                        regid = gcm.register(ConnectionsManager.GCM_SENDER_ID);
+                        regid = gcm.register(BuildVars.GCM_SENDER_ID);
                         sendRegistrationIdToBackend(true);
                         storeRegistrationId(applicationContext, regid);
                         return true;

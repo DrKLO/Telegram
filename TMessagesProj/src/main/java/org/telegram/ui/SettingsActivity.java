@@ -34,6 +34,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.SerializedData;
 import org.telegram.messenger.TLClassStore;
@@ -169,7 +170,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         textSizeRow = rowCount++;
         sendByEnterRow = rowCount++;
         supportSectionRow = rowCount++;
-        if (ConnectionsManager.DEBUG_VERSION) {
+        if (BuildVars.DEBUG_VERSION) {
             sendLogsRow = rowCount++;
             clearLogsRow = rowCount++;
         }
@@ -484,7 +485,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             }
             Intent i = new Intent(Intent.ACTION_SEND_MULTIPLE);
             i.setType("message/rfc822") ;
-            i.putExtra(Intent.EXTRA_EMAIL, new String[]{ConnectionsManager.SEND_LOGS_EMAIL});
+            i.putExtra(Intent.EXTRA_EMAIL, new String[]{BuildVars.SEND_LOGS_EMAIL});
             i.putExtra(Intent.EXTRA_SUBJECT, "last logs");
             i.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris);
             startActivity(Intent.createChooser(i, "Select email application."));

@@ -35,6 +35,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
@@ -526,12 +527,12 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     }
 
     private void checkForCrashes() {
-        CrashManager.register(this, ConnectionsManager.HOCKEY_APP_HASH);
+        CrashManager.register(this, BuildVars.HOCKEY_APP_HASH);
     }
 
     private void checkForUpdates() {
-        if (ConnectionsManager.DEBUG_VERSION) {
-            UpdateManager.register(this, ConnectionsManager.HOCKEY_APP_HASH);
+        if (BuildVars.DEBUG_VERSION) {
+            UpdateManager.register(this, BuildVars.HOCKEY_APP_HASH);
         }
     }
 

@@ -30,13 +30,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.TcpConnectionDelegate {
-    public static boolean DEBUG_VERSION = true;
-    public static int APP_ID = 2458;
-    public static String APP_HASH = "5bce48dc7d331e62c955669eb7233217";
-    public static String HOCKEY_APP_HASH = "your-hockeyapp-api-key-here";
-    public static String GCM_SENDER_ID = "760348033672";
-    public static String SEND_LOGS_EMAIL = "email@gmail.com";
-
     private HashMap<Integer, Datacenter> datacenters = new HashMap<Integer, Datacenter>();
     private HashMap<Long, ArrayList<Long>> processedMessageIdsSet = new HashMap<Long, ArrayList<Long>>();
     private HashMap<Long, Integer> nextSeqNoInSession = new HashMap<Long, Integer>();
@@ -728,7 +721,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 request.initRequest = true;
                 TLRPC.initConnection invoke = new TLRPC.initConnection();
                 invoke.query = object;
-                invoke.api_id = APP_ID;
+                invoke.api_id = BuildVars.APP_ID;
                 try {
                     invoke.lang_code = Locale.getDefault().getCountry();
                     invoke.device_model = Build.MANUFACTURER + Build.MODEL;
@@ -1637,7 +1630,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             NetworkMessage networkMessage = messages.get(0);
             TLRPC.TL_protoMessage message = networkMessage.protoMessage;
 
-            if (DEBUG_VERSION) {
+            if (BuildVars.DEBUG_VERSION) {
                 if (message.body instanceof TLRPC.invokeWithLayer12) {
                     FileLog.d("tmessages", sessionId + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + ((TLRPC.invokeWithLayer12)message.body).query);
                 } else if (message.body instanceof TLRPC.initConnection) {
@@ -1677,7 +1670,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             for (NetworkMessage networkMessage : messages) {
                 TLRPC.TL_protoMessage message = networkMessage.protoMessage;
                 containerMessages.add(message);
-                if (DEBUG_VERSION) {
+                if (BuildVars.DEBUG_VERSION) {
                     if (message.body instanceof TLRPC.invokeWithLayer12) {
                         FileLog.d("tmessages", sessionId + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + ((TLRPC.invokeWithLayer12)message.body).query);
                     } else if (message.body instanceof TLRPC.initConnection) {
@@ -2445,7 +2438,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             } else {
                 connectionState = 1;
             }
-            if (DEBUG_VERSION) {
+            if (BuildVars.DEBUG_VERSION) {
                 try {
                     ConnectivityManager cm = (ConnectivityManager)ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
                     NetworkInfo[] networkInfos = cm.getAllNetworkInfo();

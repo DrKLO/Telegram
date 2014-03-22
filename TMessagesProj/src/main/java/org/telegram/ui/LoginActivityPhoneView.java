@@ -26,6 +26,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
@@ -328,8 +329,8 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
         TLRPC.TL_auth_sendCode req = new TLRPC.TL_auth_sendCode();
         String phone = PhoneFormat.stripExceptNumbers("" + codeField.getText() + phoneField.getText());
         ConnectionsManager.getInstance().applyCountryPortNumber(phone);
-        req.api_hash = ConnectionsManager.APP_HASH;
-        req.api_id = ConnectionsManager.APP_ID;
+        req.api_hash = BuildVars.APP_HASH;
+        req.api_id = BuildVars.APP_ID;
         req.sms_type = 0;
         req.phone_number = phone;
         req.lang_code = Locale.getDefault().getCountry();
