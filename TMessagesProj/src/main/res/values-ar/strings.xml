@@ -249,6 +249,7 @@
     <string name="AutomaticPhotoDownloadPrivateChats">المحادثات</string>
     <string name="Events">الأحداث</string>
     <string name="ContactJoined">اشترك صديق في تيليجرام</string>
+    <string name="Pebble">PEBBLE</string>
 
     <!--media view-->
     <string name="NoMedia">لا توجد وسائط بعد</string>

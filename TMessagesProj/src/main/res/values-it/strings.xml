@@ -106,6 +106,7 @@
     <string name="YouLeft">Hai abbandonato il gruppo</string>
     <string name="DeleteThisGroup">Elimina questo gruppo</string>
     <string name="SlideToCancel">TRASCINA PER ANNULLARE</string>
+    <string name="SaveToDownloads">Salva in download</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Chat segreta richiesta</string>
@@ -243,10 +244,12 @@
     <string name="SendByEnter">Usa invio per inoltrare il messaggio</string>
     <string name="TerminateAllSessions">Termina tutte le sessioni</string>
     <string name="AutomaticPhotoDownload">SCARICA AUTOMATICAMENTE LE FOTO</string>
+    <string name="AutomaticAudioDownload">SCARICAMENTO AUDIO AUTOMATICO</string>
     <string name="AutomaticPhotoDownloadGroups">Chat di gruppo</string>
     <string name="AutomaticPhotoDownloadPrivateChats">Chat private</string>
     <string name="Events">EVENTI</string>
     <string name="ContactJoined">Un nuovo contatto utilizza Telegram</string>
+    <string name="Pebble">PEBBLE</string>
 
     <!--media view-->
     <string name="NoMedia">Nessun media condiviso</string>
@@ -331,6 +334,7 @@
     <string name="AddToTheGroup">Desideri aggiungere %1$s al gruppo?</string>
     <string name="ForwardMessagesTo">Desideri inoltrare il messaggio a %1$s?</string>
     <string name="DeleteChatQuestion">Desideri eliminare la chat?</string>
+
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Veloce</string>
