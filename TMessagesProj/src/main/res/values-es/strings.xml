@@ -249,6 +249,7 @@
     <string name="AutomaticPhotoDownloadPrivateChats">Chats</string>
     <string name="Events">EVENTOS</string>
     <string name="ContactJoined">Un contacto se unió a Telegram</string>
+    <string name="Pebble">PEBBLE</string>
 
     <!--media view-->
     <string name="NoMedia">No hay fotos ni vídeos compartidos aún</string>
