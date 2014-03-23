@@ -28,7 +28,14 @@ public class NativeLoader {
             0,          //mips
     };
 
-    public static void initNativeLibs(Context context) {
+    private static volatile boolean nativeLoaded = false;
+
+    public static synchronized void initNativeLibs(Context context) {
+        if (nativeLoaded) {
+            return;
+        }
+        nativeLoaded = true;
+
         if (Build.VERSION.SDK_INT >= 9) {
             try {
                 String folder = null;

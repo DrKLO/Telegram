@@ -62,6 +62,8 @@ public class MessagesStorage {
     }
 
     public void openDatabase() {
+        NativeLoader.initNativeLibs(ApplicationLoader.applicationContext);
+        
         cacheFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "cache4.db");
 
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("dbconfig", Context.MODE_PRIVATE);
