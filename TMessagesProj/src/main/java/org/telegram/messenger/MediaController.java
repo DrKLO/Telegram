@@ -75,6 +75,9 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     public final static int audioProgressDidChanged = 50001;
     public final static int audioDidReset = 50002;
     public final static int recordProgressChanged = 50003;
+    public final static int recordStarted = 50004;
+    public final static int recordStartError = 50005;
+    public final static int recordStopped = 50006;
 
     private HashMap<String, ArrayList<WeakReference<FileDownloadProgressListener>>> loadingFileObservers = new HashMap<String, ArrayList<WeakReference<FileDownloadProgressListener>>>();
     private HashMap<Integer, String> observersByTag = new HashMap<Integer, String>();
@@ -782,10 +785,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         return isPaused;
     }
 
-    public boolean startRecording(final long dialog_id) {
-        final Semaphore semaphore = new Semaphore(0);
-        final Boolean[] result = new Boolean[1];
-
+    public void startRecording(final long dialog_id) {
         try {
             Vibrator v = (Vibrator) ApplicationLoader.applicationContext.getSystemService(Context.VIBRATOR_SERVICE);
             v.vibrate(20);
@@ -797,8 +797,12 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             @Override
             public void run() {
                 if (audioRecorder != null) {
-                    result[0] = false;
-                    semaphore.release();
+                    Utilities.RunOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            NotificationCenter.getInstance().postNotificationName(recordStartError);
+                        }
+                    });
                     return;
                 }
 
@@ -813,8 +817,12 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
                 try {
                     if (startRecord(recordingAudioFile.getAbsolutePath()) == 0) {
-                        result[0] = false;
-                        semaphore.release();
+                        Utilities.RunOnUIThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                NotificationCenter.getInstance().postNotificationName(recordStartError);
+                            }
+                        });
                         return;
                     }
                     audioRecorder = new AudioRecord(MediaRecorder.AudioSource.MIC, 16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, recordBufferSize * 10);
@@ -870,22 +878,24 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                         }
                     }
 
-                    result[0] = false;
-                    semaphore.release();
+                    Utilities.RunOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            NotificationCenter.getInstance().postNotificationName(recordStartError);
+                        }
+                    });
                     return;
                 }
 
                 recordQueue.postRunnable(recordRunnable);
-                result[0] = true;
-                semaphore.release();
+                Utilities.RunOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        NotificationCenter.getInstance().postNotificationName(recordStarted);
+                    }
+                });
             }
-        }, 120);
-        try {
-            semaphore.acquire();
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
-        return result[0];
+        });
     }
 
     private void stopRecordingInternal(final boolean send) {
@@ -963,6 +973,12 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
+                Utilities.RunOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        NotificationCenter.getInstance().postNotificationName(recordStopped);
+                    }
+                });
             }
         });
     }

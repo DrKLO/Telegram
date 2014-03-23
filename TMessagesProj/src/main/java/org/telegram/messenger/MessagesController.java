@@ -34,6 +34,8 @@ import android.support.v7.app.ActionBarActivity;
 import android.text.Html;
 import android.util.SparseArray;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.telegram.objects.MessageObject;
 import org.telegram.objects.PhotoObject;
 import org.telegram.ui.LaunchActivity;
@@ -4516,10 +4518,33 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             notification.flags |= Notification.FLAG_SHOW_LIGHTS;
             try {
                 mNotificationManager.notify(1, notification);
+                if (preferences.getBoolean("EnablePebbleNotifications", false)) {
+                    sendAlertToPebble(msg);
+                }
                 currentPushMessage = messageObject;
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
+        }
+    }
+
+    public void sendAlertToPebble(String message) {
+        try {
+            final Intent i = new Intent("com.getpebble.action.SEND_NOTIFICATION");
+
+            final HashMap<String, String> data = new HashMap<String, String>();
+            data.put("title", LocaleController.getString("AppName", R.string.AppName));
+            data.put("body", message);
+            final JSONObject jsonData = new JSONObject(data);
+            final String notificationData = new JSONArray().put(jsonData).toString();
+
+            i.putExtra("messageType", "PEBBLE_ALERT");
+            i.putExtra("sender", "MyAndroidApp");
+            i.putExtra("notificationData", notificationData);
+
+            ApplicationLoader.applicationContext.sendBroadcast(i);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
     }
 
