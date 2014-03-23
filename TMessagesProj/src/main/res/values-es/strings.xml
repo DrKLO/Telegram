@@ -5,6 +5,9 @@
 <resources>
     <string name="AppName">Telegram</string>
 
+    <string name="LanguangeName">Spanish</string>
+    <string name="LanguangeNameInEnglish">Spanish</string>
+
     <!--signin view-->
     <string name="YourPhone">Tu teléfono</string>
     <string name="StartText">Por favor, confirma tu código de país\ne introduce tu número.</string>
@@ -107,6 +110,7 @@
     <string name="DeleteThisGroup">Eliminar este grupo</string>
     <string name="SlideToCancel">DESLIZA PARA CANCELAR</string>
     <string name="SaveToDownloads">Guardar en descargas</string>
+    <string name="ApplyLocalizationFile">Apply localization file</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Chat secreto solicitado</string>
@@ -250,6 +254,7 @@
     <string name="Events">EVENTOS</string>
     <string name="ContactJoined">Un contacto se unió a Telegram</string>
     <string name="Pebble">PEBBLE</string>
+    <string name="Language">Language</string>
 
     <!--media view-->
     <string name="NoMedia">No hay fotos ni vídeos compartidos aún</string>
@@ -268,7 +273,7 @@
     <!--photo gallery view-->
     <string name="ShowAllMedia">Mostrar todas las fotos y vídeos</string>
     <string name="SaveToGallery">Guardar en galería</string>
-    <string name="Of">de</string>
+    <string name="Of">%1$d de %2$d</string>
     <string name="Gallery">Galería</string>
 
     <!--button titles-->
