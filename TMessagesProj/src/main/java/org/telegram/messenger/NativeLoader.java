@@ -33,10 +33,12 @@ public class NativeLoader {
             try {
                 String folder = null;
                 long libSize = 0;
+                long libSize2 = 0;
 
                 if (Build.CPU_ABI.equalsIgnoreCase("armeabi-v7a")) {
                     folder = "armeabi-v7a";
                     libSize = sizes[1];
+                    libSize2 = sizes[0];
                 } else if (Build.CPU_ABI.equalsIgnoreCase("armeabi")) {
                     folder = "armeabi";
                     libSize = sizes[0];
@@ -53,10 +55,14 @@ public class NativeLoader {
                 }
 
                 File destFile = new File(context.getApplicationInfo().nativeLibraryDir + "/libtmessages.so");
-                if (destFile.exists() && destFile.length() == libSize) {
+                if (destFile.exists() && (destFile.length() == libSize || libSize2 != 0 && destFile.length() == libSize2)) {
                     Log.d("tmessages", "Load normal lib");
-                    System.loadLibrary("tmessages");
-                    return;
+                    try {
+                        System.loadLibrary("tmessages");
+                        return;
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
 
                 File destLocalFile = new File(context.getFilesDir().getAbsolutePath() + "/libtmessages.so");
@@ -64,6 +70,7 @@ public class NativeLoader {
                     if (destLocalFile.length() == libSize) {
                         Log.d("tmessages", "Load local lib");
                         System.load(destLocalFile.getAbsolutePath());
+                        return;
                     } else {
                         destLocalFile.delete();
                     }

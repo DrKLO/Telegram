@@ -141,7 +141,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
                         }
-                    } else if (i == 17) {
+                    } else if (i == 19) {
                         if (reseting) {
                             return;
                         }
@@ -200,6 +200,13 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         boolean enabled = preferences.getBoolean("EnableContactJoined", true);
                         MessagesController.getInstance().enableJoined = !enabled;
                         editor.putBoolean("EnableContactJoined", !enabled);
+                        editor.commit();
+                        listView.invalidateViews();
+                    } else if (i == 17) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        boolean enabled = preferences.getBoolean("EnablePebbleNotifications", false);
+                        editor.putBoolean("EnablePebbleNotifications", !enabled);
                         editor.commit();
                         listView.invalidateViews();
                     }
@@ -334,15 +341,15 @@ public class SettingsNotificationsActivity extends BaseFragment {
         public boolean isEnabled(int i) {
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             boolean enabledAll = preferences.getBoolean("EnableAll", true);
-            if (i == 17 || i == 15) {
+            if (i == 19 || i == 15) {
                 return true;
             }
-            return !(i != 1 && !enabledAll && i != 13) && (i > 0 && i < 5 || i > 5 && i < 10 || i > 10 && i < 14);
+            return !(i != 1 && !enabledAll && i != 13) && (i > 0 && i < 5 || i > 5 && i < 10 || i > 10 && i < 14) || i == 17;
         }
 
         @Override
         public int getCount() {
-            return 18;
+            return 20;
         }
 
         @Override
@@ -378,6 +385,8 @@ public class SettingsNotificationsActivity extends BaseFragment {
                 } else if (i == 14) {
                     textView.setText(LocaleController.getString("Events", R.string.Events));
                 } else if (i == 16) {
+                    textView.setText(LocaleController.getString("Pebble", R.string.Pebble));
+                } else if (i == 18) {
                     textView.setText(LocaleController.getString("Reset", R.string.Reset));
                 }
             } if (type == 1) {
@@ -433,6 +442,10 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     enabled = preferences.getBoolean("EnableContactJoined", true);
                     textView.setText(LocaleController.getString("ContactJoined", R.string.ContactJoined));
                     divider.setVisibility(View.INVISIBLE);
+                } else if (i == 17) {
+                    enabled = preferences.getBoolean("EnablePebbleNotifications", false);
+                    textView.setText(LocaleController.getString("Alert", R.string.Alert));
+                    divider.setVisibility(View.INVISIBLE);
                 }
                 if (enabled) {
                     checkButton.setImageResource(R.drawable.btn_check_on);
@@ -480,12 +493,12 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     }
                     textView.setText(LocaleController.getString("Sound", R.string.Sound));
                     divider.setVisibility(View.INVISIBLE);
-                } else if (i == 17) {
+                } else if (i == 19) {
                     textView.setText(LocaleController.getString("ResetAllNotifications", R.string.ResetAllNotifications));
                     textViewDetail.setText(LocaleController.getString("UndoAllCustom", R.string.UndoAllCustom));
                     divider.setVisibility(View.INVISIBLE);
                 }
-                if (i != 17 && !enabledAll) {
+                if (i != 19 && !enabledAll) {
                     view.setEnabled(false);
                     if(android.os.Build.VERSION.SDK_INT >= 11) {
                         textView.setAlpha(0.3f);
@@ -507,9 +520,9 @@ public class SettingsNotificationsActivity extends BaseFragment {
 
         @Override
         public int getItemViewType(int i) {
-            if (i == 0 || i == 5 || i == 10 || i == 14 || i == 16) {
+            if (i == 0 || i == 5 || i == 10 || i == 14 || i == 16 || i == 18) {
                 return 0;
-            } else if (i > 0 && i < 4 || i > 5 && i < 9 || i > 10 && i < 14 || i == 15) {
+            } else if (i > 0 && i < 4 || i > 5 && i < 9 || i > 10 && i < 14 || i == 15 || i == 17) {
                 return 1;
             } else {
                 return 2;
