@@ -342,6 +342,8 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         NotificationCenter.getInstance().addObserver(this, MediaController.audioProgressDidChanged);
         NotificationCenter.getInstance().addObserver(this, MediaController.audioDidReset);
         NotificationCenter.getInstance().addObserver(this, MediaController.recordProgressChanged);
+        NotificationCenter.getInstance().addObserver(this, MediaController.recordStarted);
+        NotificationCenter.getInstance().addObserver(this, MediaController.recordStartError);
         NotificationCenter.getInstance().addObserver(this, 997);
 
         loading = true;
@@ -388,6 +390,8 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         NotificationCenter.getInstance().removeObserver(this, MediaController.audioProgressDidChanged);
         NotificationCenter.getInstance().removeObserver(this, MediaController.audioDidReset);
         NotificationCenter.getInstance().removeObserver(this, MediaController.recordProgressChanged);
+        NotificationCenter.getInstance().removeObserver(this, MediaController.recordStarted);
+        NotificationCenter.getInstance().removeObserver(this, MediaController.recordStartError);
         NotificationCenter.getInstance().removeObserver(this, 997);
         if (sizeNotifierRelativeLayout != null) {
             sizeNotifierRelativeLayout.delegate = null;
@@ -677,7 +681,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 public boolean onTouch(View view, MotionEvent motionEvent) {
                     if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
                         startedDraggingX = -1;
-                        recordingAudio = MediaController.getInstance().startRecording(dialog_id);
+                        MediaController.getInstance().startRecording(dialog_id);
                         updateAudioRecordIntefrace();
                     } else if (motionEvent.getAction() == MotionEvent.ACTION_UP || motionEvent.getAction() == MotionEvent.ACTION_CANCEL) {
                         startedDraggingX = -1;
@@ -2228,6 +2232,16 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             if (mActionMode != null) {
                 mActionMode.finish();
                 mActionMode = null;
+            }
+        } else if (id == MediaController.recordStartError) {
+            if (recordingAudio) {
+                recordingAudio = false;
+                updateAudioRecordIntefrace();
+            }
+        } else if (id == MediaController.recordStarted) {
+            if (!recordingAudio) {
+                recordingAudio = true;
+                updateAudioRecordIntefrace();
             }
         }
     }
