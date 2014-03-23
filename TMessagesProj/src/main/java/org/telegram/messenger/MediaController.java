@@ -77,6 +77,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     public final static int recordProgressChanged = 50003;
     public final static int recordStarted = 50004;
     public final static int recordStartError = 50005;
+    public final static int recordStopped = 50006;
 
     private HashMap<String, ArrayList<WeakReference<FileDownloadProgressListener>>> loadingFileObservers = new HashMap<String, ArrayList<WeakReference<FileDownloadProgressListener>>>();
     private HashMap<Integer, String> observersByTag = new HashMap<Integer, String>();
@@ -894,7 +895,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     }
                 });
             }
-        }, 100);
+        });
     }
 
     private void stopRecordingInternal(final boolean send) {
@@ -972,6 +973,12 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
+                Utilities.RunOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        NotificationCenter.getInstance().postNotificationName(recordStopped);
+                    }
+                });
             }
         });
     }
