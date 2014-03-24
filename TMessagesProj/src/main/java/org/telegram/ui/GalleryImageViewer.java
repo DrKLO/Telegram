@@ -374,9 +374,9 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                         Utilities.RunOnUIThread(new Runnable() {
                             @Override
                             public void run() {
-                                getSupportActionBar().setTitle(String.format("%d %s %d", pos, LocaleController.getString("Of", R.string.Of), totalCount));
+                                getSupportActionBar().setTitle(LocaleController.formatString("Of", R.string.Of, pos, totalCount));
                                 if (title != null) {
-                                    fakeTitleView.setText(String.format("%d %s %d", pos, LocaleController.getString("Of", R.string.Of), totalCount));
+                                    fakeTitleView.setText(LocaleController.formatString("Of", R.string.Of, pos, totalCount));
                                     fakeTitleView.measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.AT_MOST));
                                     title.setWidth(fakeTitleView.getMeasuredWidth() + Utilities.dp(8));
                                     title.setMaxWidth(fakeTitleView.getMeasuredWidth() + Utilities.dp(8));
@@ -866,9 +866,9 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                     Utilities.RunOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            getSupportActionBar().setTitle(String.format("%d %s %d", (totalCount - imagesArr.size()) + position + 1, LocaleController.getString("Of", R.string.Of), totalCount));
+                            getSupportActionBar().setTitle(LocaleController.formatString("Of", R.string.Of, (totalCount - imagesArr.size()) + position + 1, totalCount));
                             if (title != null) {
-                                fakeTitleView.setText(String.format("%d %s %d", (totalCount - imagesArr.size()) + position + 1, LocaleController.getString("Of", R.string.Of), totalCount));
+                                fakeTitleView.setText(LocaleController.formatString("Of", R.string.Of, (totalCount - imagesArr.size()) + position + 1, totalCount));
                                 fakeTitleView.measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.AT_MOST));
                                 title.setWidth(fakeTitleView.getMeasuredWidth() + Utilities.dp(8));
                                 title.setMaxWidth(fakeTitleView.getMeasuredWidth() + Utilities.dp(8));
@@ -885,9 +885,9 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                     Utilities.RunOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            getSupportActionBar().setTitle(String.format("%d %s %d", position + 1, LocaleController.getString("Of", R.string.Of), imagesArrLocations.size()));
+                            getSupportActionBar().setTitle(LocaleController.formatString("Of", R.string.Of, position + 1, imagesArrLocations.size()));
                             if (title != null) {
-                                fakeTitleView.setText(String.format("%d %s %d", position + 1, LocaleController.getString("Of", R.string.Of), imagesArrLocations.size()));
+                                fakeTitleView.setText(LocaleController.formatString("Of", R.string.Of, position + 1, imagesArrLocations.size()));
                                 fakeTitleView.measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.AT_MOST));
                                 title.setWidth(fakeTitleView.getMeasuredWidth() + Utilities.dp(8));
                                 title.setMaxWidth(fakeTitleView.getMeasuredWidth() + Utilities.dp(8));
