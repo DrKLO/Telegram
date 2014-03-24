@@ -12,7 +12,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
-import android.text.Html;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -55,7 +54,6 @@ public class ChatOrUserCell extends BaseCell {
     private TLRPC.FileLocation lastAvatar = null;
 
     public boolean usePadding = true;
-    public boolean useBoldFont = false;
     public boolean useSeparator = false;
     public float drawAlpha = 1;
 
@@ -294,39 +292,30 @@ public class ChatOrUserCell extends BaseCell {
             if (currentName != null) {
                 nameString = currentName;
             } else {
-                if (useBoldFont) {
-                    if (user != null) {
-                        if (user.first_name.length() != 0 && user.last_name.length() != 0) {
-                            nameString = Html.fromHtml(user.first_name + " <b>" + user.last_name + "</b>");
-                        } else if (user.first_name.length() != 0) {
-                            nameString = Html.fromHtml("<b>" + user.first_name + "</b>");
-                        } else {
-                            nameString = Html.fromHtml("<b>" + user.last_name + "</b>");
-                        }
-                    }
-                } else {
-                    String nameString2 = "";
-                    if (chat != null) {
-                        nameString2 = chat.title;
-                    } else if (user != null) {
-                        if (user.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(user.id) == null) {
-                            if (ContactsController.getInstance().contactsDict.size() == 0 && ContactsController.getInstance().loadingContacts) {
-                                nameString2 = Utilities.formatName(user.first_name, user.last_name);
-                            } else {
-                                if (user.phone != null && user.phone.length() != 0) {
-                                    nameString2 = PhoneFormat.getInstance().format("+" + user.phone);
-                                } else {
-                                    nameString2 = Utilities.formatName(user.first_name, user.last_name);
-                                }
-                            }
-                        } else {
+                String nameString2 = "";
+                if (chat != null) {
+                    nameString2 = chat.title;
+                } else if (user != null) {
+                    if (user.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(user.id) == null) {
+                        if (ContactsController.getInstance().contactsDict.size() == 0 && ContactsController.getInstance().loadingContacts) {
                             nameString2 = Utilities.formatName(user.first_name, user.last_name);
+                        } else {
+                            if (user.phone != null && user.phone.length() != 0) {
+                                nameString2 = PhoneFormat.getInstance().format("+" + user.phone);
+                            } else {
+                                nameString2 = Utilities.formatName(user.first_name, user.last_name);
+                            }
                         }
+                    } else {
+                        nameString2 = Utilities.formatName(user.first_name, user.last_name);
                     }
-                    nameString = nameString2.replace("\n", " ");
                 }
+                nameString = nameString2.replace("\n", " ");
             }
             if (nameString.length() == 0) {
+                if (user.phone != null && user.phone.length() != 0) {
+                    nameString = PhoneFormat.getInstance().format("+" + user.phone);
+                }
                 nameString = LocaleController.getString("HiddenName", R.string.HiddenName);
             }
             if (encryptedChat != null) {

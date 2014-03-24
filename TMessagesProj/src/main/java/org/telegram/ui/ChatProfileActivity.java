@@ -684,7 +684,6 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
                 if (view == null) {
                     view = new ChatOrUserCell(mContext);
-                    ((ChatOrUserCell)view).useBoldFont = true;
                     ((ChatOrUserCell)view).usePadding = false;
                     ((ChatOrUserCell)view).useSeparator = true;
                 }

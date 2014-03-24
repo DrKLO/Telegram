@@ -86,7 +86,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
 
         if (!UserConfig.clientActivated) {
             Intent intent = getIntent();
-            if (intent != null && intent.getAction() != null && Intent.ACTION_SEND.equals(intent.getAction()) || intent.getAction().equals(Intent.ACTION_SEND_MULTIPLE)) {
+            if (intent != null && intent.getAction() != null && (Intent.ACTION_SEND.equals(intent.getAction()) || intent.getAction().equals(Intent.ACTION_SEND_MULTIPLE))) {
                 finish();
                 return;
             }

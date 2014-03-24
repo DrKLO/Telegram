@@ -9,7 +9,6 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
-import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -114,7 +113,6 @@ public class ContactsActivityAdapter extends SectionedBaseAdapter {
         if (user != null) {
             if (convertView == null) {
                 convertView = new ChatOrUserCell(mContext);
-                ((ChatOrUserCell)convertView).useBoldFont = true;
                 ((ChatOrUserCell)convertView).usePadding = false;
             }
 
@@ -153,11 +151,11 @@ public class ContactsActivityAdapter extends SectionedBaseAdapter {
             }
         }
         if (contact.first_name != null && contact.last_name != null) {
-            textView.setText(Html.fromHtml(contact.first_name + " <b>" + contact.last_name + "</b>"));
+            textView.setText(contact.first_name + " " + contact.last_name);
         } else if (contact.first_name != null && contact.last_name == null) {
-            textView.setText(Html.fromHtml("<b>" + contact.first_name + "</b>"));
+            textView.setText(contact.first_name);
         } else {
-            textView.setText(Html.fromHtml("<b>" + contact.last_name + "</b>"));
+            textView.setText(contact.last_name);
         }
         return convertView;
     }

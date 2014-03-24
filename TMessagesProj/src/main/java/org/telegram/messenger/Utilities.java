@@ -941,7 +941,7 @@ public class Utilities {
         } else if (result.length() != 0 && lastName.length() != 0) {
             result += " " + lastName;
         }
-        return result;
+        return result.trim();
     }
 
     public static String formatFileSize(long size) {

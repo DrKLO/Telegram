@@ -148,6 +148,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         actionBar.setDisplayUseLogoEnabled(false);
         actionBar.setDisplayShowCustomEnabled(false);
         actionBar.setCustomView(null);
+        actionBar.setSubtitle(null);
         actionBar.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
 
         TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
@@ -346,7 +347,6 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
             if (convertView == null) {
                 convertView = new ChatOrUserCell(mContext);
-                ((ChatOrUserCell)convertView).useBoldFont = true;
                 ((ChatOrUserCell)convertView).usePadding = false;
             }
 

@@ -386,7 +386,6 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
             if (type == 0) {
                 if (view == null) {
                     view = new ChatOrUserCell(mContext);
-                    ((ChatOrUserCell)view).useBoldFont = true;
                     ((ChatOrUserCell)view).usePadding = false;
                     ((ChatOrUserCell)view).useSeparator = true;
                 }

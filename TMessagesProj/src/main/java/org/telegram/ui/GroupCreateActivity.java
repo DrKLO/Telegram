@@ -18,7 +18,6 @@ import android.os.Bundle;
 import android.support.v4.internal.view.SupportMenuItem;
 import android.support.v7.app.ActionBar;
 import android.text.Editable;
-import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -35,6 +34,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
@@ -60,9 +60,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private SectionedBaseAdapter listViewAdapter;
     private PinnedHeaderListView listView;
     private TextView epmtyTextView;
-    private TextView doneTextView;
     private EditText userSelectEditText;
-    private TextView countTextView;
     private boolean ignoreChange = false;
 
     private HashMap<Integer, Emoji.XImageSpan> selectedContacts =  new HashMap<Integer, Emoji.XImageSpan>();
@@ -117,7 +115,6 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             epmtyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
             userSelectEditText = (EditText)fragmentView.findViewById(R.id.bubble_input_text);
             userSelectEditText.setHint(LocaleController.getString("SendMessageTo", R.string.SendMessageTo));
-            countTextView = (TextView)fragmentView.findViewById(R.id.bubble_counter_text);
             if (Build.VERSION.SDK_INT >= 11) {
                 userSelectEditText.setTextIsSelectable(false);
             }
@@ -159,12 +156,10 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                         selectedContacts.remove(sp.uid);
                                     }
                                 }
-                                if (selectedContacts.isEmpty()) {
-                                    doneTextView.setText(LocaleController.getString("Done", R.string.Done));
-                                } else {
-                                    doneTextView.setText(LocaleController.getString("Done", R.string.Done) + " (" + selectedContacts.size() + ")");
+                                if (parentActivity != null) {
+                                    ActionBar actionBar = parentActivity.getSupportActionBar();
+                                    actionBar.setSubtitle(String.format("%d/200 %s", selectedContacts.size(), LocaleController.getString("Members", R.string.Members)));
                                 }
-                                countTextView.setText(selectedContacts.size() + "/200");
                                 listView.invalidateViews();
                             } else {
                                 search = true;
@@ -230,12 +225,10 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         span.uid = user.id;
                         ignoreChange = false;
                     }
-                    if (selectedContacts.isEmpty()) {
-                        doneTextView.setText(LocaleController.getString("Done", R.string.Done));
-                    } else {
-                        doneTextView.setText(LocaleController.getString("Done", R.string.Done) + " (" + selectedContacts.size() + ")");
+                    if (parentActivity != null) {
+                        ActionBar actionBar = parentActivity.getSupportActionBar();
+                        actionBar.setSubtitle(String.format("%d/200 %s", selectedContacts.size(), LocaleController.getString("Members", R.string.Members)));
                     }
-                    countTextView.setText(selectedContacts.size() + "/200");
                     if (searching || searchWas) {
                         searching = false;
                         searchWas = false;
@@ -279,6 +272,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         actionBar.setDisplayShowCustomEnabled(false);
         actionBar.setCustomView(null);
         actionBar.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
+        actionBar.setSubtitle(String.format("%d/200 %s", selectedContacts.size(), LocaleController.getString("Members", R.string.Members)));
 
         TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
         if (title == null) {
@@ -305,7 +299,11 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         LayoutInflater lf = (LayoutInflater)parentActivity.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
         View textView = lf.inflate(R.layout.group_create_bubble, null);
         TextView text = (TextView)textView.findViewById(R.id.bubble_text_view);
-        text.setText(Utilities.formatName(user.first_name, user.last_name));
+        String name = Utilities.formatName(user.first_name, user.last_name);
+        if (name.length() == 0 && user.phone != null && user.phone.length() != 0) {
+            name = PhoneFormat.getInstance().format("+" + user.phone);
+        }
+        text.setText(name + ", ");
 
         int spec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
         textView.measure(spec, spec);
@@ -425,8 +423,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.group_create_menu, menu);
         SupportMenuItem doneItem = (SupportMenuItem)menu.findItem(R.id.done_menu_item);
-        doneTextView = (TextView)doneItem.getActionView().findViewById(R.id.done_button);
-        doneTextView.setText(LocaleController.getString("Done", R.string.Done));
+        TextView doneTextView = (TextView)doneItem.getActionView().findViewById(R.id.done_button);
+        doneTextView.setText(LocaleController.getString("Next", R.string.Next));
         doneTextView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -525,9 +523,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
             ImageView checkButton = (ImageView)convertView.findViewById(R.id.settings_row_check_button);
             if (selectedContacts.containsKey(user.id)) {
-                checkButton.setImageResource(R.drawable.btn_check_on_old);
+                checkButton.setImageResource(R.drawable.btn_check_on_holo_light);
             } else {
-                checkButton.setImageResource(R.drawable.btn_check_off_old);
+                checkButton.setImageResource(R.drawable.btn_check_off_holo_light);
             }
 
             View divider = convertView.findViewById(R.id.settings_row_divider);
@@ -540,13 +538,15 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             if (searchWas && searching) {
                 holder.nameTextView.setText(searchResultNames.get(position));
             } else {
-                if (user.first_name.length() != 0 && user.last_name.length() != 0) {
-                    holder.nameTextView.setText(Html.fromHtml(user.first_name + " <b>" + user.last_name + "</b>"));
-                } else if (user.first_name.length() != 0) {
-                    holder.nameTextView.setText(Html.fromHtml("<b>" + user.first_name + "</b>"));
-                } else {
-                    holder.nameTextView.setText(Html.fromHtml("<b>" + user.last_name + "</b>"));
+                String name = Utilities.formatName(user.first_name, user.last_name);
+                if (name.length() == 0) {
+                    if (user.phone != null && user.phone.length() != 0) {
+                        name = PhoneFormat.getInstance().format("+" + user.phone);
+                    } else {
+                        name = LocaleController.getString("HiddenName", R.string.HiddenName);
+                    }
                 }
+                holder.nameTextView.setText(name);
             }
 
             TLRPC.FileLocation photo = null;

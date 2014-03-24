@@ -60,6 +60,7 @@ public class TcpConnection extends PyroClientAdapter {
     private boolean firstPacket;
 
     private Timer reconnectTimer;
+    private boolean tryWithNoNetworkAnyway = false;
 
     public TcpConnection(int did) {
         if (selector == null) {
@@ -90,9 +91,13 @@ public class TcpConnection extends PyroClientAdapter {
 
                 connectionState = TcpConnectionState.TcpConnectionStageConnecting;
                 try {
-                    if (!ConnectionsManager.isNetworkOnline()) {
-                        handleConnectionError(null);
-                        return;
+                    if(android.os.Build.VERSION.SDK_INT < 11) {
+                        if (!ConnectionsManager.isNetworkOnline() && !tryWithNoNetworkAnyway) {
+                            handleConnectionError(null);
+                            tryWithNoNetworkAnyway = true;
+                            return;
+                        }
+                        tryWithNoNetworkAnyway = false;
                     }
                     try {
                         synchronized (timerSync) {
