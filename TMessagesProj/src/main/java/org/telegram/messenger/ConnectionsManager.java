@@ -53,8 +53,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     public int currentDatacenterId;
     public int movingToDatacenterId;
     private long lastOutgoingMessageId = 0;
-    private int useDifferentBackend = 0;
-    private final int SESSION_VERSION = 2;
+    private int isTestBackend = 0;
     public int timeDifference = 0;
     public int currentPingTime;
     private int lastDestroySessionRequestTime;
@@ -228,7 +227,30 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         }
     }
 
-    void loadSession() {
+    public void switchBackend() {
+        Utilities.stageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                if (isTestBackend == 0) {
+                    isTestBackend = 1;
+                } else {
+                    isTestBackend = 0;
+                }
+                datacenters.clear();
+                fillDatacenters();
+                saveSession();
+                Utilities.stageQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        UserConfig.clearConfig();
+                        System.exit(0);
+                    }
+                });
+            }
+        });
+    }
+
+    private void loadSession() {
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -236,68 +258,61 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 if (configFile.exists()) {
                     try {
                         SerializedData data = new SerializedData(configFile);
-                        int datacenterSetId = data.readInt32();
+                        isTestBackend = data.readInt32();
                         int version = data.readInt32();
-
-                        if (datacenterSetId == useDifferentBackend && version == SESSION_VERSION) {
-                            sessionsToDestroy.clear();
-                            int count = data.readInt32();
-                            for (int a = 0; a < count; a++) {
-                                sessionsToDestroy.add(data.readInt64());
-                            }
-                            timeDifference = data.readInt32();
-                            count = data.readInt32();
-                            for (int a = 0; a < count; a++) {
-                                Datacenter datacenter = new Datacenter(data, 0);
-                                datacenters.put(datacenter.datacenterId, datacenter);
-                            }
-                            currentDatacenterId = data.readInt32();
-                        } else {
-                            UserConfig.clearConfig();
+                        sessionsToDestroy.clear();
+                        int count = data.readInt32();
+                        for (int a = 0; a < count; a++) {
+                            sessionsToDestroy.add(data.readInt64());
                         }
+                        timeDifference = data.readInt32();
+                        count = data.readInt32();
+                        for (int a = 0; a < count; a++) {
+                            Datacenter datacenter = new Datacenter(data, 0);
+                            datacenters.put(datacenter.datacenterId, datacenter);
+                        }
+                        currentDatacenterId = data.readInt32();
                     } catch (Exception e) {
                         UserConfig.clearConfig();
                     }
                 } else {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("dataconfig", Context.MODE_PRIVATE);
-                    int datacenterSetId = preferences.getInt("datacenterSetId", 0);
-                    if (datacenterSetId == useDifferentBackend) {
-                        currentDatacenterId = preferences.getInt("currentDatacenterId", 0);
-                        timeDifference = preferences.getInt("timeDifference", 0);
-                        lastDcUpdateTime = preferences.getInt("lastDcUpdateTime", 0);
-                        try {
-                            sessionsToDestroy.clear();
-                            String sessionsString = preferences.getString("sessionsToDestroy", null);
-                            if (sessionsString != null) {
-                                byte[] sessionsBytes = Base64.decode(sessionsString, Base64.DEFAULT);
-                                if (sessionsBytes != null) {
-                                    SerializedData data = new SerializedData(sessionsBytes);
-                                    int count = data.readInt32();
-                                    for (int a = 0; a < count; a++) {
-                                        sessionsToDestroy.add(data.readInt64());
-                                    }
+                    isTestBackend = preferences.getInt("datacenterSetId", 0);
+                    currentDatacenterId = preferences.getInt("currentDatacenterId", 0);
+                    timeDifference = preferences.getInt("timeDifference", 0);
+                    lastDcUpdateTime = preferences.getInt("lastDcUpdateTime", 0);
+                    try {
+                        sessionsToDestroy.clear();
+                        String sessionsString = preferences.getString("sessionsToDestroy", null);
+                        if (sessionsString != null) {
+                            byte[] sessionsBytes = Base64.decode(sessionsString, Base64.DEFAULT);
+                            if (sessionsBytes != null) {
+                                SerializedData data = new SerializedData(sessionsBytes);
+                                int count = data.readInt32();
+                                for (int a = 0; a < count; a++) {
+                                    sessionsToDestroy.add(data.readInt64());
                                 }
                             }
-                        } catch (Exception e) {
-                            FileLog.e("tmessages", e);
                         }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
 
-                        try {
-                            String datacentersString = preferences.getString("datacenters", null);
-                            if (datacentersString != null) {
-                                byte[] datacentersBytes = Base64.decode(datacentersString, Base64.DEFAULT);
-                                if (datacentersBytes != null) {
-                                    SerializedData data = new SerializedData(datacentersBytes);
-                                    int count = data.readInt32();
-                                    for (int a = 0; a < count; a++) {
-                                        Datacenter datacenter = new Datacenter(data, 1);
-                                        datacenters.put(datacenter.datacenterId, datacenter);
-                                    }
+                    try {
+                        String datacentersString = preferences.getString("datacenters", null);
+                        if (datacentersString != null) {
+                            byte[] datacentersBytes = Base64.decode(datacentersString, Base64.DEFAULT);
+                            if (datacentersBytes != null) {
+                                SerializedData data = new SerializedData(datacentersBytes);
+                                int count = data.readInt32();
+                                for (int a = 0; a < count; a++) {
+                                    Datacenter datacenter = new Datacenter(data, 1);
+                                    datacenters.put(datacenter.datacenterId, datacenter);
                                 }
                             }
-                        } catch (Exception e) {
-                            FileLog.e("tmessages", e);
                         }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
                     }
                 }
 
@@ -310,69 +325,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     }
                 }
 
-                if (datacenters.size() == 0) {
-                    if (useDifferentBackend == 0) {
-                        Datacenter datacenter = new Datacenter();
-                        datacenter.datacenterId = 1;
-                        datacenter.addAddressAndPort("173.240.5.1", 443);
-                        datacenters.put(datacenter.datacenterId, datacenter);
-
-                        datacenter = new Datacenter();
-                        datacenter.datacenterId = 2;
-                        datacenter.addAddressAndPort("109.239.131.193", 443);
-                        datacenters.put(datacenter.datacenterId, datacenter);
-
-                        datacenter = new Datacenter();
-                        datacenter.datacenterId = 3;
-                        datacenter.addAddressAndPort("174.140.142.6", 443);
-                        datacenters.put(datacenter.datacenterId, datacenter);
-
-                        datacenter = new Datacenter();
-                        datacenter.datacenterId = 4;
-                        datacenter.addAddressAndPort("31.210.235.12", 443);
-                        datacenters.put(datacenter.datacenterId, datacenter);
-
-                        datacenter = new Datacenter();
-                        datacenter.datacenterId = 5;
-                        datacenter.addAddressAndPort("116.51.22.2", 443);
-                        datacenters.put(datacenter.datacenterId, datacenter);
-                    } else {
-                        Datacenter datacenter = new Datacenter();
-                        datacenter.datacenterId = 1;
-                        datacenter.addAddressAndPort("173.240.5.253", 443);
-                        datacenters.put(datacenter.datacenterId, datacenter);
-
-                        datacenter = new Datacenter();
-                        datacenter.datacenterId = 2;
-                        datacenter.addAddressAndPort("109.239.131.195", 443);
-                        datacenters.put(datacenter.datacenterId, datacenter);
-
-                        datacenter = new Datacenter();
-                        datacenter.datacenterId = 3;
-                        datacenter.addAddressAndPort("174.140.142.5", 443);
-                        datacenters.put(datacenter.datacenterId, datacenter);
-                    }
-                } else if (datacenters.size() == 1) {
-                    Datacenter datacenter = new Datacenter();
-                    datacenter.datacenterId = 2;
-                    datacenter.addAddressAndPort("109.239.131.193", 443);
-                    datacenters.put(datacenter.datacenterId, datacenter);
-
-                    datacenter = new Datacenter();
-                    datacenter.datacenterId = 3;
-                    datacenter.addAddressAndPort("174.140.142.6", 443);
-                    datacenters.put(datacenter.datacenterId, datacenter);
-
-                    datacenter = new Datacenter();
-                    datacenter.datacenterId = 4;
-                    datacenter.addAddressAndPort("31.210.235.12", 443);
-                    datacenters.put(datacenter.datacenterId, datacenter);
-
-                    datacenter = new Datacenter();
-                    datacenter.datacenterId = 5;
-                    datacenter.addAddressAndPort("116.51.22.2", 443);
-                    datacenters.put(datacenter.datacenterId, datacenter);
-                }
+                fillDatacenters();
 
                 for (Datacenter datacenter : datacenters.values()) {
                     datacenter.authSessionId = getNewSessionId();
@@ -387,14 +340,80 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         });
     }
 
-    void saveSession() {
+    private void fillDatacenters() {
+        if (datacenters.size() == 0) {
+            if (isTestBackend == 0) {
+                Datacenter datacenter = new Datacenter();
+                datacenter.datacenterId = 1;
+                datacenter.addAddressAndPort("173.240.5.1", 443);
+                datacenters.put(datacenter.datacenterId, datacenter);
+
+                datacenter = new Datacenter();
+                datacenter.datacenterId = 2;
+                datacenter.addAddressAndPort("109.239.131.193", 443);
+                datacenters.put(datacenter.datacenterId, datacenter);
+
+                datacenter = new Datacenter();
+                datacenter.datacenterId = 3;
+                datacenter.addAddressAndPort("174.140.142.6", 443);
+                datacenters.put(datacenter.datacenterId, datacenter);
+
+                datacenter = new Datacenter();
+                datacenter.datacenterId = 4;
+                datacenter.addAddressAndPort("31.210.235.12", 443);
+                datacenters.put(datacenter.datacenterId, datacenter);
+
+                datacenter = new Datacenter();
+                datacenter.datacenterId = 5;
+                datacenter.addAddressAndPort("116.51.22.2", 443);
+                datacenters.put(datacenter.datacenterId, datacenter);
+            } else {
+                Datacenter datacenter = new Datacenter();
+                datacenter.datacenterId = 1;
+                datacenter.addAddressAndPort("173.240.5.253", 443);
+                datacenters.put(datacenter.datacenterId, datacenter);
+
+                datacenter = new Datacenter();
+                datacenter.datacenterId = 2;
+                datacenter.addAddressAndPort("109.239.131.195", 443);
+                datacenters.put(datacenter.datacenterId, datacenter);
+
+                datacenter = new Datacenter();
+                datacenter.datacenterId = 3;
+                datacenter.addAddressAndPort("174.140.142.5", 443);
+                datacenters.put(datacenter.datacenterId, datacenter);
+            }
+        } else if (datacenters.size() == 1) {
+            Datacenter datacenter = new Datacenter();
+            datacenter.datacenterId = 2;
+            datacenter.addAddressAndPort("109.239.131.193", 443);
+            datacenters.put(datacenter.datacenterId, datacenter);
+
+            datacenter = new Datacenter();
+            datacenter.datacenterId = 3;
+            datacenter.addAddressAndPort("174.140.142.6", 443);
+            datacenters.put(datacenter.datacenterId, datacenter);
+
+            datacenter = new Datacenter();
+            datacenter.datacenterId = 4;
+            datacenter.addAddressAndPort("31.210.235.12", 443);
+            datacenters.put(datacenter.datacenterId, datacenter);
+
+            datacenter = new Datacenter();
+            datacenter.datacenterId = 5;
+            datacenter.addAddressAndPort("116.51.22.2", 443);
+            datacenters.put(datacenter.datacenterId, datacenter);
+        }
+    }
+
+    private void saveSession() {
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
                 try {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("dataconfig", Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
-                    editor.putInt("datacenterSetId", useDifferentBackend);
+                    editor.putInt("datacenterSetId", isTestBackend);
                     Datacenter currentDatacenter = datacenterWithId(currentDatacenterId);
                     if (currentDatacenter != null) {
                         editor.putInt("currentDatacenterId", currentDatacenterId);

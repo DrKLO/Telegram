@@ -27,15 +27,15 @@
             android:id="@+id/chat_photo_image"/>
 
         <org.telegram.ui.Views.FrameLayoutFixed
-            android:layout_height="40dp"
-            android:layout_width="40dp"
+            android:layout_height="44dp"
+            android:layout_width="44dp"
             android:id="@+id/chat_view_action_layout"
             android:layout_gravity="center"
             android:visibility="visible">
 
             <ImageView
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:scaleType="centerInside"
                 android:id="@+id/chat_view_action_cancel_button"
                 android:src="@drawable/photo_download_states"
