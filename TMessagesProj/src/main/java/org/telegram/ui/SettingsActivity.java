@@ -77,6 +77,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int logoutRow;
     private int sendLogsRow;
     private int clearLogsRow;
+    private int switchBackendButtonRow;
     private int rowCount;
     private int messagesSectionRow;
     private int sendByEnterRow;
@@ -175,6 +176,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         if (BuildVars.DEBUG_VERSION) {
             sendLogsRow = rowCount++;
             clearLogsRow = rowCount++;
+            switchBackendButtonRow = rowCount++;
         }
         askQuestionRow = rowCount++;
         logoutRow = rowCount++;
@@ -408,6 +410,18 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         }
                     } else if (i == languageRow) {
                         ((LaunchActivity)parentActivity).presentFragment(new LanguageSelectActivity(), "settings_wallpapers", false);
+                    } else if (i == switchBackendButtonRow) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                        builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
+                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                ConnectionsManager.getInstance().switchBackend();
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        builder.show().setCanceledOnTouchOutside(true);
                     }
 //                else if (i == 6) {
 //                    UserConfig.saveIncomingPhotos = !UserConfig.saveIncomingPhotos;
@@ -542,7 +556,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         public boolean isEnabled(int i) {
             return i == textSizeRow || i == enableAnimationsRow || i == blockedRow || i == notificationRow || i == backgroundRow ||
                     i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == terminateSessionsRow || i == photoDownloadPrivateRow ||
-                    i == photoDownloadChatRow || i == clearLogsRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow || i == languageRow;
+                    i == photoDownloadChatRow || i == clearLogsRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow || i == languageRow ||
+                    i == switchBackendButtonRow;
         }
 
         @Override
@@ -748,6 +763,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 } else if (i == terminateSessionsRow) {
                     textView.setText(LocaleController.getString("TerminateAllSessions", R.string.TerminateAllSessions));
                     divider.setVisibility(View.INVISIBLE);
+                } else if (i == switchBackendButtonRow) {
+                    textView.setText("Switch Backend");
+                    divider.setVisibility(View.VISIBLE);
                 }
             } else if (type == 3) {
                 if (view == null) {
@@ -883,7 +901,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 5;
             } else if (i == enableAnimationsRow || i == sendByEnterRow || i == photoDownloadChatRow || i == photoDownloadPrivateRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow) {
                 return 3;
-            } else if (i == numberRow || i == notificationRow || i == blockedRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == terminateSessionsRow || i == clearLogsRow) {
+            } else if (i == numberRow || i == notificationRow || i == blockedRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == terminateSessionsRow || i == clearLogsRow || i == switchBackendButtonRow) {
                 return 2;
             } else if (i == logoutRow) {
                 return 4;

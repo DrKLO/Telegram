@@ -22,7 +22,6 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
-import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -296,27 +295,16 @@ public class ChatOrUserCell extends BaseCell {
                 if (chat != null) {
                     nameString2 = chat.title;
                 } else if (user != null) {
-                    if (user.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(user.id) == null) {
-                        if (ContactsController.getInstance().contactsDict.size() == 0 && ContactsController.getInstance().loadingContacts) {
-                            nameString2 = Utilities.formatName(user.first_name, user.last_name);
-                        } else {
-                            if (user.phone != null && user.phone.length() != 0) {
-                                nameString2 = PhoneFormat.getInstance().format("+" + user.phone);
-                            } else {
-                                nameString2 = Utilities.formatName(user.first_name, user.last_name);
-                            }
-                        }
-                    } else {
-                        nameString2 = Utilities.formatName(user.first_name, user.last_name);
-                    }
+                    nameString2 = Utilities.formatName(user.first_name, user.last_name);
                 }
                 nameString = nameString2.replace("\n", " ");
             }
             if (nameString.length() == 0) {
                 if (user.phone != null && user.phone.length() != 0) {
                     nameString = PhoneFormat.getInstance().format("+" + user.phone);
+                } else {
+                    nameString = LocaleController.getString("HiddenName", R.string.HiddenName);
                 }
-                nameString = LocaleController.getString("HiddenName", R.string.HiddenName);
             }
             if (encryptedChat != null) {
                 currentNamePaint = nameEncryptedPaint;

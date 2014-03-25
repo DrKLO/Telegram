@@ -263,11 +263,8 @@ public class LanguageSelectActivity extends BaseFragment {
                 searching = false;
                 searchWas = false;
                 if (listView != null) {
-                    listView.setEmptyView(emptyTextView);
                     emptyTextView.setVisibility(View.GONE);
-                }
-                if (listAdapter != null) {
-                    listAdapter.notifyDataSetChanged();
+                    listView.setAdapter(listAdapter);
                 }
                 ((LaunchActivity)parentActivity).fixBackButton();
                 return true;
