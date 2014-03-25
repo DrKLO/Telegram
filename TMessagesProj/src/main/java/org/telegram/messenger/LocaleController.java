@@ -147,7 +147,7 @@ public class LocaleController {
     }
 
     public void applyLanguage(LocaleInfo localeInfo, boolean override) {
-        if (localeInfo == null || localeInfo == currentLocaleInfo) {
+        if (localeInfo == null) {
             return;
         }
         try {

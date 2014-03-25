@@ -120,7 +120,11 @@ public class ApplicationLoader extends Application {
         lastPauseTime = System.currentTimeMillis();
         applicationContext = getApplicationContext();
         NativeLoader.initNativeLibs(this);
-        LocaleController.getInstance();
+        try {
+            LocaleController.getInstance();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
 
@@ -142,8 +146,12 @@ public class ApplicationLoader extends Application {
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        LocaleController.getInstance().onDeviceConfigurationChange(newConfig);
-        Utilities.checkDisplaySize();
+        try {
+            LocaleController.getInstance().onDeviceConfigurationChange(newConfig);
+            Utilities.checkDisplaySize();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static void resetLastPauseTime() {
