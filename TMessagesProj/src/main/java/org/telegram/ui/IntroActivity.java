@@ -44,7 +44,7 @@ public class IntroActivity extends ActionBarActivity {
 
         setContentView(R.layout.intro_layout);
 
-        if (Utilities.isRTL) {
+        if (LocaleController.isRTL) {
             icons = new int[] {
                     R.drawable.intro7,
                     R.drawable.intro6,
@@ -209,7 +209,7 @@ public class IntroActivity extends ActionBarActivity {
     protected void onResume() {
         super.onResume();
         if (justCreated) {
-            if (Utilities.isRTL) {
+            if (LocaleController.isRTL) {
                 viewPager.setCurrentItem(6);
                 lastPage = 6;
             } else {

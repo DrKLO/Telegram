@@ -1315,7 +1315,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         if (currentUser.status.expires <= 10000) {
                             actionBar.setSubtitle(LocaleController.getString("Invisible", R.string.Invisible));
                         } else {
-                            actionBar.setSubtitle(Utilities.formatDateOnline(currentUser.status.expires));
+                            actionBar.setSubtitle(LocaleController.formatDateOnline(currentUser.status.expires));
                         }
                     }
                 }
@@ -1624,7 +1624,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         messagesByDays.put(obj.dateKey, dayArray);
 
                         TLRPC.Message dateMsg = new TLRPC.Message();
-                        dateMsg.message = Utilities.formatDateChat(obj.messageOwner.date);
+                        dateMsg.message = LocaleController.formatDateChat(obj.messageOwner.date);
                         dateMsg.id = 0;
                         MessageObject dateObj = new MessageObject(dateMsg, null);
                         dateObj.type = 10;
@@ -1902,7 +1902,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                             messagesByDays.put(obj.dateKey, dayArray);
 
                             TLRPC.Message dateMsg = new TLRPC.Message();
-                            dateMsg.message = Utilities.formatDateChat(obj.messageOwner.date);
+                            dateMsg.message = LocaleController.formatDateChat(obj.messageOwner.date);
                             dateMsg.id = 0;
                             MessageObject dateObj = new MessageObject(dateMsg, null);
                             dateObj.type = 10;
@@ -3557,7 +3557,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             int type = message.type;
 
             if (timeTextView != null) {
-                timeTextView.setText(Utilities.formatterDay.format((long) (message.messageOwner.date) * 1000));
+                timeTextView.setText(LocaleController.formatterDay.format((long) (message.messageOwner.date) * 1000));
             }
 
             if (avatarImageView != null && fromUser != null) {

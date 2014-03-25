@@ -5,7 +5,7 @@
 <resources>
     <string name="AppName">Telegram</string>
 
-    <string name="LanguangeName">German</string>
+    <string name="LanguangeName">Deutsch</string>
     <string name="LanguangeNameInEnglish">German</string>
 
     <!--signin view-->
@@ -254,7 +254,7 @@
     <string name="Events">EREIGNISSE</string>
     <string name="ContactJoined">Kontakt ist Telegram beigetreten</string>
     <string name="Pebble">PEBBLE</string>
-    <string name="Language">Language</string>
+    <string name="Language">Sprache</string>
 
     <!--media view-->
     <string name="NoMedia">Noch keine geteilten Medien vorhanden</string>

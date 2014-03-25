@@ -565,7 +565,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
         TLRPC.User user = MessagesController.getInstance().users.get(obj.messageOwner.from_id);
         if (user != null) {
             nameTextView.setText(Utilities.formatName(user.first_name, user.last_name));
-            timeTextView.setText(Utilities.formatterYearMax.format(((long)obj.messageOwner.date) * 1000));
+            timeTextView.setText(LocaleController.formatterYearMax.format(((long)obj.messageOwner.date) * 1000));
         } else {
             nameTextView.setText("");
         }

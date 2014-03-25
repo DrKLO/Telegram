@@ -70,7 +70,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     public int selectAlertString = 0;
     public String selectAlertStringDesc = null;
     private SearchView searchView;
-    private TextView epmtyTextView;
+    private TextView emptyTextView;
     private HashMap<Integer, TLRPC.User> ignoreUsers;
     private SupportMenuItem searchItem;
 
@@ -145,12 +145,12 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
             fragmentView = inflater.inflate(R.layout.contacts_layout, container, false);
 
-            epmtyTextView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
-            epmtyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+            emptyTextView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
+            emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
             searchListViewAdapter = new ContactsActivitySearchAdapter(parentActivity, ignoreUsers);
 
             listView = (PinnedHeaderListView)fragmentView.findViewById(R.id.listView);
-            listView.setEmptyView(epmtyTextView);
+            listView.setEmptyView(emptyTextView);
             listView.setVerticalScrollBarEnabled(false);
 
             listViewAdapter = new ContactsActivityAdapter(parentActivity, onlyUsers, usersAsSections, ignoreUsers);
@@ -284,7 +284,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     }
                 }
             });
-            epmtyTextView.setOnTouchListener(new OnSwipeTouchListener() {
+            emptyTextView.setOnTouchListener(new OnSwipeTouchListener() {
                 public void onSwipeRight() {
                     finishFragment(true);
                     if (searchItem != null) {
@@ -444,8 +444,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         listView.setFastScrollEnabled(false);
                         listView.setVerticalScrollBarEnabled(true);
                     }
-                    if (epmtyTextView != null) {
-                        epmtyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+                    if (emptyTextView != null) {
+                        emptyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
                     }
                 }
                 return true;
@@ -474,7 +474,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 searchWas = false;
                 ViewGroup group = (ViewGroup) listView.getParent();
                 listView.setAdapter(listViewAdapter);
-                if (!Utilities.isRTL) {
+                if (!LocaleController.isRTL) {
                     listView.setPadding(Utilities.dp(16), listView.getPaddingTop(), Utilities.dp(30), listView.getPaddingBottom());
                 } else {
                     listView.setPadding(Utilities.dp(30), listView.getPaddingTop(), Utilities.dp(16), listView.getPaddingBottom());
@@ -486,7 +486,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 listView.setVerticalScrollBarEnabled(false);
                 ((LaunchActivity)parentActivity).updateActionBar();
 
-                epmtyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+                emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
                 return true;
             }
         });
