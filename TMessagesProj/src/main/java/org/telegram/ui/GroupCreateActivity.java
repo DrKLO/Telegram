@@ -59,7 +59,7 @@ import java.util.TimerTask;
 public class GroupCreateActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private SectionedBaseAdapter listViewAdapter;
     private PinnedHeaderListView listView;
-    private TextView epmtyTextView;
+    private TextView emptyTextView;
     private EditText userSelectEditText;
     private boolean ignoreChange = false;
 
@@ -68,7 +68,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
     private boolean searchWas;
     private boolean searching;
-    private Timer searchDialogsTimer;
+    private Timer searchTimer;
     public ArrayList<TLRPC.User> searchResult;
     public ArrayList<CharSequence> searchResultNames;
 
@@ -111,8 +111,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
             fragmentView = inflater.inflate(R.layout.group_create_layout, container, false);
 
-            epmtyTextView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
-            epmtyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+            emptyTextView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
+            emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
             userSelectEditText = (EditText)fragmentView.findViewById(R.id.bubble_input_text);
             userSelectEditText.setHint(LocaleController.getString("SendMessageTo", R.string.SendMessageTo));
             if (Build.VERSION.SDK_INT >= 11) {
@@ -173,14 +173,14 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                 searchDialogs(text);
                                 searching = true;
                                 searchWas = true;
-                                epmtyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+                                emptyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
                                 listViewAdapter.notifyDataSetChanged();
                             } else {
                                 searchResult = null;
                                 searchResultNames = null;
                                 searching = false;
                                 searchWas = false;
-                                epmtyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+                                emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
                                 listViewAdapter.notifyDataSetChanged();
                             }
                         }
@@ -189,7 +189,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             });
 
             listView = (PinnedHeaderListView)fragmentView.findViewById(R.id.listView);
-            listView.setEmptyView(epmtyTextView);
+            listView.setEmptyView(emptyTextView);
             listView.setVerticalScrollBarEnabled(false);
 
             listView.setAdapter(listViewAdapter = new ListAdapter(parentActivity));
@@ -232,7 +232,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     if (searching || searchWas) {
                         searching = false;
                         searchWas = false;
-                        epmtyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+                        emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
 
                         ignoreChange = true;
                         SpannableStringBuilder ssb = new SpannableStringBuilder("");
@@ -339,19 +339,19 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             searchResultNames = null;
         } else {
             try {
-                if (searchDialogsTimer != null) {
-                    searchDialogsTimer.cancel();
+                if (searchTimer != null) {
+                    searchTimer.cancel();
                 }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
-            searchDialogsTimer = new Timer();
-            searchDialogsTimer.schedule(new TimerTask() {
+            searchTimer = new Timer();
+            searchTimer.schedule(new TimerTask() {
                 @Override
                 public void run() {
                     try {
-                        searchDialogsTimer.cancel();
-                        searchDialogsTimer = null;
+                        searchTimer.cancel();
+                        searchTimer = null;
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
                     }
@@ -568,7 +568,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     if (user.status.expires <= 10000) {
                         holder.messageTextView.setText(LocaleController.getString("Invisible", R.string.Invisible));
                     } else {
-                        holder.messageTextView.setText(Utilities.formatDateOnline(user.status.expires));
+                        holder.messageTextView.setText(LocaleController.formatDateOnline(user.status.expires));
                     }
                     holder.messageTextView.setTextColor(0xff808080);
                 }

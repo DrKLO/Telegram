@@ -69,7 +69,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     private int activityToken = (int)(MessagesController.random.nextDouble() * Integer.MAX_VALUE);
     private long selectedDialog;
 
-    private Timer searchDialogsTimer;
+    private Timer searchTimer;
     public ArrayList<TLObject> searchResult;
     public ArrayList<CharSequence> searchResultNames;
 
@@ -511,19 +511,19 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             searchResultNames = null;
         } else {
             try {
-                if (searchDialogsTimer != null) {
-                    searchDialogsTimer.cancel();
+                if (searchTimer != null) {
+                    searchTimer.cancel();
                 }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
-            searchDialogsTimer = new Timer();
-            searchDialogsTimer.schedule(new TimerTask() {
+            searchTimer = new Timer();
+            searchTimer.schedule(new TimerTask() {
                 @Override
                 public void run() {
                     try {
-                        searchDialogsTimer.cancel();
-                        searchDialogsTimer = null;
+                        searchTimer.cancel();
+                        searchTimer = null;
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
                     }

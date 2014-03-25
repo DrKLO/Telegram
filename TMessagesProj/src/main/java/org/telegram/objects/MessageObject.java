@@ -202,7 +202,7 @@ public class MessageObject {
                         }
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionLoginUnknownLocation) {
-                    String date = String.format("%s %s %s", Utilities.formatterYear.format(((long)message.date) * 1000), LocaleController.getString("OtherAt", R.string.OtherAt), Utilities.formatterDay.format(((long)message.date) * 1000));
+                    String date = String.format("%s %s %s", LocaleController.formatterYear.format(((long)message.date) * 1000), LocaleController.getString("OtherAt", R.string.OtherAt), LocaleController.formatterDay.format(((long)message.date) * 1000));
                     messageText = LocaleController.formatString("NotificationUnrecognizedDevice", R.string.NotificationUnrecognizedDevice, UserConfig.currentUser.first_name, date, message.action.title, message.action.address);
                 } else if (message.action instanceof TLRPC.TL_messageActionUserJoined) {
                     if (fromUser != null) {

@@ -23,6 +23,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
@@ -305,7 +306,7 @@ public class NotificationView extends LinearLayout {
             messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
             nameTextView.setPadding(0, Utilities.dp(2), 0, 0);
             messageTextView.setPadding(0, Utilities.dp(18), 0, 0);
-            if (Utilities.isRTL) {
+            if (LocaleController.isRTL) {
                 params1.setMargins(Utilities.dp(40), 0, height + Utilities.dp(6), 0);
             } else {
                 params1.setMargins(height + Utilities.dp(6), 0, Utilities.dp(40), 0);
@@ -315,7 +316,7 @@ public class NotificationView extends LinearLayout {
             messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
             nameTextView.setPadding(0, Utilities.dp(4), 0, 0);
             messageTextView.setPadding(0, Utilities.dp(24), 0, 0);
-            if (Utilities.isRTL) {
+            if (LocaleController.isRTL) {
                 params1.setMargins(Utilities.dp(40), 0, height + Utilities.dp(8), 0);
             } else {
                 params1.setMargins(height + Utilities.dp(8), 0, Utilities.dp(40), 0);

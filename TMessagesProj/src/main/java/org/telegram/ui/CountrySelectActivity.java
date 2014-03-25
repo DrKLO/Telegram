@@ -29,6 +29,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.PinnedHeaderListView;
@@ -52,11 +53,11 @@ public class CountrySelectActivity extends ActionBarActivity {
     private boolean searchWas;
     private boolean searching;
     private BaseAdapter searchListViewAdapter;
-    private TextView epmtyTextView;
+    private TextView emptyTextView;
     private HashMap<String, ArrayList<Country>> countries = new HashMap<String, ArrayList<Country>>();
     private ArrayList<String> sortedCountries = new ArrayList<String>();
 
-    private Timer searchDialogsTimer;
+    private Timer searchTimer;
     public ArrayList<Country> searchResult;
 
     public static class Country {
@@ -112,11 +113,11 @@ public class CountrySelectActivity extends ActionBarActivity {
 
         setContentView(R.layout.country_select_layout);
 
-        epmtyTextView = (TextView)findViewById(R.id.searchEmptyView);
+        emptyTextView = (TextView)findViewById(R.id.searchEmptyView);
         searchListViewAdapter = new SearchAdapter(this);
 
         listView = (PinnedHeaderListView)findViewById(R.id.listView);
-        listView.setEmptyView(epmtyTextView);
+        listView.setEmptyView(emptyTextView);
         listView.setVerticalScrollBarEnabled(false);
 
         listView.setAdapter(listViewAdapter = new ListAdapter(this));
@@ -221,7 +222,7 @@ public class CountrySelectActivity extends ActionBarActivity {
 
             @Override
             public boolean onQueryTextChange(String s) {
-                searchDialogs(s);
+                search(s);
                 if (s.length() != 0) {
                     searchWas = true;
                     if (listView != null) {
@@ -233,8 +234,8 @@ public class CountrySelectActivity extends ActionBarActivity {
                         listView.setFastScrollEnabled(false);
                         listView.setVerticalScrollBarEnabled(true);
                     }
-                    if (epmtyTextView != null) {
-                        epmtyTextView.setText(getString(R.string.NoResult));
+                    if (emptyTextView != null) {
+                        emptyTextView.setText(getString(R.string.NoResult));
                     }
                 }
                 return true;
@@ -252,12 +253,12 @@ public class CountrySelectActivity extends ActionBarActivity {
             @Override
             public boolean onMenuItemActionCollapse(MenuItem menuItem) {
                 searchView.setQuery("", false);
-                searchDialogs(null);
+                search(null);
                 searching = false;
                 searchWas = false;
                 ViewGroup group = (ViewGroup) listView.getParent();
                 listView.setAdapter(listViewAdapter);
-                if (!Utilities.isRTL) {
+                if (!LocaleController.isRTL) {
                     listView.setPadding(Utilities.dp(16), listView.getPaddingTop(), Utilities.dp(30), listView.getPaddingBottom());
                 } else {
                     listView.setPadding(Utilities.dp(30), listView.getPaddingTop(), Utilities.dp(16), listView.getPaddingBottom());
@@ -269,7 +270,7 @@ public class CountrySelectActivity extends ActionBarActivity {
                 listView.setVerticalScrollBarEnabled(false);
                 applySelfActionBar();
 
-                epmtyTextView.setText(getString(R.string.ChooseCountry));
+                emptyTextView.setText(getString(R.string.ChooseCountry));
                 return true;
             }
         });
@@ -305,24 +306,24 @@ public class CountrySelectActivity extends ActionBarActivity {
         }
     }
 
-    public void searchDialogs(final String query) {
+    public void search(final String query) {
         if (query == null) {
             searchResult = null;
         } else {
             try {
-                if (searchDialogsTimer != null) {
-                    searchDialogsTimer.cancel();
+                if (searchTimer != null) {
+                    searchTimer.cancel();
                 }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
-            searchDialogsTimer = new Timer();
-            searchDialogsTimer.schedule(new TimerTask() {
+            searchTimer = new Timer();
+            searchTimer.schedule(new TimerTask() {
                 @Override
                 public void run() {
                     try {
-                        searchDialogsTimer.cancel();
-                        searchDialogsTimer = null;
+                        searchTimer.cancel();
+                        searchTimer = null;
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
                     }

@@ -24,7 +24,6 @@ import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.text.Html;
 import android.text.SpannableStringBuilder;
-import android.text.format.DateFormat;
 import android.util.Base64;
 import android.view.Display;
 import android.view.View;
@@ -49,7 +48,6 @@ import java.security.PublicKey;
 import java.security.spec.RSAPublicKeySpec;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.Locale;
@@ -64,7 +62,6 @@ public class Utilities {
     public static int statusBarHeight = 0;
     public static float density = 1;
     public static Point displaySize = new Point();
-    public static boolean isRTL = false;
     public static Pattern pattern = Pattern.compile("[0-9]+");
     private final static Integer lock = 1;
 
@@ -82,14 +79,6 @@ public class Utilities {
     public static volatile DispatchQueue cacheOutQueue = new DispatchQueue("cacheOutQueue");
     public static volatile DispatchQueue imageLoadQueue = new DispatchQueue("imageLoadQueue");
     public static volatile DispatchQueue fileUploadQueue = new DispatchQueue("fileUploadQueue");
-
-    public static FastDateFormat formatterDay;
-    public static FastDateFormat formatterWeek;
-    public static FastDateFormat formatterMonth;
-    public static FastDateFormat formatterYear;
-    public static FastDateFormat formatterYearMax;
-    public static FastDateFormat chatDate;
-    public static FastDateFormat chatFullDate;
 
     public static int[] arrColors = {0xffee4928, 0xff41a903, 0xffe09602, 0xff0f94ed, 0xff8f3bf7, 0xfffc4380, 0xff00a1c4, 0xffeb7002};
     public static int[] arrUsersAvatars = {
@@ -139,7 +128,6 @@ public class Utilities {
             }
         }
 
-        recreateFormatters();
         checkDisplaySize();
     }
 
@@ -537,49 +525,6 @@ public class Utilities {
         });
     }
 
-    public static void recreateFormatters() {
-        Locale locale = Locale.getDefault();
-        String lang = locale.getLanguage();
-        if (lang == null) {
-            lang = "en";
-        }
-        isRTL = lang.toLowerCase().equals("ar");
-        if (lang.equals("en")) {
-            formatterMonth = FastDateFormat.getInstance("MMM dd", locale);
-            formatterYear = FastDateFormat.getInstance("dd.MM.yy", locale);
-            formatterYearMax = FastDateFormat.getInstance("dd.MM.yyyy", locale);
-            chatDate = FastDateFormat.getInstance("MMMM d", locale);
-            chatFullDate = FastDateFormat.getInstance("MMMM d, yyyy", locale);
-        } else if (lang.startsWith("es")) {
-            formatterMonth = FastDateFormat.getInstance("dd 'de' MMM", locale);
-            formatterYear = FastDateFormat.getInstance("dd.MM.yy", locale);
-            formatterYearMax = FastDateFormat.getInstance("dd.MM.yyyy", locale);
-            chatDate = FastDateFormat.getInstance("d 'de' MMMM", locale);
-            chatFullDate = FastDateFormat.getInstance("d 'de' MMMM 'de' yyyy", locale);
-        } else {
-            formatterMonth = FastDateFormat.getInstance("dd MMM", locale);
-            formatterYear = FastDateFormat.getInstance("dd.MM.yy", locale);
-            formatterYearMax = FastDateFormat.getInstance("dd.MM.yyyy", locale);
-            chatDate = FastDateFormat.getInstance("d MMMM", locale);
-            chatFullDate = FastDateFormat.getInstance("d MMMM yyyy", locale);
-        }
-        formatterWeek = FastDateFormat.getInstance("EEE", locale);
-
-        if (lang != null) {
-            if (DateFormat.is24HourFormat(ApplicationLoader.applicationContext)) {
-                formatterDay = FastDateFormat.getInstance("HH:mm", locale);
-            } else {
-                if (lang.toLowerCase().equals("ar")) {
-                    formatterDay = FastDateFormat.getInstance("h:mm a", locale);
-                } else {
-                    formatterDay = FastDateFormat.getInstance("h:mm a", Locale.US);
-                }
-            }
-        } else {
-            formatterDay = FastDateFormat.getInstance("h:mm a", Locale.US);
-        }
-    }
-
     public static void checkDisplaySize() {
         try {
             WindowManager manager = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
@@ -596,57 +541,6 @@ public class Utilities {
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
-        }
-    }
-
-    public static String formatDateChat(long date) {
-        Calendar rightNow = Calendar.getInstance();
-        int year = rightNow.get(Calendar.YEAR);
-
-        rightNow.setTimeInMillis(date * 1000);
-        int dateYear = rightNow.get(Calendar.YEAR);
-
-        if (year == dateYear) {
-            return chatDate.format(date * 1000);
-        }
-        return chatFullDate.format(date * 1000);
-    }
-
-    public static String formatDate(long date) {
-        Calendar rightNow = Calendar.getInstance();
-        int day = rightNow.get(Calendar.DAY_OF_YEAR);
-        int year = rightNow.get(Calendar.YEAR);
-        rightNow.setTimeInMillis(date * 1000);
-        int dateDay = rightNow.get(Calendar.DAY_OF_YEAR);
-        int dateYear = rightNow.get(Calendar.YEAR);
-
-        if (dateDay == day && year == dateYear) {
-            return formatterDay.format(new Date(date * 1000));
-        } else if (dateDay + 1 == day && year == dateYear) {
-            return ApplicationLoader.applicationContext.getResources().getString(R.string.Yesterday);
-        } else if (year == dateYear) {
-            return formatterMonth.format(new Date(date * 1000));
-        } else {
-            return formatterYear.format(new Date(date * 1000));
-        }
-    }
-
-    public static String formatDateOnline(long date) {
-        Calendar rightNow = Calendar.getInstance();
-        int day = rightNow.get(Calendar.DAY_OF_YEAR);
-        int year = rightNow.get(Calendar.YEAR);
-        rightNow.setTimeInMillis(date * 1000);
-        int dateDay = rightNow.get(Calendar.DAY_OF_YEAR);
-        int dateYear = rightNow.get(Calendar.YEAR);
-
-        if (dateDay == day && year == dateYear) {
-            return String.format("%s %s %s", LocaleController.getString("LastSeen", R.string.LastSeen), LocaleController.getString("TodayAt", R.string.TodayAt), formatterDay.format(new Date(date * 1000)));
-        } else if (dateDay + 1 == day && year == dateYear) {
-            return String.format("%s %s %s", LocaleController.getString("LastSeen", R.string.LastSeen), LocaleController.getString("YesterdayAt", R.string.YesterdayAt), formatterDay.format(new Date(date * 1000)));
-        } else if (year == dateYear) {
-            return String.format("%s %s %s %s", LocaleController.getString("LastSeenDate", R.string.LastSeenDate), formatterMonth.format(new Date(date * 1000)), LocaleController.getString("OtherAt", R.string.OtherAt), formatterDay.format(new Date(date * 1000)));
-        } else {
-            return String.format("%s %s %s %s", LocaleController.getString("LastSeenDate", R.string.LastSeenDate), formatterYear.format(new Date(date * 1000)), LocaleController.getString("OtherAt", R.string.OtherAt), formatterDay.format(new Date(date * 1000)));
         }
     }
 
@@ -953,28 +847,6 @@ public class Utilities {
             return String.format("%.1f MB", size / 1024.0f / 1024.0f);
         } else {
             return String.format("%.1f GB", size / 1024.0f / 1024.0f / 1024.0f);
-        }
-    }
-
-    public static String stringForMessageListDate(long date) {
-        Calendar rightNow = Calendar.getInstance();
-        int day = rightNow.get(Calendar.DAY_OF_YEAR);
-        int year = rightNow.get(Calendar.YEAR);
-        rightNow.setTimeInMillis(date * 1000);
-        int dateDay = rightNow.get(Calendar.DAY_OF_YEAR);
-        int dateYear = rightNow.get(Calendar.YEAR);
-
-        if (year != dateYear) {
-            return formatterYear.format(new Date(date * 1000));
-        } else {
-            int dayDiff = dateDay - day;
-            if(dayDiff == 0 || dayDiff == -1 && (int)(System.currentTimeMillis() / 1000) - date < 60 * 60 * 8) {
-                return formatterDay.format(new Date(date * 1000));
-            } else if(dayDiff > -7 && dayDiff <= -1) {
-                return formatterWeek.format(new Date(date * 1000));
-            } else {
-                return formatterMonth.format(new Date(date * 1000));
-            }
         }
     }
 

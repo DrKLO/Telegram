@@ -206,7 +206,7 @@ public class ChatBaseCell extends BaseCell {
             currentTimePaint = timePaintIn;
         }
 
-        currentTimeString = Utilities.formatterDay.format((long) (currentMessageObject.messageOwner.date) * 1000);
+        currentTimeString = LocaleController.formatterDay.format((long) (currentMessageObject.messageOwner.date) * 1000);
         timeWidth = (int)Math.ceil(currentTimePaint.measureText(currentTimeString));
 
         namesOffset = 0;

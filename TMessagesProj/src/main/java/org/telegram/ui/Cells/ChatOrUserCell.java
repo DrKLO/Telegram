@@ -273,7 +273,7 @@ public class ChatOrUserCell extends BaseCell {
 
             if (encryptedChat != null) {
                 drawNameLock = true;
-                if (!Utilities.isRTL) {
+                if (!LocaleController.isRTL) {
                     nameLockLeft = Utilities.dp(61 + (usePadding ? 11 : 0));
                     nameLeft = Utilities.dp(65 + (usePadding ? 11 : 0)) + lockDrawable.getIntrinsicWidth();
                 } else {
@@ -282,7 +282,7 @@ public class ChatOrUserCell extends BaseCell {
                 }
             } else {
                 drawNameLock = false;
-                if (!Utilities.isRTL) {
+                if (!LocaleController.isRTL) {
                     nameLeft = Utilities.dp(61 + (usePadding ? 11 : 0));
                 } else {
                     nameLeft = usePadding ? Utilities.dp(11) : 0;
@@ -324,7 +324,7 @@ public class ChatOrUserCell extends BaseCell {
                 currentNamePaint = namePaint;
             }
 
-            if (!Utilities.isRTL) {
+            if (!LocaleController.isRTL) {
                 onlineWidth = nameWidth = width - nameLeft - Utilities.dp(3 + (usePadding ? 11 : 0));
             } else {
                 onlineWidth = nameWidth = width - nameLeft - Utilities.dp(61 + (usePadding ? 11 : 0));
@@ -337,7 +337,7 @@ public class ChatOrUserCell extends BaseCell {
             nameLayout = new StaticLayout(nameStringFinal, currentNamePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 
             if (chat == null) {
-                if (!Utilities.isRTL) {
+                if (!LocaleController.isRTL) {
                     onlineLeft = Utilities.dp(61 + (usePadding ? 11 : 0));
                 } else {
                     onlineLeft = usePadding ? Utilities.dp(11) : 0;
@@ -361,7 +361,7 @@ public class ChatOrUserCell extends BaseCell {
                                 if (user.status.expires <= 10000) {
                                     onlineString = getResources().getString(R.string.Invisible);
                                 } else {
-                                    onlineString = Utilities.formatDateOnline(user.status.expires);
+                                    onlineString = LocaleController.formatDateOnline(user.status.expires);
                                 }
                             }
                         }
@@ -376,7 +376,7 @@ public class ChatOrUserCell extends BaseCell {
                 nameTop = Utilities.dp(22);
             }
 
-            if (!Utilities.isRTL) {
+            if (!LocaleController.isRTL) {
                 avatarLeft = usePadding ? Utilities.dp(11) : 0;
             } else {
                 avatarLeft = width - Utilities.dp(50 + (usePadding ? 11 : 0));
@@ -388,7 +388,7 @@ public class ChatOrUserCell extends BaseCell {
 
             double widthpx = 0;
             float left = 0;
-            if (Utilities.isRTL) {
+            if (LocaleController.isRTL) {
                 if (nameLayout.getLineCount() > 0) {
                     left = nameLayout.getLineLeft(0);
                     if (left == 0) {

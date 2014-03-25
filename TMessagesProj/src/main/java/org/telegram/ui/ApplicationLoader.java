@@ -30,6 +30,7 @@ import com.google.android.gms.gcm.GoogleCloudMessaging;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NativeLoader;
 import org.telegram.messenger.ScreenReceiver;
@@ -39,7 +40,6 @@ import org.telegram.ui.Views.BaseFragment;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ApplicationLoader extends Application {
@@ -52,7 +52,6 @@ public class ApplicationLoader extends Application {
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     public static long lastPauseTime;
     public static Bitmap cachedWallpaper = null;
-    private Locale currentLocale;
 
     public static volatile Context applicationContext = null;
     public static volatile Handler applicationHandler = null;
@@ -120,8 +119,10 @@ public class ApplicationLoader extends Application {
         super.onCreate();
         lastPauseTime = System.currentTimeMillis();
         applicationContext = getApplicationContext();
+        NativeLoader.initNativeLibs(this);
+        LocaleController.getInstance();
+
         applicationHandler = new Handler(applicationContext.getMainLooper());
-        currentLocale = Locale.getDefault();
 
         java.lang.System.setProperty("java.net.preferIPv4Stack", "true");
         java.lang.System.setProperty("java.net.preferIPv6Addresses", "false");
@@ -136,22 +137,12 @@ public class ApplicationLoader extends Application {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        FileLog.e("tmessages", "start application with time " + lastPauseTime);
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        Locale newLocale = newConfig.locale;
-        if (newLocale != null) {
-            String d1 = newLocale.getDisplayName();
-            String d2 = currentLocale.getDisplayName();
-            if (d1 != null && d2 != null && !d1.equals(d2)) {
-                Utilities.recreateFormatters();
-            }
-            currentLocale = newLocale;
-        }
+        LocaleController.getInstance().onDeviceConfigurationChange(newConfig);
         Utilities.checkDisplaySize();
     }
 
