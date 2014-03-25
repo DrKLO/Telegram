@@ -30,7 +30,7 @@ public class ContactsActivitySearchAdapter extends BaseFragmentAdapter {
     private HashMap<Integer, TLRPC.User> ignoreUsers;
     private ArrayList<TLRPC.User> searchResult;
     private ArrayList<CharSequence> searchResultNames;
-    private Timer searchDialogsTimer;
+    private Timer searchTimer;
 
     public ContactsActivitySearchAdapter(Context context, HashMap<Integer, TLRPC.User> arg1) {
         mContext = context;
@@ -44,19 +44,19 @@ public class ContactsActivitySearchAdapter extends BaseFragmentAdapter {
             notifyDataSetChanged();
         } else {
             try {
-                if (searchDialogsTimer != null) {
-                    searchDialogsTimer.cancel();
+                if (searchTimer != null) {
+                    searchTimer.cancel();
                 }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
-            searchDialogsTimer = new Timer();
-            searchDialogsTimer.schedule(new TimerTask() {
+            searchTimer = new Timer();
+            searchTimer.schedule(new TimerTask() {
                 @Override
                 public void run() {
                     try {
-                        searchDialogsTimer.cancel();
-                        searchDialogsTimer = null;
+                        searchTimer.cancel();
+                        searchTimer = null;
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
                     }

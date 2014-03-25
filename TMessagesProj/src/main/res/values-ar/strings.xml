@@ -5,6 +5,9 @@
 <resources>
     <string name="AppName">Telegram</string>
 
+    <string name="LanguangeName">العربية</string>
+    <string name="LanguangeNameInEnglish">Arabic</string>
+
     <!--signin view-->
     <string name="YourPhone">رقم هاتفك المحمول</string>
     <string name="StartText">يرجى التحقق من صحة رمز بلدك وإدخال رقم هاتفك المحمول</string>
@@ -107,6 +110,7 @@
     <string name="DeleteThisGroup">حذف المجموعة</string>
     <string name="SlideToCancel">قم بالسحب للإلغاء</string>
     <string name="SaveToDownloads">حفظ في الجهاز</string>
+    <string name="ApplyLocalizationFile">Apply localization file</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">تم طلب محادثة سرية</string>
@@ -250,6 +254,7 @@
     <string name="Events">الأحداث</string>
     <string name="ContactJoined">اشترك صديق في تيليجرام</string>
     <string name="Pebble">PEBBLE</string>
+    <string name="Language">اللغة</string>
 
     <!--media view-->
     <string name="NoMedia">لا توجد وسائط بعد</string>
@@ -268,7 +273,7 @@
     <!--photo gallery view-->
     <string name="ShowAllMedia">عرض كافة الوسائط</string>
     <string name="SaveToGallery">حفظ في الجهاز</string>
-    <string name="Of">من</string>
+    <string name="Of">%1$d من %2$d</string>
     <string name="Gallery">الألبوم</string>
 
     <!--button titles-->

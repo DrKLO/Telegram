@@ -5,14 +5,16 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <LinearLayout android:orientation="vertical"
+    <LinearLayout
+        android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
         android:paddingTop="8dp">
 
-        <include layout="@layout/settings_section_layout"/>
+        <include
+            layout="@layout/settings_section_layout"/>
 
         <EditText
             android:textSize="19dp"

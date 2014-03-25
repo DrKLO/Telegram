@@ -87,6 +87,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int audioDownloadSection;
     private int audioDownloadChatRow;
     private int audioDownloadPrivateRow;
+    private int languageRow;
 
     @Override
     public boolean onFragmentCreate() {
@@ -156,6 +157,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         numberRow = rowCount++;
         settingsSectionRow = rowCount++;
         enableAnimationsRow = rowCount++;
+        languageRow = rowCount++;
         notificationRow = rowCount++;
         blockedRow = rowCount++;
         backgroundRow = rowCount++;
@@ -206,7 +208,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     if (i == textSizeRow) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
                         builder.setTitle(LocaleController.getString("TextSize", R.string.TextSize));
-                        builder.setItems(new CharSequence[]{String.format("%d", 12), String.format("%d", 13), String.format("%d", 14), String.format("%d", 15), String.format("%d", 16), String.format("%d", 17), String.format("%d", 18), String.format("%d", 19), String.format("%d", 20)}, new DialogInterface.OnClickListener() {
+                        builder.setItems(new CharSequence[]{String.format("%d", 12), String.format("%d", 13), String.format("%d", 14), String.format("%d", 15), String.format("%d", 16), String.format("%d", 17), String.format("%d", 18), String.format("%d", 19), String.format("%d", 20), String.format("%d", 21), String.format("%d", 22), String.format("%d", 23), String.format("%d", 24)}, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
@@ -404,6 +406,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         if (listView != null) {
                             listView.invalidateViews();
                         }
+                    } else if (i == languageRow) {
+                        ((LaunchActivity)parentActivity).presentFragment(new LanguageSelectActivity(), "settings_wallpapers", false);
                     }
 //                else if (i == 6) {
 //                    UserConfig.saveIncomingPhotos = !UserConfig.saveIncomingPhotos;
@@ -538,7 +542,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         public boolean isEnabled(int i) {
             return i == textSizeRow || i == enableAnimationsRow || i == blockedRow || i == notificationRow || i == backgroundRow ||
                     i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == terminateSessionsRow || i == photoDownloadPrivateRow ||
-                    i == photoDownloadChatRow || i == clearLogsRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow;
+                    i == photoDownloadChatRow || i == clearLogsRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow || i == languageRow;
         }
 
         @Override
@@ -568,9 +572,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.settings_name_layout, viewGroup, false);
-
-                    TextView textView = (TextView)view.findViewById(R.id.settings_online);
-                    textView.setText(LocaleController.getString("Online", R.string.Online));
 
                     ImageButton button = (ImageButton)view.findViewById(R.id.settings_edit_name);
                     button.setOnClickListener(new View.OnClickListener() {
@@ -672,7 +673,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         }
                     });
                 }
-                TextView textView = (TextView)view.findViewById(R.id.settings_name);
+                TextView textView = (TextView)view.findViewById(R.id.settings_online);
+                textView.setText(LocaleController.getString("Online", R.string.Online));
+
+                textView = (TextView)view.findViewById(R.id.settings_name);
                 Typeface typeface = Utilities.getTypeface("fonts/rmedium.ttf");
                 textView.setTypeface(typeface);
                 TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.clientUserId);
@@ -860,9 +864,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     detailTextView.setText(String.format("%d", size));
                     textView.setText(LocaleController.getString("TextSize", R.string.TextSize));
                     divider.setVisibility(View.VISIBLE);
+                } else if (i == languageRow) {
+                    detailTextView.setText(LocaleController.getCurrentLanguageName());
+                    textView.setText(LocaleController.getString("Language", R.string.Language));
+                    divider.setVisibility(View.VISIBLE);
                 }
             }
-
             return view;
         }
 
@@ -872,7 +879,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 0;
             } else if (i == numberSectionRow || i == settingsSectionRow || i == supportSectionRow || i == messagesSectionRow || i == photoDownloadSection || i == audioDownloadSection) {
                 return 1;
-            } else if (i == textSizeRow) {
+            } else if (i == textSizeRow || i == languageRow) {
                 return 5;
             } else if (i == enableAnimationsRow || i == sendByEnterRow || i == photoDownloadChatRow || i == photoDownloadPrivateRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow) {
                 return 3;

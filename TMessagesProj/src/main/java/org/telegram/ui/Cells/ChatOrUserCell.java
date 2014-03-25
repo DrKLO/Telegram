@@ -12,7 +12,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
-import android.text.Html;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -55,7 +54,6 @@ public class ChatOrUserCell extends BaseCell {
     private TLRPC.FileLocation lastAvatar = null;
 
     public boolean usePadding = true;
-    public boolean useBoldFont = false;
     public boolean useSeparator = false;
     public float drawAlpha = 1;
 
@@ -275,7 +273,7 @@ public class ChatOrUserCell extends BaseCell {
 
             if (encryptedChat != null) {
                 drawNameLock = true;
-                if (!Utilities.isRTL) {
+                if (!LocaleController.isRTL) {
                     nameLockLeft = Utilities.dp(61 + (usePadding ? 11 : 0));
                     nameLeft = Utilities.dp(65 + (usePadding ? 11 : 0)) + lockDrawable.getIntrinsicWidth();
                 } else {
@@ -284,7 +282,7 @@ public class ChatOrUserCell extends BaseCell {
                 }
             } else {
                 drawNameLock = false;
-                if (!Utilities.isRTL) {
+                if (!LocaleController.isRTL) {
                     nameLeft = Utilities.dp(61 + (usePadding ? 11 : 0));
                 } else {
                     nameLeft = usePadding ? Utilities.dp(11) : 0;
@@ -294,39 +292,30 @@ public class ChatOrUserCell extends BaseCell {
             if (currentName != null) {
                 nameString = currentName;
             } else {
-                if (useBoldFont) {
-                    if (user != null) {
-                        if (user.first_name.length() != 0 && user.last_name.length() != 0) {
-                            nameString = Html.fromHtml(user.first_name + " <b>" + user.last_name + "</b>");
-                        } else if (user.first_name.length() != 0) {
-                            nameString = Html.fromHtml("<b>" + user.first_name + "</b>");
-                        } else {
-                            nameString = Html.fromHtml("<b>" + user.last_name + "</b>");
-                        }
-                    }
-                } else {
-                    String nameString2 = "";
-                    if (chat != null) {
-                        nameString2 = chat.title;
-                    } else if (user != null) {
-                        if (user.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(user.id) == null) {
-                            if (ContactsController.getInstance().contactsDict.size() == 0 && ContactsController.getInstance().loadingContacts) {
-                                nameString2 = Utilities.formatName(user.first_name, user.last_name);
-                            } else {
-                                if (user.phone != null && user.phone.length() != 0) {
-                                    nameString2 = PhoneFormat.getInstance().format("+" + user.phone);
-                                } else {
-                                    nameString2 = Utilities.formatName(user.first_name, user.last_name);
-                                }
-                            }
-                        } else {
+                String nameString2 = "";
+                if (chat != null) {
+                    nameString2 = chat.title;
+                } else if (user != null) {
+                    if (user.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(user.id) == null) {
+                        if (ContactsController.getInstance().contactsDict.size() == 0 && ContactsController.getInstance().loadingContacts) {
                             nameString2 = Utilities.formatName(user.first_name, user.last_name);
+                        } else {
+                            if (user.phone != null && user.phone.length() != 0) {
+                                nameString2 = PhoneFormat.getInstance().format("+" + user.phone);
+                            } else {
+                                nameString2 = Utilities.formatName(user.first_name, user.last_name);
+                            }
                         }
+                    } else {
+                        nameString2 = Utilities.formatName(user.first_name, user.last_name);
                     }
-                    nameString = nameString2.replace("\n", " ");
                 }
+                nameString = nameString2.replace("\n", " ");
             }
             if (nameString.length() == 0) {
+                if (user.phone != null && user.phone.length() != 0) {
+                    nameString = PhoneFormat.getInstance().format("+" + user.phone);
+                }
                 nameString = LocaleController.getString("HiddenName", R.string.HiddenName);
             }
             if (encryptedChat != null) {
@@ -335,7 +324,7 @@ public class ChatOrUserCell extends BaseCell {
                 currentNamePaint = namePaint;
             }
 
-            if (!Utilities.isRTL) {
+            if (!LocaleController.isRTL) {
                 onlineWidth = nameWidth = width - nameLeft - Utilities.dp(3 + (usePadding ? 11 : 0));
             } else {
                 onlineWidth = nameWidth = width - nameLeft - Utilities.dp(61 + (usePadding ? 11 : 0));
@@ -348,7 +337,7 @@ public class ChatOrUserCell extends BaseCell {
             nameLayout = new StaticLayout(nameStringFinal, currentNamePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 
             if (chat == null) {
-                if (!Utilities.isRTL) {
+                if (!LocaleController.isRTL) {
                     onlineLeft = Utilities.dp(61 + (usePadding ? 11 : 0));
                 } else {
                     onlineLeft = usePadding ? Utilities.dp(11) : 0;
@@ -372,7 +361,7 @@ public class ChatOrUserCell extends BaseCell {
                                 if (user.status.expires <= 10000) {
                                     onlineString = getResources().getString(R.string.Invisible);
                                 } else {
-                                    onlineString = Utilities.formatDateOnline(user.status.expires);
+                                    onlineString = LocaleController.formatDateOnline(user.status.expires);
                                 }
                             }
                         }
@@ -387,7 +376,7 @@ public class ChatOrUserCell extends BaseCell {
                 nameTop = Utilities.dp(22);
             }
 
-            if (!Utilities.isRTL) {
+            if (!LocaleController.isRTL) {
                 avatarLeft = usePadding ? Utilities.dp(11) : 0;
             } else {
                 avatarLeft = width - Utilities.dp(50 + (usePadding ? 11 : 0));
@@ -399,7 +388,7 @@ public class ChatOrUserCell extends BaseCell {
 
             double widthpx = 0;
             float left = 0;
-            if (Utilities.isRTL) {
+            if (LocaleController.isRTL) {
                 if (nameLayout.getLineCount() > 0) {
                     left = nameLayout.getLineLeft(0);
                     if (left == 0) {

@@ -5,6 +5,9 @@
 <resources>
     <string name="AppName">Telegram</string>
 
+    <string name="LanguangeName">Nederlands</string>
+    <string name="LanguangeNameInEnglish">Dutch</string>
+
     <!--signin view-->
     <string name="YourPhone">Uw telefoon</string>
     <string name="StartText">Bevestig uw landcode\nen voer uw telefoonnummer in.</string>
@@ -107,6 +110,7 @@
     <string name="DeleteThisGroup">Deze groep verwijderen</string>
     <string name="SlideToCancel">SLEEP OM TE ANNULEREN</string>
     <string name="SaveToDownloads">Opslaan in downloads</string>
+    <string name="ApplyLocalizationFile">Apply localization file</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Privégesprek aangevraagd</string>
@@ -250,6 +254,7 @@
     <string name="Events">GEBEURTENISSEN</string>
     <string name="ContactJoined">Contact lid geworden van Telegram</string>
     <string name="Pebble">PEBBLE</string>
+    <string name="Language">Taal</string>
 
     <!--media view-->
     <string name="NoMedia">Nog geen media gedeeld</string>
@@ -268,7 +273,7 @@
     <!--photo gallery view-->
     <string name="ShowAllMedia">Alle media weergeven</string>
     <string name="SaveToGallery">Opslaan in galerij</string>
-    <string name="Of">van</string>
+    <string name="Of">%1$d van %1$d</string>
     <string name="Gallery">Galerij</string>
 
     <!--button titles-->

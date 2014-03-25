@@ -28,7 +28,13 @@ public class NativeLoader {
             0,          //mips
     };
 
-    public static void initNativeLibs(Context context) {
+    private static volatile boolean nativeLoaded = false;
+
+    public static synchronized void initNativeLibs(Context context) {
+        if (nativeLoaded) {
+            return;
+        }
+
         if (Build.VERSION.SDK_INT >= 9) {
             try {
                 String folder = null;
@@ -50,6 +56,7 @@ public class NativeLoader {
                     libSize = sizes[3];
                 } else {
                     System.loadLibrary("tmessages");
+                    nativeLoaded = true;
                     Log.e("tmessages", "Unsupported arch: " + Build.CPU_ABI);
                     return;
                 }
@@ -59,6 +66,7 @@ public class NativeLoader {
                     Log.d("tmessages", "Load normal lib");
                     try {
                         System.loadLibrary("tmessages");
+                        nativeLoaded = true;
                         return;
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -68,9 +76,14 @@ public class NativeLoader {
                 File destLocalFile = new File(context.getFilesDir().getAbsolutePath() + "/libtmessages.so");
                 if (destLocalFile.exists()) {
                     if (destLocalFile.length() == libSize) {
-                        Log.d("tmessages", "Load local lib");
-                        System.load(destLocalFile.getAbsolutePath());
-                        return;
+                        try {
+                            Log.d("tmessages", "Load local lib");
+                            System.load(destLocalFile.getAbsolutePath());
+                            nativeLoaded = true;
+                            return;
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     } else {
                         destLocalFile.delete();
                     }
@@ -98,6 +111,7 @@ public class NativeLoader {
                     out.close();
 
                     System.load(destLocalFile.getAbsolutePath());
+                    nativeLoaded = true;
                     return;
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -123,5 +137,6 @@ public class NativeLoader {
         }
 
         System.loadLibrary("tmessages");
+        nativeLoaded = true;
     }
 }

@@ -592,9 +592,9 @@ public class ContactsController {
                     if (!toImport.isEmpty()) {
                         if (BuildVars.DEBUG_VERSION) {
                             FileLog.e("tmessages", "start import contacts");
-                            for (TLRPC.TL_inputPhoneContact contact : toImport) {
-                                FileLog.e("tmessages", "add contact " + contact.first_name + " " + contact.last_name + " " + contact.phone);
-                            }
+//                            for (TLRPC.TL_inputPhoneContact contact : toImport) {
+//                                FileLog.e("tmessages", "add contact " + contact.first_name + " " + contact.last_name + " " + contact.phone);
+//                            }
                         }
                         final int count = (int)Math.ceil(toImport.size() / 500.0f);
                         for (int a = 0; a < count; a++) {
@@ -614,9 +614,9 @@ public class ContactsController {
                                         }
                                         TLRPC.TL_contacts_importedContacts res = (TLRPC.TL_contacts_importedContacts)response;
                                         if (BuildVars.DEBUG_VERSION) {
-                                            for (TLRPC.User user : res.users) {
-                                                FileLog.e("tmessages", "received user " + user.first_name + " " + user.last_name + " " + user.phone);
-                                            }
+//                                            for (TLRPC.User user : res.users) {
+//                                                FileLog.e("tmessages", "received user " + user.first_name + " " + user.last_name + " " + user.phone);
+//                                            }
                                         }
                                         MessagesStorage.getInstance().putUsersAndChats(res.users, null, true, true);
                                         ArrayList<TLRPC.TL_contact> cArr = new ArrayList<TLRPC.TL_contact>();
@@ -776,9 +776,9 @@ public class ContactsController {
                     if (user != null) {
                         usersDict.put(user.id, user);
 
-                        if (BuildVars.DEBUG_VERSION) {
-                            FileLog.e("tmessages", "loaded user contact " + user.first_name + " " + user.last_name + " " + user.phone);
-                        }
+//                        if (BuildVars.DEBUG_VERSION) {
+//                            FileLog.e("tmessages", "loaded user contact " + user.first_name + " " + user.last_name + " " + user.phone);
+//                        }
                     }
                 }
 
@@ -1398,9 +1398,9 @@ public class ContactsController {
         contactsParams.add(c);
         req.contacts = contactsParams;
         req.replace = false;
-        if (BuildVars.DEBUG_VERSION) {
-            FileLog.e("tmessages", "add contact " + user.first_name + " " + user.last_name + " " + user.phone);
-        }
+//        if (BuildVars.DEBUG_VERSION) {
+//            FileLog.e("tmessages", "add contact " + user.first_name + " " + user.last_name + " " + user.phone);
+//        }
         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
@@ -1410,11 +1410,11 @@ public class ContactsController {
                 final TLRPC.TL_contacts_importedContacts res = (TLRPC.TL_contacts_importedContacts)response;
                 MessagesStorage.getInstance().putUsersAndChats(res.users, null, true, true);
 
-                if (BuildVars.DEBUG_VERSION) {
-                    for (TLRPC.User user : res.users) {
-                        FileLog.e("tmessages", "received user " + user.first_name + " " + user.last_name + " " + user.phone);
-                    }
-                }
+//                if (BuildVars.DEBUG_VERSION) {
+//                    for (TLRPC.User user : res.users) {
+//                        FileLog.e("tmessages", "received user " + user.first_name + " " + user.last_name + " " + user.phone);
+//                    }
+//                }
 
                 for (final TLRPC.User u : res.users) {
                     Utilities.globalQueue.postRunnable(new Runnable() {

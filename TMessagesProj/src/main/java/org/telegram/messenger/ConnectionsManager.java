@@ -479,7 +479,6 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         processedMessageIdsSet.remove(sessionId);
         nextSeqNoInSession.remove(sessionId);
         processedSessionChanges.remove(sessionId);
-        pingIdToDate.remove(sessionId);
 
         if (sessionId == datacenter.authSessionId) {
             clearRequestsForRequestClass(RPCRequest.RPCRequestClassGeneric, datacenter);
@@ -858,7 +857,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             }
         } catch(Exception e) {
             FileLog.e("tmessages", e);
-            return false;
+            return true;
         }
         return status;
     }

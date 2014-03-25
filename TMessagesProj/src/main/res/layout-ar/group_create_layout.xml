@@ -21,25 +21,13 @@
             android:layout_marginRight="5dp"
             android:minHeight="52dp"
             android:gravity="right|center_vertical"
-            android:maxLines="3"
+            android:maxLines="2"
             android:paddingTop="3dp"
             android:layout_marginTop="0dp"
             android:inputType="textFilter|textNoSuggestions|textMultiLine"
             android:imeOptions="flagNoExtractUi"
             android:textCursorDrawable="@null"
             android:textColor="#000000"/>
-
-        <TextView
-            android:textSize="16dp"
-            android:textColor="#a6a6a6"
-            android:gravity="center_vertical"
-            android:layout_gravity="top|left|center"
-            android:id="@+id/bubble_counter_text"
-            android:layout_width="wrap_content"
-            android:layout_height="52dp"
-            android:layout_marginLeft="16dp"
-            android:paddingBottom="4dp"
-            android:text="0/200"/>
 
     </FrameLayout>
 

@@ -141,7 +141,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                 if (user.status.expires <= 10000) {
                     onlineText.setText(LocaleController.getString("Invisible", R.string.Invisible));
                 } else {
-                    onlineText.setText(Utilities.formatDateOnline(user.status.expires));
+                    onlineText.setText(LocaleController.formatDateOnline(user.status.expires));
                 }
             }
         }
