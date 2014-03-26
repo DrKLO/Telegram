@@ -140,6 +140,46 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             MessagesActivity fragment = new MessagesActivity();
             fragment.onFragmentCreate();
             ApplicationLoader.fragmentsStack.add(fragment);
+
+            try {
+                if (savedInstanceState != null) {
+                    String fragmentName = savedInstanceState.getString("fragment");
+                    if (fragmentName != null) {
+                        Bundle args = savedInstanceState.getBundle("args");
+                        if (fragmentName.equals("chat")) {
+                            if (args != null) {
+                                ChatActivity chat = new ChatActivity();
+                                chat.setArguments(args);
+                                if (chat.onFragmentCreate()) {
+                                    ApplicationLoader.fragmentsStack.add(chat);
+                                    chat.restoreSelfArgs(savedInstanceState);
+                                }
+                            }
+                        } else if (fragmentName.equals("settings")) {
+                            SettingsActivity settings = new SettingsActivity();
+                            settings.onFragmentCreate();
+                            settings.restoreSelfArgs(savedInstanceState);
+                            ApplicationLoader.fragmentsStack.add(settings);
+                        } else if (fragmentName.equals("group")) {
+                            if (args != null) {
+                                GroupCreateFinalActivity group = new GroupCreateFinalActivity();
+                                group.setArguments(args);
+                                if (group.onFragmentCreate()) {
+                                    group.restoreSelfArgs(savedInstanceState);
+                                    ApplicationLoader.fragmentsStack.add(group);
+                                }
+                            }
+                        } else if (fragmentName.equals("wallpapers")) {
+                            SettingsWallpapersActivity settings = new SettingsWallpapersActivity();
+                            settings.onFragmentCreate();
+                            settings.restoreSelfArgs(savedInstanceState);
+                            ApplicationLoader.fragmentsStack.add(settings);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
         }
 
         handleIntent(getIntent(), false, savedInstanceState != null);
@@ -533,6 +573,15 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     private void checkForUpdates() {
         if (BuildVars.DEBUG_VERSION) {
             UpdateManager.register(this, BuildVars.HOCKEY_APP_HASH);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (ApplicationLoader.fragmentsStack.size() != 0) {
+            BaseFragment fragment = ApplicationLoader.fragmentsStack.get(ApplicationLoader.fragmentsStack.size() - 1);
+            fragment.onActivityResultFragment(requestCode, resultCode, data);
         }
     }
 
@@ -932,6 +981,22 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     protected void onSaveInstanceState(Bundle outState) {
         try {
             super.onSaveInstanceState(outState);
+            if (!ApplicationLoader.fragmentsStack.isEmpty()) {
+                BaseFragment lastFragment = ApplicationLoader.fragmentsStack.get(ApplicationLoader.fragmentsStack.size() - 1);
+                Bundle args = lastFragment.getArguments();
+                if (lastFragment instanceof ChatActivity && args != null) {
+                    outState.putBundle("args", args);
+                    outState.putString("fragment", "chat");
+                } else if (lastFragment instanceof SettingsActivity) {
+                    outState.putString("fragment", "settings");
+                } else if (lastFragment instanceof GroupCreateFinalActivity && args != null) {
+                    outState.putBundle("args", args);
+                    outState.putString("fragment", "group");
+                } else if (lastFragment instanceof SettingsWallpapersActivity) {
+                    outState.putString("fragment", "wallpapers");
+                }
+                lastFragment.saveSelfArgs(outState);
+            }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }

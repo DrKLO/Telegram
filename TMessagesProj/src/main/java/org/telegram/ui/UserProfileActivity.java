@@ -144,6 +144,9 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     } else if (i == 5 && dialog_id == 0 ||
                             dialog_id != 0 && (i == 7 && currentEncryptedChat instanceof TLRPC.TL_encryptedChat ||
                                     i == 5 && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat))) {
+                        if (parentActivity == null) {
+                            return;
+                        }
                         try {
                             Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
@@ -168,7 +171,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                             }
 
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentSound);
-                            startActivityForResult(tmpIntent, 0);
+                            parentActivity.startActivityForResult(tmpIntent, 12);
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
                         }
@@ -256,8 +259,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
         if (resultCode == Activity.RESULT_OK) {
             if (data == null) {
                 return;
@@ -279,7 +281,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             SharedPreferences.Editor editor = preferences.edit();
 
-            if (requestCode == 0) {
+            if (requestCode == 12) {
                 if (name != null && ringtone != null) {
                     editor.putString("sound_" + user_id, name);
                     editor.putString("sound_path_" + user_id, ringtone.toString());

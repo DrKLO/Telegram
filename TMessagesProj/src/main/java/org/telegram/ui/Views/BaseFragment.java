@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Views;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBarActivity;
@@ -28,6 +29,7 @@ public class BaseFragment extends Fragment {
     public int classGuid = 0;
     public boolean firstStart = true;
     public boolean animationInProgress = false;
+    private long currentAnimationDuration = 0;
     private boolean removeParentOnDestroy = false;
     private boolean removeParentOnAnimationEnd = true;
 
@@ -108,6 +110,16 @@ public class BaseFragment extends Fragment {
 
     public void onAnimationStart() {
         animationInProgress = true;
+        if (fragmentView != null) {
+            fragmentView.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    if (animationInProgress) {
+                        onAnimationEnd();
+                    }
+                }
+            }, currentAnimationDuration);
+        }
     }
 
     public void onAnimationEnd() {
@@ -137,6 +149,7 @@ public class BaseFragment extends Fragment {
     public Animation onCreateAnimation(int transit, boolean enter, int nextAnim) {
         if (nextAnim != 0) {
             Animation anim = AnimationUtils.loadAnimation(getActivity(), nextAnim);
+            currentAnimationDuration = anim.getDuration();
 
             anim.setAnimationListener(new Animation.AnimationListener() {
 
@@ -149,7 +162,9 @@ public class BaseFragment extends Fragment {
                 }
 
                 public void onAnimationEnd(Animation animation) {
-                    BaseFragment.this.onAnimationEnd();
+                    if (animationInProgress) {
+                        BaseFragment.this.onAnimationEnd();
+                    }
                 }
             });
 
@@ -164,6 +179,18 @@ public class BaseFragment extends Fragment {
     }
 
     public void applySelfActionBar() {
+
+    }
+
+    public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
+
+    }
+
+    public void saveSelfArgs(Bundle args) {
+
+    }
+
+    public void restoreSelfArgs(Bundle args) {
 
     }
 }

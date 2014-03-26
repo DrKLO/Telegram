@@ -113,6 +113,9 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                         builder.setItems(items, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
+                                if (parentActivity == null) {
+                                    return;
+                                }
                                 if (i == 0) {
                                     Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                                     File image = Utilities.generatePicturePath();
@@ -120,11 +123,11 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                                         takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
                                         currentPicturePath = image.getAbsolutePath();
                                     }
-                                    startActivityForResult(takePictureIntent, 0);
+                                    parentActivity.startActivityForResult(takePictureIntent, 10);
                                 } else if (i == 1) {
                                     Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
                                     photoPickerIntent.setType("image/*");
-                                    startActivityForResult(photoPickerIntent, 1);
+                                    parentActivity.startActivityForResult(photoPickerIntent, 11);
                                 }
                             }
                         });
@@ -194,10 +197,9 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
         if (resultCode == Activity.RESULT_OK) {
-            if (requestCode == 0) {
+            if (requestCode == 10) {
                 Utilities.addMediaToGallery(currentPicturePath);
                 try {
                     Bitmap bitmap = FileLoader.loadBitmap(currentPicturePath, null, Utilities.dp(320), Utilities.dp(480));
@@ -211,7 +213,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                     FileLog.e("tmessages", e);
                 }
                 currentPicturePath = null;
-            } else if (requestCode == 1) {
+            } else if (requestCode == 11) {
                 Uri imageUri = data.getData();
                 Cursor cursor = parentActivity.getContentResolver().query(imageUri, new String[]{android.provider.MediaStore.Images.ImageColumns.DATA}, null, null, null);
                 if (cursor == null) {
@@ -237,6 +239,18 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 }
             }
         }
+    }
+
+    @Override
+    public void saveSelfArgs(Bundle args) {
+        if (currentPicturePath != null) {
+            args.putString("path", currentPicturePath);
+        }
+    }
+
+    @Override
+    public void restoreSelfArgs(Bundle args) {
+        currentPicturePath = args.getString("path");
     }
 
     private void processSelectedBackground() {

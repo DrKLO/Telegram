@@ -28,6 +28,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
@@ -42,10 +43,11 @@ import org.telegram.ui.Views.PinnedHeaderListView;
 import org.telegram.ui.Views.SectionedBaseAdapter;
 
 import java.util.ArrayList;
+import java.util.concurrent.Semaphore;
 
 public class GroupCreateFinalActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, AvatarUpdater.AvatarUpdaterDelegate {
     private PinnedHeaderListView listView;
-    private TextView nameTextView;
+    private EditText nameTextView;
     private TLRPC.FileLocation avatar;
     private TLRPC.InputFile uploadedAvatar;
     private ArrayList<Integer> selectedContacts;
@@ -54,6 +56,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     private boolean donePressed;
     private AvatarUpdater avatarUpdater = new AvatarUpdater();
     private ProgressDialog progressDialog = null;
+    private String nameToSet = null;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -64,7 +67,40 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         NotificationCenter.getInstance().addObserver(this, MessagesController.chatDidFailCreate);
         avatarUpdater.parentFragment = this;
         avatarUpdater.delegate = this;
-        selectedContacts = (ArrayList<Integer>)NotificationCenter.getInstance().getFromMemCache(2);
+        selectedContacts = getArguments().getIntegerArrayList("result");
+        final ArrayList<Integer> usersToLoad = new ArrayList<Integer>();
+        for (Integer uid : selectedContacts) {
+            if (MessagesController.getInstance().users.get(uid) == null) {
+                usersToLoad.add(uid);
+            }
+        }
+        if (!usersToLoad.isEmpty()) {
+            final Semaphore semaphore = new Semaphore(0);
+            final ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+            final boolean[] error = new boolean[1];
+            MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
+                @Override
+                public void run() {
+                    users.addAll(MessagesStorage.getInstance().getUsers(usersToLoad, error));
+                    semaphore.release();
+                }
+            });
+            try {
+                semaphore.acquire();
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+            if (error[0]) {
+                return false;
+            }
+            if (!users.isEmpty()) {
+                for (TLRPC.User user : users) {
+                    MessagesController.getInstance().users.putIfAbsent(user.id, user);
+                }
+            } else {
+                return false;
+            }
+        }
         return true;
     }
 
@@ -125,6 +161,10 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
             nameTextView = (EditText)fragmentView.findViewById(R.id.bubble_input_text);
             nameTextView.setHint(LocaleController.getString("EnterGroupNamePlaceholder", R.string.EnterGroupNamePlaceholder));
+            if (nameToSet != null) {
+                nameTextView.setText(nameToSet);
+                nameToSet = null;
+            }
             listView = (PinnedHeaderListView)fragmentView.findViewById(R.id.listView);
             listView.setAdapter(new ListAdapter(parentActivity));
         } else {
@@ -200,9 +240,36 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
         avatarUpdater.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override
+    public void saveSelfArgs(Bundle args) {
+        if (avatarUpdater != null && avatarUpdater.currentPicturePath != null) {
+            args.putString("path", avatarUpdater.currentPicturePath);
+        }
+        if (nameTextView != null) {
+            String text = nameTextView.getText().toString();
+            if (text != null && text.length() != 0) {
+                args.putString("nameTextView", text);
+            }
+        }
+    }
+
+    @Override
+    public void restoreSelfArgs(Bundle args) {
+        if (avatarUpdater != null) {
+            avatarUpdater.currentPicturePath = args.getString("path");
+        }
+        String text = args.getString("nameTextView");
+        if (text != null) {
+            if (nameTextView != null) {
+                nameTextView.setText(text);
+            } else {
+                nameToSet = text;
+            }
+        }
     }
 
     @Override

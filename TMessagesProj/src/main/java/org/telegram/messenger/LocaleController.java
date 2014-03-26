@@ -26,6 +26,7 @@ import java.util.Locale;
 public class LocaleController {
 
     public static boolean isRTL = false;
+    private static boolean is24HourFormat = false;
     public static FastDateFormat formatterDay;
     public static FastDateFormat formatterWeek;
     public static FastDateFormat formatterMonth;
@@ -121,6 +122,7 @@ public class LocaleController {
         sortedLanguages.add(0, localeInfo);
 
         systemDefaultLocale = Locale.getDefault();
+        is24HourFormat = DateFormat.is24HourFormat(ApplicationLoader.applicationContext);
         LocaleInfo currentInfo = null;
         boolean override = false;
 
@@ -226,6 +228,7 @@ public class LocaleController {
         if (changingConfiguration) {
             return;
         }
+        is24HourFormat = DateFormat.is24HourFormat(ApplicationLoader.applicationContext);
         systemDefaultLocale = newConfig.locale;
         if (languageOverride != null) {
             LocaleInfo toSet = currentLocaleInfo;
@@ -324,7 +327,7 @@ public class LocaleController {
         formatterWeek = FastDateFormat.getInstance("EEE", locale);
 
         if (lang != null) {
-            if (DateFormat.is24HourFormat(ApplicationLoader.applicationContext)) {
+            if (is24HourFormat) {
                 formatterDay = FastDateFormat.getInstance("HH:mm", locale);
             } else {
                 if (lang.toLowerCase().equals("ar")) {

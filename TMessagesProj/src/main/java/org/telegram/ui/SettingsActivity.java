@@ -445,9 +445,22 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
         avatarUpdater.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override
+    public void saveSelfArgs(Bundle args) {
+        if (avatarUpdater != null && avatarUpdater.currentPicturePath != null) {
+            args.putString("path", avatarUpdater.currentPicturePath);
+        }
+    }
+
+    @Override
+    public void restoreSelfArgs(Bundle args) {
+        if (avatarUpdater != null) {
+            avatarUpdater.currentPicturePath = args.getString("path");
+        }
     }
 
     @Override

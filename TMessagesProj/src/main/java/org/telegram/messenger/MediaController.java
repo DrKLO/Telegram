@@ -831,26 +831,30 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     recordDialogId = dialog_id;
                     fileBuffer.rewind();
 
-                    /*if (android.os.Build.VERSION.SDK_INT >= 16) { some devices crash with it
-                        AutomaticGainControl agc = null;
-                        try {
-                            if (AutomaticGainControl.isAvailable()) {
-                                agc = AutomaticGainControl.create(audioRecorder.getAudioSessionId());
-                                agc.setEnabled(true);
-                                audioGainObj = agc;
-                            }
-                        } catch (Exception e) {
+                    if (android.os.Build.VERSION.SDK_INT >= 16) {
+                        File f = new File("/vendor/lib/libaudioeffect_jni.so");
+                        File f2 = new File("/system/lib/libaudioeffect_jni.so");
+                        if (f.exists() || f2.exists()) {
+                            AutomaticGainControl agc = null;
                             try {
-                                if (agc != null) {
-                                    agc.release();
-                                    agc = null;
+                                if (AutomaticGainControl.isAvailable()) {
+                                    agc = AutomaticGainControl.create(audioRecorder.getAudioSessionId());
+                                    agc.setEnabled(true);
+                                    audioGainObj = agc;
                                 }
-                            } catch (Exception e2) {
-                                FileLog.e("tmessages", e2);
+                            } catch (Exception e) {
+                                try {
+                                    if (agc != null) {
+                                        agc.release();
+                                        agc = null;
+                                    }
+                                } catch (Exception e2) {
+                                    FileLog.e("tmessages", e2);
+                                }
+                                FileLog.e("tmessages", e);
                             }
-                            FileLog.e("tmessages", e);
                         }
-                    }*/
+                    }
 
                     audioRecorder.startRecording();
                 } catch (Exception e) {

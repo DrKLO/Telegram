@@ -431,11 +431,12 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 if (!selectedContacts.isEmpty()) {
                     ArrayList<Integer> result = new ArrayList<Integer>();
                     result.addAll(selectedContacts.keySet());
-                    NotificationCenter.getInstance().addToMemCache(2, result);
-                } else {
-                    return;
+                    Bundle args = new Bundle();
+                    args.putIntegerArrayList("result", result);
+                    GroupCreateFinalActivity fragment = new GroupCreateFinalActivity();
+                    fragment.setArguments(args);
+                    ((LaunchActivity)parentActivity).presentFragment(fragment, "group_craate_final", false);
                 }
-                ((LaunchActivity)parentActivity).presentFragment(new GroupCreateFinalActivity(), "group_craate_final", false);
             }
         });
     }

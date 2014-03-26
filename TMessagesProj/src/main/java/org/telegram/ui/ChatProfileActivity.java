@@ -163,6 +163,9 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         editor.commit();
                         listView.invalidateViews();
                     } else if (i == 3) {
+                        if (parentActivity == null) {
+                            return;
+                        }
                         try {
                             Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
@@ -187,7 +190,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                             }
 
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentSound);
-                            startActivityForResult(tmpIntent, 15);
+                            parentActivity.startActivityForResult(tmpIntent, 3);
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
                         }
@@ -247,11 +250,10 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
         avatarUpdater.onActivityResult(requestCode, resultCode, data);
         if (resultCode == Activity.RESULT_OK) {
-            if (requestCode == 15) {
+            if (requestCode == 3) {
                 Uri ringtone = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);
                 String name = null;
                 if (ringtone != null && parentActivity != null) {

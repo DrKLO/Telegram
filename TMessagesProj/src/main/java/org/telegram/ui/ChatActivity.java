@@ -104,6 +104,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.concurrent.Semaphore;
 
 public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLayout.SizeNotifierRelativeLayoutDelegate, NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate, DocumentSelectActivity.DocumentSelectActivityDelegate {
     private LayoutListView chatListView;
@@ -288,31 +289,99 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        int chatId = getArguments().getInt("chat_id", 0);
-        int userId = getArguments().getInt("user_id", 0);
-        int encId = getArguments().getInt("enc_id", 0);
+        final int chatId = getArguments().getInt("chat_id", 0);
+        final int userId = getArguments().getInt("user_id", 0);
+        final int encId = getArguments().getInt("enc_id", 0);
 
         if (chatId != 0) {
             currentChat = MessagesController.getInstance().chats.get(chatId);
             if (currentChat == null) {
-                return false;
+                final Semaphore semaphore = new Semaphore(0);
+                MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        currentChat = MessagesStorage.getInstance().getChat(chatId);
+                        semaphore.release();
+                    }
+                });
+                try {
+                    semaphore.acquire();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+                if (currentChat != null) {
+                    MessagesController.getInstance().chats.put(currentChat.id, currentChat);
+                } else {
+                    return false;
+                }
             }
             MessagesController.getInstance().loadChatInfo(currentChat.id);
             dialog_id = -chatId;
         } else if (userId != 0) {
             currentUser = MessagesController.getInstance().users.get(userId);
             if (currentUser == null) {
-                return false;
+                final Semaphore semaphore = new Semaphore(0);
+                MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        currentUser = MessagesStorage.getInstance().getUser(userId);
+                        semaphore.release();
+                    }
+                });
+                try {
+                    semaphore.acquire();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+                if (currentUser != null) {
+                    MessagesController.getInstance().users.putIfAbsent(currentUser.id, currentUser);
+                } else {
+                    return false;
+                }
             }
             dialog_id = userId;
         } else if (encId != 0) {
             currentEncryptedChat = MessagesController.getInstance().encryptedChats.get(encId);
             if (currentEncryptedChat == null) {
-                return false;
+                final Semaphore semaphore = new Semaphore(0);
+                MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        currentEncryptedChat = MessagesStorage.getInstance().getEncryptedChat(encId);
+                        semaphore.release();
+                    }
+                });
+                try {
+                    semaphore.acquire();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+                if (currentEncryptedChat != null) {
+                    MessagesController.getInstance().encryptedChats.putIfAbsent(currentEncryptedChat.id, currentEncryptedChat);
+                } else {
+                    return false;
+                }
             }
             currentUser = MessagesController.getInstance().users.get(currentEncryptedChat.user_id);
             if (currentUser == null) {
-                return false;
+                final Semaphore semaphore = new Semaphore(0);
+                MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        currentUser = MessagesStorage.getInstance().getUser(currentEncryptedChat.user_id);
+                        semaphore.release();
+                    }
+                });
+                try {
+                    semaphore.acquire();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+                if (currentUser != null) {
+                    MessagesController.getInstance().users.putIfAbsent(currentUser.id, currentUser);
+                } else {
+                    return false;
+                }
             }
             dialog_id = ((long)encId) << 32;
             maxMessageId = Integer.MIN_VALUE;
@@ -1400,8 +1469,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == 0) {
                 Utilities.addMediaToGallery(currentPicturePath);
@@ -1448,6 +1516,18 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 processSendingVideo(videoPath);
             }
         }
+    }
+
+    @Override
+    public void saveSelfArgs(Bundle args) {
+        if (currentPicturePath != null) {
+            args.putString("path", currentPicturePath);
+        }
+    }
+
+    @Override
+    public void restoreSelfArgs(Bundle args) {
+        currentPicturePath = args.getString("path");
     }
 
     public boolean processSendingText(String text) {
@@ -3104,7 +3184,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
                         currentPicturePath = image.getAbsolutePath();
                     }
-                    startActivityForResult(takePictureIntent, 0);
+                    parentActivity.startActivityForResult(takePictureIntent, 0);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
@@ -3114,7 +3194,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 try {
                     Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
                     photoPickerIntent.setType("image/*");
-                    startActivityForResult(photoPickerIntent, 1);
+                    parentActivity.startActivityForResult(photoPickerIntent, 1);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
@@ -3138,7 +3218,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     Intent chooserIntent = Intent.createChooser(pickIntent, "");
                     chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[] { takeVideoIntent });
 
-                    startActivityForResult(chooserIntent, 2);
+                    parentActivity.startActivityForResult(chooserIntent, 2);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
