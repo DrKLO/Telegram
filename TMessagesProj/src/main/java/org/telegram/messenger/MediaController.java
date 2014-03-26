@@ -831,7 +831,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     recordDialogId = dialog_id;
                     fileBuffer.rewind();
 
-                    if (android.os.Build.VERSION.SDK_INT >= 16) {
+                    /*if (android.os.Build.VERSION.SDK_INT >= 16) { some devices crash with it
                         AutomaticGainControl agc = null;
                         try {
                             if (AutomaticGainControl.isAvailable()) {
@@ -850,7 +850,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                             }
                             FileLog.e("tmessages", e);
                         }
-                    }
+                    }*/
 
                     audioRecorder.startRecording();
                 } catch (Exception e) {

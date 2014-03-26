@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
 
 public class RuleSet {
     public int matchLen;
-    public ArrayList<PhoneRule> rules;
+    public ArrayList<PhoneRule> rules = new ArrayList<PhoneRule>();
     public boolean hasRuleWithIntlPrefix;
     public boolean hasRuleWithTrunkPrefix;
     public static Pattern pattern = Pattern.compile("[0-9]+");
