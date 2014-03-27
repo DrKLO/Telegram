@@ -177,6 +177,12 @@ public class BackupImageView extends ImageView {
     }
 
     @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        recycleBitmap(null);
+    }
+
+    @Override
     protected void onDraw(Canvas canvas) {
         try {
             super.onDraw(canvas);
@@ -186,12 +192,6 @@ public class BackupImageView extends ImageView {
             setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_placeholderBitmap, last_size);
             FileLog.e("tmessages", e);
         }
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        recycleBitmap(null);
-        super.finalize();
     }
 
     public void setImageResourceMy(int resId) {

@@ -153,6 +153,14 @@ public class DialogCell extends BaseCell {
     }
 
     @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (avatarImage != null) {
+            avatarImage.clearImage();
+        }
+    }
+
+    @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), Utilities.dp(70));
     }

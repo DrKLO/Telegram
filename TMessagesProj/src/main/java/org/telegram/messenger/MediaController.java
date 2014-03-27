@@ -45,12 +45,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private native int seekOpusFile(float position);
     private native int isOpusFile(String path);
     private native void closeOpusFile();
-    private native void readOpusFile(ByteBuffer buffer, int capacity);
-    private native int getFinished();
-    private native int getSize();
-    private native long getPcmOffset();
+    private native void readOpusFile(ByteBuffer buffer, int capacity, int[] args);
     private native long getTotalPcmDuration();
 
+    public static int[] readArgs = new int[3];
 
     public static interface FileDownloadProgressListener {
         public void onFailedDownload(String fileName);
@@ -403,10 +401,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                         }
                     }
                     if (buffer != null) {
-                        readOpusFile(buffer.buffer, playerBufferSize);
-                        buffer.size = getSize();
-                        buffer.pcmOffset = getPcmOffset();
-                        buffer.finished = getFinished();
+                        readOpusFile(buffer.buffer, playerBufferSize, readArgs);
+                        buffer.size = readArgs[0];
+                        buffer.pcmOffset = readArgs[1];
+                        buffer.finished = readArgs[2];
                         if (buffer.finished == 1) {
                             decodingFinished = true;
                         }

@@ -95,6 +95,15 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     }
 
     @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (avatarImage != null) {
+            avatarImage.clearImage();
+            currentPhoto = null;
+        }
+    }
+
+    @Override
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
         float y = event.getY();

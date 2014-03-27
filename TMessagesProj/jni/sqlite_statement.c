@@ -1,21 +1,11 @@
-#include <time.h>
-#include <stdlib.h>
-#include "org_telegram_SQLite.h"
+#include "sqlite.h"
 
 jfieldID queryArgsCountField;
 
-jint JNI_OnLoad(JavaVM *vm, void *reserved) {
-	JNIEnv* env = 0;
-    srand(time(NULL));
-
-	if ((*vm)->GetEnv(vm, (void**) &env, JNI_VERSION_1_4) != JNI_OK) {
-		return -1;
-	}
-
+jint sqliteOnJNILoad(JavaVM *vm, void *reserved, JNIEnv *env) {
 	jclass class = (*env)->FindClass(env, "org/telegram/SQLite/SQLitePreparedStatement");
 	queryArgsCountField = (*env)->GetFieldID(env, class, "queryArgsCount", "I");
-
-	return JNI_VERSION_1_4;
+	return JNI_VERSION_1_6;
 }
 
 int Java_org_telegram_SQLite_SQLitePreparedStatement_step(JNIEnv* env, jobject object, int statementHandle) {

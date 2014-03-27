@@ -9,4 +9,11 @@
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 #define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__)
 
+#ifndef max
+#define max(x, y) ((x) > (y)) ? (x) : (y)
+#endif
+#ifndef min
+#define min(x, y) ((x) < (y)) ? (x) : (y)
+#endif
+
 #endif

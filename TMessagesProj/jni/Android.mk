@@ -154,6 +154,18 @@ LOCAL_SRC_FILES     += \
 ./opus/opusfile/opusfile.c \
 ./opus/opusfile/stream.c
 
+LOCAL_SRC_FILES     += \
+./giflib/dgif_lib.c \
+./giflib/gifalloc.c
+
+LOCAL_SRC_FILES     += \
+./aes/aes_core.c \
+./aes/aes_ige.c \
+./aes/aes_misc.c
+
+LOCAL_SRC_FILES     += \
+./sqlite/sqlite3.c
+
 LOCAL_C_INCLUDES    := \
 ./opus/include \
 ./opus/silk \
@@ -163,16 +175,12 @@ LOCAL_C_INCLUDES    := \
 ./opus/opusfile
 
 LOCAL_SRC_FILES     += \
-./aes_core.c \
-./aes_ige.c \
-./aes_misc.c \
 ./jni.c \
-./sqlite3.c \
-./org_telegram_SQLite_SQLiteCursor.c \
-./org_telegram_SQLite_SQLiteDatabase.c \
-./org_telegram_SQLite_SQLitePreparedStatement.c \
-./org_telegram_SQLite.c \
-./audio.c
+./sqlite_cursor.c \
+./sqlite_database.c \
+./sqlite_statement.c \
+./sqlite.c \
+./audio.c \
+./gif.c
 
- 
 include $(BUILD_SHARED_LIBRARY)

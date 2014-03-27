@@ -105,6 +105,15 @@ public class ChatBaseCell extends BaseCell {
         }
     }
 
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (avatarImage != null) {
+            avatarImage.clearImage();
+            currentPhoto = null;
+        }
+    }
+
     private void init() {
         if (backgroundDrawableIn == null) {
             backgroundDrawableIn = getResources().getDrawable(R.drawable.msg_in);

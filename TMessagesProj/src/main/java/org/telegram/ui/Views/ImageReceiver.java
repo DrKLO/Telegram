@@ -137,6 +137,7 @@ public class ImageReceiver {
                     } else {
                         currentImage = null;
                     }
+                    currentPath = null;
                 }
             }
         }
@@ -159,11 +160,5 @@ public class ImageReceiver {
             setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size);
             FileLog.e("tmessages", e);
         }
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        recycleBitmap(null);
-        super.finalize();
     }
 }

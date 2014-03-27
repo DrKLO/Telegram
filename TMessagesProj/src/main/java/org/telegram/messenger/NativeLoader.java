@@ -22,9 +22,9 @@ import java.util.zip.ZipFile;
 public class NativeLoader {
 
     private static final long sizes[] = new long[] {
-            782992,     //armeabi
-            766628,     //armeabi-v7a
-            1352692,    //x86
+            795280,     //armeabi
+            778916,     //armeabi-v7a
+            1377300,    //x86
             0,          //mips
     };
 

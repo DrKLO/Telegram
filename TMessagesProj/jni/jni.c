@@ -3,9 +3,34 @@
 #include <jni.h>
 #include <sys/types.h>
 #include <inttypes.h>
-#include <android/log.h>
-#include "aes.h"
-#include "log.h"
+#include <stdlib.h>
+#include "aes/aes.h"
+#include "utils.h"
+#include "sqlite.h"
+#include "gif.h"
+
+jint JNI_OnLoad(JavaVM *vm, void *reserved) {
+	JNIEnv *env = 0;
+    srand(time(NULL));
+    
+	if ((*vm)->GetEnv(vm, (void**) &env, JNI_VERSION_1_6) != JNI_OK) {
+		return -1;
+	}
+    
+    if (sqliteOnJNILoad(vm, reserved, env) == -1) {
+        return -1;
+    }
+    
+    if (gifOnJNILoad(vm, reserved, env) == -1) {
+        return -1;
+    }
+    
+	return JNI_VERSION_1_6;
+}
+
+void JNI_OnUnload(JavaVM *vm, void *reserved) {
+    gifOnJNIUnload(vm, reserved);
+}
 
 JNIEXPORT jbyteArray Java_org_telegram_messenger_Utilities_aesIgeEncryption(JNIEnv *env, jclass class, jbyteArray _what, jbyteArray _key, jbyteArray _iv, jboolean encrypt, jboolean changeIv, jint l) {
     unsigned char *what = (unsigned char *)(*env)->GetByteArrayElements(env, _what, NULL);

@@ -5,14 +5,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <opusfile.h>
-#include "log.h"
-
-#ifndef max
-#define max(x, y) ((x) > (y)) ? (x) : (y)
-#endif
-#ifndef min
-#define min(x, y) ((x) < (y)) ? (x) : (y)
-#endif
+#include "utils.h"
 
 typedef struct {
     int version;
@@ -540,9 +533,6 @@ int64_t _currentPcmOffset = 0;
 int _finished = 0;
 static const int playerBuffersCount = 3;
 static const int playerSampleRate = 48000;
-int finished;
-int pcmOffset;
-int size;
 
 void cleanupPlayer() {
     if (_opusFile) {
@@ -585,14 +575,14 @@ int initPlayer(const char *path) {
     return 1;
 }
 
-void fillBuffer(uint8_t *buffer, int capacity) {
+void fillBuffer(uint8_t *buffer, int capacity, int *args) {
     if (_opusFile) {
-        pcmOffset = max(0, op_pcm_tell(_opusFile));
+        args[1] = max(0, op_pcm_tell(_opusFile));
         
         if (_finished) {
-            finished = 1;
-            size = 0;
-            pcmOffset = 0;
+            args[0] = 0;
+            args[1] = 0;
+            args[2] = 1;
             return;
         } else {
             int writtenOutputBytes = 0;
@@ -612,19 +602,19 @@ void fillBuffer(uint8_t *buffer, int capacity) {
                 }
             }
             
-            size = writtenOutputBytes;
+            args[0] = writtenOutputBytes;
             
-            if (endOfFileReached || pcmOffset + size == _totalPcmDuration) {
+            if (endOfFileReached || args[1] + args[0] == _totalPcmDuration) {
                 _finished = 1;
-                finished = 1;
+                args[2] = 1;
             } else {
-                finished = 0;
+                args[2] = 0;
             }
         }
     } else {
         memset(buffer, 0, capacity);
-        size = capacity;
-        pcmOffset = _totalPcmDuration;
+        args[0] = capacity;
+        args[1] = _totalPcmDuration;
     }
 }
 
@@ -632,21 +622,11 @@ JNIEXPORT jlong Java_org_telegram_messenger_MediaController_getTotalPcmDuration(
     return _totalPcmDuration;
 }
 
-JNIEXPORT int Java_org_telegram_messenger_MediaController_getFinished(JNIEnv *env, jclass class) {
-    return finished;
-}
-
-JNIEXPORT int Java_org_telegram_messenger_MediaController_getSize(JNIEnv *env, jclass class) {
-    return size;
-}
-
-JNIEXPORT jlong Java_org_telegram_messenger_MediaController_getPcmOffset(JNIEnv *env, jclass class) {
-    return pcmOffset;
-}
-
-JNIEXPORT void Java_org_telegram_messenger_MediaController_readOpusFile(JNIEnv *env, jclass class, jobject buffer, jint capacity) {
+JNIEXPORT void Java_org_telegram_messenger_MediaController_readOpusFile(JNIEnv *env, jclass class, jobject buffer, jint capacity, jintArray args) {
+    jint *argsArr = (*env)->GetIntArrayElements(env, args, 0);
     jbyte *bufferBytes = (*env)->GetDirectBufferAddress(env, buffer);
-    fillBuffer(bufferBytes, capacity);
+    fillBuffer(bufferBytes, capacity, argsArr);
+    (*env)->ReleaseIntArrayElements(env, args, argsArr, 0);
 }
 
 JNIEXPORT int Java_org_telegram_messenger_MediaController_seekOpusFile(JNIEnv *env, jclass class, jfloat position) {
