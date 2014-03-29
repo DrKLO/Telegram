@@ -857,12 +857,12 @@ public class TLRPC {
 
         public void readParams(AbsSerializedData stream) {
             rawMedia = TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+            onRawMediaChanged();
         }
 
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(getConstructor());
             rawMedia.serializeToStream(stream);
-            onRawMediaChanged();
         }
 
         protected abstract void onRawMediaChanged();
