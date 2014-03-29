@@ -1025,9 +1025,9 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                             }
                             if (loadFile) {
                                 if (!FileLoader.getInstance().isLoadingFile(fileName)) {
-                                    FileLoader.getInstance().loadFile(message.messageOwner.media.video, null, null, null);
+                                    FileLoader.getInstance().loadFile(message.messageOwner.media.video);
                                 } else {
-                                    FileLoader.getInstance().cancelLoadFile(message.messageOwner.media.video, null, null, null);
+                                    FileLoader.getInstance().cancelLoadFile(message.messageOwner.media.video);
                                 }
                                 checkCurrentFile();
                                 processViews(playButton, message);

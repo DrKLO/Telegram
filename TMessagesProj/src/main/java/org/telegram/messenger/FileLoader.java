@@ -450,29 +450,20 @@ public class FileLoader {
         });
     }
 
-    public void cancelLoadFile(final TLRPC.Video video, final TLRPC.PhotoSize photo, final TLRPC.Document document, final TLRPC.Audio audio) {
-        if (video == null && photo == null && document == null && audio == null) {
+    public void cancelLoadFile(final TLRPC.Attachment attachment) {
+        if (attachment == null) {
             return;
         }
         Utilities.fileUploadQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
-                String fileName = null;
-                if (video != null) {
-                    fileName = MessageObject.getAttachFileName(video);
-                } else if (photo != null) {
-                    fileName = MessageObject.getAttachFileName(photo);
-                } else if (document != null) {
-                    fileName = MessageObject.getAttachFileName(document);
-                } else if (audio != null) {
-                    fileName = MessageObject.getAttachFileName(audio);
-                }
+                String fileName = attachment.getAttachmentFileName();
                 if (fileName == null) {
                     return;
                 }
                 FileLoadOperation operation = loadOperationPaths.get(fileName);
                 if (operation != null) {
-                    if (audio != null) {
+                    if (attachment instanceof TLRPC.Audio) {
                         audioLoadOperationQueue.remove(operation);
                     } else {
                         loadOperationQueue.remove(operation);
@@ -487,159 +478,133 @@ public class FileLoader {
         return loadOperationPaths.containsKey(fileName);
     }
 
-    public void loadFile(final TLRPC.Video video, final TLRPC.PhotoSize photo, final TLRPC.Document document, final TLRPC.Audio audio) {
-        Utilities.fileUploadQueue.postRunnable(new Runnable() {
+    public void loadFile(final TLRPC.Attachment attachment) {
+        String fileName = attachment.getAttachmentFileName();
+        FileLoadOperation operation = null;
+        if (attachment instanceof TLRPC.ExtendedAttachment) {
+            new FileLoadOperation((TLRPC.ExtendedAttachment)attachment);
+        } else if (attachment instanceof TLRPC.PhotoSize) {
+            operation = new FileLoadOperation(((TLRPC.PhotoSize)attachment).location);
+            operation.needBitmapCreate = false;
+        }
+        operation.totalBytesCount = attachment.size;
+
+        final String arg1 = fileName;
+        loadOperationPaths.put(fileName, operation);
+        operation.delegate = new FileLoadOperation.FileLoadOperationDelegate() {
             @Override
-            public void run() {
-                String fileName = null;
-                if (video != null) {
-                    fileName = MessageObject.getAttachFileName(video);
-                } else if (photo != null) {
-                    fileName = MessageObject.getAttachFileName(photo);
-                } else if (document != null) {
-                    fileName = MessageObject.getAttachFileName(document);
-                } else if (audio != null) {
-                    fileName = MessageObject.getAttachFileName(audio);
-                }
-                if (fileName == null || fileName.contains("" + Integer.MIN_VALUE)) {
-                    return;
-                }
-                if (loadOperationPaths.containsKey(fileName)) {
-                    return;
-                }
-                FileLoadOperation operation = null;
-                if (video != null) {
-                    operation = new FileLoadOperation(video);
-                    operation.totalBytesCount = video.size;
-                } else if (photo != null) {
-                    operation = new FileLoadOperation(photo.location);
-                    operation.totalBytesCount = photo.size;
-                    operation.needBitmapCreate = false;
-                } else if (document != null) {
-                    operation = new FileLoadOperation(document);
-                    operation.totalBytesCount = document.size;
-                } else if (audio != null) {
-                    operation = new FileLoadOperation(audio);
-                    operation.totalBytesCount = audio.size;
-                }
-
-                final String arg1 = fileName;
-                loadOperationPaths.put(fileName, operation);
-                operation.delegate = new FileLoadOperation.FileLoadOperationDelegate() {
+            public void didFinishLoadingFile(FileLoadOperation operation) {
+                Utilities.RunOnUIThread(new Runnable() {
                     @Override
-                    public void didFinishLoadingFile(FileLoadOperation operation) {
-                        Utilities.RunOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                NotificationCenter.getInstance().postNotificationName(FileLoadProgressChanged, arg1, 1.0f);
-                            }
-                        });
-                        Utilities.RunOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                NotificationCenter.getInstance().postNotificationName(FileDidLoaded, arg1);
-                            }
-                        });
-                        Utilities.fileUploadQueue.postRunnable(new Runnable() {
-                            @Override
-                            public void run() {
-                                loadOperationPaths.remove(arg1);
-                                if (audio != null) {
-                                    currentAudioLoadOperationsCount--;
-                                    if (currentAudioLoadOperationsCount < 2) {
-                                        FileLoadOperation operation = audioLoadOperationQueue.poll();
-                                        if (operation != null) {
-                                            currentAudioLoadOperationsCount++;
-                                            operation.start();
-                                        }
-                                    }
-                                } else {
-                                    currentLoadOperationsCount--;
-                                    if (currentLoadOperationsCount < 2) {
-                                        FileLoadOperation operation = loadOperationQueue.poll();
-                                        if (operation != null) {
-                                            currentLoadOperationsCount++;
-                                            operation.start();
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                        fileProgresses.remove(arg1);
+                    public void run() {
+                        NotificationCenter.getInstance().postNotificationName(FileLoadProgressChanged, arg1, 1.0f);
                     }
-
+                });
+                Utilities.RunOnUIThread(new Runnable() {
                     @Override
-                    public void didFailedLoadingFile(FileLoadOperation operation) {
-                        fileProgresses.remove(arg1);
-                        if (operation.state != 2) {
-                            Utilities.RunOnUIThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    NotificationCenter.getInstance().postNotificationName(FileDidFailedLoad, arg1);
-                                }
-                            });
-                        }
-                        Utilities.fileUploadQueue.postRunnable(new Runnable() {
-                            @Override
-                            public void run() {
-                                loadOperationPaths.remove(arg1);
-                                if (audio != null) {
-                                    currentAudioLoadOperationsCount--;
-                                    if (currentAudioLoadOperationsCount < 2) {
-                                        FileLoadOperation operation = audioLoadOperationQueue.poll();
-                                        if (operation != null) {
-                                            currentAudioLoadOperationsCount++;
-                                            operation.start();
-                                        }
-                                    }
-                                } else {
-                                    currentLoadOperationsCount--;
-                                    if (currentLoadOperationsCount < 2) {
-                                        FileLoadOperation operation = loadOperationQueue.poll();
-                                        if (operation != null) {
-                                            currentLoadOperationsCount++;
-                                            operation.start();
-                                        }
-                                    }
+                    public void run() {
+                        NotificationCenter.getInstance().postNotificationName(FileDidLoaded, arg1);
+                    }
+                });
+                Utilities.fileUploadQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        loadOperationPaths.remove(arg1);
+                        if (attachment instanceof TLRPC.Audio) {
+                            currentAudioLoadOperationsCount--;
+                            if (currentAudioLoadOperationsCount < 2) {
+                                FileLoadOperation operation = audioLoadOperationQueue.poll();
+                                if (operation != null) {
+                                    currentAudioLoadOperationsCount++;
+                                    operation.start();
                                 }
                             }
-                        });
-                    }
-
-                    @Override
-                    public void didChangedLoadProgress(FileLoadOperation operation, final float progress) {
-                        if (operation.state != 2) {
-                            fileProgresses.put(arg1, progress);
-                        }
-                        long currentTime = System.currentTimeMillis();
-                        if (lastProgressUpdateTime == 0 || lastProgressUpdateTime < currentTime - 500) {
-                            lastProgressUpdateTime = currentTime;
-                            Utilities.RunOnUIThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    NotificationCenter.getInstance().postNotificationName(FileLoadProgressChanged, arg1, progress);
+                        } else {
+                            currentLoadOperationsCount--;
+                            if (currentLoadOperationsCount < 2) {
+                                FileLoadOperation operation = loadOperationQueue.poll();
+                                if (operation != null) {
+                                    currentLoadOperationsCount++;
+                                    operation.start();
                                 }
-                            });
+                            }
                         }
                     }
-                };
-                if (audio != null) {
-                    if (currentAudioLoadOperationsCount < 2) {
-                        currentAudioLoadOperationsCount++;
-                        operation.start();
-                    } else {
-                        audioLoadOperationQueue.add(operation);
+                });
+                fileProgresses.remove(arg1);
+            }
+
+            @Override
+            public void didFailedLoadingFile(FileLoadOperation operation) {
+                fileProgresses.remove(arg1);
+                if (operation.state != 2) {
+                    Utilities.RunOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            NotificationCenter.getInstance().postNotificationName(FileDidFailedLoad, arg1);
+                        }
+                    });
+                }
+                Utilities.fileUploadQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        loadOperationPaths.remove(arg1);
+                        if (attachment instanceof TLRPC.Audio) {
+                            currentAudioLoadOperationsCount--;
+                            if (currentAudioLoadOperationsCount < 2) {
+                                FileLoadOperation operation = audioLoadOperationQueue.poll();
+                                if (operation != null) {
+                                    currentAudioLoadOperationsCount++;
+                                    operation.start();
+                                }
+                            }
+                        } else {
+                            currentLoadOperationsCount--;
+                            if (currentLoadOperationsCount < 2) {
+                                FileLoadOperation operation = loadOperationQueue.poll();
+                                if (operation != null) {
+                                    currentLoadOperationsCount++;
+                                    operation.start();
+                                }
+                            }
+                        }
                     }
-                } else {
-                    if (currentLoadOperationsCount < 2) {
-                        currentLoadOperationsCount++;
-                        operation.start();
-                    } else {
-                        loadOperationQueue.add(operation);
-                    }
+                });
+            }
+
+            @Override
+            public void didChangedLoadProgress(FileLoadOperation operation, final float progress) {
+                if (operation.state != 2) {
+                    fileProgresses.put(arg1, progress);
+                }
+                long currentTime = System.currentTimeMillis();
+                if (lastProgressUpdateTime == 0 || lastProgressUpdateTime < currentTime - 500) {
+                    lastProgressUpdateTime = currentTime;
+                    Utilities.RunOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            NotificationCenter.getInstance().postNotificationName(FileLoadProgressChanged, arg1, progress);
+                        }
+                    });
                 }
             }
-        });
+        };
+
+        if (attachment instanceof TLRPC.Audio) {
+            if (currentAudioLoadOperationsCount < 2) {
+                currentAudioLoadOperationsCount++;
+                operation.start();
+            } else {
+                audioLoadOperationQueue.add(operation);
+            }
+        } else {
+            if (currentLoadOperationsCount < 2) {
+                currentLoadOperationsCount++;
+                operation.start();
+            } else {
+                loadOperationQueue.add(operation);
+            }
+        }
     }
 
     Bitmap imageFromKey(String key) {

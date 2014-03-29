@@ -32,6 +32,9 @@ android {
     signingConfigs {
         debug {
             storeFile file("config/debug.keystore")
+            storePassword DEBUG_STORE_PASSWORD
+            keyAlias DEBUG_KEY_ALIAS
+            keyPassword DEBUG_KEY_PASSWORD
         }
 
         release {

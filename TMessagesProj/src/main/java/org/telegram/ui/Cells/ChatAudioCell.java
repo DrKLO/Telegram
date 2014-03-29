@@ -176,11 +176,11 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
                 invalidate();
             }
         } else if (buttonState == 2) {
-            FileLoader.getInstance().loadFile(null, null, null, currentMessageObject.messageOwner.media.audio);
+            FileLoader.getInstance().loadFile(currentMessageObject.messageOwner.media.audio);
             buttonState = 3;
             invalidate();
         } else if (buttonState == 3) {
-            FileLoader.getInstance().cancelLoadFile(null, null, null, currentMessageObject.messageOwner.media.audio);
+            FileLoader.getInstance().cancelLoadFile(currentMessageObject.messageOwner.media.audio);
             buttonState = 2;
             invalidate();
         }
@@ -211,7 +211,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
 
     public void downloadAudioIfNeed() {
         if (buttonState == 2) {
-            FileLoader.getInstance().loadFile(null, null, null, currentMessageObject.messageOwner.media.audio);
+            FileLoader.getInstance().loadFile(currentMessageObject.messageOwner.media.audio);
             buttonState = 3;
             invalidate();
         }

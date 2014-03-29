@@ -3707,7 +3707,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         photoImage.setImageBitmap(photo.image);
                     } else {
                         if (type == 2 || type == 3) {
-                            String fileName = MessageObject.getAttachFileName(photo.photoOwner);
+                            String fileName = photo.photoOwner.getAttachmentFileName();
                             File cacheFile = new File(Utilities.getCacheDir(), fileName);
                             if (!cacheFile.exists()) {
                                 photoFileName = fileName;
@@ -4288,9 +4288,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                 if (file != null) {
                                     loadingFile.remove(file);
                                     if (message.type == 6 || message.type == 7) {
-                                        FileLoader.getInstance().cancelLoadFile(message.messageOwner.media.video, null, null, null);
+                                        FileLoader.getInstance().cancelLoadFile(message.messageOwner.media.video);
                                     } else if (message.type == 16 || message.type == 17) {
-                                        FileLoader.getInstance().cancelLoadFile(null, null, message.messageOwner.media.document, null);
+                                        FileLoader.getInstance().cancelLoadFile(message.messageOwner.media.document);
                                     }
                                     updateVisibleRows();
                                 }
@@ -4434,9 +4434,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                 progressByTag.put((Integer)actionProgress.getTag(), fileName);
                                 addToLoadingFile(fileName, actionProgress);
                                 if (message.type == 6 || message.type == 7) {
-                                    FileLoader.getInstance().loadFile(message.messageOwner.media.video, null, null, null);
+                                    FileLoader.getInstance().loadFile(message.messageOwner.media.video);
                                 } else if (message.type == 16 || message.type == 17) {
-                                    FileLoader.getInstance().loadFile(null, null, message.messageOwner.media.document, null);
+                                    FileLoader.getInstance().loadFile(message.messageOwner.media.document);
                                 }
                                 updateVisibleRows();
                             }

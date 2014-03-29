@@ -55,86 +55,31 @@ public class FileLoadOperation {
     }
 
     public FileLoadOperation(TLRPC.FileLocation fileLocation) {
+        datacenter_id = fileLocation.dc_id;
         if (fileLocation instanceof TLRPC.TL_fileEncryptedLocation) {
             location = new TLRPC.TL_inputEncryptedFileLocation();
             location.id = fileLocation.volume_id;
-            location.volume_id = fileLocation.volume_id;
             location.access_hash = fileLocation.secret;
-            location.local_id = fileLocation.local_id;
             iv = new byte[32];
             System.arraycopy(fileLocation.iv, 0, iv, 0, iv.length);
             key = fileLocation.key;
-            datacenter_id = fileLocation.dc_id;
         } else if (fileLocation instanceof TLRPC.TL_fileLocation) {
             location = new TLRPC.TL_inputFileLocation();
-            location.volume_id = fileLocation.volume_id;
             location.secret = fileLocation.secret;
-            location.local_id = fileLocation.local_id;
-            datacenter_id = fileLocation.dc_id;
         }
+        location.volume_id = fileLocation.volume_id;
+        location.local_id = fileLocation.local_id;
     }
 
-    public FileLoadOperation(TLRPC.Video videoLocation) {
-        if (videoLocation instanceof TLRPC.TL_video) {
-            location = new TLRPC.TL_inputVideoFileLocation();
-            datacenter_id = videoLocation.dc_id;
-            location.id = videoLocation.id;
-            location.access_hash = videoLocation.access_hash;
-        } else if (videoLocation instanceof TLRPC.TL_videoEncrypted) {
-            location = new TLRPC.TL_inputEncryptedFileLocation();
-            location.id = videoLocation.id;
-            location.access_hash = videoLocation.access_hash;
-            datacenter_id = videoLocation.dc_id;
+    public FileLoadOperation(TLRPC.ExtendedAttachment attachmentLocation) {
+        datacenter_id = attachmentLocation.dc_id;
+        location = attachmentLocation.getFileLocation();
+        if (attachmentLocation.isEncrypted()) {
             iv = new byte[32];
-            System.arraycopy(videoLocation.iv, 0, iv, 0, iv.length);
-            key = videoLocation.key;
+            System.arraycopy(attachmentLocation.iv, 0, iv, 0, iv.length);
+            key = attachmentLocation.key;
         }
-        ext = ".mp4";
-    }
-
-    public FileLoadOperation(TLRPC.Audio audioLocation) {
-        if (audioLocation instanceof TLRPC.TL_audio) {
-            location = new TLRPC.TL_inputAudioFileLocation();
-            datacenter_id = audioLocation.dc_id;
-            location.id = audioLocation.id;
-            location.access_hash = audioLocation.access_hash;
-        } else if (audioLocation instanceof TLRPC.TL_audioEncrypted) {
-            location = new TLRPC.TL_inputEncryptedFileLocation();
-            location.id = audioLocation.id;
-            location.access_hash = audioLocation.access_hash;
-            datacenter_id = audioLocation.dc_id;
-            iv = new byte[32];
-            System.arraycopy(audioLocation.iv, 0, iv, 0, iv.length);
-            key = audioLocation.key;
-        }
-        ext = ".m4a";
-    }
-
-    public FileLoadOperation(TLRPC.Document documentLocation) {
-        if (documentLocation instanceof TLRPC.TL_document) {
-            location = new TLRPC.TL_inputDocumentFileLocation();
-            datacenter_id = documentLocation.dc_id;
-            location.id = documentLocation.id;
-            location.access_hash = documentLocation.access_hash;
-        } else if (documentLocation instanceof TLRPC.TL_documentEncrypted) {
-            location = new TLRPC.TL_inputEncryptedFileLocation();
-            location.id = documentLocation.id;
-            location.access_hash = documentLocation.access_hash;
-            datacenter_id = documentLocation.dc_id;
-            iv = new byte[32];
-            System.arraycopy(documentLocation.iv, 0, iv, 0, iv.length);
-            key = documentLocation.key;
-        }
-        ext = documentLocation.file_name;
-        int idx = -1;
-        if (ext == null || (idx = ext.lastIndexOf(".")) == -1) {
-            ext = "";
-        } else {
-            ext = ext.substring(idx);
-            if (ext.length() <= 1) {
-                ext = "";
-            }
-        }
+        ext = attachmentLocation.getAttachmentFileExtension();
     }
 
     public FileLoadOperation(String url) {

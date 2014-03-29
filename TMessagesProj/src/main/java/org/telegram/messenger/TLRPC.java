@@ -8,6 +8,8 @@
 
 package org.telegram.messenger;
 
+import org.telegram.objects.PhotoObject;
+
 import java.util.ArrayList;
 
 @SuppressWarnings("unchecked")
@@ -850,45 +852,96 @@ public class TLRPC {
         public byte[] bytes;
     }
 
-    public static class TL_messageMediaVideo extends MessageMedia {
+    public abstract static class TL_messageMediaWithFile extends MessageMedia {
+        protected TLObject rawMedia;
+
+        public void readParams(AbsSerializedData stream) {
+            rawMedia = TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(getConstructor());
+            rawMedia.serializeToStream(stream);
+            onRawMediaChanged();
+        }
+
+        protected abstract void onRawMediaChanged();
+
+        protected abstract int getConstructor();
+
+        public abstract String getFileName();
+    }
+
+    public static class TL_messageMediaVideo extends TL_messageMediaWithFile {
         public static int constructor = 0xa2d24290;
 
-
-        public void readParams(AbsSerializedData stream) {
-            video = (Video)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+        @Override
+        protected void onRawMediaChanged() {
+            video = (Video)rawMedia;
         }
 
-        public void serializeToStream(AbsSerializedData stream) {
-            stream.writeInt32(constructor);
-            video.serializeToStream(stream);
+        @Override
+        protected int getConstructor() {
+            return constructor;
+        }
+
+        @Override
+        public String getFileName() {
+            return video.getAttachmentFileName();
         }
     }
 
-    public static class TL_messageMediaPhoto extends MessageMedia {
+    public static class TL_messageMediaPhoto extends TL_messageMediaWithFile {
         public static int constructor = 0xc8c45a2a;
 
-
-        public void readParams(AbsSerializedData stream) {
-            photo = (Photo)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+        @Override
+        protected void onRawMediaChanged() {
+            photo = (Photo)rawMedia;
         }
 
-        public void serializeToStream(AbsSerializedData stream) {
-            stream.writeInt32(constructor);
-            photo.serializeToStream(stream);
+        @Override
+        protected int getConstructor() {
+            return constructor;
+        }
+
+        @Override
+        public String getFileName() {
+            ArrayList<TLRPC.PhotoSize> sizes = photo.sizes;
+            if (sizes.size() > 0) {
+                int width = (int)(Math.min(Utilities.displaySize.x, Utilities.displaySize.y) * 0.7f);
+                int height = width + Utilities.dp(100);
+                if (width > 800) {
+                    width = 800;
+                }
+                if (height > 800) {
+                    height = 800;
+                }
+
+                TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(sizes, width, height);
+                if (sizeFull != null) {
+                    return sizeFull.location.volume_id + "_" + sizeFull.location.local_id + ".jpg";
+                }
+            }
+            return "";
         }
     }
 
-    public static class TL_messageMediaDocument extends MessageMedia {
+    public static class TL_messageMediaDocument extends TL_messageMediaWithFile {
         public static int constructor = 0x2fda2204;
 
-
-        public void readParams(AbsSerializedData stream) {
-            document = (Document)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+        @Override
+        protected void onRawMediaChanged() {
+            document = (Document)rawMedia;
         }
 
-        public void serializeToStream(AbsSerializedData stream) {
-            stream.writeInt32(constructor);
-            document.serializeToStream(stream);
+        @Override
+        protected int getConstructor() {
+            return constructor;
+        }
+
+        @Override
+        public String getFileName() {
+            return document.getAttachmentFileName();
         }
     }
 
@@ -915,17 +968,22 @@ public class TLRPC {
         }
     }
 
-    public static class TL_messageMediaAudio extends MessageMedia {
+    public static class TL_messageMediaAudio extends TL_messageMediaWithFile {
         public static int constructor = 0xc6b68300;
 
-
-        public void readParams(AbsSerializedData stream) {
-            audio = (Audio)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+        @Override
+        protected void onRawMediaChanged() {
+            audio = (Audio)rawMedia;
         }
 
-        public void serializeToStream(AbsSerializedData stream) {
-            stream.writeInt32(constructor);
-            audio.serializeToStream(stream);
+        @Override
+        protected int getConstructor() {
+            return constructor;
+        }
+
+        @Override
+        public String getFileName() {
+            return audio.getAttachmentFileName();
         }
     }
 
@@ -5056,13 +5114,22 @@ public class TLRPC {
         }
     }
 
-    public static class PhotoSize extends TLObject {
+    public static class PhotoSize extends Attachment {
         public String type;
         public FileLocation location;
         public int w;
         public int h;
-        public int size;
         public byte[] bytes;
+
+        @Override
+        public String getAttachmentFileName() {
+            return location.volume_id + "_" + location.local_id + getAttachmentFileExtension();
+        }
+
+        @Override
+        public String getAttachmentFileExtension() {
+            return ".jpg";
+        }
     }
 
     public static class TL_photoSize extends PhotoSize {
@@ -8818,49 +8885,94 @@ public class TLRPC {
         }
     }
 
-    public static class Video extends TLObject {
+    public abstract static class Attachment extends TLObject {
+        public int size;
+
+        public abstract String getAttachmentFileName();
+
+        public abstract String getAttachmentFileExtension();
+    }
+
+    public abstract static class ExtendedAttachment extends Attachment {
         public long id;
         public long access_hash;
         public int user_id;
         public int date;
+        public String path;
+        public int dc_id;
+        public byte[] key;
+        public byte[] iv;
+
+        public InputFileLocation getFileLocation() {
+            InputFileLocation fileLocation = getAttachmentFileLocation();
+            fileLocation.id = id;
+            fileLocation.access_hash = access_hash;
+            return fileLocation;
+        }
+
+        @Override
+        public String getAttachmentFileName() {
+            return dc_id + "_" + id + getAttachmentFileExtension();
+        }
+
+        public abstract InputFileLocation getAttachmentFileLocation();
+
+        public boolean isEncrypted() {
+            return false;
+        }
+    }
+
+    public static class Video extends ExtendedAttachment {
         public String caption;
         public int duration;
-        public int size;
         public PhotoSize thumb;
-        public int dc_id;
         public int w;
         public int h;
-        public String path;
-        public byte[] key;
-        public byte[] iv;
+
+        @Override
+        public String getAttachmentFileExtension() {
+            return ".mp4";
+        }
+
+        @Override
+        public InputFileLocation getAttachmentFileLocation() {
+            return new TL_inputVideoFileLocation();
+        }
     }
 
-    public static class Document extends TLObject {
-        public long id;
-        public long access_hash;
-        public int user_id;
-        public int date;
+    public static class Document extends ExtendedAttachment {
         public String file_name;
         public String mime_type;
-        public int size;
         public PhotoSize thumb;
-        public int dc_id;
-        public String path;
-        public byte[] key;
-        public byte[] iv;
+
+        @Override
+        public String getAttachmentFileExtension() {
+            String ext = file_name;
+            int idx = -1;
+            if (ext == null || (idx = ext.lastIndexOf(".")) == -1) {
+                return "";
+            }
+            return ext.substring(idx);
+        }
+
+        @Override
+        public InputFileLocation getAttachmentFileLocation() {
+            return new TL_inputDocumentFileLocation();
+        }
     }
 
-    public static class Audio extends TLObject {
-        public long id;
-        public long access_hash;
-        public int user_id;
-        public int date;
+    public static class Audio extends ExtendedAttachment {
         public int duration;
-        public int size;
-        public int dc_id;
-        public String path;
-        public byte[] key;
-        public byte[] iv;
+
+        @Override
+        public String getAttachmentFileExtension() {
+            return ".m4a";
+        }
+
+        @Override
+        public InputFileLocation getAttachmentFileLocation() {
+            return new TL_inputAudioFileLocation();
+        }
     }
 
     public static class MessageAction extends TLObject {
@@ -8955,6 +9067,10 @@ public class TLRPC {
             stream.writeInt32(h);
             stream.writeByteArray(key);
             stream.writeByteArray(iv);
+        }
+
+        public boolean isEncrypted() {
+            return true;
         }
     }
 

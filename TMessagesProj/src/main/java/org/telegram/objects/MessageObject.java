@@ -330,57 +330,8 @@ public class MessageObject {
     }
 
     public String getFileName() {
-        if (messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
-            return getAttachFileName(messageOwner.media.video);
-        } else if (messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
-            return getAttachFileName(messageOwner.media.document);
-        } else if (messageOwner.media instanceof TLRPC.TL_messageMediaAudio) {
-            return getAttachFileName(messageOwner.media.audio);
-        } else if (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
-            ArrayList<TLRPC.PhotoSize> sizes = messageOwner.media.photo.sizes;
-            if (sizes.size() > 0) {
-                int width = (int)(Math.min(Utilities.displaySize.x, Utilities.displaySize.y) * 0.7f);
-                int height = width + Utilities.dp(100);
-                if (width > 800) {
-                    width = 800;
-                }
-                if (height > 800) {
-                    height = 800;
-                }
-
-                TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(sizes, width, height);
-                if (sizeFull != null) {
-                    return getAttachFileName(sizeFull);
-                }
-            }
-        }
-        return "";
-    }
-
-    public static String getAttachFileName(TLObject attach) {
-        if (attach instanceof TLRPC.Video) {
-            TLRPC.Video video = (TLRPC.Video)attach;
-            return video.dc_id + "_" + video.id + ".mp4";
-        } else if (attach instanceof TLRPC.Document) {
-            TLRPC.Document document = (TLRPC.Document)attach;
-            String ext = document.file_name;
-            int idx = -1;
-            if (ext == null || (idx = ext.lastIndexOf(".")) == -1) {
-                ext = "";
-            } else {
-                ext = ext.substring(idx);
-            }
-            if (ext.length() > 1) {
-                return document.dc_id + "_" + document.id + ext;
-            } else {
-                return document.dc_id + "_" + document.id;
-            }
-        } else if (attach instanceof TLRPC.PhotoSize) {
-            TLRPC.PhotoSize photo = (TLRPC.PhotoSize)attach;
-            return photo.location.volume_id + "_" + photo.location.local_id + ".jpg";
-        } else if (attach instanceof TLRPC.Audio) {
-            TLRPC.Audio audio = (TLRPC.Audio)attach;
-            return audio.dc_id + "_" + audio.id + ".m4a";
+        if (messageOwner.media instanceof TLRPC.TL_messageMediaWithFile) {
+            return ((TLRPC.TL_messageMediaWithFile)messageOwner.media).getFileName();
         }
         return "";
     }
