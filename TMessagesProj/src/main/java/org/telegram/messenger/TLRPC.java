@@ -8,9 +8,13 @@
 
 package org.telegram.messenger;
 
+import android.graphics.Bitmap;
+
 import org.telegram.objects.PhotoObject;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.List;
 
 @SuppressWarnings("unchecked")
 public class TLRPC {
@@ -839,7 +843,7 @@ public class TLRPC {
         }
     }
 
-    public static class MessageMedia extends TLObject {
+    public abstract static class MessageMedia extends TLObject {
         public Video video;
         public Photo photo;
         public Document document;
@@ -850,6 +854,20 @@ public class TLRPC {
         public String last_name;
         public int user_id;
         public byte[] bytes;
+
+        public abstract String generateMessageText();
+
+        public List<PhotoObject> getPhotoThumbs() {
+            return new ArrayList<PhotoObject>();
+        }
+
+        public Bitmap getImagePreview() {
+            return null;
+        }
+
+        public boolean isEmpty() {
+            return false;
+        }
     }
 
     public abstract static class TL_messageMediaWithFile extends MessageMedia {
@@ -874,10 +892,18 @@ public class TLRPC {
 
     public static class TL_messageMediaVideo extends TL_messageMediaWithFile {
         public static int constructor = 0xa2d24290;
+        private List<PhotoObject> photoThumbs;
+        private Bitmap imagePreview;
 
         @Override
         protected void onRawMediaChanged() {
             video = (Video)rawMedia;
+            photoThumbs = new ArrayList<PhotoObject>();
+            PhotoObject obj = new PhotoObject(video.thumb);
+            photoThumbs.add(obj);
+            if (imagePreview == null && obj.image != null) {
+                imagePreview = obj.image;
+            }
         }
 
         @Override
@@ -889,14 +915,29 @@ public class TLRPC {
         public String getFileName() {
             return video.getAttachmentFileName();
         }
+
+        @Override
+        public String generateMessageText() {
+            return LocaleController.getString("AttachVideo", R.string.AttachVideo);
+        }
     }
 
     public static class TL_messageMediaPhoto extends TL_messageMediaWithFile {
         public static int constructor = 0xc8c45a2a;
+        private List<PhotoObject> photoThumbs;
+        private Bitmap imagePreview;
 
         @Override
         protected void onRawMediaChanged() {
             photo = (Photo)rawMedia;
+            photoThumbs = new ArrayList<PhotoObject>();
+            for (TLRPC.PhotoSize size : photo.sizes) {
+                PhotoObject obj = new PhotoObject(size);
+                photoThumbs.add(obj);
+                if (imagePreview == null && obj.image != null) {
+                    imagePreview = obj.image;
+                }
+            }
         }
 
         @Override
@@ -924,6 +965,21 @@ public class TLRPC {
             }
             return "";
         }
+
+        @Override
+        public String generateMessageText() {
+            return LocaleController.getString("AttachPhoto", R.string.AttachPhoto);
+        }
+
+        @Override
+        public List<PhotoObject> getPhotoThumbs() {
+            return photoThumbs;
+        }
+
+        @Override
+        public Bitmap getImagePreview() {
+            return imagePreview;
+        }
     }
 
     public static class TL_messageMediaDocument extends TL_messageMediaWithFile {
@@ -943,6 +999,11 @@ public class TLRPC {
         public String getFileName() {
             return document.getAttachmentFileName();
         }
+
+        @Override
+        public String generateMessageText() {
+            return LocaleController.getString("AttachDocument", R.string.AttachDocument);
+        }
     }
 
     public static class TL_messageMediaGeo extends MessageMedia {
@@ -957,6 +1018,11 @@ public class TLRPC {
             stream.writeInt32(constructor);
             geo.serializeToStream(stream);
         }
+
+        @Override
+        public String generateMessageText() {
+            return LocaleController.getString("AttachLocation", R.string.AttachLocation);
+        }
     }
 
     public static class TL_messageMediaEmpty extends MessageMedia {
@@ -965,6 +1031,16 @@ public class TLRPC {
 
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
+        }
+
+        @Override
+        public String generateMessageText() {
+            return null;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return true;
         }
     }
 
@@ -984,6 +1060,11 @@ public class TLRPC {
         @Override
         public String getFileName() {
             return audio.getAttachmentFileName();
+        }
+
+        @Override
+        public String generateMessageText() {
+            return LocaleController.getString("AttachAudio", R.string.AttachAudio);
         }
     }
 
@@ -1005,6 +1086,11 @@ public class TLRPC {
             stream.writeString(last_name);
             stream.writeInt32(user_id);
         }
+
+        @Override
+        public String generateMessageText() {
+            return LocaleController.getString("AttachContact", R.string.AttachContact);
+        }
     }
 
     public static class TL_messageMediaUnsupported extends MessageMedia {
@@ -1018,6 +1104,11 @@ public class TLRPC {
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeByteArray(bytes);
+        }
+
+        @Override
+        public String generateMessageText() {
+            return LocaleController.getString("UnsuppotedMedia", R.string.UnsuppotedMedia);
         }
     }
 
@@ -2232,6 +2323,26 @@ public class TLRPC {
             stream.writeInt32(constructor);
             photo.serializeToStream(stream);
         }
+
+        @Override
+        public String generateMessageText(Message message, User fromUser, User whoUser) {
+            if (message.isFromMe()) {
+                return LocaleController.getString("ActionYouChangedPhoto", R.string.ActionYouChangedPhoto);
+            }
+            if (fromUser != null) {
+                return LocaleController.getString("ActionChangedPhoto", R.string.ActionChangedPhoto).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+            }
+            return LocaleController.getString("ActionChangedPhoto", R.string.ActionChangedPhoto).replace("un1", "");
+        }
+
+        @Override
+        public List<PhotoObject> getPhotoThumbs() {
+            List<PhotoObject> photoThumbs = new ArrayList<PhotoObject>();
+            for (TLRPC.PhotoSize size : photo.sizes) {
+                photoThumbs.add(new PhotoObject(size));
+            }
+            return photoThumbs;
+        }
     }
 
     public static class TL_messageActionChatDeleteUser extends MessageAction {
@@ -2246,6 +2357,33 @@ public class TLRPC {
             stream.writeInt32(constructor);
             stream.writeInt32(user_id);
         }
+
+        @Override
+        public String generateMessageText(Message message, User fromUser, User whoUser) {
+            if (message.action.user_id == message.from_id) {
+                if (message.isFromMe()) {
+                    return LocaleController.getString("ActionYouLeftUser", R.string.ActionYouLeftUser);
+                } else {
+                    if (fromUser != null) {
+                        return LocaleController.getString("ActionLeftUser", R.string.ActionLeftUser).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                    } else {
+                        return LocaleController.getString("ActionLeftUser", R.string.ActionLeftUser).replace("un1", "");
+                    }
+                }
+            } else {
+                if (whoUser != null && fromUser != null) {
+                    if (message.isFromMe()) {
+                        return LocaleController.getString("ActionYouKickUser", R.string.ActionYouKickUser).replace("un2", Utilities.formatName(whoUser.first_name, whoUser.last_name));
+                    } else if (message.action.user_id == UserConfig.clientUserId) {
+                        return LocaleController.getString("ActionKickUserYou", R.string.ActionKickUserYou).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                    } else {
+                        return LocaleController.getString("ActionKickUser", R.string.ActionKickUser).replace("un2", Utilities.formatName(whoUser.first_name, whoUser.last_name)).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+                    }
+                } else {
+                    return LocaleController.getString("ActionKickUser", R.string.ActionKickUser).replace("un2", "").replace("un1", "");
+                }
+            }
+        }
     }
 
     public static class TL_messageActionChatDeletePhoto extends MessageAction {
@@ -2254,6 +2392,17 @@ public class TLRPC {
 
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
+        }
+
+        @Override
+        public String generateMessageText(Message message, User fromUser, User whoUser) {
+            if (message.isFromMe()) {
+                return LocaleController.getString("ActionYouRemovedPhoto", R.string.ActionYouRemovedPhoto);
+            }
+            if (fromUser != null) {
+                return LocaleController.getString("ActionRemovedPhoto", R.string.ActionRemovedPhoto).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+            }
+            return LocaleController.getString("ActionRemovedPhoto", R.string.ActionRemovedPhoto).replace("un1", "");
         }
     }
 
@@ -2268,6 +2417,20 @@ public class TLRPC {
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(user_id);
+        }
+
+        @Override
+        public String generateMessageText(Message message, User fromUser, User whoUser) {
+            if (whoUser == null || fromUser == null) {
+                return LocaleController.getString("ActionAddUser", R.string.ActionAddUser).replace("un2", "").replace("un1", "");
+            }
+            if (message.isFromMe()) {
+                return LocaleController.getString("ActionYouAddUser", R.string.ActionYouAddUser).replace("un2", Utilities.formatName(whoUser.first_name, whoUser.last_name));
+            }
+            if (message.action.isFromMe()) {
+                return LocaleController.getString("ActionAddUserYou", R.string.ActionAddUserYou).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+            }
+            return LocaleController.getString("ActionAddUser", R.string.ActionAddUser).replace("un2", Utilities.formatName(whoUser.first_name, whoUser.last_name)).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
         }
     }
 
@@ -2294,6 +2457,17 @@ public class TLRPC {
                 stream.writeInt32(user);
             }
         }
+
+        @Override
+        public String generateMessageText(Message message, User fromUser, User whoUser) {
+            if (message.isFromMe()) {
+                return LocaleController.getString("ActionYouCreateGroup", R.string.ActionYouCreateGroup);
+            }
+            if (fromUser != null) {
+                return LocaleController.getString("ActionCreateGroup", R.string.ActionCreateGroup).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
+            }
+            return LocaleController.getString("ActionCreateGroup", R.string.ActionCreateGroup).replace("un1", "");
+        }
     }
 
     public static class TL_messageActionEmpty extends MessageAction {
@@ -2302,6 +2476,11 @@ public class TLRPC {
 
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
+        }
+
+        @Override
+        public String generateMessageText(Message message, User fromUser, User whoUser) {
+            return null;
         }
     }
 
@@ -2316,6 +2495,17 @@ public class TLRPC {
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeString(title);
+        }
+
+        @Override
+        public String generateMessageText(Message message, User fromUser, User whoUser) {
+            if (message.isFromMe()) {
+                return LocaleController.getString("ActionYouChangedTitle", R.string.ActionYouChangedTitle).replace("un2", message.action.title);
+            }
+            if (fromUser != null) {
+                return LocaleController.getString("ActionChangedTitle", R.string.ActionChangedTitle).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name)).replace("un2", message.action.title);
+            }
+            return LocaleController.getString("ActionChangedTitle", R.string.ActionChangedTitle).replace("un1", "").replace("un2", message.action.title);
         }
     }
 
@@ -2333,6 +2523,12 @@ public class TLRPC {
             stream.writeString(title);
             stream.writeString(address);
         }
+
+        @Override
+        public String generateMessageText(Message message, User fromUser, User whoUser) {
+            // TODO maxbruecken: don't know what is the text
+            return null;
+        }
     }
 
     public static class TL_messageActionGeoChatCheckin extends MessageAction {
@@ -2341,6 +2537,12 @@ public class TLRPC {
 
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
+        }
+
+        @Override
+        public String generateMessageText(Message message, User fromUser, User whoUser) {
+            // TODO maxbruecken: don't know what is the text
+            return null;
         }
     }
 
@@ -8484,6 +8686,56 @@ public class TLRPC {
         public int local_id = 0;
         public long dialog_id;
         public int ttl;
+
+        public String generateMessageText(AbstractMap<Integer, User> users) {
+            if (isAction()) {
+                return action.generateMessageText(this, resolveUser(from_id, users), resolveUser(action.user_id, users));
+            }
+            if (hasAttachedMedia() && !(media.isEmpty())) {
+                return media.generateMessageText();
+            }
+            return message;
+        }
+
+        private TLRPC.User resolveUser(int user_id, AbstractMap<Integer, User> users) {
+            if (user_id == 0) {
+                return null;
+            }
+            TLRPC.User fromUser = users.get(user_id);
+            if (fromUser == null) {
+                fromUser = MessagesController.getInstance().users.get(user_id);
+            }
+            return fromUser;
+        }
+
+        public boolean isAction() {
+            return action != null;
+        }
+
+        public boolean hasAttachedMedia() {
+            return media != null;
+        }
+
+        public boolean isFromMe() {
+            return from_id == UserConfig.clientUserId;
+        }
+
+        public List<PhotoObject> getPhotoThumbs() {
+            if (isAction()) {
+                return action.getPhotoThumbs();
+            }
+            if (hasAttachedMedia()) {
+                return media.getPhotoThumbs();
+            }
+            return new ArrayList<PhotoObject>();
+        }
+
+        public Bitmap getImagePreview() {
+            if (hasAttachedMedia()) {
+                return media.getImagePreview();
+            }
+            return null;
+        }
     }
 
     public static class TL_messageForwarded extends Message {
@@ -8975,7 +9227,7 @@ public class TLRPC {
         }
     }
 
-    public static class MessageAction extends TLObject {
+    public abstract static class MessageAction extends TLObject {
         public Photo photo;
         public UserProfilePhoto newUserPhoto;
         public int user_id;
@@ -8983,6 +9235,16 @@ public class TLRPC {
         public ArrayList<Integer> users = new ArrayList<Integer>();
         public String address;
         public int ttl;
+
+        public abstract String generateMessageText(Message message, User fromUser, User whoUser);
+
+        public boolean isFromMe() {
+            return user_id == UserConfig.clientUserId;
+        }
+
+        public List<PhotoObject> getPhotoThumbs() {
+            return new ArrayList<PhotoObject>();
+        }
     }
 
     public static class TL_messageActionTTLChange extends MessageAction {
@@ -8995,6 +9257,47 @@ public class TLRPC {
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(ttl);
+        }
+
+        @Override
+        public String generateMessageText(Message message, User fromUser, User whoUser) {
+            if (ttl != 0) {
+                String timeString = getTTLAsString();
+                if (message.isFromMe()) {
+                    return LocaleController.formatString("MessageLifetimeChangedOutgoing", R.string.MessageLifetimeChangedOutgoing, timeString);
+                }
+                if (fromUser != null) {
+                    return LocaleController.formatString("MessageLifetimeChanged", R.string.MessageLifetimeChanged, fromUser.first_name, timeString);
+                }
+                return LocaleController.formatString("MessageLifetimeChanged", R.string.MessageLifetimeChanged, "", timeString);
+            }
+            if (message.isFromMe()) {
+                return LocaleController.getString("MessageLifetimeYouRemoved", R.string.MessageLifetimeYouRemoved);
+            }
+            if (fromUser != null) {
+                return LocaleController.formatString("MessageLifetimeRemoved", R.string.MessageLifetimeRemoved, fromUser.first_name);
+            }
+            return LocaleController.formatString("MessageLifetimeRemoved", R.string.MessageLifetimeRemoved, "");
+        }
+
+        private String getTTLAsString() {
+            String timeString;
+            if (ttl == 2) {
+                timeString = LocaleController.getString("MessageLifetime2s", R.string.MessageLifetime2s);
+            } else if (ttl == 5) {
+                timeString = LocaleController.getString("MessageLifetime5s", R.string.MessageLifetime5s);
+            } else if (ttl == 60) {
+                timeString = LocaleController.getString("MessageLifetime1m", R.string.MessageLifetime1m);
+            } else if (ttl == 60 * 60) {
+                timeString = LocaleController.getString("MessageLifetime1h", R.string.MessageLifetime1h);
+            } else if (ttl == 60 * 60 * 24) {
+                timeString = LocaleController.getString("MessageLifetime1d", R.string.MessageLifetime1d);
+            } else if (ttl == 60 * 60 * 24 * 7) {
+                timeString = LocaleController.getString("MessageLifetime1w", R.string.MessageLifetime1w);
+            } else {
+                timeString = String.format("%d", ttl);
+            }
+            return timeString;
         }
     }
 
@@ -9115,6 +9418,14 @@ public class TLRPC {
             stream.writeInt32(constructor);
             newUserPhoto.serializeToStream(stream);
         }
+
+        @Override
+        public String generateMessageText(Message message, User fromUser, User whoUser) {
+            if (fromUser != null) {
+                return LocaleController.formatString("NotificationContactNewPhoto", R.string.NotificationContactNewPhoto, Utilities.formatName(fromUser.first_name, fromUser.last_name));
+            }
+            return LocaleController.formatString("NotificationContactNewPhoto", R.string.NotificationContactNewPhoto, "");
+        }
     }
 
     public static class TL_messageActionUserJoined extends MessageAction {
@@ -9126,6 +9437,14 @@ public class TLRPC {
 
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
+        }
+
+        @Override
+        public String generateMessageText(Message message, User fromUser, User whoUser) {
+            if (fromUser != null) {
+                return LocaleController.formatString("NotificationContactJoined", R.string.NotificationContactJoined, Utilities.formatName(fromUser.first_name, fromUser.last_name));
+            }
+            return LocaleController.formatString("NotificationContactJoined", R.string.NotificationContactJoined, "");
         }
     }
 
@@ -9141,6 +9460,13 @@ public class TLRPC {
             stream.writeInt32(constructor);
             stream.writeString(title);
             stream.writeString(address);
+        }
+
+        @Override
+        public String generateMessageText(Message message, User fromUser, User whoUser) {
+            long longDate = (long) message.date;
+            String date = String.format("%s %s %s", LocaleController.formatterYear.format(longDate * 1000), LocaleController.getString("OtherAt", R.string.OtherAt), LocaleController.formatterDay.format(longDate * 1000));
+            return LocaleController.formatString("NotificationUnrecognizedDevice", R.string.NotificationUnrecognizedDevice, UserConfig.currentUser.first_name, date, title, address);
         }
     }
 
