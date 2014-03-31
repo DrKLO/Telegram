@@ -111,8 +111,45 @@ public class ImageReceiver {
         }
     }
 
+    public void setImageBitmap(Bitmap bitmap) {
+        currentPath = null;
+        last_path = null;
+        last_httpUrl = null;
+        last_filter = null;
+        last_placeholder = null;
+        last_size = 0;
+        FileLoader.getInstance().cancelLoadingForImageView(this);
+        if (bitmap != null) {
+            recycleBitmap(null);
+            currentImage = new BitmapDrawable(null, bitmap);
+        }
+    }
+
+    public void setImageBitmap(Drawable bitmap) {
+        currentPath = null;
+        last_path = null;
+        last_httpUrl = null;
+        last_filter = null;
+        last_placeholder = null;
+        last_size = 0;
+        FileLoader.getInstance().cancelLoadingForImageView(this);
+        if (bitmap != null) {
+            recycleBitmap(null);
+            currentImage = bitmap;
+        }
+    }
+
     public void clearImage() {
         recycleBitmap(null);
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        try {
+            clearImage();
+        } finally {
+            super.finalize();
+        }
     }
 
     private void recycleBitmap(Bitmap newBitmap) {

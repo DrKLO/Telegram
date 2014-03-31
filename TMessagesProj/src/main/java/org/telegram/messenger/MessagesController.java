@@ -1895,6 +1895,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     delayedMessage.type = 2;
                     delayedMessage.obj = newMsgObj;
                     delayedMessage.documentLocation = document;
+                    delayedMessage.location = document.thumb.location;
                     performSendDelayedMessage(delayedMessage);
                 } else if (type == 8) {
                     reqSend.media = new TLRPC.TL_inputMediaUploadedAudio();
@@ -1976,9 +1977,15 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     random.nextBytes(reqSend.media.iv);
                     random.nextBytes(reqSend.media.key);
                     reqSend.media.size = document.size;
-                    reqSend.media.thumb = new byte[0];
-                    reqSend.media.thumb_h = 0;
-                    reqSend.media.thumb_w = 0;
+                    if (!(document.thumb instanceof TLRPC.TL_photoSizeEmpty)) {
+                        reqSend.media.thumb = document.thumb.bytes;
+                        reqSend.media.thumb_h = document.thumb.h;
+                        reqSend.media.thumb_w = document.thumb.w;
+                    } else {
+                        reqSend.media.thumb = new byte[0];
+                        reqSend.media.thumb_h = 0;
+                        reqSend.media.thumb_w = 0;
+                    }
                     reqSend.media.file_name = document.file_name;
                     reqSend.media.mime_type = document.mime_type;
 
@@ -2051,18 +2058,30 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 if (size2.location != null && size.location != null && !(size instanceof TLRPC.TL_photoSizeEmpty) && !(size2 instanceof TLRPC.TL_photoSizeEmpty)) {
                     String fileName = size2.location.volume_id + "_" + size2.location.local_id;
                     String fileName2 = size.location.volume_id + "_" + size.location.local_id;
-                    if (fileName.equals(fileName2)) {
-                        return;
+                    if (!fileName.equals(fileName2)) {
+                        File cacheFile = new File(Utilities.getCacheDir(), fileName + ".jpg");
+                        File cacheFile2 = new File(Utilities.getCacheDir(), fileName2 + ".jpg");
+                        boolean result = cacheFile.renameTo(cacheFile2);
+                        FileLoader.getInstance().replaceImageInCache(fileName, fileName2);
+                        size2.location = size.location;
                     }
-                    File cacheFile = new File(Utilities.getCacheDir(), fileName + ".jpg");
-                    File cacheFile2 = new File(Utilities.getCacheDir(), fileName2 + ".jpg");
-                    boolean result = cacheFile.renameTo(cacheFile2);
-                    FileLoader.getInstance().replaceImageInCache(fileName, fileName2);
-                    size2.location = size.location;
-                    sentMessage.message = newMsg.message;
-                    sentMessage.attachPath = newMsg.attachPath;
                 }
+                sentMessage.message = newMsg.message;
+                sentMessage.attachPath = newMsg.attachPath;
             } else if (sentMessage.media instanceof TLRPC.TL_messageMediaDocument && sentMessage.media.document != null && newMsg.media instanceof TLRPC.TL_messageMediaDocument && newMsg.media.document != null) {
+                TLRPC.PhotoSize size2 = newMsg.media.document.thumb;
+                TLRPC.PhotoSize size = sentMessage.media.document.thumb;
+                if (size2.location != null && size.location != null && !(size instanceof TLRPC.TL_photoSizeEmpty) && !(size2 instanceof TLRPC.TL_photoSizeEmpty)) {
+                    String fileName = size2.location.volume_id + "_" + size2.location.local_id;
+                    String fileName2 = size.location.volume_id + "_" + size.location.local_id;
+                    if (!fileName.equals(fileName2)) {
+                        File cacheFile = new File(Utilities.getCacheDir(), fileName + ".jpg");
+                        File cacheFile2 = new File(Utilities.getCacheDir(), fileName2 + ".jpg");
+                        boolean result = cacheFile.renameTo(cacheFile2);
+                        FileLoader.getInstance().replaceImageInCache(fileName, fileName2);
+                        size2.location = size.location;
+                    }
+                }
                 sentMessage.message = newMsg.message;
                 sentMessage.attachPath = newMsg.attachPath;
             } else if (sentMessage.media instanceof TLRPC.TL_messageMediaAudio && sentMessage.media.audio != null && newMsg.media instanceof TLRPC.TL_messageMediaAudio && newMsg.media.audio != null) {
@@ -2071,14 +2090,13 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
                 String fileName = newMsg.media.audio.dc_id + "_" + newMsg.media.audio.id + ".m4a";
                 String fileName2 = sentMessage.media.audio.dc_id + "_" + sentMessage.media.audio.id + ".m4a";
-                if (fileName.equals(fileName2)) {
-                    return;
+                if (!fileName.equals(fileName2)) {
+                    File cacheFile = new File(Utilities.getCacheDir(), fileName);
+                    File cacheFile2 = new File(Utilities.getCacheDir(), fileName2);
+                    cacheFile.renameTo(cacheFile2);
+                    newMsg.media.audio.dc_id = sentMessage.media.audio.dc_id;
+                    newMsg.media.audio.id = sentMessage.media.audio.id;
                 }
-                File cacheFile = new File(Utilities.getCacheDir(), fileName);
-                File cacheFile2 = new File(Utilities.getCacheDir(), fileName2);
-                cacheFile.renameTo(cacheFile2);
-                newMsg.media.audio.dc_id = sentMessage.media.audio.dc_id;
-                newMsg.media.audio.id = sentMessage.media.audio.id;
             }
         } else if (file != null) {
             if (newMsg.media instanceof TLRPC.TL_messageMediaPhoto && newMsg.media.photo != null) {
@@ -2154,12 +2172,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
                 String fileName = audio.dc_id + "_" + audio.id + ".m4a";
                 String fileName2 = newMsg.media.audio.dc_id + "_" + newMsg.media.audio.id + ".m4a";
-                if (fileName.equals(fileName2)) {
-                    return;
+                if (!fileName.equals(fileName2)) {
+                    File cacheFile = new File(Utilities.getCacheDir(), fileName);
+                    File cacheFile2 = new File(Utilities.getCacheDir(), fileName2);
+                    cacheFile.renameTo(cacheFile2);
                 }
-                File cacheFile = new File(Utilities.getCacheDir(), fileName);
-                File cacheFile2 = new File(Utilities.getCacheDir(), fileName2);
-                cacheFile.renameTo(cacheFile2);
 
                 ArrayList<TLRPC.Message> arr = new ArrayList<TLRPC.Message>();
                 arr.add(newMsg);
@@ -2429,12 +2446,18 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 FileLoader.getInstance().uploadFile(location, message.sendEncryptedRequest.media.key, message.sendEncryptedRequest.media.iv);
             }
         } else if (message.type == 2) {
-            String location = message.documentLocation.path;
-            putToDelayedMessages(location, message);
-            if (message.sendRequest != null) {
+            if (message.sendRequest != null && message.sendRequest.media.thumb == null && message.location != null) {
+                String location = Utilities.getCacheDir() + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
+                putToDelayedMessages(location, message);
                 FileLoader.getInstance().uploadFile(location, null, null);
             } else {
-                FileLoader.getInstance().uploadFile(location, message.sendEncryptedRequest.media.key, message.sendEncryptedRequest.media.iv);
+                String location = message.documentLocation.path;
+                putToDelayedMessages(location, message);
+                if (message.sendRequest != null) {
+                    FileLoader.getInstance().uploadFile(location, null, null);
+                } else {
+                    FileLoader.getInstance().uploadFile(location, message.sendEncryptedRequest.media.key, message.sendEncryptedRequest.media.iv);
+                }
             }
         } else if (message.type == 3) {
             String location = message.audioLocation.path;
@@ -2545,8 +2568,13 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                         performSendMessageRequest(message.sendRequest, message.obj);
                                     }
                                 } else if (message.type == 2) {
-                                    message.sendRequest.media.file = file;
-                                    performSendMessageRequest(message.sendRequest, message.obj);
+                                    if (message.sendRequest.media.thumb == null && message.location != null) {
+                                        message.sendRequest.media.thumb = file;
+                                        performSendDelayedMessage(message);
+                                    } else {
+                                        message.sendRequest.media.file = file;
+                                        performSendMessageRequest(message.sendRequest, message.obj);
+                                    }
                                 } else if (message.type == 3) {
                                     message.sendRequest.media.file = file;
                                     performSendMessageRequest(message.sendRequest, message.obj);
@@ -4692,7 +4720,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         newMessage.media.geo.lat = decryptedMessage.media.lat;
                         newMessage.media.geo._long = decryptedMessage.media._long;
                     } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaPhoto) {
-                        if (decryptedMessage.media.key.length != 32 || decryptedMessage.media.iv.length != 32) {
+                        if (decryptedMessage.media.key == null || decryptedMessage.media.key.length != 32 || decryptedMessage.media.iv == null || decryptedMessage.media.iv.length != 32) {
                             return null;
                         }
                         newMessage.media = new TLRPC.TL_messageMediaPhoto();
@@ -4725,7 +4753,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         big.location.local_id = message.file.key_fingerprint;
                         newMessage.media.photo.sizes.add(big);
                     } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaVideo) {
-                        if (decryptedMessage.media.key.length != 32 || decryptedMessage.media.iv.length != 32) {
+                        if (decryptedMessage.media.key == null || decryptedMessage.media.key.length != 32 || decryptedMessage.media.iv == null || decryptedMessage.media.iv.length != 32) {
                             return null;
                         }
                         newMessage.media = new TLRPC.TL_messageMediaVideo();
@@ -4754,7 +4782,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         newMessage.media.video.key = decryptedMessage.media.key;
                         newMessage.media.video.iv = decryptedMessage.media.iv;
                     } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaDocument) {
-                        if (decryptedMessage.media.key.length != 32 || decryptedMessage.media.iv.length != 32) {
+                        if (decryptedMessage.media.key == null || decryptedMessage.media.key.length != 32 || decryptedMessage.media.iv == null || decryptedMessage.media.iv.length != 32) {
                             return null;
                         }
                         newMessage.media = new TLRPC.TL_messageMediaDocument();
@@ -4781,7 +4809,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         }
                         newMessage.media.document.dc_id = message.file.dc_id;
                     } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaAudio) {
-                        if (decryptedMessage.media.key.length != 32 || decryptedMessage.media.iv.length != 32) {
+                        if (decryptedMessage.media.key == null || decryptedMessage.media.key.length != 32 || decryptedMessage.media.iv == null || decryptedMessage.media.iv.length != 32) {
                             return null;
                         }
                         newMessage.media = new TLRPC.TL_messageMediaAudio();

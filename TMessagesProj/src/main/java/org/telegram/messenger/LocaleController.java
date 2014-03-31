@@ -12,9 +12,13 @@ import android.app.Activity;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.text.format.DateFormat;
+import android.util.Xml;
 
 import org.telegram.ui.ApplicationLoader;
+import org.xmlpull.v1.XmlPullParser;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -66,42 +70,42 @@ public class LocaleController {
     }
 
     public LocaleController() {
-        LocaleController.LocaleInfo localeInfo = new LocaleController.LocaleInfo();
+        LocaleInfo localeInfo = new LocaleInfo();
         localeInfo.name = "English";
         localeInfo.nameEnglish = "English";
         localeInfo.shortName = "en";
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
-        localeInfo = new LocaleController.LocaleInfo();
+        localeInfo = new LocaleInfo();
         localeInfo.name = "Italiano";
         localeInfo.nameEnglish = "Italian";
         localeInfo.shortName = "it";
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
-        localeInfo = new LocaleController.LocaleInfo();
+        localeInfo = new LocaleInfo();
         localeInfo.name = "Español";
         localeInfo.nameEnglish = "Spanish";
         localeInfo.shortName = "es";
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
-        localeInfo = new LocaleController.LocaleInfo();
+        localeInfo = new LocaleInfo();
         localeInfo.name = "Deutsch";
         localeInfo.nameEnglish = "German";
         localeInfo.shortName = "de";
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
-        localeInfo = new LocaleController.LocaleInfo();
+        localeInfo = new LocaleInfo();
         localeInfo.name = "Nederlands";
         localeInfo.nameEnglish = "Dutch";
         localeInfo.shortName = "nl";
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
-        localeInfo = new LocaleController.LocaleInfo();
+        localeInfo = new LocaleInfo();
         localeInfo.name = "العربية";
         localeInfo.nameEnglish = "Arabic";
         localeInfo.shortName = "ar";
@@ -146,6 +150,75 @@ public class LocaleController {
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
+    }
+
+    public boolean applyLanguageFile(File file) {
+        try {
+            HashMap<String, String> stringMap = new HashMap<String, String>();
+            XmlPullParser parser = Xml.newPullParser();
+            parser.setInput(new FileInputStream(file), "UTF-8");
+            int eventType = parser.getEventType();
+            String name = null;
+            String value = null;
+            String attrName = null;
+            while (eventType != XmlPullParser.END_DOCUMENT) {
+                if(eventType == XmlPullParser.START_TAG) {
+                    name = parser.getName();
+                    int c = parser.getAttributeCount();
+                    if (c > 0) {
+                        attrName = parser.getAttributeValue(0);
+                    }
+                } else if(eventType == XmlPullParser.TEXT) {
+                    if (attrName != null) {
+                        value = parser.getText();
+                    }
+                } else if (eventType == XmlPullParser.END_TAG) {
+                    value = null;
+                    attrName = null;
+                    name = null;
+                }
+                if (name != null && name.equals("string") && value != null && attrName != null) {
+                    stringMap.put(attrName, value);
+                    name = null;
+                    value = null;
+                    attrName = null;
+                }
+                eventType = parser.next();
+            }
+
+            String languageName = stringMap.get("LanguageName");
+            String languageNameInEnglish = stringMap.get("LanguageNameInEnglish");
+            String languageCode = stringMap.get("LanguageCode");
+
+            if (languageName != null && languageName.length() > 0 &&
+                    languageNameInEnglish != null && languageNameInEnglish.length() > 0 &&
+                    languageCode != null && languageCode.length() > 0) {
+                LocaleInfo localeInfo = new LocaleInfo();
+                localeInfo.name = languageName;
+                localeInfo.nameEnglish = languageNameInEnglish;
+                localeInfo.shortName = languageCode;
+                sortedLanguages.add(localeInfo);
+                languagesDict.put(localeInfo.shortName, localeInfo);
+
+                Collections.sort(sortedLanguages, new Comparator<LocaleInfo>() {
+                    @Override
+                    public int compare(LocaleController.LocaleInfo o, LocaleController.LocaleInfo o2) {
+                        if (o.shortName == null) {
+                            return -1;
+                        } else if (o2.shortName == null) {
+                            return 1;
+                        }
+                        return o.name.compareTo(o2.name);
+                    }
+                });
+                applyLanguage(localeInfo, true);
+                localeValues = stringMap;
+                return true;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return false;
     }
 
     public void applyLanguage(LocaleInfo localeInfo, boolean override) {
@@ -196,7 +269,7 @@ public class LocaleController {
     }
 
     public static String getCurrentLanguageName() {
-        return getString("LanguangeName", R.string.LanguangeName);
+        return getString("LanguageName", R.string.LanguageName);
     }
 
     public static String getString(String key, int res) {

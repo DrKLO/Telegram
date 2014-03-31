@@ -76,9 +76,6 @@ public class Utilities {
 
     public static volatile DispatchQueue stageQueue = new DispatchQueue("stageQueue");
     public static volatile DispatchQueue globalQueue = new DispatchQueue("globalQueue");
-    public static volatile DispatchQueue cacheOutQueue = new DispatchQueue("cacheOutQueue");
-    public static volatile DispatchQueue imageLoadQueue = new DispatchQueue("imageLoadQueue");
-    public static volatile DispatchQueue fileUploadQueue = new DispatchQueue("fileUploadQueue");
 
     public static int[] arrColors = {0xffee4928, 0xff41a903, 0xffe09602, 0xff0f94ed, 0xff8f3bf7, 0xfffc4380, 0xff00a1c4, 0xffeb7002};
     public static int[] arrUsersAvatars = {

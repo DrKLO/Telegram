@@ -28,8 +28,8 @@ public class ChatMessageCell extends ChatBaseCell {
     private int firstVisibleBlockNum = 0;
     private int totalVisibleBlocksCount = 0;
 
-    public ChatMessageCell(Context context, boolean isChat) {
-        super(context, isChat);
+    public ChatMessageCell(Context context) {
+        super(context, false);
         drawForwardedName = true;
     }
 
@@ -131,7 +131,7 @@ public class ChatMessageCell extends ChatBaseCell {
             }
             pressedLink = null;
             int maxWidth;
-            if (chat) {
+            if (isChat) {
                 maxWidth = Utilities.displaySize.x - Utilities.dp(122);
                 drawName = true;
             } else {
@@ -180,7 +180,7 @@ public class ChatMessageCell extends ChatBaseCell {
             textX = layoutWidth - backgroundWidth + Utilities.dp(10);
             textY = Utilities.dp(10) + namesOffset;
         } else {
-            textX = Utilities.dp(19) + (chat ? Utilities.dp(52) : 0);
+            textX = Utilities.dp(19) + (isChat ? Utilities.dp(52) : 0);
             textY = Utilities.dp(10) + namesOffset;
         }
     }
@@ -196,7 +196,7 @@ public class ChatMessageCell extends ChatBaseCell {
             textX = layoutWidth - backgroundWidth + Utilities.dp(10);
             textY = Utilities.dp(10) + namesOffset;
         } else {
-            textX = Utilities.dp(19) + (chat ? Utilities.dp(52) : 0);
+            textX = Utilities.dp(19) + (isChat ? Utilities.dp(52) : 0);
             textY = Utilities.dp(10) + namesOffset;
         }
 

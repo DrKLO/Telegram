@@ -24,6 +24,7 @@ THE SOFTWARE.
 
 package org.telegram.ui.Views;
 
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
@@ -33,9 +34,11 @@ import android.graphics.drawable.Animatable;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.View;
 import android.widget.MediaController;
 
 import java.io.File;
+import java.lang.ref.WeakReference;
 import java.util.Locale;
 
 public class GifDrawable extends Drawable implements Animatable, MediaController.MediaPlayerControl {
@@ -68,6 +71,8 @@ public class GifDrawable extends Drawable implements Animatable, MediaController
     private boolean mApplyTransformation;
     private final Rect mDstRect = new Rect();
 
+    public WeakReference<View> parentView = null;
+
     protected final Paint mPaint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.DITHER_FLAG);
     protected final int[] mColors;
 
@@ -82,7 +87,10 @@ public class GifDrawable extends Drawable implements Animatable, MediaController
         @Override
         public void run() {
             restoreRemainder(mGifInfoPtr);
-            invalidateSelf();
+            if (parentView != null && parentView.get() != null) {
+                parentView.get().invalidate();
+            }
+            mMetaData[4] = 0;
         }
     };
 
@@ -96,7 +104,9 @@ public class GifDrawable extends Drawable implements Animatable, MediaController
     private final Runnable mInvalidateTask = new Runnable() {
         @Override
         public void run() {
-            invalidateSelf();
+            if (parentView != null && parentView.get() != null) {
+                parentView.get().invalidate();
+            }
         }
     };
 
@@ -109,18 +119,12 @@ public class GifDrawable extends Drawable implements Animatable, MediaController
     }
 
     public GifDrawable(String filePath) throws Exception {
-        if (filePath == null) {
-            throw new NullPointerException("Source is null");
-        }
         mInputSourceLength = new File(filePath).length();
         mGifInfoPtr = openFile(mMetaData, filePath);
         mColors = new int[mMetaData[0] * mMetaData[1]];
     }
 
     public GifDrawable(File file) throws Exception {
-        if (file == null) {
-            throw new NullPointerException("Source is null");
-        }
         mInputSourceLength = file.length();
         mGifInfoPtr = openFile(mMetaData, file.getPath());
         mColors = new int[mMetaData[0] * mMetaData[1]];
@@ -169,6 +173,9 @@ public class GifDrawable extends Drawable implements Animatable, MediaController
 
     @Override
     public void start() {
+        if (mIsRunning) {
+            return;
+        }
         mIsRunning = true;
         runOnUiThread(mStartTask);
     }
@@ -240,7 +247,9 @@ public class GifDrawable extends Drawable implements Animatable, MediaController
             @Override
             public void run() {
                 seekToTime(mGifInfoPtr, position, mColors);
-                invalidateSelf();
+                if (parentView != null && parentView.get() != null) {
+                    parentView.get().invalidate();
+                }
             }
         });
     }
@@ -253,7 +262,9 @@ public class GifDrawable extends Drawable implements Animatable, MediaController
             @Override
             public void run() {
                 seekToFrame(mGifInfoPtr, frameIndex, mColors);
-                invalidateSelf();
+                if (parentView != null && parentView.get() != null) {
+                    parentView.get().invalidate();
+                }
             }
         });
     }
@@ -323,6 +334,11 @@ public class GifDrawable extends Drawable implements Animatable, MediaController
         return mColors[mMetaData[1] * y + x];
     }
 
+    public Bitmap getBitmap() {
+        seekToFrame(mGifInfoPtr, 0, mColors);
+        return Bitmap.createBitmap(mColors, 0, mMetaData[0], mMetaData[0], mMetaData[1], Bitmap.Config.ARGB_8888);
+    }
+
     @Override
     protected void onBoundsChange(Rect bounds) {
         super.onBoundsChange(bounds);
@@ -343,6 +359,7 @@ public class GifDrawable extends Drawable implements Animatable, MediaController
             } else {
                 mMetaData[4] = -1;
             }
+            canvas.translate(mDstRect.left, mDstRect.top);
             canvas.scale(mSx, mSy);
             canvas.drawBitmap(mColors, 0, mMetaData[0], 0f, 0f, mMetaData[0], mMetaData[1], true, mPaint);
             if (mMetaData[4] >= 0 && mMetaData[2] > 1) {
@@ -365,13 +382,17 @@ public class GifDrawable extends Drawable implements Animatable, MediaController
     @Override
     public void setFilterBitmap(boolean filter) {
         mPaint.setFilterBitmap(filter);
-        invalidateSelf();
+        if (parentView != null && parentView.get() != null) {
+            parentView.get().invalidate();
+        }
     }
 
     @Override
     public void setDither(boolean dither) {
         mPaint.setDither(dither);
-        invalidateSelf();
+        if (parentView != null && parentView.get() != null) {
+            parentView.get().invalidate();
+        }
     }
 
     @Override

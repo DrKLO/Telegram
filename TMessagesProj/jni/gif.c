@@ -794,6 +794,9 @@ JNIEXPORT void JNICALL Java_org_telegram_ui_Views_GifDrawable_saveRemainder(JNIE
         return;
     }
 	info->lastFrameReaminder = getRealTime() - info->nextStartTime;
+    if (info->lastFrameReaminder > 0) {
+        info->lastFrameReaminder = 0;
+    }
 }
 
 JNIEXPORT void JNICALL Java_org_telegram_ui_Views_GifDrawable_restoreRemainder(JNIEnv *env, jclass class, jobject gifInfo) {

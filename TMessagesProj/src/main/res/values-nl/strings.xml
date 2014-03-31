@@ -5,8 +5,9 @@
 <resources>
     <string name="AppName">Telegram</string>
 
-    <string name="LanguangeName">Nederlands</string>
-    <string name="LanguangeNameInEnglish">Dutch</string>
+    <string name="LanguageName">Nederlands</string>
+    <string name="LanguageNameInEnglish">Dutch</string>
+    <string name="LanguageCode">nl</string>
 
     <!--signin view-->
     <string name="YourPhone">Uw telefoon</string>
@@ -110,7 +111,7 @@
     <string name="DeleteThisGroup">Deze groep verwijderen</string>
     <string name="SlideToCancel">SLEEP OM TE ANNULEREN</string>
     <string name="SaveToDownloads">Opslaan in downloads</string>
-    <string name="ApplyLocalizationFile">Apply localization file</string>
+    <string name="ApplyLocalizationFile">Vertaling toepassen</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Privégesprek aangevraagd</string>

@@ -409,7 +409,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             listView.invalidateViews();
                         }
                     } else if (i == languageRow) {
-                        ((LaunchActivity)parentActivity).presentFragment(new LanguageSelectActivity(), "settings_wallpapers", false);
+                        ((LaunchActivity)parentActivity).presentFragment(new LanguageSelectActivity(), "settings_lang", false);
                     } else if (i == switchBackendButtonRow) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
                         builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));

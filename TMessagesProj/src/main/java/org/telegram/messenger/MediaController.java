@@ -20,9 +20,12 @@ import android.media.audiofx.AutomaticGainControl;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.Vibrator;
+import android.view.View;
 
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.ApplicationLoader;
+import org.telegram.ui.Cells.ChatMediaCell;
+import org.telegram.ui.Views.GifDrawable;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -54,6 +57,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         public void onFailedDownload(String fileName);
         public void onSuccessDownload(String fileName);
         public void onProgressDownload(String fileName, float progress);
+        public void onProgressUpload(String fileName, float progress, boolean isEncrypted);
         public int getObserverTag();
     }
 
@@ -83,6 +87,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private HashMap<String, FileDownloadProgressListener> addLaterArray = new HashMap<String, FileDownloadProgressListener>();
     private ArrayList<FileDownloadProgressListener> deleteLaterArray = new ArrayList<FileDownloadProgressListener>();
     private int lastTag = 0;
+
+    private GifDrawable currentGifDrawable;
+    private MessageObject currentGifMessageObject;
+    private ChatMediaCell currentMediaCell;
 
     private boolean isPaused = false;
     private MediaPlayer audioPlayer = null;
@@ -226,6 +234,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         NotificationCenter.getInstance().addObserver(this, FileLoader.FileDidFailedLoad);
         NotificationCenter.getInstance().addObserver(this, FileLoader.FileDidLoaded);
         NotificationCenter.getInstance().addObserver(this, FileLoader.FileLoadProgressChanged);
+        NotificationCenter.getInstance().addObserver(this, FileLoader.FileUploadProgressChanged);
 
         Timer progressTimer = new Timer();
         progressTimer.schedule(new TimerTask() {
@@ -273,6 +282,12 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
     public void cleanup() {
         clenupPlayer(false);
+        if (currentGifDrawable != null) {
+            currentGifDrawable.recycle();
+            currentGifDrawable = null;
+        }
+        currentMediaCell = null;
+        currentGifMessageObject = null;
     }
 
     public int generateObserverTag() {
@@ -372,6 +387,22 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 for (WeakReference<FileDownloadProgressListener> reference : arrayList) {
                     if (reference.get() != null) {
                         reference.get().onProgressDownload(fileName, progress);
+                    }
+                }
+            }
+            listenerInProgress = false;
+            processLaterArrays();
+        } else if (id == FileLoader.FileUploadProgressChanged) {
+            String location = (String)args[0];
+            listenerInProgress = true;
+            String fileName = (String)args[0];
+            ArrayList<WeakReference<FileDownloadProgressListener>> arrayList = loadingFileObservers.get(fileName);
+            if (arrayList != null) {
+                Float progress = (Float)args[1];
+                Boolean enc = (Boolean)args[2];
+                for (WeakReference<FileDownloadProgressListener> reference : arrayList) {
+                    if (reference.get() != null) {
+                        reference.get().onProgressUpload(fileName, progress, enc);
                     }
                 }
             }
@@ -1077,6 +1108,75 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     }
                 }
             });
+        }
+    }
+
+    public GifDrawable getGifDrawable(ChatMediaCell cell, boolean create) {
+        if (cell == null) {
+            return null;
+        }
+
+        MessageObject messageObject = cell.getMessageObject();
+        if (messageObject == null) {
+            return null;
+        }
+
+        if (currentGifMessageObject != null && messageObject.messageOwner.id == currentGifMessageObject.messageOwner.id) {
+            currentMediaCell = cell;
+            currentGifDrawable.parentView = new WeakReference<View>(cell);
+            return currentGifDrawable;
+        }
+
+        if (create) {
+            if (currentMediaCell != null) {
+                if (currentGifDrawable != null) {
+                    currentGifDrawable.stop();
+                    currentGifDrawable.recycle();
+                }
+                currentMediaCell.clearGifImage();
+            }
+            currentGifMessageObject = cell.getMessageObject();
+            currentMediaCell = cell;
+
+            File cacheFile = null;
+            if (currentGifMessageObject.messageOwner.attachPath != null && currentGifMessageObject.messageOwner.attachPath.length() != 0) {
+                File f = new File(currentGifMessageObject.messageOwner.attachPath);
+                if (f.length() > 0) {
+                    cacheFile = f;
+                }
+            } else {
+                cacheFile = new File(Utilities.getCacheDir(), messageObject.getFileName());
+            }
+            try {
+                currentGifDrawable = new GifDrawable(cacheFile);
+                currentGifDrawable.parentView = new WeakReference<View>(cell);
+                return currentGifDrawable;
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+        }
+
+        return null;
+    }
+
+    public void clearGifDrawable(ChatMediaCell cell) {
+        if (cell == null) {
+            return;
+        }
+
+        MessageObject messageObject = cell.getMessageObject();
+        if (messageObject == null) {
+            return;
+        }
+
+        if (currentGifMessageObject != null && messageObject.messageOwner.id == currentGifMessageObject.messageOwner.id) {
+            if (currentGifDrawable != null) {
+                currentGifDrawable.stop();
+                currentGifDrawable.recycle();
+                currentGifDrawable = null;
+            }
+            currentMediaCell = null;
+            currentGifMessageObject = null;
         }
     }
 }
