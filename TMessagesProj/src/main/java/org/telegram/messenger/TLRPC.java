@@ -8691,7 +8691,7 @@ public class TLRPC {
             if (isAction()) {
                 return action.generateMessageText(this, resolveUser(from_id, users), resolveUser(action.user_id, users));
             }
-            if (hasAttachedMedia() && !(media.isEmpty())) {
+            if (hasAttachedMedia()) {
                 return media.generateMessageText();
             }
             return message;
@@ -8713,7 +8713,7 @@ public class TLRPC {
         }
 
         public boolean hasAttachedMedia() {
-            return media != null;
+            return media != null && !(media.isEmpty());
         }
 
         public boolean isFromMe() {
