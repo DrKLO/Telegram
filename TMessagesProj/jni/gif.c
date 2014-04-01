@@ -113,7 +113,7 @@ jint gifOnJNILoad(JavaVM *vm, void *reserved, JNIEnv *env) {
 	if (defaultCmap == NULL) {
         return -1;
     }
-    return JNI_VERSION_1_6;
+    return JNI_VERSION_1_4;
 }
 
 void gifOnJNIUnload(JavaVM *vm, void *reserved) {
@@ -794,6 +794,9 @@ JNIEXPORT void JNICALL Java_org_telegram_ui_Views_GifDrawable_saveRemainder(JNIE
         return;
     }
 	info->lastFrameReaminder = getRealTime() - info->nextStartTime;
+    if (info->lastFrameReaminder > 0) {
+        info->lastFrameReaminder = 0;
+    }
 }
 
 JNIEXPORT void JNICALL Java_org_telegram_ui_Views_GifDrawable_restoreRemainder(JNIEnv *env, jclass class, jobject gifInfo) {

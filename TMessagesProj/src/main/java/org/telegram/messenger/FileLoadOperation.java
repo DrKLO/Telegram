@@ -143,7 +143,7 @@ public class FileLoadOperation {
         }
         final boolean dontDelete = isLocalFile;
         if ((exist = cacheFileFinal.exists()) && !ignoreCache) {
-            Utilities.cacheOutQueue.postRunnable(new Runnable() {
+            FileLoader.cacheOutQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -348,7 +348,7 @@ public class FileLoadOperation {
         final boolean renamed = cacheFileTemp.renameTo(cacheFileFinal);
 
         if (needBitmapCreate) {
-            Utilities.cacheOutQueue.postRunnable(new Runnable() {
+            FileLoader.cacheOutQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
                     int delay = 20;
@@ -465,7 +465,7 @@ public class FileLoadOperation {
             int readed = httpConnectionStream.read(data);
             if (readed > 0) {
                 fileOutputStream.write(data, 0, readed);
-                Utilities.imageLoadQueue.postRunnable(new Runnable() {
+                FileLoader.fileLoaderQueue.postRunnable(new Runnable() {
                     @Override
                     public void run() {
                         startDownloadHTTPRequest();

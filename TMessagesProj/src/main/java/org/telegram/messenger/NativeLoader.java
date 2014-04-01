@@ -10,7 +10,6 @@ package org.telegram.messenger;
 
 import android.content.Context;
 import android.os.Build;
-import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -35,7 +34,7 @@ public class NativeLoader {
             return;
         }
 
-        if (Build.VERSION.SDK_INT >= 9) {
+        if (Build.VERSION.SDK_INT >= 10) {
             try {
                 String folder = null;
                 long libSize = 0;
@@ -48,6 +47,7 @@ public class NativeLoader {
                 } else if (Build.CPU_ABI.equalsIgnoreCase("armeabi")) {
                     folder = "armeabi";
                     libSize = sizes[0];
+                    libSize2 = sizes[1];
                 } else if (Build.CPU_ABI.equalsIgnoreCase("x86")) {
                     folder = "x86";
                     libSize = sizes[2];
@@ -57,13 +57,13 @@ public class NativeLoader {
                 } else {
                     System.loadLibrary("tmessages");
                     nativeLoaded = true;
-                    Log.e("tmessages", "Unsupported arch: " + Build.CPU_ABI);
+                    FileLog.e("tmessages", "Unsupported arch: " + Build.CPU_ABI);
                     return;
                 }
 
                 File destFile = new File(context.getApplicationInfo().nativeLibraryDir + "/libtmessages.so");
                 if (destFile.exists() && (destFile.length() == libSize || libSize2 != 0 && destFile.length() == libSize2)) {
-                    Log.d("tmessages", "Load normal lib");
+                    FileLog.d("tmessages", "Load normal lib");
                     try {
                         System.loadLibrary("tmessages");
                         nativeLoaded = true;
@@ -77,7 +77,7 @@ public class NativeLoader {
                 if (destLocalFile.exists()) {
                     if (destLocalFile.length() == libSize) {
                         try {
-                            Log.d("tmessages", "Load local lib");
+                            FileLog.d("tmessages", "Load local lib");
                             System.load(destLocalFile.getAbsolutePath());
                             nativeLoaded = true;
                             return;
@@ -89,7 +89,7 @@ public class NativeLoader {
                     }
                 }
 
-                Log.e("tmessages", "Library not found, arch = " + folder);
+                FileLog.e("tmessages", "Library not found, arch = " + folder);
 
                 ZipFile zipFile = null;
                 InputStream stream = null;
@@ -114,25 +114,25 @@ public class NativeLoader {
                     nativeLoaded = true;
                     return;
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    FileLog.e("tmessages", e);
                 } finally {
                     if (stream != null) {
                         try {
                             stream.close();
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            FileLog.e("tmessages", e);
                         }
                     }
                     if (zipFile != null) {
                         try {
                             zipFile.close();
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            FileLog.e("tmessages", e);
                         }
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                FileLog.e("tmessages", e);
             }
         }
 

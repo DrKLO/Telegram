@@ -18,7 +18,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 
-import org.telegram.objects.MessageObject;
 import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ImageReceiver;
@@ -38,6 +37,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class FileLoader {
     public LruCache memCache;
 
+    public static volatile DispatchQueue cacheOutQueue = new DispatchQueue("cacheOutQueue");
+    public static volatile DispatchQueue fileLoaderQueue = new DispatchQueue("fileUploadQueue");
+
     private String ignoreRemoval = null;
     private ConcurrentHashMap<String, CacheImage> imageLoading;
     private HashMap<Integer, CacheImage> imageLoadingByKeys;
@@ -50,9 +52,11 @@ public class FileLoader {
     private int currentUploadOperationsCount = 0;
     private Queue<FileLoadOperation> loadOperationQueue;
     private Queue<FileLoadOperation> audioLoadOperationQueue;
+    private Queue<FileLoadOperation> photoLoadOperationQueue;
     private ConcurrentHashMap<String, FileLoadOperation> loadOperationPaths;
     private int currentLoadOperationsCount = 0;
     private int currentAudioLoadOperationsCount = 0;
+    private int currentPhotoLoadOperationsCount = 0;
     public static long lastCacheOutTime = 0;
     public ConcurrentHashMap<String, Float> fileProgresses = new ConcurrentHashMap<String, Float>();
     private long lastProgressUpdateTime = 0;
@@ -108,21 +112,12 @@ public class FileLoader {
             try {
                 Class cl = Class.forName("dalvik.system.VMRuntime");
                 Method getRt = cl.getMethod("getRuntime", new Class[0]);
-                runtime = getRt.invoke(null, new Object[0]);
+                Object obj = new Object[0];
+                runtime = getRt.invoke(null, obj);
                 trackAllocation = cl.getMethod("trackExternalAllocation", new Class[] {long.class});
                 trackFree = cl.getMethod("trackExternalFree", new Class[] {long.class});
                 success = true;
-            } catch (ClassNotFoundException e) {
-                FileLog.e("tmessages", e);
-            } catch (SecurityException e) {
-                FileLog.e("tmessages", e);
-            } catch (NoSuchMethodException e) {
-                FileLog.e("tmessages", e);
-            } catch (IllegalArgumentException e) {
-                FileLog.e("tmessages", e);
-            } catch (IllegalAccessException e) {
-                FileLog.e("tmessages", e);
-            } catch (InvocationTargetException e) {
+            } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
             if (!success) {
@@ -179,7 +174,7 @@ public class FileLoader {
                     }
                 }
             }
-            Utilities.imageLoadQueue.postRunnable(new Runnable() {
+            fileLoaderQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
                     synchronized (imageViewArray) {
@@ -316,10 +311,11 @@ public class FileLoader {
         loadOperationPaths = new ConcurrentHashMap<String, FileLoadOperation>();
         loadOperationQueue = new LinkedList<FileLoadOperation>();
         audioLoadOperationQueue = new LinkedList<FileLoadOperation>();
+        photoLoadOperationQueue = new LinkedList<FileLoadOperation>();
     }
 
     public void cancelUploadFile(final String location, final boolean enc) {
-        Utilities.fileUploadQueue.postRunnable(new Runnable() {
+        fileLoaderQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
                 if (!enc) {
@@ -344,7 +340,7 @@ public class FileLoader {
     }
 
     public void uploadFile(final String location, final byte[] key, final byte[] iv) {
-        Utilities.fileUploadQueue.postRunnable(new Runnable() {
+        fileLoaderQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
                 if (key != null) {
@@ -365,7 +361,7 @@ public class FileLoader {
                 operation.delegate = new FileUploadOperation.FileUploadOperationDelegate() {
                     @Override
                     public void didFinishUploadingFile(FileUploadOperation operation, final TLRPC.InputFile inputFile, final TLRPC.InputEncryptedFile inputEncryptedFile) {
-                        Utilities.fileUploadQueue.postRunnable(new Runnable() {
+                        fileLoaderQueue.postRunnable(new Runnable() {
                             @Override
                             public void run() {
                                 Utilities.stageQueue.postRunnable(new Runnable() {
@@ -394,7 +390,7 @@ public class FileLoader {
 
                     @Override
                     public void didFailedUploadingFile(final FileUploadOperation operation) {
-                        Utilities.fileUploadQueue.postRunnable(new Runnable() {
+                        fileLoaderQueue.postRunnable(new Runnable() {
                             @Override
                             public void run() {
                                 Utilities.stageQueue.postRunnable(new Runnable() {
@@ -454,7 +450,7 @@ public class FileLoader {
         if (attachment == null) {
             return;
         }
-        Utilities.fileUploadQueue.postRunnable(new Runnable() {
+        fileLoaderQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
                 String fileName = attachment.getAttachmentFileName();
@@ -465,6 +461,8 @@ public class FileLoader {
                 if (operation != null) {
                     if (attachment instanceof TLRPC.Audio) {
                         audioLoadOperationQueue.remove(operation);
+                    } else if (attachment instanceof TLRPC.PhotoSize) {
+                        photoLoadOperationQueue.remove(operation);
                     } else {
                         loadOperationQueue.remove(operation);
                     }
@@ -479,130 +477,135 @@ public class FileLoader {
     }
 
     public void loadFile(final TLRPC.Attachment attachment) {
-        String fileName = attachment.getAttachmentFileName();
-        FileLoadOperation operation = null;
-        if (attachment instanceof TLRPC.ExtendedAttachment) {
-            new FileLoadOperation((TLRPC.ExtendedAttachment)attachment);
-        } else if (attachment instanceof TLRPC.PhotoSize) {
-            operation = new FileLoadOperation(((TLRPC.PhotoSize)attachment).location);
-            operation.needBitmapCreate = false;
-        }
-        operation.totalBytesCount = attachment.size;
-
-        final String arg1 = fileName;
-        loadOperationPaths.put(fileName, operation);
-        operation.delegate = new FileLoadOperation.FileLoadOperationDelegate() {
+        fileLoaderQueue.postRunnable(new Runnable() {
             @Override
-            public void didFinishLoadingFile(FileLoadOperation operation) {
-                Utilities.RunOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        NotificationCenter.getInstance().postNotificationName(FileLoadProgressChanged, arg1, 1.0f);
-                    }
-                });
-                Utilities.RunOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        NotificationCenter.getInstance().postNotificationName(FileDidLoaded, arg1);
-                    }
-                });
-                Utilities.fileUploadQueue.postRunnable(new Runnable() {
-                    @Override
-                    public void run() {
-                        loadOperationPaths.remove(arg1);
-                        if (attachment instanceof TLRPC.Audio) {
-                            currentAudioLoadOperationsCount--;
-                            if (currentAudioLoadOperationsCount < 2) {
-                                FileLoadOperation operation = audioLoadOperationQueue.poll();
-                                if (operation != null) {
-                                    currentAudioLoadOperationsCount++;
-                                    operation.start();
-                                }
-                            }
-                        } else {
-                            currentLoadOperationsCount--;
-                            if (currentLoadOperationsCount < 2) {
-                                FileLoadOperation operation = loadOperationQueue.poll();
-                                if (operation != null) {
-                                    currentLoadOperationsCount++;
-                                    operation.start();
-                                }
-                            }
-                        }
-                    }
-                });
-                fileProgresses.remove(arg1);
-            }
-
-            @Override
-            public void didFailedLoadingFile(FileLoadOperation operation) {
-                fileProgresses.remove(arg1);
-                if (operation.state != 2) {
-                    Utilities.RunOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            NotificationCenter.getInstance().postNotificationName(FileDidFailedLoad, arg1);
-                        }
-                    });
+            public void run() {
+                final String fileName = attachment.getAttachmentFileName();
+                FileLoadOperation operation = null;
+                if (attachment instanceof TLRPC.ExtendedAttachment) {
+                    new FileLoadOperation((TLRPC.ExtendedAttachment)attachment);
+                } else if (attachment instanceof TLRPC.PhotoSize) {
+                    operation = new FileLoadOperation(((TLRPC.PhotoSize)attachment).location);
+                    operation.needBitmapCreate = false;
                 }
-                Utilities.fileUploadQueue.postRunnable(new Runnable() {
+                operation.totalBytesCount = attachment.size;
+
+
+                loadOperationPaths.put(fileName, operation);
+                operation.delegate = new FileLoadOperation.FileLoadOperationDelegate() {
                     @Override
-                    public void run() {
-                        loadOperationPaths.remove(arg1);
-                        if (attachment instanceof TLRPC.Audio) {
-                            currentAudioLoadOperationsCount--;
-                            if (currentAudioLoadOperationsCount < 2) {
-                                FileLoadOperation operation = audioLoadOperationQueue.poll();
-                                if (operation != null) {
-                                    currentAudioLoadOperationsCount++;
-                                    operation.start();
-                                }
+                    public void didFinishLoadingFile(FileLoadOperation operation) {
+                        Utilities.RunOnUIThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                NotificationCenter.getInstance().postNotificationName(FileLoadProgressChanged, fileName, 1.0f);
                             }
-                        } else {
-                            currentLoadOperationsCount--;
-                            if (currentLoadOperationsCount < 2) {
-                                FileLoadOperation operation = loadOperationQueue.poll();
-                                if (operation != null) {
-                                    currentLoadOperationsCount++;
-                                    operation.start();
-                                }
+                        });
+                        Utilities.RunOnUIThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                NotificationCenter.getInstance().postNotificationName(FileDidLoaded, fileName);
                             }
+                        });
+                        fileLoaderQueue.postRunnable(new Runnable() {
+                            @Override
+                            public void run() {
+                                finishLoading(fileName, attachment);
+                            }
+                        });
+                        fileProgresses.remove(fileName);
+                    }
+
+                    @Override
+                    public void didFailedLoadingFile(FileLoadOperation operation) {
+                        fileProgresses.remove(fileName);
+                        if (operation.state != 2) {
+                            Utilities.RunOnUIThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    NotificationCenter.getInstance().postNotificationName(FileDidFailedLoad, fileName);
+                                }
+                            });
+                        }
+                        fileLoaderQueue.postRunnable(new Runnable() {
+                            @Override
+                            public void run() {
+                                finishLoading(fileName, attachment);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void didChangedLoadProgress(FileLoadOperation operation, final float progress) {
+                        if (operation.state != 2) {
+                            fileProgresses.put(fileName, progress);
+                        }
+                        long currentTime = System.currentTimeMillis();
+                        if (lastProgressUpdateTime == 0 || lastProgressUpdateTime < currentTime - 500) {
+                            lastProgressUpdateTime = currentTime;
+                            Utilities.RunOnUIThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    NotificationCenter.getInstance().postNotificationName(FileLoadProgressChanged, fileName, progress);
+                                }
+                            });
                         }
                     }
-                });
-            }
-
-            @Override
-            public void didChangedLoadProgress(FileLoadOperation operation, final float progress) {
-                if (operation.state != 2) {
-                    fileProgresses.put(arg1, progress);
-                }
-                long currentTime = System.currentTimeMillis();
-                if (lastProgressUpdateTime == 0 || lastProgressUpdateTime < currentTime - 500) {
-                    lastProgressUpdateTime = currentTime;
-                    Utilities.RunOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            NotificationCenter.getInstance().postNotificationName(FileLoadProgressChanged, arg1, progress);
-                        }
-                    });
+                };
+                if (attachment instanceof TLRPC.Audio) {
+                    if (currentAudioLoadOperationsCount < 2) {
+                        currentAudioLoadOperationsCount++;
+                        operation.start();
+                    } else {
+                        audioLoadOperationQueue.add(operation);
+                    }
+                } else if (attachment instanceof TLRPC.PhotoSize) {
+                    if (currentPhotoLoadOperationsCount < 2) {
+                        currentPhotoLoadOperationsCount++;
+                        operation.start();
+                    } else {
+                        photoLoadOperationQueue.add(operation);
+                    }
+                } else {
+                    if (currentLoadOperationsCount < 2) {
+                        currentLoadOperationsCount++;
+                        operation.start();
+                    } else {
+                        loadOperationQueue.add(operation);
+                    }
                 }
             }
-        };
+        });
+    }
 
+    private void finishLoading(String arg1, TLRPC.Attachment attachment) {
+        loadOperationPaths.remove(arg1);
         if (attachment instanceof TLRPC.Audio) {
+            currentAudioLoadOperationsCount--;
             if (currentAudioLoadOperationsCount < 2) {
-                currentAudioLoadOperationsCount++;
-                operation.start();
-            } else {
-                audioLoadOperationQueue.add(operation);
+                FileLoadOperation operation = audioLoadOperationQueue.poll();
+                if (operation != null) {
+                    currentAudioLoadOperationsCount++;
+                    operation.start();
+                }
+            }
+        } else if (attachment instanceof TLRPC.PhotoSize) {
+            currentPhotoLoadOperationsCount--;
+            if (currentPhotoLoadOperationsCount < 2) {
+                FileLoadOperation operation = photoLoadOperationQueue.poll();
+                if (operation != null) {
+                    currentPhotoLoadOperationsCount++;
+                    operation.start();
+                }
             }
         } else {
+            currentLoadOperationsCount--;
             if (currentLoadOperationsCount < 2) {
-                currentLoadOperationsCount++;
-                operation.start();
-            } else {
-                loadOperationQueue.add(operation);
+                FileLoadOperation operation = loadOperationQueue.poll();
+                if (operation != null) {
+                    currentLoadOperationsCount++;
+                    operation.start();
+                }
             }
         }
     }
@@ -639,7 +642,7 @@ public class FileLoader {
         if (imageView == null) {
             return;
         }
-        Utilities.imageLoadQueue.postRunnable(new Runnable() {
+        fileLoaderQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
                 Integer TAG = getTag(imageView);
@@ -741,14 +744,16 @@ public class FileLoader {
         if ((url == null && httpUrl == null) || imageView == null || (url != null && !(url instanceof TLRPC.TL_fileLocation) && !(url instanceof TLRPC.TL_fileEncryptedLocation))) {
             return;
         }
-        Utilities.imageLoadQueue.postRunnable(new Runnable() {
+        fileLoaderQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
                 String key;
+                String fileName = null;
                 if (httpUrl != null) {
                     key = Utilities.MD5(httpUrl);
                 } else {
                     key = url.volume_id + "_" + url.local_id;
+                    fileName = key + ".jpg";
                 }
                 if (filter != null) {
                     key += "@" + filter;
@@ -797,6 +802,7 @@ public class FileLoader {
                     imageLoading.put(key, img);
 
                     final String arg2 = key;
+                    final String arg3 = fileName;
                     FileLoadOperation loadOperation;
                     if (httpUrl != null) {
                         loadOperation = new FileLoadOperation(httpUrl);
@@ -808,30 +814,43 @@ public class FileLoader {
                     loadOperation.delegate = new FileLoadOperation.FileLoadOperationDelegate() {
                         @Override
                         public void didFinishLoadingFile(final FileLoadOperation operation) {
-                            enqueueImageProcessingOperationWithImage(operation.image, filter, arg2, img);
                             if (operation.totalBytesCount != 0) {
-                                final String arg1 = operation.location.volume_id + "_" + operation.location.local_id + ".jpg";
-                                fileProgresses.remove(arg1);
-                                Utilities.RunOnUIThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        NotificationCenter.getInstance().postNotificationName(FileLoadProgressChanged, arg1, 1.0f);
-                                    }
-                                });
-                                Utilities.RunOnUIThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        NotificationCenter.getInstance().postNotificationName(FileDidLoaded, arg1);
-                                    }
-                                });
+                                fileProgresses.remove(arg3);
                             }
+                            fileLoaderQueue.postRunnable(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (arg3 != null) {
+                                        loadOperationPaths.remove(arg3);
+                                    }
+                                    for (Object v : img.imageViewArray) {
+                                        imageLoadingByKeys.remove(getTag(v));
+                                    }
+                                    checkOperationsAndClear(img.loadOperation);
+                                    imageLoading.remove(arg2);
+                                }
+                            });
+
+                            Utilities.RunOnUIThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    img.callAndClear(operation.image);
+                                    if (operation.image != null && memCache.get(arg2) == null) {
+                                        memCache.put(arg2, operation.image);
+                                    }
+                                    NotificationCenter.getInstance().postNotificationName(FileDidLoaded, arg3);
+                                }
+                            });
                         }
 
                         @Override
                         public void didFailedLoadingFile(final FileLoadOperation operation) {
-                            Utilities.imageLoadQueue.postRunnable(new Runnable() {
+                            fileLoaderQueue.postRunnable(new Runnable() {
                                 @Override
                                 public void run() {
+                                    if (arg3 != null) {
+                                        loadOperationPaths.remove(arg3);
+                                    }
                                     for (Object view : img.imageViewArray) {
                                         imageLoadingByKeys.remove(getTag(view));
                                         imageLoading.remove(arg2);
@@ -886,6 +905,9 @@ public class FileLoader {
                     } else {
                         operationsQueue.add(loadOperation);
                     }
+                    if (fileName != null) {
+                        loadOperationPaths.put(fileName, loadOperation);
+                    }
                 }
             }
         });
@@ -899,85 +921,6 @@ public class FileLoader {
             runningOperation.add(loadOperation);
             loadOperation.start();
         }
-    }
-
-    public void processImage(Bitmap image, Object imageView, String filter, boolean cancel) {
-        if (filter == null || imageView == null) {
-            return;
-        }
-
-
-        Integer TAG = getTag(imageView);
-        if (TAG == null) {
-            TAG = lastImageNum;
-            setTag(image, TAG);
-            lastImageNum++;
-            if (lastImageNum == Integer.MAX_VALUE)
-                lastImageNum = 0;
-        }
-
-        boolean added = false;
-        boolean addToByKeys = true;
-        CacheImage alreadyLoadingImage = imageLoading.get(filter);
-        if (cancel) {
-            CacheImage ei = imageLoadingByKeys.get(TAG);
-            if (ei != null) {
-                if (ei != alreadyLoadingImage) {
-                    ei.removeImageView(imageView);
-                    if (ei.imageViewArray.size() == 0) {
-                        checkOperationsAndClear(ei.loadOperation);
-                        ei.cancelAndClear();
-                        imageLoading.remove(ei.key);
-                    }
-                } else {
-                    addToByKeys = false;
-                    added = true;
-                }
-            }
-        }
-
-        if (alreadyLoadingImage != null && addToByKeys) {
-            alreadyLoadingImage.addImageView(imageView);
-            imageLoadingByKeys.put(TAG, alreadyLoadingImage);
-            added = true;
-        }
-
-        if (!added) {
-            CacheImage img = new CacheImage();
-            img.key = filter;
-            img.addImageView(imageView);
-            imageLoadingByKeys.put(TAG, img);
-            imageLoading.put(filter, img);
-
-            enqueueImageProcessingOperationWithImage(image, filter, filter, img);
-        }
-    }
-
-    void enqueueImageProcessingOperationWithImage(final Bitmap image, final String filter, final String key, final CacheImage img) {
-        if (key == null) {
-            return;
-        }
-
-        Utilities.imageLoadQueue.postRunnable(new Runnable() {
-            @Override
-            public void run() {
-                for (Object v : img.imageViewArray) {
-                    imageLoadingByKeys.remove(getTag(v));
-                }
-                checkOperationsAndClear(img.loadOperation);
-                imageLoading.remove(key);
-            }
-        });
-
-        Utilities.RunOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                img.callAndClear(image);
-                if (image != null && memCache.get(key) == null) {
-                    memCache.put(key, image);
-                }
-            }
-        });
     }
 
     public static Bitmap loadBitmap(String path, Uri uri, float maxWidth, float maxHeight) {

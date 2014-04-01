@@ -68,6 +68,12 @@ public class ApplicationLoader extends Application {
         NativeLoader.initNativeLibs(applicationContext);
 
         try {
+            LocaleController.getInstance();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
             final IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
             filter.addAction(Intent.ACTION_SCREEN_OFF);
             final BroadcastReceiver mReceiver = new ScreenReceiver();
@@ -119,12 +125,6 @@ public class ApplicationLoader extends Application {
         super.onCreate();
         lastPauseTime = System.currentTimeMillis();
         applicationContext = getApplicationContext();
-        NativeLoader.initNativeLibs(this);
-        try {
-            LocaleController.getInstance();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
 

@@ -5,8 +5,9 @@
 <resources>
     <string name="AppName">Telegram</string>
 
-    <string name="LanguangeName">Deutsch</string>
-    <string name="LanguangeNameInEnglish">German</string>
+    <string name="LanguageName">Deutsch</string>
+    <string name="LanguageNameInEnglish">German</string>
+    <string name="LanguageCode">de</string>
 
     <!--signin view-->
     <string name="YourPhone">Dein Telefon</string>
@@ -110,7 +111,7 @@
     <string name="DeleteThisGroup">Diese Gruppe löschen</string>
     <string name="SlideToCancel">WISCHEN UM ABZUBRECHEN</string>
     <string name="SaveToDownloads">In Ordner Downloads speichern</string>
-    <string name="ApplyLocalizationFile">Apply localization file</string>
+    <string name="ApplyLocalizationFile">Sprachdatei benutzen</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Geheimen Chat angefordert</string>

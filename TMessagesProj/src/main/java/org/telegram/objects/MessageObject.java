@@ -32,6 +32,7 @@ public class MessageObject {
     public TLRPC.Message messageOwner;
     public CharSequence messageText;
     public int type;
+    public int contentType;
     public ArrayList<PhotoObject> photoThumbs;
     public Bitmap imagePreview;
     public PhotoObject previewPhoto;
@@ -70,71 +71,54 @@ public class MessageObject {
         imagePreview = message.getImagePreview();
 
         if (message instanceof TLRPC.TL_message || (message instanceof TLRPC.TL_messageForwarded && (message.media == null || !(message.media instanceof TLRPC.TL_messageMediaEmpty)))) {
-            if (!message.hasAttachedMedia() || message.media instanceof TLRPC.TL_messageMediaEmpty) {
+            if (message.media == null || message.media instanceof TLRPC.TL_messageMediaEmpty) {
+                contentType = type = 0;
+            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaPhoto) {
+                contentType = type = 1;
+            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaGeo) {
                 if (message.isFromMe()) {
-                    type = 0;
+                    contentType = type = 4;
                 } else {
-                    type = 1;
+                    contentType = type = 5;
                 }
-            } else {
-                if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
+            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaVideo) {
+                if (message.isFromMe()) {
+                    contentType = type = 6;
+                } else {
+                    contentType = type = 7;
+                }
+            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaContact) {
+                if (message.isFromMe()) {
+                    contentType = type = 12;
+                } else {
+                    contentType = type = 13;
+                }
+            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaUnsupported) {
+                contentType = type = 0;
+            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaDocument) {
+                if (message.media.document.thumb != null && !(message.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty) && message.media.document.mime_type != null && message.media.document.mime_type.equals("image/gif")) {
+                    contentType = 1;
+                    type = 8;
+                } else {
                     if (message.isFromMe()) {
-                        type = 2;
+                        contentType = type = 8;
                     } else {
-                        type = 3;
-                    }
-                } else if (message.media instanceof TLRPC.TL_messageMediaGeo) {
-                    if (message.isFromMe()) {
-                        type = 4;
-                    } else {
-                        type = 5;
-                    }
-                } else if (message.media instanceof TLRPC.TL_messageMediaVideo) {
-                    if (message.isFromMe()) {
-                        type = 6;
-                    } else {
-                        type = 7;
-                    }
-                } else if (message.media instanceof TLRPC.TL_messageMediaContact) {
-                    if (message.isFromMe()) {
-                        type = 12;
-                    } else {
-                        type = 13;
-                    }
-                } else if (message.media instanceof TLRPC.TL_messageMediaUnsupported) {
-                    if (message.isFromMe()) {
-                        type = 0;
-                    } else {
-                        type = 1;
-                    }
-                } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
-                    if (message.isFromMe()) {
-                        type = 16;
-                    } else {
-                        type = 17;
-                    }
-                } else if (message.media instanceof TLRPC.TL_messageMediaAudio) {
-                    if (message.isFromMe()) {
-                        type = 18;
-                    } else {
-                        type = 19;
+                        contentType = type = 9;
                     }
                 }
+            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaAudio) {
+                contentType = type = 2;
             }
         } else if (message instanceof TLRPC.TL_messageService) {
             if (message.action instanceof TLRPC.TL_messageActionLoginUnknownLocation) {
-                type = 1;
+                contentType = type = 0;
             } else if (message.action instanceof TLRPC.TL_messageActionChatEditPhoto || message.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
-                type = 11;
+                contentType = type = 11;
             } else {
-                type = 10;
+                contentType = type = 10;
             }
         } else if (message instanceof TLRPC.TL_messageForwarded) {
-            if (message.isFromMe()) {
-                type = 8;
-            } else {
-                type = 9;
-            }
+            contentType = type = 0;
         }
 
         Calendar rightNow = new GregorianCalendar();

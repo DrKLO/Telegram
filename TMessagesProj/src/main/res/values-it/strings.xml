@@ -5,8 +5,9 @@
 <resources>
     <string name="AppName">Telegram</string>
 
-    <string name="LanguangeName">Italiano</string>
-    <string name="LanguangeNameInEnglish">Italian</string>
+    <string name="LanguageName">Italiano</string>
+    <string name="LanguageNameInEnglish">Italian</string>
+    <string name="LanguageCode">it</string>
 
     <!--signin view-->
     <string name="YourPhone">Il tuo telefono</string>
@@ -110,7 +111,7 @@
     <string name="DeleteThisGroup">Elimina questo gruppo</string>
     <string name="SlideToCancel">TRASCINA PER ANNULLARE</string>
     <string name="SaveToDownloads">Salva in download</string>
-    <string name="ApplyLocalizationFile">Apply localization file</string>
+    <string name="ApplyLocalizationFile">Applica file di localizzazione</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Chat segreta richiesta</string>

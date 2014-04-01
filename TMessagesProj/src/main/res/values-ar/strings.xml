@@ -5,8 +5,9 @@
 <resources>
     <string name="AppName">Telegram</string>
 
-    <string name="LanguangeName">العربية</string>
-    <string name="LanguangeNameInEnglish">Arabic</string>
+    <string name="LanguageName">العربية</string>
+    <string name="LanguageNameInEnglish">Arabic</string>
+    <string name="LanguageCode">ar</string>
 
     <!--signin view-->
     <string name="YourPhone">رقم هاتفك المحمول</string>
@@ -110,7 +111,7 @@
     <string name="DeleteThisGroup">حذف المجموعة</string>
     <string name="SlideToCancel">قم بالسحب للإلغاء</string>
     <string name="SaveToDownloads">حفظ في الجهاز</string>
-    <string name="ApplyLocalizationFile">Apply localization file</string>
+    <string name="ApplyLocalizationFile">تطبيق ملف التعريب</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">تم طلب محادثة سرية</string>

@@ -5,7 +5,7 @@ jfieldID queryArgsCountField;
 jint sqliteOnJNILoad(JavaVM *vm, void *reserved, JNIEnv *env) {
 	jclass class = (*env)->FindClass(env, "org/telegram/SQLite/SQLitePreparedStatement");
 	queryArgsCountField = (*env)->GetFieldID(env, class, "queryArgsCount", "I");
-	return JNI_VERSION_1_6;
+	return JNI_VERSION_1_4;
 }
 
 int Java_org_telegram_SQLite_SQLitePreparedStatement_step(JNIEnv* env, jobject object, int statementHandle) {

@@ -60,8 +60,8 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     private TLRPC.FileLocation currentPhoto;
     private String currentNameString;
 
-    public ChatAudioCell(Context context, boolean isChat) {
-        super(context, isChat);
+    public ChatAudioCell(Context context) {
+        super(context, false);
         TAG = MediaController.getInstance().generateObserverTag();
 
         avatarImage = new ImageReceiver();
@@ -101,6 +101,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             avatarImage.clearImage();
             currentPhoto = null;
         }
+        MediaController.getInstance().removeLoadingFileObserver(this);
     }
 
     @Override
@@ -230,7 +231,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             }
             progressView.setProgress(0);
         } else {
-            MediaController.getInstance().addLoadingFileObserver(currentMessageObject.getFileName(), this);
+            MediaController.getInstance().addLoadingFileObserver(fileName, this);
             if (!FileLoader.getInstance().isLoadingFile(fileName)) {
                 buttonState = 2;
                 progressView.setProgress(0);
@@ -264,6 +265,11 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     }
 
     @Override
+    public void onProgressUpload(String fileName, float progress, boolean isEncrypted) {
+
+    }
+
+    @Override
     public int getObserverTag() {
         return TAG;
     }
@@ -281,7 +287,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
         setMeasuredDimension(width, Utilities.dp(68));
-        if (chat) {
+        if (isChat) {
             backgroundWidth = Math.min(width - Utilities.dp(102), Utilities.dp(300));
         } else {
             backgroundWidth = Math.min(width - Utilities.dp(50), Utilities.dp(300));
@@ -298,7 +304,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             buttonX = layoutWidth - backgroundWidth + Utilities.dp(67);
             timeX = layoutWidth - backgroundWidth + Utilities.dp(71);
         } else {
-            if (chat) {
+            if (isChat) {
                 avatarImage.imageX = Utilities.dp(69);
                 seekBarX = Utilities.dp(158);
                 buttonX = Utilities.dp(128);
@@ -355,10 +361,10 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
 
             if (messageObject.messageOwner.out) {
                 seekBar.type = 0;
-                progressView.type = 0;
+                progressView.setProgressColors(0xffb4e396, 0xff6ac453);
             } else {
                 seekBar.type = 1;
-                progressView.type = 1;
+                progressView.setProgressColors(0xffd9e2eb, 0xff86c5f8);
             }
 
             super.setMessageObject(messageObject);
@@ -404,11 +410,5 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         canvas.translate(timeX, Utilities.dp(45));
         timeLayout.draw(canvas);
         canvas.restore();
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        MediaController.getInstance().removeLoadingFileObserver(this);
-        super.finalize();
     }
 }
