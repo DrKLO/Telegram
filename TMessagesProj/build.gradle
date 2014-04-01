@@ -1,11 +1,4 @@
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:0.8.+'
-    }
-}
+
 apply plugin: 'android'
 
 repositories {
@@ -40,34 +33,19 @@ dependencies {
 
 android {
     compileSdkVersion 19
-    buildToolsVersion '19.0.1'
-
-    signingConfigs {
-        debug {
-            storeFile file("debug.keystore")
-        }
-
-        release {
-            storeFile file("release.keystore")
-        }
-    }
-
-    buildTypes {
-        debug {
-            debuggable true
-            jniDebugBuild true
-            signingConfig signingConfigs.debug
-        }
-
-        release {
-            debuggable false
-            jniDebugBuild false
-            signingConfig signingConfigs.release
-        }
-    }
+    buildToolsVersion "19.0.1"
 
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 19
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            runProguard false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
     }
 }
+
