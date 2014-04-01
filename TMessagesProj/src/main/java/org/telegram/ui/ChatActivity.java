@@ -93,7 +93,6 @@ import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.EmojiView;
-import org.telegram.ui.Views.GifDrawable;
 import org.telegram.ui.Views.LayoutListView;
 import org.telegram.ui.Views.MessageActionLayout;
 import org.telegram.ui.Views.OnSwipeTouchListener;
@@ -883,49 +882,21 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
             chatListView.setOnTouchListener(new OnSwipeTouchListener() {
                 public void onSwipeRight() {
-                    try {
-                        if (visibleDialog != null) {
-                            visibleDialog.dismiss();
-                            visibleDialog = null;
-                        }
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                    finishFragment(true);
+                    ChatActivity.this.onSwipeRight();
                 }
 
                 public void onSwipeLeft() {
-                    if (swipeOpening) {
-                        return;
-                    }
-                    try {
-                        if (visibleDialog != null) {
-                            visibleDialog.dismiss();
-                            visibleDialog = null;
-                        }
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                    if (avatarImageView != null) {
-                        swipeOpening = true;
-                        avatarImageView.performClick();
-                    }
+                    ChatActivity.this.onSwipeLeft();
                 }
             });
 
             emptyView.setOnTouchListener(new OnSwipeTouchListener() {
                 public void onSwipeRight() {
-                    finishFragment(true);
+                    ChatActivity.this.onSwipeRight();
                 }
 
                 public void onSwipeLeft() {
-                    if (swipeOpening) {
-                        return;
-                    }
-                    if (avatarImageView != null) {
-                        swipeOpening = true;
-                        avatarImageView.performClick();
-                    }
+                    ChatActivity.this.onSwipeLeft();
                 }
             });
             if (currentChat != null && (currentChat instanceof TLRPC.TL_chatForbidden || currentChat.left)) {
@@ -940,6 +911,38 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             }
         }
         return fragmentView;
+    }
+
+    private boolean onSwipeLeft() {
+        if (swipeOpening) {
+            return false;
+        }
+        try {
+            if (visibleDialog != null) {
+                visibleDialog.dismiss();
+                visibleDialog = null;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        if (avatarImageView != null) {
+            swipeOpening = true;
+            avatarImageView.performClick();
+        }
+        return true;
+    }
+
+    private boolean onSwipeRight() {
+        try {
+            if (visibleDialog != null) {
+                visibleDialog.dismiss();
+                visibleDialog = null;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        finishFragment(true);
+        return true;
     }
 
     private void checkSendButton() {
@@ -1247,7 +1250,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                 if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
                                     String mime = messageObject.messageOwner.media.document.mime_type;
                                     if (mime != null && mime.equals("text/xml")) {
-                                        return 5;
+                                        return 4;
                                     }
                                 }
                                 return 4;
@@ -1291,7 +1294,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                             if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
                                 String mime = messageObject.messageOwner.media.document.mime_type;
                                 if (mime != null && mime.equals("text/xml")) {
-                                    return 5;
+                                    return 4;
                                 }
                             }
                             //return 4;
@@ -1615,7 +1618,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         String ext = "";
         int idx = documentFilePath.lastIndexOf(".");
         if (idx != -1) {
-            ext = documentFilePath.substring(idx);
+            ext = documentFilePath.substring(idx + 1);
         }
         TLRPC.TL_document document = new TLRPC.TL_document();
         document.id = 0;
@@ -1637,19 +1640,13 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             document.mime_type = "application/octet-stream";
         }
         if (document.mime_type.equals("image/gif")) {
-            GifDrawable gifDrawable = null;
             try {
-                gifDrawable = new GifDrawable(f);
-                Bitmap bitmap = gifDrawable.getBitmap();
+                Bitmap bitmap = FileLoader.loadBitmap(f.getAbsolutePath(), null, 90, 90);
                 if (bitmap != null) {
                     document.thumb = FileLoader.scaleAndSaveImage(bitmap, 90, 90, 55, currentEncryptedChat != null);
                     document.thumb.type = "s";
                 }
-                gifDrawable.recycle();
             } catch (Exception e) {
-                if (gifDrawable != null) {
-                    gifDrawable.recycle();
-                }
                 FileLog.e("tmessages", e);
             }
         }
@@ -3187,19 +3184,13 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             document.mime_type = "application/octet-stream";
         }
         if (document.mime_type.equals("image/gif")) {
-            GifDrawable gifDrawable = null;
             try {
-                gifDrawable = new GifDrawable(path);
-                Bitmap bitmap = gifDrawable.getBitmap();
+                Bitmap bitmap = FileLoader.loadBitmap(path, null, 90, 90);
                 if (bitmap != null) {
-                    document.thumb = FileLoader.scaleAndSaveImage(bitmap, 90, 90, 55, currentEncryptedChat != null);
+                    document.thumb = FileLoader.scaleAndSaveImage(bitmap, 90, 90, 80, currentEncryptedChat != null);
                     document.thumb.type = "s";
                 }
-                gifDrawable.recycle();
             } catch (Exception e) {
-                if (gifDrawable != null) {
-                    gifDrawable.recycle();
-                }
                 FileLog.e("tmessages", e);
             }
         }
@@ -3660,6 +3651,26 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         if (message.messageOwner.send_state != 0) {
                             MessagesController.getInstance().cancelSendingMessage(message);
                         }
+                    }
+
+                    @Override
+                    public void didLongPressed(ChatBaseCell cell) {
+                        createMenu(cell, false);
+                    }
+
+                    @Override
+                    public boolean canPerformActions() {
+                        return mActionMode == null;
+                    }
+
+                    @Override
+                    public boolean onSwipeLeft() {
+                        return ChatActivity.this.onSwipeLeft();
+                    }
+
+                    @Override
+                    public boolean onSwipeRight() {
+                        return ChatActivity.this.onSwipeRight();
                     }
                 };
                 if (view instanceof ChatMediaCell) {

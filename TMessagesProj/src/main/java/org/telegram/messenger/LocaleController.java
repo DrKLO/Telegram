@@ -50,6 +50,7 @@ public class LocaleController {
         public String name;
         public String nameEnglish;
         public String shortName;
+        public boolean embededLang;
     }
 
     public ArrayList<LocaleInfo> sortedLanguages = new ArrayList<LocaleController.LocaleInfo>();
@@ -74,6 +75,7 @@ public class LocaleController {
         localeInfo.name = "English";
         localeInfo.nameEnglish = "English";
         localeInfo.shortName = "en";
+        localeInfo.embededLang = true;
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
@@ -81,6 +83,7 @@ public class LocaleController {
         localeInfo.name = "Italiano";
         localeInfo.nameEnglish = "Italian";
         localeInfo.shortName = "it";
+        localeInfo.embededLang = true;
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
@@ -95,6 +98,7 @@ public class LocaleController {
         localeInfo.name = "Deutsch";
         localeInfo.nameEnglish = "German";
         localeInfo.shortName = "de";
+        localeInfo.embededLang = true;
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
@@ -102,6 +106,7 @@ public class LocaleController {
         localeInfo.name = "Nederlands";
         localeInfo.nameEnglish = "Dutch";
         localeInfo.shortName = "nl";
+        localeInfo.embededLang = true;
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
@@ -109,6 +114,7 @@ public class LocaleController {
         localeInfo.name = "العربية";
         localeInfo.nameEnglish = "Arabic";
         localeInfo.shortName = "ar";
+        localeInfo.embededLang = true;
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
@@ -123,6 +129,7 @@ public class LocaleController {
         localeInfo.name = "System default";
         localeInfo.nameEnglish = "System default";
         localeInfo.shortName = null;
+        localeInfo.embededLang = true;
         sortedLanguages.add(0, localeInfo);
 
         systemDefaultLocale = Locale.getDefault();
@@ -197,6 +204,7 @@ public class LocaleController {
                 localeInfo.name = languageName;
                 localeInfo.nameEnglish = languageNameInEnglish;
                 localeInfo.shortName = languageCode;
+                localeInfo.embededLang = false;
                 sortedLanguages.add(localeInfo);
                 languagesDict.put(localeInfo.shortName, localeInfo);
 
@@ -248,6 +256,9 @@ public class LocaleController {
                 editor.commit();
             }
             if (newLocale != null) {
+                if (localeInfo.embededLang) {
+                    localeValues.clear();
+                }
                 currentLocale = newLocale;
                 currentLocaleInfo = localeInfo;
                 changingConfiguration = true;

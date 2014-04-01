@@ -143,15 +143,6 @@ public class ImageReceiver {
         recycleBitmap(null);
     }
 
-    @Override
-    protected void finalize() throws Throwable {
-        try {
-            clearImage();
-        } finally {
-            super.finalize();
-        }
-    }
-
     private void recycleBitmap(Bitmap newBitmap) {
         if (currentImage == null || isPlaceholder) {
             return;

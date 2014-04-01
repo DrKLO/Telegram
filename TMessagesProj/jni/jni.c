@@ -13,7 +13,7 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 	JNIEnv *env = 0;
     srand(time(NULL));
     
-	if ((*vm)->GetEnv(vm, (void**) &env, JNI_VERSION_1_6) != JNI_OK) {
+	if ((*vm)->GetEnv(vm, (void **) &env, JNI_VERSION_1_4) != JNI_OK) {
 		return -1;
 	}
     
@@ -21,11 +21,9 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
         return -1;
     }
     
-    if (gifOnJNILoad(vm, reserved, env) == -1) {
-        return -1;
-    }
+    gifOnJNILoad(vm, reserved, env);
     
-	return JNI_VERSION_1_6;
+	return JNI_VERSION_1_4;
 }
 
 void JNI_OnUnload(JavaVM *vm, void *reserved) {

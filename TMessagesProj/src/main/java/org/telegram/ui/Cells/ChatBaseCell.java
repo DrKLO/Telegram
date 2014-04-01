@@ -17,9 +17,11 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 import android.view.View;
+import android.view.ViewConfiguration;
 
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
@@ -28,6 +30,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.Views.ImageReceiver;
+import org.telegram.ui.Views.OnSwipeTouchListener;
 
 import java.lang.ref.WeakReference;
 
@@ -36,6 +39,10 @@ public class ChatBaseCell extends BaseCell {
     public static interface ChatBaseCellDelegate {
         public abstract void didPressedUserAvatar(ChatBaseCell cell, TLRPC.User user);
         public abstract void didPressedCanceSendButton(ChatBaseCell cell);
+        public abstract void didLongPressed(ChatBaseCell cell);
+        public abstract boolean canPerformActions();
+        public boolean onSwipeLeft();
+        public boolean onSwipeRight();
     }
 
     public boolean isChat = false;
@@ -107,12 +114,62 @@ public class ChatBaseCell extends BaseCell {
 
     protected int namesOffset = 0;
 
+    private boolean checkingForLongPress = false;
+    private int pressCount = 0;
+    private CheckForLongPress pendingCheckForLongPress = null;
+    private CheckForTap pendingCheckForTap = null;
+    private OnSwipeTouchListener onSwipeTouchListener;
+
+    private final class CheckForTap implements Runnable {
+        public void run() {
+            if (pendingCheckForLongPress == null) {
+                pendingCheckForLongPress = new CheckForLongPress();
+            }
+            pendingCheckForLongPress.currentPressCount = ++pressCount;
+            postDelayed(pendingCheckForLongPress, ViewConfiguration.getLongPressTimeout() - ViewConfiguration.getTapTimeout());
+        }
+    }
+
+    class CheckForLongPress implements Runnable {
+        public int currentPressCount;
+
+        public void run() {
+            if (checkingForLongPress && getParent() != null && currentPressCount == pressCount) {
+                if (delegate != null) {
+                    checkingForLongPress = false;
+                    MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
+                    onTouchEvent(event);
+                    event.recycle();
+                    performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                    delegate.didLongPressed(ChatBaseCell.this);
+                }
+            }
+        }
+    }
+
     public ChatBaseCell(Context context, boolean isMedia) {
         super(context);
         init();
         media = isMedia;
         avatarImage = new ImageReceiver();
         avatarImage.parentView = new WeakReference<View>(this);
+        onSwipeTouchListener = new OnSwipeTouchListener() {
+            public void onSwipeRight() {
+                if (delegate != null && delegate.onSwipeRight()) {
+                    MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
+                    onTouchEvent(event);
+                    event.recycle();
+                }
+            }
+
+            public void onSwipeLeft() {
+                if (delegate != null && delegate.onSwipeLeft()) {
+                    MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
+                    onTouchEvent(event);
+                    event.recycle();
+                }
+            }
+        };
     }
 
     @Override
@@ -158,7 +215,6 @@ public class ChatBaseCell extends BaseCell {
 
             forwardNamePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             forwardNamePaint.setTextSize(Utilities.dp(14));
-
         }
     }
 
@@ -210,6 +266,7 @@ public class ChatBaseCell extends BaseCell {
         currentMessageObject = messageObject;
         isPressed = false;
         isCheckPressed = true;
+        isAvatarVisible = false;
         wasLayout = false;
 
         if (currentMessageObject.messageOwner.id < 0 && currentMessageObject.messageOwner.send_state != MessagesController.MESSAGE_SEND_STATE_SEND_ERROR && currentMessageObject.messageOwner.send_state != MessagesController.MESSAGE_SEND_STATE_SENT) {
@@ -304,47 +361,82 @@ public class ChatBaseCell extends BaseCell {
         return backgroundWidth - Utilities.dp(8);
     }
 
+    protected void startCheckLongPress() {
+        if (checkingForLongPress) {
+            return;
+        }
+        checkingForLongPress = true;
+        if (pendingCheckForTap == null) {
+            pendingCheckForTap = new CheckForTap();
+        }
+        postDelayed(pendingCheckForTap, ViewConfiguration.getTapTimeout());
+    }
+
+    protected void cancelCheckLongPress() {
+        checkingForLongPress = false;
+        if (pendingCheckForLongPress != null) {
+            removeCallbacks(pendingCheckForLongPress);
+        }
+        if (pendingCheckForTap != null) {
+            removeCallbacks(pendingCheckForTap);
+        }
+    }
+
+    protected void checkSwipes(MotionEvent event) {
+        onSwipeTouchListener.onTouch(this, event);
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         boolean result = false;
         float x = event.getX();
         float y = event.getY();
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            if (isAvatarVisible && x >= avatarImage.imageX && x <= avatarImage.imageX + avatarImage.imageW && y >= avatarImage.imageY && y <= avatarImage.imageY + avatarImage.imageH) {
-                avatarPressed = true;
-                result = true;
-            } else if (drawForwardedName && forwardedNameLayout != null) {
-                if (x >= forwardNameX && x <= forwardNameX + forwardedNameWidth && y >= forwardNameY && y <= forwardNameY + Utilities.dp(32)) {
-                    forwardNamePressed = true;
+            if (delegate == null || delegate.canPerformActions()) {
+                if (isAvatarVisible && x >= avatarImage.imageX && x <= avatarImage.imageX + avatarImage.imageW && y >= avatarImage.imageY && y <= avatarImage.imageY + avatarImage.imageH) {
+                    avatarPressed = true;
                     result = true;
+                } else if (drawForwardedName && forwardedNameLayout != null) {
+                    if (x >= forwardNameX && x <= forwardNameX + forwardedNameWidth && y >= forwardNameY && y <= forwardNameY + Utilities.dp(32)) {
+                        forwardNamePressed = true;
+                        result = true;
+                    }
+                }
+                if (result) {
+                    startCheckLongPress();
                 }
             }
-        } else if (avatarPressed) {
-            if (event.getAction() == MotionEvent.ACTION_UP) {
-                avatarPressed = false;
-                playSoundEffect(SoundEffectConstants.CLICK);
-                if (delegate != null) {
-                    delegate.didPressedUserAvatar(this, currentUser);
-                }
-            } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
-                avatarPressed = false;
-            } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                if (isAvatarVisible && !(x >= avatarImage.imageX && x <= avatarImage.imageX + avatarImage.imageW && y >= avatarImage.imageY && y <= avatarImage.imageY + avatarImage.imageH)) {
+        } else {
+            if (event.getAction() != MotionEvent.ACTION_MOVE) {
+                cancelCheckLongPress();
+            }
+            if (avatarPressed) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
                     avatarPressed = false;
+                    playSoundEffect(SoundEffectConstants.CLICK);
+                    if (delegate != null) {
+                        delegate.didPressedUserAvatar(this, currentUser);
+                    }
+                } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    avatarPressed = false;
+                } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                    if (isAvatarVisible && !(x >= avatarImage.imageX && x <= avatarImage.imageX + avatarImage.imageW && y >= avatarImage.imageY && y <= avatarImage.imageY + avatarImage.imageH)) {
+                        avatarPressed = false;
+                    }
                 }
-            }
-        } else if (forwardNamePressed) {
-            if (event.getAction() == MotionEvent.ACTION_UP) {
-                forwardNamePressed = false;
-                playSoundEffect(SoundEffectConstants.CLICK);
-                if (delegate != null) {
-                    delegate.didPressedUserAvatar(this, currentForwardUser);
-                }
-            } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
-                forwardNamePressed = false;
-            } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                if (!(x >= forwardNameX && x <= forwardNameX + forwardedNameWidth && y >= forwardNameY && y <= forwardNameY + Utilities.dp(32))) {
+            } else if (forwardNamePressed) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
                     forwardNamePressed = false;
+                    playSoundEffect(SoundEffectConstants.CLICK);
+                    if (delegate != null) {
+                        delegate.didPressedUserAvatar(this, currentForwardUser);
+                    }
+                } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    forwardNamePressed = false;
+                } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                    if (!(x >= forwardNameX && x <= forwardNameX + forwardedNameWidth && y >= forwardNameY && y <= forwardNameY + Utilities.dp(32))) {
+                        forwardNamePressed = false;
+                    }
                 }
             }
         }
@@ -401,7 +493,7 @@ public class ChatBaseCell extends BaseCell {
         }
 
         if (!wasLayout) {
-            requestFocus();
+            requestLayout();
             return;
         }
 
@@ -547,7 +639,7 @@ public class ChatBaseCell extends BaseCell {
                     setDrawableBounds(halfCheckDrawable, layoutWidth - Utilities.dp(18) - halfCheckDrawable.getIntrinsicWidth(), layoutHeight - Utilities.dpf(8.5f) - halfCheckDrawable.getIntrinsicHeight());
                     halfCheckDrawable.draw(canvas);
                 } else {
-                    setDrawableBounds(halfCheckMediaDrawable, layoutWidth - Utilities.dpf(20.5f) - halfCheckMediaDrawable.getIntrinsicWidth(), layoutHeight - Utilities.dpf(13.5f) - halfCheckMediaDrawable.getIntrinsicHeight());
+                    setDrawableBounds(halfCheckMediaDrawable, layoutWidth - Utilities.dpf(20.5f) - halfCheckMediaDrawable.getIntrinsicWidth(), layoutHeight - Utilities.dpf(13.0f) - halfCheckMediaDrawable.getIntrinsicHeight());
                     halfCheckMediaDrawable.draw(canvas);
                 }
             }
