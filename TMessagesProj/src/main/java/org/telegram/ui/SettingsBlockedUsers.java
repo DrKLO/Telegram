@@ -12,6 +12,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.v4.internal.view.SupportMenuItem;
 import android.support.v7.app.ActionBar;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -37,7 +38,6 @@ import org.telegram.messenger.Utilities;
 import org.telegram.ui.Cells.ChatOrUserCell;
 import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.OnSwipeTouchListener;
-import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,6 +51,8 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
     private ArrayList<TLRPC.TL_contactBlocked> blockedContacts = new ArrayList<TLRPC.TL_contactBlocked>();
     private HashMap<Integer, TLRPC.TL_contactBlocked> blockedContactsDict = new HashMap<Integer, TLRPC.TL_contactBlocked>();
     private int selectedUserId;
+
+    private final static int block_user = 1;
 
     @Override
     public boolean onFragmentCreate() {
@@ -293,7 +295,8 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
     }
 
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.settings_block_users_bar_menu, menu);
+        SupportMenuItem item = (SupportMenuItem)menu.add(Menu.NONE, block_user, Menu.NONE, null).setIcon(R.drawable.plus);
+        item.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
     }
 
     @Override
@@ -303,7 +306,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
             case android.R.id.home:
                 finishFragment();
                 break;
-            case R.id.block_user:
+            case block_user:
                 ContactsActivity fragment = new ContactsActivity();
                 fragment.animationType = 1;
                 Bundle bundle = new Bundle();

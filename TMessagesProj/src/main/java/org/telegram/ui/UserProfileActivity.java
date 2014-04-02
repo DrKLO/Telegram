@@ -66,6 +66,12 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     private long dialog_id;
     private TLRPC.EncryptedChat currentEncryptedChat;
 
+    private final static int add_contact = 1;
+    private final static int block_contact = 2;
+    private final static int share_contact = 3;
+    private final static int edit_contact = 4;
+    private final static int delete_contact = 5;
+
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
@@ -426,7 +432,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             case android.R.id.home:
                 finishFragment();
                 break;
-            case R.id.block_contact: {
+            case block_contact: {
                 TLRPC.User user = MessagesController.getInstance().users.get(user_id);
                 if (user == null) {
                     break;
@@ -444,7 +450,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 }, null, true, RPCRequest.RPCRequestClassGeneric);
                 break;
             }
-            case R.id.add_contact: {
+            case add_contact: {
                 TLRPC.User user = MessagesController.getInstance().users.get(user_id);
                 ContactAddActivity fragment = new ContactAddActivity();
                 Bundle args = new Bundle();
@@ -453,7 +459,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 ((LaunchActivity)parentActivity).presentFragment(fragment, "add_contact_" + user.id, false);
                 break;
             }
-            case R.id.share_contact: {
+            case share_contact: {
                 MessagesActivity fragment = new MessagesActivity();
                 Bundle args = new Bundle();
                 args.putBoolean("onlySelect", true);
@@ -463,7 +469,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 ((LaunchActivity)parentActivity).presentFragment(fragment, "chat_select", false);
                 break;
             }
-            case R.id.edit_contact: {
+            case edit_contact: {
                 ContactAddActivity fragment = new ContactAddActivity();
                 Bundle args = new Bundle();
                 args.putInt("user_id", user_id);
@@ -471,7 +477,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 ((LaunchActivity)parentActivity).presentFragment(fragment, "add_contact_" + user_id, false);
                 break;
             }
-            case R.id.delete_contact: {
+            case delete_contact: {
                 final TLRPC.User user = MessagesController.getInstance().users.get(user_id);
                 if (user == null) {
                     break;
@@ -503,12 +509,16 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 return;
             }
             if (user.phone != null && user.phone.length() != 0) {
-                inflater.inflate(R.menu.user_profile_menu, menu);
+                menu.add(Menu.NONE, add_contact, Menu.NONE, LocaleController.getString("AddContact", R.string.AddContact));
+                menu.add(Menu.NONE, block_contact, Menu.NONE, LocaleController.getString("BlockContact", R.string.BlockContact));
             } else {
-                inflater.inflate(R.menu.user_profile_block_menu, menu);
+                menu.add(Menu.NONE, block_contact, Menu.NONE, LocaleController.getString("BlockContact", R.string.BlockContact));
             }
         } else {
-            inflater.inflate(R.menu.user_profile_contact_menu, menu);
+            menu.add(Menu.NONE, share_contact, Menu.NONE, LocaleController.getString("ShareContact", R.string.ShareContact));
+            menu.add(Menu.NONE, block_contact, Menu.NONE, LocaleController.getString("BlockContact", R.string.BlockContact));
+            menu.add(Menu.NONE, block_contact, Menu.NONE, LocaleController.getString("EditContact", R.string.EditContact));
+            menu.add(Menu.NONE, block_contact, Menu.NONE, LocaleController.getString("DeleteContact", R.string.DeleteContact));
         }
     }
 

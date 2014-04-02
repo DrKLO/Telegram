@@ -345,7 +345,7 @@ public class DocumentSelectActivity extends BaseFragment {
 
     private void showErrorBox(String error){
         new AlertDialog.Builder(parentActivity)
-                .setTitle(R.string.AppName)
+                .setTitle(LocaleController.getString("AppName", R.string.AppName))
                 .setMessage(error)
                 .setPositiveButton(R.string.OK, null)
                 .show();

@@ -131,7 +131,7 @@ public class ChatMessageCell extends ChatBaseCell {
             }
             pressedLink = null;
             int maxWidth;
-            if (isChat) {
+            if (isChat && !messageObject.messageOwner.out) {
                 maxWidth = Utilities.displaySize.x - Utilities.dp(122);
                 drawName = true;
             } else {

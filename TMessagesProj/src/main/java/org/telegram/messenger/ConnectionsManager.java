@@ -649,7 +649,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 if (phone.startsWith("968")) {
                     for (HashMap.Entry<Integer, Datacenter> entry : datacenters.entrySet()) {
                         Datacenter datacenter = entry.getValue();
-                        datacenter.overridePort = 14;
+                        datacenter.overridePort = 8888;
                         if (datacenter.connection != null) {
                             datacenter.connection.suspendConnection(true);
                         }

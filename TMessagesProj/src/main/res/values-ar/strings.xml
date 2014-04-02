@@ -256,6 +256,12 @@
     <string name="ContactJoined">اشترك صديق في تيليجرام</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">اللغة</string>
+    <string name="AskAQuestionInfo">نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحاول الرد بسرعة قدر المستطاع، لكن ربما نستغرق القليل من الوقت.<![CDATA[<br><br>]]>يرجى الإطلاع على <![CDATA[<a href="http://telegram.org/faq/ar">صفحة الأسئلة الأكثر شيوعًا</a>]]>: يوجد بها حلول للمشاكل وإجابات لمعظم الأسئلة.</string>
+    <string name="AskButton">اسأل متطوع</string>
+    <string name="TelegramFaq">Telegram FAQ</string>
+    <string name="TelegramFaqUrl">https://telegram.org/faq/ar</string>
+    <string name="DeleteLocalization">Delete localization?</string>
+    <string name="IncorrectLocalization">Incorrect localization file</string>
 
     <!--media view-->
     <string name="NoMedia">لا توجد وسائط بعد</string>

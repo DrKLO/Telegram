@@ -22,6 +22,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.support.v4.internal.view.SupportMenuItem;
 import android.support.v7.app.ActionBar;
+import android.support.v7.widget.SearchView;
 import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -483,16 +484,21 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.group_profile_menu, menu);
-        SupportMenuItem doneItem = (SupportMenuItem)menu.findItem(R.id.block_user);
-        TextView doneTextView = (TextView)doneItem.getActionView().findViewById(R.id.done_button);
-        doneTextView.setText(LocaleController.getString("AddMember", R.string.AddMember));
-        doneTextView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                openAddMenu();
-            }
-        });
+        SupportMenuItem item = (SupportMenuItem)menu.add(Menu.NONE, 0, Menu.NONE, LocaleController.getString("AddMember", R.string.AddMember));
+        item.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
+        LayoutInflater li = (LayoutInflater)ApplicationLoader.applicationContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        item.setActionView(R.layout.group_profile_add_member_layout);
+
+        TextView textView = (TextView)item.getActionView().findViewById(R.id.done_button);
+        if (textView != null) {
+            textView.setText(LocaleController.getString("AddMember", R.string.AddMember));
+            textView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    openAddMenu();
+                }
+            });
+        }
     }
 
     private class ListAdapter extends BaseAdapter {

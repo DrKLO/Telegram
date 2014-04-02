@@ -256,6 +256,12 @@
     <string name="ContactJoined">Un contacto se unió a Telegram</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Idioma</string>
+    <string name="AskAQuestionInfo">Por favor, ten en cuenta que el Soporte de Telegram está hecho por voluntarios. Intentamos responder lo antes posible, pero puede tomar un tiempo.<![CDATA[<br><br>]]>Por favor, echa un vistazo a las <![CDATA[<a href=“http://telegram.org/faq/es”>Preguntas Frecuentes de Telegram</a>]]>: tiene importantes <![CDATA[<a href=“http://telegram.org/faq/es#solucin-de-problemas”>Soluciones a problemas</a>]]> y respuestas para la mayoría de las preguntas.</string>
+    <string name="AskButton">Preguntar</string>
+    <string name="TelegramFaq">Telegram FAQ</string>
+    <string name="TelegramFaqUrl">https://telegram.org/faq/es</string>
+    <string name="DeleteLocalization">¿Eliminar localización?</string>
+    <string name="IncorrectLocalization">Incorrect localization file</string>
 
     <!--media view-->
     <string name="NoMedia">No hay fotos ni vídeos compartidos aún</string>

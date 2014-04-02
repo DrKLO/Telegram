@@ -42,6 +42,7 @@ public class LocaleController {
     private Locale currentLocale;
     private Locale systemDefaultLocale;
     private LocaleInfo currentLocaleInfo;
+    private LocaleInfo defaultLocalInfo;
     private HashMap<String, String> localeValues = new HashMap<String, String>();
     private String languageOverride;
     private boolean changingConfiguration = false;
@@ -50,11 +51,33 @@ public class LocaleController {
         public String name;
         public String nameEnglish;
         public String shortName;
-        public boolean embededLang;
+        public String pathToFile;
+
+        public String getSaveString() {
+            return name + "|" + nameEnglish + "|" + shortName + "|" + pathToFile;
+        }
+
+        public static LocaleInfo createWithString(String string) {
+            if (string == null || string.length() == 0) {
+                return null;
+            }
+            String[] args = string.split("\\|");
+            if (args.length != 4) {
+                return null;
+            }
+            LocaleInfo localeInfo = new LocaleInfo();
+            localeInfo.name = args[0];
+            localeInfo.nameEnglish = args[1];
+            localeInfo.shortName = args[2];
+            localeInfo.pathToFile = args[3];
+            return localeInfo;
+        }
     }
 
     public ArrayList<LocaleInfo> sortedLanguages = new ArrayList<LocaleController.LocaleInfo>();
     public HashMap<String, LocaleInfo> languagesDict = new HashMap<String, LocaleInfo>();
+
+    private ArrayList<LocaleInfo> otherLanguages = new ArrayList<LocaleInfo>();
 
     private static volatile LocaleController Instance = null;
     public static LocaleController getInstance() {
@@ -75,7 +98,7 @@ public class LocaleController {
         localeInfo.name = "English";
         localeInfo.nameEnglish = "English";
         localeInfo.shortName = "en";
-        localeInfo.embededLang = true;
+        localeInfo.pathToFile = null;
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
@@ -83,7 +106,7 @@ public class LocaleController {
         localeInfo.name = "Italiano";
         localeInfo.nameEnglish = "Italian";
         localeInfo.shortName = "it";
-        localeInfo.embededLang = true;
+        localeInfo.pathToFile = null;
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
@@ -98,7 +121,7 @@ public class LocaleController {
         localeInfo.name = "Deutsch";
         localeInfo.nameEnglish = "German";
         localeInfo.shortName = "de";
-        localeInfo.embededLang = true;
+        localeInfo.pathToFile = null;
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
@@ -106,7 +129,7 @@ public class LocaleController {
         localeInfo.name = "Nederlands";
         localeInfo.nameEnglish = "Dutch";
         localeInfo.shortName = "nl";
-        localeInfo.embededLang = true;
+        localeInfo.pathToFile = null;
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
@@ -114,9 +137,16 @@ public class LocaleController {
         localeInfo.name = "العربية";
         localeInfo.nameEnglish = "Arabic";
         localeInfo.shortName = "ar";
-        localeInfo.embededLang = true;
+        localeInfo.pathToFile = null;
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
+
+        loadOtherLanguages();
+
+        for (LocaleInfo locale : otherLanguages) {
+            sortedLanguages.add(locale);
+            languagesDict.put(locale.shortName, locale);
+        }
 
         Collections.sort(sortedLanguages, new Comparator<LocaleInfo>() {
             @Override
@@ -125,11 +155,11 @@ public class LocaleController {
             }
         });
 
-        localeInfo = new LocaleController.LocaleInfo();
+        defaultLocalInfo = localeInfo = new LocaleController.LocaleInfo();
         localeInfo.name = "System default";
         localeInfo.nameEnglish = "System default";
         localeInfo.shortName = null;
-        localeInfo.embededLang = true;
+        localeInfo.pathToFile = null;
         sortedLanguages.add(0, localeInfo);
 
         systemDefaultLocale = Locale.getDefault();
@@ -160,6 +190,117 @@ public class LocaleController {
     }
 
     public boolean applyLanguageFile(File file) {
+        try {
+            HashMap<String, String> stringMap = getLocaleFileStrings(file);
+
+            String languageName = stringMap.get("LanguageName");
+            String languageNameInEnglish = stringMap.get("LanguageNameInEnglish");
+            String languageCode = stringMap.get("LanguageCode");
+
+            if (languageName != null && languageName.length() > 0 &&
+                    languageNameInEnglish != null && languageNameInEnglish.length() > 0 &&
+                    languageCode != null && languageCode.length() > 0) {
+
+                if (languageName.contains("&") || languageName.contains("|")) {
+                    return false;
+                }
+                if (languageNameInEnglish.contains("&") || languageNameInEnglish.contains("|")) {
+                    return false;
+                }
+                if (languageCode.contains("&") || languageCode.contains("|")) {
+                    return false;
+                }
+
+                File finalFile = new File(ApplicationLoader.applicationContext.getFilesDir(), languageCode + ".xml");
+                if (!Utilities.copyFile(file, finalFile)) {
+                    return false;
+                }
+
+                LocaleInfo localeInfo = languagesDict.get(languageCode);
+                if (localeInfo == null) {
+                    localeInfo = new LocaleInfo();
+                    localeInfo.name = languageName;
+                    localeInfo.nameEnglish = languageNameInEnglish;
+                    localeInfo.shortName = languageCode;
+
+                    localeInfo.pathToFile = finalFile.getAbsolutePath();
+                    sortedLanguages.add(localeInfo);
+                    languagesDict.put(localeInfo.shortName, localeInfo);
+                    otherLanguages.add(localeInfo);
+
+                    Collections.sort(sortedLanguages, new Comparator<LocaleInfo>() {
+                        @Override
+                        public int compare(LocaleController.LocaleInfo o, LocaleController.LocaleInfo o2) {
+                            if (o.shortName == null) {
+                                return -1;
+                            } else if (o2.shortName == null) {
+                                return 1;
+                            }
+                            return o.name.compareTo(o2.name);
+                        }
+                    });
+                    saveOtherLanguages();
+                }
+                localeValues = stringMap;
+                applyLanguage(localeInfo, true, true);
+                return true;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return false;
+    }
+
+    private void saveOtherLanguages() {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("langconfig", Activity.MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        String locales = "";
+        for (LocaleInfo localeInfo : otherLanguages) {
+            String loc = localeInfo.getSaveString();
+            if (loc != null) {
+                if (locales.length() != 0) {
+                    locales += "&";
+                }
+                locales += loc;
+            }
+        }
+        editor.putString("locales", locales);
+        editor.commit();
+    }
+
+    public boolean deleteLanguage(LocaleInfo localeInfo) {
+        if (localeInfo.pathToFile == null) {
+            return false;
+        }
+        if (currentLocaleInfo == localeInfo) {
+            applyLanguage(defaultLocalInfo, true);
+        }
+
+        otherLanguages.remove(localeInfo);
+        sortedLanguages.remove(localeInfo);
+        languagesDict.remove(localeInfo.shortName);
+        File file = new File(localeInfo.pathToFile);
+        file.delete();
+        saveOtherLanguages();
+        return true;
+    }
+
+    private void loadOtherLanguages() {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("langconfig", Activity.MODE_PRIVATE);
+        String locales = preferences.getString("locales", null);
+        if (locales == null || locales.length() == 0) {
+            return;
+        }
+        String[] localesArr = locales.split("&");
+        for (String locale : localesArr) {
+            LocaleInfo localeInfo = LocaleInfo.createWithString(locale);
+            if (localeInfo != null) {
+                otherLanguages.add(localeInfo);
+            }
+        }
+    }
+
+    private HashMap<String, String> getLocaleFileStrings(File file) {
         try {
             HashMap<String, String> stringMap = new HashMap<String, String>();
             XmlPullParser parser = Xml.newPullParser();
@@ -192,44 +333,18 @@ public class LocaleController {
                 }
                 eventType = parser.next();
             }
-
-            String languageName = stringMap.get("LanguageName");
-            String languageNameInEnglish = stringMap.get("LanguageNameInEnglish");
-            String languageCode = stringMap.get("LanguageCode");
-
-            if (languageName != null && languageName.length() > 0 &&
-                    languageNameInEnglish != null && languageNameInEnglish.length() > 0 &&
-                    languageCode != null && languageCode.length() > 0) {
-                LocaleInfo localeInfo = new LocaleInfo();
-                localeInfo.name = languageName;
-                localeInfo.nameEnglish = languageNameInEnglish;
-                localeInfo.shortName = languageCode;
-                localeInfo.embededLang = false;
-                sortedLanguages.add(localeInfo);
-                languagesDict.put(localeInfo.shortName, localeInfo);
-
-                Collections.sort(sortedLanguages, new Comparator<LocaleInfo>() {
-                    @Override
-                    public int compare(LocaleController.LocaleInfo o, LocaleController.LocaleInfo o2) {
-                        if (o.shortName == null) {
-                            return -1;
-                        } else if (o2.shortName == null) {
-                            return 1;
-                        }
-                        return o.name.compareTo(o2.name);
-                    }
-                });
-                applyLanguage(localeInfo, true);
-                localeValues = stringMap;
-                return true;
-            }
+            return stringMap;
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
-        return false;
+        return null;
     }
 
     public void applyLanguage(LocaleInfo localeInfo, boolean override) {
+        applyLanguage(localeInfo, override, false);
+    }
+
+    public void applyLanguage(LocaleInfo localeInfo, boolean override, boolean fromFile) {
         if (localeInfo == null) {
             return;
         }
@@ -256,8 +371,10 @@ public class LocaleController {
                 editor.commit();
             }
             if (newLocale != null) {
-                if (localeInfo.embededLang) {
+                if (localeInfo.pathToFile == null) {
                     localeValues.clear();
+                } else if (!fromFile) {
+                    localeValues = getLocaleFileStrings(new File(localeInfo.pathToFile));
                 }
                 currentLocale = newLocale;
                 currentLocaleInfo = localeInfo;

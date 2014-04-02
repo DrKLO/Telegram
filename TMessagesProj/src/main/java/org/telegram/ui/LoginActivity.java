@@ -19,7 +19,6 @@ import android.support.v4.internal.view.SupportMenuItem;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Display;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.ImageView;
@@ -113,9 +112,10 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.group_create_menu, menu);
-        SupportMenuItem doneItem = (SupportMenuItem)menu.findItem(R.id.done_menu_item);
+        SupportMenuItem doneItem = (SupportMenuItem)menu.add(Menu.NONE, 0, Menu.NONE, null);
+        doneItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
+        doneItem.setActionView(R.layout.group_create_done_layout);
+
         TextView doneTextView = (TextView)doneItem.getActionView().findViewById(R.id.done_button);
         doneTextView.setText(LocaleController.getString("Done", R.string.Done));
         doneTextView.setOnClickListener(new View.OnClickListener() {

@@ -306,7 +306,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private void didSelectResult(final TLRPC.User user, boolean useAlert) {
         if (useAlert && selectAlertString != 0) {
             AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
-            builder.setTitle(R.string.AppName);
+            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
             builder.setMessage(LocaleController.formatString(selectAlertStringDesc, selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
             builder.setPositiveButton(R.string.OK, new DialogInterface.OnClickListener() {
                 @Override
@@ -400,9 +400,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
 
-        inflater.inflate(R.menu.contacts_menu, menu);
-        searchItem = (SupportMenuItem)menu.findItem(R.id.messages_list_menu_search);
-        searchView = (SearchView)searchItem.getActionView();
+        searchItem = (SupportMenuItem)menu.add(Menu.NONE, 0, Menu.NONE, LocaleController.getString("Search", R.string.Search)).setIcon(R.drawable.ic_ab_search);
+        searchItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS|SupportMenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
+        searchItem.setActionView(searchView = new SearchView(parentActivity));
 
         TextView textView = (TextView) searchView.findViewById(R.id.search_src_text);
         if (textView != null) {

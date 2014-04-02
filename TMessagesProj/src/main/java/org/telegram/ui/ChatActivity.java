@@ -46,6 +46,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.SubMenu;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
@@ -197,6 +198,18 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
     private CharSequence lastPrintString;
 
+    private final static int copy = 1;
+    private final static int forward = 2;
+    private final static int delete = 3;
+    private final static int chat_enc_timer = 4;
+    private final static int chat_menu_attach = 5;
+    private final static int attach_photo = 6;
+    private final static int attach_gallery = 7;
+    private final static int attach_video = 8;
+    private final static int attach_document = 9;
+    private final static int attach_location = 10;
+    private final static int chat_menu_avatar = 11;
+
     ActionMode mActionMode = null;
     private ActionMode.Callback mActionModeCallback = new ActionMode.Callback() {
         @Override
@@ -204,11 +217,14 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             menu.clear();
             MenuInflater inflater = actionMode.getMenuInflater();
             if (currentEncryptedChat == null) {
-                inflater.inflate(R.menu.messages_full_menu, menu);
+                menu.add(Menu.NONE, copy, Menu.NONE, LocaleController.getString("Copy", R.string.Copy)).setIcon(R.drawable.ic_ab_fwd_copy);
+                menu.add(Menu.NONE, forward, Menu.NONE, LocaleController.getString("Forward", R.string.Forward)).setIcon(R.drawable.ic_ab_fwd_forward);
+                menu.add(Menu.NONE, delete, Menu.NONE, LocaleController.getString("Delete", R.string.Delete)).setIcon(R.drawable.ic_ab_fwd_delete);
             } else {
-                inflater.inflate(R.menu.messages_encrypted_menu, menu);
+                menu.add(Menu.NONE, copy, Menu.NONE, LocaleController.getString("Copy", R.string.Copy)).setIcon(R.drawable.ic_ab_fwd_copy);
+                menu.add(Menu.NONE, delete, Menu.NONE, LocaleController.getString("Delete", R.string.Delete)).setIcon(R.drawable.ic_ab_fwd_delete);
             }
-            menu.findItem(R.id.copy).setVisible(selectedMessagesCanCopyIds.size() != 0);
+            menu.findItem(copy).setVisible(selectedMessagesCanCopyIds.size() != 0);
             return true;
         }
 
@@ -220,7 +236,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         @Override
         public boolean onActionItemClicked(ActionMode actionMode, MenuItem menuItem) {
             switch (menuItem.getItemId()) {
-                case R.id.copy: {
+                case copy: {
                     String str = "";
                     ArrayList<Integer> ids = new ArrayList<Integer>(selectedMessagesCanCopyIds.keySet());
                     if (currentEncryptedChat == null) {
@@ -247,7 +263,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     }
                     break;
                 }
-                case R.id.delete: {
+                case delete: {
                     ArrayList<Integer> ids = new ArrayList<Integer>(selectedMessagesIds.keySet());
                     ArrayList<Long> random_ids = null;
                     if (currentEncryptedChat != null) {
@@ -262,7 +278,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     MessagesController.getInstance().deleteMessages(ids, random_ids, currentEncryptedChat);
                     break;
                 }
-                case R.id.forward: {
+                case forward: {
                     MessagesActivity fragment = new MessagesActivity();
                     fragment.selectAlertString = R.string.ForwardMessagesTo;
                     fragment.selectAlertStringDesc = "ForwardMessagesTo";
@@ -1250,7 +1266,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                 if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
                                     String mime = messageObject.messageOwner.media.document.mime_type;
                                     if (mime != null && mime.equals("text/xml")) {
-                                        return 4;
+                                        return 5;
                                     }
                                 }
                                 return 4;
@@ -1294,7 +1310,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                             if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
                                 String mime = messageObject.messageOwner.media.document.mime_type;
                                 if (mime != null && mime.equals("text/xml")) {
-                                    return 4;
+                                    return 5;
                                 }
                             }
                             //return 4;
@@ -1321,7 +1337,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             }
         }
         if (mActionMode != null && mActionMode.getMenu() != null) {
-            mActionMode.getMenu().findItem(R.id.copy).setVisible(selectedMessagesCanCopyIds.size() != 0);
+            mActionMode.getMenu().findItem(copy).setVisible(selectedMessagesCanCopyIds.size() != 0);
         }
     }
 
@@ -2745,16 +2761,32 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         menu.clear();
+
+        SupportMenuItem timeItem = null;
+
         if (currentEncryptedChat != null) {
-            inflater.inflate(R.menu.chat_enc_menu, menu);
-        } else {
-            inflater.inflate(R.menu.chat_menu, menu);
+            timeItem = (SupportMenuItem)menu.add(Menu.NONE, chat_enc_timer, Menu.NONE, null);
+            timeItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
+            timeItem.setActionView(R.layout.chat_header_enc_layout);
         }
-        SupportMenuItem timeItem = (SupportMenuItem)menu.findItem(R.id.chat_enc_timer);
+
+        SubMenu subMenu = menu.addSubMenu(Menu.NONE, chat_menu_attach, Menu.NONE, LocaleController.getString("Attach", R.string.Attach)).setIcon(R.drawable.ic_ab_attach);
+        SupportMenuItem menuItem = (SupportMenuItem)subMenu.getItem();
+        menuItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
+
+        subMenu.add(Menu.NONE, attach_photo, Menu.NONE, LocaleController.getString("ChatTakePhoto", R.string.ChatTakePhoto)).setIcon(R.drawable.ic_attach_photo);
+        subMenu.add(Menu.NONE, attach_gallery, Menu.NONE, LocaleController.getString("ChatGallery", R.string.ChatGallery)).setIcon(R.drawable.ic_attach_gallery);
+        subMenu.add(Menu.NONE, attach_video, Menu.NONE, LocaleController.getString("ChatVideo", R.string.ChatVideo)).setIcon(R.drawable.ic_attach_video);
+        subMenu.add(Menu.NONE, attach_document, Menu.NONE, LocaleController.getString("ChatDocument", R.string.ChatDocument)).setIcon(R.drawable.ic_ab_doc);
+        subMenu.add(Menu.NONE, attach_location, Menu.NONE, LocaleController.getString("ChatLocation", R.string.ChatLocation)).setIcon(R.drawable.ic_attach_location);
+
+        SupportMenuItem avatarItem = (SupportMenuItem)menu.add(Menu.NONE, chat_menu_avatar, Menu.NONE, null);
+        avatarItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
+        avatarItem.setActionView(R.layout.chat_header_layout);
+
         if (currentEncryptedChat != null && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat) || currentChat != null && (currentChat instanceof TLRPC.TL_chatForbidden || currentChat.left)) {
-            SupportMenuItem item = (SupportMenuItem)menu.findItem(R.id.chat_menu_attach);
-            if (item != null) {
-                item.setVisible(false);
+            if (menuItem != null) {
+                menuItem.setVisible(false);
             }
 
             if (timeItem != null) {
@@ -2810,7 +2842,6 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             timerButton.setTime(currentEncryptedChat.ttl);
         }
 
-        SupportMenuItem avatarItem = (SupportMenuItem)menu.findItem(R.id.chat_menu_avatar);
         View avatarLayout = avatarItem.getActionView();
         avatarImageView = (BackupImageView)avatarLayout.findViewById(R.id.chat_avatar_image);
 
@@ -3040,6 +3071,20 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                 if (locFile != null) {
                                     if (LocaleController.getInstance().applyLanguageFile(locFile)) {
                                         ((LaunchActivity)parentActivity).presentFragment(new LanguageSelectActivity(), "settings_lang", false);
+                                    } else if (parentActivity != null) {
+                                        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                        builder.setMessage(LocaleController.getString("IncorrectLocalization", R.string.IncorrectLocalization));
+                                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                                        visibleDialog = builder.show();
+                                        visibleDialog.setCanceledOnTouchOutside(true);
+
+                                        visibleDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                                            @Override
+                                            public void onDismiss(DialogInterface dialog) {
+                                                visibleDialog = null;
+                                            }
+                                        });
                                     }
                                 }
                             }
@@ -3047,7 +3092,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     }
                 });
 
-                builder.setTitle(R.string.Message);
+                builder.setTitle(LocaleController.getString("Message", R.string.Message));
                 visibleDialog = builder.show();
                 visibleDialog.setCanceledOnTouchOutside(true);
 
@@ -3290,7 +3335,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             case android.R.id.home:
                 finishFragment();
                 break;
-            case R.id.attach_photo: {
+            case attach_photo: {
                 try {
                     Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                     File image = Utilities.generatePicturePath();
@@ -3304,7 +3349,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 }
                 break;
             }
-            case R.id.attach_gallery: {
+            case attach_gallery: {
                 try {
                     Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
                     photoPickerIntent.setType("image/*");
@@ -3314,7 +3359,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 }
                 break;
             }
-            case R.id.attach_video: {
+            case attach_video: {
                 try {
                     Intent pickIntent = new Intent();
                     pickIntent.setType("video/*");
@@ -3338,7 +3383,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 }
                 break;
             }
-            case R.id.attach_location: {
+            case attach_location: {
                 if (!isGoogleMapsInstalled()) {
                     return true;
                 }
@@ -3346,7 +3391,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 ((LaunchActivity)parentActivity).presentFragment(fragment, "location", false);
                 break;
             }
-            case R.id.attach_document: {
+            case attach_document: {
                 DocumentSelectActivity fragment = new DocumentSelectActivity();
                 fragment.delegate = this;
                 ((LaunchActivity)parentActivity).presentFragment(fragment, "document", false);
@@ -4404,7 +4449,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
         private void alertUserOpenError() {
             AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
-            builder.setTitle(R.string.AppName);
+            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
             builder.setPositiveButton(R.string.OK, null);
             if (message.type == 6 || message.type == 7) {
                 builder.setMessage(R.string.NoPlayerInstalled);
