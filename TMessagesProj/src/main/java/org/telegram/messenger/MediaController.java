@@ -842,7 +842,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 UserConfig.lastLocalId--;
                 UserConfig.saveConfig(false);
 
-                recordingAudioFile = new File(Utilities.getCacheDir(), recordingAudio.getAttachmentFileName());
+                recordingAudioFile = new File(Utilities.getCacheDir(), MessageObject.getAttachFileName(recordingAudio));
 
                 try {
                     if (startRecord(recordingAudioFile.getAbsolutePath()) == 0) {

@@ -3810,10 +3810,10 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 PhotoObject photo = PhotoObject.getClosestImageWithSize(message.photoThumbs, width, height);
 
                 if (photo != null) {
-                    float scale = (float)photo.photoOwner.w / (float)width;
+                    float scale = (float)photo.getWidth() / (float)width;
 
-                    int w = (int)(photo.photoOwner.w / scale);
-                    int h = (int)(photo.photoOwner.h / scale);
+                    int w = (int)(photo.getWidth() / scale);
+                    int h = (int)(photo.getHeight() / scale);
                     if (h > height) {
                         float scale2 = h;
                         h = height;
@@ -3821,9 +3821,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         w = (int)(w / scale2);
                     } else if (h < Utilities.dp(120)) {
                         h = Utilities.dp(120);
-                        float hScale = (float)photo.photoOwner.h / h;
-                        if (photo.photoOwner.w / hScale < width) {
-                            w = (int)(photo.photoOwner.w / hScale);
+                        float hScale = (float)photo.getHeight() / h;
+                        if (photo.getWidth() / hScale < width) {
+                            w = (int)(photo.getWidth() / hScale);
                         }
                     }
 
@@ -3842,17 +3842,17 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     } else {
                         if (photoFileName == null) {
                             if (message.imagePreview != null) {
-                                photoImage.setImage(photo.photoOwner.location, String.format(Locale.US, "%d_%d", (int)(w / Utilities.density), (int)(h / Utilities.density)), message.imagePreview);
+                                photoImage.setImage(photo.getLocation(), String.format(Locale.US, "%d_%d", (int)(w / Utilities.density), (int)(h / Utilities.density)), message.imagePreview);
                             } else {
-                                photoImage.setImage(photo.photoOwner.location, String.format(Locale.US, "%d_%d", (int)(w / Utilities.density), (int)(h / Utilities.density)), message.messageOwner.out ? R.drawable.photo_placeholder_out : R.drawable.photo_placeholder_in);
+                                photoImage.setImage(photo.getLocation(), String.format(Locale.US, "%d_%d", (int)(w / Utilities.density), (int)(h / Utilities.density)), message.messageOwner.out ? R.drawable.photo_placeholder_out : R.drawable.photo_placeholder_in);
                             }
                         } else {
                             if (downloadPhotos) {
                                 addToLoadingFile(photoFileName, actionProgress);
                                 if (message.imagePreview != null) {
-                                    photoImage.setImage(photo.photoOwner.location, String.format(Locale.US, "%d_%d", (int)(w / Utilities.density), (int)(h / Utilities.density)), message.imagePreview, photo.photoOwner.size);
+                                    photoImage.setImage(photo.getLocation(), String.format(Locale.US, "%d_%d", (int)(w / Utilities.density), (int)(h / Utilities.density)), message.imagePreview, photo.getSize());
                                 } else {
-                                    photoImage.setImage(photo.photoOwner.location, String.format(Locale.US, "%d_%d", (int)(w / Utilities.density), (int)(h / Utilities.density)), message.messageOwner.out ? R.drawable.photo_placeholder_out : R.drawable.photo_placeholder_in, photo.photoOwner.size);
+                                    photoImage.setImage(photo.getLocation(), String.format(Locale.US, "%d_%d", (int)(w / Utilities.density), (int)(h / Utilities.density)), message.messageOwner.out ? R.drawable.photo_placeholder_out : R.drawable.photo_placeholder_in, photo.getSize());
                                 }
                                 photoObjectToSet = null;
                                 photoFilter = null;
@@ -3890,7 +3890,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         if (photo.image != null) {
                             photoImage.setImageBitmap(photo.image);
                         } else {
-                            photoImage.setImage(photo.photoOwner.location, "50_50", Utilities.getGroupAvatarForId(currentChat.id));
+                            photoImage.setImage(photo.getLocation(), "50_50", Utilities.getGroupAvatarForId(currentChat.id));
                         }
                     }
                 }

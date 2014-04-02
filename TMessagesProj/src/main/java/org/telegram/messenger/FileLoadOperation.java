@@ -12,6 +12,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
 
+import org.telegram.objects.ExtendedAttachmentObject;
+
 import java.io.RandomAccessFile;
 import java.net.URL;
 import java.io.File;
@@ -71,13 +73,13 @@ public class FileLoadOperation {
         location.local_id = fileLocation.local_id;
     }
 
-    public FileLoadOperation(TLRPC.ExtendedAttachment attachmentLocation) {
-        datacenter_id = attachmentLocation.dc_id;
+    public FileLoadOperation(ExtendedAttachmentObject attachmentLocation) {
+        datacenter_id = attachmentLocation.getDc_id();
         location = attachmentLocation.getFileLocation();
         if (attachmentLocation.isEncrypted()) {
             iv = new byte[32];
-            System.arraycopy(attachmentLocation.iv, 0, iv, 0, iv.length);
-            key = attachmentLocation.key;
+            System.arraycopy(attachmentLocation.getIv(), 0, iv, 0, iv.length);
+            key = attachmentLocation.getKey();
         }
         ext = attachmentLocation.getAttachmentFileExtension();
     }

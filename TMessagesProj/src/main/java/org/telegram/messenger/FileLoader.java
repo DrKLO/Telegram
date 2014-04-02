@@ -18,6 +18,11 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 
+import org.telegram.objects.AttachmentObject;
+import org.telegram.objects.AttachmentObjectWrapper;
+import org.telegram.objects.AudioObject;
+import org.telegram.objects.ExtendedAttachmentObject;
+import org.telegram.objects.PhotoObject;
 import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ImageReceiver;
@@ -446,7 +451,11 @@ public class FileLoader {
         });
     }
 
-    public void cancelLoadFile(final TLRPC.Attachment attachment) {
+    public void cancelLoadFile(TLObject rawObject) {
+        cancelLoadFile(AttachmentObjectWrapper.wrap(rawObject.getClass(), rawObject));
+    }
+
+    public <T extends TLObject> void cancelLoadFile(final AttachmentObject<T> attachment) {
         if (attachment == null) {
             return;
         }
@@ -459,9 +468,9 @@ public class FileLoader {
                 }
                 FileLoadOperation operation = loadOperationPaths.get(fileName);
                 if (operation != null) {
-                    if (attachment instanceof TLRPC.Audio) {
+                    if (attachment instanceof AudioObject) {
                         audioLoadOperationQueue.remove(operation);
-                    } else if (attachment instanceof TLRPC.PhotoSize) {
+                    } else if (attachment instanceof PhotoObject) {
                         photoLoadOperationQueue.remove(operation);
                     } else {
                         loadOperationQueue.remove(operation);
@@ -476,19 +485,23 @@ public class FileLoader {
         return loadOperationPaths.containsKey(fileName);
     }
 
-    public void loadFile(final TLRPC.Attachment attachment) {
+    public void loadFile(TLObject rawObject) {
+        loadFile(AttachmentObjectWrapper.wrap(rawObject.getClass(), rawObject));
+    }
+
+    public <T extends TLObject> void loadFile(final AttachmentObject<T> attachment) {
         fileLoaderQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
                 final String fileName = attachment.getAttachmentFileName();
                 FileLoadOperation operation = null;
-                if (attachment instanceof TLRPC.ExtendedAttachment) {
-                    new FileLoadOperation((TLRPC.ExtendedAttachment)attachment);
-                } else if (attachment instanceof TLRPC.PhotoSize) {
-                    operation = new FileLoadOperation(((TLRPC.PhotoSize)attachment).location);
+                if (attachment instanceof ExtendedAttachmentObject<?>) {
+                    new FileLoadOperation((ExtendedAttachmentObject<?>)attachment);
+                } else if (attachment instanceof PhotoObject) {
+                    operation = new FileLoadOperation(((PhotoObject)attachment).getLocation());
                     operation.needBitmapCreate = false;
                 }
-                operation.totalBytesCount = attachment.size;
+                operation.totalBytesCount = attachment.getSize();
 
 
                 loadOperationPaths.put(fileName, operation);
@@ -552,14 +565,14 @@ public class FileLoader {
                         }
                     }
                 };
-                if (attachment instanceof TLRPC.Audio) {
+                if (attachment instanceof AudioObject) {
                     if (currentAudioLoadOperationsCount < 2) {
                         currentAudioLoadOperationsCount++;
                         operation.start();
                     } else {
                         audioLoadOperationQueue.add(operation);
                     }
-                } else if (attachment instanceof TLRPC.PhotoSize) {
+                } else if (attachment instanceof PhotoObject) {
                     if (currentPhotoLoadOperationsCount < 2) {
                         currentPhotoLoadOperationsCount++;
                         operation.start();
@@ -578,9 +591,9 @@ public class FileLoader {
         });
     }
 
-    private void finishLoading(String arg1, TLRPC.Attachment attachment) {
+    private void finishLoading(String arg1, AttachmentObject<?> attachment) {
         loadOperationPaths.remove(arg1);
-        if (attachment instanceof TLRPC.Audio) {
+        if (attachment instanceof AudioObject) {
             currentAudioLoadOperationsCount--;
             if (currentAudioLoadOperationsCount < 2) {
                 FileLoadOperation operation = audioLoadOperationQueue.poll();
@@ -589,7 +602,7 @@ public class FileLoader {
                     operation.start();
                 }
             }
-        } else if (attachment instanceof TLRPC.PhotoSize) {
+        } else if (attachment instanceof PhotoObject) {
             currentPhotoLoadOperationsCount--;
             if (currentPhotoLoadOperationsCount < 2) {
                 FileLoadOperation operation = photoLoadOperationQueue.poll();
