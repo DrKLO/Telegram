@@ -2041,13 +2041,14 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                         if (request.serverFailureCount < 1) {
                                             discardResponse = true;
                                             request.runningMinStartTime = request.runningStartTime + 1;
-                                            request.serverFailureCount++;
                                         }
                                     } else {
                                         discardResponse = true;
-                                        request.runningMinStartTime = request.runningStartTime + 1;
+                                        int delay = Math.min(1, request.serverFailureCount * 2);
+                                        request.runningMinStartTime = request.runningStartTime + delay;
                                         request.confirmed = false;
                                     }
+                                    request.serverFailureCount++;
                                 } else if (errorCode == 420) {
                                     if ((request.flags & RPCRequest.RPCRequestClassFailOnServerErrors) == 0) {
                                         double waitTime = 2.0;

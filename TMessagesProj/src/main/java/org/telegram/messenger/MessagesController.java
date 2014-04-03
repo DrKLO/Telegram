@@ -26,7 +26,6 @@ import android.media.AudioManager;
 import android.media.SoundPool;
 import android.net.Uri;
 import android.os.Build;
-import android.os.PowerManager;
 import android.os.Vibrator;
 import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
@@ -100,7 +99,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     public int fontSize = Utilities.dp(16);
     public long scheduleContactsReload = 0;
 
-    public static volatile boolean isScreenOn = true;
     public MessageObject currentPushMessage;
 
     private class UserActionUpdates extends TLRPC.Updates {
@@ -201,14 +199,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     public MessagesController() {
-        try {
-            PowerManager pm = (PowerManager)ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
-            isScreenOn = pm.isScreenOn();
-            FileLog.e("tmessages", "screen state = " + isScreenOn);
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
-
         MessagesStorage storage = MessagesStorage.getInstance();
         NotificationCenter.getInstance().addObserver(this, FileLoader.FileDidUpload);
         NotificationCenter.getInstance().addObserver(this, FileLoader.FileDidFailUpload);
@@ -2186,7 +2176,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     private void performSendEncryptedRequest(final TLRPC.DecryptedMessage req, final MessageObject newMsgObj, final TLRPC.EncryptedChat chat, final TLRPC.InputEncryptedFile encryptedFile) {
-        if (req == null) {
+        if (req == null || chat.auth_key == null || chat instanceof TLRPC.TL_encryptedChatRequested || chat instanceof TLRPC.TL_encryptedChatWaiting) {
             return;
         }
         //TLRPC.decryptedMessageLayer messageLayer = new TLRPC.decryptedMessageLayer();
@@ -3373,7 +3363,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     });
                 } else {
                     gettingDifference = false;
-                    loadCurrentState();
+                    getDifference();
                     FileLog.e("tmessages", "get difference error, don't know what to do :(");
                 }
             }
@@ -3424,7 +3414,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             } else {
                                 dialog_id = obj.messageOwner.to_id.user_id;
                             }
-                            if (dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0 || !isScreenOn) {
+                            if (dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0 || !ApplicationLoader.isScreenOn) {
                                 showInAppNotification(obj);
                             }
                         }
@@ -3483,7 +3473,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             } else {
                                 dialog_id = obj.messageOwner.to_id.user_id;
                             }
-                            if (dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0 || !isScreenOn) {
+                            if (dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0 || !ApplicationLoader.isScreenOn) {
                                 showInAppNotification(obj);
                             }
                         }
@@ -4240,7 +4230,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             return;
         }
 
-        if (ApplicationLoader.lastPauseTime == 0 && isScreenOn) {
+        if (ApplicationLoader.lastPauseTime == 0 && ApplicationLoader.isScreenOn) {
             boolean inAppSounds = preferences.getBoolean("EnableInAppSounds", true);
             boolean inAppVibrate = preferences.getBoolean("EnableInAppVibrate", true);
             boolean inAppPreview = preferences.getBoolean("EnableInAppPreview", true);

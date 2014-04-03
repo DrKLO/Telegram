@@ -258,9 +258,9 @@
     <string name="Language">Sprache</string>
     <string name="AskAQuestionInfo">Please note that Telegram Support is done by volunteers. We try to respond as quickly as possible, but it may take a while.<![CDATA[<br><br>]]>Please take a look at the <![CDATA[<a href="http://telegram.org/faq#general">Telegram FAQ</a>]]>: it has important <![CDATA[<a href="http://telegram.org/faq#troubleshooting">troubleshooting tips</a>]]> and answers to most questions.</string>
     <string name="AskButton">Ask a volunteer</string>
-    <string name="TelegramFaq">Telegram FAQ</string>
+    <string name="TelegramFaq">Telegram-FAQ</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
-    <string name="DeleteLocalization">Delete localization?</string>
+    <string name="DeleteLocalization">Lokalisierung löschen?</string>
     <string name="IncorrectLocalization">Incorrect localization file</string>
 
     <!--media view-->

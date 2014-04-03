@@ -198,7 +198,9 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         } else if (currentMessageObject.type == 8) {
             if (buttonState == -1) {
                 buttonState = 2;
-                gifDrawable.pause();
+                if (gifDrawable != null) {
+                    gifDrawable.pause();
+                }
                 invalidate();
             } else if (buttonState == 2 || buttonState == 0) {
                 didPressedButton();
@@ -344,6 +346,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 photoImage.setImageBitmap(messageObject.messageOwner.out ? placeholderOutDrawable : placeholderInDrawable);
             }
 
+            invalidate();
             /*if ((type == 6 || type == 7) && videoTimeText != null) {
                 int duration = message.messageOwner.media.video.duration;
                 int minutes = duration / 60;

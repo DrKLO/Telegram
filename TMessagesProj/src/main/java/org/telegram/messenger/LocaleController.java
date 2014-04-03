@@ -319,13 +319,18 @@ public class LocaleController {
                 } else if(eventType == XmlPullParser.TEXT) {
                     if (attrName != null) {
                         value = parser.getText();
+                        if (value != null) {
+                            value = value.trim();
+                            value = value.replace("\\n", "\n");
+                            value = value.replace("\\", "");
+                        }
                     }
                 } else if (eventType == XmlPullParser.END_TAG) {
                     value = null;
                     attrName = null;
                     name = null;
                 }
-                if (name != null && name.equals("string") && value != null && attrName != null) {
+                if (name != null && name.equals("string") && value != null && attrName != null && value.length() != 0 && attrName.length() != 0) {
                     stringMap.put(attrName, value);
                     name = null;
                     value = null;

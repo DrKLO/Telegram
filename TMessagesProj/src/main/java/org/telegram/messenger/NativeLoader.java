@@ -34,7 +34,7 @@ public class NativeLoader {
             return;
         }
 
-        if (Build.VERSION.SDK_INT >= 10) {
+        if (Build.VERSION.SDK_INT > 10) {
             try {
                 String folder = null;
                 long libSize = 0;

@@ -517,8 +517,8 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         } else {
             menu.add(Menu.NONE, share_contact, Menu.NONE, LocaleController.getString("ShareContact", R.string.ShareContact));
             menu.add(Menu.NONE, block_contact, Menu.NONE, LocaleController.getString("BlockContact", R.string.BlockContact));
-            menu.add(Menu.NONE, block_contact, Menu.NONE, LocaleController.getString("EditContact", R.string.EditContact));
-            menu.add(Menu.NONE, block_contact, Menu.NONE, LocaleController.getString("DeleteContact", R.string.DeleteContact));
+            menu.add(Menu.NONE, edit_contact, Menu.NONE, LocaleController.getString("EditContact", R.string.EditContact));
+            menu.add(Menu.NONE, delete_contact, Menu.NONE, LocaleController.getString("DeleteContact", R.string.DeleteContact));
         }
     }
 

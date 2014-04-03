@@ -258,10 +258,10 @@
     <string name="Language">Lingua</string>
     <string name="AskAQuestionInfo">Nota che il supporto di Telegram è fornito da volontari. Proviamo a rispondere non appena possibile, ma potrebbe richiedere del tempo.<![CDATA[<br><br>]]>Dai un\'occhiata alle <![CDATA[<a href="http://telegram.org/faq#general">Domande frequenti</a>]]>: troverai risposte alla maggior parte delle domande e suggerimenti importanti per <![CDATA[<a href="http://telegram.org/faq#troubleshooting">l\'individuazione del problema</a>]]>.</string>
     <string name="AskButton">Chiedi a un volontario</string>
-    <string name="TelegramFaq">Telegram FAQ</string>
+    <string name="TelegramFaq">Domande frequenti</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
     <string name="DeleteLocalization">Eliminare la localizzazione?</string>
-    <string name="IncorrectLocalization">Incorrect localization file</string>
+    <string name="IncorrectLocalization">File della localizzazione non valido</string>
 
     <!--media view-->
     <string name="NoMedia">Nessun media condiviso</string>

@@ -15,7 +15,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -80,6 +79,8 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
         selectedBackground = preferences.getInt("selectedBackground", 1000001);
         selectedColor = preferences.getInt("selectedColor", 0);
         MessagesStorage.getInstance().getWallpapers();
+        File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
+        toFile.delete();
         return true;
     }
 
@@ -171,7 +172,13 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                             FileLog.e("tmessages", e);
                         }
                     } else {
-                        done = true;
+                        if (selectedBackground == -1) {
+                            File fromFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
+                            File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
+                            done = fromFile.renameTo(toFile);
+                        } else {
+                            done = true;
+                        }
                     }
 
                     if (done) {
@@ -203,7 +210,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 Utilities.addMediaToGallery(currentPicturePath);
                 try {
                     Bitmap bitmap = FileLoader.loadBitmap(currentPicturePath, null, Utilities.dp(320), Utilities.dp(480));
-                    File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
+                    File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
                     FileOutputStream stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
                     selectedBackground = -1;
@@ -214,21 +221,12 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 }
                 currentPicturePath = null;
             } else if (requestCode == 11) {
-                Uri imageUri = data.getData();
-                Cursor cursor = parentActivity.getContentResolver().query(imageUri, new String[]{android.provider.MediaStore.Images.ImageColumns.DATA}, null, null, null);
-                if (cursor == null) {
+                if (data == null || data.getData() == null) {
                     return;
                 }
-
                 try {
-                    String imageFilePath = null;
-                    if (cursor.moveToFirst()) {
-                        imageFilePath = cursor.getString(0);
-                    }
-                    cursor.close();
-
-                    Bitmap bitmap = FileLoader.loadBitmap(imageFilePath, null, Utilities.dp(320), Utilities.dp(480));
-                    File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
+                    Bitmap bitmap = FileLoader.loadBitmap(null, data.getData(), Utilities.dp(320), Utilities.dp(480));
+                    File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
                     FileOutputStream stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
                     selectedBackground = -1;
@@ -291,7 +289,10 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 backgroundImage.setBackgroundColor(0);
                 selectedColor = 0;
             } else if (selectedBackground == -1) {
-                File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
+                File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
+                if (!toFile.exists()) {
+                    toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
+                }
                 if (toFile.exists()) {
                     backgroundImage.setImageURI(Uri.fromFile(toFile));
                 } else {
