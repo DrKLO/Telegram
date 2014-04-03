@@ -130,13 +130,13 @@ public class FileUploadOperation {
                 isLastPart = true;
             }
             sendBuffer.writeRaw(readBuffer, 0, readed);
-            sendBuffer.rewind();
             if (key != null) {
                 for (int a = 0; a < toAdd; a++) {
                     sendBuffer.writeByte(0);
                 }
                 Utilities.aesIgeEncryption2(sendBuffer.buffer, key, iv, true, true, readed + toAdd);
             }
+            sendBuffer.rewind();
             if (!isBigFile) {
                 mdEnc.update(sendBuffer.buffer);
             }

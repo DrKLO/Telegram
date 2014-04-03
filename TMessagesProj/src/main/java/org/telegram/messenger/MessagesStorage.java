@@ -1400,7 +1400,7 @@ public class MessagesStorage {
                                 fromUser.add(message.fwd_from_id);
                             }
                             message.send_state = cursor.intValue(2);
-                            if (!message.unread || message.id > 0) {
+                            if (!message.unread && lower_id != 0 || message.id > 0) {
                                 message.send_state = 0;
                             }
                             if (lower_id == 0 && !cursor.isNull(5)) {
