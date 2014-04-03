@@ -489,6 +489,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             public void run() {
                 Datacenter datacenter = datacenterWithId(currentDatacenterId);
                 recreateSession(datacenter.authSessionId, datacenter);
+                recreateSession(datacenter.authDownloadSessionId, datacenter);
+                recreateSession(datacenter.authUploadSessionId, datacenter);
             }
         });
     }
@@ -503,6 +505,14 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             clearRequestsForRequestClass(RPCRequest.RPCRequestClassGeneric, datacenter);
             FileLog.d("tmessages", "***** Recreate generic session");
             datacenter.authSessionId = getNewSessionId();
+        } else if (sessionId == datacenter.authDownloadSessionId) {
+            clearRequestsForRequestClass(RPCRequest.RPCRequestClassDownloadMedia, datacenter);
+            FileLog.d("tmessages", "***** Recreate download session");
+            datacenter.authDownloadSessionId = getNewSessionId();
+        } else if (sessionId == datacenter.authUploadSessionId) {
+            clearRequestsForRequestClass(RPCRequest.RPCRequestClassUploadMedia, datacenter);
+            FileLog.d("tmessages", "***** Recreate upload session");
+            datacenter.authUploadSessionId = getNewSessionId();
         }
     }
 
@@ -850,6 +860,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                         }
 
                         request.cancelled = true;
+                        request.rawRequest.freeResources();
+                        request.rpcRequest.freeResources();
                         runningRequests.remove(i);
                         break;
                     }
@@ -1025,7 +1037,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             Datacenter requestDatacenter = datacenterWithId(datacenterId);
             if (!request.initRequest && requestDatacenter.lastInitVersion != currentAppVersion) {
                 request.rpcRequest = wrapInLayer(request.rawRequest, requestDatacenter.datacenterId, request);
-                SerializedData os = new SerializedData(true);
+                ByteBufferDesc os = new ByteBufferDesc(true);
                 request.rpcRequest.serializeToStream(os);
                 request.serializedLength = os.length();
             }
@@ -1520,7 +1532,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     TLRPC.TL_protoMessage wrapMessage(TLObject message, long sessionId, boolean meaningful) {
-        SerializedData os = new SerializedData(true);
+        ByteBufferDesc os = new ByteBufferDesc(true);
         message.serializeToStream(os);
 
         if (os.length() != 0) {
@@ -1552,7 +1564,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             msgAck.msg_ids = new ArrayList<Long>();
             msgAck.msg_ids.addAll(arr);
 
-            SerializedData os = new SerializedData(true);
+            ByteBufferDesc os = new ByteBufferDesc(true);
             msgAck.serializeToStream(os);
 
             if (os.length() != 0) {
@@ -1599,7 +1611,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
             if (currentSize >= 3 * 1024 || a == messagesToSend.size() - 1) {
                 ArrayList<Integer> quickAckId = new ArrayList<Integer>();
-                byte[] transportData = createConnectionData(currentMessages, sessionId, quickAckId, connection);
+                ByteBufferDesc transportData = createConnectionData(currentMessages, sessionId, quickAckId, connection);
 
                 if (transportData != null) {
                     if (reportAck && quickAckId.size() != 0) {
@@ -1622,7 +1634,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                         }
                     }
 
-                    connection.sendData(transportData, reportAck, requestShortTimeout);
+                    connection.sendData(null, transportData, reportAck, requestShortTimeout);
                 } else {
                     FileLog.e("tmessages", "***** Transport data is nil");
                 }
@@ -1634,7 +1646,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     @SuppressWarnings("unused")
-    byte[] createConnectionData(ArrayList<NetworkMessage> messages, long sessionId, ArrayList<Integer> quickAckId, TcpConnection connection) {
+    ByteBufferDesc createConnectionData(ArrayList<NetworkMessage> messages, long sessionId, ArrayList<Integer> quickAckId, TcpConnection connection) {
         Datacenter datacenter = datacenterWithId(connection.getDatacenterId());
         if (datacenter.authKey == null) {
             return null;
@@ -1711,11 +1723,11 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             messageSeqNo = generateMessageSeqNo(sessionId, false);
         }
 
-        SerializedData innerMessageOs = new SerializedData();
-        messageBody.serializeToStream(innerMessageOs);
-        byte[] messageData = innerMessageOs.toByteArray();
+        ByteBufferDesc sizeBuffer = new ByteBufferDesc(true);
+        messageBody.serializeToStream(sizeBuffer);
 
-        SerializedData innerOs = new SerializedData(8 + 8 + 8 + 4 + 4 + messageData.length);
+        ByteBufferDesc innerOs = BuffersStorage.getInstance().getFreeBuffer(8 + 8 + 8 + 4 + 4 + sizeBuffer.length());
+
         long serverSalt = datacenter.selectServerSalt(getCurrentTime());
         if (serverSalt == 0) {
             innerOs.writeInt64(0);
@@ -1725,11 +1737,10 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         innerOs.writeInt64(sessionId);
         innerOs.writeInt64(messageId);
         innerOs.writeInt32(messageSeqNo);
-        innerOs.writeInt32(messageData.length);
-        innerOs.writeRaw(messageData);
-        byte[] innerData = innerOs.toByteArray();
+        innerOs.writeInt32(sizeBuffer.length());
+        messageBody.serializeToStream(innerOs);
 
-        byte[] messageKeyFull = Utilities.computeSHA1(innerData);
+        byte[] messageKeyFull = Utilities.computeSHA1(innerOs.buffer, 0, innerOs.limit());
         byte[] messageKey = new byte[16];
         System.arraycopy(messageKeyFull, messageKeyFull.length - 16, messageKey, 0, 16);
 
@@ -1740,35 +1751,29 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
         MessageKeyData keyData = Utilities.generateMessageKeyData(datacenter.authKey, messageKey, false);
 
-        SerializedData dataForEncryption = new SerializedData(innerData.length + (innerData.length % 16));
-        dataForEncryption.writeRaw(innerData);
+        int zeroCount = 0;
+        if (innerOs.limit() % 16 != 0) {
+            zeroCount = 16 - innerOs.limit() % 16;
+        }
+
+        ByteBufferDesc dataForEncryption = BuffersStorage.getInstance().getFreeBuffer(innerOs.limit() + zeroCount);
+        dataForEncryption.writeRaw(innerOs);
+        BuffersStorage.getInstance().reuseFreeBuffer(innerOs);
         byte[] b = new byte[1];
-        while (dataForEncryption.length() % 16 != 0) {
+        for (int a = 0; a < zeroCount; a++) {
             MessagesController.random.nextBytes(b);
             dataForEncryption.writeByte(b[0]);
         }
 
-        byte[] encryptedData = Utilities.aesIgeEncryption(dataForEncryption.toByteArray(), keyData.aesKey, keyData.aesIv, true, false, 0);
+        Utilities.aesIgeEncryption2(dataForEncryption.buffer, keyData.aesKey, keyData.aesIv, true, false, dataForEncryption.limit());
 
-        try {
-            SerializedData data = new SerializedData(8 + messageKey.length + encryptedData.length);
-            data.writeInt64(datacenter.authKeyId);
-            data.writeRaw(messageKey);
-            data.writeRaw(encryptedData);
+        ByteBufferDesc data = BuffersStorage.getInstance().getFreeBuffer(8 + messageKey.length + dataForEncryption.limit());
+        data.writeInt64(datacenter.authKeyId);
+        data.writeRaw(messageKey);
+        data.writeRaw(dataForEncryption);
+        BuffersStorage.getInstance().reuseFreeBuffer(dataForEncryption);
 
-            return data.toByteArray();
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-            innerData = null;
-            messageData = null;
-            System.gc();
-            SerializedData data = new SerializedData();
-            data.writeInt64(datacenter.authKeyId);
-            data.writeRaw(messageKey);
-            data.writeRaw(encryptedData);
-
-            return data.toByteArray();
-        }
+        return data;
     }
 
     void refillSaltSet(final Datacenter datacenter) {
@@ -1821,6 +1826,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     RPCRequest request = runningRequests.get(i);
                     removeRequestInClass(request.token);
                     if (request.respondsToMessageId(requestMsgId)) {
+                        request.rawRequest.freeResources();
+                        request.rpcRequest.freeResources();
                         runningRequests.remove(i);
                         i--;
                     }
@@ -2188,6 +2195,9 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 }
 
                 recreateSession(datacenter.authSessionId, datacenter);
+                recreateSession(datacenter.authDownloadSessionId, datacenter);
+                recreateSession(datacenter.authUploadSessionId, datacenter);
+
                 saveSession();
 
                 lastOutgoingMessageId = 0;
@@ -2273,7 +2283,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     static long nextPingId = 0;
-    byte[] generatePingData(Datacenter datacenter, boolean recordTime) {
+    ByteBufferDesc generatePingData(Datacenter datacenter, boolean recordTime) {
         long sessionId = datacenter.authSessionId;
         if (sessionId == 0) {
             return null;
@@ -2300,9 +2310,9 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             return;
         }
 
-        byte[] transportData = generatePingData(datacenter, true);
+        ByteBufferDesc transportData = generatePingData(datacenter, true);
         if (transportData != null) {
-            datacenter.connection.sendData(transportData, false, true);
+            datacenter.connection.sendData(null, transportData, false, true);
         }
     }
 
@@ -2698,6 +2708,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         }
 
         recreateSession(datacenter.authSessionId, datacenter);
+        recreateSession(datacenter.authDownloadSessionId, datacenter);
+        recreateSession(datacenter.authUploadSessionId, datacenter);
 
         if (datacenter.authKey == null) {
             datacenter.clearServerSalts();
@@ -2766,6 +2778,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 timeDifference = (Integer)params.get("timeDifference");
 
                 recreateSession(eactor.datacenter.authSessionId, eactor.datacenter);
+                recreateSession(eactor.datacenter.authDownloadSessionId, eactor.datacenter);
+                recreateSession(eactor.datacenter.authUploadSessionId, eactor.datacenter);
             }
             processRequestQueue(RPCRequest.RPCRequestClassTransportMask, eactor.datacenter.datacenterId);
         } else if (action instanceof ExportAuthorizationAction) {

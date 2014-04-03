@@ -726,9 +726,9 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                     return;
                 }
                 if (isVideo) {
-                    MediaController.saveFile(currentFileName, this, 1, null);
+                    MediaController.saveFile(currentFileName, null, this, 1, null);
                 } else {
-                    MediaController.saveFile(currentFileName, this, 0, null);
+                    MediaController.saveFile(currentFileName, null, this, 0, null);
                 }
                 break;
 //            case R.id.gallery_menu_send: {

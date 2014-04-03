@@ -3274,7 +3274,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                             }
 
                                             if (!(res instanceof TLRPC.TL_updates_differenceSlice)) {
-                                                if ((dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0) && !obj.messageOwner.out && obj.messageOwner.unread && (lastMessage == null || lastMessage.messageOwner.date < obj.messageOwner.date)) {
+                                                if ((dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0) && !obj.isOut() && obj.messageOwner.unread && (lastMessage == null || lastMessage.messageOwner.date < obj.messageOwner.date)) {
                                                     if (!readMessages.contains(obj.messageOwner.id)) {
                                                         lastMessage = obj;
                                                     }
@@ -3342,7 +3342,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                         ConnectionsManager.getInstance().connectionState = 0;
                                         processUpdatesQueue(true);
                                     } else if (res instanceof TLRPC.TL_updates_differenceSlice) {
-                                        MessagesStorage.lastSeqValue = res.intermediate_state.seq;
+                                        //MessagesStorage.lastSeqValue = res.intermediate_state.seq;
                                         MessagesStorage.lastDateValue = res.intermediate_state.date;
                                         MessagesStorage.lastPtsValue = res.intermediate_state.pts;
                                         MessagesStorage.lastQtsValue = res.intermediate_state.qts;
@@ -3380,123 +3380,131 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             processUpdateArray(arr, null, null);
         } else if (updates instanceof TLRPC.TL_updateShortChatMessage) {
             boolean missingData = chats.get(updates.chat_id) == null || users.get(updates.from_id) == null;
-            if (MessagesStorage.lastSeqValue + 1 == updates.seq && !missingData) {
-                TLRPC.TL_message message = new TLRPC.TL_message();
-                message.from_id = updates.from_id;
-                message.id = updates.id;
-                message.to_id = new TLRPC.TL_peerChat();
-                message.to_id.chat_id = updates.chat_id;
-                message.message = updates.message;
-                message.date = updates.date;
-                message.unread = true;
-                message.media = new TLRPC.TL_messageMediaEmpty();
-                MessagesStorage.lastSeqValue = updates.seq;
-                MessagesStorage.lastPtsValue = updates.pts;
-                final MessageObject obj = new MessageObject(message, null);
-                final ArrayList<MessageObject> objArr = new ArrayList<MessageObject>();
-                objArr.add(obj);
-                ArrayList<TLRPC.Message> arr = new ArrayList<TLRPC.Message>();
-                arr.add(message);
-                final boolean printUpdate = updatePrintingUsersWithNewMessages(-updates.chat_id, objArr);
-                if (printUpdate) {
-                    updatePrintingStrings();
-                }
-                Utilities.RunOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (printUpdate) {
-                            NotificationCenter.getInstance().postNotificationName(updateInterfaces, UPDATE_MASK_USER_PRINT);
-                        }
-                        if (obj.messageOwner.from_id != UserConfig.clientUserId) {
-                            long dialog_id;
-                            if (obj.messageOwner.to_id.chat_id != 0) {
-                                dialog_id = -obj.messageOwner.to_id.chat_id;
-                            } else {
-                                dialog_id = obj.messageOwner.to_id.user_id;
-                            }
-                            if (dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0 || !ApplicationLoader.isScreenOn) {
-                                showInAppNotification(obj);
-                            }
-                        }
-                        updateInterfaceWithMessages(-updates.chat_id, objArr);
-                        NotificationCenter.getInstance().postNotificationName(dialogsNeedReload);
+            if (missingData) {
+                needGetDiff = true;
+            } else {
+                if (MessagesStorage.lastSeqValue + 1 == updates.seq && !gettingDifference) {
+                    TLRPC.TL_message message = new TLRPC.TL_message();
+                    message.from_id = updates.from_id;
+                    message.id = updates.id;
+                    message.to_id = new TLRPC.TL_peerChat();
+                    message.to_id.chat_id = updates.chat_id;
+                    message.message = updates.message;
+                    message.date = updates.date;
+                    message.unread = true;
+                    message.media = new TLRPC.TL_messageMediaEmpty();
+                    MessagesStorage.lastSeqValue = updates.seq;
+                    MessagesStorage.lastPtsValue = updates.pts;
+                    final MessageObject obj = new MessageObject(message, null);
+                    final ArrayList<MessageObject> objArr = new ArrayList<MessageObject>();
+                    objArr.add(obj);
+                    ArrayList<TLRPC.Message> arr = new ArrayList<TLRPC.Message>();
+                    arr.add(message);
+                    final boolean printUpdate = updatePrintingUsersWithNewMessages(-updates.chat_id, objArr);
+                    if (printUpdate) {
+                        updatePrintingStrings();
                     }
-                });
-                MessagesStorage.getInstance().putMessages(arr, false, true);
-            } else if (!missingData && MessagesStorage.lastSeqValue != updates.seq) {
-                FileLog.e("tmessages", "need get diff TL_updateShortChatMessage, seq: " + MessagesStorage.lastSeqValue + " " + updates.seq);
-                if (gettingDifference || updatesStartWaitTime == 0 || updatesStartWaitTime != 0 && updatesStartWaitTime + 1500 > System.currentTimeMillis()) {
-                    if (updatesStartWaitTime == 0) {
-                        updatesStartWaitTime = System.currentTimeMillis();
+                    Utilities.RunOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (printUpdate) {
+                                NotificationCenter.getInstance().postNotificationName(updateInterfaces, UPDATE_MASK_USER_PRINT);
+                            }
+                            if (obj.messageOwner.from_id != UserConfig.clientUserId) {
+                                long dialog_id;
+                                if (obj.messageOwner.to_id.chat_id != 0) {
+                                    dialog_id = -obj.messageOwner.to_id.chat_id;
+                                } else {
+                                    dialog_id = obj.messageOwner.to_id.user_id;
+                                }
+                                if (dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0 || !ApplicationLoader.isScreenOn) {
+                                    showInAppNotification(obj);
+                                }
+                            }
+                            updateInterfaceWithMessages(-updates.chat_id, objArr);
+                            NotificationCenter.getInstance().postNotificationName(dialogsNeedReload);
+                        }
+                    });
+                    MessagesStorage.getInstance().putMessages(arr, false, true);
+                } else if (MessagesStorage.lastSeqValue != updates.seq) {
+                    FileLog.e("tmessages", "need get diff TL_updateShortChatMessage, seq: " + MessagesStorage.lastSeqValue + " " + updates.seq);
+                    if (gettingDifference || updatesStartWaitTime == 0 || updatesStartWaitTime != 0 && updatesStartWaitTime + 1500 > System.currentTimeMillis()) {
+                        if (updatesStartWaitTime == 0) {
+                            updatesStartWaitTime = System.currentTimeMillis();
+                        }
+                        FileLog.e("tmessages", "add TL_updateShortChatMessage to queue");
+                        updatesQueue.add(updates);
+                        addedToQueue = true;
+                    } else {
+                        needGetDiff = true;
                     }
-                    FileLog.e("tmessages", "add TL_updateShortChatMessage to queue");
-                    updatesQueue.add(updates);
-                    addedToQueue = true;
-                } else {
-                    needGetDiff = true;
                 }
             }
         } else if (updates instanceof TLRPC.TL_updateShortMessage) {
             boolean missingData = users.get(updates.from_id) == null;
-            if (MessagesStorage.lastSeqValue + 1 == updates.seq && !missingData) {
-                TLRPC.TL_message message = new TLRPC.TL_message();
-                message.from_id = updates.from_id;
-                message.id = updates.id;
-                message.to_id = new TLRPC.TL_peerUser();
-                message.to_id.user_id = updates.from_id;
-                message.message = updates.message;
-                message.date = updates.date;
-                message.unread = true;
-                message.media = new TLRPC.TL_messageMediaEmpty();
-                MessagesStorage.lastSeqValue = updates.seq;
-                MessagesStorage.lastPtsValue = updates.pts;
-                MessagesStorage.lastDateValue = updates.date;
-                final MessageObject obj = new MessageObject(message, null);
-                final ArrayList<MessageObject> objArr = new ArrayList<MessageObject>();
-                objArr.add(obj);
-                ArrayList<TLRPC.Message> arr = new ArrayList<TLRPC.Message>();
-                arr.add(message);
-                final boolean printUpdate = updatePrintingUsersWithNewMessages(updates.from_id, objArr);
-                if (printUpdate) {
-                    updatePrintingStrings();
-                }
-                Utilities.RunOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (printUpdate) {
-                            NotificationCenter.getInstance().postNotificationName(updateInterfaces, UPDATE_MASK_USER_PRINT);
-                        }
-                        if (obj.messageOwner.from_id != UserConfig.clientUserId) {
-                            long dialog_id;
-                            if (obj.messageOwner.to_id.chat_id != 0) {
-                                dialog_id = -obj.messageOwner.to_id.chat_id;
-                            } else {
-                                dialog_id = obj.messageOwner.to_id.user_id;
-                            }
-                            if (dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0 || !ApplicationLoader.isScreenOn) {
-                                showInAppNotification(obj);
-                            }
-                        }
-                        updateInterfaceWithMessages(updates.from_id, objArr);
-                        NotificationCenter.getInstance().postNotificationName(dialogsNeedReload);
+            if (missingData) {
+                needGetDiff = true;
+            } else {
+                if (MessagesStorage.lastSeqValue + 1 == updates.seq && !gettingDifference) {
+                    TLRPC.TL_message message = new TLRPC.TL_message();
+                    message.from_id = updates.from_id;
+                    message.id = updates.id;
+                    message.to_id = new TLRPC.TL_peerUser();
+                    message.to_id.user_id = updates.from_id;
+                    message.message = updates.message;
+                    message.date = updates.date;
+                    message.unread = true;
+                    message.media = new TLRPC.TL_messageMediaEmpty();
+                    MessagesStorage.lastSeqValue = updates.seq;
+                    MessagesStorage.lastPtsValue = updates.pts;
+                    MessagesStorage.lastDateValue = updates.date;
+                    final MessageObject obj = new MessageObject(message, null);
+                    final ArrayList<MessageObject> objArr = new ArrayList<MessageObject>();
+                    objArr.add(obj);
+                    ArrayList<TLRPC.Message> arr = new ArrayList<TLRPC.Message>();
+                    arr.add(message);
+                    final boolean printUpdate = updatePrintingUsersWithNewMessages(updates.from_id, objArr);
+                    if (printUpdate) {
+                        updatePrintingStrings();
                     }
-                });
-                MessagesStorage.getInstance().putMessages(arr, false, true);
-            } else if (!missingData && MessagesStorage.lastSeqValue != updates.seq) {
-                FileLog.e("tmessages", "need get diff TL_updateShortMessage, seq: " + MessagesStorage.lastSeqValue + " " + updates.seq);
-                if (gettingDifference || updatesStartWaitTime == 0 || updatesStartWaitTime != 0 && updatesStartWaitTime + 1500 > System.currentTimeMillis()) {
-                    if (updatesStartWaitTime == 0) {
-                        updatesStartWaitTime = System.currentTimeMillis();
+                    Utilities.RunOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (printUpdate) {
+                                NotificationCenter.getInstance().postNotificationName(updateInterfaces, UPDATE_MASK_USER_PRINT);
+                            }
+                            if (obj.messageOwner.from_id != UserConfig.clientUserId) {
+                                long dialog_id;
+                                if (obj.messageOwner.to_id.chat_id != 0) {
+                                    dialog_id = -obj.messageOwner.to_id.chat_id;
+                                } else {
+                                    dialog_id = obj.messageOwner.to_id.user_id;
+                                }
+                                if (dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0 || !ApplicationLoader.isScreenOn) {
+                                    showInAppNotification(obj);
+                                }
+                            }
+                            updateInterfaceWithMessages(updates.from_id, objArr);
+                            NotificationCenter.getInstance().postNotificationName(dialogsNeedReload);
+                        }
+                    });
+                    MessagesStorage.getInstance().putMessages(arr, false, true);
+                } else if (MessagesStorage.lastSeqValue != updates.seq) {
+                    FileLog.e("tmessages", "need get diff TL_updateShortMessage, seq: " + MessagesStorage.lastSeqValue + " " + updates.seq);
+                    if (gettingDifference || updatesStartWaitTime == 0 || updatesStartWaitTime != 0 && updatesStartWaitTime + 1500 > System.currentTimeMillis()) {
+                        if (updatesStartWaitTime == 0) {
+                            updatesStartWaitTime = System.currentTimeMillis();
+                        }
+                        FileLog.e("tmessages", "add TL_updateShortMessage to queue");
+                        updatesQueue.add(updates);
+                        addedToQueue = true;
+                    } else {
+                        needGetDiff = true;
                     }
-                    FileLog.e("tmessages", "add TL_updateShortMessage to queue");
-                    updatesQueue.add(updates);
-                    addedToQueue = true;
-                } else {
-                    needGetDiff = true;
                 }
             }
         } else if (updates instanceof TLRPC.TL_updatesCombined) {
-            if (MessagesStorage.lastSeqValue + 1 == updates.seq_start || MessagesStorage.lastSeqValue == updates.seq_start) {
+            if ((MessagesStorage.lastSeqValue + 1 == updates.seq_start || MessagesStorage.lastSeqValue == updates.seq_start) && !gettingDifference) {
                 MessagesStorage.getInstance().putUsersAndChats(updates.users, updates.chats, true, true);
                 int lastPtsValue = MessagesStorage.lastPtsValue;
                 int lastQtsValue = MessagesStorage.lastQtsValue;
@@ -3526,7 +3534,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
             }
         } else if (updates instanceof TLRPC.TL_updates) {
-            if (MessagesStorage.lastSeqValue + 1 == updates.seq || updates.seq == 0 || updates.seq == MessagesStorage.lastSeqValue) {
+            if ((MessagesStorage.lastSeqValue + 1 == updates.seq || updates.seq == 0 || updates.seq == MessagesStorage.lastSeqValue) && !gettingDifference) {
                 MessagesStorage.getInstance().putUsersAndChats(updates.users, updates.chats, true, true);
                 int lastPtsValue = MessagesStorage.lastPtsValue;
                 int lastQtsValue = MessagesStorage.lastQtsValue;

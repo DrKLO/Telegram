@@ -179,7 +179,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
 
         byte[] transportData = messageOs.toByteArray();
 
-        datacenter.connection.sendData(transportData, false, false);
+        datacenter.connection.sendData(transportData, null, false, false);
 
         return transportData;
     }
@@ -576,11 +576,11 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
             return;
         }
         if (reqPQMsgData != null) {
-            datacenter.connection.sendData(reqPQMsgData, false, false);
+            datacenter.connection.sendData(reqPQMsgData, null, false, false);
         } else if (reqDHMsgData != null) {
-            datacenter.connection.sendData(reqDHMsgData, false, false);
+            datacenter.connection.sendData(reqDHMsgData, null, false, false);
         } else if (setClientDHParamsMsgData != null) {
-            datacenter.connection.sendData(setClientDHParamsMsgData, false, false);
+            datacenter.connection.sendData(setClientDHParamsMsgData, null, false, false);
         }
     }
 

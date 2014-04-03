@@ -21,10 +21,12 @@ import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.text.Html;
+import android.text.Spannable;
 import android.text.method.LinkMovementMethod;
 import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -92,6 +94,18 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int audioDownloadPrivateRow;
     private int telegramFaqRow;
     private int languageRow;
+
+    private static class LinkMovementMethodMy extends LinkMovementMethod {
+        @Override
+        public boolean onTouchEvent(TextView widget, Spannable buffer, MotionEvent event) {
+            try {
+                return super.onTouchEvent(widget, buffer, event);
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+            return false;
+        }
+    }
 
     @Override
     public boolean onFragmentCreate() {
@@ -252,7 +266,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         message.setText(Html.fromHtml(LocaleController.getString("AskAQuestionInfo", R.string.AskAQuestionInfo)));
                         message.setTextSize(18);
                         message.setPadding(Utilities.dp(8), Utilities.dp(5), Utilities.dp(8), Utilities.dp(6));
-                        message.setMovementMethod(LinkMovementMethod.getInstance());
+                        message.setMovementMethod(new LinkMovementMethodMy());
 
                         AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
                         builder.setView(message);
@@ -642,6 +656,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     button2.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
+                            if (parentActivity == null) {
+                                return;
+                            }
 
                             AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
 

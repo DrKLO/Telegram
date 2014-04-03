@@ -298,7 +298,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
 
-        if (currentMessageObject.messageOwner.out) {
+        if (currentMessageObject.isOut()) {
             avatarImage.imageX = layoutWidth - backgroundWidth + Utilities.dp(9);
             seekBarX = layoutWidth - backgroundWidth + Utilities.dp(97);
             buttonX = layoutWidth - backgroundWidth + Utilities.dp(67);
@@ -359,7 +359,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
                 avatarImage.setImage((TLRPC.FileLocation)null, "50_50", getResources().getDrawable(Utilities.getUserAvatarForId(uid)));
             }
 
-            if (messageObject.messageOwner.out) {
+            if (messageObject.isOut()) {
                 seekBar.type = 0;
                 progressView.setProgressColors(0xffb4e396, 0xff6ac453);
             } else {
@@ -393,7 +393,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         canvas.restore();
 
         int state = buttonState;
-        if (!currentMessageObject.messageOwner.out) {
+        if (!currentMessageObject.isOut()) {
             state += 4;
             timePaint.setColor(0xffa1aab3);
         } else {

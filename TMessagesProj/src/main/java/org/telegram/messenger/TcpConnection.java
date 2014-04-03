@@ -271,7 +271,10 @@ public class TcpConnection extends PyroClientAdapter {
         connect();
     }
 
-    public void sendData(final byte[] data, final boolean reportAck, final boolean startResponseTimeout) {
+    public void sendData(final byte[] data, final ByteBufferDesc buff, final boolean reportAck, final boolean startResponseTimeout) {
+        if (data == null && buff == null) {
+            return;
+        }
         selector.scheduleTask(new Runnable() {
             @Override
             public void run() {
@@ -285,9 +288,28 @@ public class TcpConnection extends PyroClientAdapter {
                     return;
                 }
 
-                int packetLength = data.length / 4;
+                int bufferLen = 0;
+                if (data != null) {
+                    bufferLen = data.length;
+                } else if (buff != null) {
+                    bufferLen = buff.limit();
+                }
+                int packetLength = bufferLen / 4;
 
-                SerializedData buffer = new SerializedData();
+                if (packetLength < 0x7f) {
+                    bufferLen++;
+                } else {
+                    bufferLen += 4;
+                }
+                if (firstPacket) {
+                    bufferLen++;
+                }
+
+                ByteBufferDesc buffer = BuffersStorage.getInstance().getFreeBuffer(bufferLen);
+                if (firstPacket) {
+                    buffer.writeByte((byte)0xef);
+                    firstPacket = false;
+                }
                 if (packetLength < 0x7f) {
                     if (reportAck) {
                         packetLength |= (1 << 7);
@@ -300,20 +322,16 @@ public class TcpConnection extends PyroClientAdapter {
                     }
                     buffer.writeInt32(packetLength);
                 }
-                buffer.writeRaw(data);
-
-                final byte[] packet = buffer.toByteArray();
-
-                ByteBuffer sendBuffer = ByteBuffer.allocate((firstPacket ? 1 : 0) + packet.length);
-                sendBuffer.rewind();
-                sendBuffer.order(ByteOrder.LITTLE_ENDIAN);
-                if (firstPacket) {
-                    sendBuffer.put((byte)0xef);
-                    firstPacket = false;
+                if (data != null) {
+                    buffer.writeRaw(data);
+                } else {
+                    buffer.writeRaw(buff);
+                    BuffersStorage.getInstance().reuseFreeBuffer(buff);
                 }
-                sendBuffer.put(packet);
-                sendBuffer.rewind();
-                client.write(sendBuffer);
+
+                buffer.rewind();
+
+                client.write(buffer);
             }
         });
     }

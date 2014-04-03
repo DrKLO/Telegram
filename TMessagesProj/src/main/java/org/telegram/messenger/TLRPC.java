@@ -7360,31 +7360,6 @@ public class TLRPC {
         }
     }
 
-    public static class TL_upload_saveFilePart extends TLObject {
-        public static int constructor = 0xb304a621;
-
-        public long file_id;
-        public int file_part;
-        public byte[] bytes;
-
-        public Class responseClass () {
-            return Bool.class;
-        }
-
-        public void readParams(AbsSerializedData stream) {
-            file_id = stream.readInt64();
-            file_part = stream.readInt32();
-            bytes = stream.readByteArray();
-        }
-
-        public void serializeToStream(AbsSerializedData stream) {
-            stream.writeInt32(constructor);
-            stream.writeInt64(file_id);
-            stream.writeInt32(file_part);
-            stream.writeByteArray(bytes);
-        }
-    }
-
     public static class TL_upload_getFile extends TLObject {
         public static int constructor = 0xe3a6cfb5;
 
@@ -8108,34 +8083,6 @@ public class TLRPC {
             peer.serializeToStream(stream);
             stream.writeInt64(random_id);
             stream.writeByteArray(data);
-        }
-    }
-
-    public static class TL_upload_saveBigFilePart extends TLObject {
-        public static int constructor = 0xde7b673d;
-
-        public long file_id;
-        public int file_part;
-        public int file_total_parts;
-        public byte[] bytes;
-
-        public Class responseClass () {
-            return Bool.class;
-        }
-
-        public void readParams(AbsSerializedData stream) {
-            file_id = stream.readInt64();
-            file_part = stream.readInt32();
-            file_total_parts = stream.readInt32();
-            bytes = stream.readByteArray();
-        }
-
-        public void serializeToStream(AbsSerializedData stream) {
-            stream.writeInt32(constructor);
-            stream.writeInt64(file_id);
-            stream.writeInt32(file_part);
-            stream.writeInt32(file_total_parts);
-            stream.writeByteArray(bytes);
         }
     }
 
@@ -9159,6 +9106,62 @@ public class TLRPC {
             stream.writeInt32(count);
             for (Long value : random_ids) {
                 stream.writeInt64(value);
+            }
+        }
+    }
+
+    public static class TL_upload_saveBigFilePart extends TLObject {
+        public static int constructor = 0xde7b673d;
+
+        public long file_id;
+        public int file_part;
+        public int file_total_parts;
+        public ByteBufferDesc bytes;
+
+        public Class responseClass () {
+            return Bool.class;
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(file_id);
+            stream.writeInt32(file_part);
+            stream.writeInt32(file_total_parts);
+            stream.writeByteBuffer(bytes);
+        }
+
+        @Override
+        public void freeResources() {
+            if (bytes != null) {
+                BuffersStorage.getInstance().reuseFreeBuffer(bytes);
+                bytes = null;
+            }
+        }
+    }
+
+    public static class TL_upload_saveFilePart extends TLObject {
+        public static int constructor = 0xb304a621;
+
+        public long file_id;
+        public int file_part;
+        public ByteBufferDesc bytes;
+
+        public Class responseClass () {
+            return Bool.class;
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(file_id);
+            stream.writeInt32(file_part);
+            stream.writeByteBuffer(bytes);
+        }
+
+        @Override
+        public void freeResources() {
+            if (bytes != null) {
+                BuffersStorage.getInstance().reuseFreeBuffer(bytes);
+                bytes = null;
             }
         }
     }

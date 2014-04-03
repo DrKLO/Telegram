@@ -77,7 +77,7 @@ public class MessageObject {
                     fromUser = MessagesController.getInstance().users.get(message.from_id);
                 }
                 if (message.action instanceof TLRPC.TL_messageActionChatCreate) {
-                    if (message.from_id == UserConfig.clientUserId) {
+                    if (isFromMe()) {
                         messageText = LocaleController.getString("ActionYouCreateGroup", R.string.ActionYouCreateGroup);
                     } else {
                         if (fromUser != null) {
@@ -88,7 +88,7 @@ public class MessageObject {
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionChatDeleteUser) {
                     if (message.action.user_id == message.from_id) {
-                        if (message.from_id == UserConfig.clientUserId) {
+                        if (isFromMe()) {
                             messageText = LocaleController.getString("ActionYouLeftUser", R.string.ActionYouLeftUser);
                         } else {
                             if (fromUser != null) {
@@ -103,7 +103,7 @@ public class MessageObject {
                             MessagesController.getInstance().users.get(message.action.user_id);
                         }
                         if (who != null && fromUser != null) {
-                            if (message.from_id == UserConfig.clientUserId) {
+                            if (isFromMe()) {
                                 messageText = LocaleController.getString("ActionYouKickUser", R.string.ActionYouKickUser).replace("un2", Utilities.formatName(who.first_name, who.last_name));
                             } else if (message.action.user_id == UserConfig.clientUserId) {
                                 messageText = LocaleController.getString("ActionKickUserYou", R.string.ActionKickUserYou).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
@@ -120,7 +120,7 @@ public class MessageObject {
                         MessagesController.getInstance().users.get(message.action.user_id);
                     }
                     if (whoUser != null && fromUser != null) {
-                        if (message.from_id == UserConfig.clientUserId) {
+                        if (isFromMe()) {
                             messageText = LocaleController.getString("ActionYouAddUser", R.string.ActionYouAddUser).replace("un2", Utilities.formatName(whoUser.first_name, whoUser.last_name));
                         } else if (message.action.user_id == UserConfig.clientUserId) {
                             messageText = LocaleController.getString("ActionAddUserYou", R.string.ActionAddUserYou).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
@@ -135,7 +135,7 @@ public class MessageObject {
                     for (TLRPC.PhotoSize size : message.action.photo.sizes) {
                         photoThumbs.add(new PhotoObject(size));
                     }
-                    if (message.from_id == UserConfig.clientUserId) {
+                    if (isFromMe()) {
                         messageText = LocaleController.getString("ActionYouChangedPhoto", R.string.ActionYouChangedPhoto);
                     } else {
                         if (fromUser != null) {
@@ -145,7 +145,7 @@ public class MessageObject {
                         }
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionChatEditTitle) {
-                    if (message.from_id == UserConfig.clientUserId) {
+                    if (isFromMe()) {
                         messageText = LocaleController.getString("ActionYouChangedTitle", R.string.ActionYouChangedTitle).replace("un2", message.action.title);
                     } else {
                         if (fromUser != null) {
@@ -155,7 +155,7 @@ public class MessageObject {
                         }
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionChatDeletePhoto) {
-                    if (message.from_id == UserConfig.clientUserId) {
+                    if (isFromMe()) {
                         messageText = LocaleController.getString("ActionYouRemovedPhoto", R.string.ActionYouRemovedPhoto);
                     } else {
                         if (fromUser != null) {
@@ -182,7 +182,7 @@ public class MessageObject {
                         } else {
                             timeString = String.format("%d", message.action.ttl);
                         }
-                        if (message.from_id == UserConfig.clientUserId) {
+                        if (isFromMe()) {
                             messageText = LocaleController.formatString("MessageLifetimeChangedOutgoing", R.string.MessageLifetimeChangedOutgoing, timeString);
                         } else {
                             if (fromUser != null) {
@@ -192,7 +192,7 @@ public class MessageObject {
                             }
                         }
                     } else {
-                        if (message.from_id == UserConfig.clientUserId) {
+                        if (isFromMe()) {
                             messageText = LocaleController.getString("MessageLifetimeYouRemoved", R.string.MessageLifetimeYouRemoved);
                         } else {
                             if (fromUser != null) {
@@ -265,22 +265,18 @@ public class MessageObject {
             } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaPhoto) {
                 contentType = type = 1;
             } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaGeo) {
-                if (message.from_id == UserConfig.clientUserId) {
-                    contentType = type = 4;
-                } else {
-                    contentType = type = 5;
-                }
+                contentType = 1;
+                type = 4;
             } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaVideo) {
-                if (message.from_id == UserConfig.clientUserId) {
-                    contentType = type = 6;
-                } else {
-                    contentType = type = 7;
-                }
+                contentType = 1;
+                type = 3;
             } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaContact) {
-                if (message.from_id == UserConfig.clientUserId) {
-                    contentType = type = 12;
+                if (isFromMe()) {
+                    contentType = 4;
+                    type = 12;
                 } else {
-                    contentType = type = 13;
+                    contentType = 5;
+                    type = 13;
                 }
             } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaUnsupported) {
                 contentType = type = 0;
@@ -289,7 +285,7 @@ public class MessageObject {
                     contentType = 1;
                     type = 8;
                 } else {
-                    if (message.from_id == UserConfig.clientUserId) {
+                    if (isFromMe()) {
                         contentType = type = 8;
                     } else {
                         contentType = type = 9;
@@ -524,5 +520,13 @@ public class MessageObject {
 
             linesOffset += currentBlockLinesCount;
         }
+    }
+
+    public boolean isOut() {
+        return messageOwner.out;
+    }
+
+    public boolean isFromMe() {
+        return messageOwner.from_id == UserConfig.clientUserId;
     }
 }

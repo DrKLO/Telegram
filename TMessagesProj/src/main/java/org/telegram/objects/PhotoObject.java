@@ -37,6 +37,9 @@ public class PhotoObject {
     }
 
     public static PhotoObject getClosestImageWithSize(ArrayList<PhotoObject> arr, int width, int height) {
+        if (arr == null) {
+            return null;
+        }
         int closestWidth = 9999;
         int closestHeight = 9999;
         PhotoObject closestObject = null;
@@ -56,6 +59,9 @@ public class PhotoObject {
     }
 
     public static TLRPC.PhotoSize getClosestPhotoSizeWithSize(ArrayList<TLRPC.PhotoSize> sizes, int width, int height) {
+        if (sizes == null) {
+            return null;
+        }
         int closestWidth = 9999;
         int closestHeight = 9999;
         TLRPC.PhotoSize closestObject = null;
