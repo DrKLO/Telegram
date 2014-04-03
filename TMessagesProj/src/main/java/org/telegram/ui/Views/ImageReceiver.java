@@ -111,6 +111,34 @@ public class ImageReceiver {
         }
     }
 
+    public void setImageBitmap(Bitmap bitmap) {
+        currentPath = null;
+        last_path = null;
+        last_httpUrl = null;
+        last_filter = null;
+        last_placeholder = null;
+        last_size = 0;
+        FileLoader.getInstance().cancelLoadingForImageView(this);
+        if (bitmap != null) {
+            recycleBitmap(null);
+            currentImage = new BitmapDrawable(null, bitmap);
+        }
+    }
+
+    public void setImageBitmap(Drawable bitmap) {
+        currentPath = null;
+        last_path = null;
+        last_httpUrl = null;
+        last_filter = null;
+        last_placeholder = null;
+        last_size = 0;
+        FileLoader.getInstance().cancelLoadingForImageView(this);
+        if (bitmap != null) {
+            recycleBitmap(null);
+            currentImage = bitmap;
+        }
+    }
+
     public void clearImage() {
         recycleBitmap(null);
     }
@@ -137,6 +165,7 @@ public class ImageReceiver {
                     } else {
                         currentImage = null;
                     }
+                    currentPath = null;
                 }
             }
         }
@@ -159,11 +188,5 @@ public class ImageReceiver {
             setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size);
             FileLog.e("tmessages", e);
         }
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        recycleBitmap(null);
-        super.finalize();
     }
 }

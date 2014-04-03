@@ -2825,4 +2825,109 @@ public class MessagesStorage {
             }
         });
     }
+
+    public TLRPC.User getUser(final int user_id) {
+        TLRPC.User user = null;
+        try {
+            SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, status FROM users WHERE uid = %d", user_id));
+            if (cursor.next()) {
+                byte[] userData = cursor.byteArrayValue(0);
+                if (userData != null) {
+                    SerializedData data = new SerializedData(userData);
+                    user = (TLRPC.User) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                    if (user != null) {
+                        if (user.status != null) {
+                            user.status.expires = cursor.intValue(1);
+                        }
+                    }
+                }
+            }
+            cursor.dispose();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return user;
+    }
+
+    public ArrayList<TLRPC.User> getUsers(final ArrayList<Integer> uids, final boolean[] error) {
+        ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+        try {
+            String uidsStr = "";
+
+            for (Integer uid : uids) {
+                if (uidsStr.length() != 0) {
+                    uidsStr += ",";
+                }
+                uidsStr += uid;
+            }
+
+            SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, status FROM users WHERE uid IN (%s)", uidsStr));
+            while (cursor.next()) {
+                byte[] userData = cursor.byteArrayValue(0);
+                if (userData != null) {
+                    SerializedData data = new SerializedData(userData);
+                    TLRPC.User user = (TLRPC.User) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                    if (user != null) {
+                        if (user.status != null) {
+                            user.status.expires = cursor.intValue(1);
+                        }
+                        users.add(user);
+                    } else {
+                        error[0] = true;
+                        break;
+                    }
+                } else {
+                    error[0] = true;
+                    break;
+                }
+            }
+            cursor.dispose();
+        } catch (Exception e) {
+            error[0] = true;
+            FileLog.e("tmessages", e);
+        }
+        return users;
+    }
+
+    public TLRPC.Chat getChat(final int chat_id) {
+        TLRPC.Chat chat = null;
+        try {
+            SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT data FROM chats WHERE uid = %d", chat_id));
+            if (cursor.next()) {
+                byte[] chatData = cursor.byteArrayValue(0);
+                if (chatData != null) {
+                    SerializedData data = new SerializedData(chatData);
+                    chat = (TLRPC.Chat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                }
+            }
+            cursor.dispose();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return chat;
+    }
+
+    public TLRPC.EncryptedChat getEncryptedChat(final int chat_id) {
+        TLRPC.EncryptedChat chat = null;
+        try {
+            SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, user, g, authkey, ttl FROM enc_chats WHERE uid = %d", chat_id));
+            if (cursor.next()) {
+                byte[] chatData = cursor.byteArrayValue(0);
+                if (chatData != null) {
+                    SerializedData data = new SerializedData(chatData);
+                    chat = (TLRPC.EncryptedChat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                    if (chat != null) {
+                        chat.user_id = cursor.intValue(1);
+                        chat.a_or_b = cursor.byteArrayValue(2);
+                        chat.auth_key = cursor.byteArrayValue(3);
+                        chat.ttl = cursor.intValue(4);
+                    }
+                }
+            }
+            cursor.dispose();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return chat;
+    }
 }

@@ -58,7 +58,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
                 currentPicturePath = image.getAbsolutePath();
             }
-            parentFragment.startActivityForResult(takePictureIntent, 0);
+            parentFragment.parentActivity.startActivityForResult(takePictureIntent, 13);
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
@@ -68,7 +68,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
         try {
             Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
             photoPickerIntent.setType("image/*");
-            parentFragment.startActivityForResult(photoPickerIntent, 1);
+            parentFragment.parentActivity.startActivityForResult(photoPickerIntent, 14);
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
@@ -102,12 +102,12 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == Activity.RESULT_OK) {
-            if (requestCode == 0) {
+            if (requestCode == 13) {
                 Utilities.addMediaToGallery(currentPicturePath);
                 startCrop(currentPicturePath, null);
 
                 currentPicturePath = null;
-            } else if (requestCode == 1) {
+            } else if (requestCode == 14) {
                 if (data == null || data.getData() == null) {
                     return;
                 }

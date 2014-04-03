@@ -151,7 +151,7 @@
             android:layout_marginTop="2dp"
             android:maxLines="4"
             android:minHeight="48dp"
-            android:textSize="18sp"
+            android:textSize="18dp"
             android:textColorHint="#909090"
             android:ems="10"
             android:imeOptions="flagNoExtractUi"

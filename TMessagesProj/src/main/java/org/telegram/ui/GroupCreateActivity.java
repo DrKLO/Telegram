@@ -421,8 +421,10 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.group_create_menu, menu);
-        SupportMenuItem doneItem = (SupportMenuItem)menu.findItem(R.id.done_menu_item);
+        SupportMenuItem doneItem = (SupportMenuItem)menu.add(Menu.NONE, 0, Menu.NONE, null);
+        doneItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
+        doneItem.setActionView(R.layout.group_create_done_layout);
+
         TextView doneTextView = (TextView)doneItem.getActionView().findViewById(R.id.done_button);
         doneTextView.setText(LocaleController.getString("Next", R.string.Next));
         doneTextView.setOnClickListener(new View.OnClickListener() {
@@ -431,11 +433,12 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 if (!selectedContacts.isEmpty()) {
                     ArrayList<Integer> result = new ArrayList<Integer>();
                     result.addAll(selectedContacts.keySet());
-                    NotificationCenter.getInstance().addToMemCache(2, result);
-                } else {
-                    return;
+                    Bundle args = new Bundle();
+                    args.putIntegerArrayList("result", result);
+                    GroupCreateFinalActivity fragment = new GroupCreateFinalActivity();
+                    fragment.setArguments(args);
+                    ((LaunchActivity)parentActivity).presentFragment(fragment, "group_craate_final", false);
                 }
-                ((LaunchActivity)parentActivity).presentFragment(new GroupCreateFinalActivity(), "group_craate_final", false);
             }
         });
     }

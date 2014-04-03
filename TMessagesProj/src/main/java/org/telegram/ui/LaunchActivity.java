@@ -65,8 +65,8 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     private String videoPath = null;
     private String sendingText = null;
     private String documentPath = null;
-    private Uri[] imagesPathArray = null;
-    private String[] documentsPathArray = null;
+    private ArrayList<Uri> imagesPathArray = null;
+    private ArrayList<String> documentsPathArray = null;
     private ArrayList<TLRPC.User> contactsToSend = null;
     private int currentConnectionState;
     private View statusView;
@@ -140,6 +140,46 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             MessagesActivity fragment = new MessagesActivity();
             fragment.onFragmentCreate();
             ApplicationLoader.fragmentsStack.add(fragment);
+
+            try {
+                if (savedInstanceState != null) {
+                    String fragmentName = savedInstanceState.getString("fragment");
+                    if (fragmentName != null) {
+                        Bundle args = savedInstanceState.getBundle("args");
+                        if (fragmentName.equals("chat")) {
+                            if (args != null) {
+                                ChatActivity chat = new ChatActivity();
+                                chat.setArguments(args);
+                                if (chat.onFragmentCreate()) {
+                                    ApplicationLoader.fragmentsStack.add(chat);
+                                    chat.restoreSelfArgs(savedInstanceState);
+                                }
+                            }
+                        } else if (fragmentName.equals("settings")) {
+                            SettingsActivity settings = new SettingsActivity();
+                            settings.onFragmentCreate();
+                            settings.restoreSelfArgs(savedInstanceState);
+                            ApplicationLoader.fragmentsStack.add(settings);
+                        } else if (fragmentName.equals("group")) {
+                            if (args != null) {
+                                GroupCreateFinalActivity group = new GroupCreateFinalActivity();
+                                group.setArguments(args);
+                                if (group.onFragmentCreate()) {
+                                    group.restoreSelfArgs(savedInstanceState);
+                                    ApplicationLoader.fragmentsStack.add(group);
+                                }
+                            }
+                        } else if (fragmentName.equals("wallpapers")) {
+                            SettingsWallpapersActivity settings = new SettingsWallpapersActivity();
+                            settings.onFragmentCreate();
+                            settings.restoreSelfArgs(savedInstanceState);
+                            ApplicationLoader.fragmentsStack.add(settings);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
         }
 
         handleIntent(getIntent(), false, savedInstanceState != null);
@@ -289,7 +329,18 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                         parcelable = Uri.parse(parcelable.toString());
                     }
                     if (parcelable != null && type != null && type.startsWith("image/")) {
-                        photoPath = (Uri)parcelable;
+                        if (type.equals("image/gif")) {
+                            try {
+                                documentPath = Utilities.getPath((Uri)parcelable);
+                            } catch (Exception e) {
+                                FileLog.e("tmessages", e);
+                            }
+                            if (documentPath == null) {
+                                photoPath = (Uri) parcelable;
+                            }
+                        } else {
+                            photoPath = (Uri) parcelable;
+                        }
                     } else {
                         path = Utilities.getPath((Uri)parcelable);
                         if (path != null) {
@@ -316,31 +367,42 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                     String type = intent.getType();
                     if (uris != null) {
                         if (type != null && type.startsWith("image/")) {
-                            Uri[] uris2 = new Uri[uris.size()];
-                            for (int i = 0; i < uris2.length; i++) {
-                                Parcelable parcelable = uris.get(i);
+                            for (Parcelable parcelable : uris) {
                                 if (!(parcelable instanceof Uri)) {
                                     parcelable = Uri.parse(parcelable.toString());
                                 }
-                                uris2[i] = (Uri)parcelable;
+                                if (type.equals("image/gif")) {
+                                    if (documentsPathArray == null) {
+                                        documentsPathArray = new ArrayList<String>();
+                                    }
+                                    try {
+                                        documentsPathArray.add(Utilities.getPath((Uri) parcelable));
+                                    } catch (Exception e) {
+                                        FileLog.e("tmessages", e);
+                                    }
+                                } else {
+                                    if (imagesPathArray == null) {
+                                        imagesPathArray = new ArrayList<Uri>();
+                                    }
+                                    imagesPathArray.add((Uri) parcelable);
+                                }
                             }
-                            imagesPathArray = uris2;
                         } else {
-                            String[] uris2 = new String[uris.size()];
-                            for (int i = 0; i < uris2.length; i++) {
-                                Parcelable parcelable = uris.get(i);
+                            for (Parcelable parcelable : uris) {
                                 if (!(parcelable instanceof Uri)) {
                                     parcelable = Uri.parse(parcelable.toString());
                                 }
-                                String path = Utilities.getPath((Uri)parcelable);
+                                String path = Utilities.getPath((Uri) parcelable);
                                 if (path != null) {
                                     if (path.startsWith("file:")) {
                                         path = path.replace("file://", "");
                                     }
-                                    uris2[i] = path;
+                                    if (documentsPathArray == null) {
+                                        documentsPathArray = new ArrayList<String>();
+                                    }
+                                    documentsPathArray.add(path);
                                 }
                             }
-                            documentsPathArray = uris2;
                         }
                     } else {
                         error = true;
@@ -497,21 +559,27 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             }
             if (photoPath != null) {
                 fragment.processSendingPhoto(null, photoPath);
-            } else if (videoPath != null) {
+            }
+            if (videoPath != null) {
                 fragment.processSendingVideo(videoPath);
-            } else if (sendingText != null) {
+            }
+            if (sendingText != null) {
                 fragment.processSendingText(sendingText);
-            } else if (documentPath != null) {
+            }
+            if (documentPath != null) {
                 fragment.processSendingDocument(documentPath);
-            } else if (imagesPathArray != null) {
+            }
+            if (imagesPathArray != null) {
                 for (Uri path : imagesPathArray) {
                     fragment.processSendingPhoto(null, path);
                 }
-            } else if (documentsPathArray != null) {
+            }
+            if (documentsPathArray != null) {
                 for (String path : documentsPathArray) {
                     fragment.processSendingDocument(path);
                 }
-            } else if (contactsToSend != null && !contactsToSend.isEmpty()) {
+            }
+            if (contactsToSend != null && !contactsToSend.isEmpty()) {
                 for (TLRPC.User user : contactsToSend) {
                     MessagesController.getInstance().sendMessage(user, dialog_id);
                 }
@@ -533,6 +601,15 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     private void checkForUpdates() {
         if (BuildVars.DEBUG_VERSION) {
             UpdateManager.register(this, BuildVars.HOCKEY_APP_HASH);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (ApplicationLoader.fragmentsStack.size() != 0) {
+            BaseFragment fragment = ApplicationLoader.fragmentsStack.get(ApplicationLoader.fragmentsStack.size() - 1);
+            fragment.onActivityResultFragment(requestCode, resultCode, data);
         }
     }
 
@@ -932,6 +1009,22 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     protected void onSaveInstanceState(Bundle outState) {
         try {
             super.onSaveInstanceState(outState);
+            if (!ApplicationLoader.fragmentsStack.isEmpty()) {
+                BaseFragment lastFragment = ApplicationLoader.fragmentsStack.get(ApplicationLoader.fragmentsStack.size() - 1);
+                Bundle args = lastFragment.getArguments();
+                if (lastFragment instanceof ChatActivity && args != null) {
+                    outState.putBundle("args", args);
+                    outState.putString("fragment", "chat");
+                } else if (lastFragment instanceof SettingsActivity) {
+                    outState.putString("fragment", "settings");
+                } else if (lastFragment instanceof GroupCreateFinalActivity && args != null) {
+                    outState.putBundle("args", args);
+                    outState.putString("fragment", "group");
+                } else if (lastFragment instanceof SettingsWallpapersActivity) {
+                    outState.putString("fragment", "wallpapers");
+                }
+                lastFragment.saveSelfArgs(outState);
+            }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }

@@ -1,5 +1,5 @@
-#include "sqlite3.h"
-#include "org_telegram_SQLite.h"
+#include "sqlite/sqlite3.h"
+#include "sqlite.h"
 
 void throw_sqlite3_exception(JNIEnv *env, sqlite3 *handle, int errcode) {
 	if (SQLITE_OK == errcode) {

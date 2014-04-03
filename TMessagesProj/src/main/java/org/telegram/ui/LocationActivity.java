@@ -10,6 +10,7 @@ package org.telegram.ui;
 
 import android.location.Location;
 import android.os.Bundle;
+import android.support.v4.internal.view.SupportMenuItem;
 import android.support.v7.app.ActionBar;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -52,6 +53,11 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     private TextView sendButton;
     private boolean userLocationMoved = false;
     private boolean firstWas = false;
+
+    private final static int map_to_my_location = 1;
+    private final static int map_list_menu_map = 2;
+    private final static int map_list_menu_satellite = 3;
+    private final static int map_list_menu_hybrid = 4;
 
     public SupportMapFragment mapFragment = new SupportMapFragment() {
         @Override
@@ -261,29 +267,34 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.location_menu, menu);
+        SupportMenuItem item = (SupportMenuItem)menu.add(Menu.NONE, map_to_my_location, Menu.NONE, LocaleController.getString("MyLocation", R.string.MyLocation)).setIcon(R.drawable.ic_ab_location);
+        item.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
+
+        menu.add(Menu.NONE, map_list_menu_map, Menu.NONE, LocaleController.getString("Map", R.string.Map));
+        menu.add(Menu.NONE, map_list_menu_satellite, Menu.NONE, LocaleController.getString("Satellite", R.string.Satellite));
+        menu.add(Menu.NONE, map_list_menu_hybrid, Menu.NONE, LocaleController.getString("Hybrid", R.string.Hybrid));
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int itemId = item.getItemId();
         switch (itemId) {
-            case R.id.map_list_menu_map:
+            case map_list_menu_map:
                 if (googleMap != null) {
                     googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
                 }
                 break;
-            case R.id.map_list_menu_satellite:
+            case map_list_menu_satellite:
                 if (googleMap != null) {
                     googleMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
                 }
                 break;
-            case R.id.map_list_menu_hybrid:
+            case map_list_menu_hybrid:
                 if (googleMap != null) {
                     googleMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
                 }
                 break;
-            case R.id.map_to_my_location:
+            case map_to_my_location:
                 if (myLocation != null) {
                     LatLng latLng = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
                     if (googleMap != null) {

@@ -46,6 +46,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.SubMenu;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
@@ -88,6 +89,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Cells.ChatAudioCell;
 import org.telegram.ui.Cells.ChatBaseCell;
+import org.telegram.ui.Cells.ChatMediaCell;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.BaseFragment;
@@ -104,6 +106,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.concurrent.Semaphore;
 
 public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLayout.SizeNotifierRelativeLayoutDelegate, NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate, DocumentSelectActivity.DocumentSelectActivityDelegate {
     private LayoutListView chatListView;
@@ -195,6 +198,18 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
     private CharSequence lastPrintString;
 
+    private final static int copy = 1;
+    private final static int forward = 2;
+    private final static int delete = 3;
+    private final static int chat_enc_timer = 4;
+    private final static int chat_menu_attach = 5;
+    private final static int attach_photo = 6;
+    private final static int attach_gallery = 7;
+    private final static int attach_video = 8;
+    private final static int attach_document = 9;
+    private final static int attach_location = 10;
+    private final static int chat_menu_avatar = 11;
+
     ActionMode mActionMode = null;
     private ActionMode.Callback mActionModeCallback = new ActionMode.Callback() {
         @Override
@@ -202,11 +217,14 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             menu.clear();
             MenuInflater inflater = actionMode.getMenuInflater();
             if (currentEncryptedChat == null) {
-                inflater.inflate(R.menu.messages_full_menu, menu);
+                menu.add(Menu.NONE, copy, Menu.NONE, LocaleController.getString("Copy", R.string.Copy)).setIcon(R.drawable.ic_ab_fwd_copy);
+                menu.add(Menu.NONE, forward, Menu.NONE, LocaleController.getString("Forward", R.string.Forward)).setIcon(R.drawable.ic_ab_fwd_forward);
+                menu.add(Menu.NONE, delete, Menu.NONE, LocaleController.getString("Delete", R.string.Delete)).setIcon(R.drawable.ic_ab_fwd_delete);
             } else {
-                inflater.inflate(R.menu.messages_encrypted_menu, menu);
+                menu.add(Menu.NONE, copy, Menu.NONE, LocaleController.getString("Copy", R.string.Copy)).setIcon(R.drawable.ic_ab_fwd_copy);
+                menu.add(Menu.NONE, delete, Menu.NONE, LocaleController.getString("Delete", R.string.Delete)).setIcon(R.drawable.ic_ab_fwd_delete);
             }
-            menu.findItem(R.id.copy).setVisible(selectedMessagesCanCopyIds.size() != 0);
+            menu.findItem(copy).setVisible(selectedMessagesCanCopyIds.size() != 0);
             return true;
         }
 
@@ -218,7 +236,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         @Override
         public boolean onActionItemClicked(ActionMode actionMode, MenuItem menuItem) {
             switch (menuItem.getItemId()) {
-                case R.id.copy: {
+                case copy: {
                     String str = "";
                     ArrayList<Integer> ids = new ArrayList<Integer>(selectedMessagesCanCopyIds.keySet());
                     if (currentEncryptedChat == null) {
@@ -245,7 +263,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     }
                     break;
                 }
-                case R.id.delete: {
+                case delete: {
                     ArrayList<Integer> ids = new ArrayList<Integer>(selectedMessagesIds.keySet());
                     ArrayList<Long> random_ids = null;
                     if (currentEncryptedChat != null) {
@@ -260,7 +278,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     MessagesController.getInstance().deleteMessages(ids, random_ids, currentEncryptedChat);
                     break;
                 }
-                case R.id.forward: {
+                case forward: {
                     MessagesActivity fragment = new MessagesActivity();
                     fragment.selectAlertString = R.string.ForwardMessagesTo;
                     fragment.selectAlertStringDesc = "ForwardMessagesTo";
@@ -288,31 +306,99 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        int chatId = getArguments().getInt("chat_id", 0);
-        int userId = getArguments().getInt("user_id", 0);
-        int encId = getArguments().getInt("enc_id", 0);
+        final int chatId = getArguments().getInt("chat_id", 0);
+        final int userId = getArguments().getInt("user_id", 0);
+        final int encId = getArguments().getInt("enc_id", 0);
 
         if (chatId != 0) {
             currentChat = MessagesController.getInstance().chats.get(chatId);
             if (currentChat == null) {
-                return false;
+                final Semaphore semaphore = new Semaphore(0);
+                MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        currentChat = MessagesStorage.getInstance().getChat(chatId);
+                        semaphore.release();
+                    }
+                });
+                try {
+                    semaphore.acquire();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+                if (currentChat != null) {
+                    MessagesController.getInstance().chats.put(currentChat.id, currentChat);
+                } else {
+                    return false;
+                }
             }
             MessagesController.getInstance().loadChatInfo(currentChat.id);
             dialog_id = -chatId;
         } else if (userId != 0) {
             currentUser = MessagesController.getInstance().users.get(userId);
             if (currentUser == null) {
-                return false;
+                final Semaphore semaphore = new Semaphore(0);
+                MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        currentUser = MessagesStorage.getInstance().getUser(userId);
+                        semaphore.release();
+                    }
+                });
+                try {
+                    semaphore.acquire();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+                if (currentUser != null) {
+                    MessagesController.getInstance().users.putIfAbsent(currentUser.id, currentUser);
+                } else {
+                    return false;
+                }
             }
             dialog_id = userId;
         } else if (encId != 0) {
             currentEncryptedChat = MessagesController.getInstance().encryptedChats.get(encId);
             if (currentEncryptedChat == null) {
-                return false;
+                final Semaphore semaphore = new Semaphore(0);
+                MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        currentEncryptedChat = MessagesStorage.getInstance().getEncryptedChat(encId);
+                        semaphore.release();
+                    }
+                });
+                try {
+                    semaphore.acquire();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+                if (currentEncryptedChat != null) {
+                    MessagesController.getInstance().encryptedChats.putIfAbsent(currentEncryptedChat.id, currentEncryptedChat);
+                } else {
+                    return false;
+                }
             }
             currentUser = MessagesController.getInstance().users.get(currentEncryptedChat.user_id);
             if (currentUser == null) {
-                return false;
+                final Semaphore semaphore = new Semaphore(0);
+                MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        currentUser = MessagesStorage.getInstance().getUser(currentEncryptedChat.user_id);
+                        semaphore.release();
+                    }
+                });
+                try {
+                    semaphore.acquire();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+                if (currentUser != null) {
+                    MessagesController.getInstance().users.putIfAbsent(currentUser.id, currentUser);
+                } else {
+                    return false;
+                }
             }
             dialog_id = ((long)encId) << 32;
             maxMessageId = Integer.MIN_VALUE;
@@ -812,49 +898,21 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
             chatListView.setOnTouchListener(new OnSwipeTouchListener() {
                 public void onSwipeRight() {
-                    try {
-                        if (visibleDialog != null) {
-                            visibleDialog.dismiss();
-                            visibleDialog = null;
-                        }
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                    finishFragment(true);
+                    ChatActivity.this.onSwipeRight();
                 }
 
                 public void onSwipeLeft() {
-                    if (swipeOpening) {
-                        return;
-                    }
-                    try {
-                        if (visibleDialog != null) {
-                            visibleDialog.dismiss();
-                            visibleDialog = null;
-                        }
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                    if (avatarImageView != null) {
-                        swipeOpening = true;
-                        avatarImageView.performClick();
-                    }
+                    ChatActivity.this.onSwipeLeft();
                 }
             });
 
             emptyView.setOnTouchListener(new OnSwipeTouchListener() {
                 public void onSwipeRight() {
-                    finishFragment(true);
+                    ChatActivity.this.onSwipeRight();
                 }
 
                 public void onSwipeLeft() {
-                    if (swipeOpening) {
-                        return;
-                    }
-                    if (avatarImageView != null) {
-                        swipeOpening = true;
-                        avatarImageView.performClick();
-                    }
+                    ChatActivity.this.onSwipeLeft();
                 }
             });
             if (currentChat != null && (currentChat instanceof TLRPC.TL_chatForbidden || currentChat.left)) {
@@ -869,6 +927,38 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             }
         }
         return fragmentView;
+    }
+
+    private boolean onSwipeLeft() {
+        if (swipeOpening) {
+            return false;
+        }
+        try {
+            if (visibleDialog != null) {
+                visibleDialog.dismiss();
+                visibleDialog = null;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        if (avatarImageView != null) {
+            swipeOpening = true;
+            avatarImageView.performClick();
+        }
+        return true;
+    }
+
+    private boolean onSwipeRight() {
+        try {
+            if (visibleDialog != null) {
+                visibleDialog.dismiss();
+                visibleDialog = null;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        finishFragment(true);
+        return true;
     }
 
     private void checkSendButton() {
@@ -1156,9 +1246,29 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     return 1;
                 } else {
                     if (!(messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
-                        if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaVideo || messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto || messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
-                            File f = new File(Utilities.getCacheDir(), messageObject.getFileName());
-                            if (f.exists()) {
+                        if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaVideo ||
+                                messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto ||
+                                messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
+                            boolean canSave = false;
+                            if (messageObject.messageOwner.attachPath != null && messageObject.messageOwner.attachPath.length() != 0) {
+                                File f = new File(messageObject.messageOwner.attachPath);
+                                if (f.exists()) {
+                                    canSave = true;
+                                }
+                            }
+                            if (!canSave) {
+                                File f = new File(Utilities.getCacheDir(), messageObject.getFileName());
+                                if (f.exists()) {
+                                    canSave = true;
+                                }
+                            }
+                            if (canSave) {
+                                if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
+                                    String mime = messageObject.messageOwner.media.document.mime_type;
+                                    if (mime != null && mime.equals("text/xml")) {
+                                        return 5;
+                                    }
+                                }
                                 return 4;
                             }
                         }
@@ -1180,12 +1290,32 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 return 1;
             } else {
                 if (!(messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
-                    /*if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaVideo || messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
-                        File f = new File(Utilities.getCacheDir(), messageObject.getFileName());
-                        if (f.exists()) {
-                            return 4;
+                    if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaVideo ||
+                            messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto ||
+                            messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
+                        boolean canSave = false;
+                        if (messageObject.messageOwner.attachPath != null && messageObject.messageOwner.attachPath.length() != 0) {
+                            File f = new File(messageObject.messageOwner.attachPath);
+                            if (f.exists()) {
+                                canSave = true;
+                            }
                         }
-                    }*/
+                        if (!canSave) {
+                            File f = new File(Utilities.getCacheDir(), messageObject.getFileName());
+                            if (f.exists()) {
+                                canSave = true;
+                            }
+                        }
+                        if (canSave) {
+                            if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
+                                String mime = messageObject.messageOwner.media.document.mime_type;
+                                if (mime != null && mime.equals("text/xml")) {
+                                    return 5;
+                                }
+                            }
+                            //return 4;
+                        }
+                    }
                     return 2;
                 } else {
                     return 3;
@@ -1197,17 +1327,17 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     private void addToSelectedMessages(MessageObject messageObject) {
         if (selectedMessagesIds.containsKey(messageObject.messageOwner.id)) {
             selectedMessagesIds.remove(messageObject.messageOwner.id);
-            if (messageObject.type == 0 || messageObject.type == 1 || messageObject.type == 8 || messageObject.type == 9) {
+            if (messageObject.type == 0) {
                 selectedMessagesCanCopyIds.remove(messageObject.messageOwner.id);
             }
         } else {
             selectedMessagesIds.put(messageObject.messageOwner.id, messageObject);
-            if (messageObject.type == 0 || messageObject.type == 1 || messageObject.type == 8 || messageObject.type == 9) {
+            if (messageObject.type == 0) {
                 selectedMessagesCanCopyIds.put(messageObject.messageOwner.id, messageObject);
             }
         }
         if (mActionMode != null && mActionMode.getMenu() != null) {
-            mActionMode.getMenu().findItem(R.id.copy).setVisible(selectedMessagesCanCopyIds.size() != 0);
+            mActionMode.getMenu().findItem(copy).setVisible(selectedMessagesCanCopyIds.size() != 0);
         }
     }
 
@@ -1400,8 +1530,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == 0) {
                 Utilities.addMediaToGallery(currentPicturePath);
@@ -1450,6 +1579,18 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         }
     }
 
+    @Override
+    public void saveSelfArgs(Bundle args) {
+        if (currentPicturePath != null) {
+            args.putString("path", currentPicturePath);
+        }
+    }
+
+    @Override
+    public void restoreSelfArgs(Bundle args) {
+        currentPicturePath = args.getString("path");
+    }
+
     public boolean processSendingText(String text) {
         text = text.replaceAll("\n\n+", "\n\n");
         text = text.replaceAll(" +", " ");
@@ -1493,11 +1634,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         String ext = "";
         int idx = documentFilePath.lastIndexOf(".");
         if (idx != -1) {
-            ext = documentFilePath.substring(idx);
+            ext = documentFilePath.substring(idx + 1);
         }
         TLRPC.TL_document document = new TLRPC.TL_document();
-        document.thumb = new TLRPC.TL_photoSizeEmpty();
-        document.thumb.type = "s";
         document.id = 0;
         document.user_id = UserConfig.clientUserId;
         document.date = ConnectionsManager.getInstance().getCurrentTime();
@@ -1515,6 +1654,21 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             }
         } else {
             document.mime_type = "application/octet-stream";
+        }
+        if (document.mime_type.equals("image/gif")) {
+            try {
+                Bitmap bitmap = FileLoader.loadBitmap(f.getAbsolutePath(), null, 90, 90);
+                if (bitmap != null) {
+                    document.thumb = FileLoader.scaleAndSaveImage(bitmap, 90, 90, 55, currentEncryptedChat != null);
+                    document.thumb.type = "s";
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+        }
+        if (document.thumb == null) {
+            document.thumb = new TLRPC.TL_photoSizeEmpty();
+            document.thumb.type = "s";
         }
         MessagesController.getInstance().sendMessage(document, dialog_id);
     }
@@ -1627,7 +1781,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         dateMsg.message = LocaleController.formatDateChat(obj.messageOwner.date);
                         dateMsg.id = 0;
                         MessageObject dateObj = new MessageObject(dateMsg, null);
-                        dateObj.type = 10;
+                        dateObj.contentType = dateObj.type = 10;
                         if (forwardLoad) {
                             messages.add(0, dateObj);
                         } else {
@@ -1650,7 +1804,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                             dateMsg.message = "";
                             dateMsg.id = 0;
                             MessageObject dateObj = new MessageObject(dateMsg, null);
-                            dateObj.type = 15;
+                            dateObj.contentType = dateObj.type = 15;
                             boolean dateAdded = true;
                             if (a != messArr.size() - 1) {
                                 MessageObject next = messArr.get(a + 1);
@@ -1905,7 +2059,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                             dateMsg.message = LocaleController.formatDateChat(obj.messageOwner.date);
                             dateMsg.id = 0;
                             MessageObject dateObj = new MessageObject(dateMsg, null);
-                            dateObj.type = 10;
+                            dateObj.contentType = dateObj.type = 10;
                             messages.add(0, dateObj);
                         }
                         if (!obj.messageOwner.out && obj.messageOwner.unread) {
@@ -2607,16 +2761,32 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         menu.clear();
+
+        SupportMenuItem timeItem = null;
+
         if (currentEncryptedChat != null) {
-            inflater.inflate(R.menu.chat_enc_menu, menu);
-        } else {
-            inflater.inflate(R.menu.chat_menu, menu);
+            timeItem = (SupportMenuItem)menu.add(Menu.NONE, chat_enc_timer, Menu.NONE, null);
+            timeItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
+            timeItem.setActionView(R.layout.chat_header_enc_layout);
         }
-        SupportMenuItem timeItem = (SupportMenuItem)menu.findItem(R.id.chat_enc_timer);
+
+        SubMenu subMenu = menu.addSubMenu(Menu.NONE, chat_menu_attach, Menu.NONE, LocaleController.getString("Attach", R.string.Attach)).setIcon(R.drawable.ic_ab_attach);
+        SupportMenuItem menuItem = (SupportMenuItem)subMenu.getItem();
+        menuItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
+
+        subMenu.add(Menu.NONE, attach_photo, Menu.NONE, LocaleController.getString("ChatTakePhoto", R.string.ChatTakePhoto)).setIcon(R.drawable.ic_attach_photo);
+        subMenu.add(Menu.NONE, attach_gallery, Menu.NONE, LocaleController.getString("ChatGallery", R.string.ChatGallery)).setIcon(R.drawable.ic_attach_gallery);
+        subMenu.add(Menu.NONE, attach_video, Menu.NONE, LocaleController.getString("ChatVideo", R.string.ChatVideo)).setIcon(R.drawable.ic_attach_video);
+        subMenu.add(Menu.NONE, attach_document, Menu.NONE, LocaleController.getString("ChatDocument", R.string.ChatDocument)).setIcon(R.drawable.ic_ab_doc);
+        subMenu.add(Menu.NONE, attach_location, Menu.NONE, LocaleController.getString("ChatLocation", R.string.ChatLocation)).setIcon(R.drawable.ic_attach_location);
+
+        SupportMenuItem avatarItem = (SupportMenuItem)menu.add(Menu.NONE, chat_menu_avatar, Menu.NONE, null);
+        avatarItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
+        avatarItem.setActionView(R.layout.chat_header_layout);
+
         if (currentEncryptedChat != null && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat) || currentChat != null && (currentChat instanceof TLRPC.TL_chatForbidden || currentChat.left)) {
-            SupportMenuItem item = (SupportMenuItem)menu.findItem(R.id.chat_menu_attach);
-            if (item != null) {
-                item.setVisible(false);
+            if (menuItem != null) {
+                menuItem.setVisible(false);
             }
 
             if (timeItem != null) {
@@ -2672,7 +2842,6 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             timerButton.setTime(currentEncryptedChat.ttl);
         }
 
-        SupportMenuItem avatarItem = (SupportMenuItem)menu.findItem(R.id.chat_menu_avatar);
         View avatarLayout = avatarItem.getActionView();
         avatarImageView = (BackupImageView)avatarLayout.findViewById(R.id.chat_avatar_image);
 
@@ -2784,6 +2953,8 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     } else if (type == 4) {
                         items = new CharSequence[] {LocaleController.getString(selectedObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument ? "SaveToDownloads" : "SaveToGallery",
                                 selectedObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument ? R.string.SaveToDownloads : R.string.SaveToGallery), LocaleController.getString("Forward", R.string.Forward), LocaleController.getString("Delete", R.string.Delete)};
+                    } else if (type == 5) {
+                        items = new CharSequence[] {LocaleController.getString("ApplyLocalizationFile", R.string.ApplyLocalizationFile), LocaleController.getString("SaveToDownloads", R.string.SaveToDownloads), LocaleController.getString("Forward", R.string.Forward), LocaleController.getString("Delete", R.string.Delete)};
                     }
                 } else {
                     if (type == 0) {
@@ -2797,6 +2968,8 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     } else if (type == 4) {
                         items = new CharSequence[] {LocaleController.getString(selectedObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument ? "SaveToDownloads" : "SaveToGallery",
                                 selectedObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument ? R.string.SaveToDownloads : R.string.SaveToGallery), LocaleController.getString("Delete", R.string.Delete)};
+                    } else if (type == 5) {
+                        items = new CharSequence[] {LocaleController.getString("ApplyLocalizationFile", R.string.ApplyLocalizationFile), LocaleController.getString("Delete", R.string.Delete)};
                     }
                 }
 
@@ -2843,9 +3016,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                     String fileName = selectedObject.getFileName();
                                     if (selectedObject.type == 6 || selectedObject.type == 7) {
                                         MediaController.saveFile(fileName, parentActivity, 1, null);
-                                    } else if (selectedObject.type == 2 || selectedObject.type == 3) {
+                                    } else if (selectedObject.type == 1) {
                                         MediaController.saveFile(fileName, parentActivity, 0, null);
-                                    } else if (selectedObject.type == 16 || selectedObject.type == 17) {
+                                    } else if (selectedObject.type == 8 || selectedObject.type == 9) {
                                         MediaController.saveFile(fileName, parentActivity, 2, selectedObject.messageOwner.media.document.file_name);
                                     }
                                 } else if (i == 1) {
@@ -2860,11 +3033,66 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                     processSelectedOption(1);
                                 }
                             }
+                        } else if (type == 5) {
+                            if (currentEncryptedChat == null) {
+                                if (i == 1) {
+                                    String fileName = selectedObject.getFileName();
+                                    if (selectedObject.type == 6 || selectedObject.type == 7) {
+                                        MediaController.saveFile(fileName, parentActivity, 1, null);
+                                    } else if (selectedObject.type == 1) {
+                                        MediaController.saveFile(fileName, parentActivity, 0, null);
+                                    } else if (selectedObject.type == 8 || selectedObject.type == 9) {
+                                        MediaController.saveFile(fileName, parentActivity, 2, selectedObject.messageOwner.media.document.file_name);
+                                    }
+                                } else if (i == 2) {
+                                    processSelectedOption(2);
+                                } else if (i == 3) {
+                                    processSelectedOption(1);
+                                }
+                            } else {
+                                if (i == 1) {
+                                    processSelectedOption(1);
+                                }
+                            }
+                            if (i == 0) {
+                                File locFile = null;
+                                if (selectedObject.messageOwner.attachPath != null && selectedObject.messageOwner.attachPath.length() != 0) {
+                                    File f = new File(selectedObject.messageOwner.attachPath);
+                                    if (f.exists()) {
+                                        locFile = f;
+                                    }
+                                }
+                                if (locFile == null) {
+                                    File f = new File(Utilities.getCacheDir(), selectedObject.getFileName());
+                                    if (f.exists()) {
+                                        locFile = f;
+                                    }
+                                }
+                                if (locFile != null) {
+                                    if (LocaleController.getInstance().applyLanguageFile(locFile)) {
+                                        ((LaunchActivity)parentActivity).presentFragment(new LanguageSelectActivity(), "settings_lang", false);
+                                    } else if (parentActivity != null) {
+                                        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                        builder.setMessage(LocaleController.getString("IncorrectLocalization", R.string.IncorrectLocalization));
+                                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                                        visibleDialog = builder.show();
+                                        visibleDialog.setCanceledOnTouchOutside(true);
+
+                                        visibleDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                                            @Override
+                                            public void onDismiss(DialogInterface dialog) {
+                                                visibleDialog = null;
+                                            }
+                                        });
+                                    }
+                                }
+                            }
                         }
                     }
                 });
 
-                builder.setTitle(R.string.Message);
+                builder.setTitle(LocaleController.getString("Message", R.string.Message));
                 visibleDialog = builder.show();
                 visibleDialog.setCanceledOnTouchOutside(true);
 
@@ -2886,17 +3114,15 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     private void processSelectedOption(int option) {
         if (option == 0) {
             if (selectedObject != null && selectedObject.messageOwner.id < 0) {
-                if (selectedObject.type == 0 || selectedObject.type == 1) {
+                if (selectedObject.type == 0) {
                     if (selectedObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
                         MessagesController.getInstance().sendMessage(selectedObject, dialog_id);
                     } else {
                         MessagesController.getInstance().sendMessage(selectedObject.messageOwner.message, dialog_id);
                     }
-                } else if (selectedObject.type == 8 || selectedObject.type == 9) {
-                    MessagesController.getInstance().sendMessage(selectedObject, dialog_id);
                 } else if (selectedObject.type == 4 || selectedObject.type == 5) {
                     MessagesController.getInstance().sendMessage(selectedObject.messageOwner.media.geo.lat, selectedObject.messageOwner.media.geo._long, dialog_id);
-                } else if (selectedObject.type == 2 || selectedObject.type == 3) {
+                } else if (selectedObject.type == 1) {
                     if (selectedObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
                         MessagesController.getInstance().sendMessage(selectedObject, dialog_id);
                     } else {
@@ -2914,11 +3140,11 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 } else if (selectedObject.type == 12 || selectedObject.type == 13) {
                     TLRPC.User user = MessagesController.getInstance().users.get(selectedObject.messageOwner.media.user_id);
                     MessagesController.getInstance().sendMessage(user, dialog_id);
-                } else if (selectedObject.type == 16 || selectedObject.type == 17) {
+                } else if (selectedObject.type == 8 || selectedObject.type == 9) {
                     TLRPC.TL_document document = (TLRPC.TL_document)selectedObject.messageOwner.media.document;
                     document.path = selectedObject.messageOwner.attachPath;
                     MessagesController.getInstance().sendMessage(document, dialog_id);
-                } else if (selectedObject.type == 18 || selectedObject.type == 19) {
+                } else if (selectedObject.type == 2) {
                     TLRPC.TL_audio audio = (TLRPC.TL_audio)selectedObject.messageOwner.media.audio;
                     audio.path = selectedObject.messageOwner.attachPath;
                     MessagesController.getInstance().sendMessage(audio, dialog_id);
@@ -2984,8 +3210,6 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     public void didSelectFile(DocumentSelectActivity activity, String path, String name, String ext, long size) {
         activity.finishFragment();
         TLRPC.TL_document document = new TLRPC.TL_document();
-        document.thumb = new TLRPC.TL_photoSizeEmpty();
-        document.thumb.type = "s";
         document.id = 0;
         document.user_id = UserConfig.clientUserId;
         document.date = ConnectionsManager.getInstance().getCurrentTime();
@@ -3003,6 +3227,21 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             }
         } else {
             document.mime_type = "application/octet-stream";
+        }
+        if (document.mime_type.equals("image/gif")) {
+            try {
+                Bitmap bitmap = FileLoader.loadBitmap(path, null, 90, 90);
+                if (bitmap != null) {
+                    document.thumb = FileLoader.scaleAndSaveImage(bitmap, 90, 90, 80, currentEncryptedChat != null);
+                    document.thumb.type = "s";
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+        }
+        if (document.thumb == null) {
+            document.thumb = new TLRPC.TL_photoSizeEmpty();
+            document.thumb.type = "s";
         }
         MessagesController.getInstance().sendMessage(document, dialog_id);
     }
@@ -3096,7 +3335,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             case android.R.id.home:
                 finishFragment();
                 break;
-            case R.id.attach_photo: {
+            case attach_photo: {
                 try {
                     Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                     File image = Utilities.generatePicturePath();
@@ -3104,23 +3343,23 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
                         currentPicturePath = image.getAbsolutePath();
                     }
-                    startActivityForResult(takePictureIntent, 0);
+                    parentActivity.startActivityForResult(takePictureIntent, 0);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
                 break;
             }
-            case R.id.attach_gallery: {
+            case attach_gallery: {
                 try {
                     Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
                     photoPickerIntent.setType("image/*");
-                    startActivityForResult(photoPickerIntent, 1);
+                    parentActivity.startActivityForResult(photoPickerIntent, 1);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
                 break;
             }
-            case R.id.attach_video: {
+            case attach_video: {
                 try {
                     Intent pickIntent = new Intent();
                     pickIntent.setType("video/*");
@@ -3138,13 +3377,13 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     Intent chooserIntent = Intent.createChooser(pickIntent, "");
                     chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[] { takeVideoIntent });
 
-                    startActivityForResult(chooserIntent, 2);
+                    parentActivity.startActivityForResult(chooserIntent, 2);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
                 break;
             }
-            case R.id.attach_location: {
+            case attach_location: {
                 if (!isGoogleMapsInstalled()) {
                     return true;
                 }
@@ -3152,7 +3391,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 ((LaunchActivity)parentActivity).presentFragment(fragment, "location", false);
                 break;
             }
-            case R.id.attach_document: {
+            case attach_document: {
                 DocumentSelectActivity fragment = new DocumentSelectActivity();
                 fragment.delegate = this;
                 ((LaunchActivity)parentActivity).presentFragment(fragment, "document", false);
@@ -3242,9 +3481,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     private void updateRowBackground(ChatListRowHolderEx holder, boolean disableSelection, boolean selected) {
         int messageType = holder.message.type;
         if (!disableSelection) {
-            if (messageType == 2 || messageType == 4 || messageType == 6) {
+            if (messageType == 4 || messageType == 6) {
                 holder.chatBubbleView.setBackgroundResource(R.drawable.chat_outgoing_photo_states);
-            } else if (messageType == 3 || messageType == 5 || messageType == 7) {
+            } else if (messageType == 5 || messageType == 7) {
                 holder.chatBubbleView.setBackgroundResource(R.drawable.chat_incoming_photo_states);
             } else if (messageType == 12) {
                 holder.chatBubbleView.setBackgroundResource(R.drawable.chat_outgoing_text_states);
@@ -3252,21 +3491,21 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             } else if (messageType == 13) {
                 holder.chatBubbleView.setBackgroundResource(R.drawable.chat_incoming_text_states);
                 holder.chatBubbleView.setPadding(Utilities.dp(15), Utilities.dp(6), Utilities.dp(9), 0);
-            } else if (messageType == 16) {
+            } else if (messageType == 8) {
                 holder.chatBubbleView.setBackgroundResource(R.drawable.chat_outgoing_text_states);
                 holder.chatBubbleView.setPadding(Utilities.dp(9), Utilities.dp(9), Utilities.dp(18), 0);
-            } else if (messageType == 17) {
+            } else if (messageType == 9) {
                 holder.chatBubbleView.setBackgroundResource(R.drawable.chat_incoming_text_states);
                 holder.chatBubbleView.setPadding(Utilities.dp(18), Utilities.dp(9), Utilities.dp(9), 0);
             }
         } else {
-            if (messageType == 2 || messageType == 4 || messageType == 6) {
+            if (messageType == 4 || messageType == 6) {
                 if (selected) {
                     holder.chatBubbleView.setBackgroundResource(R.drawable.msg_out_photo_selected);
                 } else {
                     holder.chatBubbleView.setBackgroundResource(R.drawable.msg_out_photo);
                 }
-            } else if (messageType == 3 || messageType == 5 || messageType == 7) {
+            } else if (messageType == 5 || messageType == 7) {
                 if (selected) {
                     holder.chatBubbleView.setBackgroundResource(R.drawable.msg_in_photo_selected);
                 } else {
@@ -3286,14 +3525,14 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     holder.chatBubbleView.setBackgroundResource(R.drawable.msg_in);
                 }
                 holder.chatBubbleView.setPadding(Utilities.dp(15), Utilities.dp(6), Utilities.dp(9), 0);
-            } else if (messageType == 16) {
+            } else if (messageType == 8) {
                 if (selected) {
                     holder.chatBubbleView.setBackgroundResource(R.drawable.msg_out_selected);
                 } else {
                     holder.chatBubbleView.setBackgroundResource(R.drawable.msg_out);
                 }
                 holder.chatBubbleView.setPadding(Utilities.dp(9), Utilities.dp(9), Utilities.dp(18), 0);
-            } else if (messageType == 17) {
+            } else if (messageType == 9) {
                 if (selected) {
                     holder.chatBubbleView.setBackgroundResource(R.drawable.msg_in_selected);
                 } else {
@@ -3373,17 +3612,11 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 }
             }
             MessageObject message = messages.get(messages.size() - i - offset);
-            int type = message.type;
+            int type = message.contentType;
             if (view == null) {
                 LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                 if (type == 0) {
-                    view = new ChatMessageCell(mContext, false);
-                } else if (type == 1) {
-                    view = new ChatMessageCell(mContext, currentChat != null);
-                } else if (type == 8) {
-                    view = new ChatMessageCell(mContext, false);
-                } else if (type == 9) {
-                    view = new ChatMessageCell(mContext, currentChat != null);
+                    view = new ChatMessageCell(mContext);
                 } else if (type == 4) {
                     view = li.inflate(R.layout.chat_outgoing_location_layout, viewGroup, false);
                 } else if (type == 5) {
@@ -3392,14 +3625,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     } else {
                         view = li.inflate(R.layout.chat_incoming_location_layout, viewGroup, false);
                     }
-                } else if (type == 2) {
-                    view = li.inflate(R.layout.chat_outgoing_photo_layout, viewGroup, false);
-                } else if (type == 3) {
-                    if (currentChat != null) {
-                        view = li.inflate(R.layout.chat_group_incoming_photo_layout, viewGroup, false);
-                    } else {
-                        view = li.inflate(R.layout.chat_incoming_photo_layout, viewGroup, false);
-                    }
+                } else if (type == 1) {
+                    view = new ChatMediaCell(mContext);
+                    ((ChatMediaCell)view).downloadPhotos = downloadPhotos;
                 } else if (type == 6) {
                     view = li.inflate(R.layout.chat_outgoing_video_layout, viewGroup, false);
                 } else if (type == 7) {
@@ -3422,34 +3650,17 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     }
                 } else if (type == 15) {
                     view = li.inflate(R.layout.chat_unread_layout, viewGroup, false);
-                } else if (type == 16) {
+                } else if (type == 8) {
                     view = li.inflate(R.layout.chat_outgoing_document_layout, viewGroup, false);
-                } else if (type == 17) {
+                } else if (type == 9) {
                     if (currentChat != null) {
                         view = li.inflate(R.layout.chat_group_incoming_document_layout, viewGroup, false);
                     } else {
                         view = li.inflate(R.layout.chat_incoming_document_layout, viewGroup, false);
                     }
-                } else if (type == 18) {
-                    view = new ChatAudioCell(mContext, false);
-                } else if (type == 19) {
-                    view = new ChatAudioCell(mContext, currentChat != null);
+                } else if (type == 2) {
+                    view = new ChatAudioCell(mContext);
                 }
-            }
-
-            if (view instanceof ChatBaseCell) {
-                ((ChatBaseCell)view).delegate = new ChatBaseCell.ChatBaseCellDelegate() {
-                    @Override
-                    public void didPressedUserAvatar(ChatBaseCell cell, TLRPC.User user) {
-                        if (user != null && user.id != UserConfig.clientUserId) {
-                            UserProfileActivity fragment = new UserProfileActivity();
-                            Bundle args = new Bundle();
-                            args.putInt("user_id", user.id);
-                            fragment.setArguments(args);
-                            ((LaunchActivity)parentActivity).presentFragment(fragment, "user_" + user.id, false);
-                        }
-                    }
-                };
             }
 
             boolean selected = false;
@@ -3467,15 +3678,69 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             }
 
             if (view instanceof ChatBaseCell) {
+                ((ChatBaseCell)view).delegate = new ChatBaseCell.ChatBaseCellDelegate() {
+                    @Override
+                    public void didPressedUserAvatar(ChatBaseCell cell, TLRPC.User user) {
+                        if (user != null && user.id != UserConfig.clientUserId) {
+                            UserProfileActivity fragment = new UserProfileActivity();
+                            Bundle args = new Bundle();
+                            args.putInt("user_id", user.id);
+                            fragment.setArguments(args);
+                            ((LaunchActivity)parentActivity).presentFragment(fragment, "user_" + user.id, false);
+                        }
+                    }
+
+                    @Override
+                    public void didPressedCanceSendButton(ChatBaseCell cell) {
+                        MessageObject message = cell.getMessageObject();
+                        if (message.messageOwner.send_state != 0) {
+                            MessagesController.getInstance().cancelSendingMessage(message);
+                        }
+                    }
+
+                    @Override
+                    public void didLongPressed(ChatBaseCell cell) {
+                        createMenu(cell, false);
+                    }
+
+                    @Override
+                    public boolean canPerformActions() {
+                        return mActionMode == null;
+                    }
+
+                    @Override
+                    public boolean onSwipeLeft() {
+                        return ChatActivity.this.onSwipeLeft();
+                    }
+
+                    @Override
+                    public boolean onSwipeRight() {
+                        return ChatActivity.this.onSwipeRight();
+                    }
+                };
+                if (view instanceof ChatMediaCell) {
+                    ((ChatMediaCell)view).mediaDelegate = new ChatMediaCell.ChatMediaCellDelegate() {
+                        @Override
+                        public void didPressedImage(ChatBaseCell cell) {
+                            NotificationCenter.getInstance().addToMemCache(51, cell.getMessageObject());
+                            Intent intent = new Intent(parentActivity, GalleryImageViewer.class);
+                            startActivity(intent);
+                        }
+                    };
+                }
+
+                ((ChatBaseCell)view).isChat = currentChat != null;
                 ((ChatBaseCell)view).setMessageObject(message);
                 ((ChatBaseCell)view).setCheckPressed(!disableSelection, disableSelection && selected);
                 if (view instanceof ChatAudioCell && downloadAudios) {
                     ((ChatAudioCell)view).downloadAudioIfNeed();
+                } else if (view instanceof ChatMediaCell) {
+                    ((ChatMediaCell)view).downloadPhotos = downloadPhotos;
                 }
             } else {
                 ChatListRowHolderEx holder = (ChatListRowHolderEx)view.getTag();
                 if (holder == null) {
-                    holder = new ChatListRowHolderEx(view, type);
+                    holder = new ChatListRowHolderEx(view, message.type);
                     view.setTag(holder);
                 }
                 holder.message = message;
@@ -3499,12 +3764,12 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 return 14;
             }
             MessageObject message = messages.get(messages.size() - i - offset);
-            return message.type;
+            return message.contentType;
         }
 
         @Override
         public int getViewTypeCount() {
-            return 20;
+            return 16;
         }
 
         @Override
@@ -3540,7 +3805,6 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         public ImageView addContactButton;
         public View addContactView;
         public View chatBubbleView;
-        public View photoProgressView;
 
         public ProgressBar actionProgress;
         public View actionView;
@@ -3569,12 +3833,12 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 avatarImageView.setImage(photo, "50_50", placeHolderId);
             }
 
-            if (type != 12 && type != 13 && nameTextView != null && fromUser != null && type != 16 && type != 17) {
+            if (type != 12 && type != 13 && nameTextView != null && fromUser != null && type != 8 && type != 9) {
                 nameTextView.setText(Utilities.formatName(fromUser.first_name, fromUser.last_name));
                 nameTextView.setTextColor(Utilities.getColorForId(message.messageOwner.from_id));
             }
 
-            if (type == 2 || type == 3 || type == 6 || type == 7) {
+            if (type == 6 || type == 7) {
                 int width = (int)(Math.min(displaySize.x, displaySize.y) * 0.7f);
                 int height = width + Utilities.dp(100);
                 if (type == 6 || type == 7) {
@@ -3589,11 +3853,6 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 }
 
                 PhotoObject photo = PhotoObject.getClosestImageWithSize(message.photoThumbs, width, height);
-                if (type == 3) {
-                    if (photoProgressView != null) {
-                        photoProgressView.setVisibility(View.GONE);
-                    }
-                }
 
                 if (photo != null) {
                     float scale = (float)photo.photoOwner.w / (float)width;
@@ -3626,17 +3885,6 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     if (photo.image != null) {
                         photoImage.setImageBitmap(photo.image);
                     } else {
-                        if (type == 2 || type == 3) {
-                            String fileName = MessageObject.getAttachFileName(photo.photoOwner);
-                            File cacheFile = new File(Utilities.getCacheDir(), fileName);
-                            if (!cacheFile.exists()) {
-                                photoFileName = fileName;
-                                photoFile = cacheFile;
-                            } else {
-                                photoFileName = null;
-                                photoFile = null;
-                            }
-                        }
                         if (photoFileName == null) {
                             if (message.imagePreview != null) {
                                 photoImage.setImage(photo.photoOwner.location, String.format(Locale.US, "%d_%d", (int)(w / Utilities.density), (int)(h / Utilities.density)), message.imagePreview);
@@ -3737,7 +3985,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 } else {
                     messageTextView.setText(LocaleController.formatString("FewNewMessages", R.string.FewNewMessages, unread_to_load));
                 }
-            } else if (type == 16 || type == 17) {
+            } else if (type == 8 || type == 9) {
                 TLRPC.Document document = message.messageOwner.media.document;
                 if (document instanceof TLRPC.TL_document || document instanceof TLRPC.TL_documentEncrypted) {
                     nameTextView.setText(message.messageOwner.media.document.file_name);
@@ -3764,7 +4012,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     } else if (document.thumb instanceof TLRPC.TL_photoCachedSize) {
 
                     } else {
-                        if (type == 16) {
+                        if (type == 8) {
                             contactAvatar.setImageResource(R.drawable.doc_green);
                         } else {
                             contactAvatar.setImageResource(R.drawable.doc_blue);
@@ -3773,7 +4021,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 } else {
                     nameTextView.setText("Error");
                     phoneTextView.setText("Error");
-                    if (type == 16) {
+                    if (type == 8) {
                         contactAvatar.setImageResource(R.drawable.doc_green);
                     } else {
                         contactAvatar.setImageResource(R.drawable.doc_blue);
@@ -3791,18 +4039,15 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 if (halfCheckImage != null) {
                     if (message.messageOwner.send_state == MessagesController.MESSAGE_SEND_STATE_SENDING) {
                         checkImage.setVisibility(View.INVISIBLE);
-                        if (type == 2 || type == 6 || type == 4) {
+                        if (type == 6 || type == 4) {
                             halfCheckImage.setImageResource(R.drawable.msg_clock_photo);
                         } else {
                             halfCheckImage.setImageResource(R.drawable.msg_clock);
                         }
                         halfCheckImage.setVisibility(View.VISIBLE);
-                        if (actionView != null || photoProgressView != null) {
+                        if (actionView != null) {
                             if (actionView != null) {
                                 actionView.setVisibility(View.VISIBLE);
-                            }
-                            if (photoProgressView != null) {
-                                photoProgressView.setVisibility(View.VISIBLE);
                             }
                             Float progress = FileLoader.getInstance().fileProgresses.get(message.messageOwner.attachPath);
                             if (progress != null) {
@@ -3825,9 +4070,6 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         if (actionView != null) {
                             actionView.setVisibility(View.GONE);
                         }
-                        if (photoProgressView != null) {
-                            photoProgressView.setVisibility(View.GONE);
-                        }
                         if (actionAttachButton != null) {
                             actionAttachButton.setVisibility(View.GONE);
                         }
@@ -3835,7 +4077,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         if (!message.messageOwner.unread) {
                             halfCheckImage.setVisibility(View.VISIBLE);
                             checkImage.setVisibility(View.VISIBLE);
-                            if (type == 2 || type == 6 || type == 4) {
+                            if (type == 6 || type == 4) {
                                 halfCheckImage.setImageResource(R.drawable.msg_halfcheck_w);
                             } else {
                                 halfCheckImage.setImageResource(R.drawable.msg_halfcheck);
@@ -3843,7 +4085,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         } else {
                             halfCheckImage.setVisibility(View.VISIBLE);
                             checkImage.setVisibility(View.INVISIBLE);
-                            if (type == 2 || type == 6 || type == 4) {
+                            if (type == 6 || type == 4) {
                                 halfCheckImage.setImageResource(R.drawable.msg_check_w);
                             } else {
                                 halfCheckImage.setImageResource(R.drawable.msg_check);
@@ -3852,16 +4094,13 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         if (actionView != null) {
                             actionView.setVisibility(View.GONE);
                         }
-                        if (photoProgressView != null) {
-                            photoProgressView.setVisibility(View.GONE);
-                        }
                         if (actionAttachButton != null) {
                             actionAttachButton.setVisibility(View.VISIBLE);
                         }
                     }
                 }
             }
-            if (message.type == 2 || message.type == 3 || message.type == 6 || message.type == 7 || message.type == 16 || message.type == 17) {
+            if (message.type == 6 || message.type == 7 || message.type == 8 || message.type == 9) {
                 Integer tag = (Integer)actionProgress.getTag();
                 String file = progressByTag.get(tag);
                 if (file != null) {
@@ -3885,15 +4124,12 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                 actionAttachButton.setVisibility(View.VISIBLE);
                                 if (message.type == 6 || message.type == 7) {
                                     actionAttachButton.setText(LocaleController.getString("ViewVideo", R.string.ViewVideo));
-                                } else if (message.type == 16 || message.type == 17) {
+                                } else if (message.type == 8 || message.type == 9) {
                                     actionAttachButton.setText(LocaleController.getString("Open", R.string.Open));
                                 }
                             }
                             if (actionView != null) {
                                 actionView.setVisibility(View.GONE);
-                            }
-                            if (photoProgressView != null) {
-                                photoProgressView.setVisibility(View.GONE);
                             }
                         } else {
                             load = true;
@@ -3901,20 +4137,17 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     }
                     if (load && message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0 || !load && (message.messageOwner.attachPath == null || message.messageOwner.attachPath.length() == 0)) {
                         File cacheFile = null;
-                        if (((message.type == 2 || message.type == 3) && photoFileName == null) || (cacheFile = new File(Utilities.getCacheDir(), fileName)).exists()) {
+                        if ((cacheFile = new File(Utilities.getCacheDir(), fileName)).exists()) {
                             if (actionAttachButton != null) {
                                 actionAttachButton.setVisibility(View.VISIBLE);
                                 if (message.type == 6 || message.type == 7) {
                                     actionAttachButton.setText(LocaleController.getString("ViewVideo", R.string.ViewVideo));
-                                } else if (message.type == 16 || message.type == 17) {
+                                } else if (message.type == 8 || message.type == 9) {
                                     actionAttachButton.setText(LocaleController.getString("Open", R.string.Open));
                                 }
                             }
                             if (actionView != null) {
                                 actionView.setVisibility(View.GONE);
-                            }
-                            if (photoProgressView != null) {
-                                photoProgressView.setVisibility(View.GONE);
                             }
                             load = false;
                         } else {
@@ -3932,47 +4165,32 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                             progressByTag.put((Integer)actionProgress.getTag(), fileName);
                             addToLoadingFile(fileName, actionProgress);
                             if (actionView != null) {
-                                if ((message.type == 2 || message.type == 3) && downloadPhotos) {
-                                    actionView.setVisibility(View.GONE);
-                                } else {
-                                    actionView.setVisibility(View.VISIBLE);
-                                    if (photoFileName != null) {
-                                        actionCancelButton.setImageResource(R.drawable.photo_download_cancel_states);
-                                    }
+                                actionView.setVisibility(View.VISIBLE);
+                                if (photoFileName != null) {
+                                    actionCancelButton.setImageResource(R.drawable.photo_download_cancel_states);
                                 }
-                            }
-                            if (photoProgressView != null) {
-                                photoProgressView.setVisibility(View.VISIBLE);
                             }
                             if (actionAttachButton != null) {
                                 actionAttachButton.setVisibility(View.GONE);
                             }
                         } else {
                             if (actionView != null) {
-                                if ((message.type == 2 || message.type == 3) && !downloadPhotos) {
-                                    actionView.setVisibility(View.VISIBLE);
-                                    actionCancelButton.setImageResource(R.drawable.photo_download_states);
-                                } else {
-                                    actionView.setVisibility(View.GONE);
-                                }
-                            }
-                            if (photoProgressView != null) {
-                                photoProgressView.setVisibility(View.GONE);
+                                actionView.setVisibility(View.GONE);
                             }
                             if (actionAttachButton != null) {
                                 actionAttachButton.setVisibility(View.VISIBLE);
                                 if (message.type == 6 || message.type == 7) {
                                     actionAttachButton.setText(String.format("%s %.1f MB", LocaleController.getString("DOWNLOAD", R.string.DOWNLOAD), message.messageOwner.media.video.size / 1024.0f / 1024.0f));
-                                } else if (message.type == 16 || message.type == 17) {
+                                } else if (message.type == 8 || message.type == 9) {
                                     actionAttachButton.setText(LocaleController.getString("DOWNLOAD", R.string.DOWNLOAD));
                                 }
                             }
                         }
                     }
                 }
-                if (message.type == 16 || message.type == 17) {
+                if (message.type == 8 || message.type == 9) {
                     int width;
-                    if (currentChat != null && type != 16) {
+                    if (currentChat != null && type != 8) {
                         if (actionView.getVisibility() == View.VISIBLE) {
                             width = displaySize.x - Utilities.dp(290);
                         } else {
@@ -4011,7 +4229,6 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             addContactButton = (ImageView)view.findViewById(R.id.add_contact_button);
             addContactView = view.findViewById(R.id.add_contact_view);
             chatBubbleView = view.findViewById(R.id.chat_bubble_layout);
-            photoProgressView = view.findViewById(R.id.photo_progress);
             if (messageTextView != null) {
                 messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, MessagesController.getInstance().fontSize);
             }
@@ -4069,7 +4286,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 contactView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        if (message.type == 16 || message.type == 17) {
+                        if (message.type == 8 || message.type == 9) {
                             processOnClick(view);
                         } else if (message.type == 12 || message.type == 13) {
                             if (mActionMode != null) {
@@ -4150,15 +4367,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 contactAvatar.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        if (message.type == 18 || message.type == 19) {
-                            if (message.messageOwner.media.audio.user_id != UserConfig.clientUserId && message.messageOwner.media.audio.user_id != 0) {
-                                UserProfileActivity fragment = new UserProfileActivity();
-                                Bundle args = new Bundle();
-                                args.putInt("user_id", message.messageOwner.media.audio.user_id);
-                                fragment.setArguments(args);
-                                ((LaunchActivity)parentActivity).presentFragment(fragment, "user_" + message.messageOwner.media.audio.user_id, false);
-                            }
-                        }
+
                     }
                 });
             }
@@ -4203,32 +4412,16 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                 if (file != null) {
                                     progressBarMap.remove(file);
                                 }
-                            } else if (message.type == 6 || message.type == 7 || message.type == 16 || message.type == 17) {
+                            } else if (message.type == 6 || message.type == 7 || message.type == 8 || message.type == 9) {
                                 String file = progressByTag.get(tag);
                                 if (file != null) {
                                     loadingFile.remove(file);
                                     if (message.type == 6 || message.type == 7) {
                                         FileLoader.getInstance().cancelLoadFile(message.messageOwner.media.video, null, null, null);
-                                    } else if (message.type == 16 || message.type == 17) {
+                                    } else if (message.type == 8 || message.type == 9) {
                                         FileLoader.getInstance().cancelLoadFile(null, null, message.messageOwner.media.document, null);
                                     }
                                     updateVisibleRows();
-                                }
-                            } else if (message.type == 2 || message.type == 3) {
-                                if (photoFile != null && !photoFile.exists() && photoObjectToSet != null) {
-                                    if (loadingFile.containsKey(photoFileName)) {
-                                        loadingFile.remove(photoFileName);
-                                        FileLoader.getInstance().cancelLoadingForImageView(photoImage);
-                                        updateVisibleRows();
-                                    } else {
-                                        addToLoadingFile(photoFileName, actionProgress);
-                                        if (message.imagePreview != null) {
-                                            photoImage.setImage(photoObjectToSet.photoOwner.location, photoFilter, message.imagePreview, photoObjectToSet.photoOwner.size);
-                                        } else {
-                                            photoImage.setImage(photoObjectToSet.photoOwner.location, photoFilter, message.messageOwner.out ? R.drawable.photo_placeholder_out : R.drawable.photo_placeholder_in, photoObjectToSet.photoOwner.size);
-                                        }
-                                        updateVisibleRows();
-                                    }
                                 }
                             }
                         }
@@ -4256,7 +4449,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
         private void alertUserOpenError() {
             AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
-            builder.setTitle(R.string.AppName);
+            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
             builder.setPositiveButton(R.string.OK, null);
             if (message.type == 6 || message.type == 7) {
                 builder.setMessage(R.string.NoPlayerInstalled);
@@ -4287,25 +4480,11 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     NotificationCenter.getInstance().addToMemCache(0, message);
                     LocationActivity fragment = new LocationActivity();
                     ((LaunchActivity)parentActivity).presentFragment(fragment, "location_view", false);
-                } else if (message.type == 2 || message.type == 3) {
-                    if (photoFile == null || photoObjectToSet == null || photoFile != null && photoFile.exists()) {
-                        NotificationCenter.getInstance().addToMemCache(51, message);
-                        Intent intent = new Intent(parentActivity, GalleryImageViewer.class);
-                        startActivity(intent);
-                    } else {
-                        addToLoadingFile(photoFileName, actionProgress);
-                        if (message.imagePreview != null) {
-                            photoImage.setImage(photoObjectToSet.photoOwner.location, photoFilter, message.imagePreview, photoObjectToSet.photoOwner.size);
-                        } else {
-                            photoImage.setImage(photoObjectToSet.photoOwner.location, photoFilter, message.messageOwner.out ? R.drawable.photo_placeholder_out : R.drawable.photo_placeholder_in, photoObjectToSet.photoOwner.size);
-                        }
-                        updateVisibleRows();
-                    }
                 } else if (message.type == 11) {
                     NotificationCenter.getInstance().addToMemCache(51, message);
                     Intent intent = new Intent(parentActivity, GalleryImageViewer.class);
                     startActivity(intent);
-                } else if (message.type == 6 || message.type == 7 || message.type == 16 || message.type == 17) {
+                } else if (message.type == 6 || message.type == 7 || message.type == 8 || message.type == 9) {
                     File f = null;
                     String fileName = message.getFileName();
                     if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
@@ -4320,7 +4499,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                             Intent intent = new Intent(Intent.ACTION_VIEW);
                             if (message.type == 6 || message.type == 7) {
                                 intent.setDataAndType(Uri.fromFile(f), "video/mp4");
-                            } else if (message.type == 16 || message.type == 17) {
+                            } else if (message.type == 8 || message.type == 9) {
                                 MimeTypeMap myMime = MimeTypeMap.getSingleton();
                                 int idx = fileName.lastIndexOf(".");
                                 if (idx != -1) {
@@ -4355,7 +4534,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                 addToLoadingFile(fileName, actionProgress);
                                 if (message.type == 6 || message.type == 7) {
                                     FileLoader.getInstance().loadFile(message.messageOwner.media.video, null, null, null);
-                                } else if (message.type == 16 || message.type == 17) {
+                                } else if (message.type == 8 || message.type == 9) {
                                     FileLoader.getInstance().loadFile(null, null, message.messageOwner.media.document, null);
                                 }
                                 updateVisibleRows();

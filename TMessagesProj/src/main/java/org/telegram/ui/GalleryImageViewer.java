@@ -18,7 +18,6 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.view.Display;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -81,6 +80,9 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
     private boolean cacheEndReached = false;
 
     public static int needShowAllMedia = 2000;
+
+    private final static int gallery_menu_save = 1;
+    private final static int gallery_menu_showall = 2;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -640,11 +642,9 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        if (withoutBottom) {
-            inflater.inflate(R.menu.gallery_save_only_menu, menu);
-        } else {
-            inflater.inflate(R.menu.gallery_menu, menu);
+        menu.add(Menu.NONE, gallery_menu_save, Menu.NONE, LocaleController.getString("SaveToGallery", R.string.SaveToGallery));
+        if (!withoutBottom) {
+            menu.add(Menu.NONE, gallery_menu_showall, Menu.NONE, LocaleController.getString("ShowAllMedia", R.string.ShowAllMedia));
         }
         return super.onCreateOptionsMenu(menu);
     }
@@ -721,7 +721,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                 finish();
                 System.gc();
                 break;
-            case R.id.gallery_menu_save:
+            case gallery_menu_save:
                 if (currentFileName == null) {
                     return;
                 }
@@ -737,7 +737,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
 //                startActivityForResult(intent, 10);
 //                break;
 //            }
-            case R.id.gallery_menu_showall: {
+            case gallery_menu_showall: {
                 if (fromAll) {
                     finish();
                 } else {

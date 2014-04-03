@@ -103,6 +103,9 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         editor.commit();
                         listView.invalidateViews();
                     } else if (i == 4 || i == 9) {
+                        if (parentActivity == null) {
+                            return;
+                        }
                         try {
                             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                             Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
@@ -137,7 +140,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                                 }
                             }
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentSound);
-                            startActivityForResult(tmpIntent, i);
+                            parentActivity.startActivityForResult(tmpIntent, i);
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
                         }
@@ -228,8 +231,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
         if (resultCode == Activity.RESULT_OK) {
             Uri ringtone = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);
             String name = null;

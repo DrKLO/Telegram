@@ -1,4 +1,4 @@
-#include "org_telegram_SQLite.h"
+#include "sqlite.h"
 
 int Java_org_telegram_SQLite_SQLiteCursor_columnType(JNIEnv *env, jobject object, int statementHandle, int columnIndex) {
 	sqlite3_stmt *handle = (sqlite3_stmt *)statementHandle;

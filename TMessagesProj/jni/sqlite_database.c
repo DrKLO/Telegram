@@ -1,4 +1,4 @@
-#include "org_telegram_SQLite.h"
+#include "sqlite.h"
 
 void Java_org_telegram_SQLite_SQLiteDatabase_closedb(JNIEnv *env, jobject object, int sqliteHandle) {
 	sqlite3 *handle = (sqlite3 *)sqliteHandle;
