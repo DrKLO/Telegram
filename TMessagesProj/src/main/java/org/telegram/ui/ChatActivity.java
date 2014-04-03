@@ -1535,10 +1535,15 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 processSendingPhoto(currentPicturePath, null);
                 currentPicturePath = null;
             } else if (requestCode == 1) {
-                if (data == null) {
+                if (data == null || data.getData() == null) {
                     return;
                 }
-                processSendingPhoto(null, data.getData());
+                String tempPath = Utilities.getPath(data.getData());
+                if (tempPath != null && tempPath.endsWith(".gif")) {
+                    processSendingDocument(tempPath);
+                } else {
+                    processSendingPhoto(null, data.getData());
+                }
             } else if (requestCode == 2) {
                 String videoPath = null;
                 if (data != null) {
