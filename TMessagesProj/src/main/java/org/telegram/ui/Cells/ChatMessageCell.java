@@ -136,6 +136,7 @@ public class ChatMessageCell extends ChatBaseCell {
                 drawName = true;
             } else {
                 maxWidth = Utilities.displaySize.x - Utilities.dp(80);
+                drawName = false;
             }
 
             backgroundWidth = maxWidth;
