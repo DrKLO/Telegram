@@ -3441,7 +3441,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             if (missingData) {
                 needGetDiff = true;
             } else {
-                if (MessagesStorage.lastSeqValue + 1 == updates.seq && !gettingDifference) {
+                if (MessagesStorage.lastSeqValue + 1 == updates.seq) {
                     TLRPC.TL_message message = new TLRPC.TL_message();
                     message.from_id = updates.from_id;
                     message.id = updates.id;
@@ -3503,7 +3503,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             if (missingData) {
                 needGetDiff = true;
             } else {
-                if (MessagesStorage.lastSeqValue + 1 == updates.seq && !gettingDifference) {
+                if (MessagesStorage.lastSeqValue + 1 == updates.seq) {
                     TLRPC.TL_message message = new TLRPC.TL_message();
                     message.from_id = updates.from_id;
                     message.id = updates.id;
@@ -3562,7 +3562,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
             }
         } else if (updates instanceof TLRPC.TL_updatesCombined) {
-            if ((MessagesStorage.lastSeqValue + 1 == updates.seq_start || MessagesStorage.lastSeqValue == updates.seq_start) && !gettingDifference) {
+            if (MessagesStorage.lastSeqValue + 1 == updates.seq_start || MessagesStorage.lastSeqValue == updates.seq_start) {
                 MessagesStorage.getInstance().putUsersAndChats(updates.users, updates.chats, true, true);
                 int lastPtsValue = MessagesStorage.lastPtsValue;
                 int lastQtsValue = MessagesStorage.lastQtsValue;
@@ -3592,7 +3592,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
             }
         } else if (updates instanceof TLRPC.TL_updates) {
-            if ((MessagesStorage.lastSeqValue + 1 == updates.seq || updates.seq == 0 || updates.seq == MessagesStorage.lastSeqValue) && !gettingDifference) {
+            if (MessagesStorage.lastSeqValue + 1 == updates.seq || updates.seq == 0 || updates.seq == MessagesStorage.lastSeqValue) {
                 MessagesStorage.getInstance().putUsersAndChats(updates.users, updates.chats, true, true);
                 int lastPtsValue = MessagesStorage.lastPtsValue;
                 int lastQtsValue = MessagesStorage.lastQtsValue;
