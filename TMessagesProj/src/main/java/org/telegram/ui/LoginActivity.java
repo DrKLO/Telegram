@@ -12,6 +12,7 @@ import android.animation.Animator;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.os.Bundle;
@@ -24,10 +25,14 @@ import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.SlideView;
+
+import java.util.Map;
+import java.util.Set;
 
 public class LoginActivity extends ActionBarActivity implements SlideView.SlideViewDelegate {
     private int currentViewNum = 0;
@@ -55,6 +60,90 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
     protected void onPause() {
         super.onPause();
         ApplicationLoader.lastPauseTime = System.currentTimeMillis();
+    }
+
+    private void saveCurrentState() {
+        try {
+            Bundle bundle = new Bundle();
+            bundle.putInt("currentViewNum", currentViewNum);
+            for (int a = 0; a <= currentViewNum; a++) {
+                SlideView v = views[a];
+                if (v != null) {
+                    v.saveStateParams(bundle);
+                }
+            }
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("logininfo", MODE_PRIVATE);
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.clear();
+            putBundleToEditor(bundle, editor, null);
+            editor.commit();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
+    private Bundle loadCurrentState() {
+        try {
+            Bundle bundle = new Bundle();
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("logininfo", MODE_PRIVATE);
+            Map<String, ?> params = preferences.getAll();
+            for (Map.Entry<String, ?> entry : params.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+                String[] args = key.split("_\\|_");
+                if (args.length == 1) {
+                    if (value instanceof String) {
+                        bundle.putString(key, (String) value);
+                    } else if (value instanceof Integer) {
+                        bundle.putInt(key, (Integer) value);
+                    }
+                } else if (args.length == 2) {
+                    Bundle inner = bundle.getBundle(args[0]);
+                    if (inner == null) {
+                        inner = new Bundle();
+                        bundle.putBundle(args[0], inner);
+                    }
+                    if (value instanceof String) {
+                        inner.putString(args[1], (String) value);
+                    } else if (value instanceof Integer) {
+                        inner.putInt(args[1], (Integer) value);
+                    }
+                }
+            }
+            return bundle;
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return null;
+    }
+
+    private void clearCurrentState() {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("logininfo", MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.clear();
+        editor.commit();
+    }
+
+    private void putBundleToEditor(Bundle bundle, SharedPreferences.Editor editor, String prefix) {
+        Set<String> keys = bundle.keySet();
+        for (String key : keys) {
+            Object obj = bundle.get(key);
+            if (obj instanceof String) {
+                if (prefix != null) {
+                    editor.putString(prefix + "_|_" + key, (String) obj);
+                } else {
+                    editor.putString(key, (String) obj);
+                }
+            } else if (obj instanceof Integer) {
+                if (prefix != null) {
+                    editor.putInt(prefix + "_|_" + key, (Integer) obj);
+                } else {
+                    editor.putInt(key, (Integer) obj);
+                }
+            } else if (obj instanceof Bundle) {
+                putBundleToEditor((Bundle)obj, editor, key);
+            }
+        }
     }
 
     public void ShowAlertDialog(final Activity activity, final String message) {
@@ -95,12 +184,16 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
 
         getSupportActionBar().setTitle(views[0].getHeaderName());
 
+        savedInstanceState = loadCurrentState();
         if (savedInstanceState != null) {
             currentViewNum = savedInstanceState.getInt("currentViewNum", 0);
         }
         for (int a = 0; a < views.length; a++) {
             SlideView v = views[a];
             if (v != null) {
+                if (savedInstanceState != null) {
+                    v.restoreStateParams(savedInstanceState);
+                }
                 v.delegate = this;
                 v.setVisibility(currentViewNum == a ? View.VISIBLE : View.GONE);
             }
@@ -239,7 +332,7 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putInt("currentViewNum", currentViewNum);
+        saveCurrentState();
     }
 
     @Override
@@ -247,5 +340,6 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
         Intent intent2 = new Intent(this, LaunchActivity.class);
         startActivity(intent2);
         finish();
+        clearCurrentState();
     }
 }

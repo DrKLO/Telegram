@@ -10,8 +10,6 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.os.Parcel;
-import android.os.Parcelable;
 import android.text.Html;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
@@ -51,7 +49,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
 
     private Timer timeTimer;
     private final Integer timerSync = 1;
-    private int time = 60000;
+    private volatile int time = 60000;
     private double lastCurrentTime;
     private boolean waitingForSms = false;
 
@@ -380,47 +378,32 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     }
 
     @Override
-    protected Parcelable onSaveInstanceState() {
-        Parcelable superState = super.onSaveInstanceState();
-        return new SavedState(superState, currentParams);
+    public void saveStateParams(Bundle bundle) {
+        String code = codeField.getText().toString();
+        if (code != null && code.length() != 0) {
+            bundle.putString("smsview_code", code);
+        }
+        if (currentParams != null) {
+            bundle.putBundle("smsview_params", currentParams);
+        }
+        if (time != 0) {
+            bundle.putInt("time", time);
+        }
     }
 
     @Override
-    protected void onRestoreInstanceState(Parcelable state) {
-        SavedState savedState = (SavedState) state;
-        super.onRestoreInstanceState(savedState.getSuperState());
-        currentParams = savedState.params;
+    public void restoreStateParams(Bundle bundle) {
+        currentParams = bundle.getBundle("smsview_params");
         if (currentParams != null) {
             setParams(currentParams);
         }
-    }
-
-    protected static class SavedState extends BaseSavedState {
-        public Bundle params;
-
-        private SavedState(Parcelable superState, Bundle p1) {
-            super(superState);
-            params = p1;
+        String code = bundle.getString("smsview_code");
+        if (code != null) {
+            codeField.setText(code);
         }
-
-        private SavedState(Parcel in) {
-            super(in);
-            params = in.readBundle();
+        Integer t = bundle.getInt("time");
+        if (t != 0) {
+            time = t;
         }
-
-        @Override
-        public void writeToParcel(Parcel destination, int flags) {
-            super.writeToParcel(destination, flags);
-            destination.writeBundle(params);
-        }
-
-        public static final Parcelable.Creator<SavedState> CREATOR = new Creator<SavedState>() {
-            public SavedState createFromParcel(Parcel in) {
-                return new SavedState(in);
-            }
-            public SavedState[] newArray(int size) {
-                return new SavedState[size];
-            }
-        };
     }
 }

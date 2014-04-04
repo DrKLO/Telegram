@@ -57,6 +57,7 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Map;
 
 public class LaunchActivity extends ActionBarActivity implements NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate {
     private boolean finished = false;
@@ -90,8 +91,15 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                 finish();
                 return;
             }
-            Intent intent2 = new Intent(this, IntroActivity.class);
-            startActivity(intent2);
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("logininfo", MODE_PRIVATE);
+            Map<String, ?> state = preferences.getAll();
+            if (state.isEmpty()) {
+                Intent intent2 = new Intent(this, IntroActivity.class);
+                startActivity(intent2);
+            } else {
+                Intent intent2 = new Intent(this, LoginActivity.class);
+                startActivity(intent2);
+            }
             finish();
             return;
         }

@@ -10,8 +10,6 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.os.Parcel;
-import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.View;
@@ -40,10 +38,6 @@ public class LoginActivityRegisterView extends SlideView {
     private String requestPhone;
     private String phoneHash;
     private String phoneCode;
-    //private BackupImageView avatarImage;
-    //public AvatarUpdater avatarUpdater = new AvatarUpdater();
-    //private TLRPC.PhotoSize avatarPhoto = null;
-    //private TLRPC.PhotoSize avatarPhotoBig = null;
     private Bundle currentParams;
 
     public LoginActivityRegisterView(Context context) {
@@ -62,25 +56,10 @@ public class LoginActivityRegisterView extends SlideView {
     protected void onFinishInflate() {
         super.onFinishInflate();
 
-//        avatarUpdater.parentActivity = (Activity)delegate;
-//        avatarUpdater.delegate = new AvatarUpdater.AvatarUpdaterDelegate() {
-//            @Override
-//            public void didUploadedPhoto(TLRPC.InputFile file, TLRPC.PhotoSize small, TLRPC.PhotoSize big) {
-//                avatarPhotoBig = big;
-//                avatarPhoto = small;
-//                if (avatarImage != null) {
-//                    avatarImage.setImage(small.location, null, R.drawable.user_placeholder);
-//                }
-//            }
-//        };
-//        avatarUpdater.returnOnly = true;
-
-        //ImageButton avatarButton = (ImageButton)findViewById(R.id.settings_change_avatar_button);
         firstNameField = (EditText)findViewById(R.id.login_first_name_field);
         firstNameField.setHint(LocaleController.getString("FirstName", R.string.FirstName));
         lastNameField = (EditText)findViewById(R.id.login_last_name_field);
         lastNameField.setHint(LocaleController.getString("LastName", R.string.LastName));
-        //avatarImage = (BackupImageView)findViewById(R.id.settings_avatar_image);
 
         TextView textView = (TextView)findViewById(R.id.login_register_info);
         textView.setText(LocaleController.getString("RegisterText", R.string.RegisterText));
@@ -107,51 +86,6 @@ public class LoginActivityRegisterView extends SlideView {
             }
         });
 
-//        avatarButton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-//
-//                CharSequence[] items;
-//
-//                if (avatarPhoto != null) {
-//                    items = new CharSequence[]{getString(R.string.FromCamera), getString(R.string.FromGalley), getString(R.string.DeletePhoto)};
-//                } else {
-//                    items = new CharSequence[]{getString(R.string.FromCamera), getString(R.string.FromGalley)};
-//                }
-//
-//                builder.setItems(items, new DialogInterface.OnClickListener() {
-//                    @Override
-//                    public void onClick(DialogInterface dialogInterface, int i) {
-//                        if (i == 0) {
-//                            avatarUpdater.openCamera();
-//                        } else if (i == 1) {
-//                            avatarUpdater.openGallery();
-//                        } else if (i == 2) {
-//                            resetAvatar();
-//                        }
-//                    }
-//                });
-//                builder.show().setCanceledOnTouchOutside(true);
-//            }
-//        });
-    }
-
-    public void resetAvatar() {
-//        avatarPhoto = null;
-//        avatarPhotoBig = null;
-//        if (avatarImage != null) {
-//            avatarImage.setImageResource(R.drawable.user_placeholder);
-//        }
-    }
-
-    @Override
-    public void onDestroyActivity() {
-        super.onDestroyActivity();
-//        if (avatarUpdater != null) {
-//            avatarUpdater.clear();
-//            avatarUpdater = null;
-//        }
     }
 
     @Override
@@ -184,7 +118,6 @@ public class LoginActivityRegisterView extends SlideView {
         phoneHash = params.getString("phoneHash");
         phoneCode = params.getString("code");
         currentParams = params;
-        resetAvatar();
     }
 
     @Override
@@ -249,63 +182,33 @@ public class LoginActivityRegisterView extends SlideView {
     }
 
     @Override
-    protected Parcelable onSaveInstanceState() {
-        Parcelable superState = super.onSaveInstanceState();
-        return new SavedState(superState, firstNameField.getText().toString(), lastNameField.getText().toString(), currentParams);
+    public void saveStateParams(Bundle bundle) {
+        String first = firstNameField.getText().toString();
+        if (first != null && first.length() != 0) {
+            bundle.putString("registerview_first", first);
+        }
+        String last = lastNameField.getText().toString();
+        if (last != null && last.length() != 0) {
+            bundle.putString("registerview_last", last);
+        }
+        if (currentParams != null) {
+            bundle.putBundle("registerview_params", currentParams);
+        }
     }
 
     @Override
-    protected void onRestoreInstanceState(Parcelable state) {
-        SavedState savedState = (SavedState) state;
-        super.onRestoreInstanceState(savedState.getSuperState());
-        currentParams = savedState.params;
+    public void restoreStateParams(Bundle bundle) {
+        currentParams = bundle.getBundle("registerview_params");
         if (currentParams != null) {
             setParams(currentParams);
         }
-        firstNameField.setText(savedState.firstName);
-        lastNameField.setText(savedState.lastName);
-    }
-
-    protected static class SavedState extends BaseSavedState {
-        public String firstName;
-        public String lastName;
-        public Bundle params;
-
-        private SavedState(Parcelable superState, String text1, String text2, Bundle p1) {
-            super(superState);
-            firstName = text1;
-            lastName = text2;
-            if (firstName == null) {
-                firstName = "";
-            }
-            if (lastName == null) {
-                lastName = "";
-            }
-            params = p1;
+        String first = bundle.getString("registerview_first");
+        if (first != null) {
+            firstNameField.setText(first);
         }
-
-        private SavedState(Parcel in) {
-            super(in);
-            firstName = in.readString();
-            lastName = in.readString();
-            params = in.readBundle();
+        String last = bundle.getString("registerview_last");
+        if (last != null) {
+            lastNameField.setText(last);
         }
-
-        @Override
-        public void writeToParcel(Parcel destination, int flags) {
-            super.writeToParcel(destination, flags);
-            destination.writeString(firstName);
-            destination.writeString(lastName);
-            destination.writeBundle(params);
-        }
-
-        public static final Parcelable.Creator<SavedState> CREATOR = new Creator<SavedState>() {
-            public SavedState createFromParcel(Parcel in) {
-                return new SavedState(in);
-            }
-            public SavedState[] newArray(int size) {
-                return new SavedState[size];
-            }
-        };
     }
 }

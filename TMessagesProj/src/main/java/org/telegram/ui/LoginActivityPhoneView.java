@@ -11,8 +11,6 @@ package org.telegram.ui;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Parcel;
-import android.os.Parcelable;
 import android.support.v7.app.ActionBarActivity;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
@@ -400,55 +398,26 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
     }
 
     @Override
-    protected Parcelable onSaveInstanceState() {
-        Parcelable superState = super.onSaveInstanceState();
-        return new SavedState(superState, phoneField.getText().toString(), codeField.getText().toString());
+    public void saveStateParams(Bundle bundle) {
+        String code = codeField.getText().toString();
+        if (code != null && code.length() != 0) {
+            bundle.putString("phoneview_code", code);
+        }
+        String phone = phoneField.getText().toString();
+        if (phone != null && phone.length() != 0) {
+            bundle.putString("phoneview_phone", phone);
+        }
     }
 
     @Override
-    protected void onRestoreInstanceState(Parcelable state) {
-        SavedState savedState = (SavedState) state;
-        super.onRestoreInstanceState(savedState.getSuperState());
-        codeField.setText(savedState.code);
-        phoneField.setText(savedState.phone);
-    }
-
-    protected static class SavedState extends BaseSavedState {
-        public String phone;
-        public String code;
-
-        private SavedState(Parcelable superState, String text1, String text2) {
-            super(superState);
-            phone = text1;
-            code = text2;
-            if (phone == null) {
-                phone = "";
-            }
-            if (code == null) {
-                code = "";
-            }
+    public void restoreStateParams(Bundle bundle) {
+        String code = bundle.getString("phoneview_code");
+        if (code != null) {
+            codeField.setText(code);
         }
-
-        private SavedState(Parcel in) {
-            super(in);
-            phone = in.readString();
-            code = in.readString();
+        String phone = bundle.getString("phoneview_phone");
+        if (phone != null) {
+            phoneField.setText(phone);
         }
-
-        @Override
-        public void writeToParcel(Parcel destination, int flags) {
-            super.writeToParcel(destination, flags);
-            destination.writeString(phone);
-            destination.writeString(code);
-        }
-
-        public static final Parcelable.Creator<SavedState> CREATOR = new Creator<SavedState>() {
-            public SavedState createFromParcel(Parcel in) {
-                return new SavedState(in);
-            }
-            public SavedState[] newArray(int size) {
-                return new SavedState[size];
-            }
-        };
     }
 }

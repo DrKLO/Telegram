@@ -60,4 +60,12 @@ public class SlideView extends LinearLayout {
     public void onDestroyActivity() {
         delegate = null;
     }
+
+    public void saveStateParams(Bundle bundle) {
+
+    }
+
+    public void restoreStateParams(Bundle bundle) {
+
+    }
 }
