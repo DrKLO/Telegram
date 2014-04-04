@@ -19,7 +19,6 @@ import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.SearchView;
 import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -191,11 +190,9 @@ public class CountrySelectActivity extends ActionBarActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-
-        inflater.inflate(R.menu.contacts_menu, menu);
-        searchItem = (SupportMenuItem)menu.findItem(R.id.messages_list_menu_search);
-        searchView = (SearchView)searchItem.getActionView();
+        searchItem = (SupportMenuItem)menu.add(Menu.NONE, 0, Menu.NONE, LocaleController.getString("Search", R.string.Search)).setIcon(R.drawable.ic_ab_search);
+        searchItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS|SupportMenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
+        searchItem.setActionView(searchView = new SearchView(this));
 
         TextView textView = (TextView) searchView.findViewById(R.id.search_src_text);
         if (textView != null) {

@@ -65,6 +65,9 @@ public class PhotoObject extends AttachmentObject<TLRPC.PhotoSize> {
     }
 
     public static PhotoObject getClosestImageWithSize(ArrayList<PhotoObject> arr, int width, int height) {
+        if (arr == null) {
+            return null;
+        }
         int closestWidth = 9999;
         int closestHeight = 9999;
         PhotoObject closestObject = null;
@@ -84,10 +87,16 @@ public class PhotoObject extends AttachmentObject<TLRPC.PhotoSize> {
     }
 
     public static TLRPC.PhotoSize getClosestPhotoSizeWithSize(ArrayList<TLRPC.PhotoSize> sizes, int width, int height) {
+        if (sizes == null) {
+            return null;
+        }
         int closestWidth = 9999;
         int closestHeight = 9999;
         TLRPC.PhotoSize closestObject = null;
         for (TLRPC.PhotoSize obj : sizes) {
+            if (obj == null) {
+                continue;
+            }
             int diffW = Math.abs(obj.w - width);
             int diffH = Math.abs(obj.h - height);
             if (closestObject == null || closestObject instanceof TLRPC.TL_photoCachedSize || closestWidth > diffW || closestHeight > diffH) {

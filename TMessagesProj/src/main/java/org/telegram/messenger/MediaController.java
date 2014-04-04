@@ -1016,8 +1016,23 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         });
     }
 
-    public static void saveFile(String path, Context context, final int type, final String name) {
-        final File sourceFile = new File(Utilities.getCacheDir(), path);
+    public static void saveFile(String path, String fullPath, Context context, final int type, final String name) {
+        if (path == null && fullPath == null) {
+            return;
+        }
+
+        File file = null;
+        if (fullPath != null && fullPath.length() != 0) {
+            file = new File(fullPath);
+            if (!file.exists()) {
+                file = null;
+            }
+        }
+        if (file == null) {
+            file = new File(Utilities.getCacheDir(), path);
+        }
+
+        final File sourceFile = file;
         if (sourceFile.exists()) {
             ProgressDialog progressDialog = null;
             if (context != null) {
@@ -1121,7 +1136,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             return null;
         }
 
-        if (currentGifMessageObject != null && messageObject.messageOwner.id == currentGifMessageObject.messageOwner.id) {
+        if (currentGifDrawable != null && currentGifMessageObject != null && messageObject.messageOwner.id == currentGifMessageObject.messageOwner.id) {
             currentMediaCell = cell;
             currentGifDrawable.parentView = new WeakReference<View>(cell);
             return currentGifDrawable;

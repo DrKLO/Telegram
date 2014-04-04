@@ -38,7 +38,7 @@ public class ChatBaseCell extends BaseCell {
 
     public static interface ChatBaseCellDelegate {
         public abstract void didPressedUserAvatar(ChatBaseCell cell, TLRPC.User user);
-        public abstract void didPressedCanceSendButton(ChatBaseCell cell);
+        public abstract void didPressedCancelSendButton(ChatBaseCell cell);
         public abstract void didLongPressed(ChatBaseCell cell);
         public abstract boolean canPerformActions();
         public boolean onSwipeLeft();
@@ -246,7 +246,7 @@ public class ChatBaseCell extends BaseCell {
         }
 
         String newNameString = null;
-        if (drawName && isChat && newUser != null && !currentMessageObject.messageOwner.out) {
+        if (drawName && isChat && newUser != null && !currentMessageObject.isOut()) {
             newNameString = Utilities.formatName(newUser.first_name, newUser.last_name);
         }
 
@@ -276,7 +276,7 @@ public class ChatBaseCell extends BaseCell {
         }
 
         currentUser = MessagesController.getInstance().users.get(messageObject.messageOwner.from_id);
-        if (isChat && !messageObject.messageOwner.out) {
+        if (isChat && !messageObject.isOut()) {
             isAvatarVisible = true;
             if (currentUser != null) {
                 if (currentUser.photo != null) {
@@ -289,7 +289,7 @@ public class ChatBaseCell extends BaseCell {
         }
 
         if (!media) {
-            if (currentMessageObject.messageOwner.out) {
+            if (currentMessageObject.isOut()) {
                 currentTimePaint = timePaintOut;
             } else {
                 currentTimePaint = timePaintIn;
@@ -303,7 +303,7 @@ public class ChatBaseCell extends BaseCell {
 
         namesOffset = 0;
 
-        if (drawName && isChat && currentUser != null && !currentMessageObject.messageOwner.out) {
+        if (drawName && isChat && currentUser != null && !currentMessageObject.isOut()) {
             currentNameString = Utilities.formatName(currentUser.first_name, currentUser.last_name);
             nameWidth = getMaxNameWidth();
 
@@ -457,13 +457,13 @@ public class ChatBaseCell extends BaseCell {
 
             timeLayout = new StaticLayout(currentTimeString, currentTimePaint, timeWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             if (!media) {
-                if (!currentMessageObject.messageOwner.out) {
+                if (!currentMessageObject.isOut()) {
                     timeX = backgroundWidth - Utilities.dp(9) - timeWidth + (isChat ? Utilities.dp(52) : 0);
                 } else {
                     timeX = layoutWidth - timeWidth - Utilities.dpf(38.5f);
                 }
             } else {
-                if (!currentMessageObject.messageOwner.out) {
+                if (!currentMessageObject.isOut()) {
                     timeX = backgroundWidth - Utilities.dp(4) - timeWidth + (isChat ? Utilities.dp(52) : 0);
                 } else {
                     timeX = layoutWidth - timeWidth - Utilities.dpf(42.0f);
@@ -502,7 +502,7 @@ public class ChatBaseCell extends BaseCell {
         }
 
         Drawable currentBackgroundDrawable = null;
-        if (currentMessageObject.messageOwner.out) {
+        if (currentMessageObject.isOut()) {
             if (isPressed() && isCheckPressed || !isCheckPressed && isPressed) {
                 if (!media) {
                     currentBackgroundDrawable = backgroundDrawableOutSelected;
@@ -551,7 +551,7 @@ public class ChatBaseCell extends BaseCell {
 
         if (drawForwardedName && forwardedNameLayout != null) {
             canvas.save();
-            if (currentMessageObject.messageOwner.out) {
+            if (currentMessageObject.isOut()) {
                 forwardNamePaint.setColor(0xff4a923c);
                 forwardNameX = currentBackgroundDrawable.getBounds().left + Utilities.dp(10);
                 forwardNameY = Utilities.dp(10 + (drawName ? 18 : 0));
@@ -566,7 +566,7 @@ public class ChatBaseCell extends BaseCell {
         }
 
         if (media) {
-            setDrawableBounds(mediaBackgroundDrawable, timeX - Utilities.dp(3), layoutHeight - Utilities.dpf(27.5f), timeWidth + Utilities.dp(6 + (currentMessageObject.messageOwner.out ? 20 : 0)), Utilities.dpf(16.5f));
+            setDrawableBounds(mediaBackgroundDrawable, timeX - Utilities.dp(3), layoutHeight - Utilities.dpf(27.5f), timeWidth + Utilities.dp(6 + (currentMessageObject.isOut() ? 20 : 0)), Utilities.dpf(16.5f));
             mediaBackgroundDrawable.draw(canvas);
 
             canvas.save();
@@ -580,7 +580,7 @@ public class ChatBaseCell extends BaseCell {
             canvas.restore();
         }
 
-        if (currentMessageObject.messageOwner.out) {
+        if (currentMessageObject.isOut()) {
             boolean drawCheck1 = false;
             boolean drawCheck2 = false;
             boolean drawClock = false;

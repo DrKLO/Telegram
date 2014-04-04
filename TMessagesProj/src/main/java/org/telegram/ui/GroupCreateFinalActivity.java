@@ -274,8 +274,10 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.group_create_menu, menu);
-        SupportMenuItem doneItem = (SupportMenuItem)menu.findItem(R.id.done_menu_item);
+        SupportMenuItem doneItem = (SupportMenuItem)menu.add(Menu.NONE, 0, Menu.NONE, null);
+        doneItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
+        doneItem.setActionView(R.layout.group_create_done_layout);
+
         TextView doneTextView = (TextView)doneItem.getActionView().findViewById(R.id.done_button);
         doneTextView.setText(LocaleController.getString("Done", R.string.Done));
         doneTextView.setOnClickListener(new View.OnClickListener() {

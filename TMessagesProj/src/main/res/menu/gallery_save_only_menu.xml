@@ -1,8 +1,0 @@
-<menu
-    xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <item
-        android:id="@+id/gallery_menu_save"
-        android:title="@string/SaveToGallery"/>
-
-</menu>

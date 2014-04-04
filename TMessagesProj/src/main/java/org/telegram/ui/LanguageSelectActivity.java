@@ -8,7 +8,9 @@
 
 package org.telegram.ui;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v4.internal.view.SupportMenuItem;
 import android.support.v4.view.MenuItemCompat;
@@ -114,7 +116,59 @@ public class LanguageSelectActivity extends BaseFragment {
                             }
                         }
                     }
+                    if (searchItem != null && searchItem.isActionViewExpanded()) {
+                        searchItem.collapseActionView();
+                    }
                     finishFragment();
+                }
+            });
+
+            listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+                @Override
+                public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
+                    if (parentActivity == null) {
+                        return false;
+                    }
+                    LocaleController.LocaleInfo localeInfo = null;
+                    if (searching && searchWas) {
+                        if (i >= 0 && i < searchResult.size()) {
+                            localeInfo = searchResult.get(i);
+                        }
+                    } else {
+                        if (i >= 0 && i < LocaleController.getInstance().sortedLanguages.size()) {
+                            localeInfo = LocaleController.getInstance().sortedLanguages.get(i);
+                        }
+                    }
+                    if (localeInfo == null || localeInfo.pathToFile == null) {
+                        return false;
+                    }
+                    final LocaleController.LocaleInfo finalLocaleInfo = localeInfo;
+                    AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                    builder.setMessage(LocaleController.getString("DeleteLocalization", R.string.DeleteLocalization));
+                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                    builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            if (LocaleController.getInstance().deleteLanguage(finalLocaleInfo)) {
+                                if (searchResult != null) {
+                                    searchResult.remove(finalLocaleInfo);
+                                }
+                                if (listAdapter != null) {
+                                    listAdapter.notifyDataSetChanged();
+                                }
+                                if (searchListViewAdapter != null) {
+                                    searchListViewAdapter.notifyDataSetChanged();
+                                }
+                                applySelfActionBar();
+                                if (searchItem != null && searchItem.isActionViewExpanded()) {
+                                    searchItem.collapseActionView();
+                                }
+                            }
+                        }
+                    });
+                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    builder.show().setCanceledOnTouchOutside(true);
+                    return true;
                 }
             });
 
@@ -184,10 +238,8 @@ public class LanguageSelectActivity extends BaseFragment {
         int itemId = item.getItemId();
         switch (itemId) {
             case android.R.id.home:
-                if (searchItem != null) {
-                    if (searchItem.isActionViewExpanded()) {
-                        searchItem.collapseActionView();
-                    }
+                if (searchItem != null && searchItem.isActionViewExpanded()) {
+                    searchItem.collapseActionView();
                 }
                 finishFragment();
                 break;
@@ -197,9 +249,9 @@ public class LanguageSelectActivity extends BaseFragment {
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.contacts_menu, menu);
-        searchItem = (SupportMenuItem)menu.findItem(R.id.messages_list_menu_search);
-        searchView = (SearchView)searchItem.getActionView();
+        searchItem = (SupportMenuItem)menu.add(Menu.NONE, 0, Menu.NONE, LocaleController.getString("Search", R.string.Search)).setIcon(R.drawable.ic_ab_search);
+        searchItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS|SupportMenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
+        searchItem.setActionView(searchView = new SearchView(parentActivity));
 
         TextView textView = (TextView) searchView.findViewById(R.id.search_src_text);
         if (textView != null) {

@@ -323,19 +323,9 @@ public class ContactsController {
                             name = PhoneFormat.getInstance().format(phone);
                         }
 
-                        String[] args = name.split(" ", 2);
-
                         Contact contact = new Contact();
-                        if (args.length > 0) {
-                            contact.first_name = args[0];
-                        } else {
-                            contact.first_name = "";
-                        }
-                        if (args.length > 1) {
-                            contact.last_name = args[1];
-                        } else {
-                            contact.last_name = "";
-                        }
+                        contact.first_name = name;
+                        contact.last_name = "";
                         contact.id = pCur.getInt(2);
                         contactsMap.put(contact.id, contact);
 

@@ -329,7 +329,8 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                         parcelable = Uri.parse(parcelable.toString());
                     }
                     if (parcelable != null && type != null && type.startsWith("image/")) {
-                        if (type.equals("image/gif")) {
+                        String tempPath = Utilities.getPath((Uri)parcelable);
+                        if (type.equals("image/gif") || tempPath != null && tempPath.endsWith(".gif")) {
                             try {
                                 documentPath = Utilities.getPath((Uri)parcelable);
                             } catch (Exception e) {
@@ -371,7 +372,8 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                                 if (!(parcelable instanceof Uri)) {
                                     parcelable = Uri.parse(parcelable.toString());
                                 }
-                                if (type.equals("image/gif")) {
+                                String tempPath = Utilities.getPath((Uri)parcelable);
+                                if (type.equals("image/gif") || tempPath != null && tempPath.endsWith(".gif")) {
                                     if (documentsPathArray == null) {
                                         documentsPathArray = new ArrayList<String>();
                                     }
