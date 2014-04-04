@@ -329,6 +329,8 @@
     <string name="AttachDocument">Document</string>
     <string name="AttachAudio">Audio</string>
     <string name="FromYou">You</string>
+    <string name="ActionTakeScreenshootYou">You took a screenshot!</string>
+    <string name="ActionTakeScreenshoot">un1 took a screenshot!</string>
 
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Invalid phone number</string>

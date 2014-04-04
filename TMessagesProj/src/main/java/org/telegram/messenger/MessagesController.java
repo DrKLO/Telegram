@@ -401,7 +401,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     public void deleteAllAppAccounts() {
         try {
             AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
-            Account[] accounts = am.getAccountsByType("org.telegram.messenger.account");
+            Account[] accounts = am.getAccountsByType("org.telegram.account");
             for (Account c : accounts) {
                 am.removeAccount(c, null, null);
             }
@@ -1613,6 +1613,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     private void sendMessagesDeleteMessage(ArrayList<Long> random_ids, TLRPC.EncryptedChat encryptedChat) {
+        if (!(encryptedChat instanceof TLRPC.TL_encryptedChat)) {
+            return;
+        }
         TLRPC.TL_decryptedMessageService reqSend = new TLRPC.TL_decryptedMessageService();
         reqSend.random_id = getNextRandomId();
         reqSend.random_bytes = new byte[Math.max(1, (int)Math.ceil(random.nextDouble() * 16))];
@@ -1620,9 +1623,13 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         reqSend.action = new TLRPC.TL_decryptedMessageActionDeleteMessages();
         reqSend.action.random_ids = random_ids;
         performSendEncryptedRequest(reqSend, null, encryptedChat, null);
+
     }
 
     private void sendClearHistoryMessage(TLRPC.EncryptedChat encryptedChat) {
+        if (!(encryptedChat instanceof TLRPC.TL_encryptedChat)) {
+            return;
+        }
         TLRPC.TL_decryptedMessageService reqSend = new TLRPC.TL_decryptedMessageService();
         reqSend.random_id = getNextRandomId();
         reqSend.random_bytes = new byte[Math.max(1, (int)Math.ceil(random.nextDouble() * 16))];
@@ -1632,6 +1639,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     public void sendTTLMessage(TLRPC.EncryptedChat encryptedChat) {
+        if (!(encryptedChat instanceof TLRPC.TL_encryptedChat)) {
+            return;
+        }
         TLRPC.TL_messageService newMsg = new TLRPC.TL_messageService();
 
         newMsg.action = new TLRPC.TL_messageActionTTLChange();
@@ -1669,6 +1679,54 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         random.nextBytes(reqSend.random_bytes);
         reqSend.action = new TLRPC.TL_decryptedMessageActionSetMessageTTL();
         reqSend.action.ttl_seconds = encryptedChat.ttl;
+        performSendEncryptedRequest(reqSend, newMsgObj, encryptedChat, null);
+    }
+
+    public void sendScreenshotMessage(TLRPC.EncryptedChat encryptedChat, ArrayList<Long> random_ids) {
+        if (!(encryptedChat instanceof TLRPC.TL_encryptedChat)) {
+            return;
+        }
+
+        TLRPC.TL_decryptedMessageActionScreenshotMessages action = new TLRPC.TL_decryptedMessageActionScreenshotMessages();
+        action.random_ids = random_ids;
+
+        TLRPC.TL_messageService newMsg = new TLRPC.TL_messageService();
+
+        newMsg.action = new TLRPC.TL_messageEcryptedAction();
+        newMsg.action.encryptedAction = action;
+
+        newMsg.local_id = newMsg.id = UserConfig.getNewMessageId();
+        newMsg.from_id = UserConfig.clientUserId;
+        newMsg.unread = true;
+        newMsg.dialog_id = ((long)encryptedChat.id) << 32;
+        newMsg.to_id = new TLRPC.TL_peerUser();
+        if (encryptedChat.participant_id == UserConfig.clientUserId) {
+            newMsg.to_id.user_id = encryptedChat.admin_id;
+        } else {
+            newMsg.to_id.user_id = encryptedChat.participant_id;
+        }
+        newMsg.out = true;
+        newMsg.date = ConnectionsManager.getInstance().getCurrentTime();
+        newMsg.random_id = getNextRandomId();
+        UserConfig.saveConfig(false);
+        final MessageObject newMsgObj = new MessageObject(newMsg, users);
+        newMsgObj.messageOwner.send_state = MESSAGE_SEND_STATE_SENDING;
+
+        final ArrayList<MessageObject> objArr = new ArrayList<MessageObject>();
+        objArr.add(newMsgObj);
+        ArrayList<TLRPC.Message> arr = new ArrayList<TLRPC.Message>();
+        arr.add(newMsg);
+        MessagesStorage.getInstance().putMessages(arr, false, true);
+        updateInterfaceWithMessages(newMsg.dialog_id, objArr);
+        NotificationCenter.getInstance().postNotificationName(dialogsNeedReload);
+
+        sendingMessages.put(newMsg.id, newMsgObj);
+
+        TLRPC.TL_decryptedMessageService reqSend = new TLRPC.TL_decryptedMessageService();
+        reqSend.random_id = newMsg.random_id;
+        reqSend.random_bytes = new byte[Math.max(1, (int)Math.ceil(random.nextDouble() * 16))];
+        random.nextBytes(reqSend.random_bytes);
+        reqSend.action = action;
         performSendEncryptedRequest(reqSend, newMsgObj, encryptedChat, null);
     }
 
@@ -4542,6 +4600,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             notification.ledOnMS = 1000;
             notification.ledOffMS = 1000;
             notification.flags |= Notification.FLAG_SHOW_LIGHTS;
+            notification.defaults = 0;
             try {
                 mNotificationManager.notify(1, notification);
                 if (preferences.getBoolean("EnablePebbleNotifications", false)) {
@@ -4827,10 +4886,17 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     return newMessage;
                 } else if (object instanceof TLRPC.TL_decryptedMessageService) {
                     TLRPC.TL_decryptedMessageService serviceMessage = (TLRPC.TL_decryptedMessageService)object;
-                    if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionSetMessageTTL) {
+                    if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionSetMessageTTL || serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionScreenshotMessages) {
                         TLRPC.TL_messageService newMessage = new TLRPC.TL_messageService();
-                        newMessage.action = new TLRPC.TL_messageActionTTLChange();
-                        newMessage.action.ttl = chat.ttl = serviceMessage.action.ttl_seconds;
+                        if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionSetMessageTTL) {
+                            newMessage.action = new TLRPC.TL_messageActionTTLChange();
+                            newMessage.action.ttl = chat.ttl = serviceMessage.action.ttl_seconds;
+                        } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionScreenshotMessages) {
+                            newMessage.action = new TLRPC.TL_messageEcryptedAction();
+                            newMessage.action.encryptedAction = serviceMessage.action;
+                        } else {
+                            return null;
+                        }
                         newMessage.local_id = newMessage.id = UserConfig.getNewMessageId();
                         UserConfig.saveConfig(false);
                         newMessage.unread = true;

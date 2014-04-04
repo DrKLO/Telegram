@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.telegram.messenger">
+    package="org.telegram.messenger"
+    android:installLocation="auto">
 
     <supports-screens android:anyDensity="true"
                       android:smallScreens="true"
@@ -45,8 +46,7 @@
         android:theme="@style/Theme.TMessages.Start"
         android:name="org.telegram.ui.ApplicationLoader"
         android:hardwareAccelerated="true"
-        android:largeHeap="true"
-        android:installLocation="auto">
+        android:largeHeap="true">
 
         <activity
             android:name="org.telegram.ui.LaunchActivity"

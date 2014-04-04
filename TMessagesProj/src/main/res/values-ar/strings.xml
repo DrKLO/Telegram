@@ -329,6 +329,8 @@
     <string name="AttachDocument">مستند</string>
     <string name="AttachAudio">مقطع صوتي</string>
     <string name="FromYou">أنت</string>
+    <string name="ActionTakeScreenshootYou">You took a screenshot!</string>
+    <string name="ActionTakeScreenshoot">un1 took a screenshot!</string>
 
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">رقم الهاتف غير صحيح</string>

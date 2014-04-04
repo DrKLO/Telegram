@@ -533,7 +533,9 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 View selection = view.findViewById(R.id.selection);
                 TLRPC.WallPaper wallPaper = wallPapers.get(i - 1);
                 TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, Utilities.dp(100), Utilities.dp(100));
-                image.setImage(size.location, "100_100", 0);
+                if (size != null && size.location != null) {
+                    image.setImage(size.location, "100_100", 0);
+                }
                 if (wallPaper.id == selectedBackground) {
                     selection.setVisibility(View.VISIBLE);
                 } else {

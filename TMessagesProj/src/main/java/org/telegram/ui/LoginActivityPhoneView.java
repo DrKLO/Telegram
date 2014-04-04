@@ -322,7 +322,7 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
             delegate.needShowAlert(LocaleController.getString("WrongCountry", R.string.WrongCountry));
             return;
         }
-        if (codeField.length() == 0 || phoneField.length() == 0) {
+        if (codeField.length() == 0) {
             delegate.needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
             return;
         }

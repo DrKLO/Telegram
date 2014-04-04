@@ -8818,6 +8818,7 @@ public class TLRPC {
         public ArrayList<Integer> users = new ArrayList<Integer>();
         public String address;
         public int ttl;
+        public DecryptedMessageAction encryptedAction;
     }
 
     public static class TL_messageActionTTLChange extends MessageAction {
@@ -9107,6 +9108,52 @@ public class TLRPC {
             for (Long value : random_ids) {
                 stream.writeInt64(value);
             }
+        }
+    }
+
+    public static class TL_decryptedMessageActionScreenshotMessages extends DecryptedMessageAction {
+        public static int constructor = 0x954bd30;
+
+
+        public void readParams(AbsSerializedData stream) {
+            boolean[] error = new boolean[1];
+            stream.readInt32(error);
+            if (error[0]) {
+                return;
+            }
+            int count = stream.readInt32(error);
+            if (error[0]) {
+                return;
+            }
+            for (long a = 0; a < count; a++) {
+                random_ids.add(stream.readInt64(error));
+                if (error[0]) {
+                    return;
+                }
+            }
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(0x1cb5c415);
+            int count = random_ids.size();
+            stream.writeInt32(count);
+            for (Long value : random_ids) {
+                stream.writeInt64(value);
+            }
+        }
+    }
+
+    public static class TL_messageEcryptedAction extends MessageAction {
+        public static int constructor = 0x555555F7;
+
+        public void readParams(AbsSerializedData stream) {
+            encryptedAction = (DecryptedMessageAction)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+            encryptedAction.serializeToStream(stream);
         }
     }
 

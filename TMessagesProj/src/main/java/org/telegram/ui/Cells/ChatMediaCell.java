@@ -411,7 +411,8 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     fileName = currentMessageObject.messageOwner.attachPath;
                     cacheFile = f;
                 }
-            } else {
+            }
+            if (fileName == null) {
                 fileName = currentMessageObject.getFileName();
                 cacheFile = new File(Utilities.getCacheDir(), fileName);
             }

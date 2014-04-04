@@ -173,6 +173,14 @@ public class CountrySelectActivity extends ActionBarActivity {
     }
 
     @Override
+    public void onPause() {
+        super.onPause();
+        if (searchItem != null && searchItem.isActionViewExpanded()) {
+            searchItem.collapseActionView();
+        }
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int itemId = item.getItemId();
         switch (itemId) {

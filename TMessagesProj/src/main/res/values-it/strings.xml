@@ -321,7 +321,7 @@
     <string name="ActionYouCreateGroup">Hai creato il gruppo</string>
     <string name="ActionKickUserYou">un1 ti ha rimosso</string>
     <string name="ActionAddUserYou">un1 ti ha aggiunto</string>
-    <string name="UnsuppotedMedia">Questo messaggio non è supportato dalla tua versione di Telegram.</string>
+    <string name="UnsuppotedMedia">Questo messaggio non è supportato sulla tua versione di Telegram. Aggiorna l\'applicazione per\nvisualizzarlo: http://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Posizione</string>
@@ -329,6 +329,8 @@
     <string name="AttachDocument">Documento</string>
     <string name="AttachAudio">Audio</string>
     <string name="FromYou">Tu</string>
+    <string name="ActionTakeScreenshootYou">You took a screenshot!</string>
+    <string name="ActionTakeScreenshoot">un1 took a screenshot!</string>
 
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Numero di telefono non valido</string>
@@ -358,7 +360,7 @@
     <string name="Page1Message">Benvenuto nell\'era della messaggistica veloce e sicura</string>
     <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> consegna i messaggi più velocemente di qualsiasi altra applicazione</string>
     <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> è gratuita per sempre. Nessuna pubblicità. Nessun costo di abbonamento</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> tiene al sicuro i tuoi messaggi dagli attacchi dei hacker</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> tiene al sicuro i tuoi messaggi dagli attacchi degli hacker</string>
     <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> non ha limiti sulle dimensioni dei tuoi file multimediali e delle chat</string>
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> ti consente di accedere ai messaggi da più dispositivi</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> cifra in maniera sicura i messaggi e può far sì che si autodistruggano</string>

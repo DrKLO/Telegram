@@ -361,8 +361,17 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         if (messagesListViewAdapter != null) {
             messagesListViewAdapter.notifyDataSetChanged();
         }
+
         ((LaunchActivity)parentActivity).showActionBar();
         ((LaunchActivity)parentActivity).updateActionBar();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (searchItem != null && searchItem.isActionViewExpanded()) {
+            searchItem.collapseActionView();
+        }
     }
 
     @Override
@@ -541,6 +550,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        if (parentActivity == null) {
+            return;
+        }
         searchItem = (SupportMenuItem)menu.add(Menu.NONE, 0, Menu.NONE, LocaleController.getString("Search", R.string.Search)).setIcon(R.drawable.ic_ab_search);
         searchItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS|SupportMenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
         searchItem.setActionView(searchView = new SearchView(parentActivity));

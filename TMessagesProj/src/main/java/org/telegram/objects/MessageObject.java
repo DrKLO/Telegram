@@ -217,6 +217,18 @@ public class MessageObject {
                     } else {
                         messageText = LocaleController.formatString("NotificationContactNewPhoto", R.string.NotificationContactNewPhoto, "");
                     }
+                } else if (message.action instanceof TLRPC.TL_messageEcryptedAction) {
+                    if (message.action.encryptedAction instanceof TLRPC.TL_decryptedMessageActionScreenshotMessages) {
+                        if (isFromMe()) {
+                            messageText = LocaleController.formatString("ActionTakeScreenshootYou", R.string.ActionTakeScreenshootYou);
+                        } else {
+                            if (fromUser != null) {
+                                messageText = LocaleController.formatString("ActionTakeScreenshoot", R.string.ActionTakeScreenshoot).replace("un1", fromUser.first_name);
+                            } else {
+                                messageText = LocaleController.formatString("ActionTakeScreenshoot", R.string.ActionTakeScreenshoot).replace("un1", "");
+                            }
+                        }
+                    }
                 }
             }
         } else if (message.media != null && !(message.media instanceof TLRPC.TL_messageMediaEmpty)) {

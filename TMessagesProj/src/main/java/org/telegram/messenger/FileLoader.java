@@ -113,8 +113,7 @@ public class FileLoader {
             try {
                 Class cl = Class.forName("dalvik.system.VMRuntime");
                 Method getRt = cl.getMethod("getRuntime", new Class[0]);
-                Object obj = new Object[0];
-                runtime = getRt.invoke(null, obj);
+                runtime = getRt.invoke(null, new Object[0]);
                 trackAllocation = cl.getMethod("trackExternalAllocation", new Class[] {long.class});
                 trackFree = cl.getMethod("trackExternalFree", new Class[] {long.class});
                 success = true;
