@@ -23,18 +23,8 @@ public class VideoObject extends ExtendedAttachmentObject<TLRPC.Video> {
     }
 
     @Override
-    public int getSize() {
-        return 0;
-    }
-
-    @Override
     public TLRPC.InputFileLocation getAttachmentFileLocation() {
         return new TLRPC.TL_inputVideoFileLocation();
-    }
-
-    @Override
-    public String getAttachmentFileName() {
-        return null;
     }
 
     @Override
