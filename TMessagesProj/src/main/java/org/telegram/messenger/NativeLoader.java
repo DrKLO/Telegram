@@ -40,26 +40,34 @@ public class NativeLoader {
                 long libSize = 0;
                 long libSize2 = 0;
 
-                if (Build.CPU_ABI.equalsIgnoreCase("armeabi-v7a")) {
-                    folder = "armeabi-v7a";
-                    libSize = sizes[1];
-                    libSize2 = sizes[0];
-                } else if (Build.CPU_ABI.equalsIgnoreCase("armeabi")) {
+                try {
+                    if (Build.CPU_ABI.equalsIgnoreCase("armeabi-v7a")) {
+                        folder = "armeabi-v7a";
+                        libSize = sizes[1];
+                        libSize2 = sizes[0];
+                    } else if (Build.CPU_ABI.equalsIgnoreCase("armeabi")) {
+                        folder = "armeabi";
+                        libSize = sizes[0];
+                        libSize2 = sizes[1];
+                    } else if (Build.CPU_ABI.equalsIgnoreCase("x86")) {
+                        folder = "x86";
+                        libSize = sizes[2];
+                    } else if (Build.CPU_ABI.equalsIgnoreCase("mips")) {
+                        folder = "mips";
+                        libSize = sizes[3];
+                    } else {
+                        folder = "armeabi";
+                        libSize = sizes[0];
+                        libSize2 = sizes[1];
+                        FileLog.e("tmessages", "Unsupported arch: " + Build.CPU_ABI);
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
                     folder = "armeabi";
                     libSize = sizes[0];
                     libSize2 = sizes[1];
-                } else if (Build.CPU_ABI.equalsIgnoreCase("x86")) {
-                    folder = "x86";
-                    libSize = sizes[2];
-                } else if (Build.CPU_ABI.equalsIgnoreCase("mips")) {
-                    folder = "mips";
-                    libSize = sizes[3];
-                } else {
-                    System.loadLibrary("tmessages");
-                    nativeLoaded = true;
-                    FileLog.e("tmessages", "Unsupported arch: " + Build.CPU_ABI);
-                    return;
                 }
+
 
                 File destFile = new File(context.getApplicationInfo().nativeLibraryDir + "/libtmessages.so");
                 if (destFile.exists() && (destFile.length() == libSize || libSize2 != 0 && destFile.length() == libSize2)) {

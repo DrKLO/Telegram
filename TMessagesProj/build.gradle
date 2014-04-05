@@ -82,7 +82,7 @@ android {
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 19
-        versionCode 224
+        versionCode 225
         versionName "1.4.10"
     }
 }

@@ -105,6 +105,9 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
 
     @Override
     public void setParams(Bundle params) {
+        if (params == null) {
+            return;
+        }
         codeField.setText("");
         Utilities.setWaitingForSms(true);
         NotificationCenter.getInstance().addObserver(this, 998);
@@ -115,6 +118,10 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         phoneHash = params.getString("phoneHash");
         registered = params.getString("registered");
         time = params.getInt("calltime");
+
+        if (phone == null) {
+            return;
+        }
 
         String number = PhoneFormat.getInstance().format(phone);
         confirmTextView.setText(Html.fromHtml(String.format(ApplicationLoader.applicationContext.getResources().getString(R.string.SentSmsCode) + " <b>%s</b>", number)));

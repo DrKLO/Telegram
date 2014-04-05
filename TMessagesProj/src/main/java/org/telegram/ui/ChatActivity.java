@@ -3424,7 +3424,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 break;
             }
             case attach_location: {
-                if (!isGoogleMapsInstalled()) {
+                if (!isGoogleMapsInstalled() || parentActivity == null) {
                     return true;
                 }
                 LocationActivity fragment = new LocationActivity();
@@ -3432,6 +3432,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 break;
             }
             case attach_document: {
+                if (parentActivity == null) {
+                    return true;
+                }
                 DocumentSelectActivity fragment = new DocumentSelectActivity();
                 fragment.delegate = this;
                 ((LaunchActivity)parentActivity).presentFragment(fragment, "document", false);

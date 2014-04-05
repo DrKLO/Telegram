@@ -45,9 +45,6 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
                 ((LoginActivityPhoneView)views[0]).selectCountry(data.getStringExtra("country"));
             }
         }
-//        if (views[currentViewNum] instanceof LoginActivityRegisterView) {
-//            ((LoginActivityRegisterView)views[currentViewNum]).avatarUpdater.onActivityResult(requestCode, resultCode, data);
-//        }
     }
 
     @Override
