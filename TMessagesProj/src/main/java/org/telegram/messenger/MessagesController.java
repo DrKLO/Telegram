@@ -1935,7 +1935,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     reqSend.media.last_name = user.last_name;
                     performSendMessageRequest(reqSend, newMsgObj);
                 } else if (type == 7) {
-                    reqSend.media = new TLRPC.TL_inputMediaUploadedDocument();
+                    if (document.thumb.location != null && document.thumb.location instanceof TLRPC.TL_fileLocation) {
+                        reqSend.media = new TLRPC.TL_inputMediaUploadedThumbDocument();
+                    } else {
+                        reqSend.media = new TLRPC.TL_inputMediaUploadedDocument();
+                    }
                     reqSend.media.mime_type = document.mime_type;
                     reqSend.media.file_name = document.file_name;
                     DelayedMessage delayedMessage = new DelayedMessage();
