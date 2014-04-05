@@ -34,7 +34,7 @@ public class NativeLoader {
         File f = null;
         if (context != null) {
             try {
-                f = (File) ApplicationInfo.class.getField("nativeLibraryDir").get(context.getApplicationInfo());
+                f = new File((String)ApplicationInfo.class.getField("nativeLibraryDir").get(context.getApplicationInfo()));
             } catch (Throwable th) {
                 th.printStackTrace();
             }

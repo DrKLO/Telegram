@@ -21,6 +21,7 @@ import android.media.MediaRecorder;
 import android.media.audiofx.AutomaticGainControl;
 import android.net.Uri;
 import android.os.Environment;
+import android.os.ParcelFileDescriptor;
 import android.os.Vibrator;
 import android.provider.MediaStore;
 import android.view.View;
@@ -38,6 +39,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Semaphore;
@@ -1423,5 +1425,82 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             currentMediaCell = null;
             currentGifMessageObject = null;
         }
+    }
+
+    public static boolean isGif(Uri uri) {
+        ParcelFileDescriptor parcelFD = null;
+        FileInputStream input = null;
+        try {
+            parcelFD = ApplicationLoader.applicationContext.getContentResolver().openFileDescriptor(uri, "r");
+            input = new FileInputStream(parcelFD.getFileDescriptor());
+            if (input.getChannel().size() > 3) {
+                byte[] header = new byte[3];
+                input.read(header, 0, 3);
+                String str = new String(header);
+                if (str != null && str.equalsIgnoreCase("gif")) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        } finally {
+            try {
+                if (parcelFD != null) {
+                    parcelFD.close();
+                }
+            } catch (Exception e2) {
+                FileLog.e("tmessages", e2);
+            }
+            try {
+                if (input != null) {
+                    input.close();
+                }
+            } catch (Exception e2) {
+                FileLog.e("tmessages", e2);
+            }
+        }
+        return false;
+    }
+
+    public static String copyDocumentToCache(Uri uri) {
+        ParcelFileDescriptor parcelFD = null;
+        FileInputStream input = null;
+        FileOutputStream output = null;
+        try {
+            int id = UserConfig.lastLocalId;
+            UserConfig.lastLocalId--;
+            parcelFD = ApplicationLoader.applicationContext.getContentResolver().openFileDescriptor(uri, "r");
+            input = new FileInputStream(parcelFD.getFileDescriptor());
+            File f = new File(Utilities.getCacheDir(), String.format(Locale.US, "%d.gif", id));
+            output = new FileOutputStream(f);
+            input.getChannel().transferTo(0, input.getChannel().size(), output.getChannel());
+            UserConfig.saveConfig(false);
+            return f.getAbsolutePath();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        } finally {
+            try {
+                if (parcelFD != null) {
+                    parcelFD.close();
+                }
+            } catch (Exception e2) {
+                FileLog.e("tmessages", e2);
+            }
+            try {
+                if (input != null) {
+                    input.close();
+                }
+            } catch (Exception e2) {
+                FileLog.e("tmessages", e2);
+            }
+            try {
+                if (output != null) {
+                    output.close();
+                }
+            } catch (Exception e2) {
+                FileLog.e("tmessages", e2);
+            }
+        }
+        return null;
     }
 }

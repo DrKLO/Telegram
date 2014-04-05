@@ -1556,7 +1556,18 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     return;
                 }
                 String tempPath = Utilities.getPath(data.getData());
+
+                boolean isGif = false;
                 if (tempPath != null && tempPath.endsWith(".gif")) {
+                    isGif = true;
+                } else if (tempPath == null) {
+                    isGif = MediaController.isGif(data.getData());
+                    if (isGif) {
+                        tempPath = MediaController.copyDocumentToCache(data.getData());
+                    }
+                }
+
+                if (tempPath != null && isGif) {
                     processSendingDocument(tempPath);
                 } else {
                     processSendingPhoto(null, data.getData());

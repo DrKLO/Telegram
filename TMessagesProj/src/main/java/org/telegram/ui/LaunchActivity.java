@@ -38,6 +38,7 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -336,22 +337,24 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                     if (!(parcelable instanceof Uri)) {
                         parcelable = Uri.parse(parcelable.toString());
                     }
-                    if (parcelable != null && type != null && type.startsWith("image/")) {
-                        String tempPath = Utilities.getPath((Uri)parcelable);
-                        if (type.equals("image/gif") || tempPath != null && tempPath.endsWith(".gif")) {
-                            try {
-                                documentPath = Utilities.getPath((Uri)parcelable);
-                            } catch (Exception e) {
-                                FileLog.e("tmessages", e);
+                    Uri uri = (Uri)parcelable;
+                    if (uri != null && type != null && type.startsWith("image/")) {
+                        String tempPath = Utilities.getPath(uri);
+                        boolean isGif = false;
+                        if (tempPath != null && tempPath.endsWith(".gif")) {
+                            isGif = true;
+                            documentPath = tempPath;
+                        } else if (tempPath == null) {
+                            isGif = MediaController.isGif(uri);
+                            if (isGif) {
+                                documentPath = MediaController.copyDocumentToCache(uri);
                             }
-                            if (documentPath == null) {
-                                photoPath = (Uri) parcelable;
-                            }
-                        } else {
-                            photoPath = (Uri) parcelable;
+                        }
+                        if (!isGif || documentPath == null) {
+                            photoPath = uri;
                         }
                     } else {
-                        path = Utilities.getPath((Uri)parcelable);
+                        path = Utilities.getPath(uri);
                         if (path != null) {
                             if (path.startsWith("file:")) {
                                 path = path.replace("file://", "");
@@ -380,13 +383,24 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                                 if (!(parcelable instanceof Uri)) {
                                     parcelable = Uri.parse(parcelable.toString());
                                 }
-                                String tempPath = Utilities.getPath((Uri)parcelable);
-                                if (type.equals("image/gif") || tempPath != null && tempPath.endsWith(".gif")) {
+                                Uri uri = (Uri)parcelable;
+                                String tempPath = Utilities.getPath(uri);
+
+                                boolean isGif = false;
+                                if (tempPath != null && tempPath.endsWith(".gif")) {
+                                    isGif = true;
+                                } else if (tempPath == null) {
+                                    isGif = MediaController.isGif(uri);
+                                    if (isGif) {
+                                        tempPath = MediaController.copyDocumentToCache(uri);
+                                    }
+                                }
+                                if (isGif && tempPath != null) {
                                     if (documentsPathArray == null) {
                                         documentsPathArray = new ArrayList<String>();
                                     }
                                     try {
-                                        documentsPathArray.add(Utilities.getPath((Uri) parcelable));
+                                        documentsPathArray.add(tempPath);
                                     } catch (Exception e) {
                                         FileLog.e("tmessages", e);
                                     }
@@ -394,7 +408,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                                     if (imagesPathArray == null) {
                                         imagesPathArray = new ArrayList<Uri>();
                                     }
-                                    imagesPathArray.add((Uri) parcelable);
+                                    imagesPathArray.add(uri);
                                 }
                             }
                         } else {

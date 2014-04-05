@@ -2134,8 +2134,22 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         size2.location = size.location;
                     }
                 }
-                sentMessage.message = newMsg.message;
-                sentMessage.attachPath = newMsg.attachPath;
+                if (newMsg.attachPath != null && newMsg.attachPath.startsWith(Utilities.getCacheDir().getAbsolutePath())) {
+                    File cacheFile = new File(newMsg.attachPath);
+                    File cacheFile2 = new File(Utilities.getCacheDir(), MessageObject.getAttachFileName(sentMessage.media.document));
+                    boolean result = cacheFile.renameTo(cacheFile2);
+                    if (result) {
+                        newMsg.attachPath = null;
+                        newMsg.media.document.dc_id = sentMessage.media.document.dc_id;
+                        newMsg.media.document.id = sentMessage.media.document.id;
+                    } else {
+                        sentMessage.attachPath = newMsg.attachPath;
+                        sentMessage.message = newMsg.message;
+                    }
+                } else {
+                    sentMessage.attachPath = newMsg.attachPath;
+                    sentMessage.message = newMsg.message;
+                }
             } else if (sentMessage.media instanceof TLRPC.TL_messageMediaAudio && sentMessage.media.audio != null && newMsg.media instanceof TLRPC.TL_messageMediaAudio && newMsg.media.audio != null) {
                 sentMessage.message = newMsg.message;
                 sentMessage.attachPath = newMsg.attachPath;
@@ -2205,6 +2219,13 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 newMsg.media.document.path = document.path;
                 newMsg.media.document.thumb = document.thumb;
                 newMsg.media.document.dc_id = file.dc_id;
+
+                if (document.path != null && document.path.startsWith(Utilities.getCacheDir().getAbsolutePath())) {
+                    File cacheFile = new File(document.path);
+                    File cacheFile2 = new File(Utilities.getCacheDir(), MessageObject.getAttachFileName(newMsg.media.document));
+                    cacheFile.renameTo(cacheFile2);
+                }
+
                 ArrayList<TLRPC.Message> arr = new ArrayList<TLRPC.Message>();
                 arr.add(newMsg);
                 MessagesStorage.getInstance().putMessages(arr, false, true);
