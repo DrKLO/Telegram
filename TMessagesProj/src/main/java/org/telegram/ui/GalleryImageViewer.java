@@ -172,6 +172,14 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                 timeTextView.setVisibility(View.INVISIBLE);
                 localPagerAdapter = new LocalPagerAdapter(arr);
             } else if (messagesArr != null) {
+                MessageObject object = null;
+                for (MessageObject messageObject : messagesArr) {
+                    if (messageObject.messageOwner.dialog_id != 0 || messageObject.messageOwner.to_id != null) {
+                        object = messageObject;
+                        break;
+                    }
+                }
+
                 ArrayList<MessageObject> imagesArr = new ArrayList<MessageObject>();
                 HashMap<Integer, MessageObject> imagesByIds = new HashMap<Integer, MessageObject>();
                 imagesArr.addAll(messagesArr);
@@ -181,10 +189,13 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                 }
                 index = imagesArr.size() - index - 1;
 
-                MessageObject object = imagesArr.get(0);
+
                 if (object.messageOwner.dialog_id != 0) {
                     currentDialog = object.messageOwner.dialog_id;
                 } else {
+                    if (object.messageOwner.to_id == null) {
+                        finish();
+                    }
                     if (object.messageOwner.to_id.chat_id != 0) {
                         currentDialog = -object.messageOwner.to_id.chat_id;
                     } else {

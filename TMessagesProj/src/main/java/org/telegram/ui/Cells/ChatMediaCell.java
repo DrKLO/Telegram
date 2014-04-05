@@ -53,6 +53,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     private int photoWidth;
     private int photoHeight;
     private PhotoObject currentPhotoObject;
+    private String currentUrl;
     private String currentPhotoFilter;
     private ImageReceiver photoImage;
     private ProgressView progressView;
@@ -274,19 +275,33 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         }
     }
 
-    @Override
-    protected boolean isUserDataChanged() {
-        return currentPhotoObject == null || super.isUserDataChanged();
+    private boolean isPhotoDataChanged(MessageObject object) {
+        if (object.type == 4) {
+            if (currentUrl == null) {
+                return true;
+            }
+            double lat = object.messageOwner.media.geo.lat;
+            double lon = object.messageOwner.media.geo._long;
+            String url = String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=13&size=100x100&maptype=roadmap&scale=%d&markers=color:red|size:big|%f,%f&sensor=false", lat, lon, Math.min(2, (int)Math.ceil(Utilities.density)), lat, lon);
+            if (!url.equals(currentUrl)) {
+                return true;
+            }
+        } else if (currentPhotoObject == null) {
+            return true;
+        }
+        return false;
     }
 
     @Override
     public void setMessageObject(MessageObject messageObject) {
-        if (currentMessageObject != messageObject || isUserDataChanged()) {
+        if (currentMessageObject != messageObject || isPhotoDataChanged(messageObject) || isUserDataChanged()) {
             super.setMessageObject(messageObject);
 
             progressVisible = false;
             buttonState = -1;
             gifDrawable = null;
+            currentPhotoObject = null;
+            currentUrl = null;
 
             if (messageObject.type == 8) {
                 gifDrawable = MediaController.getInstance().getGifDrawable(this, false);
@@ -321,8 +336,8 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
 
                 double lat = messageObject.messageOwner.media.geo.lat;
                 double lon = messageObject.messageOwner.media.geo._long;
-                String url = String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=13&size=100x100&maptype=roadmap&scale=%d&markers=color:red|size:big|%f,%f&sensor=false", lat, lon, Math.min(2, (int)Math.ceil(Utilities.density)), lat, lon);
-                photoImage.setImage(url, null, messageObject.isOut() ? placeholderOutDrawable : placeholderInDrawable);
+                currentUrl = String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=13&size=100x100&maptype=roadmap&scale=%d&markers=color:red|size:big|%f,%f&sensor=false", lat, lon, Math.min(2, (int)Math.ceil(Utilities.density)), lat, lon);
+                photoImage.setImage(currentUrl, null, messageObject.isOut() ? placeholderOutDrawable : placeholderInDrawable);
             } else {
                 photoWidth = (int) (Math.min(Utilities.displaySize.x, Utilities.displaySize.y) * 0.7f);
                 photoHeight = photoWidth + Utilities.dp(100);

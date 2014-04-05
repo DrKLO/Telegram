@@ -1468,13 +1468,21 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         TLRPC.FileLocation newPhoto = null;
         int placeHolderId = 0;
         if (currentUser != null) {
-            currentUser = MessagesController.getInstance().users.get(currentUser.id);
+            TLRPC.User user = MessagesController.getInstance().users.get(currentUser.id);
+            if (user == null) {
+                return;
+            }
+            currentUser = user;
             if (currentUser.photo != null) {
                 newPhoto = currentUser.photo.photo_small;
             }
             placeHolderId = Utilities.getUserAvatarForId(currentUser.id);
         } else if (currentChat != null) {
-            currentChat = MessagesController.getInstance().chats.get(currentChat.id);
+            TLRPC.Chat chat = MessagesController.getInstance().chats.get(currentChat.id);
+            if (chat == null) {
+                return;
+            }
+            currentChat = chat;
             if (currentChat.photo != null) {
                 newPhoto = currentChat.photo.photo_small;
             }

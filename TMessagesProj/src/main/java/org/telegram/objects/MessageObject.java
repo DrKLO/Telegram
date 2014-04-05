@@ -376,6 +376,9 @@ public class MessageObject {
             }
         } else if (attach instanceof TLRPC.PhotoSize) {
             TLRPC.PhotoSize photo = (TLRPC.PhotoSize)attach;
+            if (photo.location == null) {
+                return "";
+            }
             return photo.location.volume_id + "_" + photo.location.local_id + ".jpg";
         } else if (attach instanceof TLRPC.Audio) {
             TLRPC.Audio audio = (TLRPC.Audio)attach;
