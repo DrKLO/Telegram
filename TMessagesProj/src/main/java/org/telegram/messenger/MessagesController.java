@@ -4530,9 +4530,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             mBuilder.setContentIntent(contentIntent);
             mNotificationManager.cancel(1);
             Notification notification = mBuilder.build();
-            notification.ledARGB = 0xff00ff00;
-            notification.ledOnMS = 1000;
-            notification.ledOffMS = 1000;
+            notification.defaults |= Notification.DEFAULT_LIGHTS;
             notification.flags |= Notification.FLAG_SHOW_LIGHTS;
             try {
                 mNotificationManager.notify(1, notification);
