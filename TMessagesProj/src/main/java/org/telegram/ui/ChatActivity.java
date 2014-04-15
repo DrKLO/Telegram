@@ -725,6 +725,15 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     }
                 }
             });
+            
+            messsageEditText.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (emojiPopup != null) {
+                        showEmojiPopup(false);
+                    }
+                }
+            });
 
             messsageEditText.setOnKeyListener(new View.OnKeyListener() {
                 @Override
