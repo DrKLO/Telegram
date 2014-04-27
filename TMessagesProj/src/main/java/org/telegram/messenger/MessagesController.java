@@ -775,30 +775,53 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         long currentTime = System.currentTimeMillis();
 
         checkDeletingTask();
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        final boolean connectionstate = preferences.getBoolean("showConnection", true);
+        if (connectionstate || !offlineSent) {
+            if (UserConfig.clientUserId != 0) {
+                if (scheduleContactsReload != 0 && currentTime > scheduleContactsReload) {
+                    ContactsController.getInstance().performSyncPhoneBook(ContactsController.getInstance().getContactsCopy(ContactsController.getInstance().contactsBook), true, false, true);
+                    scheduleContactsReload = 0;
+                }
 
-        if (UserConfig.clientUserId != 0) {
-            if (scheduleContactsReload != 0 && currentTime > scheduleContactsReload) {
-                ContactsController.getInstance().performSyncPhoneBook(ContactsController.getInstance().getContactsCopy(ContactsController.getInstance().contactsBook), true, false, true);
-                scheduleContactsReload = 0;
-            }
+                if (ApplicationLoader.lastPauseTime == 0) {
+                    if (statusSettingState != 1 && (lastStatusUpdateTime == 0 || lastStatusUpdateTime <= System.currentTimeMillis() - 55000 || offlineSent)) {
+                        statusSettingState = 1;
 
-            if (ApplicationLoader.lastPauseTime == 0) {
-                if (statusSettingState != 1 && (lastStatusUpdateTime == 0 || lastStatusUpdateTime <= System.currentTimeMillis() - 55000 || offlineSent)) {
-                    statusSettingState = 1;
+                        if (statusRequest != 0) {
+                            ConnectionsManager.getInstance().cancelRpc(statusRequest, true);
+                        }
 
+                        TLRPC.TL_account_updateStatus req = new TLRPC.TL_account_updateStatus();
+                        req.offline = false;
+                        statusRequest = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                            @Override
+                            public void run(TLObject response, TLRPC.TL_error error) {
+                                if (error == null) {
+                                    lastStatusUpdateTime = System.currentTimeMillis();
+                                    offlineSent = false;
+                                    statusSettingState = 0;
+                                } else {
+                                    if (lastStatusUpdateTime != 0) {
+                                        lastStatusUpdateTime += 5000;
+                                    }
+                                }
+                                statusRequest = 0;
+                            }
+                        }, null, true, RPCRequest.RPCRequestClassGeneric);
+                    }
+                } else if (statusSettingState != 2 && !offlineSent && ApplicationLoader.lastPauseTime <= System.currentTimeMillis() - 2000) {
+                    statusSettingState = 2;
                     if (statusRequest != 0) {
                         ConnectionsManager.getInstance().cancelRpc(statusRequest, true);
                     }
-
                     TLRPC.TL_account_updateStatus req = new TLRPC.TL_account_updateStatus();
-                    req.offline = false;
+                    req.offline = true;
                     statusRequest = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                         @Override
                         public void run(TLObject response, TLRPC.TL_error error) {
                             if (error == null) {
-                                lastStatusUpdateTime = System.currentTimeMillis();
-                                offlineSent = false;
-                                statusSettingState = 0;
+                                offlineSent = true;
                             } else {
                                 if (lastStatusUpdateTime != 0) {
                                     lastStatusUpdateTime += 5000;
@@ -808,28 +831,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         }
                     }, null, true, RPCRequest.RPCRequestClassGeneric);
                 }
-            } else if (statusSettingState != 2 && !offlineSent && ApplicationLoader.lastPauseTime <= System.currentTimeMillis() - 2000) {
-                statusSettingState = 2;
-                if (statusRequest != 0) {
-                    ConnectionsManager.getInstance().cancelRpc(statusRequest, true);
-                }
-                TLRPC.TL_account_updateStatus req = new TLRPC.TL_account_updateStatus();
-                req.offline = true;
-                statusRequest = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
-                    @Override
-                    public void run(TLObject response, TLRPC.TL_error error) {
-                        if (error == null) {
-                            offlineSent = true;
-                        } else {
-                            if (lastStatusUpdateTime != 0) {
-                                lastStatusUpdateTime += 5000;
-                            }
-                        }
-                        statusRequest = 0;
-                    }
-                }, null, true, RPCRequest.RPCRequestClassGeneric);
             }
-
             if (updatesStartWaitTime != 0 && updatesStartWaitTime + 1500 < currentTime) {
                 FileLog.e("tmessages", "UPDATES WAIT TIMEOUT - CHECK QUEUE");
                 processUpdatesQueue(false);
@@ -918,46 +920,33 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     public void sendTyping(long dialog_id, int classGuid) {
-        if (dialog_id == 0) {
-            return;
-        }
-        int lower_part = (int)dialog_id;
-        if (lower_part != 0) {
-            TLRPC.TL_messages_setTyping req = new TLRPC.TL_messages_setTyping();
-            if (lower_part < 0) {
-                req.peer = new TLRPC.TL_inputPeerChat();
-                req.peer.chat_id = -lower_part;
-            } else {
-                TLRPC.User user = users.get(lower_part);
-                if (user != null) {
-                    if (user instanceof TLRPC.TL_userForeign || user instanceof TLRPC.TL_userRequest) {
-                        req.peer = new TLRPC.TL_inputPeerForeign();
-                        req.peer.user_id = user.id;
-                        req.peer.access_hash = user.access_hash;
-                    } else {
-                        req.peer = new TLRPC.TL_inputPeerContact();
-                        req.peer.user_id = user.id;
-                    }
-                } else {
-                    return;
-                }
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        final boolean connectionstate = preferences.getBoolean("showConnection", true);
+        if (connectionstate) {
+            if (dialog_id == 0) {
+                return;
             }
-            req.typing = true;
-            long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
-                @Override
-                public void run(TLObject response, TLRPC.TL_error error) {
-
+            int lower_part = (int) dialog_id;
+            if (lower_part != 0) {
+                TLRPC.TL_messages_setTyping req = new TLRPC.TL_messages_setTyping();
+                if (lower_part < 0) {
+                    req.peer = new TLRPC.TL_inputPeerChat();
+                    req.peer.chat_id = -lower_part;
+                } else {
+                    TLRPC.User user = users.get(lower_part);
+                    if (user != null) {
+                        if (user instanceof TLRPC.TL_userForeign || user instanceof TLRPC.TL_userRequest) {
+                            req.peer = new TLRPC.TL_inputPeerForeign();
+                            req.peer.user_id = user.id;
+                            req.peer.access_hash = user.access_hash;
+                        } else {
+                            req.peer = new TLRPC.TL_inputPeerContact();
+                            req.peer.user_id = user.id;
+                        }
+                    } else {
+                        return;
+                    }
                 }
-            }, null, true, RPCRequest.RPCRequestClassGeneric);
-            ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
-        } else {
-            int encId = (int)(dialog_id >> 32);
-            TLRPC.EncryptedChat chat = encryptedChats.get(encId);
-            if (chat.auth_key != null && chat.auth_key.length > 1 && chat instanceof TLRPC.TL_encryptedChat) {
-                TLRPC.TL_messages_setEncryptedTyping req = new TLRPC.TL_messages_setEncryptedTyping();
-                req.peer = new TLRPC.TL_inputEncryptedChat();
-                req.peer.chat_id = chat.id;
-                req.peer.access_hash = chat.access_hash;
                 req.typing = true;
                 long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                     @Override
@@ -966,6 +955,23 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     }
                 }, null, true, RPCRequest.RPCRequestClassGeneric);
                 ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
+            } else {
+                int encId = (int) (dialog_id >> 32);
+                TLRPC.EncryptedChat chat = encryptedChats.get(encId);
+                if (chat.auth_key != null && chat.auth_key.length > 1 && chat instanceof TLRPC.TL_encryptedChat) {
+                    TLRPC.TL_messages_setEncryptedTyping req = new TLRPC.TL_messages_setEncryptedTyping();
+                    req.peer = new TLRPC.TL_inputEncryptedChat();
+                    req.peer.chat_id = chat.id;
+                    req.peer.access_hash = chat.access_hash;
+                    req.typing = true;
+                    long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                        @Override
+                        public void run(TLObject response, TLRPC.TL_error error) {
+
+                        }
+                    }, null, true, RPCRequest.RPCRequestClassGeneric);
+                    ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
+                }
             }
         }
     }

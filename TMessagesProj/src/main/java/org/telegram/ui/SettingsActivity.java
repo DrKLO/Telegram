@@ -72,6 +72,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int numberRow;
     private int settingsSectionRow;
     private int textSizeRow;
+    private int connectionStateShow;
     private int enableAnimationsRow;
     private int notificationRow;
     private int blockedRow;
@@ -175,6 +176,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         numberRow = rowCount++;
         settingsSectionRow = rowCount++;
         enableAnimationsRow = rowCount++;
+        connectionStateShow = rowCount++;
         languageRow = rowCount++;
         notificationRow = rowCount++;
         blockedRow = rowCount++;
@@ -248,6 +250,15 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         boolean animations = preferences.getBoolean("view_animations", true);
                         SharedPreferences.Editor editor = preferences.edit();
                         editor.putBoolean("view_animations", !animations);
+                        editor.commit();
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
+                    } else if (i == connectionStateShow) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        boolean connectionState = preferences.getBoolean("showConnection", true);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        editor.putBoolean("showConnection", !connectionState);
                         editor.commit();
                         if (listView != null) {
                             listView.invalidateViews();
@@ -847,6 +858,15 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else {
                         checkButton.setImageResource(R.drawable.btn_check_off);
                     }
+                } else if (i == connectionStateShow) {
+                    textView.setText(LocaleController.getString("HideStatus", R.string.HideStatus));
+                    divider.setVisibility(View.VISIBLE);
+                    boolean enabled = preferences.getBoolean("showConnection", true);
+                    if (enabled) {
+                        checkButton.setImageResource(R.drawable.btn_check_on);
+                    } else {
+                        checkButton.setImageResource(R.drawable.btn_check_off);
+                    }
                 } else if (i == sendByEnterRow) {
                     textView.setText(LocaleController.getString("SendByEnter", R.string.SendByEnter));
                     divider.setVisibility(View.INVISIBLE);
@@ -961,7 +981,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 1;
             } else if (i == textSizeRow || i == languageRow) {
                 return 5;
-            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == photoDownloadChatRow || i == photoDownloadPrivateRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow) {
+            } else if (i == enableAnimationsRow || i == connectionStateShow|| i == sendByEnterRow || i == photoDownloadChatRow || i == photoDownloadPrivateRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow) {
                 return 3;
             } else if (i == numberRow || i == notificationRow || i == blockedRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == terminateSessionsRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow) {
                 return 2;
