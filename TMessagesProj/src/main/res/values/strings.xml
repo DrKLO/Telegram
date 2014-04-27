@@ -224,6 +224,7 @@
     <string name="UnblockText">Tap and hold on user to unblock.</string>
     <string name="NoBlocked">No blocked users yet</string>
     <string name="YourPhoneNumber">YOUR PHONE NUMBER</string>
+    <string name="VersionSection">Version</string>
     <string name="MessageNotifications">MESSAGE NOTIFICATIONS</string>
     <string name="Alert">Alert</string>
     <string name="MessagePreview">Message Preview</string>

@@ -15,6 +15,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
@@ -72,7 +74,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int numberRow;
     private int settingsSectionRow;
     private int textSizeRow;
-    private int connectionStateShow;
+    private int connectionStateShowRow;
     private int enableAnimationsRow;
     private int notificationRow;
     private int blockedRow;
@@ -95,6 +97,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int audioDownloadPrivateRow;
     private int telegramFaqRow;
     private int languageRow;
+    private int versionSectionRow;
+    private int telegramVersionRow;
 
     private static class LinkMovementMethodMy extends LinkMovementMethod {
         @Override
@@ -176,7 +180,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         numberRow = rowCount++;
         settingsSectionRow = rowCount++;
         enableAnimationsRow = rowCount++;
-        connectionStateShow = rowCount++;
+        connectionStateShowRow = rowCount++;
         languageRow = rowCount++;
         notificationRow = rowCount++;
         blockedRow = rowCount++;
@@ -199,6 +203,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
         telegramFaqRow = rowCount++;
         askQuestionRow = rowCount++;
+        versionSectionRow = rowCount++;
+        telegramVersionRow = rowCount++;
         logoutRow = rowCount++;
 
         return true;
@@ -254,7 +260,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         if (listView != null) {
                             listView.invalidateViews();
                         }
-                    } else if (i == connectionStateShow) {
+                    } else if (i == connectionStateShowRow) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                         boolean connectionState = preferences.getBoolean("showConnection", true);
                         SharedPreferences.Editor editor = preferences.edit();
@@ -621,10 +627,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public boolean isEnabled(int i) {
-            return i == textSizeRow || i == enableAnimationsRow || i == blockedRow || i == notificationRow || i == backgroundRow ||
+            return i == textSizeRow || i == enableAnimationsRow || i == connectionStateShowRow || i == blockedRow || i == notificationRow || i == backgroundRow ||
                     i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == terminateSessionsRow || i == photoDownloadPrivateRow ||
                     i == photoDownloadChatRow || i == clearLogsRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow || i == languageRow ||
-                    i == switchBackendButtonRow || i == telegramFaqRow;
+                    i == switchBackendButtonRow || i == telegramFaqRow || i == telegramVersionRow;
         }
 
         @Override
@@ -796,6 +802,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     textView.setText(LocaleController.getString("AutomaticPhotoDownload", R.string.AutomaticPhotoDownload));
                 } else if (i == audioDownloadSection) {
                     textView.setText(LocaleController.getString("AutomaticAudioDownload", R.string.AutomaticAudioDownload));
+                } else if (i == versionSectionRow) {
+                    textView.setText(LocaleController.getString("VersionSection", R.string.VersionSection));
                 }
             } else if (type == 2) {
                 if (view == null) {
@@ -839,6 +847,15 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 } else if (i == telegramFaqRow) {
                     textView.setText(LocaleController.getString("TelegramFAQ", R.string.TelegramFaq));
                     divider.setVisibility(View.VISIBLE);
+                } else if (i == telegramVersionRow) {
+                    try {
+                        PackageInfo pInfo = getActivity().getPackageManager().getPackageInfo(getActivity().getPackageName(),0);
+                        String version = pInfo.versionName;
+                        textView.setText(LocaleController.getString("AppName", R.string.AppName) + " " +  version);
+                    } catch (PackageManager.NameNotFoundException e) {
+                        textView.setText("Unknown");
+                    }
+
                 }
             } else if (type == 3) {
                 if (view == null) {
@@ -858,7 +875,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else {
                         checkButton.setImageResource(R.drawable.btn_check_off);
                     }
-                } else if (i == connectionStateShow) {
+                } else if (i == connectionStateShowRow) {
                     textView.setText(LocaleController.getString("HideStatus", R.string.HideStatus));
                     divider.setVisibility(View.VISIBLE);
                     boolean enabled = preferences.getBoolean("showConnection", true);
@@ -977,13 +994,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         public int getItemViewType(int i) {
             if (i == profileRow) {
                 return 0;
-            } else if (i == numberSectionRow || i == settingsSectionRow || i == supportSectionRow || i == messagesSectionRow || i == photoDownloadSection || i == audioDownloadSection) {
+            } else if (i == numberSectionRow || i == settingsSectionRow || i == supportSectionRow || i == messagesSectionRow || i == photoDownloadSection || i == audioDownloadSection || i == versionSectionRow) {
                 return 1;
             } else if (i == textSizeRow || i == languageRow) {
                 return 5;
-            } else if (i == enableAnimationsRow || i == connectionStateShow|| i == sendByEnterRow || i == photoDownloadChatRow || i == photoDownloadPrivateRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow) {
+            } else if (i == enableAnimationsRow || i == connectionStateShowRow|| i == sendByEnterRow || i == photoDownloadChatRow || i == photoDownloadPrivateRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow) {
                 return 3;
-            } else if (i == numberRow || i == notificationRow || i == blockedRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == terminateSessionsRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow) {
+            } else if (i == numberRow || i == notificationRow || i == blockedRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == terminateSessionsRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == telegramVersionRow) {
                 return 2;
             } else if (i == logoutRow) {
                 return 4;
