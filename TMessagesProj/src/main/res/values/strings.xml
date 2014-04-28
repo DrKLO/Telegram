@@ -96,6 +96,7 @@
     <string name="DOWNLOAD">Download</string>
     <string name="Selected">Selected:</string>
     <string name="ShareMyContactInfo">SHARE MY CONTACT INFO</string>
+    <string name="ShareMyContactInfoConfirmation">Do you want to share your contact info?</string>
     <string name="AddToContacts">ADD TO CONTACTS</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s invited you to join a secret chat.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">You have invited %s to join a secret chat.</string>

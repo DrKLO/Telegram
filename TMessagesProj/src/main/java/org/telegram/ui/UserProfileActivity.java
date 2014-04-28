@@ -119,6 +119,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 public void onClick(View view) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
                     builder.setMessage(LocaleController.getString("SecretChatConfirmation", R.string.SecretChatConfirmation));
+                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                     builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {

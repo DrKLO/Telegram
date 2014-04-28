@@ -2496,15 +2496,26 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         topPanel.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
-                                MessagesController.getInstance().hidenAddToContacts.put(currentUser.id, currentUser);
-                                topPanel.setVisibility(View.GONE);
-                                MessagesController.getInstance().sendMessage(UserConfig.currentUser, dialog_id);
-                                chatListView.post(new Runnable() {
+                                AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                                builder.setMessage(LocaleController.getString("ShareMyContactInfoConfirmation", R.string.ShareMyContactInfoConfirmation));
+                                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                                     @Override
-                                    public void run() {
-                                        chatListView.setSelectionFromTop(messages.size() - 1, -100000 - chatListView.getPaddingTop());
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        MessagesController.getInstance().hidenAddToContacts.put(currentUser.id, currentUser);
+                                        topPanel.setVisibility(View.GONE);
+                                        MessagesController.getInstance().sendMessage(UserConfig.currentUser, dialog_id);
+                                        chatListView.post(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                chatListView.setSelectionFromTop(messages.size() - 1, -100000 - chatListView.getPaddingTop());
+                                            }
+                                        });
                                     }
                                 });
+                                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                                builder.show().setCanceledOnTouchOutside(true);
+
                             }
                         });
                     }
