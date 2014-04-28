@@ -451,6 +451,11 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         } else {
             downloadAudios = preferences.getBoolean("audio_download_user", true);
         }
+        if (!ConnectionsManager.isConnectionTypeWifi()) {
+                downloadPhotos = !preferences.getBoolean("photo_only_wifi", false);
+                downloadAudios = !preferences.getBoolean("audio_only_wifi", false);
+        }
+
 
         return true;
     }
