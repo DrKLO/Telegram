@@ -195,6 +195,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
             }
         }
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        boolean connectionState = preferences.getBoolean("showConnection", true);
+        localInstance.offlineSent = !connectionState;
         return localInstance;
     }
 
@@ -325,7 +328,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         firstGettingTask = false;
         updatingState = false;
         lastStatusUpdateTime = 0;
-        offlineSent = false;
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        boolean connectionState = preferences.getBoolean("showConnection", true);
+        offlineSent = !connectionState;
         registeringForPush = false;
         uploadingAvatar = null;
         startingSecretChat = false;
@@ -771,14 +776,155 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
     }
 
+    public void sendHiddenLastConnection() {
+        long currentTime = System.currentTimeMillis();
+
+        checkDeletingTask();
+        if (UserConfig.clientUserId != 0) {
+            FileLog.e("tmessages", "Sending hidden mode");
+            statusSettingState = 2;
+            if (statusRequest != 0) {
+                ConnectionsManager.getInstance().cancelRpc(statusRequest, true);
+            }
+            TLRPC.TL_account_updateStatus req = new TLRPC.TL_account_updateStatus();
+            req.offline = true;
+            statusRequest = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                @Override
+                public void run(TLObject response, TLRPC.TL_error error) {
+                    if (error == null) {
+                        offlineSent = true;
+                    } else {
+                        if (lastStatusUpdateTime != 0) {
+                            lastStatusUpdateTime += 5000;
+                        }
+                    }
+                    statusRequest = 0;
+                }
+            }, null, true, RPCRequest.RPCRequestClassGeneric);
+        }
+        if (updatesStartWaitTime != 0 && updatesStartWaitTime + 1500 < currentTime) {
+            FileLog.e("tmessages", "UPDATES WAIT TIMEOUT - CHECK QUEUE");
+            processUpdatesQueue(false);
+        }
+        if (!printingUsers.isEmpty()) {
+            boolean updated = false;
+            ArrayList<Long> keys = new ArrayList<Long>(printingUsers.keySet());
+            for (int b = 0; b < keys.size(); b++) {
+                Long key = keys.get(b);
+                ArrayList<PrintingUser> arr = printingUsers.get(key);
+                for (int a = 0; a < arr.size(); a++) {
+                    PrintingUser user = arr.get(a);
+                    if (user.lastTime + 5900 < currentTime) {
+                        updated = true;
+                        arr.remove(user);
+                        a--;
+                    }
+                }
+                if (arr.isEmpty()) {
+                    printingUsers.remove(key);
+                    keys.remove(b);
+                    b--;
+                }
+            }
+
+            updatePrintingStrings();
+
+            if (updated) {
+                Utilities.RunOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        NotificationCenter.getInstance().postNotificationName(updateInterfaces, UPDATE_MASK_USER_PRINT);
+                    }
+                });
+            }
+        }
+    }
+
+    public void sendNoHiddenLastConnection() {
+
+        long currentTime = System.currentTimeMillis();
+
+        checkDeletingTask();
+        if (scheduleContactsReload != 0 && currentTime > scheduleContactsReload) {
+            ContactsController.getInstance().performSyncPhoneBook(ContactsController.getInstance().getContactsCopy(ContactsController.getInstance().contactsBook), true, false, true);
+            scheduleContactsReload = 0;
+        }
+
+        if (ApplicationLoader.lastPauseTime == 0) {
+            FileLog.e("tmessages", "Sending online mode after hidden");
+            if (statusSettingState != 1 && (lastStatusUpdateTime == 0 || lastStatusUpdateTime <= System.currentTimeMillis() - 55000 || offlineSent)) {
+                statusSettingState = 1;
+
+                if (statusRequest != 0) {
+                    ConnectionsManager.getInstance().cancelRpc(statusRequest, true);
+                }
+
+                TLRPC.TL_account_updateStatus req = new TLRPC.TL_account_updateStatus();
+                req.offline = false;
+                statusRequest = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                    @Override
+                    public void run(TLObject response, TLRPC.TL_error error) {
+                        if (error == null) {
+                            lastStatusUpdateTime = System.currentTimeMillis();
+                            offlineSent = false;
+                            statusSettingState = 0;
+                        } else {
+                            if (lastStatusUpdateTime != 0) {
+                                lastStatusUpdateTime += 5000;
+                            }
+                        }
+                        statusRequest = 0;
+                    }
+                }, null, true, RPCRequest.RPCRequestClassGeneric);
+            }
+        }
+        if (updatesStartWaitTime != 0 && updatesStartWaitTime + 1500 < currentTime) {
+            FileLog.e("tmessages", "UPDATES WAIT TIMEOUT - CHECK QUEUE");
+            processUpdatesQueue(false);
+        }
+        if (!printingUsers.isEmpty()) {
+            boolean updated = false;
+            ArrayList<Long> keys = new ArrayList<Long>(printingUsers.keySet());
+            for (int b = 0; b < keys.size(); b++) {
+                Long key = keys.get(b);
+                ArrayList<PrintingUser> arr = printingUsers.get(key);
+                for (int a = 0; a < arr.size(); a++) {
+                    PrintingUser user = arr.get(a);
+                    if (user.lastTime + 5900 < currentTime) {
+                        updated = true;
+                        arr.remove(user);
+                        a--;
+                    }
+                }
+                if (arr.isEmpty()) {
+                    printingUsers.remove(key);
+                    keys.remove(b);
+                    b--;
+                }
+            }
+
+            updatePrintingStrings();
+
+            if (updated) {
+                Utilities.RunOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        NotificationCenter.getInstance().postNotificationName(updateInterfaces, UPDATE_MASK_USER_PRINT);
+                    }
+                });
+            }
+        }
+    }
+
     public void updateTimerProc() {
         long currentTime = System.currentTimeMillis();
 
         checkDeletingTask();
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         final boolean connectionstate = preferences.getBoolean("showConnection", true);
-        if (connectionstate || !offlineSent) {
+        if (connectionstate) {
             if (UserConfig.clientUserId != 0) {
+                FileLog.e("tmessages", "Sending state connection info");
                 if (scheduleContactsReload != 0 && currentTime > scheduleContactsReload) {
                     ContactsController.getInstance().performSyncPhoneBook(ContactsController.getInstance().getContactsCopy(ContactsController.getInstance().contactsBook), true, false, true);
                     scheduleContactsReload = 0;

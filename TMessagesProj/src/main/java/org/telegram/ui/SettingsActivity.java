@@ -266,6 +266,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         SharedPreferences.Editor editor = preferences.edit();
                         editor.putBoolean("showConnection", !connectionState);
                         editor.commit();
+                        MessagesController myMessageController = MessagesController.getInstance();
+                        if (connectionState)
+                            myMessageController.sendHiddenLastConnection();
+                        else
+                            myMessageController.sendNoHiddenLastConnection();
                         if (listView != null) {
                             listView.invalidateViews();
                         }
