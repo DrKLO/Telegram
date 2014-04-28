@@ -200,6 +200,7 @@
     <string name="ContactInfo">Contact Info</string>
     <string name="PHONE">PHONE</string>
     <string name="StartEncryptedChat">Start Secret Chat</string>
+    <string name="SecretChatConfirmation">Do you want to start a secret chat?</string>
     <string name="CreateEncryptedChatError">An error occurred.</string>
     <string name="CreateEncryptedChatOutdatedError">Cannot create a secret chat with %1$s.\n\n%2$s is using an older version of Telegram and needs to update first.</string>
     <string name="SecretTitle">Secret Chat</string>
