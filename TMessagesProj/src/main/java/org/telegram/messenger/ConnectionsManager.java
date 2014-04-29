@@ -16,9 +16,12 @@ import android.net.NetworkInfo;
 import android.os.Build;
 import android.util.Base64;
 
+import net.hockeyapp.android.utils.ConnectionManager;
+
 import org.telegram.ui.ApplicationLoader;
 
 import java.io.File;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -891,6 +894,20 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             return true;
         }
         return status;
+    }
+
+    public static boolean isConnectionTypeWifi() {
+        boolean connectionType = false;
+        try {
+            ConnectivityManager cm = (ConnectivityManager)ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo mWifi = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+            if (mWifi != null && mWifi.isAvailable())
+                connectionType = true;
+        } catch(Exception e) {
+            FileLog.e("tmessages", e);
+            return true;
+        }
+        return connectionType;
     }
 
     public int getCurrentTime() {

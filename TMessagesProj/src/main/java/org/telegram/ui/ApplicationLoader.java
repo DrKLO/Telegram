@@ -113,10 +113,14 @@ public class ApplicationLoader extends Application {
                 if (preferences.contains("fons_size")) {
                     editor.putInt("fons_size", preferences.getInt("fons_size", 16));
                 }
+                if (preferences.contains("showConnection")) {
+                    editor.putBoolean("showConnection",true);
+                }
                 editor.commit();
                 editor = preferences.edit();
                 editor.putInt("v", 1);
                 editor.remove("view_animations");
+                editor.remove("showConnection");
                 editor.remove("selectedBackground");
                 editor.remove("selectedColor");
                 editor.remove("fons_size");

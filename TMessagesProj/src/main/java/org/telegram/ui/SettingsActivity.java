@@ -15,6 +15,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
@@ -72,6 +74,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int numberRow;
     private int settingsSectionRow;
     private int textSizeRow;
+    private int connectionStateShowRow;
     private int enableAnimationsRow;
     private int notificationRow;
     private int blockedRow;
@@ -89,11 +92,15 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int photoDownloadSection;
     private int photoDownloadChatRow;
     private int photoDownloadPrivateRow;
+    private int photoDownloadOnlyWifiRow;
     private int audioDownloadSection;
     private int audioDownloadChatRow;
     private int audioDownloadPrivateRow;
+    private int audioDownloadOnlyWifiRow;
     private int telegramFaqRow;
     private int languageRow;
+    private int versionSectionRow;
+    private int telegramVersionRow;
 
     private static class LinkMovementMethodMy extends LinkMovementMethod {
         @Override
@@ -175,6 +182,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         numberRow = rowCount++;
         settingsSectionRow = rowCount++;
         enableAnimationsRow = rowCount++;
+        connectionStateShowRow = rowCount++;
         languageRow = rowCount++;
         notificationRow = rowCount++;
         blockedRow = rowCount++;
@@ -183,9 +191,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         photoDownloadSection = rowCount++;
         photoDownloadChatRow = rowCount++;
         photoDownloadPrivateRow = rowCount++;
+        photoDownloadOnlyWifiRow = rowCount++;
         audioDownloadSection = rowCount++;
         audioDownloadChatRow = rowCount++;
         audioDownloadPrivateRow = rowCount++;
+        audioDownloadOnlyWifiRow = rowCount++;
         messagesSectionRow = rowCount++;
         textSizeRow = rowCount++;
         sendByEnterRow = rowCount++;
@@ -197,6 +207,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
         telegramFaqRow = rowCount++;
         askQuestionRow = rowCount++;
+        versionSectionRow = rowCount++;
+        telegramVersionRow = rowCount++;
         logoutRow = rowCount++;
 
         return true;
@@ -249,6 +261,20 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         SharedPreferences.Editor editor = preferences.edit();
                         editor.putBoolean("view_animations", !animations);
                         editor.commit();
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
+                    } else if (i == connectionStateShowRow) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        boolean connectionState = preferences.getBoolean("showConnection", true);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        editor.putBoolean("showConnection", !connectionState);
+                        editor.commit();
+                        MessagesController myMessageController = MessagesController.getInstance();
+                        if (connectionState)
+                            myMessageController.sendHiddenLastConnection();
+                        else
+                            myMessageController.sendNoHiddenLastConnection();
                         if (listView != null) {
                             listView.invalidateViews();
                         }
@@ -338,6 +364,24 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         boolean value = preferences.getBoolean("photo_download_user", true);
                         SharedPreferences.Editor editor = preferences.edit();
                         editor.putBoolean("photo_download_user", !value);
+                        editor.commit();
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
+                    } else if (i == photoDownloadOnlyWifiRow) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        boolean value = preferences.getBoolean("photo_only_wifi", false);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        editor.putBoolean("photo_only_wifi", !value);
+                        editor.commit();
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
+                    } else if (i == audioDownloadOnlyWifiRow) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        boolean value = preferences.getBoolean("audio_only_wifi", false);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        editor.putBoolean("audio_only_wifi", !value);
                         editor.commit();
                         if (listView != null) {
                             listView.invalidateViews();
@@ -610,10 +654,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public boolean isEnabled(int i) {
-            return i == textSizeRow || i == enableAnimationsRow || i == blockedRow || i == notificationRow || i == backgroundRow ||
-                    i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == terminateSessionsRow || i == photoDownloadPrivateRow ||
-                    i == photoDownloadChatRow || i == clearLogsRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow || i == languageRow ||
-                    i == switchBackendButtonRow || i == telegramFaqRow;
+            return i == textSizeRow || i == enableAnimationsRow || i == connectionStateShowRow || i == blockedRow || i == notificationRow || i == backgroundRow ||
+                    i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == terminateSessionsRow || i == photoDownloadPrivateRow || i == audioDownloadOnlyWifiRow ||
+                    i == photoDownloadOnlyWifiRow || i == photoDownloadChatRow || i == clearLogsRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow || i == languageRow ||
+                    i == switchBackendButtonRow || i == telegramFaqRow || i == telegramVersionRow;
         }
 
         @Override
@@ -785,6 +829,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     textView.setText(LocaleController.getString("AutomaticPhotoDownload", R.string.AutomaticPhotoDownload));
                 } else if (i == audioDownloadSection) {
                     textView.setText(LocaleController.getString("AutomaticAudioDownload", R.string.AutomaticAudioDownload));
+                } else if (i == versionSectionRow) {
+                    textView.setText(LocaleController.getString("VersionSection", R.string.VersionSection));
                 }
             } else if (type == 2) {
                 if (view == null) {
@@ -828,6 +874,15 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 } else if (i == telegramFaqRow) {
                     textView.setText(LocaleController.getString("TelegramFAQ", R.string.TelegramFaq));
                     divider.setVisibility(View.VISIBLE);
+                } else if (i == telegramVersionRow) {
+                    try {
+                        PackageInfo pInfo = getActivity().getPackageManager().getPackageInfo(getActivity().getPackageName(),0);
+                        String version = pInfo.versionName;
+                        textView.setText(LocaleController.getString("AppName", R.string.AppName) + " " +  version);
+                    } catch (PackageManager.NameNotFoundException e) {
+                        textView.setText("Unknown");
+                    }
+
                 }
             } else if (type == 3) {
                 if (view == null) {
@@ -842,6 +897,15 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     textView.setText(LocaleController.getString("EnableAnimations", R.string.EnableAnimations));
                     divider.setVisibility(View.VISIBLE);
                     boolean enabled = preferences.getBoolean("view_animations", true);
+                    if (enabled) {
+                        checkButton.setImageResource(R.drawable.btn_check_on);
+                    } else {
+                        checkButton.setImageResource(R.drawable.btn_check_off);
+                    }
+                } else if (i == connectionStateShowRow) {
+                    textView.setText(LocaleController.getString("HideStatus", R.string.HideStatus));
+                    divider.setVisibility(View.VISIBLE);
+                    boolean enabled = preferences.getBoolean("showConnection", true);
                     if (enabled) {
                         checkButton.setImageResource(R.drawable.btn_check_on);
                     } else {
@@ -869,6 +933,24 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     textView.setText(LocaleController.getString("AutomaticPhotoDownloadPrivateChats", R.string.AutomaticPhotoDownloadPrivateChats));
                     divider.setVisibility(View.INVISIBLE);
                     boolean enabled = preferences.getBoolean("photo_download_user", true);
+                    if (enabled) {
+                        checkButton.setImageResource(R.drawable.btn_check_on);
+                    } else {
+                        checkButton.setImageResource(R.drawable.btn_check_off);
+                    }
+                } else if (i == photoDownloadOnlyWifiRow) {
+                    textView.setText(LocaleController.getString("AutomaticDownloadOnlyWifi", R.string.AutomaticDownloadOnlyWifi));
+                    divider.setVisibility(View.INVISIBLE);
+                    boolean enabled = preferences.getBoolean("photo_only_wifi", false);
+                    if (enabled) {
+                        checkButton.setImageResource(R.drawable.btn_check_on);
+                    } else {
+                        checkButton.setImageResource(R.drawable.btn_check_off);
+                    }
+                } else if (i == audioDownloadOnlyWifiRow) {
+                    textView.setText(LocaleController.getString("AutomaticDownloadOnlyWifi", R.string.AutomaticDownloadOnlyWifi));
+                    divider.setVisibility(View.INVISIBLE);
+                    boolean enabled = preferences.getBoolean("audio_only_wifi", false);
                     if (enabled) {
                         checkButton.setImageResource(R.drawable.btn_check_on);
                     } else {
@@ -957,13 +1039,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         public int getItemViewType(int i) {
             if (i == profileRow) {
                 return 0;
-            } else if (i == numberSectionRow || i == settingsSectionRow || i == supportSectionRow || i == messagesSectionRow || i == photoDownloadSection || i == audioDownloadSection) {
+            } else if (i == numberSectionRow || i == settingsSectionRow || i == supportSectionRow || i == messagesSectionRow || i == photoDownloadSection || i == audioDownloadSection || i == versionSectionRow) {
                 return 1;
             } else if (i == textSizeRow || i == languageRow) {
                 return 5;
-            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == photoDownloadChatRow || i == photoDownloadPrivateRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow) {
+            } else if (i == enableAnimationsRow || i == connectionStateShowRow|| i == sendByEnterRow || i == photoDownloadChatRow || i == photoDownloadPrivateRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow || i == audioDownloadOnlyWifiRow || i == photoDownloadOnlyWifiRow) {
                 return 3;
-            } else if (i == numberRow || i == notificationRow || i == blockedRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == terminateSessionsRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow) {
+            } else if (i == numberRow || i == notificationRow || i == blockedRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == terminateSessionsRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == telegramVersionRow) {
                 return 2;
             } else if (i == logoutRow) {
                 return 4;

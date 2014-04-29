@@ -29,6 +29,7 @@ public class UserConfig {
     private final static Integer sync = 1;
     public static boolean saveIncomingPhotos = false;
     public static int contactsVersion = 1;
+    public static int conectionState = 0; // 0 = show 1 = hide
 
     public static int getNewMessageId() {
         int id;
@@ -56,6 +57,7 @@ public class UserConfig {
                 editor.putString("importHash", importHash);
                 editor.putBoolean("saveIncomingPhotos", saveIncomingPhotos);
                 editor.putInt("contactsVersion", contactsVersion);
+                editor.putInt("conectionState", conectionState);
                 if (currentUser != null) {
                     if (withFile) {
                         SerializedData data = new SerializedData();
@@ -129,6 +131,7 @@ public class UserConfig {
                         importHash = preferences.getString("importHash", "");
                         saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
                         contactsVersion = preferences.getInt("contactsVersion", 0);
+                        conectionState = preferences.getInt("conectionState", 0);
                     }
                     if (lastLocalId > -210000) {
                         lastLocalId = -210000;
@@ -156,6 +159,7 @@ public class UserConfig {
                 saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
                 contactsVersion = preferences.getInt("contactsVersion", 0);
                 String user = preferences.getString("user", null);
+                conectionState = preferences.getInt("conectionState", 0);
                 if (user != null) {
                     byte[] userBytes = Base64.decode(user, Base64.DEFAULT);
                     if (userBytes != null) {
@@ -183,6 +187,7 @@ public class UserConfig {
         lastLocalId = -210000;
         lastSendMessageId = -210000;
         contactsVersion = 1;
+        conectionState = 0;
         saveIncomingPhotos = false;
         saveConfig(true);
         MessagesController.getInstance().deleteAllAppAccounts();

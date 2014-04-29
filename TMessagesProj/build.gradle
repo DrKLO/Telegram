@@ -36,9 +36,9 @@ android {
 
         release {
             storeFile file("config/release.keystore")
-            storePassword RELEASE_STORE_PASSWORD
-            keyAlias RELEASE_KEY_ALIAS
-            keyPassword RELEASE_KEY_PASSWORD
+            storePassword "android"
+            keyAlias "androidreleasekey"
+            keyPassword "android"
         }
     }
 
@@ -82,7 +82,11 @@ android {
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 19
-        versionCode 230
-        versionName "1.4.13"
+        versionCode 231
+        versionName "1.4.14"
+    }
+
+    lintOptions {
+        checkReleaseBuilds false
     }
 }

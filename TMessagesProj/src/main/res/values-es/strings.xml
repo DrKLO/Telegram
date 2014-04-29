@@ -219,6 +219,7 @@
     <string name="TextSize">Tamaño del texto</string>
     <string name="AskAQuestion">Hacer una pregunta</string>
     <string name="EnableAnimations">Activar animaciones</string>
+    <string name="HideStatus">Mostrar última conexión</string>
     <string name="Unblock">Desbloquear</string>
     <string name="UnblockText">Mantén pulsado un usuario para desbloquearlo</string>
     <string name="NoBlocked">No hay usuarios bloqueados</string>
