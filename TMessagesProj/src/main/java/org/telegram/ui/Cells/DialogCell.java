@@ -18,11 +18,13 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.View;
 
+import com.aniways.Aniways;
+import com.aniways.AniwaysIconInfoDisplayer;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.Emoji;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -474,7 +476,7 @@ public class DialogCell extends BaseCell {
                             } else {
                                 checkMessage = false;
                                 if (message.messageOwner.message != null) {
-                                    messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#316f9f>%s:</font> <font color=#808080>%s</font>", name, message.messageOwner.message.replace("\n", " "))));
+                                    messageString = Html.fromHtml(String.format("<font color=#316f9f>%s:</font> <font color=#808080>%s</font>", name, message.messageOwner.message.replace("\n", " ")));
                                 }
                             }
                         } else {
@@ -654,9 +656,10 @@ public class DialogCell extends BaseCell {
                 if (mess.length() > 150) {
                     mess = mess.substring(0, 150);
                 }
-                messageString = Emoji.replaceEmoji(mess);
+                messageString = mess;
             }
 
+            messageString = Aniways.decodeMessage(messageString, new AniwaysIconInfoDisplayer(), true);
             CharSequence messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - Utilities.dp(12), TextUtils.TruncateAt.END);
             messageLayout = new StaticLayout(messageStringFinal, currentMessagePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 

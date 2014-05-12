@@ -38,5 +38,6 @@ public class MessageActionLayout extends FrameLayout {
     protected void onFinishInflate() {
         super.onFinishInflate();
         messageTextView = (TightTextView)findViewById(R.id.chat_message_text);
+        messageTextView.setUseSmallIcons(true);
     }
 }

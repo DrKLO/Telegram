@@ -13,9 +13,11 @@ import android.text.Layout;
 import android.util.AttributeSet;
 import android.widget.TextView;
 
+import com.aniways.AniwaysTextView;
+
 import org.telegram.messenger.FileLog;
 
-public class TightTextView extends TextView {
+public class TightTextView extends AniwaysTextView {
     private boolean hasMaxWidth;
     public int maxWidth;
 
@@ -33,6 +35,7 @@ public class TightTextView extends TextView {
 
     public TightTextView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        super.setUseSmallIcons(true);
     }
 
     @Override

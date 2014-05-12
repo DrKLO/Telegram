@@ -34,6 +34,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.aniways.Aniways;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
@@ -78,6 +80,9 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Aniways.init(this);
+
         ApplicationLoader.postInitApplication();
 
         this.setTheme(R.style.Theme_TMessages);

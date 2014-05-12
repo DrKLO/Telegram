@@ -10,17 +10,21 @@ package org.telegram.objects;
 
 import android.graphics.Bitmap;
 import android.graphics.Paint;
+import android.text.Editable;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.util.Linkify;
 
+import com.aniways.Aniways;
+import com.aniways.AniwaysIconConverter;
+import com.aniways.AniwaysIconInfoDisplayer;
+
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.Emoji;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -32,6 +36,8 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 
 public class MessageObject {
+    private Editable aniwaysDecodedMessageTextBigIcons;
+    private Editable aniwaysDecodedMessageTextSmallIcons;
     public TLRPC.Message messageOwner;
     public CharSequence messageText;
     public int type;
@@ -251,7 +257,8 @@ public class MessageObject {
         } else {
             messageText = message.message;
         }
-        messageText = Emoji.replaceEmoji(messageText);
+
+        //messageText = Emoji.replaceEmoji(messageText);
 
         if (message instanceof TLRPC.TL_message || (message instanceof TLRPC.TL_messageForwarded && (message.media == null || !(message.media instanceof TLRPC.TL_messageMediaEmpty)))) {
             if (message.media == null || message.media instanceof TLRPC.TL_messageMediaEmpty) {
@@ -329,6 +336,26 @@ public class MessageObject {
         generateLayout();
     }
 
+    public CharSequence getAniwaysDecodedMessageTextSmallIcons(){
+
+        if(this.aniwaysDecodedMessageTextSmallIcons == null){
+            aniwaysDecodedMessageTextSmallIcons = Aniways.decodeMessage(this.messageText, new AniwaysIconInfoDisplayer(), true);
+        }
+
+        return this.aniwaysDecodedMessageTextSmallIcons;
+
+    }
+
+    public CharSequence getAniwaysDecodedMessageTextBigIcons(){
+
+        if(this.aniwaysDecodedMessageTextBigIcons == null){
+            aniwaysDecodedMessageTextBigIcons = Aniways.decodeMessage(this.messageText, new AniwaysIconInfoDisplayer(), false);
+        }
+
+        return this.aniwaysDecodedMessageTextBigIcons;
+
+    }
+
     public String getFileName() {
         if (messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
             return getAttachFileName(messageOwner.media.video);
@@ -386,17 +413,21 @@ public class MessageObject {
     }
 
     private void generateLayout() {
-        if (type != 0 && type != 1 && type != 8 && type != 9 || messageOwner.to_id == null || messageText == null || messageText.length() == 0) {
+
+        // This is used only by the views that display the normal sized icons, so it is OK to assume the large icons here..
+        CharSequence messageTextDecoded = getAniwaysDecodedMessageTextBigIcons();
+
+        if (type != 0 && type != 1 && type != 8 && type != 9 || messageOwner.to_id == null || messageTextDecoded == null || messageTextDecoded.length() == 0) {
             return;
         }
 
         textLayoutBlocks = new ArrayList<TextLayoutBlock>();
 
-        if (messageText instanceof Spannable) {
+        if (messageTextDecoded instanceof Spannable) {
             if (messageOwner.message != null && messageOwner.message.contains(".") && (messageOwner.message.contains(".com") || messageOwner.message.contains("http") || messageOwner.message.contains(".ru") || messageOwner.message.contains(".org") || messageOwner.message.contains(".net"))) {
-                Linkify.addLinks((Spannable)messageText, Linkify.WEB_URLS);
-            } else if (messageText.length() < 100) {
-                Linkify.addLinks((Spannable)messageText, Linkify.WEB_URLS | Linkify.EMAIL_ADDRESSES | Linkify.PHONE_NUMBERS);
+                Linkify.addLinks((Spannable)messageTextDecoded, Linkify.WEB_URLS);
+            } else if (messageTextDecoded.length() < 100) {
+                Linkify.addLinks((Spannable)messageTextDecoded, Linkify.WEB_URLS | Linkify.EMAIL_ADDRESSES | Linkify.PHONE_NUMBERS);
             }
         }
 
@@ -412,7 +443,7 @@ public class MessageObject {
         StaticLayout textLayout = null;
 
         try {
-            textLayout = new StaticLayout(messageText, textPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            textLayout = new StaticLayout(messageTextDecoded, textPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         } catch (Exception e) {
             FileLog.e("tmessages", e);
             return;
@@ -442,7 +473,7 @@ public class MessageObject {
                 }
                 block.charactersOffset = startCharacter;
                 try {
-                    CharSequence str = messageText.subSequence(startCharacter, endCharacter);
+                    CharSequence str = messageTextDecoded.subSequence(startCharacter, endCharacter);
                     block.textLayout = new StaticLayout(str, textPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                     block.textYOffset = textLayout.getLineTop(linesOffset);
                     if (a != blocksCount - 1) {

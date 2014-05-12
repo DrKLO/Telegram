@@ -21,6 +21,10 @@ dependencies {
     compile 'com.android.support:appcompat-v7:19.0.+'
     compile 'com.google.android.gms:play-services:4.1.+'
     compile 'net.hockeyapp.android:HockeySDK:3.0.1'
+    compile project(':aniways')
+    compile files('libs/AniwaysGoogleAnalytics.jar')
+    compile files('libs/AniwaysGson.jar')
+    compile files('libs/AniwaysSupport.jar')
 }
 
 android {
@@ -48,13 +52,11 @@ android {
             jniDebugBuild false
             signingConfig signingConfigs.debug
         }
-
         release {
             debuggable false
             jniDebugBuild false
             signingConfig signingConfigs.release
         }
-
         foss {
             debuggable false
             jniDebugBuild false

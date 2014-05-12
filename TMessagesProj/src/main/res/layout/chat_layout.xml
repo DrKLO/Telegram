@@ -1,3 +1,4 @@
+
 <org.telegram.ui.Views.SizeNotifierRelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -142,7 +143,7 @@
             android:src="@drawable/send_button_states"
             android:background="@android:color/transparent"/>
 
-        <EditText
+        <com.aniways.AniwaysEditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/chat_text_edit"

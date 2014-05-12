@@ -10,19 +10,26 @@ package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Point;
+import android.text.Layout;
 import android.text.Spannable;
 import android.text.style.ClickableSpan;
 import android.view.MotionEvent;
+import android.view.View;
+
+import com.aniways.AniwaysIconInfoSpan;
+import com.aniways.IAniwaysTextContainer;
 
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 
-public class ChatMessageCell extends ChatBaseCell {
+public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContainer {
 
     private int textX, textY;
     private int totalHeight = 0;
     private ClickableSpan pressedLink;
+    private AniwaysIconInfoSpan pressedIcon;
 
     private int lastVisibleBlockNum = 0;
     private int firstVisibleBlockNum = 0;
@@ -35,8 +42,8 @@ public class ChatMessageCell extends ChatBaseCell {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (currentMessageObject != null && currentMessageObject.textLayoutBlocks != null && !currentMessageObject.textLayoutBlocks.isEmpty() && currentMessageObject.messageText instanceof Spannable && !isPressed) {
-            if (event.getAction() == MotionEvent.ACTION_DOWN || pressedLink != null && event.getAction() == MotionEvent.ACTION_UP) {
+        if (currentMessageObject != null && currentMessageObject.textLayoutBlocks != null && !currentMessageObject.textLayoutBlocks.isEmpty() && currentMessageObject.getAniwaysDecodedMessageTextBigIcons() instanceof Spannable && !isPressed) {
+            if (event.getAction() == MotionEvent.ACTION_DOWN || (pressedLink != null || pressedIcon != null) && event.getAction() == MotionEvent.ACTION_UP) {
                 int x = (int)event.getX();
                 int y = (int)event.getY();
                 if (x >= textX && y >= textY && x <= textX + currentMessageObject.textWidth && y <= textY + currentMessageObject.textHeight) {
@@ -51,8 +58,9 @@ public class ChatMessageCell extends ChatBaseCell {
 
                         final float left = block.textLayout.getLineLeft(line);
                         if (left <= x && left + block.textLayout.getLineWidth(line) >= x) {
-                            Spannable buffer = (Spannable)currentMessageObject.messageText;
+                            Spannable buffer = (Spannable)currentMessageObject.getAniwaysDecodedMessageTextBigIcons();
                             ClickableSpan[] link = buffer.getSpans(off, off, ClickableSpan.class);
+                            AniwaysIconInfoSpan[] iconInfos = buffer.getSpans(off, off, AniwaysIconInfoSpan.class);
 
                             if (link.length != 0) {
                                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -71,18 +79,41 @@ public class ChatMessageCell extends ChatBaseCell {
                             } else {
                                 pressedLink = null;
                             }
+
+                            if (iconInfos.length != 0) {
+                                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                                    pressedIcon = iconInfos[0];
+                                    return true;
+                                } else {
+                                    if (iconInfos[0] == pressedIcon) {
+                                        try {
+                                            pressedIcon.onClick(this);
+                                        } catch (Exception e) {
+                                            FileLog.e("tmessages", e);
+                                        }
+                                        return true;
+                                    }
+                                }
+                            } else {
+                                pressedIcon = null;
+                            }
+
                         } else {
                             pressedLink = null;
+                            pressedIcon = null;
                         }
                     } else {
                         pressedLink = null;
+                        pressedIcon = null;
                     }
                 } else {
                     pressedLink = null;
+                    pressedIcon = null;
                 }
             }
         } else {
             pressedLink = null;
+            pressedIcon = null;
         }
         return super.onTouchEvent(event);
     }
@@ -130,6 +161,7 @@ public class ChatMessageCell extends ChatBaseCell {
                 lastVisibleBlockNum = 0;
             }
             pressedLink = null;
+            pressedIcon = null;
             int maxWidth;
             if (chat) {
                 maxWidth = Utilities.displaySize.x - Utilities.dp(122);
@@ -214,5 +246,90 @@ public class ChatMessageCell extends ChatBaseCell {
             }
             canvas.restore();
         }
+    }
+
+    @Override
+    public Spannable getText() {
+        return (Spannable) this.currentMessageObject.getAniwaysDecodedMessageTextBigIcons();
+    }
+
+    /** Return the point (in pixels) of the received char position as it is displayed
+     * relative to the upper left corner of the widget, or lower left if fromTop == false.
+     * It accounts for scroll position and paddings
+     * !! Be careful, it can return null!!
+     **/
+    @Override
+    public Point getPointOfPositionInText(int position, boolean fromTop) {
+        int leftPadding = this.textX;
+        int topPadding = this.textY;
+
+        // Get the text block this position is in
+
+        MessageObject.TextLayoutBlock theBlock = null;
+        for (int a = firstVisibleBlockNum; a <= lastVisibleBlockNum; a++) {
+            if (a >= currentMessageObject.textLayoutBlocks.size()) {
+                return null;
+            }
+
+            MessageObject.TextLayoutBlock block = currentMessageObject.textLayoutBlocks.get(a);
+
+            if(position < block.charactersOffset){
+                return null;
+            }
+
+            int blockEnd = block.charactersOffset + block.textLayout.getText().length();
+            // The second condition is because if the span is at the block end then the char after it (position) is in the next block
+            // and then position == blockEnd. We should regard this block as the right one only if we are looking at the
+            // end of the span and not the start of the span (because then we position the span as if it is in the previous block)MessageObject
+            if(position < blockEnd || (position == blockEnd && a == lastVisibleBlockNum )){
+                theBlock = block;
+                break;
+            }
+        }
+
+        if(theBlock == null){
+            return null;
+        }
+
+        // The position in the block
+        position = position - theBlock.charactersOffset;
+
+        Layout layout = theBlock.textLayout;
+
+        if(layout == null){
+            // This could happen immediately after changing modes from vertical to horizontal, for instance..
+            return null;
+        }
+
+        int line = layout.getLineForOffset(position);
+        int baseline = layout.getLineBaseline(line);
+
+        //float x = theBlock.textXOffset + layout.getPrimaryHorizontal(position);
+        // The above line is more correct, but it doesn't work for right to left, and the offset always seems to be '0', so I remove for now
+        // TODO: fix according to above comment
+        float x = layout.getPrimaryHorizontal(position) - theBlock.textXOffset;
+        x += leftPadding;
+        //x -= mTextView.getScrollX();
+
+        float y = theBlock.textYOffset + baseline;
+        y += topPadding;
+        //y -= mTextView.getScrollY();
+        if(fromTop){
+            int ascent = layout.getLineAscent(line);
+            y += ascent;
+        }
+        else{
+            int viewHeight = this.getHeight();
+            y = viewHeight - y;
+        }
+
+
+        Point point = new Point((int)Math.round(x), (int)Math.round(y));
+        return point;
+    }
+
+    @Override
+    public View getView() {
+        return this;
     }
 }

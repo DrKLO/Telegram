@@ -36,6 +36,7 @@ import android.support.v7.app.ActionBarActivity;
 import android.support.v7.view.ActionMode;
 import android.text.Editable;
 import android.text.Html;
+import android.text.Spannable;
 import android.text.TextWatcher;
 import android.text.style.ImageSpan;
 import android.util.TypedValue;
@@ -69,6 +70,10 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.aniways.Aniways;
+import com.aniways.AniwaysEditText;
+import com.aniways.AniwaysTextView;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
@@ -79,7 +84,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.objects.MessageObject;
 import org.telegram.objects.PhotoObject;
 import org.telegram.messenger.ConnectionsManager;
-import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -114,7 +118,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     private ChatAdapter chatAdapter;
     private EditText messsageEditText;
     private ImageButton sendButton;
-    private PopupWindow emojiPopup;
+    //private PopupWindow emojiPopup;
     private ImageView emojiButton;
     private EmojiView emojiView;
     private View slideText;
@@ -430,6 +434,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Aniways.init(this.getActivity());
+
         setHasOptionsMenu(true);
         Display display = parentActivity.getWindowManager().getDefaultDisplay();
         if(android.os.Build.VERSION.SDK_INT < 13) {
@@ -629,6 +636,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 }
             }
 
+            Aniways.makeButtonAniwaysEmoticonsButton(emojiButton, (ViewGroup) fragmentView, (AniwaysEditText)messsageEditText, null, true);
+
+            /*
             emojiButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -639,16 +649,12 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     }
                 }
             });
+            */
 
             messsageEditText.setOnKeyListener(new View.OnKeyListener() {
                 @Override
                 public boolean onKey(View view, int i, KeyEvent keyEvent) {
-                    if (i == 4 && !keyboardVisible && emojiPopup != null && emojiPopup.isShowing()) {
-                        if (keyEvent.getAction() == 1) {
-                            showEmojiPopup(false);
-                        }
-                        return true;
-                    } else if (i == KeyEvent.KEYCODE_ENTER && sendByEnter && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
+                    if (i == KeyEvent.KEYCODE_ENTER && sendByEnter && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
                         sendMessage();
                         return true;
                     }
@@ -775,6 +781,8 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     if (sendByEnter && editable.length() > 0 && editable.charAt(editable.length() - 1) == '\n') {
                         sendMessage();
                     }
+
+                    /*
                     int i = 0;
                     ImageSpan[] arrayOfImageSpan = editable.getSpans(0, editable.length(), ImageSpan.class);
                     int j = arrayOfImageSpan.length;
@@ -786,6 +794,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         editable.removeSpan(arrayOfImageSpan[i]);
                         i++;
                     }
+                    */
                 }
             });
 
@@ -987,7 +996,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     }
 
     private void sendMessage() {
-        String message = messsageEditText.getText().toString().trim();
+        String message = Aniways.encodeMessage(messsageEditText.getText());
         if (processSendingText(message)) {
             messsageEditText.setText("");
             lastTypingTimeSend = 0;
@@ -1096,7 +1105,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             bottomOverlay.setVisibility(View.GONE);
         }
         if (hideKeyboard) {
-            hideEmojiPopup();
+            //hideEmojiPopup();
             if (parentActivity != null) {
                 Utilities.hideKeyboard(parentActivity.getCurrentFocus());
             }
@@ -1350,6 +1359,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
     @Override
     public void onSizeChanged(int height) {
+        /*
         Rect localRect = new Rect();
         parentActivity.getWindow().getDecorView().getWindowVisibleDisplayFrame(localRect);
 
@@ -1397,6 +1407,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         } else if (!keyboardVisible && keyboardVisible != oldValue && emojiPopup != null && emojiPopup.isShowing()) {
             showEmojiPopup(false);
         }
+        */
     }
 
     @Override
@@ -2326,6 +2337,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         }
     }
 
+    /*
     private void createEmojiPopup() {
         emojiView = new EmojiView(parentActivity);
         emojiView.setListener(new EmojiView.Listener() {
@@ -2343,7 +2355,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         });
         emojiPopup = new PopupWindow(emojiView);
     }
+    */
 
+    /*
     private void showEmojiPopup(boolean show) {
         if (parentActivity == null) {
             return;
@@ -2401,6 +2415,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             showEmojiPopup(false);
         }
     }
+    */
 
     @Override
     public void applySelfActionBar() {
@@ -2518,14 +2533,14 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             mActionMode.finish();
             mActionMode = null;
         }
-        hideEmojiPopup();
+        //hideEmojiPopup();
         paused = true;
         MessagesController.getInstance().openned_dialog_id = 0;
 
         if (messsageEditText != null && messsageEditText.length() != 0) {
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
             SharedPreferences.Editor editor = preferences.edit();
-            editor.putString("dialog_" + dialog_id, messsageEditText.getText().toString());
+            editor.putString("dialog_" + dialog_id, Aniways.encodeMessage(messsageEditText.getText()));
             editor.commit();
         }
 
@@ -2969,6 +2984,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             if (selectedObject != null) {
                 if(android.os.Build.VERSION.SDK_INT < 11) {
                     android.text.ClipboardManager clipboard = (android.text.ClipboardManager)parentActivity.getSystemService(Context.CLIPBOARD_SERVICE);
+                    // This is not the Aniways decoded version on purpose
                     clipboard.setText(selectedObject.messageText);
                 } else {
                     android.content.ClipboardManager clipboard = (android.content.ClipboardManager)parentActivity.getSystemService(Context.CLIPBOARD_SERVICE);
@@ -3079,6 +3095,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         }
     }
 
+    /*
     @Override
     public boolean onBackPressed() {
         if (emojiPopup != null && emojiPopup.isShowing()) {
@@ -3088,6 +3105,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             return true;
         }
     }
+    */
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -3676,6 +3694,8 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 actionAttachButton.setText(LocaleController.getString("ViewLocation", R.string.ViewLocation));
             } else if (type == 11 || type == 10) {
                 int width = displaySize.x - Utilities.dp(30);
+
+                //TODO: Find out where this textView is and whether it should be an AniwaysTextView
                 messageTextView.setText(message.messageText);
                 messageTextView.setMaxWidth(width);
 
@@ -4000,7 +4020,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             halfCheckImage = (ImageView)view.findViewById(R.id.chat_row_halfcheck);
             checkImage = (ImageView)view.findViewById(R.id.chat_row_check);
             actionAttachButton = (TextView)view.findViewById(R.id.chat_view_action_button);
-            messageTextView = (TextView)view.findViewById(R.id.chat_message_text);
+            messageTextView = (AniwaysTextView)view.findViewById(R.id.chat_message_text);
             videoTimeText = (TextView)view.findViewById(R.id.chat_video_time);
             actionView = view.findViewById(R.id.chat_view_action_layout);
             actionProgress = (ProgressBar)view.findViewById(R.id.chat_view_action_progress);
@@ -4014,6 +4034,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             photoProgressView = view.findViewById(R.id.photo_progress);
             if (messageTextView != null) {
                 messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, MessagesController.getInstance().fontSize);
+                ((AniwaysTextView)messageTextView).setUseSmallIcons(true);
             }
 
             if (actionProgress != null) {

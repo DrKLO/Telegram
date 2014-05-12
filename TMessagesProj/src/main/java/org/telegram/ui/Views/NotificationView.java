@@ -23,6 +23,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.aniways.AniwaysTextView;
+
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.FileLog;
@@ -39,7 +41,7 @@ import java.util.TimerTask;
 public class NotificationView extends LinearLayout {
     public BackupImageView avatarImage;
     public TextView nameTextView;
-    public TextView messageTextView;
+    public AniwaysTextView messageTextView;
     public ImageView closeButton;
     public FrameLayout textLayout;
     private WindowManager.LayoutParams notificationLayoutParams;
@@ -71,7 +73,8 @@ public class NotificationView extends LinearLayout {
         super.onFinishInflate();
         avatarImage = (BackupImageView)findViewById(R.id.avatar_image);
         nameTextView = (TextView)findViewById(R.id.name_text_view);
-        messageTextView = (TextView)findViewById(R.id.message_text_view);
+        messageTextView = (AniwaysTextView)findViewById(R.id.message_text_view);
+        messageTextView.setUseSmallIcons(true);
         closeButton = (ImageView)findViewById(R.id.close_button);
         textLayout = (FrameLayout)findViewById(R.id.text_layout);
         closeButton.setOnClickListener(new OnClickListener() {
