@@ -37,6 +37,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.objects.MessageObject;
 import org.telegram.objects.PhotoObject;
+import org.telegram.objects.VibrationSpeed;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.ApplicationLoader;
 
@@ -4558,14 +4559,17 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             }
 
             boolean needVibrate = false;
+            VibrationSpeed speed = VibrationSpeed.getDefault();
 
             if (user_id != 0) {
                 userSoundPath = preferences.getString("sound_path_" + user_id, null);
                 needVibrate = globalVibrate;
+                speed = VibrationSpeed.fromValue(preferences.getInt("VibrationSpeed", 0));
             }
             if (chat_id != 0) {
                 chatSoundPath = preferences.getString("sound_chat_path_" + chat_id, null);
                 needVibrate = groupVibrate;
+                speed = VibrationSpeed.fromValue(preferences.getInt("VibrationSpeedGroup", 0));
             }
 
             String choosenSoundPath = null;
@@ -4606,8 +4610,23 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
             }
 
+            int notificationDefaults = 0;
+
             if (needVibrate) {
-                mBuilder.setVibrate(new long[]{0, 100, 0, 100});
+                switch (speed) {
+                    case FAST:
+                        mBuilder.setVibrate(new long[]{0, 100, 0, 100});
+                        break;
+                    case MEDIUM:
+                        mBuilder.setVibrate(new long[]{0, 300, 200, 300});
+                        break;
+                    case SLOW:
+                        mBuilder.setVibrate(new long[]{0, 800, 200, 800});
+                        break;
+                    case DEFAULT:
+                    default:
+                        notificationDefaults = notificationDefaults | Notification.DEFAULT_VIBRATE;
+                }
             }
             if (choosenSoundPath != null && !choosenSoundPath.equals("NoSound")) {
                 if (choosenSoundPath.equals(defaultPath)) {
@@ -4625,7 +4644,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             notification.ledOnMS = 1000;
             notification.ledOffMS = 1000;
             notification.flags |= Notification.FLAG_SHOW_LIGHTS;
-            notification.defaults = 0;
+            notification.defaults = notificationDefaults;
             try {
                 mNotificationManager.notify(1, notification);
                 if (preferences.getBoolean("EnablePebbleNotifications", false)) {

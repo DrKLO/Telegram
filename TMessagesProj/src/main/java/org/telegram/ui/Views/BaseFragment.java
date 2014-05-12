@@ -10,6 +10,7 @@ package org.telegram.ui.Views;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBarActivity;
 import android.view.View;
@@ -21,7 +22,7 @@ import org.telegram.messenger.ConnectionsManager;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.ApplicationLoader;
 
-public class BaseFragment extends Fragment {
+public class BaseFragment extends DialogFragment {
     public int animationType = 0;
     public boolean isFinish = false;
     public View fragmentView;

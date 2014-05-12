@@ -232,6 +232,12 @@
     <string name="InAppSounds">In-App Sounds</string>
     <string name="InAppVibrate">In-App Vibrate</string>
     <string name="Vibrate">Vibrate</string>
+    <string name="VibrateSpeed">Vibration speed</string>
+    <string name="VibrateSpeedTitle">Pick a speed</string>
+    <string name="VibrateSpeedFast">Fast</string>
+    <string name="VibrateSpeedMedium">Medium</string>
+    <string name="VibrateSpeedSlow">Slow</string>
+    <string name="VibrateSpeedDefault">Default</string>
     <string name="InAppPreview">In-App Preview</string>
     <string name="Reset">RESET</string>
     <string name="ResetAllNotifications">Reset All Notifications</string>

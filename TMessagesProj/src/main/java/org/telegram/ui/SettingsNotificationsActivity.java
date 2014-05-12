@@ -9,6 +9,7 @@
 package org.telegram.ui;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -17,6 +18,7 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.support.v4.app.DialogFragment;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
@@ -39,10 +41,40 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
+import org.telegram.objects.VibrationSpeed;
+import org.telegram.ui.Dialog.VibrationSpeedDialog;
 import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.OnSwipeTouchListener;
 
 public class SettingsNotificationsActivity extends BaseFragment {
+    private static final int TYPE_HEADER           = 0;
+    private static final int TYPE_BOOLEAN_SETTINGS = 1;
+    private static final int TYPE_INNER_SETTINGS   = 2;
+
+    private static int SETTINGS_COUNT = 0;
+    private static final int SETTINGS_MESSAGE_NOTIFICATIONS = SETTINGS_COUNT++; // 0
+    private static final int SETTINGS_MESSAGE_ALERT         = SETTINGS_COUNT++; // 1
+    private static final int SETTINGS_MESSAGE_PREVIEW       = SETTINGS_COUNT++; // 2
+    private static final int SETTINGS_MESSAGE_VIBRATE       = SETTINGS_COUNT++; // 3
+    private static final int SETTINGS_MESSAGE_VIBRATE_SPD   = SETTINGS_COUNT++; // 4
+    private static final int SETTINGS_MESSAGE_SOUND         = SETTINGS_COUNT++; // 5
+    private static final int SETTINGS_GROUP_NOTIFICATIONS   = SETTINGS_COUNT++; // 6
+    private static final int SETTINGS_GROUP_ALERT           = SETTINGS_COUNT++; // 7
+    private static final int SETTINGS_GROUP_PREVIEW         = SETTINGS_COUNT++; // 8
+    private static final int SETTINGS_GROUP_VIBRATE         = SETTINGS_COUNT++; // 9
+    private static final int SETTINGS_GROUP_VIBRATE_SPD     = SETTINGS_COUNT++; // 10
+    private static final int SETTINGS_GROUP_SOUND           = SETTINGS_COUNT++; // 11
+    private static final int SETTINGS_INAPP_NOTIFICATIONS   = SETTINGS_COUNT++; // 12
+    private static final int SETTINGS_INAPP_SOUND           = SETTINGS_COUNT++; // 13
+    private static final int SETTINGS_INAPP_VIBRATE         = SETTINGS_COUNT++; // 14
+    private static final int SETTINGS_INAPP_PREVIEW         = SETTINGS_COUNT++; // 15
+    private static final int SETTINGS_EVENTS                = SETTINGS_COUNT++; // 16
+    private static final int SETTINGS_CONTACT_JOINED        = SETTINGS_COUNT++; // 17
+    private static final int SETTINGS_PEBBLE                = SETTINGS_COUNT++; // 18
+    private static final int SETTINGS_PEBBLE_ALERT          = SETTINGS_COUNT++; // 19
+    private static final int SETTINGS_RESET                 = SETTINGS_COUNT++; // 20
+    private static final int SETTINGS_RESET_ALL             = SETTINGS_COUNT++; // 21
+
     private ListView listView;
     private boolean reseting = false;
 
@@ -62,47 +94,69 @@ public class SettingsNotificationsActivity extends BaseFragment {
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    if (i == 1 || i == 6) {
+                    if (i == SETTINGS_MESSAGE_ALERT || i == SETTINGS_GROUP_ALERT) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
                         boolean enabled;
-                        if (i == 1) {
+                        if (i == SETTINGS_MESSAGE_ALERT) {
                             enabled = preferences.getBoolean("EnableAll", true);
                             editor.putBoolean("EnableAll", !enabled);
-                        } else if (i == 6) {
+                        } else if (i == SETTINGS_GROUP_ALERT) {
                             enabled = preferences.getBoolean("EnableGroup", true);
                             editor.putBoolean("EnableGroup", !enabled);
                         }
                         editor.commit();
                         listView.invalidateViews();
-                    } else if (i == 2 || i == 7) {
+                    } else if (i == SETTINGS_MESSAGE_PREVIEW || i == SETTINGS_GROUP_PREVIEW) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
-                        boolean enabledAll = true;
                         boolean enabled;
-                        if (i == 2) {
+                        if (i == SETTINGS_MESSAGE_PREVIEW) {
                             enabled = preferences.getBoolean("EnablePreviewAll", true);
                             editor.putBoolean("EnablePreviewAll", !enabled);
-                        } else if (i == 7) {
+                        } else if (i == SETTINGS_GROUP_PREVIEW) {
                             enabled = preferences.getBoolean("EnablePreviewGroup", true);
                             editor.putBoolean("EnablePreviewGroup", !enabled);
                         }
                         editor.commit();
                         listView.invalidateViews();
-                    } else if (i == 3 || i == 8) {
+                    } else if (i == SETTINGS_MESSAGE_VIBRATE || i == SETTINGS_GROUP_VIBRATE) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
                         boolean enabled;
-                        if (i == 3) {
+                        if (i == SETTINGS_MESSAGE_VIBRATE) {
                             enabled = preferences.getBoolean("EnableVibrateAll", true);
                             editor.putBoolean("EnableVibrateAll", !enabled);
-                        } else if (i == 8) {
+                        } else if (i == SETTINGS_GROUP_VIBRATE) {
                             enabled = preferences.getBoolean("EnableVibrateGroup", true);
                             editor.putBoolean("EnableVibrateGroup", !enabled);
                         }
                         editor.commit();
                         listView.invalidateViews();
-                    } else if (i == 4 || i == 9) {
+                    } else if (i == SETTINGS_MESSAGE_VIBRATE_SPD || i == SETTINGS_GROUP_VIBRATE_SPD) {
+                        final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        final int index = i;
+                        VibrationSpeed speed = VibrationSpeed.getDefault();
+                        if (index == SETTINGS_MESSAGE_VIBRATE_SPD) {
+                            speed = VibrationSpeed.fromValue(preferences.getInt("VibrationSpeed", 0));
+                        } else if (index == SETTINGS_GROUP_VIBRATE_SPD) {
+                            speed = VibrationSpeed.fromValue(preferences.getInt("VibrationSpeedGroup", 0));
+                        }
+                        VibrationSpeedDialog vibrationSpeedDialog = new VibrationSpeedDialog(speed, new VibrationSpeedDialog.VibrationSpeedSelectionListener() {
+                            @Override
+                            public void onSpeedSelected(DialogFragment dialog, VibrationSpeed selectedSpeed) {
+                                SharedPreferences.Editor editor = preferences.edit();
+                                if (index == SETTINGS_MESSAGE_VIBRATE_SPD) {
+                                    editor.putInt("VibrationSpeed", selectedSpeed.getValue());
+                                } else if (index == SETTINGS_GROUP_VIBRATE_SPD) {
+                                    editor.putInt("VibrationSpeedGroup", selectedSpeed.getValue());
+                                }
+                                editor.commit();
+                                listView.invalidateViews();
+                            }
+                        });
+                        vibrationSpeedDialog.show(getFragmentManager(), "VibrationSpeedDialog");
+                    } else if (i == SETTINGS_MESSAGE_SOUND || i == SETTINGS_GROUP_SOUND) {
                         if (parentActivity == null) {
                             return;
                         }
@@ -120,7 +174,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                                 defaultPath = defaultUri.getPath();
                             }
 
-                            if (i == 4) {
+                            if (i == SETTINGS_MESSAGE_SOUND) {
                                 String path = preferences.getString("GlobalSoundPath", defaultPath);
                                 if (path != null && !path.equals("NoSound")) {
                                     if (path.equals(defaultPath)) {
@@ -129,7 +183,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                                         currentSound = Uri.parse(path);
                                     }
                                 }
-                            } else if (i == 9) {
+                            } else if (i == SETTINGS_GROUP_SOUND) {
                                 String path = preferences.getString("GroupSoundPath", defaultPath);
                                 if (path != null && !path.equals("NoSound")) {
                                     if (path.equals(defaultPath)) {
@@ -144,7 +198,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
                         }
-                    } else if (i == 19) {
+                    } else if (i == SETTINGS_RESET_ALL) {
                         if (reseting) {
                             return;
                         }
@@ -176,28 +230,28 @@ public class SettingsNotificationsActivity extends BaseFragment {
                                 });
                             }
                         }, null, true, RPCRequest.RPCRequestClassGeneric);
-                    } else if (i == 11) {
+                    } else if (i == SETTINGS_INAPP_SOUND) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
                         boolean enabled = preferences.getBoolean("EnableInAppSounds", true);
                         editor.putBoolean("EnableInAppSounds", !enabled);
                         editor.commit();
                         listView.invalidateViews();
-                    } else if (i == 12) {
+                    } else if (i == SETTINGS_INAPP_VIBRATE) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
                         boolean enabled = preferences.getBoolean("EnableInAppVibrate", true);
                         editor.putBoolean("EnableInAppVibrate", !enabled);
                         editor.commit();
                         listView.invalidateViews();
-                    } else if (i == 13) {
+                    } else if (i == SETTINGS_INAPP_PREVIEW) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
                         boolean enabled = preferences.getBoolean("EnableInAppPreview", true);
                         editor.putBoolean("EnableInAppPreview", !enabled);
                         editor.commit();
                         listView.invalidateViews();
-                    } else if (i == 15) {
+                    } else if (i == SETTINGS_CONTACT_JOINED) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
                         boolean enabled = preferences.getBoolean("EnableContactJoined", true);
@@ -205,7 +259,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         editor.putBoolean("EnableContactJoined", !enabled);
                         editor.commit();
                         listView.invalidateViews();
-                    } else if (i == 17) {
+                    } else if (i == SETTINGS_PEBBLE_ALERT) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
                         boolean enabled = preferences.getBoolean("EnablePebbleNotifications", false);
@@ -250,7 +304,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             SharedPreferences.Editor editor = preferences.edit();
 
-            if (requestCode == 4) {
+            if (requestCode == SETTINGS_MESSAGE_SOUND) {
                 if (name != null && ringtone != null) {
                     editor.putString("GlobalSound", name);
                     editor.putString("GlobalSoundPath", ringtone.toString());
@@ -258,7 +312,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     editor.putString("GlobalSound", "NoSound");
                     editor.putString("GlobalSoundPath", "NoSound");
                 }
-            } else if (requestCode == 9) {
+            } else if (requestCode == SETTINGS_GROUP_SOUND) {
                 if (name != null && ringtone != null) {
                     editor.putString("GroupSound", name);
                     editor.putString("GroupSoundPath", ringtone.toString());
@@ -341,17 +395,20 @@ public class SettingsNotificationsActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(int i) {
-            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-            boolean enabledAll = preferences.getBoolean("EnableAll", true);
-            if (i == 19 || i == 15) {
+            if (i == SETTINGS_RESET_ALL || i == SETTINGS_CONTACT_JOINED) {
                 return true;
             }
-            return !(i != 1 && !enabledAll && i != 13) && (i > 0 && i < 5 || i > 5 && i < 10 || i > 10 && i < 14) || i == 17;
+
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+            boolean enabledAll = preferences.getBoolean("EnableAll", true);
+            return (enabledAll || i == SETTINGS_MESSAGE_ALERT || i == SETTINGS_INAPP_PREVIEW) &&
+                   (i > SETTINGS_MESSAGE_NOTIFICATIONS && i < SETTINGS_GROUP_NOTIFICATIONS || i > SETTINGS_GROUP_NOTIFICATIONS && i < SETTINGS_INAPP_NOTIFICATIONS || i > SETTINGS_INAPP_NOTIFICATIONS && i < SETTINGS_EVENTS) ||
+                   (i == SETTINGS_PEBBLE_ALERT);
         }
 
         @Override
         public int getCount() {
-            return 20;
+            return SETTINGS_COUNT;
         }
 
         @Override
@@ -372,26 +429,26 @@ public class SettingsNotificationsActivity extends BaseFragment {
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
             int type = getItemViewType(i);
-            if (type == 0) {
+            if (type == TYPE_HEADER) {
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.settings_section_layout, viewGroup, false);
                 }
                 TextView textView = (TextView)view.findViewById(R.id.settings_section_text);
-                if (i == 0) {
+                if (i == SETTINGS_MESSAGE_NOTIFICATIONS) {
                     textView.setText(LocaleController.getString("MessageNotifications", R.string.MessageNotifications));
-                } else if (i == 5) {
+                } else if (i == SETTINGS_GROUP_NOTIFICATIONS) {
                     textView.setText(LocaleController.getString("GroupNotifications", R.string.GroupNotifications));
-                } else if (i == 10) {
+                } else if (i == SETTINGS_INAPP_NOTIFICATIONS) {
                     textView.setText(LocaleController.getString("InAppNotifications", R.string.InAppNotifications));
-                } else if (i == 14) {
+                } else if (i == SETTINGS_EVENTS) {
                     textView.setText(LocaleController.getString("Events", R.string.Events));
-                } else if (i == 16) {
+                } else if (i == SETTINGS_PEBBLE) {
                     textView.setText(LocaleController.getString("Pebble", R.string.Pebble));
-                } else if (i == 18) {
+                } else if (i == SETTINGS_RESET) {
                     textView.setText(LocaleController.getString("Reset", R.string.Reset));
                 }
-            } if (type == 1) {
+            } if (type == TYPE_BOOLEAN_SETTINGS) {
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.settings_row_check_notify_layout, viewGroup, false);
@@ -404,47 +461,47 @@ public class SettingsNotificationsActivity extends BaseFragment {
                 boolean enabled = false;
                 boolean enabledAll = preferences.getBoolean("EnableAll", true);
 
-                if (i == 1 || i == 6) {
-                    if (i == 1) {
+                if (i == SETTINGS_MESSAGE_ALERT || i == SETTINGS_GROUP_ALERT) {
+                    if (i == SETTINGS_MESSAGE_ALERT) {
                         enabled = enabledAll;
-                    } else if (i == 6) {
+                    } else if (i == SETTINGS_GROUP_ALERT) {
                         enabled = preferences.getBoolean("EnableGroup", true);
                     }
                     textView.setText(LocaleController.getString("Alert", R.string.Alert));
                     divider.setVisibility(View.VISIBLE);
-                } else if (i == 2 || i == 7) {
-                    if (i == 2) {
+                } else if (i == SETTINGS_MESSAGE_PREVIEW || i == SETTINGS_GROUP_PREVIEW) {
+                    if (i == SETTINGS_MESSAGE_PREVIEW) {
                         enabled = preferences.getBoolean("EnablePreviewAll", true);
-                    } else if (i == 7) {
+                    } else if (i == SETTINGS_GROUP_PREVIEW) {
                         enabled = preferences.getBoolean("EnablePreviewGroup", true);
                     }
                     textView.setText(LocaleController.getString("MessagePreview", R.string.MessagePreview));
                     divider.setVisibility(View.VISIBLE);
-                } else if (i == 3 || i == 8) {
-                    if (i == 3) {
+                } else if (i == SETTINGS_MESSAGE_VIBRATE || i == SETTINGS_GROUP_VIBRATE) {
+                    if (i == SETTINGS_MESSAGE_VIBRATE) {
                         enabled = preferences.getBoolean("EnableVibrateAll", true);
-                    } else if (i == 8) {
+                    } else if (i == SETTINGS_GROUP_VIBRATE) {
                         enabled = preferences.getBoolean("EnableVibrateGroup", true);
                     }
                     textView.setText(LocaleController.getString("Vibrate", R.string.Vibrate));
                     divider.setVisibility(View.VISIBLE);
-                } else if (i == 11) {
+                } else if (i == SETTINGS_INAPP_SOUND) {
                     enabled = preferences.getBoolean("EnableInAppSounds", true);
                     textView.setText(LocaleController.getString("InAppSounds", R.string.InAppSounds));
                     divider.setVisibility(View.VISIBLE);
-                } else if (i == 12) {
+                } else if (i == SETTINGS_INAPP_VIBRATE) {
                     enabled = preferences.getBoolean("EnableInAppVibrate", true);
                     textView.setText(LocaleController.getString("InAppVibrate", R.string.InAppVibrate));
                     divider.setVisibility(View.VISIBLE);
-                } else if (i == 13) {
+                } else if (i == SETTINGS_INAPP_PREVIEW) {
                     enabled = preferences.getBoolean("EnableInAppPreview", true);
                     textView.setText(LocaleController.getString("InAppPreview", R.string.InAppPreview));
                     divider.setVisibility(View.INVISIBLE);
-                } else if (i == 15) {
+                } else if (i == SETTINGS_CONTACT_JOINED) {
                     enabled = preferences.getBoolean("EnableContactJoined", true);
                     textView.setText(LocaleController.getString("ContactJoined", R.string.ContactJoined));
                     divider.setVisibility(View.INVISIBLE);
-                } else if (i == 17) {
+                } else if (i == SETTINGS_PEBBLE_ALERT) {
                     enabled = preferences.getBoolean("EnablePebbleNotifications", false);
                     textView.setText(LocaleController.getString("Alert", R.string.Alert));
                     divider.setVisibility(View.INVISIBLE);
@@ -454,20 +511,20 @@ public class SettingsNotificationsActivity extends BaseFragment {
                 } else {
                     checkButton.setImageResource(R.drawable.btn_check_off);
                 }
-                if (i != 1 && !enabledAll && i != 15) {
+                if (i != SETTINGS_MESSAGE_ALERT && !enabledAll && i != SETTINGS_CONTACT_JOINED) {
                     view.setEnabled(false);
-                    if(android.os.Build.VERSION.SDK_INT >= 11) {
+                    if(android.os.Build.VERSION.SDK_INT >= SETTINGS_INAPP_SOUND) {
                         checkButton.setAlpha(0.3f);
                         textView.setAlpha(0.3f);
                     }
                 } else {
-                    if(android.os.Build.VERSION.SDK_INT >= 11) {
+                    if(android.os.Build.VERSION.SDK_INT >= SETTINGS_INAPP_SOUND) {
                         checkButton.setAlpha(1.0f);
                         textView.setAlpha(1.0f);
                     }
                     view.setEnabled(true);
                 }
-            } else if (type == 2) {
+            } else if (type == TYPE_INNER_SETTINGS) {
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.settings_row_detail_layout, viewGroup, false);
@@ -477,15 +534,15 @@ public class SettingsNotificationsActivity extends BaseFragment {
                 View divider = view.findViewById(R.id.settings_row_divider);
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                 boolean enabledAll = preferences.getBoolean("EnableAll", true);
-                if (i == 4 || i == 9) {
-                    if (i == 4) {
+                if (i == SETTINGS_MESSAGE_SOUND || i == SETTINGS_GROUP_SOUND) {
+                    if (i == SETTINGS_MESSAGE_SOUND) {
                         String name = preferences.getString("GlobalSound", LocaleController.getString("Default", R.string.Default));
                         if (name.equals("NoSound")) {
                             textViewDetail.setText(LocaleController.getString("NoSound", R.string.NoSound));
                         } else {
                             textViewDetail.setText(name);
                         }
-                    } else if (i == 9) {
+                    } else if (i == SETTINGS_GROUP_SOUND) {
                         String name = preferences.getString("GroupSound", LocaleController.getString("Default", R.string.Default));
                         if (name.equals("NoSound")) {
                             textViewDetail.setText(LocaleController.getString("NoSound", R.string.NoSound));
@@ -495,20 +552,30 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     }
                     textView.setText(LocaleController.getString("Sound", R.string.Sound));
                     divider.setVisibility(View.INVISIBLE);
-                } else if (i == 19) {
+                } else if (i == SETTINGS_MESSAGE_VIBRATE_SPD || i == SETTINGS_GROUP_VIBRATE_SPD) {
+                    VibrationSpeed speed = VibrationSpeed.getDefault();
+                    if (i == SETTINGS_MESSAGE_VIBRATE_SPD) {
+                        speed = VibrationSpeed.fromValue(preferences.getInt("VibrationSpeed", 0));
+                    } else if (i == SETTINGS_GROUP_VIBRATE_SPD) {
+                        speed = VibrationSpeed.fromValue(preferences.getInt("VibrationSpeedGroup", 0));
+                    }
+                    textViewDetail.setText(LocaleController.getString(speed.getLocaleKey(), speed.getResourceId()));
+                    textView.setText(LocaleController.getString("VibrateSpeed", R.string.VibrateSpeed));
+                    divider.setVisibility(View.VISIBLE);
+                } else if (i == SETTINGS_RESET_ALL) {
                     textView.setText(LocaleController.getString("ResetAllNotifications", R.string.ResetAllNotifications));
                     textViewDetail.setText(LocaleController.getString("UndoAllCustom", R.string.UndoAllCustom));
                     divider.setVisibility(View.INVISIBLE);
                 }
-                if (i != 19 && !enabledAll) {
+                if (i != SETTINGS_RESET_ALL && !enabledAll) {
                     view.setEnabled(false);
-                    if(android.os.Build.VERSION.SDK_INT >= 11) {
+                    if(android.os.Build.VERSION.SDK_INT >= SETTINGS_INAPP_SOUND) {
                         textView.setAlpha(0.3f);
                         textViewDetail.setAlpha(0.3f);
                         divider.setAlpha(0.3f);
                     }
                 } else {
-                    if(android.os.Build.VERSION.SDK_INT >= 11) {
+                    if(android.os.Build.VERSION.SDK_INT >= SETTINGS_INAPP_SOUND) {
                         textView.setAlpha(1.0f);
                         textViewDetail.setAlpha(1.0f);
                         divider.setAlpha(1.0f);
@@ -522,12 +589,14 @@ public class SettingsNotificationsActivity extends BaseFragment {
 
         @Override
         public int getItemViewType(int i) {
-            if (i == 0 || i == 5 || i == 10 || i == 14 || i == 16 || i == 18) {
-                return 0;
-            } else if (i > 0 && i < 4 || i > 5 && i < 9 || i > 10 && i < 14 || i == 15 || i == 17) {
-                return 1;
+            if (i == SETTINGS_MESSAGE_NOTIFICATIONS || i == SETTINGS_GROUP_NOTIFICATIONS || i == SETTINGS_INAPP_NOTIFICATIONS || i == SETTINGS_EVENTS || i == SETTINGS_PEBBLE || i == SETTINGS_RESET) {
+                return TYPE_HEADER;
+            } else if(i == SETTINGS_MESSAGE_VIBRATE_SPD || i == SETTINGS_GROUP_VIBRATE_SPD) {
+                return TYPE_INNER_SETTINGS;
+            } else if (i > SETTINGS_MESSAGE_NOTIFICATIONS && i < SETTINGS_MESSAGE_SOUND || i > SETTINGS_GROUP_NOTIFICATIONS && i < SETTINGS_GROUP_SOUND || i > SETTINGS_INAPP_NOTIFICATIONS && i < SETTINGS_EVENTS || i == SETTINGS_CONTACT_JOINED || i == SETTINGS_PEBBLE_ALERT) {
+                return TYPE_BOOLEAN_SETTINGS;
             } else {
-                return 2;
+                return TYPE_INNER_SETTINGS;
             }
         }
 
