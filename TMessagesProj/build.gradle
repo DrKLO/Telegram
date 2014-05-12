@@ -19,7 +19,7 @@ tasks.withType(JavaCompile) {
 dependencies {
     compile 'com.android.support:support-v4:19.0.+'
     compile 'com.android.support:appcompat-v7:19.0.+'
-    compile 'com.google.android.gms:play-services:4.1.+'
+    compile 'com.google.android.gms:play-services:4.3.23'
     compile 'net.hockeyapp.android:HockeySDK:3.0.1'
     compile project(':aniways')
     compile files('libs/AniwaysGoogleAnalytics.jar')
@@ -82,7 +82,7 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 8
+        minSdkVersion 9
         targetSdkVersion 19
         versionCode 212
         versionName "1.4.9"
