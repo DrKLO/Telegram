@@ -4517,6 +4517,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
             if (needVibrate) {
                 mBuilder.setVibrate(new long[]{0, 100, 0, 100});
+            } else {
+                mBuilder.setVibrate(new long[]{0});
             }
             if (choosenSoundPath != null && !choosenSoundPath.equals("NoSound")) {
                 if (choosenSoundPath.equals(defaultPath)) {
