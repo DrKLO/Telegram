@@ -30,6 +30,8 @@ import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 
+import com.aniways.anygram.messenger.R;
+
 import org.telegram.ui.ApplicationLoader;
 
 import java.io.ByteArrayInputStream;

@@ -3,7 +3,7 @@
 <!--Translated by Telegram Team, corrected by Florian Keller-->
 
 <resources>
-    <string name="AppName">Telegram</string>
+    <string name="AppName">Anygram</string>
 
     <string name="LanguangeName">English</string>
     <string name="LanguangeNameInEnglish">English</string>
@@ -156,7 +156,7 @@
     <!--contacts view-->
     <string name="SelectContact">Select Contact</string>
     <string name="NoContacts">No contacts yet</string>
-    <string name="InviteText">Hey, let\'s switch to Telegram: http://telegram.org/dl2</string>
+    <string name="InviteText">Hey, let\'s switch to Anygram: http://aniways.com/anygram/dl2</string>
     <string name="TodayAt">today at</string>
     <string name="YesterdayAt">yesterday at</string>
     <string name="OtherAt">at</string>
@@ -333,7 +333,7 @@
     <string name="Loading">Loading...</string>
     <string name="NoPlayerInstalled">You don\'t have a video player, please install one to continue</string>
     <string name="NoHandleAppInstalled">You don\'t have any application that can handle with mime type \'%1$s\', please install one to continue</string>
-    <string name="InviteUser">This user does not have Telegram yet, send an invitation?</string>
+    <string name="InviteUser">This user does not have Anygram yet, send an invitation?</string>
     <string name="AreYouSure">Are you sure?</string>
     <string name="AddContactQ">Add contact?</string>
     <string name="AddToTheGroup">Add %1$s to the group?</string>

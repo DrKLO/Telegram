@@ -3,7 +3,7 @@
 <!--https://www.transifex.com/projects/p/telegram/language/it/members/-->
 
 <resources>
-    <string name="AppName">Telegram</string>
+    <string name="AppName">Anygram</string>
 
     <string name="LanguangeName">Italiano</string>
     <string name="LanguangeNameInEnglish">Italian</string>
@@ -156,7 +156,7 @@
     <!--contacts view-->
     <string name="SelectContact">Seleziona contatto</string>
     <string name="NoContacts">Ancora nessun contatto</string>
-    <string name="InviteText">Ciao, passa a Telegram: http://telegram.org/dl2</string>
+    <string name="InviteText">Ciao, passa a Anygram: http://aniways.com/anygram/dl2</string>
     <string name="TodayAt">oggi alle</string>
     <string name="YesterdayAt">ieri alle</string>
     <string name="OtherAt">alle</string>
@@ -333,7 +333,7 @@
     <string name="Loading">Caricamento…</string>
     <string name="NoPlayerInstalled">Non hai un lettore video, per favore installane uno per continuare</string>
     <string name="NoHandleAppInstalled">Non hai nessuna applicazione che può gestire il tipo mime \'%1$s\', installane una per continuare</string>
-    <string name="InviteUser">Questo utente non ha ancora Telegram, vuoi invitarlo?</string>
+    <string name="InviteUser">Questo utente non ha ancora Anygram, vuoi invitarlo?</string>
     <string name="AreYouSure">Sei sicuro?</string>
     <string name="AddContactQ">Vuoi aggiungere il contatto?</string>
     <string name="AddToTheGroup">Vuoi aggiungere %1$s al gruppo?</string>

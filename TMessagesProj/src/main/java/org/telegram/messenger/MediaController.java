@@ -21,6 +21,8 @@ import android.net.Uri;
 import android.os.Environment;
 import android.os.Vibrator;
 
+import com.aniways.anygram.messenger.R;
+
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.ApplicationLoader;
 

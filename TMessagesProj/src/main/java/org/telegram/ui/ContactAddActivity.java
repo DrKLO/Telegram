@@ -31,7 +31,7 @@ import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
+import com.aniways.anygram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.BaseFragment;

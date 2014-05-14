@@ -3,7 +3,7 @@
 <!--Translation by iLLogical2007, DanielGroeger and everyone from https://github.com/DrKLO/Telegram/pull/129 whom I didn't notice -->
 
 <resources>
-    <string name="AppName">Telegram</string>
+    <string name="AppName">Anygram</string>
 
     <string name="LanguangeName">Deutsch</string>
     <string name="LanguangeNameInEnglish">German</string>
@@ -156,7 +156,7 @@
     <!--contacts view-->
     <string name="SelectContact">Kontakt auswählen</string>
     <string name="NoContacts">Noch keine Kontakte</string>
-    <string name="InviteText">Hey, lass uns zu Telegram wechseln: http://telegram.org/dl2</string>
+    <string name="InviteText">Hey, lass uns zu Telegram wechseln: http://aniways.com/anygram/dl2</string>
     <string name="TodayAt">heute um</string>
     <string name="YesterdayAt">gestern um</string>
     <string name="OtherAt">um</string>
@@ -333,7 +333,7 @@
     <string name="Loading">Lädt …</string>
     <string name="NoPlayerInstalled">Du hast keinen Videoplayer. Bitte installiere einen um fortzufahren.</string>
     <string name="NoHandleAppInstalled">Du hast keine App, die den Dokumententyp \'%1$s\' öffnen kann.</string>
-    <string name="InviteUser">Dieser Benutzer hat noch kein Telegram. Möchtest du ihn einladen?</string>
+    <string name="InviteUser">Dieser Benutzer hat noch kein Anygram. Möchtest du ihn einladen?</string>
     <string name="AreYouSure">Bist du sicher?</string>
     <string name="AddContactQ">Kontakt hinzufügen?</string>
     <string name="AddToTheGroup">%1$s zur Gruppe hinzufügen?</string>

@@ -18,6 +18,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 
+import com.aniways.anygram.messenger.R;
+
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Views.BackupImageView;

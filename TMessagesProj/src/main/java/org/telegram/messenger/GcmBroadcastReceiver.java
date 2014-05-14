@@ -14,6 +14,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.PowerManager;
 
+import com.aniways.Aniways;
+
 import org.json.JSONObject;
 import org.telegram.ui.ApplicationLoader;
 
@@ -55,6 +57,8 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
                     ApplicationLoader.postInitApplication();
 
                     AwakeService.startService();
+
+                    Aniways.init(context);
 
                     try {
                         String key = intent.getStringExtra("loc_key");

@@ -34,6 +34,8 @@ import android.support.v7.app.ActionBarActivity;
 import android.text.Html;
 import android.util.SparseArray;
 
+import com.aniways.anygram.messenger.R;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.objects.MessageObject;

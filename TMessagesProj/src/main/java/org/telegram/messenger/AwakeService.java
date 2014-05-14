@@ -14,6 +14,8 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 
+import com.aniways.Aniways;
+
 import org.telegram.ui.ApplicationLoader;
 
 public class AwakeService extends Service {
@@ -30,6 +32,9 @@ public class AwakeService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+
+        Aniways.init(this);
+
         FileLog.e("tmessages", "service started");
         check();
         isStarted = true;

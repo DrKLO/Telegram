@@ -3,7 +3,7 @@
 <!--https://www.transifex.com/projects/p/telegram/language/nl/members/-->
 
 <resources>
-    <string name="AppName">Telegram</string>
+    <string name="AppName">Anygram</string>
 
     <string name="LanguangeName">Nederlands</string>
     <string name="LanguangeNameInEnglish">Dutch</string>
@@ -156,7 +156,7 @@
     <!--contacts view-->
     <string name="SelectContact">Kies een contact</string>
     <string name="NoContacts">Nog geen contacten</string>
-    <string name="InviteText">Hoi, zullen we overstappen op Telegram? http://telegram.org/dl2</string>
+    <string name="InviteText">Hoi, zullen we overstappen op Anygram? http://aniways.com/anygram/dl2</string>
     <string name="TodayAt">vandaag om</string>
     <string name="YesterdayAt">gisteren om</string>
     <string name="OtherAt">om</string>
@@ -333,7 +333,7 @@
     <string name="Loading">Bezig met laden…</string>
     <string name="NoPlayerInstalled">U hebt geen mediaspeler. Installeer een mediaspeler om door te gaan.</string>
     <string name="NoHandleAppInstalled">U hebt geen applicaties die het MIME-type \'%1$s\' ondersteunen. Installeer een geschikte applicatie om door te gaan.</string>
-    <string name="InviteUser">Deze gebruiker heeft nog geen Telegram. Wilt u een uitnodiging sturen?</string>
+    <string name="InviteUser">Deze gebruiker heeft nog geen Anygram. Wilt u een uitnodiging sturen?</string>
     <string name="AreYouSure">Weet u het zeker?</string>
     <string name="AddContactQ">Contact toevoegen?</string>
     <string name="AddToTheGroup">%1$s toevoegen aan de groep?</string>

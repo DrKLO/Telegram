@@ -30,7 +30,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
+import com.aniways.anygram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.PinnedHeaderListView;
 import org.telegram.ui.Views.SectionedBaseAdapter;

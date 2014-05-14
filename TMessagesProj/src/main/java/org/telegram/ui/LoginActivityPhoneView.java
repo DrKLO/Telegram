@@ -32,7 +32,7 @@ import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
+import com.aniways.anygram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.SlideView;

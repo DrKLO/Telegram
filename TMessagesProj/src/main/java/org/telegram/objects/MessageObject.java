@@ -18,7 +18,6 @@ import android.text.TextPaint;
 import android.text.util.Linkify;
 
 import com.aniways.Aniways;
-import com.aniways.AniwaysIconConverter;
 import com.aniways.AniwaysIconInfoDisplayer;
 
 import org.telegram.messenger.FileLog;
@@ -26,7 +25,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
+import com.aniways.anygram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 

@@ -13,6 +13,8 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.text.format.DateFormat;
 
+import com.aniways.anygram.messenger.R;
+
 import org.telegram.ui.ApplicationLoader;
 
 import java.util.ArrayList;

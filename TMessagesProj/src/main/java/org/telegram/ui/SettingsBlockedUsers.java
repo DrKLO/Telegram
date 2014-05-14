@@ -31,13 +31,12 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
+import com.aniways.anygram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Cells.ChatOrUserCell;
 import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.OnSwipeTouchListener;
-import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.HashMap;
