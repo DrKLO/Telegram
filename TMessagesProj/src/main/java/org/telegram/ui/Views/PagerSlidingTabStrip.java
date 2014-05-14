@@ -34,7 +34,7 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.aniways.anygram.messenger.R;
+import com.aniways.anigram.messenger.R;
 
 public class PagerSlidingTabStrip extends HorizontalScrollView {
 

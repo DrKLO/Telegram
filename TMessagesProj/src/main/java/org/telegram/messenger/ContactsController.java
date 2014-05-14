@@ -20,7 +20,7 @@ import android.provider.BaseColumns;
 import android.provider.ContactsContract;
 import android.util.SparseArray;
 
-import com.aniways.anygram.messenger.R;
+import com.aniways.anigram.messenger.R;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.ui.ApplicationLoader;

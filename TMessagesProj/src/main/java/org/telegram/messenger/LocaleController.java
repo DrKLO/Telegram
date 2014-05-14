@@ -13,7 +13,7 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.text.format.DateFormat;
 
-import com.aniways.anygram.messenger.R;
+import com.aniways.anigram.messenger.R;
 
 import org.telegram.ui.ApplicationLoader;
 

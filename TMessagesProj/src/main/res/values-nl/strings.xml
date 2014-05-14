@@ -349,12 +349,12 @@
     <string name="Page6Title">In de cloud</string>
     <string name="Page7Title">Privé</string>
     <string name="Page1Message">Welkom in het tijdperk van snel en veilig chatten</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> bezorgt berichten sneller dan elke andere app</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is altijd gratis. Geen advertenties. Geen abonnementskosten</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> beveiligt uw berichten tegen hackers</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> heeft geen beperkingen op de grootte van uw media en gesprekken</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> biedt toegang tot uw berichten vanaf meerdere apparaten</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> berichten zijn sterk versleuteld en kunnen zichzelf vernietigen</string>
+    <string name="Page2Message"><![CDATA[<b>Anygram</b>]]> bezorgt berichten sneller dan elke andere app</string>
+    <string name="Page3Message"><![CDATA[<b>Anygram</b>]]> is altijd gratis. Geen advertenties. Geen abonnementskosten</string>
+    <string name="Page4Message"><![CDATA[<b>Anygram</b>]]> beveiligt uw berichten tegen hackers</string>
+    <string name="Page5Message"><![CDATA[<b>Anygram</b>]]> heeft geen beperkingen op de grootte van uw media en gesprekken</string>
+    <string name="Page6Message"><![CDATA[<b>Anygram</b>]]> biedt toegang tot uw berichten vanaf meerdere apparaten</string>
+    <string name="Page7Message"><![CDATA[<b>Anygram</b>]]> berichten zijn sterk versleuteld en kunnen zichzelf vernietigen</string>
     <string name="StartMessaging">Begin nu met chatten</string>
 
     <!--Don't change this! Not for localization!-->

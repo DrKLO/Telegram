@@ -23,7 +23,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.LocaleController;
-import com.aniways.anygram.messenger.R;
+import com.aniways.anigram.messenger.R;
 
 public class IntroActivity extends ActionBarActivity {
     private ViewPager viewPager;

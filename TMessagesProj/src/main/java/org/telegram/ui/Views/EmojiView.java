@@ -25,7 +25,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
-import com.aniways.anygram.messenger.R;
+import com.aniways.anigram.messenger.R;
 
 import java.util.ArrayList;
 

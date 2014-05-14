@@ -10,7 +10,7 @@ package org.telegram.ui.Views;
 
 import android.widget.FrameLayout;
 
-import com.aniways.anygram.messenger.R;
+import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.Utilities;
 
 public class MessageActionLayout extends FrameLayout {

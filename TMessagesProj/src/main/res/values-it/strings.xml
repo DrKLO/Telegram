@@ -349,12 +349,12 @@
     <string name="Page6Title">Basato sul cloud</string>
     <string name="Page7Title">Privato</string>
     <string name="Page1Message">Benvenuto nell\'era della messaggistica veloce e sicura</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> consegna i messaggi più velocemente di qualsiasi altra applicazione</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> è gratuita per sempre. Nessuna pubblicità. Nessun costo di abbonamento</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> tiene al sicuro i tuoi messaggi dagli attacchi dei hacker</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> non ha limiti sulle dimensioni dei tuoi file multimediali e delle chat</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> ti consente di accedere ai messaggi da più dispositivi</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> cifra in maniera sicura i messaggi e può far sì che si autodistruggano</string>
+    <string name="Page2Message"><![CDATA[<b>Anygram</b>]]> consegna i messaggi più velocemente di qualsiasi altra applicazione</string>
+    <string name="Page3Message"><![CDATA[<b>Anygram</b>]]> è gratuita per sempre. Nessuna pubblicità. Nessun costo di abbonamento</string>
+    <string name="Page4Message"><![CDATA[<b>Anygram</b>]]> tiene al sicuro i tuoi messaggi dagli attacchi dei hacker</string>
+    <string name="Page5Message"><![CDATA[<b>Anygram</b>]]> non ha limiti sulle dimensioni dei tuoi file multimediali e delle chat</string>
+    <string name="Page6Message"><![CDATA[<b>Anygram</b>]]> ti consente di accedere ai messaggi da più dispositivi</string>
+    <string name="Page7Message"><![CDATA[<b>Anygram</b>]]> cifra in maniera sicura i messaggi e può far sì che si autodistruggano</string>
     <string name="StartMessaging">Inizia a inviare messaggi</string>
 
     <!--Don't change this! Not for localization!-->

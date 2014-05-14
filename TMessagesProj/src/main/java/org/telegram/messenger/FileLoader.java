@@ -18,7 +18,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 
-import com.aniways.anygram.messenger.R;
+import com.aniways.anigram.messenger.R;
 
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.ApplicationLoader;

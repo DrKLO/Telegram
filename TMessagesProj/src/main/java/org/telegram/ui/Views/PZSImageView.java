@@ -25,7 +25,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import org.telegram.messenger.FileLog;
-import com.aniways.anygram.messenger.R;
+import com.aniways.anigram.messenger.R;
 
 public class PZSImageView extends BackupImageView {
 

@@ -20,7 +20,7 @@ import android.util.AttributeSet;
 import android.view.View;
 
 import org.telegram.messenger.FileLog;
-import com.aniways.anygram.messenger.R;
+import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.Utilities;
 
 public class TimerButton extends View {

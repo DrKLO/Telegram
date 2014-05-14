@@ -26,7 +26,7 @@ import android.widget.TextView;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.MessagesController;
-import com.aniways.anygram.messenger.R;
+import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.BaseFragment;
 
