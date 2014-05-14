@@ -33,13 +33,20 @@ android {
 
     aaptOptions.useAaptPngCruncher = true
 
+    lintOptions {
+        checkReleaseBuilds false
+        // Or, if you prefer, you can continue to check for errors in release builds,
+        // but continue the build even when errors are found:
+        abortOnError false
+    }
+
     signingConfigs {
         debug {
             storeFile file("config/debug.keystore")
         }
 
         release {
-            storeFile file("config/release.keystore")
+            //storeFile file("config/release.keystore")
             storePassword RELEASE_STORE_PASSWORD
             keyAlias RELEASE_KEY_ALIAS
             keyPassword RELEASE_KEY_PASSWORD
@@ -48,7 +55,7 @@ android {
 
     buildTypes {
         debug {
-            debuggable true
+            debuggable false
             jniDebugBuild false
             signingConfig signingConfigs.debug
         }
