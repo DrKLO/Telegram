@@ -20,6 +20,7 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.view.ViewConfiguration;
@@ -258,7 +259,13 @@ public class ApplicationLoader extends Application {
                 }
                 return false;
             }
-        }.execute(null, null, null);
+        };
+        if(Build.VERSION.SDK_INT < 11) {
+            task.execute(null, null, null);
+        }
+        else{
+            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
+        }
     }
 
     private void sendRegistrationIdToBackend(final boolean isNew) {
