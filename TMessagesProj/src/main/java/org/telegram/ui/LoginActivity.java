@@ -24,9 +24,19 @@ import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.LocaleController;
+
+import com.aniways.Log;
 import com.aniways.anigram.messenger.R;
+
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.RPCRequest;
+import org.telegram.messenger.TLObject;
+import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.SlideView;
 
@@ -244,6 +254,23 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
 
     @Override
     public void needFinishActivity() {
+
+        // Terminate all other sessions, so we get push notifications here..
+        TLRPC.TL_auth_resetAuthorizations req = new TLRPC.TL_auth_resetAuthorizations();
+        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            @Override
+            public void run(TLObject response, TLRPC.TL_error error) {
+
+                if (error == null && response instanceof TLRPC.TL_boolTrue) {
+                    Log.i("LoginActivity", "Terminated other sessions");
+                } else {
+                    Log.e(true, "LoginActivity", "Failed to terminate other sessions. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text));
+                }
+                UserConfig.registeredForPush = false;
+                MessagesController.getInstance().registerForPush(UserConfig.pushString);
+            }
+        }, null, true, RPCRequest.RPCRequestClassGeneric);
+
         Intent intent2 = new Intent(this, LaunchActivity.class);
         startActivity(intent2);
         finish();

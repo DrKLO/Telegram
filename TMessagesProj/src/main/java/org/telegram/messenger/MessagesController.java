@@ -413,7 +413,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     public void deleteAllAppAccounts() {
         try {
             AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
-            Account[] accounts = am.getAccountsByType("org.telegram.messenger.account");
+            Account[] accounts = am.getAccountsByType("com.aniways.anigram.messenger.account");
             for (Account c : accounts) {
                 am.removeAccount(c, null, null);
             }

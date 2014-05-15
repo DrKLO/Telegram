@@ -8,6 +8,7 @@
 
 package org.telegram.ui;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
 import android.content.BroadcastReceiver;
@@ -23,6 +24,7 @@ import android.os.AsyncTask;
 import android.os.Handler;
 import android.view.ViewConfiguration;
 
+import com.aniways.Utils;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
@@ -217,6 +219,7 @@ public class ApplicationLoader extends Application {
         }
     }
 
+    @SuppressLint("NewApi")
     private void registerInBackground() {
         AsyncTask<String, String, Boolean> task = new AsyncTask<String, String, Boolean>() {
             @Override
@@ -247,7 +250,13 @@ public class ApplicationLoader extends Application {
                 }
                 return false;
             }
-        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
+        };
+        if(Utils.isAndroidVersionAtLeast(11)) {
+            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
+        }
+        else{
+            task.execute(null, null, null);
+        }
     }
 
     private void sendRegistrationIdToBackend(final boolean isNew) {

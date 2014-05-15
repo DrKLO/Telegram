@@ -45,6 +45,8 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
+
+import com.aniways.Log;
 import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.UserConfig;
@@ -525,6 +527,23 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             listAdapter.notifyDataSetChanged();
         }
         firstStart = false;
+
+        // Terminate all other sessions, so we get push notifications here..
+        TLRPC.TL_auth_resetAuthorizations req = new TLRPC.TL_auth_resetAuthorizations();
+        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            @Override
+            public void run(TLObject response, TLRPC.TL_error error) {
+
+                if (error == null && response instanceof TLRPC.TL_boolTrue) {
+                    Log.i("SettingsActivity", "Terminated other sessions");
+                } else {
+                    Log.e(true, "SettingsActivity", "Failed to terminate other sessions. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text));
+                }
+                UserConfig.registeredForPush = false;
+                MessagesController.getInstance().registerForPush(UserConfig.pushString);
+            }
+        }, null, true, RPCRequest.RPCRequestClassGeneric);
+
         ((LaunchActivity)parentActivity).showActionBar();
         ((LaunchActivity)parentActivity).updateActionBar();
     }

@@ -30,7 +30,9 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ContactsController;
@@ -38,6 +40,8 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
+
+import com.aniways.Log;
 import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -125,6 +129,22 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         if (fragmentView == null) {
             searching = false;
             searchWas = false;
+
+            // Terminate all other sessions, so we get push notifications here..
+            //TLRPC.TL_auth_resetAuthorizations req = new TLRPC.TL_auth_resetAuthorizations();
+            //ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            //    @Override
+            //    public void run(TLObject response, TLRPC.TL_error error) {
+            //
+            //        if (error == null && response instanceof TLRPC.TL_boolTrue) {
+            //            Log.i("MessagesActivity", "Terminated other sessions");
+            //        } else {
+            //            Log.e(true, "MessagesActivity", "Failed to terminate other sessions. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text));
+            //        }
+            //        UserConfig.registeredForPush = false;
+            //        MessagesController.getInstance().registerForPush(UserConfig.pushString);
+            //    }
+            //}, null, true, RPCRequest.RPCRequestClassGeneric);
 
             fragmentView = inflater.inflate(R.layout.messages_list, container, false);
 

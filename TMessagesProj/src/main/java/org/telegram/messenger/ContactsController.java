@@ -151,7 +151,7 @@ public class ContactsController {
 
     public void checkAppAccount() {
         AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
-        Account[] accounts = am.getAccountsByType("org.telegram.messenger.account");
+        Account[] accounts = am.getAccountsByType("com.aniways.anigram.messenger.account");
         boolean recreateAccount = false;
         if (UserConfig.currentUser != null) {
             if (accounts.length == 1) {
@@ -175,7 +175,7 @@ public class ContactsController {
                 am.removeAccount(c, null, null);
             }
             if (UserConfig.currentUser != null) {
-                currentAccount = new Account(UserConfig.currentUser.phone, "org.telegram.messenger.account");
+                currentAccount = new Account(UserConfig.currentUser.phone, "com.aniways.anigram.messenger.account");
                 am.addAccountExplicitly(currentAccount, "", null);
             }
         }
@@ -388,12 +388,12 @@ public class ContactsController {
                 if (schedule) {
                     try {
                         AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
-                        Account[] accounts = am.getAccountsByType("org.telegram.messenger.account");
+                        Account[] accounts = am.getAccountsByType("com.aniways.anigram.messenger.account");
                         boolean recreateAccount = false;
                         if (UserConfig.currentUser != null) {
                             if (accounts.length != 1) {
                                 FileLog.e("tmessages", "detected account deletion!");
-                                currentAccount = new Account(UserConfig.currentUser.phone, "org.telegram.messenger.account");
+                                currentAccount = new Account(UserConfig.currentUser.phone, "com.aniways.anigram.messenger.account");
                                 am.addAccountExplicitly(currentAccount, "", null);
                                 performWriteContactsToPhoneBookInternal();
                             }

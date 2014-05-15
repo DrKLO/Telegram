@@ -23,6 +23,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.LocaleController;
+
+import com.aniways.Aniways;
 import com.aniways.anigram.messenger.R;
 
 public class IntroActivity extends ActionBarActivity {
@@ -40,6 +42,8 @@ public class IntroActivity extends ActionBarActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Aniways.init(this);
 
         setContentView(R.layout.intro_layout);
 
