@@ -9,6 +9,10 @@
 package org.telegram.messenger;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.text.format.DateFormat;
@@ -26,6 +30,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.TimeZone;
 
 public class LocaleController {
 
@@ -46,6 +51,20 @@ public class LocaleController {
     private HashMap<String, String> localeValues = new HashMap<String, String>();
     private String languageOverride;
     private boolean changingConfiguration = false;
+
+    private class TimeZoneChangedReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            ApplicationLoader.applicationHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (!formatterMonth.getTimeZone().equals(TimeZone.getDefault())) {
+                        LocaleController.recreateFormatters();
+                    }
+                }
+            });
+        }
+    }
 
     public static class LocaleInfo {
         public String name;
@@ -184,6 +203,13 @@ public class LocaleController {
                 currentInfo = languagesDict.get("en");
             }
             applyLanguage(currentInfo, override);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+
+        try {
+            IntentFilter timezoneFilter = new IntentFilter(Intent.ACTION_TIMEZONE_CHANGED);
+            ApplicationLoader.applicationContext.registerReceiver(new TimeZoneChangedReceiver(), timezoneFilter);
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
@@ -477,7 +503,7 @@ public class LocaleController {
         if (dateDay == day && year == dateYear) {
             return formatterDay.format(new Date(date * 1000));
         } else if (dateDay + 1 == day && year == dateYear) {
-            return ApplicationLoader.applicationContext.getResources().getString(R.string.Yesterday);
+            return getString("Yesterday", R.string.Yesterday);
         } else if (year == dateYear) {
             return formatterMonth.format(new Date(date * 1000));
         } else {
@@ -565,6 +591,23 @@ public class LocaleController {
                 return formatterWeek.format(new Date(date * 1000));
             } else {
                 return formatterMonth.format(new Date(date * 1000));
+            }
+        }
+    }
+
+    public static String formatUserStatus(TLRPC.User user) {
+        if (user == null || user.status == null || user.status.expires == 0 || user instanceof TLRPC.TL_userDeleted || user instanceof TLRPC.TL_userEmpty) {
+            return getString("Offline", R.string.Offline);
+        } else {
+            int currentTime = ConnectionsManager.getInstance().getCurrentTime();
+            if (user.status.expires > currentTime) {
+                return getString("Online", R.string.Online);
+            } else {
+                if (user.status.expires == -1) {
+                    return getString("Invisible", R.string.Invisible);
+                } else {
+                    return formatDateOnline(user.status.expires);
+                }
             }
         }
     }

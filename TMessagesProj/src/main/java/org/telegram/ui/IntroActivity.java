@@ -218,6 +218,8 @@ public class IntroActivity extends ActionBarActivity {
             }
             justCreated = false;
         }
+        Utilities.checkForCrashes(this);
+        Utilities.checkForUpdates(this);
     }
 
     private class IntroAdapter extends PagerAdapter {

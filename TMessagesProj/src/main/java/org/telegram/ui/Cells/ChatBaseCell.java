@@ -281,6 +281,8 @@ public class ChatBaseCell extends BaseCell {
             if (currentUser != null) {
                 if (currentUser.photo != null) {
                     currentPhoto = currentUser.photo.photo_small;
+                } else {
+                    currentPhoto = null;
                 }
                 avatarImage.setImage(currentPhoto, "50_50", getResources().getDrawable(Utilities.getUserAvatarForId(currentUser.id)));
             } else {

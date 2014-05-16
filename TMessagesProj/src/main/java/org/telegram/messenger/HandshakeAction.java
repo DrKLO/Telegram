@@ -74,7 +74,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
 
         TLRPC.TL_req_pq reqPq = new TLRPC.TL_req_pq();
         byte[] nonceBytes = new byte[16];
-        MessagesController.random.nextBytes(nonceBytes);
+        Utilities.random.nextBytes(nonceBytes);
         authNonce = reqPq.nonce = nonceBytes;
         reqPQMsgData = sendMessageData(reqPq, generateMessageId());
     }
@@ -243,7 +243,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                                 innerData.q = reqDH.q;
 
                                 byte[] nonceBytes = new byte[32];
-                                MessagesController.random.nextBytes(nonceBytes);
+                                Utilities.random.nextBytes(nonceBytes);
                                 innerData.new_nonce = authNewNonce = nonceBytes;
                                 innerData.serializeToStream(os);
 
@@ -254,7 +254,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                                 dataWithHash.writeRaw(innerDataBytes);
                                 byte[] b = new byte[1];
                                 while (dataWithHash.length() < 255) {
-                                    MessagesController.random.nextBytes(b);
+                                    Utilities.random.nextBytes(b);
                                     dataWithHash.writeByte(b[0]);
                                 }
 
@@ -372,7 +372,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 }
 
                 byte[] b = new byte[256];
-                MessagesController.random.nextBytes(b);
+                Utilities.random.nextBytes(b);
 
                 BigInteger p = new BigInteger(1, dhInnerData.dh_prime);
                 BigInteger g_a = new BigInteger(1, dhInnerData.g_a);
@@ -436,7 +436,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 clientDataWithHash.writeRaw(clientInnerDataBytes);
                 byte[] bb = new byte[1];
                 while (clientDataWithHash.length() % 16 != 0) {
-                    MessagesController.random.nextBytes(bb);
+                    Utilities.random.nextBytes(bb);
                     clientDataWithHash.writeByte(bb[0]);
                 }
 

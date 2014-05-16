@@ -258,7 +258,7 @@ public class ApplicationLoader extends Application {
                 }
                 return false;
             }
-        }.execute(null, null, null);
+        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
     }
 
     private void sendRegistrationIdToBackend(final boolean isNew) {

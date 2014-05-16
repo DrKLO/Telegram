@@ -66,7 +66,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     private boolean searching = false;
     private boolean searchWas = false;
     private boolean onlySelect = false;
-    private int activityToken = (int)(MessagesController.random.nextDouble() * Integer.MAX_VALUE);
+    private int activityToken = (int)(Utilities.random.nextDouble() * Integer.MAX_VALUE);
     private long selectedDialog;
 
     private Timer searchTimer;

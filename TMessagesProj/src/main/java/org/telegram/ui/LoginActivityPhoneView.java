@@ -394,7 +394,7 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
 
     @Override
     public String getHeaderName() {
-        return getResources().getString(R.string.YourPhone);
+        return LocaleController.getString("YourPhone", R.string.YourPhone);
     }
 
     @Override

@@ -8906,7 +8906,7 @@ public class TLRPC {
         }
     }
 
-    public static class TL_audioEncrypted extends Audio {
+    public static class TL_audioEncrypted extends TL_audio {
         public static int constructor = 0x555555F6;
 
 

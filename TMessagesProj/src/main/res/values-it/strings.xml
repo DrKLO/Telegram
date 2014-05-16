@@ -94,7 +94,7 @@
     <string name="Message">Messaggio</string>
     <string name="TypeMessage">Scrivi il messaggio</string>
     <string name="DOWNLOAD">Scarica</string>
-    <string name="Selected">Selezionato:</string>
+    <string name="Selected">Selezionato: %d</string>
     <string name="ShareMyContactInfo">CONDIVIDI LE MIE INFORMAZIONI DI CONTATTO</string>
     <string name="AddToContacts">AGGIUNGI AI CONTATTI</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s ti ha mandato un invito a una chat privata.</string>
@@ -109,6 +109,7 @@
     <string name="YouWereKicked">Sei stato espulso da questo gruppo</string>
     <string name="YouLeft">Hai lasciato il gruppo</string>
     <string name="DeleteThisGroup">Elimina questo gruppo</string>
+    <string name="DeleteThisChat">Delete this chat</string>
     <string name="SlideToCancel">TRASCINA PER ANNULLARE</string>
     <string name="SaveToDownloads">Salva in download</string>
     <string name="ApplyLocalizationFile">Applica file di localizzazione</string>
@@ -262,6 +263,8 @@
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
     <string name="DeleteLocalization">Eliminare la localizzazione?</string>
     <string name="IncorrectLocalization">File della localizzazione non valido</string>
+    <string name="Enabled">Enabled</string>
+    <string name="Disabled">Disabled</string>
 
     <!--media view-->
     <string name="NoMedia">Nessun media condiviso</string>

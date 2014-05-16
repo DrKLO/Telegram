@@ -15,6 +15,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.Typeface;
 import android.net.Uri;
@@ -30,6 +31,9 @@ import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 
+import net.hockeyapp.android.CrashManager;
+import net.hockeyapp.android.UpdateManager;
+
 import org.telegram.ui.ApplicationLoader;
 
 import java.io.ByteArrayInputStream;
@@ -38,13 +42,18 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.spec.RSAPublicKeySpec;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -63,6 +72,7 @@ public class Utilities {
     public static float density = 1;
     public static Point displaySize = new Point();
     public static Pattern pattern = Pattern.compile("[0-9]+");
+    public static SecureRandom random = new SecureRandom();
     private final static Integer lock = 1;
 
     private static boolean waitingForSms = false;
@@ -103,6 +113,17 @@ public class Utilities {
     public static ProgressDialog progressDialog;
 
     static {
+        try {
+            File URANDOM_FILE = new File("/dev/urandom");
+            FileInputStream sUrandomIn = new FileInputStream(URANDOM_FILE);
+            byte[] buffer = new byte[1024];
+            sUrandomIn.read(buffer);
+            sUrandomIn.close();
+            random.setSeed(buffer);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+
         density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("primes", Context.MODE_PRIVATE);
         String primes = preferences.getString("primes", null);
@@ -131,6 +152,7 @@ public class Utilities {
     public native static long doPQNative(long _what);
     public native static byte[] aesIgeEncryption(byte[] _what, byte[] _key, byte[] _iv, boolean encrypt, boolean changeIv, int len);
     public native static void aesIgeEncryption2(ByteBuffer _what, byte[] _key, byte[] _iv, boolean encrypt, boolean changeIv, int len);
+    public native static void loadBitmap(String path, Bitmap bitmap, int scale);
 
     public static boolean isWaitingForSms() {
         boolean value = false;
@@ -201,13 +223,6 @@ public class Utilities {
             return false;
         }
 
-        String hex = bytesToHex(prime);
-        for (String cached : goodPrimes) {
-            if (cached.equals(hex)) {
-                return true;
-            }
-        }
-
         BigInteger dhBI = new BigInteger(1, prime);
 
         if (g == 2) { // p mod 8 = 7 for g = 2;
@@ -237,6 +252,13 @@ public class Utilities {
             int val = res.intValue();
             if (val != 3 && val != 5 && val != 6) {
                 return false;
+            }
+        }
+
+        String hex = bytesToHex(prime);
+        for (String cached : goodPrimes) {
+            if (cached.equals(hex)) {
+                return true;
             }
         }
 
@@ -552,20 +574,31 @@ public class Utilities {
         });
     }
 
+    public static boolean copyFile(InputStream sourceFile, File destFile) throws IOException {
+        OutputStream out = new FileOutputStream(destFile);
+        byte[] buf = new byte[4096];
+        int len;
+        while ((len = sourceFile.read(buf)) > 0) {
+            Thread.yield();
+            out.write(buf, 0, len);
+        }
+        out.close();
+        return true;
+    }
+
     public static boolean copyFile(File sourceFile, File destFile) throws IOException {
         if(!destFile.exists()) {
             destFile.createNewFile();
         }
         FileChannel source = null;
         FileChannel destination = null;
-        boolean result = true;
         try {
             source = new FileInputStream(sourceFile).getChannel();
             destination = new FileOutputStream(destFile).getChannel();
             destination.transferFrom(source, 0, source.size());
         } catch (Exception e) {
             FileLog.e("tmessages", e);
-            result = false;
+            return false;
         } finally {
             if(source != null) {
                 source.close();
@@ -574,7 +607,7 @@ public class Utilities {
                 destination.close();
             }
         }
-        return result;
+        return true;
     }
 
     public static void RunOnUIThread(Runnable runnable) {
@@ -667,7 +700,7 @@ public class Utilities {
     private static File getAlbumDir() {
         File storageDir = null;
         if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
-            storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), ApplicationLoader.applicationContext.getResources().getString(R.string.AppName));
+            storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), LocaleController.getString("AppName", R.string.AppName));
             if (storageDir != null) {
                 if (! storageDir.mkdirs()) {
                     if (! storageDir.exists()){
@@ -871,5 +904,15 @@ public class Utilities {
             }
         }
         return buffer.toByteArray();
+    }
+
+    public static void checkForCrashes(Activity context) {
+        CrashManager.register(context, BuildVars.HOCKEY_APP_HASH);
+    }
+
+    public static void checkForUpdates(Activity context) {
+        if (BuildVars.DEBUG_VERSION) {
+            UpdateManager.register(context, BuildVars.HOCKEY_APP_HASH);
+        }
     }
 }

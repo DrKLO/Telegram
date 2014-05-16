@@ -22,7 +22,6 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.support.v4.internal.view.SupportMenuItem;
 import android.support.v7.app.ActionBar;
-import android.support.v7.widget.SearchView;
 import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -33,7 +32,6 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -69,6 +67,18 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
     private int onlineCount = -1;
     private ArrayList<Integer> sortedUsers = new ArrayList<Integer>();
 
+    private int avatarRow;
+    private int settingsSectionRow;
+    private int settingsNotificationsRow;
+    private int settingsVibrateRow;
+    private int settingsSoundRow;
+    private int sharedMediaSectionRow;
+    private int sharedMediaRow;
+    private int membersSectionRow;
+    private int addMemberRow;
+    private int leaveGroupRow;
+    private int rowCount = 0;
+
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
@@ -90,7 +100,34 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
             }
         };
         avatarUpdater.parentFragment = this;
+
+        updateRowsIds();
+
         return true;
+    }
+
+    private void updateRowsIds() {
+        rowCount = 0;
+        avatarRow = rowCount++;
+        settingsSectionRow = rowCount++;
+        settingsNotificationsRow = rowCount++;
+        settingsVibrateRow = rowCount++;
+        settingsSoundRow = rowCount++;
+        sharedMediaSectionRow = rowCount++;
+        sharedMediaRow = rowCount++;
+        if (info != null && !(info instanceof TLRPC.TL_chatParticipantsForbidden)) {
+            membersSectionRow = rowCount++;
+            rowCount += info.participants.size();
+            if (info.participants.size() < 200) {
+                addMemberRow = rowCount++;
+            } else {
+                addMemberRow = -1;
+            }
+        } else {
+            addMemberRow = -1;
+            membersSectionRow = -1;
+        }
+        leaveGroupRow = rowCount++;
     }
 
     @Override
@@ -119,12 +156,8 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
             listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
                 @Override
                 public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    int size = 0;
-                    if (info != null) {
-                        size += info.participants.size();
-                    }
-                    if (i > 6 && i < size + 7) {
-                        TLRPC.TL_chatParticipant user = info.participants.get(sortedUsers.get(i - 7));
+                    if (i > membersSectionRow && i < addMemberRow) {
+                        TLRPC.TL_chatParticipant user = info.participants.get(sortedUsers.get(i - membersSectionRow - 1));
                         if (user.user_id == UserConfig.clientUserId) {
                             return false;
                         }
@@ -154,19 +187,11 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
-                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    if (i == 2) {
-                        SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                        String key = "notify_" + (-chat_id);
-                        boolean value = preferences.getBoolean(key, true);
-                        SharedPreferences.Editor editor = preferences.edit();
-                        editor.putBoolean(key, !value);
-                        editor.commit();
-                        listView.invalidateViews();
-                    } else if (i == 3) {
-                        if (parentActivity == null) {
-                            return;
-                        }
+                public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
+                    if (parentActivity == null) {
+                        return;
+                    }
+                    if (i == settingsSoundRow) {
                         try {
                             Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
@@ -195,38 +220,49 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
                         }
-                    } else if (i == 5) {
+                    } else if (i == sharedMediaRow) {
                         MediaActivity fragment = new MediaActivity();
                         Bundle bundle = new Bundle();
                         bundle.putLong("dialog_id", -chat_id);
                         fragment.setArguments(bundle);
                         ((LaunchActivity)parentActivity).presentFragment(fragment, "media_chat_" + chat_id, false);
-                    } else {
-                        int size = 0;
-                        if (info != null) {
-                            size += info.participants.size();
+                    } else if (i == addMemberRow) {
+                        openAddMenu();
+                    } else if (i > membersSectionRow && i < addMemberRow) {
+                        int user_id = info.participants.get(sortedUsers.get(i - membersSectionRow - 1)).user_id;
+                        if (user_id == UserConfig.clientUserId) {
+                            return;
                         }
-                        if (i > 6 && i < size + 7) {
-                            int user_id = info.participants.get(sortedUsers.get(i - 7)).user_id;
-                            if (user_id == UserConfig.clientUserId) {
-                                return;
-                            }
-                            UserProfileActivity fragment = new UserProfileActivity();
-                            Bundle args = new Bundle();
-                            args.putInt("user_id", user_id);
-                            fragment.setArguments(args);
-                            ((LaunchActivity)parentActivity).presentFragment(fragment, "user_" + user_id, false);
-                        } else {
-                            if (size + 7 == i) {
-                                if (info.participants.size() < 200) {
-                                    openAddMenu();
-                                } else {
-                                    kickUser(null);
+                        UserProfileActivity fragment = new UserProfileActivity();
+                        Bundle args = new Bundle();
+                        args.putInt("user_id", user_id);
+                        fragment.setArguments(args);
+                        ((LaunchActivity)parentActivity).presentFragment(fragment, "user_" + user_id, false);
+                    } else if (i == settingsVibrateRow || i == settingsNotificationsRow) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setItems(new CharSequence[] {
+                                LocaleController.getString("Default", R.string.Default),
+                                LocaleController.getString("Enabled", R.string.Enabled),
+                                LocaleController.getString("Disabled", R.string.Disabled)
+                        }, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                if (i == settingsVibrateRow) {
+                                    editor.putInt("vibrate_" + (-chat_id), which);
+                                } else if (i == settingsNotificationsRow) {
+                                    editor.putInt("notify2_" + (-chat_id), which);
                                 }
-                            } else if (size + 7 == i + 1) {
-                                kickUser(null);
+                                editor.commit();
+                                if (listView != null) {
+                                    listView.invalidateViews();
+                                }
                             }
-                        }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        builder.show().setCanceledOnTouchOutside(true);
                     }
                 }
             });
@@ -299,6 +335,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
             if (chatId == chat_id) {
                 info = (TLRPC.ChatParticipants)args[1];
                 updateOnlineCount();
+                updateRowsIds();
                 if (listViewAdapter != null) {
                     listViewAdapter.notifyDataSetChanged();
                 }
@@ -515,19 +552,12 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
         @Override
         public boolean isEnabled(int i) {
-            return (i == 2 || i == 3 || i == 5 || i > 6) && i != getCount() - 1;
+            return i == settingsNotificationsRow || i == settingsSoundRow || i == sharedMediaRow || i > membersSectionRow && i <= addMemberRow || i == settingsVibrateRow;
         }
 
         @Override
         public int getCount() {
-            int count = 6;
-            if (info != null && !(info instanceof TLRPC.TL_chatParticipantsForbidden)) {
-                count += info.participants.size() + 2;
-                if (info.participants.size() < 200) {
-                    count++;
-                }
-            }
-            return count;
+            return rowCount;
         }
 
         @Override
@@ -641,35 +671,15 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     view = li.inflate(R.layout.settings_section_layout, viewGroup, false);
                 }
                 TextView textView = (TextView)view.findViewById(R.id.settings_section_text);
-                if (i == 1) {
+                if (i == settingsSectionRow) {
                     textView.setText(LocaleController.getString("SETTINGS", R.string.SETTINGS));
-                } else if (i == 4) {
+                } else if (i == sharedMediaSectionRow) {
                     textView.setText(LocaleController.getString("SHAREDMEDIA", R.string.SHAREDMEDIA));
-                } else if (i == 6) {
+                } else if (i == membersSectionRow) {
                     TLRPC.Chat chat = MessagesController.getInstance().chats.get(chat_id);
                     textView.setText(String.format("%d %s", chat.participants_count, LocaleController.getString("MEMBERS", R.string.MEMBERS)));
                 }
             } else if (type == 2) {
-                if (view == null) {
-                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = li.inflate(R.layout.settings_row_check_layout, viewGroup, false);
-                }
-                TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
-                View divider = view.findViewById(R.id.settings_row_divider);
-                if (i == 2) {
-                    SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                    String key = "notify_" + (-chat_id);
-                    boolean value = preferences.getBoolean(key, true);
-                    ImageView checkButton = (ImageView)view.findViewById(R.id.settings_row_check_button);
-                    if (value) {
-                        checkButton.setImageResource(R.drawable.btn_check_on);
-                    } else {
-                        checkButton.setImageResource(R.drawable.btn_check_off);
-                    }
-                    textView.setText(LocaleController.getString("Notifications", R.string.Notifications));
-                    divider.setVisibility(View.VISIBLE);
-                }
-            } else if (type == 3) {
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.user_profile_leftright_row_layout, viewGroup, false);
@@ -677,7 +687,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
                 TextView detailTextView = (TextView)view.findViewById(R.id.settings_row_text_detail);
                 View divider = view.findViewById(R.id.settings_row_divider);
-                if (i == 5) {
+                if (i == sharedMediaRow) {
                     textView.setText(LocaleController.getString("SharedMedia", R.string.SharedMedia));
                     if (totalMediaCount == -1) {
                         detailTextView.setText(LocaleController.getString("Loading", R.string.Loading));
@@ -685,9 +695,33 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         detailTextView.setText(String.format("%d", totalMediaCount));
                     }
                     divider.setVisibility(View.INVISIBLE);
+                } else if (i == settingsVibrateRow) {
+                    textView.setText(LocaleController.getString("Vibrate", R.string.Vibrate));
+                    divider.setVisibility(View.VISIBLE);
+                    SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    int value = preferences.getInt("vibrate_" + (-chat_id), 0);
+                    if (value == 0) {
+                        detailTextView.setText(LocaleController.getString("Default", R.string.Default));
+                    } else if (value == 1) {
+                        detailTextView.setText(LocaleController.getString("Enabled", R.string.Enabled));
+                    } else if (value == 2) {
+                        detailTextView.setText(LocaleController.getString("Disabled", R.string.Disabled));
+                    }
+                } else if (i == settingsNotificationsRow) {
+                    textView.setText(LocaleController.getString("Notifications", R.string.Notifications));
+                    divider.setVisibility(View.VISIBLE);
+                    SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    int value = preferences.getInt("notify2_" + (-chat_id), 0);
+                    if (value == 0) {
+                        detailTextView.setText(LocaleController.getString("Default", R.string.Default));
+                    } else if (value == 1) {
+                        detailTextView.setText(LocaleController.getString("Enabled", R.string.Enabled));
+                    } else if (value == 2) {
+                        detailTextView.setText(LocaleController.getString("Disabled", R.string.Disabled));
+                    }
                 }
-            } else if (type == 4) {
-                TLRPC.TL_chatParticipant part = info.participants.get(sortedUsers.get(i - 7));
+            } else if (type == 3) {
+                TLRPC.TL_chatParticipant part = info.participants.get(sortedUsers.get(i - membersSectionRow - 1));
                 TLRPC.User user = MessagesController.getInstance().users.get(part.user_id);
 
                 if (view == null) {
@@ -703,39 +737,37 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 //                } else {
 //
 //                }
-            } else if (type == 5) {
+            } else if (type == 4) {
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.chat_profile_add_row, viewGroup, false);
                     TextView textView = (TextView)view.findViewById(R.id.messages_list_row_name);
                     textView.setText(LocaleController.getString("AddMember", R.string.AddMember));
                 }
-            } else if (type == 6) {
+            } else if (type == 5) {
                 if (view == null) {
-                    if (view == null) {
-                        LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                        view = li.inflate(R.layout.settings_logout_button, viewGroup, false);
-                        TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
-                        textView.setText(LocaleController.getString("DeleteAndExit", R.string.DeleteAndExit));
-                        textView.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View view) {
-                                AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
-                                builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
-                                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialogInterface, int i) {
-                                        kickUser(null);
-                                    }
-                                });
-                                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                                builder.show().setCanceledOnTouchOutside(true);
-                            }
-                        });
-                    }
+                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                    view = li.inflate(R.layout.settings_logout_button, viewGroup, false);
+                    TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
+                    textView.setText(LocaleController.getString("DeleteAndExit", R.string.DeleteAndExit));
+                    textView.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                            builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
+                            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    kickUser(null);
+                                }
+                            });
+                            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                            builder.show().setCanceledOnTouchOutside(true);
+                        }
+                    });
                 }
-            } else if (type == 7) {
+            } else if (type == 6) {
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.settings_row_detail_layout, viewGroup, false);
@@ -743,7 +775,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
                 TextView detailTextView = (TextView)view.findViewById(R.id.settings_row_text_detail);
                 View divider = view.findViewById(R.id.settings_row_divider);
-                if (i == 3) {
+                if (i == settingsSoundRow) {
                     SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     String name = preferences.getString("sound_chat_" + chat_id, LocaleController.getString("Default", R.string.Default));
                     if (name.equals("NoSound")) {
@@ -760,41 +792,27 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
         @Override
         public int getItemViewType(int i) {
-            if (i == 0) {
+            if (i == avatarRow) {
                 return 0;
-            } else if (i == 1 || i == 4 || i == 6) {
+            } else if (i == settingsSectionRow || i == sharedMediaSectionRow || i == membersSectionRow) {
                 return 1;
-            } else if (i == 2) {
+            } else if (i == sharedMediaRow || i == settingsVibrateRow || i == settingsNotificationsRow) {
                 return 2;
-            } else if (i == 5) {
+            } else if (i == settingsSoundRow) {
+                return 6;
+            } else if (i == addMemberRow) {
+                return 4;
+            } else if (i == leaveGroupRow) {
+                return 5;
+            } else if (i > membersSectionRow && i < addMemberRow) {
                 return 3;
-            } else if (i == 3) {
-                return 7;
-            } else if (i > 6) {
-                int size = 0;
-                if (info != null) {
-                    size += info.participants.size();
-                }
-                if (i > 6 && i < size + 7) {
-                    return 4;
-                } else {
-                    if (size + 7 == i) {
-                        if (info != null && info.participants.size() < 200) {
-                            return 5;
-                        } else {
-                            return 6;
-                        }
-                    } else if (size + 8 == i) {
-                        return 6;
-                    }
-                }
             }
             return 0;
         }
 
         @Override
         public int getViewTypeCount() {
-            return 8;
+            return 7;
         }
 
         @Override

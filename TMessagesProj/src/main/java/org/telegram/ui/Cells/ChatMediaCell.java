@@ -119,6 +119,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             photoImage.clearImage();
             currentPhotoObject = null;
         }
+        currentUrl = null;
         if (gifDrawable != null) {
             MediaController.getInstance().clearGifDrawable(this);
             gifDrawable = null;
@@ -248,7 +249,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     FileLoader.getInstance().cancelLoadingForImageView(photoImage);
                 } else if (currentMessageObject.type == 8) {
                     FileLoader.getInstance().cancelLoadFile(null, null, currentMessageObject.messageOwner.media.document, null);
-                    if (lastDownloadedGifMessage.messageOwner.id == currentMessageObject.messageOwner.id) {
+                    if (lastDownloadedGifMessage != null && lastDownloadedGifMessage.messageOwner.id == currentMessageObject.messageOwner.id) {
                         lastDownloadedGifMessage = null;
                     }
                 } else if (currentMessageObject.type == 3) {

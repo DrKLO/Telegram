@@ -108,6 +108,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private long currentTotalPcmDuration;
     private long lastPlayPcm;
     private int ignoreFirstProgress = 0;
+    private Timer progressTimer = null;
+    private final Integer progressTimerSync = 1;
 
     private AudioRecord audioRecorder = null;
     private Object audioGainObj = null;
@@ -307,49 +309,74 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         NotificationCenter.getInstance().addObserver(this, FileLoader.FileDidLoaded);
         NotificationCenter.getInstance().addObserver(this, FileLoader.FileLoadProgressChanged);
         NotificationCenter.getInstance().addObserver(this, FileLoader.FileUploadProgressChanged);
+    }
 
-        Timer progressTimer = new Timer();
-        progressTimer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                synchronized (sync) {
-                    Utilities.RunOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (playingMessageObject != null && (audioPlayer != null || audioTrackPlayer != null) && !isPaused) {
-                                try {
-                                    if (ignoreFirstProgress != 0) {
-                                        ignoreFirstProgress--;
-                                        return;
-                                    }
-                                    int progress = 0;
-                                    float value = 0;
-                                    if (audioPlayer != null) {
-                                        progress = audioPlayer.getCurrentPosition();
-                                        value = (float) lastProgress / (float) audioPlayer.getDuration();
-                                        if (progress <= lastProgress) {
-                                            return;
-                                        }
-                                    } else if (audioTrackPlayer != null) {
-                                        progress = (int)(lastPlayPcm / 48.0f);
-                                        value = (float)lastPlayPcm / (float)currentTotalPcmDuration;
-                                        if (progress == lastProgress) {
-                                            return;
-                                        }
-                                    }
-                                    lastProgress = progress;
-                                    playingMessageObject.audioProgress = value;
-                                    playingMessageObject.audioProgressSec = lastProgress / 1000;
-                                    NotificationCenter.getInstance().postNotificationName(audioProgressDidChanged, playingMessageObject.messageOwner.id, value);
-                                } catch (Exception e) {
-                                    FileLog.e("tmessages", e);
-                                }
-                            }
-                        }
-                    });
+    private void startProgressTimer() {
+        synchronized (progressTimerSync) {
+            if (progressTimer != null) {
+                try {
+                    progressTimer.cancel();
+                    progressTimer = null;
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
                 }
             }
-        }, 100, 17);
+            progressTimer = new Timer();
+            progressTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    synchronized (sync) {
+                        Utilities.RunOnUIThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (playingMessageObject != null && (audioPlayer != null || audioTrackPlayer != null) && !isPaused) {
+                                    try {
+                                        if (ignoreFirstProgress != 0) {
+                                            ignoreFirstProgress--;
+                                            return;
+                                        }
+                                        int progress = 0;
+                                        float value = 0;
+                                        if (audioPlayer != null) {
+                                            progress = audioPlayer.getCurrentPosition();
+                                            value = (float) lastProgress / (float) audioPlayer.getDuration();
+                                            if (progress <= lastProgress) {
+                                                return;
+                                            }
+                                        } else if (audioTrackPlayer != null) {
+                                            progress = (int) (lastPlayPcm / 48.0f);
+                                            value = (float) lastPlayPcm / (float) currentTotalPcmDuration;
+                                            if (progress == lastProgress) {
+                                                return;
+                                            }
+                                        }
+                                        lastProgress = progress;
+                                        playingMessageObject.audioProgress = value;
+                                        playingMessageObject.audioProgressSec = lastProgress / 1000;
+                                        NotificationCenter.getInstance().postNotificationName(audioProgressDidChanged, playingMessageObject.messageOwner.id, value);
+                                    } catch (Exception e) {
+                                        FileLog.e("tmessages", e);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            }, 0, 17);
+        }
+    }
+
+    private void stopProgressTimer() {
+        synchronized (progressTimerSync) {
+            if (progressTimer != null) {
+                try {
+                    progressTimer.cancel();
+                    progressTimer = null;
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        }
     }
 
     public void cleanup() {
@@ -782,6 +809,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     }
                 }
             }
+            stopProgressTimer();
             lastProgress = 0;
             isPaused = false;
             MessageObject lastFile = playingMessageObject;
@@ -891,6 +919,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                         }
                     });
                     audioTrackPlayer.play();
+                    startProgressTimer();
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                     if (audioTrackPlayer != null) {
@@ -915,6 +944,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 });
                 audioPlayer.prepare();
                 audioPlayer.start();
+                startProgressTimer();
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
                 if (audioPlayer != null) {
@@ -947,7 +977,6 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             if (playingMessageObject.audioProgress == 1) {
                 playingMessageObject.audioProgress = 0;
             }
-            //audioTrackPlayer.setNotificationMarkerPosition((int)(currentTotalPcmDuration * (1 - playingMessageObject.audioProgress)));
             fileDecodingQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
@@ -995,6 +1024,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
+        stopProgressTimer();
         playingMessageObject = null;
         isPaused = false;
     }

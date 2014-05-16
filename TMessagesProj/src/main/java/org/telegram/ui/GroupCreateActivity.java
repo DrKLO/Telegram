@@ -12,7 +12,9 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.internal.view.SupportMenuItem;
@@ -39,7 +41,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -57,14 +58,42 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class GroupCreateActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+
+    public static class XImageSpan extends ImageSpan {
+        public int uid;
+
+        public XImageSpan(Drawable d, int verticalAlignment) {
+            super(d, verticalAlignment);
+        }
+
+        @Override
+        public int getSize(Paint paint, CharSequence text, int start, int end, Paint.FontMetricsInt fm) {
+            if (fm == null) {
+                fm = new Paint.FontMetricsInt();
+            }
+
+            int sz = super.getSize(paint, text, start, end, fm);
+
+            int offset = Utilities.dp(6);
+            int w = (fm.bottom - fm.top) / 2;
+            fm.top = -w - offset;
+            fm.bottom = w - offset;
+            fm.ascent = -w - offset;
+            fm.leading = 0;
+            fm.descent = w - offset;
+
+            return sz;
+        }
+    }
+
     private SectionedBaseAdapter listViewAdapter;
     private PinnedHeaderListView listView;
     private TextView emptyTextView;
     private EditText userSelectEditText;
     private boolean ignoreChange = false;
 
-    private HashMap<Integer, Emoji.XImageSpan> selectedContacts =  new HashMap<Integer, Emoji.XImageSpan>();
-    private ArrayList<Emoji.XImageSpan> allSpans = new ArrayList<Emoji.XImageSpan>();
+    private HashMap<Integer, XImageSpan> selectedContacts =  new HashMap<Integer, XImageSpan>();
+    private ArrayList<XImageSpan> allSpans = new ArrayList<XImageSpan>();
 
     private boolean searchWas;
     private boolean searching;
@@ -150,7 +179,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                 }
                                 Spannable span = userSelectEditText.getText();
                                 for (int a = 0; a < allSpans.size(); a++) {
-                                    Emoji.XImageSpan sp = allSpans.get(a);
+                                    XImageSpan sp = allSpans.get(a);
                                     if (span.getSpanStart(sp) == -1) {
                                         allSpans.remove(sp);
                                         selectedContacts.remove(sp.uid);
@@ -207,7 +236,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         listView.invalidateViews();
                     }
                     if (selectedContacts.containsKey(user.id)) {
-                        Emoji.XImageSpan span = selectedContacts.get(user.id);
+                        XImageSpan span = selectedContacts.get(user.id);
                         selectedContacts.remove(user.id);
                         SpannableStringBuilder text = new SpannableStringBuilder(userSelectEditText.getText());
                         text.delete(text.getSpanStart(span), text.getSpanEnd(span));
@@ -221,7 +250,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                             return;
                         }
                         ignoreChange = true;
-                        Emoji.XImageSpan span = createAndPutChipForUser(user);
+                        XImageSpan span = createAndPutChipForUser(user);
                         span.uid = user.id;
                         ignoreChange = false;
                     }
@@ -295,7 +324,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         ((LaunchActivity)parentActivity).updateActionBar();
     }
 
-    public Emoji.XImageSpan createAndPutChipForUser(TLRPC.User user) {
+    public XImageSpan createAndPutChipForUser(TLRPC.User user) {
         LayoutInflater lf = (LayoutInflater)parentActivity.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
         View textView = lf.inflate(R.layout.group_create_bubble, null);
         TextView text = (TextView)textView.findViewById(R.id.bubble_text_view);
@@ -321,7 +350,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         bmpDrawable.setBounds(0, 0, b.getWidth(), b.getHeight());
 
         SpannableStringBuilder ssb = new SpannableStringBuilder("");
-        Emoji.XImageSpan span = new Emoji.XImageSpan(bmpDrawable, ImageSpan.ALIGN_BASELINE);
+        XImageSpan span = new XImageSpan(bmpDrawable, ImageSpan.ALIGN_BASELINE);
         allSpans.add(span);
         selectedContacts.put(user.id, span);
         for (ImageSpan sp : allSpans) {
@@ -559,22 +588,11 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             int placeHolderId = Utilities.getUserAvatarForId(user.id);
             holder.avatarImage.setImage(photo, "50_50", placeHolderId);
 
-            if (user.status == null) {
-                holder.messageTextView.setText(LocaleController.getString("Offline", R.string.Offline));
-                holder.messageTextView.setTextColor(0xff808080);
+            holder.messageTextView.setText(LocaleController.formatUserStatus(user));
+            if (user.status != null && user.status.expires > ConnectionsManager.getInstance().getCurrentTime()) {
+                holder.messageTextView.setTextColor(0xff357aa8);
             } else {
-                int currentTime = ConnectionsManager.getInstance().getCurrentTime();
-                if (user.status.expires > currentTime) {
-                    holder.messageTextView.setTextColor(0xff357aa8);
-                    holder.messageTextView.setText(LocaleController.getString("Online", R.string.Online));
-                } else {
-                    if (user.status.expires <= 10000) {
-                        holder.messageTextView.setText(LocaleController.getString("Invisible", R.string.Invisible));
-                    } else {
-                        holder.messageTextView.setText(LocaleController.formatDateOnline(user.status.expires));
-                    }
-                    holder.messageTextView.setTextColor(0xff808080);
-                }
+                holder.messageTextView.setTextColor(0xff808080);
             }
 
             return convertView;

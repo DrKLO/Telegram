@@ -174,8 +174,30 @@ public class ImageReceiver {
     public void draw(Canvas canvas, int x, int y, int w, int h) {
         try {
             if (currentImage != null) {
-                currentImage.setBounds(x, y, x + w, y + h);
-                currentImage.draw(canvas);
+                int bitmapW = currentImage.getIntrinsicWidth();
+                int bitmapH = currentImage.getIntrinsicHeight();
+                float scaleW = bitmapW / (float)w;
+                float scaleH = bitmapH / (float)h;
+
+                if (Math.abs(scaleW - scaleH) > 0.05f) {
+                    canvas.save();
+                    canvas.clipRect(x, y, x + w, y + h);
+
+                    if (bitmapW / scaleH > w) {
+                        bitmapW /= scaleH;
+                        currentImage.setBounds(x - (bitmapW - w) / 2, y, x + (bitmapW + w) / 2, y + h);
+                    } else {
+                        bitmapH /= scaleW;
+                        currentImage.setBounds(x, y - (bitmapH - h) / 2, x + w, y + (bitmapH + h) / 2);
+                    }
+
+                    currentImage.draw(canvas);
+
+                    canvas.restore();
+                } else {
+                    currentImage.setBounds(x, y, x + w, y + h);
+                    currentImage.draw(canvas);
+                }
             } else if (last_placeholder != null) {
                 last_placeholder.setBounds(x, y, x + w, y + h);
                 last_placeholder.draw(canvas);
