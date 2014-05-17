@@ -218,7 +218,7 @@ public class FileLoadOperation {
                             BitmapFactory.Options opts = new BitmapFactory.Options();
 
                             float w_filter = 0;
-                            float h_filter;
+                            float h_filter = 0;
                             if (filter != null) {
                                 String args[] = filter.split("_");
                                 w_filter = Float.parseFloat(args[0]) * Utilities.density;
@@ -254,7 +254,7 @@ public class FileLoadOperation {
                                     float bitmapH = image.getHeight();
                                     if (bitmapW != w_filter && bitmapW > w_filter) {
                                         float scaleFactor = bitmapW / w_filter;
-                                        Bitmap scaledBitmap = Bitmap.createScaledBitmap(image, (int)w_filter, (int)(bitmapH / scaleFactor), true);
+                                        Bitmap scaledBitmap = Bitmap.createScaledBitmap(image, (int)w_filter, (int)(bitmapH / scaleFactor), false);
                                         if (image != scaledBitmap) {
                                             if (Build.VERSION.SDK_INT < 11) {
                                                 image.recycle();
@@ -283,6 +283,12 @@ public class FileLoadOperation {
                         if (!dontDelete && cacheFileFinal.length() == 0) {
                             cacheFileFinal.delete();
                         }
+                        Utilities.stageQueue.postRunnable(new Runnable() {
+                            @Override
+                            public void run() {
+                                delegate.didFailedLoadingFile(FileLoadOperation.this);
+                            }
+                        });
                         FileLog.e("tmessages", e);
                     }
                 }
@@ -461,7 +467,7 @@ public class FileLoadOperation {
                             float bitmapH = image.getHeight();
                             if (bitmapW != w_filter && bitmapW > w_filter) {
                                 float scaleFactor = bitmapW / w_filter;
-                                Bitmap scaledBitmap = Bitmap.createScaledBitmap(image, (int) w_filter, (int) (bitmapH / scaleFactor), true);
+                                Bitmap scaledBitmap = Bitmap.createScaledBitmap(image, (int) w_filter, (int) (bitmapH / scaleFactor), false);
                                 if (image != scaledBitmap) {
                                     if (Build.VERSION.SDK_INT < 11) {
                                         image.recycle();

@@ -135,7 +135,11 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 }
                 TLRPC.User user = MessagesController.getInstance().users.get(fromId);
                 if (user != null) {
-                    avatarImageView.setImage(user.photo.photo_small, "50_50", Utilities.getUserAvatarForId(user.id));
+                    TLRPC.FileLocation photo = null;
+                    if (user.photo != null) {
+                        photo = user.photo.photo_small;
+                    }
+                    avatarImageView.setImage(photo, "50_50", Utilities.getUserAvatarForId(user.id));
                     nameTextView.setText(Utilities.formatName(user.first_name, user.last_name));
                 }
                 userLocation = new Location("network");

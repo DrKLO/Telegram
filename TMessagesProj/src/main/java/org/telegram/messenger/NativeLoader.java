@@ -22,9 +22,9 @@ import java.util.zip.ZipFile;
 public class NativeLoader {
 
     private static final long sizes[] = new long[] {
-            795280,     //armeabi
-            778916,     //armeabi-v7a
-            1377300,    //x86
+            922256,     //armeabi
+            991908,     //armeabi-v7a
+            1713204,    //x86
             0,          //mips
     };
 
@@ -87,16 +87,18 @@ public class NativeLoader {
                 libSize2 = sizes[1];
             }
 
-
             File destFile = getNativeLibraryDir(context);
-            if (destFile != null && destFile.exists() && (destFile.length() == libSize || libSize2 != 0 && destFile.length() == libSize2)) {
-                FileLog.d("tmessages", "Load normal lib");
-                try {
-                    System.loadLibrary("tmessages");
-                    nativeLoaded = true;
-                    return;
-                } catch (Exception e) {
-                    e.printStackTrace();
+            if (destFile != null) {
+                destFile = new File(destFile, "libtmessages.so");
+                if (destFile.exists() && (destFile.length() == libSize || libSize2 != 0 && destFile.length() == libSize2)) {
+                    FileLog.d("tmessages", "Load normal lib");
+                    try {
+                        System.loadLibrary("tmessages");
+                        nativeLoaded = true;
+                        return;
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             }
 

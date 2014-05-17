@@ -25,6 +25,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 
 public class PZSImageView extends BackupImageView {
@@ -115,12 +116,11 @@ public class PZSImageView extends BackupImageView {
 		});
 
         videoText = new TextView(getContext());
-        videoText.setText(getResources().getString(R.string.NoResult));
         videoText.setTextColor(0xffffffff);
         videoText.setBackgroundColor(0x66000000);
         videoText.setGravity(Gravity.CENTER);
         videoText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24);
-        videoText.setText(getResources().getString(R.string.NoChats));
+        videoText.setText(LocaleController.getString("NoChats", R.string.NoChats));
         videoText.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT));
 	}
 

@@ -94,7 +94,7 @@
     <string name="Message">Nachricht</string>
     <string name="TypeMessage">Nachricht verfassen</string>
     <string name="DOWNLOAD">Download</string>
-    <string name="Selected">Ausgewählt:</string>
+    <string name="Selected">Ausgewählt: %d</string>
     <string name="ShareMyContactInfo">MEINE KONTAKTDATEN TEILEN</string>
     <string name="AddToContacts">ZU KONTAKTEN HINZUFÜGEN</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s hat dich zu einem geheimen Chat eingeladen.</string>
@@ -109,6 +109,7 @@
     <string name="YouWereKicked">Du wurdest aus der Gruppe entfernt</string>
     <string name="YouLeft">Du hast die Gruppe verlassen</string>
     <string name="DeleteThisGroup">Diese Gruppe löschen</string>
+    <string name="DeleteThisChat">Delete this chat</string>
     <string name="SlideToCancel">WISCHEN UM ABZUBRECHEN</string>
     <string name="SaveToDownloads">In Ordner Downloads speichern</string>
     <string name="ApplyLocalizationFile">Sprachdatei benutzen</string>
@@ -262,6 +263,8 @@
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
     <string name="DeleteLocalization">Lokalisierung löschen?</string>
     <string name="IncorrectLocalization">Falsche Sprachdatei</string>
+    <string name="Enabled">Enabled</string>
+    <string name="Disabled">Disabled</string>
 
     <!--media view-->
     <string name="NoMedia">Noch keine geteilten Medien vorhanden</string>

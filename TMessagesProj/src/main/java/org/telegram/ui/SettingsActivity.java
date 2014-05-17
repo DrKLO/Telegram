@@ -15,6 +15,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
@@ -61,6 +62,7 @@ import org.telegram.ui.Views.OnSwipeTouchListener;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Locale;
 
 public class SettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private ListView listView;
@@ -82,7 +84,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int sendLogsRow;
     private int clearLogsRow;
     private int switchBackendButtonRow;
-    private int rowCount;
     private int messagesSectionRow;
     private int sendByEnterRow;
     private int terminateSessionsRow;
@@ -94,6 +95,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int audioDownloadPrivateRow;
     private int telegramFaqRow;
     private int languageRow;
+    private int versionRow;
+    private int rowCount;
 
     private static class LinkMovementMethodMy extends LinkMovementMethod {
         @Override
@@ -198,6 +201,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         telegramFaqRow = rowCount++;
         askQuestionRow = rowCount++;
         logoutRow = rowCount++;
+        versionRow = rowCount++;
 
         return true;
     }
@@ -225,6 +229,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                    if (parentActivity == null) {
+                        return;
+                    }
                     if (i == textSizeRow) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
                         builder.setTitle(LocaleController.getString("TextSize", R.string.TextSize));
@@ -259,9 +266,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else if (i == backgroundRow) {
                         ((LaunchActivity)parentActivity).presentFragment(new SettingsWallpapersActivity(), "settings_wallpapers", false);
                     } else if (i == askQuestionRow) {
-                        if (parentActivity == null) {
-                            return;
-                        }
                         final TextView message = new TextView(parentActivity);
                         message.setText(Html.fromHtml(LocaleController.getString("AskAQuestionInfo", R.string.AskAQuestionInfo)));
                         message.setTextSize(18);
@@ -949,6 +953,18 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     textView.setText(LocaleController.getString("Language", R.string.Language));
                     divider.setVisibility(View.VISIBLE);
                 }
+            } else if (type == 6) {
+                if (view == null) {
+                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                    view = li.inflate(R.layout.settings_row_version, viewGroup, false);
+                    TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
+                    try {
+                        PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
+                        textView.setText(String.format(Locale.US, "Telegram for Android v%s (%d)", pInfo.versionName, pInfo.versionCode));
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                }
             }
             return view;
         }
@@ -967,6 +983,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 2;
             } else if (i == logoutRow) {
                 return 4;
+            } else if (i == versionRow) {
+                return 6;
             } else {
                 return 2;
             }
@@ -974,7 +992,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public int getViewTypeCount() {
-            return 6;
+            return 7;
         }
 
         @Override

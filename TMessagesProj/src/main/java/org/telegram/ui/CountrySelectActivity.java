@@ -10,7 +10,6 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.PixelFormat;
 import android.os.Bundle;
 import android.support.v4.internal.view.SupportMenuItem;
 import android.support.v4.view.MenuItemCompat;
@@ -150,7 +149,6 @@ public class CountrySelectActivity extends ActionBarActivity {
         });
 
         getWindow().setBackgroundDrawableResource(R.drawable.transparent);
-        getWindow().setFormat(PixelFormat.RGB_565);
     }
 
     public void applySelfActionBar() {

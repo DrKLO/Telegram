@@ -94,7 +94,7 @@
     <string name="Message">الرسالة</string>
     <string name="TypeMessage">أكتب رسالة</string>
     <string name="DOWNLOAD">تحميل</string>
-    <string name="Selected">محددة:</string>
+    <string name="Selected">محددة: %d</string>
     <string name="ShareMyContactInfo">شارك جهة الاتصال الخاصة بي</string>
     <string name="AddToContacts">أضف لجهات الاتصال</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s قام بدعوتك لمحادثة سرية</string>
@@ -109,6 +109,7 @@
     <string name="YouWereKicked">لقد تم إخراجك من هذه المجموعة</string>
     <string name="YouLeft">لقد قمت بمغادرة المجموعة</string>
     <string name="DeleteThisGroup">حذف المجموعة</string>
+    <string name="DeleteThisChat">Delete this chat</string>
     <string name="SlideToCancel">قم بالسحب للإلغاء</string>
     <string name="SaveToDownloads">حفظ في الجهاز</string>
     <string name="ApplyLocalizationFile">تطبيق ملف التعريب</string>
@@ -262,6 +263,8 @@
     <string name="TelegramFaqUrl">https://telegram.org/faq/ar</string>
     <string name="DeleteLocalization">Delete localization?</string>
     <string name="IncorrectLocalization">Incorrect localization file</string>
+    <string name="Enabled">Enabled</string>
+    <string name="Disabled">Disabled</string>
 
     <!--media view-->
     <string name="NoMedia">لا توجد وسائط بعد</string>

@@ -94,7 +94,7 @@
     <string name="Message">Bericht</string>
     <string name="TypeMessage">Typ een bericht...</string>
     <string name="DOWNLOAD">Downloaden</string>
-    <string name="Selected">Geselecteerd:</string>
+    <string name="Selected">Geselecteerd: %d</string>
     <string name="ShareMyContactInfo">MIJN CONTACTGEGEVENS DELEN</string>
     <string name="AddToContacts">TOEVOEGEN AAN CONTACTEN</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s heeft u uitgenodigd voor een privégesprek.</string>
@@ -109,6 +109,7 @@
     <string name="YouWereKicked">U bent verwijderd uit deze groep</string>
     <string name="YouLeft">U hebt deze groep verlaten</string>
     <string name="DeleteThisGroup">Deze groep verwijderen</string>
+    <string name="DeleteThisChat">Delete this chat</string>
     <string name="SlideToCancel">SLEEP OM TE ANNULEREN</string>
     <string name="SaveToDownloads">Opslaan in Downloads</string>
     <string name="ApplyLocalizationFile">Vertaling toepassen</string>
@@ -262,6 +263,8 @@
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
     <string name="DeleteLocalization">Verwijder vertaling?</string>
     <string name="IncorrectLocalization">Ongeldig vertalingsbestand</string>
+    <string name="Enabled">Enabled</string>
+    <string name="Disabled">Disabled</string>
 
     <!--media view-->
     <string name="NoMedia">Nog geen media gedeeld</string>

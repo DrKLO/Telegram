@@ -346,22 +346,10 @@ public class ChatOrUserCell extends BaseCell {
                 if (subLabel != null) {
                     onlineString = subLabel;
                 } else {
-                    if (user != null) {
-                        if (user.status == null) {
-                            onlineString = getResources().getString(R.string.Offline);
-                        } else {
-                            int currentTime = ConnectionsManager.getInstance().getCurrentTime();
-                            if (user.id == UserConfig.clientUserId || user.status.expires > currentTime) {
-                                currentOnlinePaint = onlinePaint;
-                                onlineString = getResources().getString(R.string.Online);
-                            } else {
-                                if (user.status.expires <= 10000) {
-                                    onlineString = getResources().getString(R.string.Invisible);
-                                } else {
-                                    onlineString = LocaleController.formatDateOnline(user.status.expires);
-                                }
-                            }
-                        }
+                    onlineString = LocaleController.formatUserStatus(user);
+                    if (user != null && (user.id == UserConfig.clientUserId || user.status != null && user.status.expires > ConnectionsManager.getInstance().getCurrentTime())) {
+                        currentOnlinePaint = onlinePaint;
+                        onlineString = LocaleController.getString("Online", R.string.Online);
                     }
                 }
 

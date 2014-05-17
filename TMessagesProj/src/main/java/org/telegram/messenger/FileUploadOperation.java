@@ -62,7 +62,7 @@ public class FileUploadOperation {
                 FileLog.e("tmessages", e);
             }
         }
-        currentFileId = MessagesController.random.nextLong();
+        currentFileId = Utilities.random.nextLong();
         try {
             mdEnc = MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException e) {
@@ -126,7 +126,7 @@ public class FileUploadOperation {
                 toAdd += 16 - readed % 16;
             }
             ByteBufferDesc sendBuffer = BuffersStorage.getInstance().getFreeBuffer(readed + toAdd);
-            if (readed != uploadChunkSize) {
+            if (readed != uploadChunkSize || totalPartsCount == currentPartNum + 1) {
                 isLastPart = true;
             }
             sendBuffer.writeRaw(readBuffer, 0, readed);

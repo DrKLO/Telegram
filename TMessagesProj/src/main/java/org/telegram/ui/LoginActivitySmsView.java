@@ -100,7 +100,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
 
     @Override
     public String getHeaderName() {
-        return getResources().getString(R.string.YourCode);
+        return LocaleController.getString("YourCode", R.string.YourCode);
     }
 
     @Override
@@ -124,7 +124,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         }
 
         String number = PhoneFormat.getInstance().format(phone);
-        confirmTextView.setText(Html.fromHtml(String.format(ApplicationLoader.applicationContext.getResources().getString(R.string.SentSmsCode) + " <b>%s</b>", number)));
+        confirmTextView.setText(Html.fromHtml(String.format(LocaleController.getString("SentSmsCode", R.string.SentSmsCode) + " <b>%s</b>", number)));
 
         Utilities.showKeyboard(codeField);
         codeField.requestFocus();
@@ -139,7 +139,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
-        timeText.setText(String.format("%s 1:00", ApplicationLoader.applicationContext.getResources().getString(R.string.CallText)));
+        timeText.setText(String.format("%s 1:00", LocaleController.getString("CallText", R.string.CallText)));
         lastCurrentTime = System.currentTimeMillis();
         timeTimer = new Timer();
         timeTimer.schedule(new TimerTask() {
@@ -155,9 +155,9 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                         if (time >= 1000) {
                             int minutes = time / 1000 / 60;
                             int seconds = time / 1000 - minutes * 60;
-                            timeText.setText(String.format("%s %d:%02d", ApplicationLoader.applicationContext.getResources().getString(R.string.CallText), minutes, seconds));
+                            timeText.setText(String.format("%s %d:%02d", LocaleController.getString("CallText", R.string.CallText), minutes, seconds));
                         } else {
-                            timeText.setText(ApplicationLoader.applicationContext.getResources().getString(R.string.Calling));
+                            timeText.setText(LocaleController.getString("Calling", R.string.Calling));
                             synchronized(timerSync) {
                                 if (timeTimer != null) {
                                     timeTimer.cancel();
@@ -281,9 +281,9 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                                             if (time >= 1000) {
                                                 int minutes = time / 1000 / 60;
                                                 int seconds = time / 1000 - minutes * 60;
-                                                timeText.setText(String.format("%s %d:%02d", ApplicationLoader.applicationContext.getResources().getString(R.string.CallText), minutes, seconds));
+                                                timeText.setText(String.format("%s %d:%02d", LocaleController.getString("CallText", R.string.CallText), minutes, seconds));
                                             } else {
-                                                timeText.setText(ApplicationLoader.applicationContext.getResources().getString(R.string.Calling));
+                                                timeText.setText(LocaleController.getString("Calling", R.string.Calling));
                                                 synchronized(timerSync) {
                                                     if (timeTimer != null) {
                                                         timeTimer.cancel();

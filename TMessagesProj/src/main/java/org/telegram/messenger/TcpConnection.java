@@ -18,9 +18,8 @@ import java.util.TimerTask;
 
 import jawnae.pyronet.PyroClient;
 import jawnae.pyronet.PyroSelector;
-import jawnae.pyronet.PyroClientAdapter;
 
-public class TcpConnection extends PyroClientAdapter {
+public class TcpConnection extends ConnectionContext {
     public enum TcpConnectionState {
         TcpConnectionStageIdle,
         TcpConnectionStageConnecting,

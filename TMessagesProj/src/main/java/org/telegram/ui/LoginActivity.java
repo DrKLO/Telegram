@@ -13,7 +13,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.os.Bundle;
 import android.support.v4.internal.view.SupportMenuItem;
@@ -50,6 +49,8 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
     @Override
     protected void onResume() {
         super.onResume();
+        Utilities.checkForCrashes(this);
+        Utilities.checkForUpdates(this);
         ApplicationLoader.resetLastPauseTime();
     }
 
@@ -197,7 +198,6 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
         }
 
         getWindow().setBackgroundDrawableResource(R.drawable.transparent);
-        getWindow().setFormat(PixelFormat.RGB_565);
     }
 
     @Override
@@ -241,7 +241,7 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
 
     @Override
     public void needShowProgress() {
-        Utilities.ShowProgressDialog(this, getResources().getString(R.string.Loading));
+        Utilities.ShowProgressDialog(this, LocaleController.getString("Loading", R.string.Loading));
     }
 
     @Override

@@ -95,7 +95,7 @@ public class LoginActivityRegisterView extends SlideView {
 
     @Override
     public String getHeaderName() {
-        return getResources().getString(R.string.YourName);
+        return LocaleController.getString("YourName", R.string.YourName);
     }
 
     @Override
