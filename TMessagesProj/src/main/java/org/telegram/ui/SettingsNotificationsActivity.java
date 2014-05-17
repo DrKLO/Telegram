@@ -9,6 +9,7 @@
 package org.telegram.ui;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -17,6 +18,7 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.support.v4.app.DialogFragment;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
@@ -39,6 +41,9 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
+import org.telegram.objects.VibrationSpeed;
+import org.telegram.ui.Dialog.VibrationCountDialog;
+import org.telegram.ui.Dialog.VibrationSpeedDialog;
 import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.OnSwipeTouchListener;
 
@@ -50,11 +55,15 @@ public class SettingsNotificationsActivity extends BaseFragment {
     private int messageAlertRow;
     private int messagePreviewRow;
     private int messageVibrateRow;
+    private int messageVibrationSpeedRow;
+    private int messageVibrationCountRow;
     private int messageSoundRow;
     private int groupSectionRow;
     private int groupAlertRow;
     private int groupPreviewRow;
     private int groupVibrateRow;
+    private int groupVibrationSpeedRow;
+    private int groupVibrationCountRow;
     private int groupSoundRow;
     private int inappSectionRow;
     private int inappSoundRow;
@@ -74,11 +83,15 @@ public class SettingsNotificationsActivity extends BaseFragment {
         messageAlertRow = rowCount++;
         messagePreviewRow = rowCount++;
         messageVibrateRow = rowCount++;
+        messageVibrationSpeedRow = rowCount++;
+        messageVibrationCountRow = rowCount++;
         messageSoundRow = rowCount++;
         groupSectionRow = rowCount++;
         groupAlertRow = rowCount++;
         groupPreviewRow = rowCount++;
         groupVibrateRow = rowCount++;
+        groupVibrationSpeedRow = rowCount++;
+        groupVibrationCountRow = rowCount++;
         groupSoundRow = rowCount++;
         inappSectionRow = rowCount++;
         inappSoundRow = rowCount++;
@@ -153,6 +166,60 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         }
                         editor.commit();
                         listView.invalidateViews();
+                    } else if (i == messageVibrationSpeedRow || i == groupVibrationSpeedRow) {
+                        final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        final int index = i;
+                        VibrationSpeed speed = VibrationSpeed.getDefault();
+                        if (index == messageVibrationSpeedRow) {
+                            speed = VibrationSpeed.fromValue(preferences.getInt("VibrationSpeed", 0));
+                        } else if (index == groupVibrationSpeedRow) {
+                            speed = VibrationSpeed.fromValue(preferences.getInt("VibrationSpeedGroup", 0));
+                        }
+                        VibrationSpeedDialog vibrationSpeedDialog = new VibrationSpeedDialog();
+                        Bundle args = new Bundle();
+                        args.putSerializable(VibrationSpeedDialog.KEY_CURRENT_SPEED, speed);
+                        args.putSerializable(VibrationSpeedDialog.KEY_LISTENER, new VibrationSpeedDialog.VibrationSpeedSelectionListener() {
+                            @Override
+                            public void onSpeedSelected(DialogFragment dialog, VibrationSpeed selectedSpeed) {
+                                SharedPreferences.Editor editor = preferences.edit();
+                                if (index == messageVibrationSpeedRow) {
+                                    editor.putInt("VibrationSpeed", selectedSpeed.getValue());
+                                } else if (index == groupVibrationSpeedRow) {
+                                    editor.putInt("VibrationSpeedGroup", selectedSpeed.getValue());
+                                }
+                                editor.commit();
+                                listView.invalidateViews();
+                            }
+                        });
+                        vibrationSpeedDialog.setArguments(args);
+                        vibrationSpeedDialog.show(getFragmentManager(), "VibrationSpeedDialog");
+                    } else if (i == messageVibrationCountRow || i == groupVibrationCountRow) {
+                        final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        final int index = i;
+                        int count = VibrationCountDialog.DEFAULT_VIBRATION_COUNT;
+                        if (index == messageVibrationCountRow) {
+                            count = preferences.getInt("VibrationCount", count);
+                        } else if (index == groupVibrationCountRow) {
+                            count = preferences.getInt("VibrationCountGroup", count);
+                        }
+                        VibrationCountDialog vibrationCountDialog = new VibrationCountDialog();
+                        Bundle args = new Bundle();
+                        args.putInt(VibrationCountDialog.KEY_CURRENT_COUNT, count);
+                        args.putSerializable(VibrationCountDialog.KEY_LISTENER, new VibrationCountDialog.VibrationCountSelectionListener() {
+                            @Override
+                            public void onCountSelected(DialogFragment dialog, int selectedCount) {
+                                SharedPreferences.Editor editor = preferences.edit();
+                                if (index == messageVibrationCountRow) {
+                                    editor.putInt("VibrationCount", selectedCount);
+                                } else if (index == groupVibrationCountRow) {
+                                    editor.putInt("VibrationCountGroup", selectedCount);
+                                }
+                                editor.commit();
+                                listView.invalidateViews();
+                            }
+                        });
+                        vibrationCountDialog.setArguments(args);
+                        vibrationCountDialog.show(getFragmentManager(), "VibrateCountDialog");
                     } else if (i == messageSoundRow || i == groupSoundRow) {
                         try {
                             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
@@ -389,7 +456,29 @@ public class SettingsNotificationsActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(int i) {
-            return !(i == messageSectionRow || i == groupSectionRow || i == inappSectionRow || i == eventsSectionRow || i == pebbleSectionRow || i == resetSectionRow);
+            if(i == messageVibrationSpeedRow || i == messageVibrationCountRow || i == groupVibrationSpeedRow || i == groupVibrationCountRow) {
+                boolean enabled = true;
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                if(i == messageVibrationSpeedRow) {
+                    if(!preferences.getBoolean("EnableVibrateAll", true))
+                        enabled = false;
+                }
+                else if(i == groupVibrationSpeedRow) {
+                    if(!preferences.getBoolean("EnableVibrateGroup", true))
+                        enabled = false;
+                }
+                else if(i == messageVibrationCountRow) {
+                    if(!preferences.getBoolean("EnableVibrateAll", true) || preferences.getInt("VibrationSpeed", 0) == 0)
+                        enabled = false;
+                }
+                else if(i == groupVibrationCountRow) {
+                    if(!preferences.getBoolean("EnableVibrateGroup", true) || preferences.getInt("VibrationSpeedGroup", 0) == 0)
+                        enabled = false;
+                }
+                return enabled;
+            }
+            else
+                return !(i == messageSectionRow || i == groupSectionRow || i == inappSectionRow || i == eventsSectionRow || i == pebbleSectionRow || i == resetSectionRow);
         }
 
         @Override
@@ -524,6 +613,26 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     }
                     textView.setText(LocaleController.getString("Sound", R.string.Sound));
                     divider.setVisibility(View.INVISIBLE);
+                } else if (i == messageVibrationSpeedRow || i == groupVibrationSpeedRow) {
+                    VibrationSpeed speed = VibrationSpeed.getDefault();
+                    if (i == messageVibrationSpeedRow) {
+                        speed = VibrationSpeed.fromValue(preferences.getInt("VibrationSpeed", 0));
+                    } else if (i == groupVibrationSpeedRow) {
+                        speed = VibrationSpeed.fromValue(preferences.getInt("VibrationSpeedGroup", 0));
+                    }
+                    textViewDetail.setText(LocaleController.getString(speed.getLocaleKey(), speed.getResourceId()));
+                    textView.setText(LocaleController.getString("VibrateSpeed", R.string.VibrateSpeed));
+                    divider.setVisibility(View.VISIBLE);
+                }  else if (i == messageVibrationCountRow || i == groupVibrationCountRow) {
+                    int count = VibrationCountDialog.DEFAULT_VIBRATION_COUNT;
+                    if (i == messageVibrationCountRow) {
+                        count = preferences.getInt("VibrationCount", count);
+                    } else if (i == groupVibrationCountRow) {
+                        count = preferences.getInt("VibrationCountGroup", count);
+                    }
+                    textViewDetail.setText(String.valueOf(count));
+                    textView.setText(LocaleController.getString("VibrateCount", R.string.VibrateCount));
+                    divider.setVisibility(View.VISIBLE);
                 } else if (i == resetNotificationsRow) {
                     textView.setText(LocaleController.getString("ResetAllNotifications", R.string.ResetAllNotifications));
                     textViewDetail.setText(LocaleController.getString("UndoAllCustom", R.string.UndoAllCustom));
@@ -538,6 +647,8 @@ public class SettingsNotificationsActivity extends BaseFragment {
         public int getItemViewType(int i) {
             if (i == messageSectionRow || i == groupSectionRow || i == inappSectionRow || i == eventsSectionRow || i == pebbleSectionRow || i == resetSectionRow) {
                 return 0;
+            } else if(i == messageVibrationSpeedRow || i == groupVibrationSpeedRow || i == messageVibrationCountRow || i == groupVibrationCountRow) {
+                return 2;
             } else if (i == messageAlertRow || i == messagePreviewRow || i == messageVibrateRow ||
                     i == groupAlertRow || i == groupPreviewRow || i == groupVibrateRow ||
                     i == inappSoundRow || i == inappVibrateRow || i == inappPreviewRow ||
