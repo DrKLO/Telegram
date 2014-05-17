@@ -42,6 +42,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.VibrationSpeed;
+import org.telegram.ui.Dialog.VibrationCountDialog;
 import org.telegram.ui.Dialog.VibrationSpeedDialog;
 import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.OnSwipeTouchListener;
@@ -57,23 +58,25 @@ public class SettingsNotificationsActivity extends BaseFragment {
     private static final int SETTINGS_MESSAGE_PREVIEW       = SETTINGS_COUNT++; // 2
     private static final int SETTINGS_MESSAGE_VIBRATE       = SETTINGS_COUNT++; // 3
     private static final int SETTINGS_MESSAGE_VIBRATE_SPD   = SETTINGS_COUNT++; // 4
-    private static final int SETTINGS_MESSAGE_SOUND         = SETTINGS_COUNT++; // 5
-    private static final int SETTINGS_GROUP_NOTIFICATIONS   = SETTINGS_COUNT++; // 6
-    private static final int SETTINGS_GROUP_ALERT           = SETTINGS_COUNT++; // 7
-    private static final int SETTINGS_GROUP_PREVIEW         = SETTINGS_COUNT++; // 8
-    private static final int SETTINGS_GROUP_VIBRATE         = SETTINGS_COUNT++; // 9
-    private static final int SETTINGS_GROUP_VIBRATE_SPD     = SETTINGS_COUNT++; // 10
-    private static final int SETTINGS_GROUP_SOUND           = SETTINGS_COUNT++; // 11
-    private static final int SETTINGS_INAPP_NOTIFICATIONS   = SETTINGS_COUNT++; // 12
-    private static final int SETTINGS_INAPP_SOUND           = SETTINGS_COUNT++; // 13
-    private static final int SETTINGS_INAPP_VIBRATE         = SETTINGS_COUNT++; // 14
-    private static final int SETTINGS_INAPP_PREVIEW         = SETTINGS_COUNT++; // 15
-    private static final int SETTINGS_EVENTS                = SETTINGS_COUNT++; // 16
-    private static final int SETTINGS_CONTACT_JOINED        = SETTINGS_COUNT++; // 17
-    private static final int SETTINGS_PEBBLE                = SETTINGS_COUNT++; // 18
-    private static final int SETTINGS_PEBBLE_ALERT          = SETTINGS_COUNT++; // 19
-    private static final int SETTINGS_RESET                 = SETTINGS_COUNT++; // 20
-    private static final int SETTINGS_RESET_ALL             = SETTINGS_COUNT++; // 21
+    private static final int SETTINGS_MESSAGE_VIBRATE_CNT   = SETTINGS_COUNT++; // 5
+    private static final int SETTINGS_MESSAGE_SOUND         = SETTINGS_COUNT++; // 6
+    private static final int SETTINGS_GROUP_NOTIFICATIONS   = SETTINGS_COUNT++; // 7
+    private static final int SETTINGS_GROUP_ALERT           = SETTINGS_COUNT++; // 8
+    private static final int SETTINGS_GROUP_PREVIEW         = SETTINGS_COUNT++; // 9
+    private static final int SETTINGS_GROUP_VIBRATE         = SETTINGS_COUNT++; // 10
+    private static final int SETTINGS_GROUP_VIBRATE_SPD     = SETTINGS_COUNT++; // 11
+    private static final int SETTINGS_GROUP_VIBRATE_CNT     = SETTINGS_COUNT++; // 12
+    private static final int SETTINGS_GROUP_SOUND           = SETTINGS_COUNT++; // 13
+    private static final int SETTINGS_INAPP_NOTIFICATIONS   = SETTINGS_COUNT++; // 14
+    private static final int SETTINGS_INAPP_SOUND           = SETTINGS_COUNT++; // 15
+    private static final int SETTINGS_INAPP_VIBRATE         = SETTINGS_COUNT++; // 16
+    private static final int SETTINGS_INAPP_PREVIEW         = SETTINGS_COUNT++; // 17
+    private static final int SETTINGS_EVENTS                = SETTINGS_COUNT++; // 18
+    private static final int SETTINGS_CONTACT_JOINED        = SETTINGS_COUNT++; // 19
+    private static final int SETTINGS_PEBBLE                = SETTINGS_COUNT++; // 20
+    private static final int SETTINGS_PEBBLE_ALERT          = SETTINGS_COUNT++; // 21
+    private static final int SETTINGS_RESET                 = SETTINGS_COUNT++; // 22
+    private static final int SETTINGS_RESET_ALL             = SETTINGS_COUNT++; // 23
 
     private ListView listView;
     private boolean reseting = false;
@@ -142,7 +145,10 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         } else if (index == SETTINGS_GROUP_VIBRATE_SPD) {
                             speed = VibrationSpeed.fromValue(preferences.getInt("VibrationSpeedGroup", 0));
                         }
-                        VibrationSpeedDialog vibrationSpeedDialog = new VibrationSpeedDialog(speed, new VibrationSpeedDialog.VibrationSpeedSelectionListener() {
+                        VibrationSpeedDialog vibrationSpeedDialog = new VibrationSpeedDialog();
+                        Bundle args = new Bundle();
+                        args.putSerializable(VibrationSpeedDialog.KEY_CURRENT_SPEED, speed);
+                        args.putSerializable(VibrationSpeedDialog.KEY_LISTENER, new VibrationSpeedDialog.VibrationSpeedSelectionListener() {
                             @Override
                             public void onSpeedSelected(DialogFragment dialog, VibrationSpeed selectedSpeed) {
                                 SharedPreferences.Editor editor = preferences.edit();
@@ -155,7 +161,35 @@ public class SettingsNotificationsActivity extends BaseFragment {
                                 listView.invalidateViews();
                             }
                         });
+                        vibrationSpeedDialog.setArguments(args);
                         vibrationSpeedDialog.show(getFragmentManager(), "VibrationSpeedDialog");
+                    } else if (i == SETTINGS_MESSAGE_VIBRATE_CNT || i == SETTINGS_GROUP_VIBRATE_CNT) {
+                        final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        final int index = i;
+                        int count = VibrationCountDialog.DEFAULT_VIBRATION_COUNT;
+                        if (index == SETTINGS_MESSAGE_VIBRATE_CNT) {
+                            count = preferences.getInt("VibrationCount", count);
+                        } else if (index == SETTINGS_GROUP_VIBRATE_CNT) {
+                            count = preferences.getInt("VibrationCountGroup", count);
+                        }
+                        VibrationCountDialog vibrationCountDialog = new VibrationCountDialog();
+                        Bundle args = new Bundle();
+                        args.putInt(VibrationCountDialog.KEY_CURRENT_COUNT, count);
+                        args.putSerializable(VibrationCountDialog.KEY_LISTENER, new VibrationCountDialog.VibrationCountSelectionListener() {
+                            @Override
+                            public void onCountSelected(DialogFragment dialog, int selectedCount) {
+                                SharedPreferences.Editor editor = preferences.edit();
+                                if (index == SETTINGS_MESSAGE_VIBRATE_CNT) {
+                                    editor.putInt("VibrationCount", selectedCount);
+                                } else if (index == SETTINGS_GROUP_VIBRATE_CNT) {
+                                    editor.putInt("VibrationCountGroup", selectedCount);
+                                }
+                                editor.commit();
+                                listView.invalidateViews();
+                            }
+                        });
+                        vibrationCountDialog.setArguments(args);
+                        vibrationCountDialog.show(getFragmentManager(), "VibrateCountDialog");
                     } else if (i == SETTINGS_MESSAGE_SOUND || i == SETTINGS_GROUP_SOUND) {
                         if (parentActivity == null) {
                             return;
@@ -401,9 +435,31 @@ public class SettingsNotificationsActivity extends BaseFragment {
 
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             boolean enabledAll = preferences.getBoolean("EnableAll", true);
-            return (enabledAll || i == SETTINGS_MESSAGE_ALERT || i == SETTINGS_INAPP_PREVIEW) &&
-                   (i > SETTINGS_MESSAGE_NOTIFICATIONS && i < SETTINGS_GROUP_NOTIFICATIONS || i > SETTINGS_GROUP_NOTIFICATIONS && i < SETTINGS_INAPP_NOTIFICATIONS || i > SETTINGS_INAPP_NOTIFICATIONS && i < SETTINGS_EVENTS) ||
-                   (i == SETTINGS_PEBBLE_ALERT);
+            boolean enabled =
+                (enabledAll || i == SETTINGS_MESSAGE_ALERT || i == SETTINGS_INAPP_PREVIEW) &&
+                (i > SETTINGS_MESSAGE_NOTIFICATIONS && i < SETTINGS_GROUP_NOTIFICATIONS || i > SETTINGS_GROUP_NOTIFICATIONS && i < SETTINGS_INAPP_NOTIFICATIONS || i > SETTINGS_INAPP_NOTIFICATIONS && i < SETTINGS_EVENTS) ||
+                (i == SETTINGS_PEBBLE_ALERT);
+
+            if(enabled) {
+                if(i == SETTINGS_MESSAGE_VIBRATE_SPD) {
+                    if(!preferences.getBoolean("EnableVibrateAll", true))
+                        enabled = false;
+                }
+                else if(i == SETTINGS_GROUP_VIBRATE_SPD) {
+                    if(!preferences.getBoolean("EnableVibrateGroup", true))
+                        enabled = false;
+                }
+                else if(i == SETTINGS_MESSAGE_VIBRATE_CNT) {
+                    if(!preferences.getBoolean("EnableVibrateAll", true) || preferences.getInt("VibrationSpeed", 0) == 0)
+                        enabled = false;
+                }
+                else if(i == SETTINGS_GROUP_VIBRATE_CNT) {
+                    if(!preferences.getBoolean("EnableVibrateGroup", true) || preferences.getInt("VibrationSpeedGroup", 0) == 0)
+                        enabled = false;
+                }
+            }
+
+            return enabled;
         }
 
         @Override
@@ -562,6 +618,16 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     textViewDetail.setText(LocaleController.getString(speed.getLocaleKey(), speed.getResourceId()));
                     textView.setText(LocaleController.getString("VibrateSpeed", R.string.VibrateSpeed));
                     divider.setVisibility(View.VISIBLE);
+                }  else if (i == SETTINGS_MESSAGE_VIBRATE_CNT || i == SETTINGS_GROUP_VIBRATE_CNT) {
+                    int count = VibrationCountDialog.DEFAULT_VIBRATION_COUNT;
+                    if (i == SETTINGS_MESSAGE_VIBRATE_CNT) {
+                        count = preferences.getInt("VibrationCount", count);
+                    } else if (i == SETTINGS_GROUP_VIBRATE_CNT) {
+                        count = preferences.getInt("VibrationCountGroup", count);
+                    }
+                    textViewDetail.setText(String.valueOf(count));
+                    textView.setText(LocaleController.getString("VibrateCount", R.string.VibrateCount));
+                    divider.setVisibility(View.VISIBLE);
                 } else if (i == SETTINGS_RESET_ALL) {
                     textView.setText(LocaleController.getString("ResetAllNotifications", R.string.ResetAllNotifications));
                     textViewDetail.setText(LocaleController.getString("UndoAllCustom", R.string.UndoAllCustom));
@@ -591,7 +657,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
         public int getItemViewType(int i) {
             if (i == SETTINGS_MESSAGE_NOTIFICATIONS || i == SETTINGS_GROUP_NOTIFICATIONS || i == SETTINGS_INAPP_NOTIFICATIONS || i == SETTINGS_EVENTS || i == SETTINGS_PEBBLE || i == SETTINGS_RESET) {
                 return TYPE_HEADER;
-            } else if(i == SETTINGS_MESSAGE_VIBRATE_SPD || i == SETTINGS_GROUP_VIBRATE_SPD) {
+            } else if(i == SETTINGS_MESSAGE_VIBRATE_SPD || i == SETTINGS_GROUP_VIBRATE_SPD || i == SETTINGS_MESSAGE_VIBRATE_CNT || i == SETTINGS_GROUP_VIBRATE_CNT) {
                 return TYPE_INNER_SETTINGS;
             } else if (i > SETTINGS_MESSAGE_NOTIFICATIONS && i < SETTINGS_MESSAGE_SOUND || i > SETTINGS_GROUP_NOTIFICATIONS && i < SETTINGS_GROUP_SOUND || i > SETTINGS_INAPP_NOTIFICATIONS && i < SETTINGS_EVENTS || i == SETTINGS_CONTACT_JOINED || i == SETTINGS_PEBBLE_ALERT) {
                 return TYPE_BOOLEAN_SETTINGS;

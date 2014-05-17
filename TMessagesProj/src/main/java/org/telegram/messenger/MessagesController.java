@@ -38,6 +38,7 @@ import org.json.JSONObject;
 import org.telegram.objects.MessageObject;
 import org.telegram.objects.PhotoObject;
 import org.telegram.objects.VibrationSpeed;
+import org.telegram.ui.Dialog.VibrationCountDialog;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.ApplicationLoader;
 
@@ -4560,16 +4561,19 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
             boolean needVibrate = false;
             VibrationSpeed speed = VibrationSpeed.getDefault();
+            int vibrationCount = VibrationCountDialog.DEFAULT_VIBRATION_COUNT;
 
             if (user_id != 0) {
                 userSoundPath = preferences.getString("sound_path_" + user_id, null);
                 needVibrate = globalVibrate;
                 speed = VibrationSpeed.fromValue(preferences.getInt("VibrationSpeed", 0));
+                vibrationCount = preferences.getInt("VibrationCount", vibrationCount);
             }
             if (chat_id != 0) {
                 chatSoundPath = preferences.getString("sound_chat_path_" + chat_id, null);
                 needVibrate = groupVibrate;
                 speed = VibrationSpeed.fromValue(preferences.getInt("VibrationSpeedGroup", 0));
+                vibrationCount = preferences.getInt("VibrationCountGroup", vibrationCount);
             }
 
             String choosenSoundPath = null;
@@ -4613,19 +4617,34 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             int notificationDefaults = 0;
 
             if (needVibrate) {
+                long pause, duration;
                 switch (speed) {
                     case FAST:
-                        mBuilder.setVibrate(new long[]{0, 100, 0, 100});
+                        pause = 0;
+                        duration = 100;
                         break;
                     case MEDIUM:
-                        mBuilder.setVibrate(new long[]{0, 300, 200, 300});
+                        pause = 200;
+                        duration = 300;
                         break;
                     case SLOW:
-                        mBuilder.setVibrate(new long[]{0, 800, 200, 800});
+                        pause = 200;
+                        duration = 800;
                         break;
                     case DEFAULT:
                     default:
+                        pause = -1;
+                        duration = -1;
                         notificationDefaults = notificationDefaults | Notification.DEFAULT_VIBRATE;
+                }
+                if(pause >= 0 && duration >= 0) {
+                    long pattern[] = new long[vibrationCount * 2];
+                    pattern[0] = 0l;
+                    for(int i = 1, l = pattern.length; i < l; i++) {
+                        pattern[i] = ((i % 2 != 0) ? duration : pause);
+                    }
+
+                    mBuilder.setVibrate(pattern);
                 }
             }
             if (choosenSoundPath != null && !choosenSoundPath.equals("NoSound")) {

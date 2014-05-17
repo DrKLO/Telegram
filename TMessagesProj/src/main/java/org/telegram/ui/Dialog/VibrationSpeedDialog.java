@@ -15,28 +15,39 @@ import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
 
-import com.google.android.gms.internal.cu;
-
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.objects.VibrationSpeed;
 
+import java.io.Serializable;
+
 public class VibrationSpeedDialog extends DialogFragment {
 
-    public static interface VibrationSpeedSelectionListener {
+    public static final String KEY_CURRENT_SPEED = "currentSpeed";
+    public static final String KEY_LISTENER = "mListener";
+
+    public static interface VibrationSpeedSelectionListener extends Serializable {
         public void onSpeedSelected(DialogFragment dialog, VibrationSpeed selectedSpeed);
     }
 
     private VibrationSpeedSelectionListener mListener;
     private VibrationSpeed currentSpeed;
 
-    public VibrationSpeedDialog(VibrationSpeed currentSpeed) {
-        this(currentSpeed, null);
+    public VibrationSpeedDialog() {
+        this.currentSpeed = VibrationSpeed.getDefault();
     }
 
-    public VibrationSpeedDialog(VibrationSpeed currentSpeed, VibrationSpeedSelectionListener mListener) {
-        this.currentSpeed = currentSpeed;
-        this.mListener = mListener;
+    @Override
+    public void setArguments(Bundle args) {
+        super.setArguments(args);
+
+        try {
+            this.currentSpeed = (VibrationSpeed) args.get(KEY_CURRENT_SPEED);
+        } catch (ClassCastException e) {}
+
+        try {
+            this.mListener = (VibrationSpeedSelectionListener) args.get(KEY_LISTENER);
+        } catch (ClassCastException e) {}
     }
 
     @Override
@@ -45,7 +56,6 @@ public class VibrationSpeedDialog extends DialogFragment {
         if(mListener == null) {
             // Verify that the host activity implements the callback interface
             try {
-                // Instantiate the NoticeDialogListener so we can send events to the host
                 mListener = (VibrationSpeedSelectionListener) activity;
             } catch (ClassCastException e) {
                 // The activity doesn't implement the interface, throw exception
