@@ -258,7 +258,13 @@ public class ApplicationLoader extends Application {
                 }
                 return false;
             }
-        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
+        };
+
+        if (android.os.Build.VERSION.SDK_INT >= 11) {
+            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
+        } else {
+            task.execute(null, null, null);
+        }
     }
 
     private void sendRegistrationIdToBackend(final boolean isNew) {
