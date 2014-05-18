@@ -5,8 +5,9 @@
 <resources>
     <string name="AppName">Telegram</string>
 
-    <string name="LanguangeName">Deutsch</string>
-    <string name="LanguangeNameInEnglish">German</string>
+    <string name="LanguageName">Deutsch</string>
+    <string name="LanguageNameInEnglish">German</string>
+    <string name="LanguageCode">de</string>
 
     <!--signin view-->
     <string name="YourPhone">Dein Telefon</string>
@@ -93,7 +94,7 @@
     <string name="Message">Nachricht</string>
     <string name="TypeMessage">Nachricht verfassen</string>
     <string name="DOWNLOAD">Download</string>
-    <string name="Selected">Ausgewählt:</string>
+    <string name="Selected">Ausgewählt: %d</string>
     <string name="ShareMyContactInfo">MEINE KONTAKTDATEN TEILEN</string>
     <string name="AddToContacts">ZU KONTAKTEN HINZUFÜGEN</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s hat dich zu einem geheimen Chat eingeladen.</string>
@@ -108,9 +109,10 @@
     <string name="YouWereKicked">Du wurdest aus der Gruppe entfernt</string>
     <string name="YouLeft">Du hast die Gruppe verlassen</string>
     <string name="DeleteThisGroup">Diese Gruppe löschen</string>
+    <string name="DeleteThisChat">Delete this chat</string>
     <string name="SlideToCancel">WISCHEN UM ABZUBRECHEN</string>
     <string name="SaveToDownloads">In Ordner Downloads speichern</string>
-    <string name="ApplyLocalizationFile">Apply localization file</string>
+    <string name="ApplyLocalizationFile">Sprachdatei benutzen</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Geheimen Chat angefordert</string>
@@ -223,7 +225,7 @@
     <string name="NoBlocked">Keine blockierten Benutzer</string>
     <string name="YourPhoneNumber">DEINE TELEFONNUMMER</string>
     <string name="MessageNotifications">NACHRICHTEN</string>
-    <string name="Alert">Nachrichtenton</string>
+    <string name="Alert">Benachrichtigung</string>
     <string name="MessagePreview">Nachrichtenvorschau</string>
     <string name="GroupNotifications">GRUPPEN</string>
     <string name="Sound">Nachrichtenton auswählen</string>
@@ -255,6 +257,14 @@
     <string name="ContactJoined">Kontakt ist Telegram beigetreten</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Sprache</string>
+    <string name="AskAQuestionInfo">Bedenke bitte, dass der Telegram Support von Freiwilligen geleistet wird. Wir versuchen so schnell wie möglich zu antworten. Dies kann jedoch manchmal etwas länger dauern.<![CDATA[<br><br>]]>Bitte schau in den <![CDATA[<a href="http://telegram.org/faq#general">Telegram FAQ</a>]]>: nach. Dort findest du Antworten auf die meisten Fragen und wichtige Tipps zur <![CDATA[<a href="http://telegram.org/faq#troubleshooting">Problemlösung</a>]]>.</string>
+    <string name="AskButton">Frage einen Freiwilligen</string>
+    <string name="TelegramFaq">Telegram-FAQ</string>
+    <string name="TelegramFaqUrl">https://telegram.org/faq</string>
+    <string name="DeleteLocalization">Lokalisierung löschen?</string>
+    <string name="IncorrectLocalization">Falsche Sprachdatei</string>
+    <string name="Enabled">Enabled</string>
+    <string name="Disabled">Disabled</string>
 
     <!--media view-->
     <string name="NoMedia">Noch keine geteilten Medien vorhanden</string>
@@ -314,7 +324,7 @@
     <string name="ActionYouCreateGroup">Du hast die Gruppe erstellt</string>
     <string name="ActionKickUserYou">un1 hat dich aus der Gruppe entfernt</string>
     <string name="ActionAddUserYou">un1 hat dich hinzugefügt</string>
-    <string name="UnsuppotedMedia">Diese Nachricht wird von deiner Telegram-Version nicht unterstützt.</string>
+    <string name="UnsuppotedMedia">Diese Nachricht wird auf deiner Version von Telegram nicht unterstützt. Bitte aktualisiere die App um sie zu sehen: http://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Standort</string>
@@ -322,6 +332,8 @@
     <string name="AttachDocument">Dokument</string>
     <string name="AttachAudio">Audio</string>
     <string name="FromYou">Du</string>
+    <string name="ActionTakeScreenshootYou">You took a screenshot!</string>
+    <string name="ActionTakeScreenshoot">un1 took a screenshot!</string>
 
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Ungültige Telefonnummer</string>
@@ -349,12 +361,12 @@
     <string name="Page6Title">Cloud-Basiert</string>
     <string name="Page7Title">Vertraulich</string>
     <string name="Page1Message">Willkommen im Zeitalter der sicheren und schnellen Kommunikation.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> stellt Nachrichten schneller<![CDATA[<br/>]]>zu als andere Anwendungen</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> ist für immer kostenlos.<![CDATA[<br/>]]>Keine Werbung. Keine wiederkehrenden Kosten.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> schützt deine Nachrichten<![CDATA[<br/>]]>vor Hacker-Angriffen</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> hat keine Grenzen in Sachen<![CDATA[<br/>]]>Größe deiner Chats und Medien</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lässt sich von verschiedenen<![CDATA[<br/>]]>Geräten gleichzeitig nutzen</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]>-Nachrichten sind stark<![CDATA[<br/>]]>verschlüsselt und können sich selbst zerstören</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> stellt Nachrichten schneller zu als andere Anwendungen</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> ist für immer kostenlos. Keine Werbung. Keine wiederkehrenden Kosten.</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> schützt deine Nachrichten vor Hacker-Angriffen</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> hat keine Grenzen in Sachen Größe deiner Chats und Medien</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lässt sich von verschiedenen Geräten gleichzeitig nutzen</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]>-Nachrichten sind stark verschlüsselt und können sich selbst zerstören</string>
     <string name="StartMessaging">Jetzt beginnen</string>
 
     <!--Don't change this! Not for localization!-->

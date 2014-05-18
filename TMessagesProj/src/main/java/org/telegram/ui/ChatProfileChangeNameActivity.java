@@ -69,7 +69,7 @@ public class ChatProfileChangeNameActivity extends BaseFragment {
             firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                    if (i == EditorInfo.IME_ACTION_DONE) {
+                    if (i == EditorInfo.IME_ACTION_DONE && doneButton != null) {
                         doneButton.performClick();
                         return true;
                     }

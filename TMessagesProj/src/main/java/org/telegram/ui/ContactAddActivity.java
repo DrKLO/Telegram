@@ -131,20 +131,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
             return;
         }
         phoneText.setText(PhoneFormat.getInstance().format("+" + user.phone));
-        if (user.status == null) {
-            onlineText.setText(LocaleController.getString("Offline", R.string.Offline));
-        } else {
-            int currentTime = ConnectionsManager.getInstance().getCurrentTime();
-            if (user.status.expires > currentTime) {
-                onlineText.setText(LocaleController.getString("Online", R.string.Online));
-            } else {
-                if (user.status.expires <= 10000) {
-                    onlineText.setText(LocaleController.getString("Invisible", R.string.Invisible));
-                } else {
-                    onlineText.setText(LocaleController.formatDateOnline(user.status.expires));
-                }
-            }
-        }
+        onlineText.setText(LocaleController.formatUserStatus(user));
 
         TLRPC.FileLocation photo = null;
         if (user.photo != null) {

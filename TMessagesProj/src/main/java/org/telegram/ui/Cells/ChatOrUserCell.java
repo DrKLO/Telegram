@@ -22,7 +22,6 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
-import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -113,6 +112,15 @@ public class ChatOrUserCell extends BaseCell {
         encryptedChat = ec;
         subLabel = s;
         update(0);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (avatarImage != null) {
+            avatarImage.clearImage();
+            lastAvatar = null;
+        }
     }
 
     @Override
@@ -296,27 +304,16 @@ public class ChatOrUserCell extends BaseCell {
                 if (chat != null) {
                     nameString2 = chat.title;
                 } else if (user != null) {
-                    if (user.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(user.id) == null) {
-                        if (ContactsController.getInstance().contactsDict.size() == 0 && ContactsController.getInstance().loadingContacts) {
-                            nameString2 = Utilities.formatName(user.first_name, user.last_name);
-                        } else {
-                            if (user.phone != null && user.phone.length() != 0) {
-                                nameString2 = PhoneFormat.getInstance().format("+" + user.phone);
-                            } else {
-                                nameString2 = Utilities.formatName(user.first_name, user.last_name);
-                            }
-                        }
-                    } else {
-                        nameString2 = Utilities.formatName(user.first_name, user.last_name);
-                    }
+                    nameString2 = Utilities.formatName(user.first_name, user.last_name);
                 }
                 nameString = nameString2.replace("\n", " ");
             }
             if (nameString.length() == 0) {
                 if (user.phone != null && user.phone.length() != 0) {
                     nameString = PhoneFormat.getInstance().format("+" + user.phone);
+                } else {
+                    nameString = LocaleController.getString("HiddenName", R.string.HiddenName);
                 }
-                nameString = LocaleController.getString("HiddenName", R.string.HiddenName);
             }
             if (encryptedChat != null) {
                 currentNamePaint = nameEncryptedPaint;
@@ -349,22 +346,10 @@ public class ChatOrUserCell extends BaseCell {
                 if (subLabel != null) {
                     onlineString = subLabel;
                 } else {
-                    if (user != null) {
-                        if (user.status == null) {
-                            onlineString = getResources().getString(R.string.Offline);
-                        } else {
-                            int currentTime = ConnectionsManager.getInstance().getCurrentTime();
-                            if (user.id == UserConfig.clientUserId || user.status.expires > currentTime) {
-                                currentOnlinePaint = onlinePaint;
-                                onlineString = getResources().getString(R.string.Online);
-                            } else {
-                                if (user.status.expires <= 10000) {
-                                    onlineString = getResources().getString(R.string.Invisible);
-                                } else {
-                                    onlineString = LocaleController.formatDateOnline(user.status.expires);
-                                }
-                            }
-                        }
+                    onlineString = LocaleController.formatUserStatus(user);
+                    if (user != null && (user.id == UserConfig.clientUserId || user.status != null && user.status.expires > ConnectionsManager.getInstance().getCurrentTime())) {
+                        currentOnlinePaint = onlinePaint;
+                        onlineString = LocaleController.getString("Online", R.string.Online);
                     }
                 }
 

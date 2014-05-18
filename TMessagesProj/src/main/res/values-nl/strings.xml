@@ -5,8 +5,9 @@
 <resources>
     <string name="AppName">Telegram</string>
 
-    <string name="LanguangeName">Nederlands</string>
-    <string name="LanguangeNameInEnglish">Dutch</string>
+    <string name="LanguageName">Nederlands</string>
+    <string name="LanguageNameInEnglish">Dutch</string>
+    <string name="LanguageCode">nl</string>
 
     <!--signin view-->
     <string name="YourPhone">Uw telefoon</string>
@@ -93,7 +94,7 @@
     <string name="Message">Bericht</string>
     <string name="TypeMessage">Typ een bericht...</string>
     <string name="DOWNLOAD">Downloaden</string>
-    <string name="Selected">Geselecteerd:</string>
+    <string name="Selected">Geselecteerd: %d</string>
     <string name="ShareMyContactInfo">MIJN CONTACTGEGEVENS DELEN</string>
     <string name="AddToContacts">TOEVOEGEN AAN CONTACTEN</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s heeft u uitgenodigd voor een privégesprek.</string>
@@ -108,9 +109,10 @@
     <string name="YouWereKicked">U bent verwijderd uit deze groep</string>
     <string name="YouLeft">U hebt deze groep verlaten</string>
     <string name="DeleteThisGroup">Deze groep verwijderen</string>
+    <string name="DeleteThisChat">Delete this chat</string>
     <string name="SlideToCancel">SLEEP OM TE ANNULEREN</string>
-    <string name="SaveToDownloads">Opslaan in downloads</string>
-    <string name="ApplyLocalizationFile">Apply localization file</string>
+    <string name="SaveToDownloads">Opslaan in Downloads</string>
+    <string name="ApplyLocalizationFile">Vertaling toepassen</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Privégesprek aangevraagd</string>
@@ -255,6 +257,14 @@
     <string name="ContactJoined">Contact lid geworden van Telegram</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Taal</string>
+    <string name="AskAQuestionInfo">Houd er rekening mee dat de ondersteuning van Telegram door vrijwilligers wordt gedaan. We doen ons best om zo snel als mogelijk te antwoorden, maar het kan even even duren.<![CDATA[<br><br>]]>Bekijk ook de <![CDATA[<a href="http://telegram.org/faq#general">veelgestelde vragen (FAQ)</a>]]>: hier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href="http://telegram.org/faq#troubleshooting">het oplossen van problemen</a>]]>.</string>
+    <string name="AskButton">Vraag een vrijwilliger</string>
+    <string name="TelegramFaq">Telegram veelgestelde vragen (FAQ)</string>
+    <string name="TelegramFaqUrl">https://telegram.org/faq</string>
+    <string name="DeleteLocalization">Verwijder vertaling?</string>
+    <string name="IncorrectLocalization">Ongeldig vertalingsbestand</string>
+    <string name="Enabled">Enabled</string>
+    <string name="Disabled">Disabled</string>
 
     <!--media view-->
     <string name="NoMedia">Nog geen media gedeeld</string>
@@ -273,7 +283,7 @@
     <!--photo gallery view-->
     <string name="ShowAllMedia">Alle media weergeven</string>
     <string name="SaveToGallery">Opslaan in galerij</string>
-    <string name="Of">%1$d van %1$d</string>
+    <string name="Of">%1$d van %2$d</string>
     <string name="Gallery">Galerij</string>
 
     <!--button titles-->
@@ -314,7 +324,7 @@
     <string name="ActionYouCreateGroup">U hebt de groep gemaakt</string>
     <string name="ActionKickUserYou">un1 heeft u verwijderd</string>
     <string name="ActionAddUserYou">un1 heeft u toegevoegd</string>
-    <string name="UnsuppotedMedia">Dit bericht wordt niet ondersteund in uw versie van Telegram.</string>
+    <string name="UnsuppotedMedia">Dit bericht wordt niet ondersteund door uw versie van Telegram. Werk Telegram bij om dit bericht te bekijken: http://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Locatie</string>
@@ -322,6 +332,8 @@
     <string name="AttachDocument">Document</string>
     <string name="AttachAudio">Geluidsbestand</string>
     <string name="FromYou">U</string>
+    <string name="ActionTakeScreenshootYou">You took a screenshot!</string>
+    <string name="ActionTakeScreenshoot">un1 took a screenshot!</string>
 
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Ongeldig telefoonnummer</string>

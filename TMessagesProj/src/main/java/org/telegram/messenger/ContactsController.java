@@ -149,7 +149,7 @@ public class ContactsController {
 
     public void checkAppAccount() {
         AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
-        Account[] accounts = am.getAccountsByType("org.telegram.messenger.account");
+        Account[] accounts = am.getAccountsByType("org.telegram.account");
         boolean recreateAccount = false;
         if (UserConfig.currentUser != null) {
             if (accounts.length == 1) {
@@ -173,8 +173,12 @@ public class ContactsController {
                 am.removeAccount(c, null, null);
             }
             if (UserConfig.currentUser != null) {
-                currentAccount = new Account(UserConfig.currentUser.phone, "org.telegram.messenger.account");
-                am.addAccountExplicitly(currentAccount, "", null);
+                try {
+                    currentAccount = new Account(UserConfig.currentUser.phone, "org.telegram.account");
+                    am.addAccountExplicitly(currentAccount, "", null);
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
             }
         }
     }
@@ -323,19 +327,9 @@ public class ContactsController {
                             name = PhoneFormat.getInstance().format(phone);
                         }
 
-                        String[] args = name.split(" ", 2);
-
                         Contact contact = new Contact();
-                        if (args.length > 0) {
-                            contact.first_name = args[0];
-                        } else {
-                            contact.first_name = "";
-                        }
-                        if (args.length > 1) {
-                            contact.last_name = args[1];
-                        } else {
-                            contact.last_name = "";
-                        }
+                        contact.first_name = name;
+                        contact.last_name = "";
                         contact.id = pCur.getInt(2);
                         contactsMap.put(contact.id, contact);
 
@@ -386,12 +380,12 @@ public class ContactsController {
                 if (schedule) {
                     try {
                         AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
-                        Account[] accounts = am.getAccountsByType("org.telegram.messenger.account");
+                        Account[] accounts = am.getAccountsByType("org.telegram.account");
                         boolean recreateAccount = false;
                         if (UserConfig.currentUser != null) {
                             if (accounts.length != 1) {
                                 FileLog.e("tmessages", "detected account deletion!");
-                                currentAccount = new Account(UserConfig.currentUser.phone, "org.telegram.messenger.account");
+                                currentAccount = new Account(UserConfig.currentUser.phone, "org.telegram.account");
                                 am.addAccountExplicitly(currentAccount, "", null);
                                 performWriteContactsToPhoneBookInternal();
                             }

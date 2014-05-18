@@ -5,8 +5,9 @@
 <resources>
     <string name="AppName">Telegram</string>
 
-    <string name="LanguangeName">Italiano</string>
-    <string name="LanguangeNameInEnglish">Italian</string>
+    <string name="LanguageName">Italiano</string>
+    <string name="LanguageNameInEnglish">Italian</string>
+    <string name="LanguageCode">it</string>
 
     <!--signin view-->
     <string name="YourPhone">Il tuo telefono</string>
@@ -93,7 +94,7 @@
     <string name="Message">Messaggio</string>
     <string name="TypeMessage">Scrivi il messaggio</string>
     <string name="DOWNLOAD">Scarica</string>
-    <string name="Selected">Selezionato:</string>
+    <string name="Selected">Selezionato: %d</string>
     <string name="ShareMyContactInfo">CONDIVIDI LE MIE INFORMAZIONI DI CONTATTO</string>
     <string name="AddToContacts">AGGIUNGI AI CONTATTI</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s ti ha mandato un invito a una chat privata.</string>
@@ -108,9 +109,10 @@
     <string name="YouWereKicked">Sei stato espulso da questo gruppo</string>
     <string name="YouLeft">Hai lasciato il gruppo</string>
     <string name="DeleteThisGroup">Elimina questo gruppo</string>
+    <string name="DeleteThisChat">Delete this chat</string>
     <string name="SlideToCancel">TRASCINA PER ANNULLARE</string>
     <string name="SaveToDownloads">Salva in download</string>
-    <string name="ApplyLocalizationFile">Apply localization file</string>
+    <string name="ApplyLocalizationFile">Applica file di localizzazione</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Chat segreta richiesta</string>
@@ -255,6 +257,14 @@
     <string name="ContactJoined">Un contatto si è collegato a Telegram</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Lingua</string>
+    <string name="AskAQuestionInfo">Nota che il supporto di Telegram è fornito da volontari. Proviamo a rispondere non appena possibile, ma potrebbe richiedere del tempo.<![CDATA[<br><br>]]>Dai un\'occhiata alle <![CDATA[<a href="http://telegram.org/faq#general">Domande frequenti</a>]]>: troverai risposte alla maggior parte delle domande e suggerimenti importanti per <![CDATA[<a href="http://telegram.org/faq#troubleshooting">l\'individuazione del problema</a>]]>.</string>
+    <string name="AskButton">Chiedi a un volontario</string>
+    <string name="TelegramFaq">Domande frequenti</string>
+    <string name="TelegramFaqUrl">https://telegram.org/faq</string>
+    <string name="DeleteLocalization">Eliminare la localizzazione?</string>
+    <string name="IncorrectLocalization">File della localizzazione non valido</string>
+    <string name="Enabled">Enabled</string>
+    <string name="Disabled">Disabled</string>
 
     <!--media view-->
     <string name="NoMedia">Nessun media condiviso</string>
@@ -314,7 +324,7 @@
     <string name="ActionYouCreateGroup">Hai creato il gruppo</string>
     <string name="ActionKickUserYou">un1 ti ha rimosso</string>
     <string name="ActionAddUserYou">un1 ti ha aggiunto</string>
-    <string name="UnsuppotedMedia">Questo messaggio non è supportato dalla tua versione di Telegram.</string>
+    <string name="UnsuppotedMedia">Questo messaggio non è supportato sulla tua versione di Telegram. Aggiorna l\'applicazione per\nvisualizzarlo: http://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Posizione</string>
@@ -322,6 +332,8 @@
     <string name="AttachDocument">Documento</string>
     <string name="AttachAudio">Audio</string>
     <string name="FromYou">Tu</string>
+    <string name="ActionTakeScreenshootYou">You took a screenshot!</string>
+    <string name="ActionTakeScreenshoot">un1 took a screenshot!</string>
 
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Numero di telefono non valido</string>
@@ -351,7 +363,7 @@
     <string name="Page1Message">Benvenuto nell\'era della messaggistica veloce e sicura</string>
     <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> consegna i messaggi più velocemente di qualsiasi altra applicazione</string>
     <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> è gratuita per sempre. Nessuna pubblicità. Nessun costo di abbonamento</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> tiene al sicuro i tuoi messaggi dagli attacchi dei hacker</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> tiene al sicuro i tuoi messaggi dagli attacchi degli hacker</string>
     <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> non ha limiti sulle dimensioni dei tuoi file multimediali e delle chat</string>
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> ti consente di accedere ai messaggi da più dispositivi</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> cifra in maniera sicura i messaggi e può far sì che si autodistruggano</string>

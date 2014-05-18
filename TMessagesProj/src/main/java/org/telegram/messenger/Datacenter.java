@@ -25,11 +25,8 @@ public class Datacenter {
     public ArrayList<String> addresses = new ArrayList<String>();
     public HashMap<String, Integer> ports = new HashMap<String, Integer>();
     public int[] defaultPorts =   new int[] {-1, 80, -1, 443, -1, 443, -1, 80, -1, 443, -1};
-    public int[] defaultPorts14 = new int[] {-1, 14, -1, 443, -1, 14,  -1, 80, -1, 14,  -1};
+    public int[] defaultPorts8888 = new int[] {-1, 8888, -1, 443, -1, 8888,  -1, 80, -1, 8888,  -1};
     public boolean authorized;
-    public long authSessionId;
-    public long authDownloadSessionId;
-    public long authUploadSessionId;
     public byte[] authKey;
     public long authKeyId;
     public int lastInitVersion = 0;
@@ -136,8 +133,8 @@ public class Datacenter {
 
         int[] portsArray = defaultPorts;
 
-        if (overridePort == 14) {
-            portsArray = defaultPorts14;
+        if (overridePort == 8888) {
+            portsArray = defaultPorts8888;
         }
 
         if (currentPortNum >= defaultPorts.length) {

@@ -66,7 +66,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     private boolean searching = false;
     private boolean searchWas = false;
     private boolean onlySelect = false;
-    private int activityToken = (int)(MessagesController.random.nextDouble() * Integer.MAX_VALUE);
+    private int activityToken = (int)(Utilities.random.nextDouble() * Integer.MAX_VALUE);
     private long selectedDialog;
 
     private Timer searchTimer;
@@ -74,6 +74,12 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     public ArrayList<CharSequence> searchResultNames;
 
     public MessagesActivityDelegate delegate;
+
+    private final static int messages_list_menu_new_messages = 1;
+    private final static int messages_list_menu_new_chat = 2;
+    private final static int messages_list_menu_new_secret_chat = 3;
+    private final static int messages_list_menu_contacts = 4;
+    private final static int messages_list_menu_settings = 5;
 
     public static interface MessagesActivityDelegate {
         public abstract void didSelectDialog(MessagesActivity fragment, long dialog_id);
@@ -355,8 +361,17 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         if (messagesListViewAdapter != null) {
             messagesListViewAdapter.notifyDataSetChanged();
         }
+
         ((LaunchActivity)parentActivity).showActionBar();
         ((LaunchActivity)parentActivity).updateActionBar();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (searchItem != null && searchItem.isActionViewExpanded()) {
+            searchItem.collapseActionView();
+        }
     }
 
     @Override
@@ -434,7 +449,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     private void didSelectResult(final long dialog_id, boolean useAlert) {
         if (useAlert && selectAlertString != 0) {
             AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
-            builder.setTitle(R.string.AppName);
+            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
             int lower_part = (int)dialog_id;
             if (lower_part != 0) {
                 if (lower_part > 0) {
@@ -535,13 +550,28 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        if (onlySelect) {
-            inflater.inflate(R.menu.messages_list_select_menu, menu);
-        } else {
-            inflater.inflate(R.menu.messages_list_menu, menu);
+        if (parentActivity == null) {
+            return;
         }
-        searchItem = (SupportMenuItem)menu.findItem(R.id.messages_list_menu_search);
-        searchView = (SearchView) searchItem.getActionView();
+        searchItem = (SupportMenuItem)menu.add(Menu.NONE, 0, Menu.NONE, LocaleController.getString("Search", R.string.Search)).setIcon(R.drawable.ic_ab_search);
+        searchItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS|SupportMenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
+        searchItem.setActionView(searchView = new SearchView(parentActivity));
+        if (!onlySelect) {
+            SupportMenuItem item = (SupportMenuItem)menu.add(Menu.NONE, messages_list_menu_new_messages, Menu.NONE, LocaleController.getString("NewMessages", R.string.NewMessages)).setIcon(R.drawable.ic_ab_compose);
+            item.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
+
+            item = (SupportMenuItem)menu.add(Menu.NONE, messages_list_menu_new_chat, Menu.NONE, LocaleController.getString("NewGroup", R.string.NewGroup));
+            item.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_NEVER);
+
+            item = (SupportMenuItem)menu.add(Menu.NONE, messages_list_menu_new_secret_chat, Menu.NONE, LocaleController.getString("NewSecretChat", R.string.NewSecretChat));
+            item.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_NEVER);
+
+            item = (SupportMenuItem)menu.add(Menu.NONE, messages_list_menu_contacts, Menu.NONE, LocaleController.getString("Contacts", R.string.Contacts));
+            item.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_NEVER);
+
+            item = (SupportMenuItem)menu.add(Menu.NONE, messages_list_menu_settings, Menu.NONE, LocaleController.getString("Settings", R.string.Settings));
+            item.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_NEVER);
+        }
 
         TextView textView = (TextView) searchView.findViewById(R.id.search_src_text);
         if (textView != null) {
@@ -634,15 +664,15 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         }
         switch (itemId) {
 
-            case R.id.messages_list_menu_settings: {
+            case messages_list_menu_settings: {
                 ((LaunchActivity)inflaterActivity).presentFragment(new SettingsActivity(), "settings", false);
                 break;
             }
-            case R.id.messages_list_menu_contacts: {
+            case messages_list_menu_contacts: {
                 ((LaunchActivity)inflaterActivity).presentFragment(new ContactsActivity(), "contacts", false);
                 break;
             }
-            case R.id.messages_list_menu_new_messages: {
+            case messages_list_menu_new_messages: {
                 BaseFragment fragment = new ContactsActivity();
                 Bundle bundle = new Bundle();
                 bundle.putBoolean("onlyUsers", true);
@@ -653,7 +683,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 ((LaunchActivity)inflaterActivity).presentFragment(fragment, "contacts_chat", false);
                 break;
             }
-            case R.id.messages_list_menu_new_secret_chat: {
+            case messages_list_menu_new_secret_chat: {
                 BaseFragment fragment = new ContactsActivity();
                 Bundle bundle = new Bundle();
                 bundle.putBoolean("onlyUsers", true);
@@ -665,7 +695,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 ((LaunchActivity)inflaterActivity).presentFragment(fragment, "contacts_chat", false);
                 break;
             }
-            case R.id.messages_list_menu_new_chat: {
+            case messages_list_menu_new_chat: {
                 ((LaunchActivity)inflaterActivity).presentFragment(new GroupCreateActivity(), "group_create", false);
                 break;
             }

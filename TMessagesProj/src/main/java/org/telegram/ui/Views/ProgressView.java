@@ -14,50 +14,35 @@ import android.graphics.Paint;
 import org.telegram.messenger.Utilities;
 
 public class ProgressView {
-    private static Paint innerPaint1;
-    private static Paint outerPaint1;
-    private static Paint innerPaint2;
-    private static Paint outerPaint2;
+    private Paint innerPaint;
+    private Paint outerPaint;
 
-    public int type;
-    public int thumbX = 0;
+    public float currentProgress = 0;
     public int width;
     public int height;
+    public float progressHeight = Utilities.dpf(2.0f);
 
     public ProgressView() {
-        if (innerPaint1 == null) {
-            innerPaint1 = new Paint();
-            outerPaint1 = new Paint();
-            innerPaint2 = new Paint();
-            outerPaint2 = new Paint();
+        innerPaint = new Paint();
+        outerPaint = new Paint();
+    }
 
-            innerPaint1.setColor(0xffb4e396);
-            outerPaint1.setColor(0xff6ac453);
-            innerPaint2.setColor(0xffd9e2eb);
-            outerPaint2.setColor(0xff86c5f8);
-        }
+    public void setProgressColors(int innerColor, int outerColor) {
+        innerPaint.setColor(innerColor);
+        outerPaint.setColor(outerColor);
     }
 
     public void setProgress(float progress) {
-        thumbX = (int)Math.ceil(width * progress);
-        if (thumbX < 0) {
-            thumbX = 0;
-        } else if (thumbX > width) {
-            thumbX = width;
+        currentProgress = progress;
+        if (currentProgress < 0) {
+            currentProgress = 0;
+        } else if (currentProgress > 1) {
+            currentProgress = 1;
         }
     }
 
     public void draw(Canvas canvas) {
-        Paint inner = null;
-        Paint outer = null;
-        if (type == 0) {
-            inner = innerPaint1;
-            outer = outerPaint1;
-        } else if (type == 1) {
-            inner = innerPaint2;
-            outer = outerPaint2;
-        }
-        canvas.drawRect(0, height / 2 - Utilities.dp(1), width, height / 2 + Utilities.dp(1), inner);
-        canvas.drawRect(0, height / 2 - Utilities.dp(1), thumbX, height / 2 + Utilities.dp(1), outer);
+        canvas.drawRect(0, height / 2 - progressHeight / 2.0f, width, height / 2 + progressHeight / 2.0f, innerPaint);
+        canvas.drawRect(0, height / 2 - progressHeight / 2.0f, width * currentProgress, height / 2 + progressHeight / 2.0f, outerPaint);
     }
 }

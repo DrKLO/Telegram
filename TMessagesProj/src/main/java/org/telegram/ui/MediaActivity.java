@@ -37,7 +37,6 @@ import org.telegram.messenger.R;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.OnSwipeTouchListener;
-import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.HashMap;

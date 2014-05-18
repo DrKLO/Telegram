@@ -62,7 +62,7 @@ public class FileUploadOperation {
                 FileLog.e("tmessages", e);
             }
         }
-        currentFileId = MessagesController.random.nextLong();
+        currentFileId = Utilities.random.nextLong();
         try {
             mdEnc = MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException e) {
@@ -125,15 +125,21 @@ public class FileUploadOperation {
             if (key != null && readed % 16 != 0) {
                 toAdd += 16 - readed % 16;
             }
-            byte[] sendBuffer = new byte[readed + toAdd];
-            if (readed != uploadChunkSize) {
+            ByteBufferDesc sendBuffer = BuffersStorage.getInstance().getFreeBuffer(readed + toAdd);
+            if (readed != uploadChunkSize || totalPartsCount == currentPartNum + 1) {
                 isLastPart = true;
             }
-            System.arraycopy(readBuffer, 0, sendBuffer, 0, readed);
+            sendBuffer.writeRaw(readBuffer, 0, readed);
             if (key != null) {
-                sendBuffer = Utilities.aesIgeEncryption(sendBuffer, key, iv, true, true, 0);
+                for (int a = 0; a < toAdd; a++) {
+                    sendBuffer.writeByte(0);
+                }
+                Utilities.aesIgeEncryption2(sendBuffer.buffer, key, iv, true, true, readed + toAdd);
             }
-            mdEnc.update(sendBuffer, 0, readed + toAdd);
+            sendBuffer.rewind();
+            if (!isBigFile) {
+                mdEnc.update(sendBuffer.buffer);
+            }
             if (isBigFile) {
                 TLRPC.TL_upload_saveBigFilePart req = new TLRPC.TL_upload_saveBigFilePart();
                 req.file_part = currentPartNum;

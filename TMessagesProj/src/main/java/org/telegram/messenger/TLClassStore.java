@@ -410,6 +410,8 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_help_getSupport.constructor, TLRPC.TL_help_getSupport.class);
         classStore.put(TLRPC.TL_decryptedMessageActionDeleteMessages.constructor, TLRPC.TL_decryptedMessageActionDeleteMessages.class);
         classStore.put(TLRPC.TL_decryptedMessageActionFlushHistory.constructor, TLRPC.TL_decryptedMessageActionFlushHistory.class);
+        classStore.put(TLRPC.TL_decryptedMessageActionScreenshotMessages.constructor, TLRPC.TL_decryptedMessageActionScreenshotMessages.class);
+        classStore.put(TLRPC.TL_messageEcryptedAction.constructor, TLRPC.TL_messageEcryptedAction.class);
 
         classStore.put(TLRPC.TL_msg_container.constructor, TLRPC.TL_msg_container.class);
         classStore.put(TLRPC.TL_fileEncryptedLocation.constructor, TLRPC.TL_fileEncryptedLocation.class);

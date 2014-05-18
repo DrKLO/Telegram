@@ -182,7 +182,7 @@ public class PhotoCropActivity extends BaseFragment {
         }
 
         private void updateBitmapSize() {
-            if (viewWidth == 0 || viewHeight == 0) {
+            if (viewWidth == 0 || viewHeight == 0 || imageToCrop == null) {
                 return;
             }
             float percX = (rectX - bitmapX) / bitmapWidth;

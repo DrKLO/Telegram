@@ -28,8 +28,8 @@ public class ChatMessageCell extends ChatBaseCell {
     private int firstVisibleBlockNum = 0;
     private int totalVisibleBlocksCount = 0;
 
-    public ChatMessageCell(Context context, boolean isChat) {
-        super(context, isChat);
+    public ChatMessageCell(Context context) {
+        super(context, false);
         drawForwardedName = true;
     }
 
@@ -40,8 +40,8 @@ public class ChatMessageCell extends ChatBaseCell {
                 int x = (int)event.getX();
                 int y = (int)event.getY();
                 if (x >= textX && y >= textY && x <= textX + currentMessageObject.textWidth && y <= textY + currentMessageObject.textHeight) {
-                    y -= textY;
                     int blockNum = Math.max(0, y / currentMessageObject.blockHeight);
+                    y -= textY;
                     if (blockNum < currentMessageObject.textLayoutBlocks.size()) {
                         MessageObject.TextLayoutBlock block = currentMessageObject.textLayoutBlocks.get(blockNum);
                         x -= textX - (int)Math.ceil(block.textXOffset);
@@ -131,11 +131,12 @@ public class ChatMessageCell extends ChatBaseCell {
             }
             pressedLink = null;
             int maxWidth;
-            if (chat) {
+            if (isChat && !messageObject.isOut()) {
                 maxWidth = Utilities.displaySize.x - Utilities.dp(122);
                 drawName = true;
             } else {
                 maxWidth = Utilities.displaySize.x - Utilities.dp(80);
+                drawName = false;
             }
 
             backgroundWidth = maxWidth;
@@ -149,7 +150,7 @@ public class ChatMessageCell extends ChatBaseCell {
             maxChildWidth = Math.max(maxChildWidth, forwardedNameWidth);
 
             int timeMore = timeWidth + Utilities.dp(6);
-            if (messageObject.messageOwner.out) {
+            if (messageObject.isOut()) {
                 timeMore += Utilities.dpf(20.5f);
             }
 
@@ -176,11 +177,11 @@ public class ChatMessageCell extends ChatBaseCell {
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
 
-        if (currentMessageObject.messageOwner.out) {
+        if (currentMessageObject.isOut()) {
             textX = layoutWidth - backgroundWidth + Utilities.dp(10);
             textY = Utilities.dp(10) + namesOffset;
         } else {
-            textX = Utilities.dp(19) + (chat ? Utilities.dp(52) : 0);
+            textX = Utilities.dp(19) + (isChat ? Utilities.dp(52) : 0);
             textY = Utilities.dp(10) + namesOffset;
         }
     }
@@ -192,11 +193,11 @@ public class ChatMessageCell extends ChatBaseCell {
             return;
         }
 
-        if (currentMessageObject.messageOwner.out) {
+        if (currentMessageObject.isOut()) {
             textX = layoutWidth - backgroundWidth + Utilities.dp(10);
             textY = Utilities.dp(10) + namesOffset;
         } else {
-            textX = Utilities.dp(19) + (chat ? Utilities.dp(52) : 0);
+            textX = Utilities.dp(19) + (isChat ? Utilities.dp(52) : 0);
             textY = Utilities.dp(10) + namesOffset;
         }
 

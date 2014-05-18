@@ -34,6 +34,7 @@ public class ImageReceiver {
     public Integer TAG = null;
     public WeakReference<View> parentView = null;
     public int imageX = 0, imageY = 0, imageW = 0, imageH = 0;
+    private boolean selfSetting = false;
 
     public void setImage(TLRPC.FileLocation path, String filter, Drawable placeholder) {
         setImage(path, null, filter, placeholder, 0);
@@ -91,7 +92,9 @@ public class ImageReceiver {
             isPlaceholder = true;
             FileLoader.getInstance().loadImage(path, httpUrl, this, filter, true, size);
         } else {
+            selfSetting = true;
             setImageBitmap(img, currentPath);
+            selfSetting = false;
         }
     }
 
@@ -102,13 +105,38 @@ public class ImageReceiver {
         isPlaceholder = false;
         FileLoader.getInstance().incrementUseCount(currentPath);
         currentImage = new BitmapDrawable(null, bitmap);
-        if (parentView.get() != null) {
+        if (!selfSetting && parentView.get() != null) {
             if (imageW != 0) {
                 parentView.get().invalidate(imageX, imageY, imageX + imageW, imageY + imageH);
             } else {
                 parentView.get().invalidate();
             }
         }
+    }
+
+    public void setImageBitmap(Bitmap bitmap) {
+        FileLoader.getInstance().cancelLoadingForImageView(this);
+        recycleBitmap(null);
+        last_placeholder = new BitmapDrawable(null, bitmap);
+        currentPath = null;
+        last_path = null;
+        last_httpUrl = null;
+        last_filter = null;
+        currentImage = null;
+        last_size = 0;
+    }
+
+    public void setImageBitmap(Drawable bitmap) {
+        FileLoader.getInstance().cancelLoadingForImageView(this);
+        recycleBitmap(null);
+        last_placeholder = bitmap;
+        isPlaceholder = true;
+        currentPath = null;
+        currentImage = null;
+        last_path = null;
+        last_httpUrl = null;
+        last_filter = null;
+        last_size = 0;
     }
 
     public void clearImage() {
@@ -137,6 +165,7 @@ public class ImageReceiver {
                     } else {
                         currentImage = null;
                     }
+                    currentPath = null;
                 }
             }
         }
@@ -145,8 +174,30 @@ public class ImageReceiver {
     public void draw(Canvas canvas, int x, int y, int w, int h) {
         try {
             if (currentImage != null) {
-                currentImage.setBounds(x, y, x + w, y + h);
-                currentImage.draw(canvas);
+                int bitmapW = currentImage.getIntrinsicWidth();
+                int bitmapH = currentImage.getIntrinsicHeight();
+                float scaleW = bitmapW / (float)w;
+                float scaleH = bitmapH / (float)h;
+
+                if (Math.abs(scaleW - scaleH) > 0.05f) {
+                    canvas.save();
+                    canvas.clipRect(x, y, x + w, y + h);
+
+                    if (bitmapW / scaleH > w) {
+                        bitmapW /= scaleH;
+                        currentImage.setBounds(x - (bitmapW - w) / 2, y, x + (bitmapW + w) / 2, y + h);
+                    } else {
+                        bitmapH /= scaleW;
+                        currentImage.setBounds(x, y - (bitmapH - h) / 2, x + w, y + (bitmapH + h) / 2);
+                    }
+
+                    currentImage.draw(canvas);
+
+                    canvas.restore();
+                } else {
+                    currentImage.setBounds(x, y, x + w, y + h);
+                    currentImage.draw(canvas);
+                }
             } else if (last_placeholder != null) {
                 last_placeholder.setBounds(x, y, x + w, y + h);
                 last_placeholder.draw(canvas);
@@ -159,11 +210,5 @@ public class ImageReceiver {
             setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size);
             FileLog.e("tmessages", e);
         }
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        recycleBitmap(null);
-        super.finalize();
     }
 }

@@ -12,23 +12,26 @@ import android.animation.Animator;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
-import android.graphics.PixelFormat;
+import android.content.SharedPreferences;
 import android.graphics.Point;
 import android.os.Bundle;
 import android.support.v4.internal.view.SupportMenuItem;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Display;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.SlideView;
+
+import java.util.Map;
+import java.util.Set;
 
 public class LoginActivity extends ActionBarActivity implements SlideView.SlideViewDelegate {
     private int currentViewNum = 0;
@@ -41,14 +44,13 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
                 ((LoginActivityPhoneView)views[0]).selectCountry(data.getStringExtra("country"));
             }
         }
-//        if (views[currentViewNum] instanceof LoginActivityRegisterView) {
-//            ((LoginActivityRegisterView)views[currentViewNum]).avatarUpdater.onActivityResult(requestCode, resultCode, data);
-//        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        Utilities.checkForCrashes(this);
+        Utilities.checkForUpdates(this);
         ApplicationLoader.resetLastPauseTime();
     }
 
@@ -56,6 +58,90 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
     protected void onPause() {
         super.onPause();
         ApplicationLoader.lastPauseTime = System.currentTimeMillis();
+    }
+
+    private void saveCurrentState() {
+        try {
+            Bundle bundle = new Bundle();
+            bundle.putInt("currentViewNum", currentViewNum);
+            for (int a = 0; a <= currentViewNum; a++) {
+                SlideView v = views[a];
+                if (v != null) {
+                    v.saveStateParams(bundle);
+                }
+            }
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("logininfo", MODE_PRIVATE);
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.clear();
+            putBundleToEditor(bundle, editor, null);
+            editor.commit();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
+    private Bundle loadCurrentState() {
+        try {
+            Bundle bundle = new Bundle();
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("logininfo", MODE_PRIVATE);
+            Map<String, ?> params = preferences.getAll();
+            for (Map.Entry<String, ?> entry : params.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+                String[] args = key.split("_\\|_");
+                if (args.length == 1) {
+                    if (value instanceof String) {
+                        bundle.putString(key, (String) value);
+                    } else if (value instanceof Integer) {
+                        bundle.putInt(key, (Integer) value);
+                    }
+                } else if (args.length == 2) {
+                    Bundle inner = bundle.getBundle(args[0]);
+                    if (inner == null) {
+                        inner = new Bundle();
+                        bundle.putBundle(args[0], inner);
+                    }
+                    if (value instanceof String) {
+                        inner.putString(args[1], (String) value);
+                    } else if (value instanceof Integer) {
+                        inner.putInt(args[1], (Integer) value);
+                    }
+                }
+            }
+            return bundle;
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return null;
+    }
+
+    private void clearCurrentState() {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("logininfo", MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.clear();
+        editor.commit();
+    }
+
+    private void putBundleToEditor(Bundle bundle, SharedPreferences.Editor editor, String prefix) {
+        Set<String> keys = bundle.keySet();
+        for (String key : keys) {
+            Object obj = bundle.get(key);
+            if (obj instanceof String) {
+                if (prefix != null) {
+                    editor.putString(prefix + "_|_" + key, (String) obj);
+                } else {
+                    editor.putString(key, (String) obj);
+                }
+            } else if (obj instanceof Integer) {
+                if (prefix != null) {
+                    editor.putInt(prefix + "_|_" + key, (Integer) obj);
+                } else {
+                    editor.putInt(key, (Integer) obj);
+                }
+            } else if (obj instanceof Bundle) {
+                putBundleToEditor((Bundle)obj, editor, key);
+            }
+        }
     }
 
     public void ShowAlertDialog(final Activity activity, final String message) {
@@ -96,26 +182,30 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
 
         getSupportActionBar().setTitle(views[0].getHeaderName());
 
+        savedInstanceState = loadCurrentState();
         if (savedInstanceState != null) {
             currentViewNum = savedInstanceState.getInt("currentViewNum", 0);
         }
         for (int a = 0; a < views.length; a++) {
             SlideView v = views[a];
             if (v != null) {
+                if (savedInstanceState != null) {
+                    v.restoreStateParams(savedInstanceState);
+                }
                 v.delegate = this;
                 v.setVisibility(currentViewNum == a ? View.VISIBLE : View.GONE);
             }
         }
 
         getWindow().setBackgroundDrawableResource(R.drawable.transparent);
-        getWindow().setFormat(PixelFormat.RGB_565);
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.group_create_menu, menu);
-        SupportMenuItem doneItem = (SupportMenuItem)menu.findItem(R.id.done_menu_item);
+        SupportMenuItem doneItem = (SupportMenuItem)menu.add(Menu.NONE, 0, Menu.NONE, null);
+        doneItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
+        doneItem.setActionView(R.layout.group_create_done_layout);
+
         TextView doneTextView = (TextView)doneItem.getActionView().findViewById(R.id.done_button);
         doneTextView.setText(LocaleController.getString("Done", R.string.Done));
         doneTextView.setOnClickListener(new View.OnClickListener() {
@@ -151,7 +241,7 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
 
     @Override
     public void needShowProgress() {
-        Utilities.ShowProgressDialog(this, getResources().getString(R.string.Loading));
+        Utilities.ShowProgressDialog(this, LocaleController.getString("Loading", R.string.Loading));
     }
 
     @Override
@@ -239,7 +329,7 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putInt("currentViewNum", currentViewNum);
+        saveCurrentState();
     }
 
     @Override
@@ -247,5 +337,6 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
         Intent intent2 = new Intent(this, LaunchActivity.class);
         startActivity(intent2);
         finish();
+        clearCurrentState();
     }
 }

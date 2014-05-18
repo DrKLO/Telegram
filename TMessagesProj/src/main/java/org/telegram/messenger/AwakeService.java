@@ -37,7 +37,7 @@ public class AwakeService extends Service {
 
     public static void startService() {
         try {
-            if (MessagesController.isScreenOn && ApplicationLoader.lastPauseTime == 0) {
+            if (ApplicationLoader.isScreenOn && ApplicationLoader.lastPauseTime == 0) {
                 return;
             }
             timeout = 10000;

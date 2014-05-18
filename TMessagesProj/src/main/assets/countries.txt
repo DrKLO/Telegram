@@ -212,6 +212,7 @@
 45;DK;Denmark
 44;GB;United Kingdom
 43;AT;Austria
+42;YL;Y-land
 41;CH;Switzerland
 40;RO;Romania
 39;IT;Italy

@@ -27,11 +27,11 @@ package org.telegram.PhoneFormat;
 import java.util.ArrayList;
 
 public class CallingCodeInfo {
-    public ArrayList<String> countries;
-    public String callingCode;
-    public ArrayList<String> trunkPrefixes;
-    public ArrayList<String> intlPrefixes;
-    public ArrayList<RuleSet> ruleSets;
+    public ArrayList<String> countries = new ArrayList<String>();
+    public String callingCode = "";
+    public ArrayList<String> trunkPrefixes = new ArrayList<String>();
+    public ArrayList<String> intlPrefixes = new ArrayList<String>();
+    public ArrayList<RuleSet> ruleSets = new ArrayList<RuleSet>();
     //public ArrayList formatStrings;
 
     String matchingAccessCode(String str) {
