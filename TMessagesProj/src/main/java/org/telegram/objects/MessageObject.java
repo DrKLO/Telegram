@@ -425,6 +425,7 @@ public class MessageObject {
 
         int blocksCount = (int)Math.ceil((float)linesCount / LINES_PER_BLOCK);
         int linesOffset = 0;
+        float prevOffset = 0;
 
         for (int a = 0; a < blocksCount; a++) {
 
@@ -449,6 +450,9 @@ public class MessageObject {
                     block.textYOffset = textLayout.getLineTop(linesOffset);
                     if (a != blocksCount - 1) {
                         blockHeight = Math.min(blockHeight, block.textLayout.getHeight());
+                        prevOffset = block.textYOffset;
+                    } else {
+                        blockHeight = Math.min(blockHeight, (int)(block.textYOffset - prevOffset));
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);

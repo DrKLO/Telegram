@@ -40,8 +40,8 @@ public class ChatMessageCell extends ChatBaseCell {
                 int x = (int)event.getX();
                 int y = (int)event.getY();
                 if (x >= textX && y >= textY && x <= textX + currentMessageObject.textWidth && y <= textY + currentMessageObject.textHeight) {
-                    int blockNum = Math.max(0, y / currentMessageObject.blockHeight);
                     y -= textY;
+                    int blockNum = Math.max(0, y / currentMessageObject.blockHeight);
                     if (blockNum < currentMessageObject.textLayoutBlocks.size()) {
                         MessageObject.TextLayoutBlock block = currentMessageObject.textLayoutBlocks.get(blockNum);
                         x -= textX - (int)Math.ceil(block.textXOffset);
