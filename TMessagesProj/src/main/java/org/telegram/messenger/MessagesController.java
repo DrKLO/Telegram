@@ -37,10 +37,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.objects.MessageObject;
 import org.telegram.objects.PhotoObject;
-import org.telegram.objects.VibrationSpeed;
-import org.telegram.ui.Dialog.VibrationCountDialog;
-import org.telegram.ui.LaunchActivity;
+import org.telegram.objects.VibrationOptions;
 import org.telegram.ui.ApplicationLoader;
+import org.telegram.ui.LaunchActivity;
 
 import java.io.File;
 import java.math.BigInteger;
@@ -4512,14 +4511,14 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 needVibrate = false;
             }
 
-            VibrationSpeed speed = VibrationSpeed.getDefault();
-            int vibrationCount = VibrationCountDialog.DEFAULT_VIBRATION_COUNT;
+            VibrationOptions.VibrationSpeed speed = VibrationOptions.VibrationSpeed.getDefault();
+            int vibrationCount = VibrationOptions.DEFAULT_VIBRATION_COUNT;
             if(needVibrate) {
                 if (chat_id != 0) {
-                    speed = VibrationSpeed.fromValue(preferences.getInt("VibrationSpeedGroup", 0));
+                    speed = VibrationOptions.VibrationSpeed.fromValue(preferences.getInt("VibrationSpeedGroup", 0));
                     vibrationCount = preferences.getInt("VibrationCountGroup", vibrationCount);
                 } else if (user_id != 0) {
-                    speed = VibrationSpeed.fromValue(preferences.getInt("VibrationSpeed", 0));
+                    speed = VibrationOptions.VibrationSpeed.fromValue(preferences.getInt("VibrationSpeed", 0));
                     vibrationCount = preferences.getInt("VibrationCount", vibrationCount);
                 }
             }

@@ -22,7 +22,7 @@ import org.telegram.messenger.ConnectionsManager;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.ApplicationLoader;
 
-public class BaseFragment extends DialogFragment {
+public class BaseFragment extends Fragment {
     public int animationType = 0;
     public boolean isFinish = false;
     public View fragmentView;

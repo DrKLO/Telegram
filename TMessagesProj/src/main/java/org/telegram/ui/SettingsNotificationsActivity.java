@@ -9,8 +9,9 @@
 package org.telegram.ui;
 
 import android.app.Activity;
-import android.app.Dialog;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.Ringtone;
@@ -18,7 +19,6 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.support.v4.app.DialogFragment;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
@@ -32,18 +32,16 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.TLObject;
-import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
+import org.telegram.messenger.TLObject;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.Utilities;
-import org.telegram.objects.VibrationSpeed;
-import org.telegram.ui.Dialog.VibrationCountDialog;
-import org.telegram.ui.Dialog.VibrationSpeedDialog;
+import org.telegram.objects.VibrationOptions;
 import org.telegram.ui.Views.BaseFragment;
 import org.telegram.ui.Views.OnSwipeTouchListener;
 
@@ -169,57 +167,76 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     } else if (i == messageVibrationSpeedRow || i == groupVibrationSpeedRow) {
                         final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         final int index = i;
-                        VibrationSpeed speed = VibrationSpeed.getDefault();
+                        VibrationOptions.VibrationSpeed currentSpeed = VibrationOptions.VibrationSpeed.getDefault();
                         if (index == messageVibrationSpeedRow) {
-                            speed = VibrationSpeed.fromValue(preferences.getInt("VibrationSpeed", 0));
+                            currentSpeed = VibrationOptions.VibrationSpeed.fromValue(preferences.getInt("VibrationSpeed", 0));
                         } else if (index == groupVibrationSpeedRow) {
-                            speed = VibrationSpeed.fromValue(preferences.getInt("VibrationSpeedGroup", 0));
+                            currentSpeed = VibrationOptions.VibrationSpeed.fromValue(preferences.getInt("VibrationSpeedGroup", 0));
                         }
-                        VibrationSpeedDialog vibrationSpeedDialog = new VibrationSpeedDialog();
-                        Bundle args = new Bundle();
-                        args.putSerializable(VibrationSpeedDialog.KEY_CURRENT_SPEED, speed);
-                        args.putSerializable(VibrationSpeedDialog.KEY_LISTENER, new VibrationSpeedDialog.VibrationSpeedSelectionListener() {
-                            @Override
-                            public void onSpeedSelected(DialogFragment dialog, VibrationSpeed selectedSpeed) {
-                                SharedPreferences.Editor editor = preferences.edit();
-                                if (index == messageVibrationSpeedRow) {
-                                    editor.putInt("VibrationSpeed", selectedSpeed.getValue());
-                                } else if (index == groupVibrationSpeedRow) {
-                                    editor.putInt("VibrationSpeedGroup", selectedSpeed.getValue());
+
+                        VibrationOptions.VibrationSpeed[] vibrationSpeeds = VibrationOptions.VibrationSpeed.values();
+                        String speeds[] = new String[vibrationSpeeds.length];
+                        for(int j = 0, vl = vibrationSpeeds.length; j < vl; j++) {
+                            VibrationOptions.VibrationSpeed speedVal = vibrationSpeeds[j];
+                            speeds[j] = LocaleController.getString(speedVal.getLocaleKey(), speedVal.getResourceId());
+                        }
+                        int currentSpeedIndex = currentSpeed.getValue();
+
+                        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity)
+                            .setTitle(LocaleController.getString("VibrateSpeedTitle", R.string.VibrateSpeedTitle))
+                            .setSingleChoiceItems(speeds, currentSpeedIndex, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    VibrationOptions.VibrationSpeed selectedSpeed = VibrationOptions.VibrationSpeed.fromValue(which);
+
+                                    SharedPreferences.Editor editor = preferences.edit();
+                                    if (index == messageVibrationSpeedRow) {
+                                        editor.putInt("VibrationSpeed", selectedSpeed.getValue());
+                                    } else if (index == groupVibrationSpeedRow) {
+                                        editor.putInt("VibrationSpeedGroup", selectedSpeed.getValue());
+                                    }
+                                    editor.commit();
+                                    listView.invalidateViews();
+
+                                    dialog.dismiss();
                                 }
-                                editor.commit();
-                                listView.invalidateViews();
-                            }
-                        });
-                        vibrationSpeedDialog.setArguments(args);
-                        vibrationSpeedDialog.show(getFragmentManager(), "VibrationSpeedDialog");
+                            })
+                            .setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        builder.show().setCanceledOnTouchOutside(true);
                     } else if (i == messageVibrationCountRow || i == groupVibrationCountRow) {
                         final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         final int index = i;
-                        int count = VibrationCountDialog.DEFAULT_VIBRATION_COUNT;
+                        int count = VibrationOptions.DEFAULT_VIBRATION_COUNT;
                         if (index == messageVibrationCountRow) {
                             count = preferences.getInt("VibrationCount", count);
                         } else if (index == groupVibrationCountRow) {
                             count = preferences.getInt("VibrationCountGroup", count);
                         }
-                        VibrationCountDialog vibrationCountDialog = new VibrationCountDialog();
-                        Bundle args = new Bundle();
-                        args.putInt(VibrationCountDialog.KEY_CURRENT_COUNT, count);
-                        args.putSerializable(VibrationCountDialog.KEY_LISTENER, new VibrationCountDialog.VibrationCountSelectionListener() {
-                            @Override
-                            public void onCountSelected(DialogFragment dialog, int selectedCount) {
-                                SharedPreferences.Editor editor = preferences.edit();
-                                if (index == messageVibrationCountRow) {
-                                    editor.putInt("VibrationCount", selectedCount);
-                                } else if (index == groupVibrationCountRow) {
-                                    editor.putInt("VibrationCountGroup", selectedCount);
+
+                        String counts[] = new String[10];
+                        for(int j = 0, vl = counts.length; j < vl; j++)
+                            counts[j] = String.valueOf(j + 1);
+
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
+                            .setTitle(LocaleController.getString("VibrateCountTitle", R.string.VibrateCountTitle))
+                            .setSingleChoiceItems(counts, count - 1, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    int selectedCount = which + 1;
+
+                                    SharedPreferences.Editor editor = preferences.edit();
+                                    if (index == messageVibrationCountRow) {
+                                        editor.putInt("VibrationCount", selectedCount);
+                                    } else if (index == groupVibrationCountRow) {
+                                        editor.putInt("VibrationCountGroup", selectedCount);
+                                    }
+                                    editor.commit();
+                                    listView.invalidateViews();
+
+                                    dialog.dismiss();
                                 }
-                                editor.commit();
-                                listView.invalidateViews();
-                            }
-                        });
-                        vibrationCountDialog.setArguments(args);
-                        vibrationCountDialog.show(getFragmentManager(), "VibrateCountDialog");
+                            }).setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        builder.show().setCanceledOnTouchOutside(true);
                     } else if (i == messageSoundRow || i == groupSoundRow) {
                         try {
                             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
@@ -614,17 +631,17 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     textView.setText(LocaleController.getString("Sound", R.string.Sound));
                     divider.setVisibility(View.INVISIBLE);
                 } else if (i == messageVibrationSpeedRow || i == groupVibrationSpeedRow) {
-                    VibrationSpeed speed = VibrationSpeed.getDefault();
+                    VibrationOptions.VibrationSpeed speed = VibrationOptions.VibrationSpeed.getDefault();
                     if (i == messageVibrationSpeedRow) {
-                        speed = VibrationSpeed.fromValue(preferences.getInt("VibrationSpeed", 0));
+                        speed = VibrationOptions.VibrationSpeed.fromValue(preferences.getInt("VibrationSpeed", 0));
                     } else if (i == groupVibrationSpeedRow) {
-                        speed = VibrationSpeed.fromValue(preferences.getInt("VibrationSpeedGroup", 0));
+                        speed = VibrationOptions.VibrationSpeed.fromValue(preferences.getInt("VibrationSpeedGroup", 0));
                     }
                     textViewDetail.setText(LocaleController.getString(speed.getLocaleKey(), speed.getResourceId()));
                     textView.setText(LocaleController.getString("VibrateSpeed", R.string.VibrateSpeed));
                     divider.setVisibility(View.VISIBLE);
                 }  else if (i == messageVibrationCountRow || i == groupVibrationCountRow) {
-                    int count = VibrationCountDialog.DEFAULT_VIBRATION_COUNT;
+                    int count = VibrationOptions.DEFAULT_VIBRATION_COUNT;
                     if (i == messageVibrationCountRow) {
                         count = preferences.getInt("VibrationCount", count);
                     } else if (i == groupVibrationCountRow) {

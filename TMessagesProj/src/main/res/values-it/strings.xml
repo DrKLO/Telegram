@@ -271,8 +271,8 @@
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
     <string name="DeleteLocalization">Eliminare la localizzazione?</string>
     <string name="IncorrectLocalization">File della localizzazione non valido</string>
-    <string name="Enabled">Enabled</string>
-    <string name="Disabled">Disabled</string>
+    <string name="Enabled">Abilitato</string>
+    <string name="Disabled">Disabilitato</string>
 
     <!--media view-->
     <string name="NoMedia">Nessun media condiviso</string>
