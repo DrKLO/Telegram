@@ -239,26 +239,42 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         fragment.setArguments(args);
                         ((LaunchActivity)parentActivity).presentFragment(fragment, "user_" + user_id, false);
                     } else if (i == settingsVibrateRow || i == settingsNotificationsRow) {
+                        final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+
+                        final String key;
+                        if (i == settingsVibrateRow) {
+                            key = "vibrate_" + (-chat_id);
+                        } else if (i == settingsNotificationsRow) {
+                            key = "notify2_" + (-chat_id);
+                        } else {
+                            key = null;
+                        }
+                        int currentValue = preferences.getInt(key, 0);
+
                         AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
-                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                        builder.setItems(new CharSequence[] {
+                        if(i == settingsVibrateRow)
+                            builder.setTitle(LocaleController.getString("Vibrate", R.string.Vibrate));
+                        else
+                            builder.setTitle(LocaleController.getString("Notifications", R.string.Notifications));
+                        builder.setSingleChoiceItems(new CharSequence[] {
                                 LocaleController.getString("Default", R.string.Default),
                                 LocaleController.getString("Enabled", R.string.Enabled),
                                 LocaleController.getString("Disabled", R.string.Disabled)
-                        }, new DialogInterface.OnClickListener() {
+                        }, currentValue, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                                 SharedPreferences.Editor editor = preferences.edit();
-                                if (i == settingsVibrateRow) {
-                                    editor.putInt("vibrate_" + (-chat_id), which);
-                                } else if (i == settingsNotificationsRow) {
-                                    editor.putInt("notify2_" + (-chat_id), which);
-                                }
+
+                                if(which != 0)
+                                    editor.putInt(key, which);
+                                else
+                                    editor.remove(key);
                                 editor.commit();
                                 if (listView != null) {
                                     listView.invalidateViews();
                                 }
+
+                                dialog.dismiss();
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);

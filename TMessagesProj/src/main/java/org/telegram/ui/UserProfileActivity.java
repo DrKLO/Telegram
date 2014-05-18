@@ -169,34 +169,50 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         return;
                     }
                     if (i == settingsVibrateRow || i == settingsNotificationsRow) {
+                        final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+
+                        final String key;
+                        if (i == settingsVibrateRow) {
+                            if (dialog_id == 0) {
+                                key = "vibrate_" + user_id;
+                            } else {
+                                key = "vibrate_" + dialog_id;
+                            }
+                        } else if (i == settingsNotificationsRow) {
+                            if (dialog_id == 0) {
+                                key = "notify2_" + user_id;
+                            } else {
+                                key = "notify2_" + dialog_id;
+                            }
+                        } else {
+                            key = null;
+                        }
+                        int currentValue = preferences.getInt(key, 0);
+
                         AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
-                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                        builder.setItems(new CharSequence[] {
+                        if(i == settingsVibrateRow)
+                            builder.setTitle(LocaleController.getString("Vibrate", R.string.Vibrate));
+                        else
+                            builder.setTitle(LocaleController.getString("Notifications", R.string.Notifications));
+                        builder.setSingleChoiceItems(new CharSequence[] {
                                 LocaleController.getString("Default", R.string.Default),
                                 LocaleController.getString("Enabled", R.string.Enabled),
                                 LocaleController.getString("Disabled", R.string.Disabled)
-                        }, new DialogInterface.OnClickListener() {
+                        },currentValue, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                                 SharedPreferences.Editor editor = preferences.edit();
-                                if (i == settingsVibrateRow) {
-                                    if (dialog_id == 0) {
-                                        editor.putInt("vibrate_" + user_id, which);
-                                    } else {
-                                        editor.putInt("vibrate_" + dialog_id, which);
-                                    }
-                                } else if (i == settingsNotificationsRow) {
-                                    if (dialog_id == 0) {
-                                        editor.putInt("notify2_" + user_id, which);
-                                    } else {
-                                        editor.putInt("notify2_" + dialog_id, which);
-                                    }
-                                }
+
+                                if(which != 0)
+                                    editor.putInt(key, which);
+                                else
+                                    editor.remove(key);
                                 editor.commit();
                                 if (listView != null) {
                                     listView.invalidateViews();
                                 }
+
+                                dialog.dismiss();
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
