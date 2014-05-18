@@ -4514,12 +4514,14 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             VibrationOptions.VibrationSpeed speed = VibrationOptions.VibrationSpeed.getDefault();
             int vibrationCount = VibrationOptions.DEFAULT_VIBRATION_COUNT;
             if(needVibrate) {
+                int speedValueOverride = preferences.getInt("VibrationSpeed_" + dialog_id, -1);
+                int vibrationCountOverride = preferences.getInt("VibrationCount_" + dialog_id, -1);
                 if (chat_id != 0) {
-                    speed = VibrationOptions.VibrationSpeed.fromValue(preferences.getInt("VibrationSpeedGroup", 0));
-                    vibrationCount = preferences.getInt("VibrationCountGroup", vibrationCount);
+                    speed = VibrationOptions.VibrationSpeed.fromValue(speedValueOverride != -1 ? speedValueOverride : preferences.getInt("VibrationSpeedGroup", 0));
+                    vibrationCount = vibrationCountOverride != -1 ? vibrationCountOverride : preferences.getInt("VibrationCountGroup", vibrationCount);
                 } else if (user_id != 0) {
-                    speed = VibrationOptions.VibrationSpeed.fromValue(preferences.getInt("VibrationSpeed", 0));
-                    vibrationCount = preferences.getInt("VibrationCount", vibrationCount);
+                    speed = VibrationOptions.VibrationSpeed.fromValue(speedValueOverride != -1 ? speedValueOverride : preferences.getInt("VibrationSpeed", 0));
+                    vibrationCount = vibrationCountOverride != -1 ? vibrationCountOverride : preferences.getInt("VibrationCount", vibrationCount);
                 }
             }
 

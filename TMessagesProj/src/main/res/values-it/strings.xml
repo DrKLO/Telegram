@@ -238,7 +238,7 @@
     <string name="VibrateSpeedFast">Veloce</string>
     <string name="VibrateSpeedMedium">Media</string>
     <string name="VibrateSpeedSlow">Lenta</string>
-    <string name="VibrateSpeedDefault">Default</string>
+    <string name="VibrateSpeedDefault">Standard</string>
     <string name="VibrateCount">Numero di vibrazioni</string>
     <string name="VibrateCountTitle">Seleziona il numero di vibrazioni</string>
     <string name="InAppPreview">Anteprima in-app</string>

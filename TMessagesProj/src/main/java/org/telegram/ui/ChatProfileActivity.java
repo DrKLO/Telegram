@@ -44,6 +44,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.objects.VibrationOptions;
 import org.telegram.ui.Cells.ChatOrUserCell;
 import org.telegram.ui.Views.AvatarUpdater;
 import org.telegram.ui.Views.BackupImageView;
@@ -71,6 +72,8 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
     private int settingsSectionRow;
     private int settingsNotificationsRow;
     private int settingsVibrateRow;
+    private int settingsVibrationSpeedRow;
+    private int settingsVibrationCountRow;
     private int settingsSoundRow;
     private int sharedMediaSectionRow;
     private int sharedMediaRow;
@@ -112,6 +115,8 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         settingsSectionRow = rowCount++;
         settingsNotificationsRow = rowCount++;
         settingsVibrateRow = rowCount++;
+        settingsVibrationSpeedRow = rowCount++;
+        settingsVibrationCountRow = rowCount++;
         settingsSoundRow = rowCount++;
         sharedMediaSectionRow = rowCount++;
         sharedMediaRow = rowCount++;
@@ -256,7 +261,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                             builder.setTitle(LocaleController.getString("Vibrate", R.string.Vibrate));
                         else
                             builder.setTitle(LocaleController.getString("Notifications", R.string.Notifications));
-                        builder.setSingleChoiceItems(new CharSequence[] {
+                        builder.setSingleChoiceItems(new CharSequence[]{
                                 LocaleController.getString("Default", R.string.Default),
                                 LocaleController.getString("Enabled", R.string.Enabled),
                                 LocaleController.getString("Disabled", R.string.Disabled)
@@ -265,7 +270,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                             public void onClick(DialogInterface dialog, int which) {
                                 SharedPreferences.Editor editor = preferences.edit();
 
-                                if(which != 0)
+                                if (which != 0)
                                     editor.putInt(key, which);
                                 else
                                     editor.remove(key);
@@ -278,6 +283,78 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        builder.show().setCanceledOnTouchOutside(true);
+                    } else if(i == settingsVibrationSpeedRow) {
+                        final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        final String key = "VibrationSpeed_" + (-chat_id);
+
+                        VibrationOptions.VibrationSpeed[] vibrationSpeeds = VibrationOptions.VibrationSpeed.values();
+                        String speeds[] = new String[vibrationSpeeds.length + 1];
+                        speeds[0] = LocaleController.getString("Default", R.string.Default);
+                        for(int j = 0, vl = vibrationSpeeds.length; j < vl; j++) {
+                            VibrationOptions.VibrationSpeed speedVal = vibrationSpeeds[j];
+                            speeds[j + 1] = LocaleController.getString(speedVal.getLocaleKey(), speedVal.getResourceId());
+                        }
+                        int currentSpeedIndex = 0;
+
+                        int storedValue = preferences.getInt(key, -1);
+                        if(storedValue != -1) {
+                            VibrationOptions.VibrationSpeed currentSpeed = VibrationOptions.VibrationSpeed.fromValue(storedValue);
+                            currentSpeedIndex = currentSpeed.getValue() + 1; // index 0 is used to store the "Default" string
+                        }
+
+                        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity)
+                                .setTitle(LocaleController.getString("VibrateSpeedTitle", R.string.VibrateSpeedTitle))
+                                .setSingleChoiceItems(speeds, currentSpeedIndex, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        SharedPreferences.Editor editor = preferences.edit();
+                                        if(which != 0) {
+                                            which--;
+                                            VibrationOptions.VibrationSpeed selectedSpeed = VibrationOptions.VibrationSpeed.fromValue(which);
+
+                                            editor.putInt(key, selectedSpeed.getValue());
+                                        }
+                                        else
+                                            editor.remove(key);
+
+                                        editor.commit();
+                                        listView.invalidateViews();
+
+                                        dialog.dismiss();
+                                    }
+                                })
+                                .setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        builder.show().setCanceledOnTouchOutside(true);
+                    } else if(i == settingsVibrationCountRow) {
+                        final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        final String key = "VibrationCount_"  + (-chat_id);
+
+                        String counts[] = new String[11];
+                        counts[0] = LocaleController.getString("Default", R.string.Default);
+                        for(int j = 1, vl = counts.length; j < vl; j++)
+                            counts[j] = String.valueOf(j);
+
+                        int count = preferences.getInt(key, 0);
+
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
+                                .setTitle(LocaleController.getString("VibrateCountTitle", R.string.VibrateCountTitle))
+                                .setSingleChoiceItems(counts, count, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        SharedPreferences.Editor editor = preferences.edit();
+                                        if(which != 0) {
+                                            editor.putInt(key, which);
+                                        }
+                                        else
+                                            editor.remove(key);
+
+                                        editor.commit();
+                                        listView.invalidateViews();
+
+                                        dialog.dismiss();
+                                    }
+                                }).setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         builder.show().setCanceledOnTouchOutside(true);
                     }
                 }
@@ -568,7 +645,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
         @Override
         public boolean isEnabled(int i) {
-            return i == settingsNotificationsRow || i == settingsSoundRow || i == sharedMediaRow || i > membersSectionRow && i <= addMemberRow || i == settingsVibrateRow;
+            return i == settingsNotificationsRow || i == settingsSoundRow || i == sharedMediaRow || i > membersSectionRow && i <= addMemberRow || i == settingsVibrateRow || i == settingsVibrationSpeedRow || i == settingsVibrationCountRow;
         }
 
         @Override
@@ -735,6 +812,28 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     } else if (value == 2) {
                         detailTextView.setText(LocaleController.getString("Disabled", R.string.Disabled));
                     }
+                } else if(i == settingsVibrationSpeedRow) {
+                    textView.setText(LocaleController.getString("VibrateSpeed", R.string.VibrateSpeed));
+                    divider.setVisibility(View.VISIBLE);
+                    SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    int storedValue = preferences.getInt("VibrationSpeed_" + (-chat_id), -1);
+                    if(storedValue != -1) {
+                        VibrationOptions.VibrationSpeed speed = VibrationOptions.VibrationSpeed.fromValue(storedValue);
+                        detailTextView.setText(LocaleController.getString(speed.getLocaleKey(), speed.getResourceId()));
+                    }
+                    else
+                        detailTextView.setText(LocaleController.getString("Default", R.string.Default));
+
+                } else if(i == settingsVibrationCountRow) {
+                    textView.setText(LocaleController.getString("VibrateCount", R.string.VibrateCount));
+                    divider.setVisibility(View.VISIBLE);
+                    SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    int count = preferences.getInt("VibrationCount_"  + (-chat_id), -1);
+                    if(count != -1)
+                        detailTextView.setText(String.valueOf(count));
+                    else
+                        detailTextView.setText(LocaleController.getString("Default", R.string.Default));
+
                 }
             } else if (type == 3) {
                 TLRPC.TL_chatParticipant part = info.participants.get(sortedUsers.get(i - membersSectionRow - 1));
@@ -812,7 +911,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 return 0;
             } else if (i == settingsSectionRow || i == sharedMediaSectionRow || i == membersSectionRow) {
                 return 1;
-            } else if (i == sharedMediaRow || i == settingsVibrateRow || i == settingsNotificationsRow) {
+            } else if (i == sharedMediaRow || i == settingsVibrateRow || i == settingsNotificationsRow || i == settingsVibrationSpeedRow || i == settingsVibrationCountRow) {
                 return 2;
             } else if (i == settingsSoundRow) {
                 return 6;
