@@ -37,8 +37,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.objects.MessageObject;
 import org.telegram.objects.PhotoObject;
-import org.telegram.ui.LaunchActivity;
+import org.telegram.objects.VibrationOptions;
 import org.telegram.ui.ApplicationLoader;
+import org.telegram.ui.LaunchActivity;
 
 import java.io.File;
 import java.math.BigInteger;
@@ -4492,6 +4493,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     choosenSoundPath = preferences.getString("GroupSoundPath", defaultPath);
                 }
                 needVibrate = preferences.getBoolean("EnableVibrateGroup", true);
+
             } else if (user_id != 0) {
                 choosenSoundPath = preferences.getString("sound_path_" + user_id, null);
                 if (choosenSoundPath != null && choosenSoundPath.equals(defaultPath)) {
@@ -4500,12 +4502,27 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     choosenSoundPath = preferences.getString("GlobalSoundPath", defaultPath);
                 }
                 needVibrate = preferences.getBoolean("EnableVibrateAll", true);
+
             }
 
             if (!needVibrate && vibrate_override == 1) {
                 needVibrate = true;
             } else if (needVibrate && vibrate_override == 2) {
                 needVibrate = false;
+            }
+
+            VibrationOptions.VibrationSpeed speed = VibrationOptions.VibrationSpeed.getDefault();
+            int vibrationCount = VibrationOptions.DEFAULT_VIBRATION_COUNT;
+            if(needVibrate) {
+                int speedValueOverride = preferences.getInt("VibrationSpeed_" + dialog_id, -1);
+                int vibrationCountOverride = preferences.getInt("VibrationCount_" + dialog_id, -1);
+                if (chat_id != 0) {
+                    speed = VibrationOptions.VibrationSpeed.fromValue(speedValueOverride != -1 ? speedValueOverride : preferences.getInt("VibrationSpeedGroup", 0));
+                    vibrationCount = vibrationCountOverride != -1 ? vibrationCountOverride : preferences.getInt("VibrationCountGroup", vibrationCount);
+                } else if (user_id != 0) {
+                    speed = VibrationOptions.VibrationSpeed.fromValue(speedValueOverride != -1 ? speedValueOverride : preferences.getInt("VibrationSpeed", 0));
+                    vibrationCount = vibrationCountOverride != -1 ? vibrationCountOverride : preferences.getInt("VibrationCount", vibrationCount);
+                }
             }
 
             intent.setAction("com.tmessages.openchat" + Math.random() + Integer.MAX_VALUE);
@@ -4543,8 +4560,35 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             notification.ledOnMS = 1000;
             notification.ledOffMS = 1000;
             if (needVibrate) {
-                notification.defaults = Notification.DEFAULT_VIBRATE;
-                notification.vibrate = new long[]{0, 100, 0, 100};
+                long pause, duration;
+                switch (speed) {
+                    case FAST:
+                        pause = 0;
+                        duration = 100;
+                        break;
+                    case MEDIUM:
+                        pause = 200;
+                        duration = 300;
+                        break;
+                    case SLOW:
+                        pause = 200;
+                        duration = 800;
+                        break;
+                    case DEFAULT:
+                    default:
+                        pause = -1;
+                        duration = -1;
+                        notification.defaults = Notification.DEFAULT_VIBRATE;
+                }
+                if(pause >= 0 && duration >= 0) {
+                    long pattern[] = new long[vibrationCount * 2];
+                    pattern[0] = 0l;
+                    for(int i = 1, l = pattern.length; i < l; i++) {
+                        pattern[i] = ((i % 2 != 0) ? duration : pause);
+                    }
+
+                    notification.vibrate = pattern;
+                }
             } else {
                 notification.vibrate = new long[]{0, 0};
             }
