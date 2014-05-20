@@ -22,9 +22,6 @@ dependencies {
     compile 'com.google.android.gms:play-services:4.3.23'
     compile 'net.hockeyapp.android:HockeySDK:3.0.1'
     compile project(':aniways')
-    compile files('libs/AniwaysGoogleAnalytics.jar')
-    compile files('libs/AniwaysGson.jar')
-    compile files('libs/AniwaysSupport.jar')
 }
 
 android {
@@ -57,11 +54,15 @@ android {
         debug {
             debuggable false
             jniDebugBuild false
+            runProguard true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
             signingConfig signingConfigs.debug
         }
         release {
             debuggable false
             jniDebugBuild false
+            runProguard true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
             signingConfig signingConfigs.release
         }
         foss {
@@ -91,7 +92,7 @@ android {
     defaultConfig {
         minSdkVersion 9
         targetSdkVersion 19
-        versionCode 214
-        versionName "1.5.1"
+        versionCode 217
+        versionName "1.5.4"
     }
 }

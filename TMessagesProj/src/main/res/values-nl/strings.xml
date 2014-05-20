@@ -3,7 +3,7 @@
 <!--https://www.transifex.com/projects/p/telegram/language/nl/members/-->
 
 <resources>
-    <string name="AppName">Anygram</string>
+    <string name="AppName">Telegram Aniways</string>
 
     <string name="LanguangeName">Nederlands</string>
     <string name="LanguangeNameInEnglish">Dutch</string>
@@ -156,7 +156,7 @@
     <!--contacts view-->
     <string name="SelectContact">Kies een contact</string>
     <string name="NoContacts">Nog geen contacten</string>
-    <string name="InviteText">Hoi, zullen we overstappen op Anygram? http://aniways.com/anygram/dl2</string>
+    <string name="InviteText">Hoi, zullen we overstappen op Telegram Aniways? http://aniways.com/anygram/dl2</string>
     <string name="TodayAt">vandaag om</string>
     <string name="YesterdayAt">gisteren om</string>
     <string name="OtherAt">om</string>
@@ -333,7 +333,7 @@
     <string name="Loading">Bezig met laden…</string>
     <string name="NoPlayerInstalled">U hebt geen mediaspeler. Installeer een mediaspeler om door te gaan.</string>
     <string name="NoHandleAppInstalled">U hebt geen applicaties die het MIME-type \'%1$s\' ondersteunen. Installeer een geschikte applicatie om door te gaan.</string>
-    <string name="InviteUser">Deze gebruiker heeft nog geen Anygram. Wilt u een uitnodiging sturen?</string>
+    <string name="InviteUser">Deze gebruiker heeft nog geen Telegram Aniways. Wilt u een uitnodiging sturen?</string>
     <string name="AreYouSure">Weet u het zeker?</string>
     <string name="AddContactQ">Contact toevoegen?</string>
     <string name="AddToTheGroup">%1$s toevoegen aan de groep?</string>
@@ -341,7 +341,7 @@
     <string name="DeleteChatQuestion">Dit gesprek verwijderen?</string>
 
     <!--Intro view-->
-    <string name="Page1Title">Anygram</string>
+    <string name="Page1Title">Telegram Aniways</string>
     <string name="Page2Title">Snel</string>
     <string name="Page3Title">Gratis</string>
     <string name="Page4Title">Veilig</string>
@@ -349,12 +349,12 @@
     <string name="Page6Title">In de cloud</string>
     <string name="Page7Title">Privé</string>
     <string name="Page1Message">Welkom in het tijdperk van snel en veilig chatten</string>
-    <string name="Page2Message"><![CDATA[<b>Anygram</b>]]> bezorgt berichten sneller dan elke andere app</string>
-    <string name="Page3Message"><![CDATA[<b>Anygram</b>]]> is altijd gratis. Geen advertenties. Geen abonnementskosten</string>
-    <string name="Page4Message"><![CDATA[<b>Anygram</b>]]> beveiligt uw berichten tegen hackers</string>
-    <string name="Page5Message"><![CDATA[<b>Anygram</b>]]> heeft geen beperkingen op de grootte van uw media en gesprekken</string>
-    <string name="Page6Message"><![CDATA[<b>Anygram</b>]]> biedt toegang tot uw berichten vanaf meerdere apparaten</string>
-    <string name="Page7Message"><![CDATA[<b>Anygram</b>]]> berichten zijn sterk versleuteld en kunnen zichzelf vernietigen</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram Aniways</b>]]> bezorgt berichten sneller dan elke andere app</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram Aniways</b>]]> is altijd gratis. Geen advertenties. Geen abonnementskosten</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram Aniways</b>]]> beveiligt uw berichten tegen hackers</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram Aniways</b>]]> heeft geen beperkingen op de grootte van uw media en gesprekken</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram Aniways</b>]]> biedt toegang tot uw berichten vanaf meerdere apparaten</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram Aniways</b>]]> berichten zijn sterk versleuteld en kunnen zichzelf vernietigen</string>
     <string name="StartMessaging">Begin nu met chatten</string>
 
     <!--Don't change this! Not for localization!-->

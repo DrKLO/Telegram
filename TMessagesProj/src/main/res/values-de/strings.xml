@@ -3,7 +3,7 @@
 <!--Translation by iLLogical2007, DanielGroeger and everyone from https://github.com/DrKLO/Telegram/pull/129 whom I didn't notice -->
 
 <resources>
-    <string name="AppName">Anygram</string>
+    <string name="AppName">Telegram Aniways</string>
 
     <string name="LanguangeName">Deutsch</string>
     <string name="LanguangeNameInEnglish">German</string>
@@ -333,7 +333,7 @@
     <string name="Loading">Lädt …</string>
     <string name="NoPlayerInstalled">Du hast keinen Videoplayer. Bitte installiere einen um fortzufahren.</string>
     <string name="NoHandleAppInstalled">Du hast keine App, die den Dokumententyp \'%1$s\' öffnen kann.</string>
-    <string name="InviteUser">Dieser Benutzer hat noch kein Anygram. Möchtest du ihn einladen?</string>
+    <string name="InviteUser">Dieser Benutzer hat noch kein Telegram Aniways. Möchtest du ihn einladen?</string>
     <string name="AreYouSure">Bist du sicher?</string>
     <string name="AddContactQ">Kontakt hinzufügen?</string>
     <string name="AddToTheGroup">%1$s zur Gruppe hinzufügen?</string>
@@ -341,7 +341,7 @@
     <string name="DeleteChatQuestion">Diesen Chat löschen?</string>
 
     <!--Intro view-->
-    <string name="Page1Title">Anygram</string>
+    <string name="Page1Title">Telegram Aniways</string>
     <string name="Page2Title">Schnell</string>
     <string name="Page3Title">Kostenlos</string>
     <string name="Page4Title">Sicher</string>
@@ -349,12 +349,12 @@
     <string name="Page6Title">Cloud-Basiert</string>
     <string name="Page7Title">Vertraulich</string>
     <string name="Page1Message">Willkommen im Zeitalter der sicheren und schnellen Kommunikation.</string>
-    <string name="Page2Message"><![CDATA[<b>Anygram</b>]]> stellt Nachrichten schneller<![CDATA[<br/>]]>zu als andere Anwendungen</string>
-    <string name="Page3Message"><![CDATA[<b>Anygram</b>]]> ist für immer kostenlos.<![CDATA[<br/>]]>Keine Werbung. Keine wiederkehrenden Kosten.</string>
-    <string name="Page4Message"><![CDATA[<b>Anygram</b>]]> schützt deine Nachrichten<![CDATA[<br/>]]>vor Hacker-Angriffen</string>
-    <string name="Page5Message"><![CDATA[<b>Anygram</b>]]> hat keine Grenzen in Sachen<![CDATA[<br/>]]>Größe deiner Chats und Medien</string>
-    <string name="Page6Message"><![CDATA[<b>Anygram</b>]]> lässt sich von verschiedenen<![CDATA[<br/>]]>Geräten gleichzeitig nutzen</string>
-    <string name="Page7Message"><![CDATA[<b>Anygram</b>]]>-Nachrichten sind stark<![CDATA[<br/>]]>verschlüsselt und können sich selbst zerstören</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram Aniways</b>]]> stellt Nachrichten schneller<![CDATA[<br/>]]>zu als andere Anwendungen</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram Aniways</b>]]> ist für immer kostenlos.<![CDATA[<br/>]]>Keine Werbung. Keine wiederkehrenden Kosten.</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram Aniways</b>]]> schützt deine Nachrichten<![CDATA[<br/>]]>vor Hacker-Angriffen</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram Aniways</b>]]> hat keine Grenzen in Sachen<![CDATA[<br/>]]>Größe deiner Chats und Medien</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram Aniways</b>]]> lässt sich von verschiedenen<![CDATA[<br/>]]>Geräten gleichzeitig nutzen</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram Aniways</b>]]>-Nachrichten sind stark<![CDATA[<br/>]]>verschlüsselt und können sich selbst zerstören</string>
     <string name="StartMessaging">Jetzt beginnen</string>
 
     <!--Don't change this! Not for localization!-->

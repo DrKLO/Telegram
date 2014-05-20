@@ -34,6 +34,7 @@ import android.support.v7.app.ActionBarActivity;
 import android.text.Html;
 import android.util.SparseArray;
 
+import com.aniways.Log;
 import com.aniways.anigram.messenger.R;
 
 import org.json.JSONArray;
@@ -1834,6 +1835,31 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 reqSend.message = message;
                 reqSend.peer = sendToPeer;
                 reqSend.random_id = newMsg.random_id;
+
+                //TODO: Daniel: reqSend.user != null - this is a message to only one user. chat != null it is a message to group.
+                // If it is for user then the user is id for users.get(reqSend.user). If it is a group then we need to pass the contents of ths
+                // private TLRPC.ChatParticipants info = null; field from the ChatActivity and get all users.
+                // Then, we need to post to Ram's push notifications server
+                /*
+                for (NSString* participaintNumber in participantNumbers) {
+            NSURL *aUrl = [NSURL URLWithString:@"http://obscure-headland-7367.herokuapp.com/sendNotification"];
+            NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:aUrl
+                                                                   cachePolicy:NSURLRequestUseProtocolCachePolicy
+                                                               timeoutInterval:60.0];
+            [request setHTTPMethod:@"POST"];
+            NSString* message = [[inputMessages firstObject] objectForKey:@"text"];
+            message = (message) ? message : @"attacment received";
+            NSString *postString = [NSString stringWithFormat:@"notification-phone=%@&notification-message=%@",participaintNumber,message];
+            [request setHTTPBody:[postString dataUsingEncoding:NSUTF8StringEncoding]];
+
+            NSURLConnection *connection= [[NSURLConnection alloc] initWithRequest:request
+                                                                         delegate:self];
+
+            [connection start];
+        }
+
+                 */
+
                 performSendMessageRequest(reqSend, newMsgObj);
             } else {
                 TLRPC.TL_decryptedMessage reqSend = new TLRPC.TL_decryptedMessage();

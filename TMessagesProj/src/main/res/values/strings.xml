@@ -3,7 +3,7 @@
 <!--Translated by Telegram Team, corrected by Florian Keller-->
 
 <resources>
-    <string name="AppName">Anygram</string>
+    <string name="AppName">Telegram Aniways</string>
 
     <string name="LanguangeName">English</string>
     <string name="LanguangeNameInEnglish">English</string>
@@ -156,7 +156,7 @@
     <!--contacts view-->
     <string name="SelectContact">Select Contact</string>
     <string name="NoContacts">No contacts yet</string>
-    <string name="InviteText">Hey, let\'s switch to Anygram: http://aniways.com/anygram/dl2</string>
+    <string name="InviteText">Hey, let\'s switch to Telegram Aniways: http://aniways.com/anygram/dl2</string>
     <string name="TodayAt">today at</string>
     <string name="YesterdayAt">yesterday at</string>
     <string name="OtherAt">at</string>
@@ -333,7 +333,7 @@
     <string name="Loading">Loading...</string>
     <string name="NoPlayerInstalled">You don\'t have a video player, please install one to continue</string>
     <string name="NoHandleAppInstalled">You don\'t have any application that can handle with mime type \'%1$s\', please install one to continue</string>
-    <string name="InviteUser">This user does not have Anygram yet, send an invitation?</string>
+    <string name="InviteUser">This user does not have Telegram Aniways yet, send an invitation?</string>
     <string name="AreYouSure">Are you sure?</string>
     <string name="AddContactQ">Add contact?</string>
     <string name="AddToTheGroup">Add %1$s to the group?</string>
@@ -341,7 +341,7 @@
     <string name="DeleteChatQuestion">Delete this chat?</string>
 
     <!--Intro view-->
-    <string name="Page1Title">Anygram</string>
+    <string name="Page1Title">Telegram Aniways</string>
     <string name="Page2Title">Fast</string>
     <string name="Page3Title">Free</string>
     <string name="Page4Title">Secure</string>
@@ -349,12 +349,12 @@
     <string name="Page6Title">Cloud-Based</string>
     <string name="Page7Title">Private</string>
     <string name="Page1Message">Welcome to the era of fast and secure messaging</string>
-    <string name="Page2Message"><![CDATA[<b>Anygram</b>]]> delivers messages faster than<![CDATA[<br/>]]>any other application</string>
-    <string name="Page3Message"><![CDATA[<b>Anygram</b>]]> is free forever. No ads.<![CDATA[<br/>]]>No subscription fees</string>
-    <string name="Page4Message"><![CDATA[<b>Anygram</b>]]> keeps your messages safe<![CDATA[<br/>]]>from hacker attacks</string>
-    <string name="Page5Message"><![CDATA[<b>Anygram</b>]]> has no limits on the size of<![CDATA[<br/>]]>your media and chats</string>
-    <string name="Page6Message"><![CDATA[<b>Anygram</b>]]> lets you access your messages<![CDATA[<br/>]]>from multiple devices</string>
-    <string name="Page7Message"><![CDATA[<b>Anygram</b>]]> messages are heavily encrypted<![CDATA[<br/>]]>and can self-destruct</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram Aniways</b>]]> delivers messages faster than<![CDATA[<br/>]]>any other application</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram Aniways</b>]]> is free forever. No ads.<![CDATA[<br/>]]>No subscription fees</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram Aniways</b>]]> keeps your messages safe<![CDATA[<br/>]]>from hacker attacks</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram Aniways</b>]]> has no limits on the size of<![CDATA[<br/>]]>your media and chats</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram Aniways</b>]]> lets you access your messages<![CDATA[<br/>]]>from multiple devices</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram Aniways</b>]]> messages are heavily encrypted<![CDATA[<br/>]]>and can self-destruct</string>
     <string name="StartMessaging">Start Messaging</string>
 
     <!--Don't change this! Not for localization!-->
