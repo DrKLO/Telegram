@@ -43,8 +43,6 @@
 
         <uses-library android:name="com.google.android.maps" android:required="false"/>
 
-        <service android:name=".AwakeService"/>
-
     </application>
 
 </manifest>

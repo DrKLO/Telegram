@@ -38,6 +38,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="false"
@@ -143,6 +144,15 @@
             <meta-data android:name="android.provider.CONTACTS_STRUCTURE"
                 android:resource="@xml/contacts" />
         </service>
+
+        <service android:name="org.telegram.messenger.NotificationsService" android:enabled="true"/>
+
+        <receiver android:name="org.telegram.messenger.AppStartReceiver" android:enabled="true">
+            <intent-filter>
+                <action android:name="org.telegram.start" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

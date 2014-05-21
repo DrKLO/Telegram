@@ -49,8 +49,6 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
                 }
             }
 
-            AwakeService.startService();
-
             Utilities.RunOnUIThread(new Runnable() {
                 @Override
                 public void run() {

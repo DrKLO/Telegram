@@ -40,6 +40,10 @@ public class ConnectionContext extends PyroClientAdapter {
         sessionId = isDebugSession ? (0xabcd000000000000L | (newSessionId & 0x0000ffffffffffffL)) : newSessionId;
     }
 
+    public void setSessionId(long id) {
+        sessionId = id;
+    }
+
     public long getSissionId() {
         return sessionId;
     }

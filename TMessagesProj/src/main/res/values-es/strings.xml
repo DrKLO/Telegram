@@ -265,6 +265,8 @@
     <string name="IncorrectLocalization">Fichero de localización incorrecto</string>
     <string name="Enabled">Enabled</string>
     <string name="Disabled">Disabled</string>
+    <string name="NotificationsService">Notifications Service</string>
+    <string name="NotificationsServiceDisableInfo">If google play services are enough for you to receive notifications, you can disable Notifications Service. However we recommend you to leave it enabled to keep app running in background and receive instant notifications.</string>
 
     <!--media view-->
     <string name="NoMedia">No hay fotos ni vídeos compartidos aún</string>

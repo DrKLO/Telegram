@@ -127,10 +127,18 @@ public class TcpConnection extends ConnectionContext {
                     }
                     client = selector.connect(new InetSocketAddress(hostAddress, hostPort));
                     client.addListener(TcpConnection.this);
-                    if (isNextPort) {
-                        client.setTimeout(8000);
+                    if ((transportRequestClass & RPCRequest.RPCRequestClassPush) != 0) {
+                        if (isNextPort) {
+                            client.setTimeout(15000);
+                        } else {
+                            client.setTimeout(30000);
+                        }
                     } else {
-                        client.setTimeout(15000);
+                        if (isNextPort) {
+                            client.setTimeout(8000);
+                        } else {
+                            client.setTimeout(15000);
+                        }
                     }
                     selector.wakeup();
                 } catch (Exception e) {
@@ -270,7 +278,7 @@ public class TcpConnection extends ConnectionContext {
         connect();
     }
 
-    public void sendData(final byte[] data, final ByteBufferDesc buff, final boolean reportAck, final boolean startResponseTimeout) {
+    public void sendData(final byte[] data, final ByteBufferDesc buff, final boolean reportAck) {
         if (data == null && buff == null) {
             return;
         }
@@ -408,7 +416,11 @@ public class TcpConnection extends ConnectionContext {
                 Datacenter datacenter = ConnectionsManager.getInstance().datacenterWithId(datacenterId);
                 datacenter.storeCurrentAddressAndPortNum();
                 isNextPort = false;
-                client.setTimeout(25000);
+                if ((transportRequestClass & RPCRequest.RPCRequestClassPush) != 0) {
+                    client.setTimeout(40000);
+                } else {
+                    client.setTimeout(25000);
+                }
             }
             hasSomeDataSinceLastConnect = true;
 
