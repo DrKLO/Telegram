@@ -533,16 +533,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                     }
                 }
             } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
-                int width = (int)(Math.min(displaySize.x, displaySize.y) * 0.7f);
-                int height = width + Utilities.dp(100);
-                if (width > 800) {
-                    width = 800;
-                }
-                if (height > 800) {
-                    height = 800;
-                }
-
-                TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, width, height);
+                TLRPC.PhotoSize sizeFull = getPhotoFullSize(message.messageOwner.media.photo.sizes);
                 if (sizeFull != null) {
                     TLRPC.TL_inputFileLocation location = new TLRPC.TL_inputFileLocation();
                     location.local_id = sizeFull.location.local_id;
@@ -559,6 +550,25 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
             }
         }
         return null;
+    }
+
+    protected TLRPC.PhotoSize getPhotoFullSize(ArrayList<TLRPC.PhotoSize> sizes) {
+        if(sizes != null && !sizes.isEmpty()) {
+            int width = 1000;
+            int height = 1000;
+//            width = (int) (Math.min(displaySize.x, displaySize.y) * 0.7f);
+//            height = width + Utilities.dp(100);
+//            if (width > 800) {
+//                width = 800;
+//            }
+//            if (height > 800) {
+//                height = 800;
+//            }
+
+            return PhotoObject.getClosestPhotoSizeWithSize(sizes, width, height);
+        }
+        else
+            return null;
     }
 
     @Override
@@ -999,7 +1009,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                             height = 800;
                         }
 
-                        TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(sizes, width, height);
+                        TLRPC.PhotoSize sizeFull = getPhotoFullSize(sizes);
                         if (message.imagePreview != null) {
                             iv.setImage(sizeFull.location, null, message.imagePreview, sizeFull.size);
                         } else {
