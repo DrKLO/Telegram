@@ -96,6 +96,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int telegramFaqRow;
     private int languageRow;
     private int versionRow;
+    private int contactsSectionRow;
+    private int contactsReimportRow;
+    private int contactsSortRow;
     private int rowCount;
 
     private static class LinkMovementMethodMy extends LinkMovementMethod {
@@ -192,6 +195,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         messagesSectionRow = rowCount++;
         textSizeRow = rowCount++;
         sendByEnterRow = rowCount++;
+        //contactsSectionRow = rowCount++;
+        //contactsSortRow = rowCount++;
+        //contactsReimportRow = rowCount++;
         supportSectionRow = rowCount++;
         if (BuildVars.DEBUG_VERSION) {
             sendLogsRow = rowCount++;
@@ -228,7 +234,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             listView.setAdapter(listAdapter);
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
-                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
                     if (parentActivity == null) {
                         return;
                     }
@@ -328,42 +334,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         builder.show().setCanceledOnTouchOutside(true);
-                    } else if (i == photoDownloadChatRow) {
-                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                        boolean value = preferences.getBoolean("photo_download_chat", true);
-                        SharedPreferences.Editor editor = preferences.edit();
-                        editor.putBoolean("photo_download_chat", !value);
-                        editor.commit();
-                        if (listView != null) {
-                            listView.invalidateViews();
-                        }
-                    } else if (i == photoDownloadPrivateRow) {
-                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                        boolean value = preferences.getBoolean("photo_download_user", true);
-                        SharedPreferences.Editor editor = preferences.edit();
-                        editor.putBoolean("photo_download_user", !value);
-                        editor.commit();
-                        if (listView != null) {
-                            listView.invalidateViews();
-                        }
-                    } else if (i == audioDownloadChatRow) {
-                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                        boolean value = preferences.getBoolean("audio_download_chat", true);
-                        SharedPreferences.Editor editor = preferences.edit();
-                        editor.putBoolean("audio_download_chat", !value);
-                        editor.commit();
-                        if (listView != null) {
-                            listView.invalidateViews();
-                        }
-                    } else if (i == audioDownloadPrivateRow) {
-                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                        boolean value = preferences.getBoolean("audio_download_user", true);
-                        SharedPreferences.Editor editor = preferences.edit();
-                        editor.putBoolean("audio_download_user", !value);
-                        editor.commit();
-                        if (listView != null) {
-                            listView.invalidateViews();
-                        }
                     } else if (i == languageRow) {
                         ((LaunchActivity)parentActivity).presentFragment(new LanguageSelectActivity(), "settings_lang", false);
                     } else if (i == switchBackendButtonRow) {
@@ -385,6 +355,58 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
                         }
+                    } else if (i == contactsReimportRow) {
+
+                    } else if (i == contactsSortRow) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                        builder.setTitle(LocaleController.getString("SortBy", R.string.SortBy));
+                        builder.setItems(new CharSequence[] {
+                                LocaleController.getString("Default", R.string.Default),
+                                LocaleController.getString("SortFirstName", R.string.SortFirstName),
+                                LocaleController.getString("SortLastName", R.string.SortLastName)
+                        }, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                editor.putInt("sortContactsBy", which);
+                                editor.commit();
+                                if (listView != null) {
+                                    listView.invalidateViews();
+                                }
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        builder.show().setCanceledOnTouchOutside(true);
+                    } else if (i == photoDownloadChatRow || i == photoDownloadPrivateRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setItems(new CharSequence[] {
+                                LocaleController.getString("Enabled", R.string.Enabled),
+                                LocaleController.getString("Disabled", R.string.Disabled),
+                                LocaleController.getString("WiFiOnly", R.string.WiFiOnly)
+                        }, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                if (i == photoDownloadChatRow) {
+                                    editor.putInt("photo_download_chat2", which);
+                                } else if (i == photoDownloadPrivateRow) {
+                                    editor.putInt("photo_download_user2", which);
+                                } else if (i == audioDownloadChatRow) {
+                                    editor.putInt("audio_download_chat2", which);
+                                } else if (i == audioDownloadPrivateRow) {
+                                    editor.putInt("audio_download_user2", which);
+                                }
+                                editor.commit();
+                                if (listView != null) {
+                                    listView.invalidateViews();
+                                }
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        builder.show().setCanceledOnTouchOutside(true);
                     }
                 }
             });
@@ -617,7 +639,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             return i == textSizeRow || i == enableAnimationsRow || i == blockedRow || i == notificationRow || i == backgroundRow ||
                     i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == terminateSessionsRow || i == photoDownloadPrivateRow ||
                     i == photoDownloadChatRow || i == clearLogsRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow || i == languageRow ||
-                    i == switchBackendButtonRow || i == telegramFaqRow;
+                    i == switchBackendButtonRow || i == telegramFaqRow || i == contactsSortRow || i == contactsReimportRow;
         }
 
         @Override
@@ -789,6 +811,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     textView.setText(LocaleController.getString("AutomaticPhotoDownload", R.string.AutomaticPhotoDownload));
                 } else if (i == audioDownloadSection) {
                     textView.setText(LocaleController.getString("AutomaticAudioDownload", R.string.AutomaticAudioDownload));
+                } else if (i == contactsSectionRow) {
+                    textView.setText(LocaleController.getString("Contacts", R.string.Contacts).toUpperCase());
                 }
             } else if (type == 2) {
                 if (view == null) {
@@ -832,6 +856,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 } else if (i == telegramFaqRow) {
                     textView.setText(LocaleController.getString("TelegramFAQ", R.string.TelegramFaq));
                     divider.setVisibility(View.VISIBLE);
+                } else if (i == contactsReimportRow) {
+                    textView.setText(LocaleController.getString("ImportContacts", R.string.ImportContacts));
+                    divider.setVisibility(View.INVISIBLE);
                 }
             } else if (type == 3) {
                 if (view == null) {
@@ -855,42 +882,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     textView.setText(LocaleController.getString("SendByEnter", R.string.SendByEnter));
                     divider.setVisibility(View.INVISIBLE);
                     boolean enabled = preferences.getBoolean("send_by_enter", false);
-                    if (enabled) {
-                        checkButton.setImageResource(R.drawable.btn_check_on);
-                    } else {
-                        checkButton.setImageResource(R.drawable.btn_check_off);
-                    }
-                } else if (i == photoDownloadChatRow) {
-                    textView.setText(LocaleController.getString("AutomaticPhotoDownloadGroups", R.string.AutomaticPhotoDownloadGroups));
-                    divider.setVisibility(View.VISIBLE);
-                    boolean enabled = preferences.getBoolean("photo_download_chat", true);
-                    if (enabled) {
-                        checkButton.setImageResource(R.drawable.btn_check_on);
-                    } else {
-                        checkButton.setImageResource(R.drawable.btn_check_off);
-                    }
-                } else if (i == photoDownloadPrivateRow) {
-                    textView.setText(LocaleController.getString("AutomaticPhotoDownloadPrivateChats", R.string.AutomaticPhotoDownloadPrivateChats));
-                    divider.setVisibility(View.INVISIBLE);
-                    boolean enabled = preferences.getBoolean("photo_download_user", true);
-                    if (enabled) {
-                        checkButton.setImageResource(R.drawable.btn_check_on);
-                    } else {
-                        checkButton.setImageResource(R.drawable.btn_check_off);
-                    }
-                } else if (i == audioDownloadChatRow) {
-                    textView.setText(LocaleController.getString("AutomaticPhotoDownloadGroups", R.string.AutomaticPhotoDownloadGroups));
-                    divider.setVisibility(View.VISIBLE);
-                    boolean enabled = preferences.getBoolean("audio_download_chat", true);
-                    if (enabled) {
-                        checkButton.setImageResource(R.drawable.btn_check_on);
-                    } else {
-                        checkButton.setImageResource(R.drawable.btn_check_off);
-                    }
-                } else if (i == audioDownloadPrivateRow) {
-                    textView.setText(LocaleController.getString("AutomaticPhotoDownloadPrivateChats", R.string.AutomaticPhotoDownloadPrivateChats));
-                    divider.setVisibility(View.INVISIBLE);
-                    boolean enabled = preferences.getBoolean("audio_download_user", true);
                     if (enabled) {
                         checkButton.setImageResource(R.drawable.btn_check_on);
                     } else {
@@ -952,6 +943,66 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     detailTextView.setText(LocaleController.getCurrentLanguageName());
                     textView.setText(LocaleController.getString("Language", R.string.Language));
                     divider.setVisibility(View.VISIBLE);
+                } else if (i == contactsSortRow) {
+                    textView.setText(LocaleController.getString("SortBy", R.string.SortBy));
+                    divider.setVisibility(View.VISIBLE);
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                    int sort = preferences.getInt("sortContactsBy", 0);
+                    if (sort == 0) {
+                        detailTextView.setText(LocaleController.getString("Default", R.string.Default));
+                    } else if (sort == 1) {
+                        detailTextView.setText(LocaleController.getString("FirstName", R.string.SortFirstName));
+                    } else if (sort == 2) {
+                        detailTextView.setText(LocaleController.getString("LastName", R.string.SortLastName));
+                    }
+                } else if (i == photoDownloadChatRow) {
+                    textView.setText(LocaleController.getString("AutomaticPhotoDownloadGroups", R.string.AutomaticPhotoDownloadGroups));
+                    divider.setVisibility(View.VISIBLE);
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                    int value = preferences.getInt("photo_download_chat2", 0);
+                    if (value == 0) {
+                        detailTextView.setText(LocaleController.getString("Enabled", R.string.Enabled));
+                    } else if (value == 1) {
+                        detailTextView.setText(LocaleController.getString("Disabled", R.string.Disabled));
+                    } else if (value == 2) {
+                        detailTextView.setText(LocaleController.getString("WiFiOnly", R.string.WiFiOnly));
+                    }
+                } else if (i == photoDownloadPrivateRow) {
+                    textView.setText(LocaleController.getString("AutomaticPhotoDownloadPrivateChats", R.string.AutomaticPhotoDownloadPrivateChats));
+                    divider.setVisibility(View.INVISIBLE);
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                    int value = preferences.getInt("photo_download_user2", 0);
+                    if (value == 0) {
+                        detailTextView.setText(LocaleController.getString("Enabled", R.string.Enabled));
+                    } else if (value == 1) {
+                        detailTextView.setText(LocaleController.getString("Disabled", R.string.Disabled));
+                    } else if (value == 2) {
+                        detailTextView.setText(LocaleController.getString("WiFiOnly", R.string.WiFiOnly));
+                    }
+                } else if (i == audioDownloadChatRow) {
+                    textView.setText(LocaleController.getString("AutomaticPhotoDownloadGroups", R.string.AutomaticPhotoDownloadGroups));
+                    divider.setVisibility(View.VISIBLE);
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                    int value = preferences.getInt("audio_download_chat2", 0);
+                    if (value == 0) {
+                        detailTextView.setText(LocaleController.getString("Enabled", R.string.Enabled));
+                    } else if (value == 1) {
+                        detailTextView.setText(LocaleController.getString("Disabled", R.string.Disabled));
+                    } else if (value == 2) {
+                        detailTextView.setText(LocaleController.getString("WiFiOnly", R.string.WiFiOnly));
+                    }
+                } else if (i == audioDownloadPrivateRow) {
+                    textView.setText(LocaleController.getString("AutomaticPhotoDownloadPrivateChats", R.string.AutomaticPhotoDownloadPrivateChats));
+                    divider.setVisibility(View.INVISIBLE);
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                    int value = preferences.getInt("audio_download_user2", 0);
+                    if (value == 0) {
+                        detailTextView.setText(LocaleController.getString("Enabled", R.string.Enabled));
+                    } else if (value == 1) {
+                        detailTextView.setText(LocaleController.getString("Disabled", R.string.Disabled));
+                    } else if (value == 2) {
+                        detailTextView.setText(LocaleController.getString("WiFiOnly", R.string.WiFiOnly));
+                    }
                 }
             } else if (type == 6) {
                 if (view == null) {
@@ -973,13 +1024,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         public int getItemViewType(int i) {
             if (i == profileRow) {
                 return 0;
-            } else if (i == numberSectionRow || i == settingsSectionRow || i == supportSectionRow || i == messagesSectionRow || i == photoDownloadSection || i == audioDownloadSection) {
+            } else if (i == numberSectionRow || i == settingsSectionRow || i == supportSectionRow || i == messagesSectionRow || i == photoDownloadSection || i == audioDownloadSection || i == contactsSectionRow) {
                 return 1;
-            } else if (i == textSizeRow || i == languageRow) {
+            } else if (i == textSizeRow || i == languageRow || i == contactsSortRow  || i == photoDownloadChatRow || i == photoDownloadPrivateRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow) {
                 return 5;
-            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == photoDownloadChatRow || i == photoDownloadPrivateRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow) {
+            } else if (i == enableAnimationsRow || i == sendByEnterRow) {
                 return 3;
-            } else if (i == numberRow || i == notificationRow || i == blockedRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == terminateSessionsRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow) {
+            } else if (i == numberRow || i == notificationRow || i == blockedRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == terminateSessionsRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == contactsReimportRow) {
                 return 2;
             } else if (i == logoutRow) {
                 return 4;

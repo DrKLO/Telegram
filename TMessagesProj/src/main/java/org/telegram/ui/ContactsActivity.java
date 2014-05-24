@@ -25,6 +25,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -196,7 +197,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 } else {
                                     return;
                                 }
-
                             }
                         } else {
                             if (section == 0) {
@@ -292,6 +292,19 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                             searchItem.collapseActionView();
                         }
                     }
+                }
+            });
+
+            listView.setOnScrollListener(new AbsListView.OnScrollListener() {
+                @Override
+                public void onScrollStateChanged(AbsListView absListView, int i) {
+                    if (i == SCROLL_STATE_TOUCH_SCROLL && searching && searchWas) {
+                        Utilities.hideKeyboard(searchView);
+                    }
+                }
+
+                @Override
+                public void onScroll(AbsListView absListView, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
                 }
             });
         } else {
@@ -432,6 +445,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String s) {
+                Utilities.hideKeyboard(searchView);
                 return true;
             }
 
@@ -440,7 +454,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 if (searchListViewAdapter == null) {
                     return true;
                 }
-                searchListViewAdapter.searchDialogs(s);
                 if (s.length() != 0) {
                     searchWas = true;
                     if (listView != null) {
@@ -456,6 +469,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         emptyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
                     }
                 }
+                searchListViewAdapter.searchDialogs(s);
                 return true;
             }
         });

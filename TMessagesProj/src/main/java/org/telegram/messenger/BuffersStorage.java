@@ -42,18 +42,18 @@ public class BuffersStorage {
         for (int a = 0; a < 5; a++) {
             freeBuffers128.add(new ByteBufferDesc(128));
         }
-        for (int a = 0; a < 5; a++) {
-            freeBuffers1024.add(new ByteBufferDesc(1024 + 200));
-        }
-        for (int a = 0; a < 2; a++) {
-            freeBuffers4096.add(new ByteBufferDesc(4096 + 200));
-        }
-        for (int a = 0; a < 2; a++) {
-            freeBuffers16384.add(new ByteBufferDesc(16384 + 200));
-        }
-        for (int a = 0; a < 2; a++) {
-            freeBuffers32768.add(new ByteBufferDesc(40000));
-        }
+//        for (int a = 0; a < 5; a++) {
+//            freeBuffers1024.add(new ByteBufferDesc(1024 + 200));
+//        }
+//        for (int a = 0; a < 2; a++) {
+//            freeBuffers4096.add(new ByteBufferDesc(4096 + 200));
+//        }
+//        for (int a = 0; a < 2; a++) {
+//            freeBuffers16384.add(new ByteBufferDesc(16384 + 200));
+//        }
+//        for (int a = 0; a < 2; a++) {
+//            freeBuffers32768.add(new ByteBufferDesc(40000));
+//        }
     }
 
     public ByteBufferDesc getFreeBuffer(int size) {

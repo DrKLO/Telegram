@@ -997,8 +997,6 @@ public class MessagesStorage {
             @Override
             public void run() {
                 try {
-                    database.executeFast("DELETE FROM user_contacts_v6 WHERE 1").stepThis().dispose();
-                    database.executeFast("DELETE FROM user_phones_v6 WHERE 1").stepThis().dispose();
                     database.beginTransaction();
                     SQLitePreparedStatement state = database.executeFast("REPLACE INTO user_contacts_v6 VALUES(?, ?, ?)");
                     SQLitePreparedStatement state2 = database.executeFast("REPLACE INTO user_phones_v6 VALUES(?, ?, ?, ?)");

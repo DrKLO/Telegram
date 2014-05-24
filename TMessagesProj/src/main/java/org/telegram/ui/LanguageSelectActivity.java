@@ -22,6 +22,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
@@ -178,6 +179,19 @@ public class LanguageSelectActivity extends BaseFragment {
                 }
             });
 
+            listView.setOnScrollListener(new AbsListView.OnScrollListener() {
+                @Override
+                public void onScrollStateChanged(AbsListView absListView, int i) {
+                    if (i == SCROLL_STATE_TOUCH_SCROLL && searching && searchWas) {
+                        Utilities.hideKeyboard(searchView);
+                    }
+                }
+
+                @Override
+                public void onScroll(AbsListView absListView, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                }
+            });
+
             searching = false;
             searchWas = false;
         } else {
@@ -281,6 +295,7 @@ public class LanguageSelectActivity extends BaseFragment {
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String s) {
+                Utilities.hideKeyboard(searchView);
                 return true;
             }
 

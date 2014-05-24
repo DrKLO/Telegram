@@ -95,7 +95,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     private int sound;
     public boolean enableJoined = true;
     public int fontSize = Utilities.dp(16);
-    public long scheduleContactsReload = 0;
 
     public MessageObject currentPushMessage;
 
@@ -300,7 +299,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
         updatesStartWaitTime = 0;
         currentDeletingTaskTime = 0;
-        scheduleContactsReload = 0;
         currentDeletingTaskMids = null;
         gettingNewDeleteTask = false;
         currentDeletingTask = null;
@@ -763,11 +761,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         checkDeletingTask();
 
         if (UserConfig.clientUserId != 0) {
-            if (scheduleContactsReload != 0 && currentTime > scheduleContactsReload) {
-                ContactsController.getInstance().performSyncPhoneBook(ContactsController.getInstance().getContactsCopy(ContactsController.getInstance().contactsBook), true, false, true);
-                scheduleContactsReload = 0;
-            }
-
             if (ApplicationLoader.lastPauseTime == 0) {
                 if (statusSettingState != 1 && (lastStatusUpdateTime == 0 || lastStatusUpdateTime <= System.currentTimeMillis() - 55000 || offlineSent)) {
                     statusSettingState = 1;
@@ -820,8 +813,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 FileLog.e("tmessages", "UPDATES WAIT TIMEOUT - CHECK QUEUE");
                 processUpdatesQueue(false);
             }
-        } else {
-            scheduleContactsReload = 0;
         }
         if (!printingUsers.isEmpty() || lastPrintingStringCount != printingUsers.size()) {
             boolean updated = false;

@@ -30,6 +30,7 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.NotificationsService;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
@@ -197,6 +198,9 @@ public class ApplicationLoader extends Application {
     }
 
     public static void resetLastPauseTime() {
+        if (lastPauseTime != 0 && System.currentTimeMillis() - lastPauseTime > 5000) {
+            ContactsController.getInstance().checkContacts();
+        }
         lastPauseTime = 0;
         ConnectionsManager.getInstance().applicationMovedToForeground();
     }

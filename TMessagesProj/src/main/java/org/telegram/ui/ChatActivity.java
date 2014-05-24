@@ -147,8 +147,8 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     public boolean scrollToTopOnResume = false;
     private boolean scrollToTopUnReadOnResume = false;
     private boolean isCustomTheme = false;
-    private boolean downloadPhotos = true;
-    private boolean downloadAudios = true;
+    private int downloadPhotos = 0;
+    private int downloadAudios = 0;
     private ImageView topPlaneClose;
     private View pagedownButton;
     private TextView topPanelText;
@@ -442,14 +442,14 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         sendByEnter = preferences.getBoolean("send_by_enter", false);
 
         if (currentChat != null) {
-            downloadPhotos = preferences.getBoolean("photo_download_chat", true);
+            downloadPhotos = preferences.getInt("photo_download_chat2", 0);
         } else {
-            downloadPhotos = preferences.getBoolean("photo_download_user", true);
+            downloadPhotos = preferences.getInt("photo_download_user2", 0);
         }
         if (currentChat != null) {
-            downloadAudios = preferences.getBoolean("audio_download_chat", true);
+            downloadAudios = preferences.getInt("audio_download_chat2", 0);
         } else {
-            downloadAudios = preferences.getBoolean("audio_download_user", true);
+            downloadAudios = preferences.getInt("audio_download_user2", 0);
         }
 
         return true;
@@ -3844,7 +3844,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 ((ChatBaseCell)view).isChat = currentChat != null;
                 ((ChatBaseCell)view).setMessageObject(message);
                 ((ChatBaseCell)view).setCheckPressed(!disableSelection, disableSelection && selected);
-                if (view instanceof ChatAudioCell && downloadAudios) {
+                if (view instanceof ChatAudioCell && (downloadAudios == 0 || downloadAudios == 2 && ConnectionsManager.isConnectedToWiFi())) {
                     ((ChatAudioCell)view).downloadAudioIfNeed();
                 } else if (view instanceof ChatMediaCell) {
                     ((ChatMediaCell)view).downloadPhotos = downloadPhotos;
