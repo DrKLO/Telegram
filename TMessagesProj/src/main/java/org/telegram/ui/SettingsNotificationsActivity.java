@@ -9,7 +9,9 @@
 package org.telegram.ui;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.Ringtone;
@@ -46,6 +48,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
     private ListView listView;
     private boolean reseting = false;
 
+    private int notificationsServiceRow;
     private int messageSectionRow;
     private int messageAlertRow;
     private int messagePreviewRow;
@@ -70,6 +73,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
 
     @Override
     public boolean onFragmentCreate() {
+        notificationsServiceRow = rowCount++;
         messageSectionRow = rowCount++;
         messageAlertRow = rowCount++;
         messagePreviewRow = rowCount++;
@@ -260,6 +264,32 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         editor.putBoolean("EnablePebbleNotifications", !enabled);
                         editor.commit();
                         listView.invalidateViews();
+                    } else if (i == notificationsServiceRow) {
+                        final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        boolean enabled = preferences.getBoolean("pushService", true);
+                        if (!enabled) {
+                            final SharedPreferences.Editor editor = preferences.edit();
+                            editor.putBoolean("pushService", !enabled);
+                            editor.commit();
+                            listView.invalidateViews();
+                            ApplicationLoader.startPushService();
+                        } else {
+                            AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                            builder.setMessage(LocaleController.getString("NotificationsServiceDisableInfo", R.string.NotificationsServiceDisableInfo));
+                            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    ApplicationLoader.stopPushService();
+                                    final SharedPreferences.Editor editor = preferences.edit();
+                                    editor.putBoolean("pushService", false);
+                                    editor.commit();
+                                    listView.invalidateViews();
+                                }
+                            });
+                            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                            builder.show().setCanceledOnTouchOutside(true);
+                        }
                     }
                 }
             });
@@ -492,6 +522,10 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     enabled = preferences.getBoolean("EnablePebbleNotifications", false);
                     textView.setText(LocaleController.getString("Alert", R.string.Alert));
                     divider.setVisibility(View.INVISIBLE);
+                } else if (i == notificationsServiceRow) {
+                    enabled = preferences.getBoolean("pushService", true);
+                    textView.setText(LocaleController.getString("NotificationsService", R.string.NotificationsService));
+                    divider.setVisibility(View.INVISIBLE);
                 }
                 if (enabled) {
                     checkButton.setImageResource(R.drawable.btn_check_on);
@@ -542,7 +576,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     i == groupAlertRow || i == groupPreviewRow || i == groupVibrateRow ||
                     i == inappSoundRow || i == inappVibrateRow || i == inappPreviewRow ||
                     i == contactJoinedRow ||
-                    i == pebbleAlertRow) {
+                    i == pebbleAlertRow || i == notificationsServiceRow) {
                 return 1;
             } else {
                 return 2;

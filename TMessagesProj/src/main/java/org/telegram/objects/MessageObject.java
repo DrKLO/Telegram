@@ -340,16 +340,7 @@ public class MessageObject {
         } else if (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
             ArrayList<TLRPC.PhotoSize> sizes = messageOwner.media.photo.sizes;
             if (sizes.size() > 0) {
-                int width = (int)(Math.min(Utilities.displaySize.x, Utilities.displaySize.y) * 0.7f);
-                int height = width + Utilities.dp(100);
-                if (width > 800) {
-                    width = 800;
-                }
-                if (height > 800) {
-                    height = 800;
-                }
-
-                TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(sizes, width, height);
+                TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(sizes, 800, 800);
                 if (sizeFull != null) {
                     return getAttachFileName(sizeFull);
                 }
@@ -425,6 +416,7 @@ public class MessageObject {
 
         int blocksCount = (int)Math.ceil((float)linesCount / LINES_PER_BLOCK);
         int linesOffset = 0;
+        float prevOffset = 0;
 
         for (int a = 0; a < blocksCount; a++) {
 
@@ -449,6 +441,9 @@ public class MessageObject {
                     block.textYOffset = textLayout.getLineTop(linesOffset);
                     if (a != blocksCount - 1) {
                         blockHeight = Math.min(blockHeight, block.textLayout.getHeight());
+                        prevOffset = block.textYOffset;
+                    } else {
+                        blockHeight = Math.min(blockHeight, (int)(block.textYOffset - prevOffset));
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);

@@ -274,7 +274,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             messagesListView.setOnScrollListener(new AbsListView.OnScrollListener() {
                 @Override
                 public void onScrollStateChanged(AbsListView absListView, int i) {
-
+                    if (i == SCROLL_STATE_TOUCH_SCROLL && searching && searchWas) {
+                        Utilities.hideKeyboard(searchView);
+                    }
                 }
 
                 @Override
@@ -498,13 +500,13 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             public void run() {
                 for (TLObject obj : result) {
                     if (obj instanceof TLRPC.User) {
-                        TLRPC.User user = (TLRPC.User)obj;
+                        TLRPC.User user = (TLRPC.User) obj;
                         MessagesController.getInstance().users.putIfAbsent(user.id, user);
                     } else if (obj instanceof TLRPC.Chat) {
-                        TLRPC.Chat chat = (TLRPC.Chat)obj;
+                        TLRPC.Chat chat = (TLRPC.Chat) obj;
                         MessagesController.getInstance().chats.putIfAbsent(chat.id, chat);
                     } else if (obj instanceof TLRPC.EncryptedChat) {
-                        TLRPC.EncryptedChat chat = (TLRPC.EncryptedChat)obj;
+                        TLRPC.EncryptedChat chat = (TLRPC.EncryptedChat) obj;
                         MessagesController.getInstance().encryptedChats.putIfAbsent(chat.id, chat);
                     }
                 }
@@ -593,6 +595,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String s) {
+                Utilities.hideKeyboard(searchView);
                 return true;
             }
 

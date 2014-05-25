@@ -21,6 +21,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
@@ -148,6 +149,19 @@ public class CountrySelectActivity extends ActionBarActivity {
             }
         });
 
+        listView.setOnScrollListener(new AbsListView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(AbsListView absListView, int i) {
+                if (i == SCROLL_STATE_TOUCH_SCROLL && searching && searchWas) {
+                    Utilities.hideKeyboard(searchView);
+                }
+            }
+
+            @Override
+            public void onScroll(AbsListView absListView, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+            }
+        });
+
         getWindow().setBackgroundDrawableResource(R.drawable.transparent);
     }
 
@@ -220,6 +234,7 @@ public class CountrySelectActivity extends ActionBarActivity {
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String s) {
+                Utilities.hideKeyboard(searchView);
                 return true;
             }
 

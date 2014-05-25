@@ -241,6 +241,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                             if (delegate != null) {
                                 delegate.needFinishActivity();
                             }
+                            ConnectionsManager.getInstance().initPushConnection();
                         }
                     });
                 } else {

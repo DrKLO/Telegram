@@ -83,7 +83,7 @@ public class PyroSelector {
     }
 
     public void select() {
-        this.select(10);
+        this.select(0);
     }
 
     public void select(long eventTimeout) {

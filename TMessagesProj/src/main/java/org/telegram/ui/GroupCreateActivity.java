@@ -31,6 +31,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -277,6 +278,19 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     } else {
                         listView.invalidateViews();
                     }
+                }
+            });
+
+            listView.setOnScrollListener(new AbsListView.OnScrollListener() {
+                @Override
+                public void onScrollStateChanged(AbsListView absListView, int i) {
+                    if (i == SCROLL_STATE_TOUCH_SCROLL) {
+                        Utilities.hideKeyboard(userSelectEditText);
+                    }
+                }
+
+                @Override
+                public void onScroll(AbsListView absListView, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
                 }
             });
         } else {

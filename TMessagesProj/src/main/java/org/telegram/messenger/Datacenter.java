@@ -37,6 +37,7 @@ public class Datacenter {
     public TcpConnection connection;
     public TcpConnection downloadConnection;
     public TcpConnection uploadConnection;
+    public TcpConnection pushConnection;
 
     private ArrayList<ServerSalt> authServerSaltSet = new ArrayList<ServerSalt>();
 

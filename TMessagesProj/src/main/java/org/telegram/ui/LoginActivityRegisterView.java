@@ -158,6 +158,7 @@ public class LoginActivityRegisterView extends SlideView {
                             if (delegate != null) {
                                 delegate.needFinishActivity();
                             }
+                            ConnectionsManager.getInstance().initPushConnection();
                         }
                     });
                 } else {
