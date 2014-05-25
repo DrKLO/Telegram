@@ -275,7 +275,10 @@
     <string name="Disabled">Disabilitato</string>
     <string name="NotificationsService">Servizio notifiche</string>
     <string name="NotificationsServiceDisableInfo">Se Google Play Service è sufficiente per ricevere le tue notifiche, puoi disabilitare il Servizio Notifiche. In ogni caso, ti raccomandiamo di lasciarlo abilitato per tenere l\'app attiva in ascolto per ricevere notifiche istantanee.</string>
-
+    <string name="SortBy">Ordina per</string>
+    <string name="ImportContacts">Importa contatti</string>
+    <string name="WiFiOnly">solo in WiFi</string>
+    
     <!--media view-->
     <string name="NoMedia">Nessun media condiviso</string>
     <string name="CancelDownload">Annulla scaricamento</string>

@@ -533,16 +533,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                     }
                 }
             } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
-                int width = (int)(Math.min(displaySize.x, displaySize.y) * 0.7f);
-                int height = width + Utilities.dp(100);
-                if (width > 800) {
-                    width = 800;
-                }
-                if (height > 800) {
-                    height = 800;
-                }
-
-                TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, width, height);
+                TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, 800, 800);
                 if (sizeFull != null) {
                     TLRPC.TL_inputFileLocation location = new TLRPC.TL_inputFileLocation();
                     location.local_id = sizeFull.location.local_id;
@@ -591,16 +582,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
             } else {
                 ArrayList<TLRPC.PhotoSize> sizes = obj.messageOwner.action.photo.sizes;
                 if (sizes.size() > 0) {
-                    int width = (int)(Math.min(displaySize.x, displaySize.y) * 0.7f);
-                    int height = width + Utilities.dp(100);
-                    if (width > 800) {
-                        width = 800;
-                    }
-                    if (height > 800) {
-                        height = 800;
-                    }
-
-                    TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(sizes, width, height);
+                    TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(sizes, 800, 800);
                     if (sizeFull != null) {
                         currentFileName = sizeFull.location.volume_id + "_" + sizeFull.location.local_id + ".jpg";
                     }
@@ -990,16 +972,7 @@ public class GalleryImageViewer extends AbstractGalleryActivity implements Notif
                     ArrayList<TLRPC.PhotoSize> sizes = message.messageOwner.media.photo.sizes;
                     iv.isVideo = false;
                     if (sizes.size() > 0) {
-                        int width = (int)(Math.min(displaySize.x, displaySize.y) * 0.7f);
-                        int height = width + Utilities.dp(100);
-                        if (width > 800) {
-                            width = 800;
-                        }
-                        if (height > 800) {
-                            height = 800;
-                        }
-
-                        TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(sizes, width, height);
+                        TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(sizes, 800, 800);
                         if (message.imagePreview != null) {
                             iv.setImage(sizeFull.location, null, message.imagePreview, sizeFull.size);
                         } else {

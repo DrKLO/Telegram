@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -64,8 +62,6 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     private boolean registeringForPush = false;
 
     private boolean paused = false;
-    private Runnable stageRunnable;
-    private Runnable pingRunnable;
     private long lastPingTime = System.currentTimeMillis();
     private long lastPushPingTime = System.currentTimeMillis();
     private int nextSleepTimeout = 30000;
@@ -84,6 +80,89 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         return localInstance;
     }
 
+    static long t = System.currentTimeMillis();
+    private Runnable stageRunnable = new Runnable() {
+        @Override
+        public void run() {
+            Utilities.stageQueue.handler.removeCallbacks(stageRunnable);
+            t = System.currentTimeMillis();
+            if (datacenters != null) {
+                if (lastPushPingTime < System.currentTimeMillis() - 29000) {
+                    lastPushPingTime = System.currentTimeMillis();
+                    Datacenter datacenter = datacenterWithId(currentDatacenterId);
+                    if (datacenter != null) {
+                        generatePing(datacenter, true);
+                    }
+                }
+            }
+
+            long currentTime = System.currentTimeMillis();
+            if (ApplicationLoader.lastPauseTime != 0 && ApplicationLoader.lastPauseTime < currentTime - nextSleepTimeout) {
+                boolean dontSleep = false;
+                for (RPCRequest request : runningRequests) {
+                    if (request.retryCount < 10 && (request.runningStartTime + 60 > (int)(currentTime / 1000)) && ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0 || (request.flags & RPCRequest.RPCRequestClassUploadMedia) != 0)) {
+                        dontSleep = true;
+                        break;
+                    }
+                }
+                if (!dontSleep) {
+                    for (RPCRequest request : requestQueue) {
+                        if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0 || (request.flags & RPCRequest.RPCRequestClassUploadMedia) != 0) {
+                            dontSleep = true;
+                            break;
+                        }
+                    }
+                }
+                if (!dontSleep) {
+                    if (!paused) {
+                        FileLog.e("tmessages", "pausing network and timers by sleep time = " + nextSleepTimeout);
+                        for (Datacenter datacenter : datacenters.values()) {
+                            if (datacenter.connection != null) {
+                                datacenter.connection.suspendConnection(true);
+                            }
+                            if (datacenter.uploadConnection != null) {
+                                datacenter.uploadConnection.suspendConnection(true);
+                            }
+                            if (datacenter.downloadConnection != null) {
+                                datacenter.downloadConnection.suspendConnection(true);
+                            }
+                        }
+                    }
+                    try {
+                        paused = true;
+                        Utilities.stageQueue.postRunnable(stageRunnable, 1000);
+                        return;
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                } else {
+                    ApplicationLoader.lastPauseTime += 30 * 1000;
+                    FileLog.e("tmessages", "don't sleep 30 seconds because of upload or download request");
+                }
+            }
+            if (paused) {
+                paused = false;
+                FileLog.e("tmessages", "resume network and timers");
+            }
+
+            if (datacenters != null) {
+                MessagesController.getInstance().updateTimerProc();
+                if (datacenterWithId(currentDatacenterId).authKey != null) {
+                    if (lastPingTime < System.currentTimeMillis() - 19000) {
+                        lastPingTime = System.currentTimeMillis();
+                        generatePing();
+                    }
+                    if (!updatingDcSettings && lastDcUpdateTime < (int)(System.currentTimeMillis() / 1000) - DC_UPDATE_TIME) {
+                        updateDcSettings(0);
+                    }
+                    processRequestQueue(0, 0);
+                }
+            }
+
+            Utilities.stageQueue.postRunnable(stageRunnable, 1000);
+        }
+    };
+
     public ConnectionsManager() {
         currentAppVersion = ApplicationLoader.getAppVersion();
         lastOutgoingMessageId = 0;
@@ -94,89 +173,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             connectionState = 1;
         }
 
-        Timer serviceTimer = new Timer();
-        serviceTimer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                Utilities.stageQueue.postRunnable(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (datacenters != null) {
-                            if (lastPushPingTime < System.currentTimeMillis() - 29000) {
-                                lastPushPingTime = System.currentTimeMillis();
-                                Datacenter datacenter = datacenterWithId(currentDatacenterId);
-                                if (datacenter != null) {
-                                    generatePing(datacenter, true);
-                                }
-                            }
-                        }
-
-                        long currentTime = System.currentTimeMillis();
-                        if (ApplicationLoader.lastPauseTime != 0 && ApplicationLoader.lastPauseTime < currentTime - nextSleepTimeout) {
-                            boolean dontSleep = false;
-                            for (RPCRequest request : runningRequests) {
-                                if (request.retryCount < 10 && (request.runningStartTime + 60 > (int)(currentTime / 1000)) && ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0 || (request.flags & RPCRequest.RPCRequestClassUploadMedia) != 0)) {
-                                    dontSleep = true;
-                                    break;
-                                }
-                            }
-                            if (!dontSleep) {
-                                for (RPCRequest request : requestQueue) {
-                                    if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0 || (request.flags & RPCRequest.RPCRequestClassUploadMedia) != 0) {
-                                        dontSleep = true;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (!dontSleep) {
-                                if (!paused) {
-                                    FileLog.e("tmessages", "pausing network and timers by sleep time = " + nextSleepTimeout);
-                                    for (Datacenter datacenter : datacenters.values()) {
-                                        if (datacenter.connection != null) {
-                                            datacenter.connection.suspendConnection(true);
-                                        }
-                                        if (datacenter.uploadConnection != null) {
-                                            datacenter.uploadConnection.suspendConnection(true);
-                                        }
-                                        if (datacenter.downloadConnection != null) {
-                                            datacenter.downloadConnection.suspendConnection(true);
-                                        }
-                                    }
-                                }
-                                try {
-                                    paused = true;
-                                    Thread.sleep(500);
-                                    return;
-                                } catch (Exception e) {
-                                    FileLog.e("tmessages", e);
-                                }
-                            } else {
-                                ApplicationLoader.lastPauseTime += 30 * 1000;
-                                FileLog.e("tmessages", "don't sleep 30 seconds because of upload or download request");
-                            }
-                        }
-                        if (paused) {
-                            paused = false;
-                            FileLog.e("tmessages", "resume network and timers");
-                        }
-
-                        if (datacenters != null) {
-                            MessagesController.getInstance().updateTimerProc();
-                            if (datacenterWithId(currentDatacenterId).authKey != null) {
-                                if (lastPingTime < System.currentTimeMillis() - 19000) {
-                                    lastPingTime = System.currentTimeMillis();
-                                    generatePing();
-                                }
-                                if (!updatingDcSettings && lastDcUpdateTime < (int)(System.currentTimeMillis() / 1000) - DC_UPDATE_TIME) {
-                                    updateDcSettings(0);
-                                }
-                                processRequestQueue(0, 0);
-                            }
-                        }
-                    }
-                });
-            }
-        }, 1000, 1000);
+        Utilities.stageQueue.postRunnable(stageRunnable, 1000);
     }
 
     public void resumeNetworkMaybe() {
@@ -196,6 +193,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     public void applicationMovedToForeground() {
+        Utilities.stageQueue.postRunnable(stageRunnable);
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -848,23 +846,36 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     public static boolean isNetworkOnline() {
-        boolean status = false;
         try {
             ConnectivityManager cm = (ConnectivityManager)ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
-            NetworkInfo netInfo = cm.getNetworkInfo(0);
+            NetworkInfo netInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
             if (netInfo != null && netInfo.getState() == NetworkInfo.State.CONNECTED) {
-                status = true;
+                return true;
             } else {
-                netInfo = cm.getNetworkInfo(1);
+                netInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
                 if(netInfo != null && netInfo.getState() == NetworkInfo.State.CONNECTED) {
-                    status = true;
+                    return true;
                 }
             }
         } catch(Exception e) {
             FileLog.e("tmessages", e);
             return true;
         }
-        return status;
+        return false;
+    }
+
+    public static boolean isConnectedToWiFi() {
+        try {
+            ConnectivityManager cm = (ConnectivityManager)ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo netInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+            if (netInfo != null && netInfo.getState() == NetworkInfo.State.CONNECTED) {
+                return true;
+            }
+        } catch(Exception e) {
+            FileLog.e("tmessages", e);
+            return true;
+        }
+        return false;
     }
 
     public int getCurrentTime() {
