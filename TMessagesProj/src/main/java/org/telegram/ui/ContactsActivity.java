@@ -204,7 +204,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                     try {
                                         Intent intent = new Intent(Intent.ACTION_SEND);
                                         intent.setType("text/plain");
-                                        intent.putExtra(Intent.EXTRA_TEXT, inviteText != null ? inviteText : LocaleController.getString("InviteText", R.string.InviteText));
+                                        intent.putExtra(Intent.EXTRA_TEXT, ApplicationLoader.applicationContext.getString(R.string.InviteText));
                                         startActivity(intent);
                                     } catch (Exception e) {
                                         FileLog.e("tmessages", e);
@@ -260,7 +260,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 public void onClick(DialogInterface dialogInterface, int i) {
                                     try {
                                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromParts("sms", arg1, null));
-                                        intent.putExtra("sms_body", LocaleController.getString("InviteText", R.string.InviteText));
+                                        intent.putExtra("sms_body", ApplicationLoader.applicationContext.getString(R.string.InviteText));
                                         startActivity(intent);
                                     } catch (Exception e) {
                                         FileLog.e("tmessages", e);
