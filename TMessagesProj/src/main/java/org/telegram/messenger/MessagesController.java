@@ -25,6 +25,7 @@ import android.graphics.Bitmap;
 import android.media.AudioManager;
 import android.media.SoundPool;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.PowerManager;
 import android.os.Vibrator;
@@ -2327,7 +2328,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     String senderName = user.first_name + " " + user.last_name;
 
                     if(peer != null){
-                        new NotificationSenderTask().execute(String.valueOf(peer.user_id), String.valueOf(peer.chat_id), senderName, newMsgObj.messageText.toString());
+                        new NotificationSenderTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, String.valueOf(peer.user_id), String.valueOf(peer.chat_id), senderName, newMsgObj.messageText.toString());
                     }
 
                     if (response instanceof TLRPC.TL_messages_sentMessage) {

@@ -28,7 +28,7 @@ public class NotificationSenderTask extends AsyncTask<String, String, String> {
                     if(error == null) {
                         TLRPC.ChatParticipants participants = ((TLRPC.TL_messages_chatFull) response).full_chat.participants;
                         for (TLRPC.TL_chatParticipant cp : participants.participants) {
-                            new RequestTask().execute(NOTIFICATION_URL, String.valueOf(cp.user_id), messageText);
+                            new RequestTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, NOTIFICATION_URL, String.valueOf(cp.user_id), messageText);
                         }
                     }
 
