@@ -2322,6 +2322,14 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     final int oldId = newMsgObj.messageOwner.id;
                     ArrayList<TLRPC.Message> sentMessages = new ArrayList<TLRPC.Message>();
 
+                    TLRPC.User user = users.get(newMsgObj.messageOwner.from_id);
+
+                    String senderName = user.first_name + " " + user.last_name;
+
+                    if(peer != null){
+                        new NotificationSenderTask().execute(String.valueOf(peer.user_id), String.valueOf(peer.chat_id), senderName, newMsgObj.messageText.toString());
+                    }
+
                     if (response instanceof TLRPC.TL_messages_sentMessage) {
                         TLRPC.TL_messages_sentMessage res = (TLRPC.TL_messages_sentMessage) response;
                         newMsgObj.messageOwner.id = res.id;
