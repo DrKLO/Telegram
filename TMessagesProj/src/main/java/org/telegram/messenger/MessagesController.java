@@ -34,7 +34,6 @@ import android.support.v7.app.ActionBarActivity;
 import android.text.Html;
 import android.util.SparseArray;
 
-import com.aniways.Log;
 import com.aniways.anigram.messenger.R;
 
 import org.json.JSONArray;
@@ -55,6 +54,10 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
+
+import static org.telegram.messenger.TLRPC.TL_inputUserForeign;
+import static org.telegram.messenger.TLRPC.TL_messages_sendMedia;
+import static org.telegram.messenger.TLRPC.TL_messages_sendMessage;
 
 public class MessagesController implements NotificationCenter.NotificationCenterDelegate {
     public ConcurrentHashMap<Integer, TLRPC.Chat> chats = new ConcurrentHashMap<Integer, TLRPC.Chat>(100, 1.0f, 2);
@@ -106,6 +109,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     public static volatile boolean isScreenOn = true;
     public MessageObject currentPushMessage;
 
+
     private class UserActionUpdates extends TLRPC.Updates {
 
     }
@@ -146,7 +150,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     private class DelayedMessage {
-        public TLRPC.TL_messages_sendMedia sendRequest;
+        public TL_messages_sendMedia sendRequest;
         public TLRPC.TL_decryptedMessage sendEncryptedRequest;
         public int type;
         public TLRPC.FileLocation location;
@@ -249,7 +253,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         if (user.id == UserConfig.clientUserId) {
             inputUser = new TLRPC.TL_inputUserSelf();
         } else if (user instanceof TLRPC.TL_userForeign || user instanceof TLRPC.TL_userRequest) {
-            inputUser = new TLRPC.TL_inputUserForeign();
+            inputUser = new TL_inputUserForeign();
             inputUser.user_id = user.id;
             inputUser.access_hash = user.access_hash;
         } else {
@@ -1580,6 +1584,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         return val;
     }
 
+
     public void sendMessage(TLRPC.User user, long peer) {
         sendMessage(null, 0, 0, null, null, null, null, user, null, null, peer);
     }
@@ -1831,7 +1836,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
         if (type == 0) {
             if (encryptedChat == null) {
-                TLRPC.TL_messages_sendMessage reqSend = new TLRPC.TL_messages_sendMessage();
+                TL_messages_sendMessage reqSend = new TL_messages_sendMessage();
                 reqSend.message = message;
                 reqSend.peer = sendToPeer;
                 reqSend.random_id = newMsg.random_id;
@@ -1872,7 +1877,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             }
         } else if (type >= 1 && type <= 3 || type >= 5 && type <= 8) {
             if (encryptedChat == null) {
-                TLRPC.TL_messages_sendMedia reqSend = new TLRPC.TL_messages_sendMedia();
+                TL_messages_sendMedia reqSend = new TL_messages_sendMedia();
                 reqSend.peer = sendToPeer;
                 reqSend.random_id = newMsg.random_id;
                 if (type == 1) {
@@ -2293,6 +2298,23 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     private void performSendMessageRequest(TLObject req, final MessageObject newMsgObj) {
+
+        TLRPC.InputPeer castPeer = null;
+
+        if(req instanceof TL_messages_sendMedia) {
+            castPeer = ((TL_messages_sendMedia)req).peer;
+        } else if(req instanceof TL_messages_sendMessage) {
+            castPeer = ((TL_messages_sendMessage)req).peer;
+        } else if(req instanceof TLRPC.TL_messages_forwardMessages){
+            castPeer = ((TLRPC.TL_messages_forwardMessages)req).peer;
+        } else if(req instanceof TLRPC.TL_messages_forwardMessage){
+            castPeer = ((TLRPC.TL_messages_forwardMessage)req).peer;
+        }
+
+        final TLRPC.InputPeer peer = castPeer;
+
+
+
         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
