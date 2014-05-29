@@ -30,10 +30,15 @@ class RequestTask extends AsyncTask<String, String, String> {
 
     @Override
     protected String doInBackground(String... params) {
-        HttpClient httpclient = new DefaultHttpClient();
+        HttpClient httpClient = new DefaultHttpClient();
         HttpResponse response;
         String responseString = null;
         try {
+
+            ConnManagerParams.setTimeout(httpClient.getParams(), AniwaysServiceUtils.CONNECTION_MANAGER_TIMEOUT);
+            HttpConnectionParams.setSoTimeout(httpClient.getParams(), AniwaysServiceUtils.READ_TIMEOUT);
+            HttpConnectionParams.setConnectionTimeout(httpClient.getParams(), AniwaysServiceUtils.CONNECTION_TIMEOUT);
+            System.setProperty("http.keepAlive", "false");
 
             HttpPost httppost = new HttpPost(params[0]);
 
@@ -44,7 +49,7 @@ class RequestTask extends AsyncTask<String, String, String> {
             httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs, "UTF-8"));
 
             // Execute HTTP Post Request
-            response = httpclient.execute(httppost);
+            response = httpClient.execute(httppost);
             StatusLine statusLine = response.getStatusLine();
             if(statusLine.getStatusCode() == HttpStatus.SC_OK){
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
