@@ -2332,7 +2332,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     final String isAttachment = newMsgObj.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty ? "false" : "true";
 
                     if(peer != null){
-                        new Handler().post(new Runnable() {
+                        Utilities.RunOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 if(Utils.isAndroidVersionAtLeast(11)){
@@ -2340,9 +2340,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                 }else{
                                     new NotificationSenderTask().execute(String.valueOf(peer.user_id), String.valueOf(peer.chat_id), senderName, isAttachment, newMsgObj.messageText.toString());
                                 }
-                                }
+                            }
                         });
-                        }
+                    }
 
                     if (response instanceof TLRPC.TL_messages_sentMessage) {
                         TLRPC.TL_messages_sentMessage res = (TLRPC.TL_messages_sentMessage) response;

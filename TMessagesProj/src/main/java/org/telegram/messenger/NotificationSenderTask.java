@@ -5,6 +5,8 @@ import android.os.Handler;
 
 import com.aniways.Utils;
 
+import org.telegram.ui.ApplicationLoader;
+
 import static org.telegram.messenger.TLRPC.TL_messages_sendMessage;
 
 /**
@@ -23,7 +25,7 @@ public class NotificationSenderTask extends AsyncTask<String, String, String> {
             final String messageText = isAttachment ? params[4] + " received from " + senderName : senderName + " says " + params[4];
 
             if (user_id != 0) {
-                new Handler().post(new Runnable() {
+                Utilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if(Utils.isAndroidVersionAtLeast(11)){
