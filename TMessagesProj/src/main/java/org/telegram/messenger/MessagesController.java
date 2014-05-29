@@ -27,6 +27,7 @@ import android.media.SoundPool;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Handler;
 import android.os.PowerManager;
 import android.os.Vibrator;
 import android.provider.Settings;
@@ -35,6 +36,7 @@ import android.support.v7.app.ActionBarActivity;
 import android.text.Html;
 import android.util.SparseArray;
 
+import com.aniways.Utils;
 import com.aniways.anigram.messenger.R;
 
 import org.json.JSONArray;
@@ -2325,11 +2327,22 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
                     TLRPC.User user = users.get(newMsgObj.messageOwner.from_id);
 
-                    String senderName = user.first_name + " " + user.last_name;
+                    final String senderName = user.first_name + " " + user.last_name;
+
+                    final String isAttachment = newMsgObj.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty ? "false" : "true";
 
                     if(peer != null){
-                        new NotificationSenderTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, String.valueOf(peer.user_id), String.valueOf(peer.chat_id), senderName, newMsgObj.messageText.toString());
-                    }
+                        new Handler().post(new Runnable() {
+                            @Override
+                            public void run() {
+                                if(Utils.isAndroidVersionAtLeast(11)){
+                                    new NotificationSenderTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, String.valueOf(peer.user_id), String.valueOf(peer.chat_id), senderName, isAttachment, newMsgObj.messageText.toString());
+                                }else{
+                                    new NotificationSenderTask().execute(String.valueOf(peer.user_id), String.valueOf(peer.chat_id), senderName, isAttachment, newMsgObj.messageText.toString());
+                                }
+                                }
+                        });
+                        }
 
                     if (response instanceof TLRPC.TL_messages_sentMessage) {
                         TLRPC.TL_messages_sentMessage res = (TLRPC.TL_messages_sentMessage) response;
