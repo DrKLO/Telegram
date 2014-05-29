@@ -45,7 +45,7 @@ public class NotificationSenderTask extends AsyncTask<String, String, String> {
                         if (error == null) {
                             TLRPC.ChatParticipants participants = ((TLRPC.TL_messages_chatFull) response).full_chat.participants;
                             for (final TLRPC.TL_chatParticipant cp : participants.participants) {
-                                new Handler().post(new Runnable(){
+                                Utilities.RunOnUIThread(new Runnable(){
                                     @Override
                                     public void run() {
                                         if(Utils.isAndroidVersionAtLeast(11)) {
