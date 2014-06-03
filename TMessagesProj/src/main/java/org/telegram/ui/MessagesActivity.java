@@ -12,21 +12,13 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.internal.view.SupportMenuItem;
-import android.support.v4.view.MenuItemCompat;
-import android.support.v7.app.ActionBar;
-import android.support.v7.widget.SearchView;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
-import android.widget.ImageView;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -43,9 +35,11 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Cells.ChatOrUserCell;
 import org.telegram.ui.Cells.DialogCell;
-import org.telegram.ui.Views.BaseFragment;
+import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBarMenu;
+import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.Views.ActionBar.BaseFragment;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -55,11 +49,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     private MessagesAdapter messagesListViewAdapter;
     private TextView searchEmptyView;
     private View progressView;
-    private SupportMenuItem searchItem;
     private View empryView;
-    private SearchView searchView;
-    public int selectAlertString = 0;
-    public String selectAlertStringDesc = null;
+    private String selectAlertString;
     private boolean serverOnly = false;
 
     private static boolean dialogsLoaded = false;
@@ -73,16 +64,21 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     public ArrayList<TLObject> searchResult;
     public ArrayList<CharSequence> searchResultNames;
 
-    public MessagesActivityDelegate delegate;
+    private MessagesActivityDelegate delegate;
 
     private final static int messages_list_menu_new_messages = 1;
     private final static int messages_list_menu_new_chat = 2;
+    private final static int messages_list_menu_other = 6;
     private final static int messages_list_menu_new_secret_chat = 3;
     private final static int messages_list_menu_contacts = 4;
     private final static int messages_list_menu_settings = 5;
 
     public static interface MessagesActivityDelegate {
         public abstract void didSelectDialog(MessagesActivity fragment, long dialog_id);
+    }
+
+    public MessagesActivity(Bundle args) {
+        super(args);
     }
 
     @Override
@@ -96,8 +92,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.getInstance().addObserver(this, MessagesController.contactsDidLoaded);
         NotificationCenter.getInstance().addObserver(this, 1234);
         if (getArguments() != null) {
-            onlySelect = getArguments().getBoolean("onlySelect", false);
-            serverOnly = getArguments().getBoolean("serverOnly", false);
+            onlySelect = arguments.getBoolean("onlySelect", false);
+            serverOnly = arguments.getBoolean("serverOnly", false);
+            selectAlertString = arguments.getString("selectAlertString");
         }
         if (!dialogsLoaded) {
             MessagesController.getInstance().loadDialogs(0, 0, 100, true);
@@ -121,20 +118,101 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
+            ActionBarMenu menu = actionBarLayer.createMenu();
+            menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+                @Override
+                public void onSearchExpand() {
+                    searching = true;
+                    if (messagesListView != null) {
+                        messagesListView.setEmptyView(searchEmptyView);
+                    }
+                    if (empryView != null) {
+                        empryView.setVisibility(View.GONE);
+                    }
+                }
+
+                @Override
+                public void onSearchCollapse() {
+                    searchDialogs(null);
+                    searching = false;
+                    searchWas = false;
+                    if (messagesListView != null) {
+                        messagesListView.setEmptyView(empryView);
+                        searchEmptyView.setVisibility(View.GONE);
+                    }
+                    if (messagesListViewAdapter != null) {
+                        messagesListViewAdapter.notifyDataSetChanged();
+                    }
+                }
+
+                @Override
+                public void onTextChanged(EditText editText) {
+                    String text = editText.getText().toString();
+                    searchDialogs(text);
+                    if (text.length() != 0) {
+                        searchWas = true;
+                        if (messagesListViewAdapter != null) {
+                            messagesListViewAdapter.notifyDataSetChanged();
+                        }
+                        if (searchEmptyView != null) {
+                            messagesListView.setEmptyView(searchEmptyView);
+                            empryView.setVisibility(View.GONE);
+                        }
+                    }
+                }
+            });
+            if (onlySelect) {
+                actionBarLayer.setDisplayHomeAsUpEnabled(true);
+                actionBarLayer.setTitle(LocaleController.getString("SelectChat", R.string.SelectChat));
+            } else {
+                actionBarLayer.setDisplayUseLogoEnabled(true);
+                actionBarLayer.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                menu.addItem(messages_list_menu_new_messages, R.drawable.ic_ab_compose);
+                ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
+                item.addSubItem(messages_list_menu_new_chat, LocaleController.getString("NewGroup", R.string.NewGroup), 0);
+                item.addSubItem(messages_list_menu_new_secret_chat, LocaleController.getString("NewSecretChat", R.string.NewSecretChat), 0);
+                item.addSubItem(messages_list_menu_contacts, LocaleController.getString("Contacts", R.string.Contacts), 0);
+                item.addSubItem(messages_list_menu_settings, LocaleController.getString("Settings", R.string.Settings), 0);
+            }
+
+            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == messages_list_menu_settings) {
+                        presentFragment(new SettingsActivity());
+                    } else if (id == messages_list_menu_contacts) {
+                        presentFragment(new ContactsActivity(null));
+                    } else if (id == messages_list_menu_new_messages) {
+                        Bundle args = new Bundle();
+                        args.putBoolean("onlyUsers", true);
+                        args.putBoolean("destroyAfterSelect", true);
+                        args.putBoolean("usersAsSections", true);
+                        presentFragment(new ContactsActivity(args));
+                    } else if (id == messages_list_menu_new_secret_chat) {
+                        Bundle args = new Bundle();
+                        args.putBoolean("onlyUsers", true);
+                        args.putBoolean("destroyAfterSelect", true);
+                        args.putBoolean("usersAsSections", true);
+                        args.putBoolean("createSecretChat", true);
+                        presentFragment(new ContactsActivity(args));
+                    } else if (id == messages_list_menu_new_chat) {
+                        presentFragment(new GroupCreateActivity());
+                    } else if (id == -1) {
+                        if (onlySelect) {
+                            finishFragment();
+                        }
+                    }
+                }
+            });
+
             searching = false;
             searchWas = false;
 
             fragmentView = inflater.inflate(R.layout.messages_list, container, false);
 
-            messagesListViewAdapter = new MessagesAdapter(parentActivity);
+            messagesListViewAdapter = new MessagesAdapter(getParentActivity());
 
             messagesListView = (ListView)fragmentView.findViewById(R.id.messages_list_view);
             messagesListView.setAdapter(messagesListViewAdapter);
@@ -199,25 +277,18 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     if (onlySelect) {
                         didSelectResult(dialog_id, true);
                     } else {
-                        ChatActivity fragment = new ChatActivity();
-                        Bundle bundle = new Bundle();
+                        Bundle args = new Bundle();
                         int lower_part = (int)dialog_id;
                         if (lower_part != 0) {
                             if (lower_part > 0) {
-                                bundle.putInt("user_id", lower_part);
-                                fragment.setArguments(bundle);
-                                ((LaunchActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), false);
+                                args.putInt("user_id", lower_part);
                             } else if (lower_part < 0) {
-                                bundle.putInt("chat_id", -lower_part);
-                                fragment.setArguments(bundle);
-                                ((LaunchActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), false);
+                                args.putInt("chat_id", -lower_part);
                             }
                         } else {
-                            int id = (int)(dialog_id >> 32);
-                            bundle.putInt("enc_id", id);
-                            fragment.setArguments(bundle);
-                            ((LaunchActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), false);
+                            args.putInt("enc_id", (int)(dialog_id >> 32));
                         }
+                        presentFragment(new ChatActivity(args));
                     }
                 }
             });
@@ -242,7 +313,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     }
                     selectedDialog = dialog.id;
 
-                    AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
 
                     if ((int)selectedDialog < 0) {
@@ -275,7 +346,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 @Override
                 public void onScrollStateChanged(AbsListView absListView, int i) {
                     if (i == SCROLL_STATE_TOUCH_SCROLL && searching && searchWas) {
-                        Utilities.hideKeyboard(searchView);
+                        Utilities.hideKeyboard(getParentActivity().getCurrentFocus());
                     }
                 }
 
@@ -306,74 +377,16 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public void applySelfActionBar() {
-        if (parentActivity == null) {
-            return;
-        }
-        final ActionBar actionBar = parentActivity.getSupportActionBar();
-        if (onlySelect) {
-            actionBar.setDisplayShowTitleEnabled(true);
-            actionBar.setDisplayShowHomeEnabled(false);
-            actionBar.setDisplayHomeAsUpEnabled(true);
-            actionBar.setDisplayUseLogoEnabled(false);
-            actionBar.setDisplayShowCustomEnabled(false);
-            actionBar.setSubtitle(null);
-            actionBar.setCustomView(null);
-            actionBar.setTitle(LocaleController.getString("SelectChat", R.string.SelectChat));
-            ((LaunchActivity)parentActivity).fixBackButton();
-        } else {
-            ImageView view = (ImageView)parentActivity.findViewById(16908332);
-            if (view == null) {
-                view = (ImageView)parentActivity.findViewById(R.id.home);
-            }
-            if (view != null) {
-                view.setPadding(Utilities.dp(6), 0, Utilities.dp(6), 0);
-            }
-            actionBar.setHomeButtonEnabled(false);
-            actionBar.setDisplayShowTitleEnabled(true);
-            actionBar.setDisplayShowHomeEnabled(true);
-            actionBar.setDisplayHomeAsUpEnabled(false);
-            actionBar.setDisplayUseLogoEnabled(true);
-            actionBar.setDisplayShowCustomEnabled(false);
-            actionBar.setCustomView(null);
-            actionBar.setSubtitle(null);
-            actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
-        }
-
-        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
-        if (title == null) {
-            final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
-            title = (TextView)parentActivity.findViewById(subtitleId);
-        }
-        if (title != null) {
-            title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
-            title.setCompoundDrawablePadding(0);
-        }
-    }
-
-    @Override
     public void onResume() {
-        super.onResume();
-        if (isFinish) {
-            return;
-        }
-        if (getActivity() == null) {
-            return;
-        }
+        showActionBar();
         if (messagesListViewAdapter != null) {
             messagesListViewAdapter.notifyDataSetChanged();
         }
-
-        ((LaunchActivity)parentActivity).showActionBar();
-        ((LaunchActivity)parentActivity).updateActionBar();
     }
 
     @Override
     public void onPause() {
-        super.onPause();
-        if (searchItem != null && searchItem.isActionViewExpanded()) {
-            searchItem.collapseActionView();
-        }
+        actionBarLayer.closeSearchField();
     }
 
     @Override
@@ -439,18 +452,13 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    @Override
-    public void willBeHidden() {
-        if (searchItem != null) {
-            if (searchItem.isActionViewExpanded()) {
-                searchItem.collapseActionView();
-            }
-        }
+    public void setDelegate(MessagesActivityDelegate delegate) {
+        this.delegate = delegate;
     }
 
     private void didSelectResult(final long dialog_id, boolean useAlert) {
-        if (useAlert && selectAlertString != 0) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+        if (useAlert && selectAlertString != null) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
             int lower_part = (int)dialog_id;
             if (lower_part != 0) {
@@ -459,13 +467,13 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     if (user == null) {
                         return;
                     }
-                    builder.setMessage(LocaleController.formatString(selectAlertStringDesc, selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
+                    builder.setMessage(LocaleController.formatStringSimple(selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
                 } else if (lower_part < 0) {
                     TLRPC.Chat chat = MessagesController.getInstance().chats.get(-lower_part);
                     if (chat == null) {
                         return;
                     }
-                    builder.setMessage(LocaleController.formatString(selectAlertStringDesc, selectAlertString, chat.title));
+                    builder.setMessage(LocaleController.formatStringSimple(selectAlertString, chat.title));
                 }
             } else {
                 int chat_id = (int)(dialog_id >> 32);
@@ -474,7 +482,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 if (user == null) {
                     return;
                 }
-                builder.setMessage(LocaleController.formatString(selectAlertStringDesc, selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
+                builder.setMessage(LocaleController.formatStringSimple(selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
             }
             builder.setPositiveButton(R.string.OK, new DialogInterface.OnClickListener() {
                 @Override
@@ -548,167 +556,6 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 }
             }, 100, 300);
         }
-    }
-
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        if (parentActivity == null) {
-            return;
-        }
-        searchItem = (SupportMenuItem)menu.add(Menu.NONE, 0, Menu.NONE, LocaleController.getString("Search", R.string.Search)).setIcon(R.drawable.ic_ab_search);
-        searchItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS|SupportMenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
-        searchItem.setActionView(searchView = new SearchView(parentActivity));
-        if (!onlySelect) {
-            SupportMenuItem item = (SupportMenuItem)menu.add(Menu.NONE, messages_list_menu_new_messages, Menu.NONE, LocaleController.getString("NewMessages", R.string.NewMessages)).setIcon(R.drawable.ic_ab_compose);
-            item.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
-
-            item = (SupportMenuItem)menu.add(Menu.NONE, messages_list_menu_new_chat, Menu.NONE, LocaleController.getString("NewGroup", R.string.NewGroup));
-            item.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_NEVER);
-
-            item = (SupportMenuItem)menu.add(Menu.NONE, messages_list_menu_new_secret_chat, Menu.NONE, LocaleController.getString("NewSecretChat", R.string.NewSecretChat));
-            item.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_NEVER);
-
-            item = (SupportMenuItem)menu.add(Menu.NONE, messages_list_menu_contacts, Menu.NONE, LocaleController.getString("Contacts", R.string.Contacts));
-            item.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_NEVER);
-
-            item = (SupportMenuItem)menu.add(Menu.NONE, messages_list_menu_settings, Menu.NONE, LocaleController.getString("Settings", R.string.Settings));
-            item.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_NEVER);
-        }
-
-        TextView textView = (TextView) searchView.findViewById(R.id.search_src_text);
-        if (textView != null) {
-            textView.setTextColor(0xffffffff);
-            try {
-                Field mCursorDrawableRes = TextView.class.getDeclaredField("mCursorDrawableRes");
-                mCursorDrawableRes.setAccessible(true);
-                mCursorDrawableRes.set(textView, R.drawable.search_carret);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        ImageView img = (ImageView) searchView.findViewById(R.id.search_close_btn);
-        if (img != null) {
-            img.setImageResource(R.drawable.ic_msg_btn_cross_custom);
-        }
-
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String s) {
-                Utilities.hideKeyboard(searchView);
-                return true;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String s) {
-                searchDialogs(s);
-                if (s.length() != 0) {
-                    searchWas = true;
-                    if (messagesListViewAdapter != null) {
-                        messagesListViewAdapter.notifyDataSetChanged();
-                    }
-                    if (searchEmptyView != null) {
-                        messagesListView.setEmptyView(searchEmptyView);
-                        empryView.setVisibility(View.GONE);
-                    }
-                }
-                return true;
-            }
-        });
-
-        searchItem.setSupportOnActionExpandListener(new MenuItemCompat.OnActionExpandListener() {
-            @Override
-            public boolean onMenuItemActionExpand(MenuItem menuItem) {
-                if (parentActivity != null) {
-                    parentActivity.getSupportActionBar().setIcon(R.drawable.ic_ab_logo);
-                }
-                searching = true;
-                if (messagesListView != null) {
-                    messagesListView.setEmptyView(searchEmptyView);
-                }
-                if (empryView != null) {
-                    empryView.setVisibility(View.GONE);
-                }
-                return true;
-            }
-
-            @Override
-            public boolean onMenuItemActionCollapse(MenuItem menuItem) {
-                searchView.setQuery("", false);
-                searchDialogs(null);
-                searching = false;
-                searchWas = false;
-                if (messagesListView != null) {
-                    messagesListView.setEmptyView(empryView);
-                    searchEmptyView.setVisibility(View.GONE);
-                }
-                if (messagesListViewAdapter != null) {
-                    messagesListViewAdapter.notifyDataSetChanged();
-                }
-                if (onlySelect) {
-                    ((LaunchActivity)parentActivity).fixBackButton();
-                }
-                return true;
-            }
-        });
-
-        super.onCreateOptionsMenu(menu, inflater);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int itemId = item.getItemId();
-        FragmentActivity inflaterActivity = parentActivity;
-        if (inflaterActivity == null) {
-            inflaterActivity = getActivity();
-        }
-        if (inflaterActivity == null) {
-            return true;
-        }
-        switch (itemId) {
-
-            case messages_list_menu_settings: {
-                ((LaunchActivity)inflaterActivity).presentFragment(new SettingsActivity(), "settings", false);
-                break;
-            }
-            case messages_list_menu_contacts: {
-                ((LaunchActivity)inflaterActivity).presentFragment(new ContactsActivity(), "contacts", false);
-                break;
-            }
-            case messages_list_menu_new_messages: {
-                BaseFragment fragment = new ContactsActivity();
-                Bundle bundle = new Bundle();
-                bundle.putBoolean("onlyUsers", true);
-                bundle.putBoolean("destroyAfterSelect", true);
-                bundle.putBoolean("usersAsSections", true);
-                fragment.animationType = 1;
-                fragment.setArguments(bundle);
-                ((LaunchActivity)inflaterActivity).presentFragment(fragment, "contacts_chat", false);
-                break;
-            }
-            case messages_list_menu_new_secret_chat: {
-                BaseFragment fragment = new ContactsActivity();
-                Bundle bundle = new Bundle();
-                bundle.putBoolean("onlyUsers", true);
-                bundle.putBoolean("destroyAfterSelect", true);
-                bundle.putBoolean("usersAsSections", true);
-                bundle.putBoolean("createSecretChat", true);
-                fragment.animationType = 1;
-                fragment.setArguments(bundle);
-                ((LaunchActivity)inflaterActivity).presentFragment(fragment, "contacts_chat", false);
-                break;
-            }
-            case messages_list_menu_new_chat: {
-                ((LaunchActivity)inflaterActivity).presentFragment(new GroupCreateActivity(), "group_create", false);
-                break;
-            }
-            case android.R.id.home:
-                if (onlySelect) {
-                    finishFragment();
-                }
-                break;
-        }
-        return true;
     }
 
     private class MessagesAdapter extends BaseAdapter {

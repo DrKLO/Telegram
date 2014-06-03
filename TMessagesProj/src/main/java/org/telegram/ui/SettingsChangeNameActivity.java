@@ -10,14 +10,10 @@ package org.telegram.ui;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
-import android.os.Bundle;
-import android.support.v7.app.ActionBar;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
@@ -33,7 +29,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.Views.BaseFragment;
+import org.telegram.ui.Views.ActionBar.BaseFragment;
 
 public class SettingsChangeNameActivity extends BaseFragment {
     private EditText firstNameField;
@@ -41,90 +37,32 @@ public class SettingsChangeNameActivity extends BaseFragment {
     private View headerLabelView;
     private View doneButton;
 
-    public SettingsChangeNameActivity() {
-        animationType = 1;
-    }
-
     @Override
-    public boolean canApplyUpdateStatus() {
-        return false;
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (isFinish) {
-            return;
-        }
-        ActionBar actionBar = parentActivity.getSupportActionBar();
-        actionBar.setDisplayShowCustomEnabled(true);
-        actionBar.setDisplayShowHomeEnabled(false);
-        actionBar.setDisplayShowTitleEnabled(false);
-        actionBar.setDisplayHomeAsUpEnabled(false);
-        actionBar.setSubtitle(null);
-
-        actionBar.setCustomView(R.layout.settings_do_action_layout);
-        Button cancelButton = (Button)actionBar.getCustomView().findViewById(R.id.cancel_button);
-        cancelButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                finishFragment();
-            }
-        });
-        doneButton = actionBar.getCustomView().findViewById(R.id.done_button);
-        doneButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (firstNameField.getText().length() != 0) {
-                    saveName();
+    public View createView(LayoutInflater inflater, ViewGroup container) {
+        if (fragmentView == null) {
+            actionBarLayer.setCustomView(R.layout.settings_do_action_layout);
+            Button cancelButton = (Button)actionBarLayer.findViewById(R.id.cancel_button);
+            cancelButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
                     finishFragment();
                 }
-            }
-        });
-
-        cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel));
-        TextView textView = (TextView)doneButton.findViewById(R.id.done_button_text);
-        textView.setText(LocaleController.getString("Done", R.string.Done));
-
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-        boolean animations = preferences.getBoolean("view_animations", true);
-        if (!animations) {
-            firstNameField.requestFocus();
-            Utilities.showKeyboard(firstNameField);
-        }
-    }
-
-    @Override
-    public Animation onCreateAnimation(int transit, boolean enter, int nextAnim) {
-        if (nextAnim != 0) {
-            Animation anim = AnimationUtils.loadAnimation(getActivity(), nextAnim);
-
-            anim.setAnimationListener(new Animation.AnimationListener() {
-
-                public void onAnimationStart(Animation animation) {
-                    SettingsChangeNameActivity.this.onAnimationStart();
-                }
-
-                public void onAnimationRepeat(Animation animation) {
-
-                }
-
-                public void onAnimationEnd(Animation animation) {
-                    SettingsChangeNameActivity.this.onAnimationEnd();
-                    firstNameField.requestFocus();
-                    Utilities.showKeyboard(firstNameField);
+            });
+            doneButton = actionBarLayer.findViewById(R.id.done_button);
+            doneButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (firstNameField.getText().length() != 0) {
+                        saveName();
+                        finishFragment();
+                    }
                 }
             });
 
-            return anim;
-        } else {
-            return super.onCreateAnimation(transit, enter, nextAnim);
-        }
-    }
+            cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel));
+            TextView textView = (TextView)doneButton.findViewById(R.id.done_button_text);
+            textView.setText(LocaleController.getString("Done", R.string.Done));
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        if (fragmentView == null) {
             fragmentView = inflater.inflate(R.layout.settings_change_name_layout, container, false);
 
             TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.clientUserId);
@@ -175,6 +113,16 @@ public class SettingsChangeNameActivity extends BaseFragment {
         return fragmentView;
     }
 
+    @Override
+    public void onResume() {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        boolean animations = preferences.getBoolean("view_animations", true);
+        if (!animations) {
+            firstNameField.requestFocus();
+            Utilities.showKeyboard(firstNameField);
+        }
+    }
+
     private void saveName() {
         TLRPC.TL_account_updateProfile req = new TLRPC.TL_account_updateProfile();
         if (UserConfig.currentUser == null || lastNameField.getText() == null || firstNameField.getText() == null) {
@@ -195,5 +143,11 @@ public class SettingsChangeNameActivity extends BaseFragment {
 
             }
         }, null, true, RPCRequest.RPCRequestClassGeneric);
+    }
+
+    @Override
+    public void onOpenAnimationEnd() {
+        firstNameField.requestFocus();
+        Utilities.showKeyboard(firstNameField);
     }
 }

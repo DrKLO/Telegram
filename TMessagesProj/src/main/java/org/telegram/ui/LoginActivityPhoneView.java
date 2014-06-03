@@ -9,9 +9,7 @@
 package org.telegram.ui;
 
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -33,6 +31,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.SlideView;
 
 import java.io.BufferedReader;
@@ -82,9 +81,16 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
         countryButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                ActionBarActivity activity = (ActionBarActivity)delegate;
-                Intent intent = new Intent(activity, CountrySelectActivity.class);
-                activity.startActivityForResult(intent, 1);
+                BaseFragment activity = (BaseFragment)delegate;
+                CountrySelectActivity fragment = new CountrySelectActivity();
+                fragment.setCountrySelectActivityDelegate(new CountrySelectActivity.CountrySelectActivityDelegate() {
+                    @Override
+                    public void didSelectCountry(String name) {
+                        selectCountry(name);
+                        phoneField.requestFocus();
+                    }
+                });
+                activity.presentFragment(fragment);
             }
         });
 

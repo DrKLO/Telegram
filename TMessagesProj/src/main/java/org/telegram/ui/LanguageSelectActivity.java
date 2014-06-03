@@ -11,21 +11,13 @@ package org.telegram.ui;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.os.Bundle;
-import android.support.v4.internal.view.SupportMenuItem;
-import android.support.v4.view.MenuItemCompat;
-import android.support.v7.app.ActionBar;
-import android.support.v7.widget.SearchView;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
-import android.widget.ImageView;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -33,17 +25,16 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.Views.BaseFragment;
-import org.telegram.ui.Views.OnSwipeTouchListener;
+import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBarMenu;
+import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.Views.ActionBar.BaseFragment;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class LanguageSelectActivity extends BaseFragment {
-    private SupportMenuItem searchItem;
-    private SearchView searchView;
     private BaseAdapter listAdapter;
     private ListView listView;
     private boolean searchWas;
@@ -55,39 +46,71 @@ public class LanguageSelectActivity extends BaseFragment {
     public ArrayList<LocaleController.LocaleInfo> searchResult;
 
     @Override
-    public boolean onFragmentCreate() {
-        super.onFragmentCreate();
-        return true;
-    }
-
-    @Override
-    public void onFragmentDestroy() {
-        super.onFragmentDestroy();
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
+            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setTitle(LocaleController.getString("Language", R.string.Language));
+
+            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1) {
+                        finishFragment();
+                    }
+                }
+            });
+
+            ActionBarMenu menu = actionBarLayer.createMenu();
+            menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+                @Override
+                public void onSearchExpand() {
+                    searching = true;
+                }
+
+                @Override
+                public void onSearchCollapse() {
+                    search(null);
+                    searching = false;
+                    searchWas = false;
+                    if (listView != null) {
+                        emptyTextView.setVisibility(View.GONE);
+                        listView.setAdapter(listAdapter);
+                    }
+                }
+
+                @Override
+                public void onTextChanged(EditText editText) {
+                    String text = editText.getText().toString();
+                    search(text);
+                    if (text.length() != 0) {
+                        searchWas = true;
+                        if (listView != null) {
+                            listView.setPadding(Utilities.dp(16), listView.getPaddingTop(), Utilities.dp(16), listView.getPaddingBottom());
+                            listView.setAdapter(searchListViewAdapter);
+                            if(android.os.Build.VERSION.SDK_INT >= 11) {
+                                listView.setFastScrollAlwaysVisible(false);
+                            }
+                            listView.setFastScrollEnabled(false);
+                            listView.setVerticalScrollBarEnabled(true);
+                        }
+                        if (emptyTextView != null) {
+                            emptyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+                        }
+                    }
+                }
+            });
+
             fragmentView = inflater.inflate(R.layout.language_select_layout, container, false);
-            listAdapter = new ListAdapter(parentActivity);
+            listAdapter = new ListAdapter(getParentActivity());
             listView = (ListView)fragmentView.findViewById(R.id.listView);
             listView.setAdapter(listAdapter);
             emptyTextView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
             listView.setEmptyView(emptyTextView);
-            searchListViewAdapter = new SearchAdapter(parentActivity);
+            searchListViewAdapter = new SearchAdapter(getParentActivity());
 
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    if (parentActivity == null) {
-                        return;
-                    }
                     LocaleController.LocaleInfo localeInfo = null;
                     if (searching && searchWas) {
                         if (i >= 0 && i < searchResult.size()) {
@@ -99,26 +122,8 @@ public class LanguageSelectActivity extends BaseFragment {
                         }
                     }
                     if (localeInfo != null) {
-                        boolean isRTL = LocaleController.isRTL;
                         LocaleController.getInstance().applyLanguage(localeInfo, true);
-                        if (isRTL != LocaleController.isRTL) {
-                            for (BaseFragment fragment : ApplicationLoader.fragmentsStack) {
-                                if (fragment == LanguageSelectActivity.this) {
-                                    continue;
-                                }
-                                if (fragment.fragmentView != null) {
-                                    ViewGroup parent = (ViewGroup)fragment.fragmentView.getParent();
-                                    if (parent != null) {
-                                        parent.removeView(fragment.fragmentView);
-                                    }
-                                    fragment.fragmentView = null;
-                                }
-                                fragment.parentActivity = parentActivity;
-                            }
-                        }
-                    }
-                    if (searchItem != null && searchItem.isActionViewExpanded()) {
-                        searchItem.collapseActionView();
+                        getParentActivity().rebuildAllFragmentViews();
                     }
                     finishFragment();
                 }
@@ -127,9 +132,6 @@ public class LanguageSelectActivity extends BaseFragment {
             listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
                 @Override
                 public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    if (parentActivity == null) {
-                        return false;
-                    }
                     LocaleController.LocaleInfo localeInfo = null;
                     if (searching && searchWas) {
                         if (i >= 0 && i < searchResult.size()) {
@@ -144,7 +146,7 @@ public class LanguageSelectActivity extends BaseFragment {
                         return false;
                     }
                     final LocaleController.LocaleInfo finalLocaleInfo = localeInfo;
-                    AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setMessage(LocaleController.getString("DeleteLocalization", R.string.DeleteLocalization));
                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                     builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), new DialogInterface.OnClickListener() {
@@ -160,10 +162,6 @@ public class LanguageSelectActivity extends BaseFragment {
                                 if (searchListViewAdapter != null) {
                                     searchListViewAdapter.notifyDataSetChanged();
                                 }
-                                applySelfActionBar();
-                                if (searchItem != null && searchItem.isActionViewExpanded()) {
-                                    searchItem.collapseActionView();
-                                }
                             }
                         }
                     });
@@ -173,17 +171,11 @@ public class LanguageSelectActivity extends BaseFragment {
                 }
             });
 
-            listView.setOnTouchListener(new OnSwipeTouchListener() {
-                public void onSwipeRight() {
-                    finishFragment(true);
-                }
-            });
-
             listView.setOnScrollListener(new AbsListView.OnScrollListener() {
                 @Override
                 public void onScrollStateChanged(AbsListView absListView, int i) {
                     if (i == SCROLL_STATE_TOUCH_SCROLL && searching && searchWas) {
-                        Utilities.hideKeyboard(searchView);
+                        Utilities.hideKeyboard(getParentActivity().getCurrentFocus());
                     }
                 }
 
@@ -204,149 +196,15 @@ public class LanguageSelectActivity extends BaseFragment {
     }
 
     @Override
-    public void applySelfActionBar() {
-        if (parentActivity == null) {
-            return;
-        }
-        ActionBar actionBar = parentActivity.getSupportActionBar();
-        actionBar.setDisplayShowTitleEnabled(true);
-        actionBar.setDisplayShowHomeEnabled(false);
-        actionBar.setDisplayHomeAsUpEnabled(true);
-        actionBar.setDisplayUseLogoEnabled(false);
-        actionBar.setDisplayShowCustomEnabled(false);
-        actionBar.setCustomView(null);
-        actionBar.setSubtitle(null);
-
-        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
-        if (title == null) {
-            final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
-            title = (TextView)parentActivity.findViewById(subtitleId);
-        }
-        if (title != null) {
-            title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
-            title.setCompoundDrawablePadding(0);
-        }
-        actionBar.setTitle(LocaleController.getString("Language", R.string.Language));
-        ((LaunchActivity)parentActivity).fixBackButton();
-    }
-
-    @Override
     public void onResume() {
-        super.onResume();
-        if (isFinish) {
-            return;
-        }
-        if (getActivity() == null) {
-            return;
-        }
-        if (!firstStart && listAdapter != null) {
+        if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
-        firstStart = false;
-        ((LaunchActivity)parentActivity).showActionBar();
-        ((LaunchActivity)parentActivity).updateActionBar();
     }
 
     @Override
     public void onPause() {
-        super.onPause();
-        if (searchItem != null && searchItem.isActionViewExpanded()) {
-            searchItem.collapseActionView();
-        }
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int itemId = item.getItemId();
-        switch (itemId) {
-            case android.R.id.home:
-                if (searchItem != null && searchItem.isActionViewExpanded()) {
-                    searchItem.collapseActionView();
-                }
-                finishFragment();
-                break;
-        }
-        return true;
-    }
-
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        searchItem = (SupportMenuItem)menu.add(Menu.NONE, 0, Menu.NONE, LocaleController.getString("Search", R.string.Search)).setIcon(R.drawable.ic_ab_search);
-        searchItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS|SupportMenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
-        searchItem.setActionView(searchView = new SearchView(parentActivity));
-
-        TextView textView = (TextView) searchView.findViewById(R.id.search_src_text);
-        if (textView != null) {
-            textView.setTextColor(0xffffffff);
-            try {
-                Field mCursorDrawableRes = TextView.class.getDeclaredField("mCursorDrawableRes");
-                mCursorDrawableRes.setAccessible(true);
-                mCursorDrawableRes.set(textView, R.drawable.search_carret);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        ImageView img = (ImageView) searchView.findViewById(R.id.search_close_btn);
-        if (img != null) {
-            img.setImageResource(R.drawable.ic_msg_btn_cross_custom);
-        }
-
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String s) {
-                Utilities.hideKeyboard(searchView);
-                return true;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String s) {
-                search(s);
-                if (s.length() != 0) {
-                    searchWas = true;
-                    if (listView != null) {
-                        listView.setPadding(Utilities.dp(16), listView.getPaddingTop(), Utilities.dp(16), listView.getPaddingBottom());
-                        listView.setAdapter(searchListViewAdapter);
-                        if(android.os.Build.VERSION.SDK_INT >= 11) {
-                            listView.setFastScrollAlwaysVisible(false);
-                        }
-                        listView.setFastScrollEnabled(false);
-                        listView.setVerticalScrollBarEnabled(true);
-                    }
-                    if (emptyTextView != null) {
-                        emptyTextView.setText(getString(R.string.NoResult));
-                    }
-                }
-                return true;
-            }
-        });
-
-        searchItem.setSupportOnActionExpandListener(new MenuItemCompat.OnActionExpandListener() {
-            @Override
-            public boolean onMenuItemActionExpand(MenuItem menuItem) {
-                if (parentActivity != null) {
-                    parentActivity.getSupportActionBar().setIcon(R.drawable.ic_ab_search);
-                }
-                searching = true;
-                return true;
-            }
-
-            @Override
-            public boolean onMenuItemActionCollapse(MenuItem menuItem) {
-                searchView.setQuery("", false);
-                search(null);
-                searching = false;
-                searchWas = false;
-                if (listView != null) {
-                    emptyTextView.setVisibility(View.GONE);
-                    listView.setAdapter(listAdapter);
-                }
-                ((LaunchActivity)parentActivity).fixBackButton();
-                return true;
-            }
-        });
-
-        super.onCreateOptionsMenu(menu, inflater);
+        actionBarLayer.closeSearchField();
     }
 
     public void search(final String query) {

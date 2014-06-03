@@ -11,13 +11,10 @@ package org.telegram.ui;
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.v7.app.ActionBar;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
@@ -28,7 +25,7 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.Views.BaseFragment;
+import org.telegram.ui.Views.ActionBar.BaseFragment;
 
 public class ChatProfileChangeNameActivity extends BaseFragment {
     private EditText firstNameField;
@@ -36,8 +33,8 @@ public class ChatProfileChangeNameActivity extends BaseFragment {
     private int chat_id;
     private View doneButton;
 
-    public ChatProfileChangeNameActivity() {
-        animationType = 1;
+    public ChatProfileChangeNameActivity(Bundle args) {
+        super(args);
     }
 
     @Override
@@ -48,18 +45,32 @@ public class ChatProfileChangeNameActivity extends BaseFragment {
     }
 
     @Override
-    public void onFragmentDestroy() {
-        super.onFragmentDestroy();
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
+            actionBarLayer.setCustomView(R.layout.settings_do_action_layout);
+
+            Button cancelButton = (Button)actionBarLayer.findViewById(R.id.cancel_button);
+            cancelButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    finishFragment();
+                }
+            });
+            doneButton = actionBarLayer.findViewById(R.id.done_button);
+            doneButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (firstNameField.getText().length() != 0) {
+                        saveName();
+                        finishFragment();
+                    }
+                }
+            });
+
+            cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel));
+            TextView textView = (TextView)doneButton.findViewById(R.id.done_button_text);
+            textView.setText(LocaleController.getString("Done", R.string.Done));
+
             fragmentView = inflater.inflate(R.layout.chat_profile_change_name_layout, container, false);
 
             TLRPC.Chat currentChat = MessagesController.getInstance().chats.get(chat_id);
@@ -91,53 +102,7 @@ public class ChatProfileChangeNameActivity extends BaseFragment {
     }
 
     @Override
-    public boolean canApplyUpdateStatus() {
-        return false;
-    }
-
-    @Override
-    public void applySelfActionBar() {
-        if (parentActivity == null) {
-            return;
-        }
-        ActionBar actionBar = parentActivity.getSupportActionBar();
-        actionBar.setDisplayShowCustomEnabled(true);
-        actionBar.setDisplayShowHomeEnabled(false);
-        actionBar.setDisplayShowTitleEnabled(false);
-        actionBar.setDisplayHomeAsUpEnabled(false);
-
-        actionBar.setCustomView(R.layout.settings_do_action_layout);
-        Button cancelButton = (Button)actionBar.getCustomView().findViewById(R.id.cancel_button);
-        cancelButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                finishFragment();
-            }
-        });
-        doneButton = actionBar.getCustomView().findViewById(R.id.done_button);
-        doneButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (firstNameField.getText().length() != 0) {
-                    saveName();
-                    finishFragment();
-                }
-            }
-        });
-
-        cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel));
-        TextView textView = (TextView)doneButton.findViewById(R.id.done_button_text);
-        textView.setText(LocaleController.getString("Done", R.string.Done));
-    }
-
-    @Override
     public void onResume() {
-        super.onResume();
-        if (getActivity() == null) {
-            return;
-        }
-        ((LaunchActivity)parentActivity).updateActionBar();
-
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         boolean animations = preferences.getBoolean("view_animations", true);
         if (!animations) {
@@ -147,31 +112,9 @@ public class ChatProfileChangeNameActivity extends BaseFragment {
     }
 
     @Override
-    public Animation onCreateAnimation(int transit, boolean enter, int nextAnim) {
-        if (nextAnim != 0) {
-            Animation anim = AnimationUtils.loadAnimation(getActivity(), nextAnim);
-
-            anim.setAnimationListener(new Animation.AnimationListener() {
-
-                public void onAnimationStart(Animation animation) {
-                    ChatProfileChangeNameActivity.this.onAnimationStart();
-                }
-
-                public void onAnimationRepeat(Animation animation) {
-
-                }
-
-                public void onAnimationEnd(Animation animation) {
-                    ChatProfileChangeNameActivity.this.onAnimationEnd();
-                    firstNameField.requestFocus();
-                    Utilities.showKeyboard(firstNameField);
-                }
-            });
-
-            return anim;
-        } else {
-            return super.onCreateAnimation(transit, enter, nextAnim);
-        }
+    public void onOpenAnimationEnd() {
+        firstNameField.requestFocus();
+        Utilities.showKeyboard(firstNameField);
     }
 
     private void saveName() {

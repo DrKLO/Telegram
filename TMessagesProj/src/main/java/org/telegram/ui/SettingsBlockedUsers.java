@@ -12,12 +12,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.support.v4.internal.view.SupportMenuItem;
-import android.support.v7.app.ActionBar;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -36,8 +31,9 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Cells.ChatOrUserCell;
-import org.telegram.ui.Views.BaseFragment;
-import org.telegram.ui.Views.OnSwipeTouchListener;
+import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBarMenu;
+import org.telegram.ui.Views.ActionBar.BaseFragment;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -69,16 +65,33 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
+            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setTitle(LocaleController.getString("BlockedUsers", R.string.BlockedUsers));
+            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1) {
+                        finishFragment();
+                    } else if (id == block_user) {
+                        Bundle args = new Bundle();
+                        args.putBoolean("onlyUsers", true);
+                        args.putBoolean("destroyAfterSelect", true);
+                        args.putBoolean("usersAsSections", true);
+                        args.putBoolean("returnAsResult", true);
+                        ContactsActivity fragment = new ContactsActivity(args);
+                        fragment.setDelegate(SettingsBlockedUsers.this);
+                        presentFragment(fragment);
+                    }
+                }
+            });
+
+            ActionBarMenu menu = actionBarLayer.createMenu();
+            menu.addItem(block_user, R.drawable.plus);
+
             fragmentView = inflater.inflate(R.layout.settings_blocked_users_layout, container, false);
-            listViewAdapter = new ListAdapter(parentActivity);
+            listViewAdapter = new ListAdapter(getParentActivity());
             listView = (ListView)fragmentView.findViewById(R.id.listView);
             progressView = fragmentView.findViewById(R.id.progressLayout);
             emptyView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
@@ -96,11 +109,9 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                     if (i < blockedContacts.size()) {
-                        UserProfileActivity fragment = new UserProfileActivity();
                         Bundle args = new Bundle();
                         args.putInt("user_id", blockedContacts.get(i).user_id);
-                        fragment.setArguments(args);
-                        ((LaunchActivity)parentActivity).presentFragment(fragment, "user_" + blockedContacts.get(i).user_id, false);
+                        presentFragment(new UserProfileActivity(args));
                     }
                 }
             });
@@ -113,7 +124,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                     }
                     selectedUserId = blockedContacts.get(i).user_id;
 
-                    AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
 
                     CharSequence[] items = new CharSequence[] {LocaleController.getString("Unblock", R.string.Unblock)};
 
@@ -143,17 +154,6 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                     builder.show().setCanceledOnTouchOutside(true);
 
                     return true;
-                }
-            });
-
-            listView.setOnTouchListener(new OnSwipeTouchListener() {
-                public void onSwipeRight() {
-                    finishFragment(true);
-                }
-            });
-            emptyView.setOnTouchListener(new OnSwipeTouchListener() {
-                public void onSwipeRight() {
-                    finishFragment(true);
                 }
             });
         } else {
@@ -251,75 +251,10 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
     }
 
     @Override
-    public void applySelfActionBar() {
-        if (parentActivity == null) {
-            return;
-        }
-        ActionBar actionBar = parentActivity.getSupportActionBar();
-        actionBar.setDisplayShowTitleEnabled(true);
-        actionBar.setDisplayShowHomeEnabled(false);
-        actionBar.setDisplayHomeAsUpEnabled(true);
-        actionBar.setDisplayUseLogoEnabled(false);
-        actionBar.setDisplayShowCustomEnabled(false);
-        actionBar.setSubtitle(null);
-        actionBar.setCustomView(null);
-        actionBar.setTitle(LocaleController.getString("BlockedUsers", R.string.BlockedUsers));
-
-        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
-        if (title == null) {
-            final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
-            title = (TextView)parentActivity.findViewById(subtitleId);
-        }
-        if (title != null) {
-            title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
-            title.setCompoundDrawablePadding(0);
-        }
-        ((LaunchActivity)parentActivity).fixBackButton();
-    }
-
-    @Override
     public void onResume() {
-        super.onResume();
-        if (isFinish) {
-            return;
-        }
-        if (getActivity() == null) {
-            return;
-        }
-        if (!firstStart && listViewAdapter != null) {
+        if (listViewAdapter != null) {
             listViewAdapter.notifyDataSetChanged();
         }
-        firstStart = false;
-        ((LaunchActivity)parentActivity).showActionBar();
-        ((LaunchActivity)parentActivity).updateActionBar();
-    }
-
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        SupportMenuItem item = (SupportMenuItem)menu.add(Menu.NONE, block_user, Menu.NONE, null).setIcon(R.drawable.plus);
-        item.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int itemId = item.getItemId();
-        switch (itemId) {
-            case android.R.id.home:
-                finishFragment();
-                break;
-            case block_user:
-                ContactsActivity fragment = new ContactsActivity();
-                fragment.animationType = 1;
-                Bundle bundle = new Bundle();
-                bundle.putBoolean("onlyUsers", true);
-                bundle.putBoolean("destroyAfterSelect", true);
-                bundle.putBoolean("usersAsSections", true);
-                bundle.putBoolean("returnAsResult", true);
-                fragment.delegate = this;
-                fragment.setArguments(bundle);
-                ((LaunchActivity)parentActivity).presentFragment(fragment, "contacts_block", false);
-                break;
-        }
-        return true;
     }
 
     @Override
@@ -400,7 +335,6 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                     view = li.inflate(R.layout.settings_unblock_info_row_layout, viewGroup, false);
                     TextView textView = (TextView)view.findViewById(R.id.info_text_view);
                     textView.setText(LocaleController.getString("UnblockText", R.string.UnblockText));
-                    registerForContextMenu(view);
                 }
             }
             return view;

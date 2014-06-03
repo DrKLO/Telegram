@@ -20,13 +20,8 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.support.v4.internal.view.SupportMenuItem;
-import android.support.v7.app.ActionBar;
 import android.text.Html;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -45,10 +40,11 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Cells.ChatOrUserCell;
+import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.AvatarUpdater;
 import org.telegram.ui.Views.BackupImageView;
-import org.telegram.ui.Views.BaseFragment;
-import org.telegram.ui.Views.OnSwipeTouchListener;
+import org.telegram.ui.Views.ActionBar.BaseFragment;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -78,6 +74,12 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
     private int addMemberRow;
     private int leaveGroupRow;
     private int rowCount = 0;
+
+    private static final int done_button = 1;
+
+    public ChatProfileActivity(Bundle args) {
+        super(args);
+    }
 
     @Override
     public boolean onFragmentCreate() {
@@ -140,19 +142,31 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         avatarUpdater.clear();
     }
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
+            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setTitle(LocaleController.getString("GroupInfo", R.string.GroupInfo));
+            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1) {
+                        finishFragment();
+                    } else if (id == done_button) {
+                        openAddMenu();
+                    }
+                }
+            });
+            ActionBarMenu menu = actionBarLayer.createMenu();
+            View item = menu.addItemResource(done_button, R.layout.group_profile_add_member_layout);
+            TextView textView = (TextView)item.findViewById(R.id.done_button);
+            if (textView != null) {
+                textView.setText(LocaleController.getString("AddMember", R.string.AddMember));
+            }
+
             fragmentView = inflater.inflate(R.layout.chat_profile_layout, container, false);
 
             listView = (ListView)fragmentView.findViewById(R.id.listView);
-            listView.setAdapter(listViewAdapter = new ListAdapter(parentActivity));
+            listView.setAdapter(listViewAdapter = new ListAdapter(getParentActivity()));
             listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
                 @Override
                 public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -166,7 +180,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         }
                         selectedUser = user;
 
-                        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         CharSequence[] items = new CharSequence[] {LocaleController.getString("KickFromGroup", R.string.KickFromGroup)};
 
                         builder.setItems(items, new DialogInterface.OnClickListener() {
@@ -188,16 +202,13 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
-                    if (parentActivity == null) {
-                        return;
-                    }
                     if (i == settingsSoundRow) {
                         try {
                             Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
-                            SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                             Uri currentSound = null;
 
                             String defaultPath = null;
@@ -216,16 +227,14 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                             }
 
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentSound);
-                            parentActivity.startActivityForResult(tmpIntent, 3);
+                            getParentActivity().startActivityForResult(tmpIntent, 3);
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
                         }
                     } else if (i == sharedMediaRow) {
-                        MediaActivity fragment = new MediaActivity();
-                        Bundle bundle = new Bundle();
-                        bundle.putLong("dialog_id", -chat_id);
-                        fragment.setArguments(bundle);
-                        ((LaunchActivity)parentActivity).presentFragment(fragment, "media_chat_" + chat_id, false);
+                        Bundle args = new Bundle();
+                        args.putLong("dialog_id", -chat_id);
+                        presentFragment(new MediaActivity(args));
                     } else if (i == addMemberRow) {
                         openAddMenu();
                     } else if (i > membersSectionRow && i < addMemberRow) {
@@ -233,13 +242,11 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         if (user_id == UserConfig.clientUserId) {
                             return;
                         }
-                        UserProfileActivity fragment = new UserProfileActivity();
                         Bundle args = new Bundle();
                         args.putInt("user_id", user_id);
-                        fragment.setArguments(args);
-                        ((LaunchActivity)parentActivity).presentFragment(fragment, "user_" + user_id, false);
+                        presentFragment(new UserProfileActivity(args));
                     } else if (i == settingsVibrateRow || i == settingsNotificationsRow) {
-                        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                         builder.setItems(new CharSequence[] {
                                 LocaleController.getString("Default", R.string.Default),
@@ -266,12 +273,6 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     }
                 }
             });
-
-            listView.setOnTouchListener(new OnSwipeTouchListener() {
-                public void onSwipeRight() {
-                    finishFragment(true);
-                }
-            });
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
             if (parent != null) {
@@ -293,19 +294,19 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
             if (requestCode == 3) {
                 Uri ringtone = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);
                 String name = null;
-                if (ringtone != null && parentActivity != null) {
-                    Ringtone rng = RingtoneManager.getRingtone(parentActivity, ringtone);
+                if (ringtone != null) {
+                    Ringtone rng = RingtoneManager.getRingtone(getParentActivity(), ringtone);
                     if (rng != null) {
                         if(ringtone.equals(Settings.System.DEFAULT_NOTIFICATION_URI)) {
                             name = LocaleController.getString("Default", R.string.Default);
                         } else {
-                            name = rng.getTitle(parentActivity);
+                            name = rng.getTitle(getParentActivity());
                         }
                         rng.stop();
                     }
                 }
 
-                SharedPreferences preferences = parentActivity.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                 SharedPreferences.Editor editor = preferences.edit();
 
                 if (name != null && ringtone != null) {
@@ -318,6 +319,20 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 editor.commit();
                 listView.invalidateViews();
             }
+        }
+    }
+
+    @Override
+    public void saveSelfArgs(Bundle args) {
+        if (avatarUpdater != null && avatarUpdater.currentPicturePath != null) {
+            args.putString("path", avatarUpdater.currentPicturePath);
+        }
+    }
+
+    @Override
+    public void restoreSelfArgs(Bundle args) {
+        if (avatarUpdater != null) {
+            avatarUpdater.currentPicturePath = args.getString("path");
         }
     }
 
@@ -355,54 +370,10 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public void applySelfActionBar() {
-        if (parentActivity == null) {
-            return;
-        }
-        ActionBar actionBar = parentActivity.getSupportActionBar();
-        actionBar.setDisplayShowTitleEnabled(true);
-        actionBar.setDisplayShowHomeEnabled(false);
-        actionBar.setDisplayHomeAsUpEnabled(true);
-        actionBar.setDisplayUseLogoEnabled(false);
-        actionBar.setDisplayShowCustomEnabled(false);
-        actionBar.setCustomView(null);
-        actionBar.setTitle(LocaleController.getString("GroupInfo", R.string.GroupInfo));
-        actionBar.setSubtitle(null);
-
-        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
-        if (title == null) {
-            final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
-            title = (TextView)parentActivity.findViewById(subtitleId);
-        }
-        if (title != null) {
-            title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
-            title.setCompoundDrawablePadding(0);
-        }
-        ((LaunchActivity)parentActivity).fixBackButton();
-    }
-
-    @Override
     public void onResume() {
-        super.onResume();
-        if (getActivity() == null) {
-            return;
-        }
         if (listViewAdapter != null) {
             listViewAdapter.notifyDataSetChanged();
         }
-        ((LaunchActivity)parentActivity).showActionBar();
-        ((LaunchActivity)parentActivity).updateActionBar();
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int itemId = item.getItemId();
-        switch (itemId) {
-            case android.R.id.home:
-                finishFragment();
-                break;
-        }
-        return true;
     }
 
     private void updateVisibleRows(int mask) {
@@ -467,14 +438,11 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
     private void processPhotoMenu(int action) {
         if (action == 0) {
-            if (parentActivity == null) {
-                return;
-            }
             TLRPC.Chat chat = MessagesController.getInstance().chats.get(chat_id);
             if (chat.photo != null && chat.photo.photo_big != null) {
                 NotificationCenter.getInstance().addToMemCache(53, chat.photo.photo_big);
-                Intent intent = new Intent(parentActivity, GalleryImageViewer.class);
-                startActivity(intent);
+                Intent intent = new Intent(getParentActivity(), GalleryImageViewer.class);
+                getParentActivity().startActivity(intent);
             }
         } else if (action == 1) {
             avatarUpdater.openCamera();
@@ -486,25 +454,22 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
     }
 
     private void openAddMenu() {
-        ContactsActivity fragment = new ContactsActivity();
-        fragment.animationType = 1;
-        Bundle bundle = new Bundle();
-        bundle.putBoolean("onlyUsers", true);
-        bundle.putBoolean("destroyAfterSelect", true);
-        bundle.putBoolean("usersAsSections", true);
-        bundle.putBoolean("returnAsResult", true);
-        fragment.selectAlertString = R.string.AddToTheGroup;
-        fragment.selectAlertStringDesc = "AddToTheGroup";
-        fragment.delegate = this;
+        Bundle args = new Bundle();
+        args.putBoolean("onlyUsers", true);
+        args.putBoolean("destroyAfterSelect", true);
+        args.putBoolean("usersAsSections", true);
+        args.putBoolean("returnAsResult", true);
+        args.putString("selectAlertString", LocaleController.getString("AddToTheGroup", R.string.AddToTheGroup));
+        ContactsActivity fragment = new ContactsActivity(args);
+        fragment.setDelegate(this);
         if (info != null) {
             HashMap<Integer, TLRPC.User> users = new HashMap<Integer, TLRPC.User>();
             for (TLRPC.TL_chatParticipant p : info.participants) {
                 users.put(p.user_id, null);
             }
-            NotificationCenter.getInstance().addToMemCache(7, users);
+            fragment.setIgnoreUsers(users);
         }
-        fragment.setArguments(bundle);
-        ((LaunchActivity)parentActivity).presentFragment(fragment, "contacts_block", false);
+        presentFragment(fragment);
     }
 
     private void kickUser(TLRPC.TL_chatParticipant user) {
@@ -516,25 +481,6 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
             MessagesController.getInstance().deleteUserFromChat(chat_id, MessagesController.getInstance().users.get(UserConfig.clientUserId), info);
             MessagesController.getInstance().deleteDialog(-chat_id, 0, false);
             finishFragment();
-        }
-    }
-
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        SupportMenuItem item = (SupportMenuItem)menu.add(Menu.NONE, 0, Menu.NONE, LocaleController.getString("AddMember", R.string.AddMember));
-        item.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
-        LayoutInflater li = (LayoutInflater)ApplicationLoader.applicationContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        item.setActionView(R.layout.group_profile_add_member_layout);
-
-        TextView textView = (TextView)item.getActionView().findViewById(R.id.done_button);
-        if (textView != null) {
-            textView.setText(LocaleController.getString("AddMember", R.string.AddMember));
-            textView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    openAddMenu();
-                }
-            });
         }
     }
 
@@ -591,11 +537,9 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     button.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            ChatProfileChangeNameActivity fragment = new ChatProfileChangeNameActivity();
-                            Bundle bundle = new Bundle();
-                            bundle.putInt("chat_id", chat_id);
-                            fragment.setArguments(bundle);
-                            ((LaunchActivity)parentActivity).presentFragment(fragment, "chat_name_" + chat_id, false);
+                            Bundle args = new Bundle();
+                            args.putInt("chat_id", chat_id);
+                            presentFragment(new ChatProfileChangeNameActivity(args));
                         }
                     });
 
@@ -603,7 +547,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     button2.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                             CharSequence[] items;
                             int type;
                             TLRPC.Chat chat = MessagesController.getInstance().chats.get(chat_id);
@@ -647,6 +591,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     onlineText = (TextView)view.findViewById(R.id.settings_online);
                 }
                 avatarImage = (BackupImageView)view.findViewById(R.id.settings_avatar_image);
+                avatarImage.processDetach = false;
                 TextView textView = (TextView)view.findViewById(R.id.settings_name);
                 Typeface typeface = Utilities.getTypeface("fonts/rmedium.ttf");
                 textView.setTypeface(typeface);
@@ -753,7 +698,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     textView.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                             builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
                             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                             builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {

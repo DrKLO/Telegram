@@ -14,12 +14,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.internal.view.SupportMenuItem;
-import android.support.v7.app.ActionBar;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
@@ -36,9 +31,11 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Cells.ChatOrUserCell;
+import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.AvatarUpdater;
 import org.telegram.ui.Views.BackupImageView;
-import org.telegram.ui.Views.BaseFragment;
+import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.PinnedHeaderListView;
 import org.telegram.ui.Views.SectionedBaseAdapter;
 
@@ -58,10 +55,15 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     private ProgressDialog progressDialog = null;
     private String nameToSet = null;
 
+    private final static int done_button = 1;
+
+    public GroupCreateFinalActivity(Bundle args) {
+        super(args);
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public boolean onFragmentCreate() {
-        super.onFragmentCreate();
         NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
         NotificationCenter.getInstance().addObserver(this, MessagesController.chatDidCreated);
         NotificationCenter.getInstance().addObserver(this, MessagesController.chatDidFailCreate);
@@ -101,7 +103,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 return false;
             }
         }
-        return true;
+        return super.onFragmentCreate();
     }
 
     @Override
@@ -114,14 +116,59 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
+            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
+
+            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1) {
+                        finishFragment();
+                    } else if (id == done_button) {
+                        if (donePressed) {
+                            return;
+                        }
+                        if (nameTextView.getText().length() == 0) {
+                            return;
+                        }
+                        donePressed = true;
+
+                        if (avatarUpdater.uploadingAvatar != null) {
+                            createAfterUpload = true;
+                        } else {
+                            progressDialog = new ProgressDialog(getParentActivity());
+                            progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
+                            progressDialog.setCanceledOnTouchOutside(false);
+                            progressDialog.setCancelable(false);
+
+                            final long reqId = MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, uploadedAvatar);
+
+                            progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    ConnectionsManager.getInstance().cancelRpc(reqId, true);
+                                    donePressed = false;
+                                    try {
+                                        dialog.dismiss();
+                                    } catch (Exception e) {
+                                        FileLog.e("tmessages", e);
+                                    }
+                                }
+                            });
+                            progressDialog.show();
+                        }
+                    }
+                }
+            });
+
+            ActionBarMenu menu = actionBarLayer.createMenu();
+            View doneItem = menu.addItemResource(done_button, R.layout.group_create_done_layout);
+
+            TextView doneTextView = (TextView)doneItem.findViewById(R.id.done_button);
+            doneTextView.setText(LocaleController.getString("Done", R.string.Done));
+
             fragmentView = inflater.inflate(R.layout.group_create_final_layout, container, false);
 
             final ImageButton button2 = (ImageButton)fragmentView.findViewById(R.id.settings_change_avatar_button);
@@ -129,7 +176,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 @Override
                 public void onClick(View view) {
 
-                    AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
 
                     CharSequence[] items;
 
@@ -166,7 +213,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 nameToSet = null;
             }
             listView = (PinnedHeaderListView)fragmentView.findViewById(R.id.listView);
-            listView.setAdapter(new ListAdapter(parentActivity));
+            listView.setAdapter(new ListAdapter(getParentActivity()));
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
             if (parent != null) {
@@ -174,42 +221,6 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             }
         }
         return fragmentView;
-    }
-
-    @Override
-    public void applySelfActionBar() {
-        if (parentActivity == null) {
-            return;
-        }
-        ActionBar actionBar = parentActivity.getSupportActionBar();
-        actionBar.setDisplayShowTitleEnabled(true);
-        actionBar.setDisplayShowHomeEnabled(false);
-        actionBar.setDisplayHomeAsUpEnabled(true);
-        actionBar.setDisplayUseLogoEnabled(false);
-        actionBar.setDisplayShowCustomEnabled(false);
-        actionBar.setCustomView(null);
-        actionBar.setSubtitle(null);
-        actionBar.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
-
-        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
-        if (title == null) {
-            final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
-            title = (TextView)parentActivity.findViewById(subtitleId);
-        }
-        if (title != null) {
-            title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
-            title.setCompoundDrawablePadding(0);
-        }
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (getActivity() == null) {
-            return;
-        }
-        ((LaunchActivity)parentActivity).showActionBar();
-        ((LaunchActivity)parentActivity).updateActionBar();
     }
 
     @Override
@@ -226,17 +237,6 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 }
             }
         });
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int itemId = item.getItemId();
-        switch (itemId) {
-            case android.R.id.home:
-                finishFragment();
-                break;
-        }
-        return true;
     }
 
     @Override
@@ -273,53 +273,6 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     }
 
     @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        SupportMenuItem doneItem = (SupportMenuItem)menu.add(Menu.NONE, 0, Menu.NONE, null);
-        doneItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
-        doneItem.setActionView(R.layout.group_create_done_layout);
-
-        TextView doneTextView = (TextView)doneItem.getActionView().findViewById(R.id.done_button);
-        doneTextView.setText(LocaleController.getString("Done", R.string.Done));
-        doneTextView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (donePressed || parentActivity == null) {
-                    return;
-                }
-                if (nameTextView.getText().length() == 0) {
-                    return;
-                }
-                donePressed = true;
-
-                if (avatarUpdater.uploadingAvatar != null) {
-                    createAfterUpload = true;
-                } else {
-                    progressDialog = new ProgressDialog(parentActivity);
-                    progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
-                    progressDialog.setCanceledOnTouchOutside(false);
-                    progressDialog.setCancelable(false);
-
-                    final long reqId = MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, uploadedAvatar);
-
-                    progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            ConnectionsManager.getInstance().cancelRpc(reqId, true);
-                            donePressed = false;
-                            try {
-                                dialog.dismiss();
-                            } catch (Exception e) {
-                                FileLog.e("tmessages", e);
-                            }
-                        }
-                    });
-                    progressDialog.show();
-                }
-            }
-        });
-    }
-
-    @Override
     public void didReceivedNotification(int id, final Object... args) {
         if (id == MessagesController.updateInterfaces) {
             int mask = (Integer)args[0];
@@ -335,7 +288,6 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 }
             }
             donePressed = false;
-            FileLog.e("tmessages", "did fail create chat");
         } else if (id == MessagesController.chatDidCreated) {
             Utilities.RunOnUIThread(new Runnable() {
                 @Override
@@ -347,11 +299,9 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                             FileLog.e("tmessages", e);
                         }
                     }
-                    ChatActivity fragment = new ChatActivity();
-                    Bundle bundle = new Bundle();
-                    bundle.putInt("chat_id", (Integer)args[0]);
-                    fragment.setArguments(bundle);
-                    ((LaunchActivity)parentActivity).presentFragment(fragment, "chat" + Math.random(), true, false);
+                    Bundle args2 = new Bundle();
+                    args2.putInt("chat_id", (Integer)args[0]);
+                    presentFragment(new ChatActivity(args2));
                 }
             });
         }

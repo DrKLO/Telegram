@@ -9,34 +9,29 @@
 package org.telegram.ui;
 
 import android.content.Context;
-import android.content.Intent;
-import android.os.Bundle;
-import android.support.v4.internal.view.SupportMenuItem;
-import android.support.v4.view.MenuItemCompat;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarActivity;
-import android.support.v7.widget.SearchView;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
-import android.widget.ImageView;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBarMenu;
+import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.PinnedHeaderListView;
 import org.telegram.ui.Views.SectionedBaseAdapter;
 
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -44,9 +39,12 @@ import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class CountrySelectActivity extends ActionBarActivity {
-    private SupportMenuItem searchItem;
-    private SearchView searchView;
+public class CountrySelectActivity extends BaseFragment {
+
+    public static interface CountrySelectActivityDelegate {
+        public abstract void didSelectCountry(String name);
+    }
+
     private SectionedBaseAdapter listViewAdapter;
     private PinnedHeaderListView listView;
     private boolean searchWas;
@@ -55,6 +53,7 @@ public class CountrySelectActivity extends ActionBarActivity {
     private TextView emptyTextView;
     private HashMap<String, ArrayList<Country>> countries = new HashMap<String, ArrayList<Country>>();
     private ArrayList<String> sortedCountries = new ArrayList<String>();
+    private CountrySelectActivityDelegate delegate;
 
     private Timer searchTimer;
     public ArrayList<Country> searchResult;
@@ -66,14 +65,10 @@ public class CountrySelectActivity extends ActionBarActivity {
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        searching = false;
-        searchWas = false;
-
+    public boolean onFragmentCreate() {
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(getResources().getAssets().open("countries.txt")));
+            InputStream stream = ApplicationLoader.applicationContext.getResources().getAssets().open("countries.txt");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] args = line.split(";");
@@ -90,6 +85,8 @@ public class CountrySelectActivity extends ActionBarActivity {
                 }
                 arr.add(c);
             }
+            reader.close();//TODO
+            stream.close();
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
@@ -110,218 +107,152 @@ public class CountrySelectActivity extends ActionBarActivity {
             });
         }
 
-        setContentView(R.layout.country_select_layout);
-
-        emptyTextView = (TextView)findViewById(R.id.searchEmptyView);
-        searchListViewAdapter = new SearchAdapter(this);
-
-        listView = (PinnedHeaderListView)findViewById(R.id.listView);
-        listView.setEmptyView(emptyTextView);
-        listView.setVerticalScrollBarEnabled(false);
-
-        listView.setAdapter(listViewAdapter = new ListAdapter(this));
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                if (searching && searchWas) {
-                    if (i < searchResult.size()) {
-                        Country c = searchResult.get(i);
-                        Intent intent = new Intent();
-                        intent.putExtra("country", c.name);
-                        setResult(RESULT_OK, intent);
-                        finish();
-                    }
-                } else {
-                    int section = listViewAdapter.getSectionForPosition(i);
-                    int row = listViewAdapter.getPositionInSectionForPosition(i);
-                    if (section < sortedCountries.size()) {
-                        String n = sortedCountries.get(section);
-                        ArrayList<Country> arr = countries.get(n);
-                        if (row < arr.size()) {
-                            Country c = arr.get(row);
-                            Intent intent = new Intent();
-                            intent.putExtra("country", c.name);
-                            setResult(RESULT_OK, intent);
-                            finish();
-                        }
-                    }
-                }
-            }
-        });
-
-        listView.setOnScrollListener(new AbsListView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(AbsListView absListView, int i) {
-                if (i == SCROLL_STATE_TOUCH_SCROLL && searching && searchWas) {
-                    Utilities.hideKeyboard(searchView);
-                }
-            }
-
-            @Override
-            public void onScroll(AbsListView absListView, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-            }
-        });
-
-        getWindow().setBackgroundDrawableResource(R.drawable.transparent);
-    }
-
-    public void applySelfActionBar() {
-        ActionBar actionBar = getSupportActionBar();
-        actionBar.setDisplayShowTitleEnabled(true);
-        actionBar.setDisplayShowHomeEnabled(false);
-        actionBar.setDisplayHomeAsUpEnabled(true);
-        actionBar.setDisplayUseLogoEnabled(false);
-        actionBar.setDisplayShowCustomEnabled(false);
-        actionBar.setCustomView(null);
-        actionBar.setSubtitle(null);
-        actionBar.setTitle(getString(R.string.ChooseCountry));
-        fixBackButton();
+        return super.onFragmentCreate();
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        applySelfActionBar();
+    public void onFragmentDestroy() {
+        super.onFragmentDestroy();
+    }
+
+    @Override
+    public View createView(LayoutInflater inflater, ViewGroup container) {
+        if (fragmentView == null) {
+            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setTitle(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
+
+            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1) {
+                        finishFragment();
+                    }
+                }
+            });
+
+            ActionBarMenu menu = actionBarLayer.createMenu();
+            menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+                @Override
+                public void onSearchExpand() {
+                    searching = true;
+                }
+
+                @Override
+                public void onSearchCollapse() {
+                    search(null);
+                    searching = false;
+                    searchWas = false;
+                    ViewGroup group = (ViewGroup) listView.getParent();
+                    listView.setAdapter(listViewAdapter);
+                    if (!LocaleController.isRTL) {
+                        listView.setPadding(Utilities.dp(16), listView.getPaddingTop(), Utilities.dp(30), listView.getPaddingBottom());
+                    } else {
+                        listView.setPadding(Utilities.dp(30), listView.getPaddingTop(), Utilities.dp(16), listView.getPaddingBottom());
+                    }
+                    if (android.os.Build.VERSION.SDK_INT >= 11) {
+                        listView.setFastScrollAlwaysVisible(true);
+                    }
+                    listView.setFastScrollEnabled(true);
+                    listView.setVerticalScrollBarEnabled(false);
+
+                    emptyTextView.setText(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
+                }
+
+                @Override
+                public void onTextChanged(EditText editText) {
+                    String text = editText.getText().toString();
+                    search(text);
+                    if (text.length() != 0) {
+                        searchWas = true;
+                        if (listView != null) {
+                            listView.setPadding(Utilities.dp(16), listView.getPaddingTop(), Utilities.dp(16), listView.getPaddingBottom());
+                            listView.setAdapter(searchListViewAdapter);
+                            if(android.os.Build.VERSION.SDK_INT >= 11) {
+                                listView.setFastScrollAlwaysVisible(false);
+                            }
+                            listView.setFastScrollEnabled(false);
+                            listView.setVerticalScrollBarEnabled(true);
+                        }
+                        if (emptyTextView != null) {
+                            emptyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+                        }
+                    }
+                }
+            });
+
+            searching = false;
+            searchWas = false;
+
+            fragmentView = inflater.inflate(R.layout.country_select_layout, container, false);
+
+            emptyTextView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
+            searchListViewAdapter = new SearchAdapter(getParentActivity());
+
+            listView = (PinnedHeaderListView)fragmentView.findViewById(R.id.listView);
+            listView.setEmptyView(emptyTextView);
+            listView.setVerticalScrollBarEnabled(false);
+
+            listView.setAdapter(listViewAdapter = new ListAdapter(getParentActivity()));
+            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                    if (searching && searchWas) {
+                        if (i < searchResult.size()) {
+                            Country c = searchResult.get(i);
+                            if (delegate != null) {
+                                delegate.didSelectCountry(c.name);
+                            }
+                            finishFragment();
+                        }
+                    } else {
+                        int section = listViewAdapter.getSectionForPosition(i);
+                        int row = listViewAdapter.getPositionInSectionForPosition(i);
+                        if (section < sortedCountries.size()) {
+                            String n = sortedCountries.get(section);
+                            ArrayList<Country> arr = countries.get(n);
+                            if (row < arr.size()) {
+                                Country c = arr.get(row);
+                                if (delegate != null) {
+                                    delegate.didSelectCountry(c.name);
+                                }
+                                finishFragment();
+                            }
+                        }
+                    }
+                }
+            });
+
+            listView.setOnScrollListener(new AbsListView.OnScrollListener() {
+                @Override
+                public void onScrollStateChanged(AbsListView absListView, int i) {
+                    if (i == SCROLL_STATE_TOUCH_SCROLL && searching && searchWas) {
+                        Utilities.hideKeyboard(getParentActivity().getCurrentFocus());
+                    }
+                }
+
+                @Override
+                public void onScroll(AbsListView absListView, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                }
+            });
+        } else {
+            ViewGroup parent = (ViewGroup)fragmentView.getParent();
+            if (parent != null) {
+                parent.removeView(fragmentView);
+            }
+        }
+        return fragmentView;
+    }
+
+    @Override
+    public void onResume() {
+        if (listViewAdapter != null) {
+            listViewAdapter.notifyDataSetChanged();
+        }
     }
 
     @Override
     public void onPause() {
-        super.onPause();
-        if (searchItem != null && searchItem.isActionViewExpanded()) {
-            searchItem.collapseActionView();
-        }
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int itemId = item.getItemId();
-        switch (itemId) {
-            case android.R.id.home:
-                if (searchItem != null) {
-                    if (searchItem.isActionViewExpanded()) {
-                        searchItem.collapseActionView();
-                    }
-                }
-                finish();
-                break;
-        }
-        return true;
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        searchItem = (SupportMenuItem)menu.add(Menu.NONE, 0, Menu.NONE, LocaleController.getString("Search", R.string.Search)).setIcon(R.drawable.ic_ab_search);
-        searchItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS|SupportMenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
-        searchItem.setActionView(searchView = new SearchView(this));
-
-        TextView textView = (TextView) searchView.findViewById(R.id.search_src_text);
-        if (textView != null) {
-            textView.setTextColor(0xffffffff);
-            try {
-                Field mCursorDrawableRes = TextView.class.getDeclaredField("mCursorDrawableRes");
-                mCursorDrawableRes.setAccessible(true);
-                mCursorDrawableRes.set(textView, R.drawable.search_carret);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        ImageView img = (ImageView) searchView.findViewById(R.id.search_close_btn);
-        if (img != null) {
-            img.setImageResource(R.drawable.ic_msg_btn_cross_custom);
-        }
-
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String s) {
-                Utilities.hideKeyboard(searchView);
-                return true;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String s) {
-                search(s);
-                if (s.length() != 0) {
-                    searchWas = true;
-                    if (listView != null) {
-                        listView.setPadding(Utilities.dp(16), listView.getPaddingTop(), Utilities.dp(16), listView.getPaddingBottom());
-                        listView.setAdapter(searchListViewAdapter);
-                        if(android.os.Build.VERSION.SDK_INT >= 11) {
-                            listView.setFastScrollAlwaysVisible(false);
-                        }
-                        listView.setFastScrollEnabled(false);
-                        listView.setVerticalScrollBarEnabled(true);
-                    }
-                    if (emptyTextView != null) {
-                        emptyTextView.setText(getString(R.string.NoResult));
-                    }
-                }
-                return true;
-            }
-        });
-
-        searchItem.setSupportOnActionExpandListener(new MenuItemCompat.OnActionExpandListener() {
-            @Override
-            public boolean onMenuItemActionExpand(MenuItem menuItem) {
-                getSupportActionBar().setIcon(R.drawable.ic_ab_search);
-                searching = true;
-                return true;
-            }
-
-            @Override
-            public boolean onMenuItemActionCollapse(MenuItem menuItem) {
-                searchView.setQuery("", false);
-                search(null);
-                searching = false;
-                searchWas = false;
-                ViewGroup group = (ViewGroup) listView.getParent();
-                listView.setAdapter(listViewAdapter);
-                if (!LocaleController.isRTL) {
-                    listView.setPadding(Utilities.dp(16), listView.getPaddingTop(), Utilities.dp(30), listView.getPaddingBottom());
-                } else {
-                    listView.setPadding(Utilities.dp(30), listView.getPaddingTop(), Utilities.dp(16), listView.getPaddingBottom());
-                }
-                if (android.os.Build.VERSION.SDK_INT >= 11) {
-                    listView.setFastScrollAlwaysVisible(true);
-                }
-                listView.setFastScrollEnabled(true);
-                listView.setVerticalScrollBarEnabled(false);
-                applySelfActionBar();
-
-                emptyTextView.setText(getString(R.string.ChooseCountry));
-                return true;
-            }
-        });
-        return super.onCreateOptionsMenu(menu);
-    }
-
-    public void fixBackButton() {
-        if(android.os.Build.VERSION.SDK_INT == 19) {
-            //workaround for back button dissapear
-            try {
-                Class firstClass = getSupportActionBar().getClass();
-                Class aClass = firstClass.getSuperclass();
-                if (aClass == android.support.v7.app.ActionBar.class) {
-
-                } else {
-                    Field field = aClass.getDeclaredField("mActionBar");
-                    field.setAccessible(true);
-                    android.app.ActionBar bar = (android.app.ActionBar)field.get(getSupportActionBar());
-
-                    field = bar.getClass().getDeclaredField("mActionView");
-                    field.setAccessible(true);
-                    View v = (View)field.get(bar);
-                    aClass = v.getClass();
-
-                    field = aClass.getDeclaredField("mHomeLayout");
-                    field.setAccessible(true);
-                    v = (View)field.get(v);
-                    v.setVisibility(View.VISIBLE);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
+        actionBarLayer.closeSearchField();
     }
 
     public void search(final String query) {
@@ -377,6 +308,10 @@ public class CountrySelectActivity extends ActionBarActivity {
                 updateSearchResults(resultArray);
             }
         });
+    }
+
+    public void setCountrySelectActivityDelegate(CountrySelectActivityDelegate delegate) {
+        this.delegate = delegate;
     }
 
     private void updateSearchResults(final ArrayList<Country> arrCounties) {

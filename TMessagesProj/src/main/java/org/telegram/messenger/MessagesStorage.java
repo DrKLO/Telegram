@@ -564,9 +564,11 @@ public class MessagesStorage {
                     }
                     ids += uid;
                 }
+                int totalCount = 0;
                 SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT uid, read_state, out FROM messages WHERE mid IN(%s)", ids));
                 while (cursor.next()) {
                     int out = cursor.intValue(2);
+                    totalCount++;
                     if (out != 0) {
                         continue;
                     }
@@ -587,6 +589,10 @@ public class MessagesStorage {
                     }
                 }
                 cursor.dispose();
+
+                if (totalCount != messages.size()) {
+                    FileLog.e("tmessages", "messages read mismatch!");
+                }
 
                 cursor = database.queryFinalized(String.format(Locale.US, "SELECT did, unread_count FROM dialogs WHERE did IN(%s)", dialogsToReload));
                 while (cursor.next()) {

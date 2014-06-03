@@ -96,19 +96,6 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="org.telegram.ui.LoginActivity"
-            android:windowSoftInputMode="adjustResize"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
-            android:screenOrientation="portrait">
-        </activity>
-        <activity
-            android:name="org.telegram.ui.CountrySelectActivity"
-            android:windowSoftInputMode="adjustResize"
-            android:theme="@style/Theme.TMessages"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
-            android:screenOrientation="portrait">
-        </activity>
-        <activity
             android:name="org.telegram.ui.IntroActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:screenOrientation="portrait">

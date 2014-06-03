@@ -43,7 +43,7 @@ import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.PhotoObject;
 import org.telegram.ui.Views.BackupImageView;
-import org.telegram.ui.Views.BaseFragment;
+import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.HorizontalListView;
 
 import java.io.File;
@@ -94,10 +94,10 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
             fragmentView = inflater.inflate(R.layout.settings_wallpapers_layout, container, false);
-            listAdapter = new ListAdapter(parentActivity);
+            listAdapter = new ListAdapter(getParentActivity());
 
             progressBar = (ProgressBar)fragmentView.findViewById(R.id.action_progress);
             backgroundImage = (ImageView)fragmentView.findViewById(R.id.background_image);
@@ -107,16 +107,13 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                     if (i == 0) {
-                        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
 
                         CharSequence[] items = new CharSequence[] {LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley), LocaleController.getString("Cancel", R.string.Cancel)};
 
                         builder.setItems(items, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
-                                if (parentActivity == null) {
-                                    return;
-                                }
                                 if (i == 0) {
                                     Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                                     File image = Utilities.generatePicturePath();
@@ -124,11 +121,11 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                                         takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
                                         currentPicturePath = image.getAbsolutePath();
                                     }
-                                    parentActivity.startActivityForResult(takePictureIntent, 10);
+                                    getParentActivity().startActivityForResult(takePictureIntent, 10);
                                 } else if (i == 1) {
                                     Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
                                     photoPickerIntent.setType("image/*");
-                                    parentActivity.startActivityForResult(photoPickerIntent, 11);
+                                    getParentActivity().startActivityForResult(photoPickerIntent, 11);
                                 }
                             }
                         });
@@ -404,52 +401,34 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
     }
 
     private void fixLayout() {
-        final View view = getView();
-        if (view != null) {
-            ViewTreeObserver obs = view.getViewTreeObserver();
-            obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    view.getViewTreeObserver().removeOnPreDrawListener(this);
-                    if (listAdapter != null) {
-                        listAdapter.notifyDataSetChanged();
-                    }
-                    if (listView != null) {
-                        listView.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                listView.scrollTo(0);
-                            }
-                        });
-                    }
-                    return false;
+        ViewTreeObserver obs = fragmentView.getViewTreeObserver();
+        obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                fragmentView.getViewTreeObserver().removeOnPreDrawListener(this);
+                if (listAdapter != null) {
+                    listAdapter.notifyDataSetChanged();
                 }
-            });
-        }
-    }
-
-    @Override
-    public boolean canApplyUpdateStatus() {
-        return false;
+                if (listView != null) {
+                    listView.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            listView.scrollTo(0);
+                        }
+                    });
+                }
+                return false;
+            }
+        });
     }
 
     @Override
     public void onResume() {
-        super.onResume();
-        if (isFinish) {
-            return;
-        }
-        if (getActivity() == null) {
-            return;
-        }
-        if (!firstStart && listAdapter != null) {
+        if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
-
-        ((LaunchActivity) parentActivity).hideActionBar();
-
+        hideActionBar();
         processSelectedBackground();
-
         fixLayout();
     }
 

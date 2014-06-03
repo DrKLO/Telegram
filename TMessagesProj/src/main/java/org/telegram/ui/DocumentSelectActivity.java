@@ -14,12 +14,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
-import android.os.Bundle;
 import android.os.Environment;
 import android.os.StatFs;
-import android.support.v7.app.ActionBar;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -32,9 +29,9 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.BackupImageView;
-import org.telegram.ui.Views.BaseFragment;
-import org.telegram.ui.Views.OnSwipeTouchListener;
+import org.telegram.ui.Views.ActionBar.BaseFragment;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -58,7 +55,7 @@ public class DocumentSelectActivity extends BaseFragment {
     private boolean receiverRegistered = false;
     private ArrayList<HistoryEntry> history = new ArrayList<HistoryEntry>();
     private long sizeLimit = 1024 * 1024 * 1024;
-    public DocumentSelectActivityDelegate delegate;
+    private DocumentSelectActivityDelegate delegate;
 
     private class ListItem {
         int icon;
@@ -100,16 +97,10 @@ public class DocumentSelectActivity extends BaseFragment {
     };
 
     @Override
-    public boolean onFragmentCreate() {
-        super.onFragmentCreate();
-        return true;
-    }
-
-    @Override
     public void onFragmentDestroy() {
         try {
             if (receiverRegistered) {
-                parentActivity.unregisterReceiver(receiver);
+                getParentActivity().unregisterReceiver(receiver);
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -118,13 +109,7 @@ public class DocumentSelectActivity extends BaseFragment {
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View createView(LayoutInflater inflater, ViewGroup container) {
         if (!receiverRegistered) {
             receiverRegistered = true;
             IntentFilter filter = new IntentFilter();
@@ -138,12 +123,23 @@ public class DocumentSelectActivity extends BaseFragment {
             filter.addAction(Intent.ACTION_MEDIA_UNMOUNTABLE);
             filter.addAction(Intent.ACTION_MEDIA_UNMOUNTED);
             filter.addDataScheme("file");
-            parentActivity.registerReceiver(receiver, filter);
+            getParentActivity().registerReceiver(receiver, filter);
         }
 
         if (fragmentView == null) {
+            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setTitle(LocaleController.getString("SelectFile", R.string.SelectFile));
+            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1) {
+                        finishFragment();
+                    }
+                }
+            });
+
             fragmentView = inflater.inflate(R.layout.document_select_layout, container, false);
-            listAdapter = new ListAdapter(parentActivity);
+            listAdapter = new ListAdapter(getParentActivity());
             emptyView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
             listView = (ListView)fragmentView.findViewById(R.id.listView);
             listView.setEmptyView(emptyView);
@@ -158,22 +154,21 @@ public class DocumentSelectActivity extends BaseFragment {
                         he.scrollItem = listView.getFirstVisiblePosition();
                         he.scrollOffset = listView.getChildAt(0).getTop();
                         he.dir = currentDir;
-                        ActionBar actionBar = parentActivity.getSupportActionBar();
-                        he.title = actionBar.getTitle().toString();
+                        he.title = actionBarLayer.getTitle().toString();
                         if (!listFiles(file)){
                             return;
                         }
                         history.add(he);
-                        actionBar.setTitle(item.title);
+                        actionBarLayer.setTitle(item.title);
                         listView.setSelection(0);
                     } else {
                         if (!file.canRead()) {
-                            showErrorBox(getString(R.string.AccessError));
+                            showErrorBox(LocaleController.getString("AccessError", R.string.AccessError));
                             return;
                         }
                         if (sizeLimit != 0) {
                             if (file.length() > sizeLimit) {
-                                showErrorBox(getString(R.string.FileUploadLimit, Utilities.formatFileSize(sizeLimit)));
+                                showErrorBox(LocaleController.formatString("FileUploadLimit", R.string.FileUploadLimit, Utilities.formatFileSize(sizeLimit)));
                                 return;
                             }
                         }
@@ -187,11 +182,6 @@ public class DocumentSelectActivity extends BaseFragment {
                 }
             });
 
-            listView.setOnTouchListener(new OnSwipeTouchListener() {
-                public void onSwipeRight() {
-                    finishFragment(true);
-                }
-            });
             listRoots();
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
@@ -203,65 +193,17 @@ public class DocumentSelectActivity extends BaseFragment {
     }
 
     @Override
-    public void applySelfActionBar() {
-        if (parentActivity == null) {
-            return;
-        }
-        ActionBar actionBar = parentActivity.getSupportActionBar();
-        actionBar.setDisplayShowTitleEnabled(true);
-        actionBar.setDisplayShowHomeEnabled(false);
-        actionBar.setDisplayHomeAsUpEnabled(true);
-        actionBar.setDisplayUseLogoEnabled(false);
-        actionBar.setDisplayShowCustomEnabled(false);
-        actionBar.setSubtitle(null);
-        actionBar.setCustomView(null);
-        actionBar.setTitle(LocaleController.getString("SelectFile", R.string.SelectFile));
-
-        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
-        if (title == null) {
-            final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
-            title = (TextView)parentActivity.findViewById(subtitleId);
-        }
-        if (title != null) {
-            title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
-            title.setCompoundDrawablePadding(0);
-        }
-    }
-
-    @Override
     public void onResume() {
-        super.onResume();
-        if (isFinish) {
-            return;
-        }
-        if (getActivity() == null) {
-            return;
-        }
-        if (!firstStart && listAdapter != null) {
+        if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
-        firstStart = false;
-        ((LaunchActivity)parentActivity).showActionBar();
-        ((LaunchActivity)parentActivity).updateActionBar();
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int itemId = item.getItemId();
-        switch (itemId) {
-            case android.R.id.home:
-                finishFragment();
-                break;
-        }
-        return true;
     }
 
     @Override
     public boolean onBackPressed() {
         if (history.size() > 0){
             HistoryEntry he = history.remove(history.size() - 1);
-            ActionBar actionBar = parentActivity.getSupportActionBar();
-            actionBar.setTitle(he.title);
+            actionBarLayer.setTitle(he.title);
             if (he.dir != null) {
                 listFiles(he.dir);
             } else {
@@ -271,6 +213,10 @@ public class DocumentSelectActivity extends BaseFragment {
             return false;
         }
         return super.onBackPressed();
+    }
+
+    public void setDelegate(DocumentSelectActivityDelegate delegate) {
+        this.delegate = delegate;
     }
 
     private boolean listFiles(File dir) {
@@ -292,7 +238,7 @@ public class DocumentSelectActivity extends BaseFragment {
                     return true;
                 }
             }
-            showErrorBox(getString(R.string.AccessError));
+            showErrorBox(LocaleController.getString("AccessError", R.string.AccessError));
             return false;
         }
         emptyView.setText(LocaleController.getString("NoFiles", R.string.NoFiles));
@@ -304,7 +250,7 @@ public class DocumentSelectActivity extends BaseFragment {
             return false;
         }
         if (files == null) {
-            showErrorBox(getString(R.string.UnknownError));
+            showErrorBox(LocaleController.getString("UnknownError", R.string.UnknownError));
             return false;
         }
         currentDir = dir;
@@ -344,7 +290,7 @@ public class DocumentSelectActivity extends BaseFragment {
     }
 
     private void showErrorBox(String error){
-        new AlertDialog.Builder(parentActivity)
+        new AlertDialog.Builder(getParentActivity())
                 .setTitle(LocaleController.getString("AppName", R.string.AppName))
                 .setMessage(error)
                 .setPositiveButton(R.string.OK, null)
@@ -356,7 +302,11 @@ public class DocumentSelectActivity extends BaseFragment {
         items.clear();
         String extStorage = Environment.getExternalStorageDirectory().getAbsolutePath();
         ListItem ext = new ListItem();
-        ext.title = getString(Build.VERSION.SDK_INT < 9 || Environment.isExternalStorageRemovable() ? R.string.SdCard : R.string.InternalStorage);
+        if (Build.VERSION.SDK_INT < 9 || Environment.isExternalStorageRemovable()) {
+            ext.title = LocaleController.getString("SdCard", R.string.SdCard);
+        } else {
+            ext.title = LocaleController.getString("InternalStorage", R.string.InternalStorage);
+        }
         ext.icon = Build.VERSION.SDK_INT < 9 || Environment.isExternalStorageRemovable() ? R.drawable.ic_external_storage : R.drawable.ic_storage;
         ext.subtitle = getRootSubtitle(extStorage);
         ext.file = Environment.getExternalStorageDirectory();
@@ -386,9 +336,12 @@ public class DocumentSelectActivity extends BaseFragment {
                 result.removeAll(aliases.get(extDevice));
                 for (String path : result) {
                     try {
-                        boolean isSd = path.toLowerCase().contains("sd");
                         ListItem item = new ListItem();
-                        item.title = getString(isSd ? R.string.SdCard : R.string.ExternalStorage);
+                        if (path.toLowerCase().contains("sd")) {
+                            ext.title = LocaleController.getString("SdCard", R.string.SdCard);
+                        } else {
+                            ext.title = LocaleController.getString("ExternalStorage", R.string.ExternalStorage);
+                        }
                         item.icon = R.drawable.ic_external_storage;
                         item.subtitle = getRootSubtitle(path);
                         item.file = new File(path);

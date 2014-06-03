@@ -194,7 +194,8 @@ public class IntroActivity extends ActionBarActivity {
                     return;
                 }
                 startPressed = true;
-                Intent intent2 = new Intent(IntroActivity.this, LoginActivity.class);
+                Intent intent2 = new Intent(IntroActivity.this, LaunchActivity.class);
+                intent2.putExtra("fromIntro", true);
                 startActivity(intent2);
                 finish();
             }

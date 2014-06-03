@@ -135,7 +135,6 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
 
         boolean result = false;
         int side = Utilities.dp(44);
-        checkSwipes(event);
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             if (delegate == null || delegate.canPerformActions()) {
                 if (buttonState != -1 && x >= buttonX && x <= buttonX + side && y >= buttonY && y <= buttonY + side) {

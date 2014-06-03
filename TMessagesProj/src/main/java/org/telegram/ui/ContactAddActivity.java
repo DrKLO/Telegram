@@ -12,29 +12,25 @@ import android.app.Activity;
 import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.os.Bundle;
-import android.support.v7.app.ActionBar;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.ConnectionsManager;
-import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.BackupImageView;
-import org.telegram.ui.Views.BaseFragment;
+import org.telegram.ui.Views.ActionBar.BaseFragment;
 
 public class ContactAddActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private int user_id;
@@ -46,14 +42,17 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
     private TextView onlineText;
     private TextView phoneText;
 
+    public ContactAddActivity(Bundle args) {
+        super(args);
+    }
+
     @Override
     public boolean onFragmentCreate() {
-        super.onFragmentCreate();
         NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
         user_id = getArguments().getInt("user_id", 0);
         phone = getArguments().getString("phone");
         TLRPC.User user = MessagesController.getInstance().users.get(user_id);
-        return user != null;
+        return user != null && super.onFragmentCreate();
     }
 
     @Override
@@ -63,8 +62,35 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
+            actionBarLayer.setCustomView(R.layout.settings_do_action_layout);
+            Button cancelButton = (Button)actionBarLayer.findViewById(R.id.cancel_button);
+            cancelButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    finishFragment();
+                }
+            });
+            doneButton = actionBarLayer.findViewById(R.id.done_button);
+            doneButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (firstNameField.getText().length() != 0) {
+                        TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+                        user.first_name = firstNameField.getText().toString();
+                        user.last_name = lastNameField.getText().toString();
+                        ContactsController.getInstance().addContact(user);
+                        finishFragment();
+                        NotificationCenter.getInstance().postNotificationName(MessagesController.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
+                    }
+                }
+            });
+
+            cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel));
+            TextView textView = (TextView)doneButton.findViewById(R.id.done_button_text);
+            textView.setText(LocaleController.getString("Done", R.string.Done));
+
             fragmentView = inflater.inflate(R.layout.contact_add_layout, container, false);
 
             TLRPC.User user = MessagesController.getInstance().users.get(user_id);
@@ -150,67 +176,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
     }
 
     @Override
-    public boolean canApplyUpdateStatus() {
-        return false;
-    }
-
-    @Override
-    public void applySelfActionBar() {
-        if (parentActivity == null) {
-            return;
-        }
-        ActionBar actionBar = parentActivity.getSupportActionBar();
-        actionBar.setDisplayShowCustomEnabled(true);
-        actionBar.setDisplayShowHomeEnabled(false);
-        actionBar.setDisplayHomeAsUpEnabled(false);
-        actionBar.setDisplayShowTitleEnabled(false);
-
-        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
-        if (title == null) {
-            final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
-            title = (TextView)parentActivity.findViewById(subtitleId);
-        }
-        if (title != null) {
-            title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
-            title.setCompoundDrawablePadding(0);
-        }
-
-        actionBar.setCustomView(R.layout.settings_do_action_layout);
-        Button cancelButton = (Button)actionBar.getCustomView().findViewById(R.id.cancel_button);
-        cancelButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                finishFragment();
-            }
-        });
-        doneButton = actionBar.getCustomView().findViewById(R.id.done_button);
-        doneButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (firstNameField.getText().length() != 0) {
-                    TLRPC.User user = MessagesController.getInstance().users.get(user_id);
-                    user.first_name = firstNameField.getText().toString();
-                    user.last_name = lastNameField.getText().toString();
-                    ContactsController.getInstance().addContact(user);
-                    finishFragment();
-                    NotificationCenter.getInstance().postNotificationName(MessagesController.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
-                }
-            }
-        });
-
-        cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel));
-        TextView textView = (TextView)doneButton.findViewById(R.id.done_button_text);
-        textView.setText(LocaleController.getString("Done", R.string.Done));
-    }
-
-    @Override
     public void onResume() {
-        super.onResume();
-        if (getActivity() == null) {
-            return;
-        }
-        ((LaunchActivity)parentActivity).updateActionBar();
-
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         boolean animations = preferences.getBoolean("view_animations", true);
         if (!animations) {
@@ -220,30 +186,8 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
     }
 
     @Override
-    public Animation onCreateAnimation(int transit, boolean enter, int nextAnim) {
-        if (nextAnim != 0) {
-            Animation anim = AnimationUtils.loadAnimation(getActivity(), nextAnim);
-
-            anim.setAnimationListener(new Animation.AnimationListener() {
-
-                public void onAnimationStart(Animation animation) {
-                    ContactAddActivity.this.onAnimationStart();
-                }
-
-                public void onAnimationRepeat(Animation animation) {
-
-                }
-
-                public void onAnimationEnd(Animation animation) {
-                    ContactAddActivity.this.onAnimationEnd();
-                    firstNameField.requestFocus();
-                    Utilities.showKeyboard(firstNameField);
-                }
-            });
-
-            return anim;
-        } else {
-            return super.onCreateAnimation(transit, enter, nextAnim);
-        }
+    public void onOpenAnimationEnd() {
+        firstNameField.requestFocus();
+        Utilities.showKeyboard(firstNameField);
     }
 }
