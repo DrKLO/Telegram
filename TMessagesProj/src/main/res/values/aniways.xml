@@ -33,7 +33,7 @@
     -->
     <string name="aniways_logsVerbosity">Verbose</string>
     
-    <string name="aniways_iconEncodingMethod">Invisible</string>
+    <string name="aniways_iconEncodingMethod">ViralLink</string>
 
     <integer name="aniways_smallIconSize">20</integer>
 
