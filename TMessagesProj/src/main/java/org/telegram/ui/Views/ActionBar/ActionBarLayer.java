@@ -40,6 +40,7 @@ public class ActionBarLayer extends FrameLayout {
     private ActionBar parentActionBar;
     private boolean oldUseLogo;
     private boolean oldUseBack;
+    private boolean isBackLayoutHidden = false;
     protected boolean isSearchFieldVisible;
     public ActionBarMenuOnItemClick actionBarMenuOnItemClick;
 
@@ -329,7 +330,8 @@ public class ActionBarLayer extends FrameLayout {
     }
 
     public void setBackLayoutVisible(int visibility) {
-        backButtonFrameLayout.setVisibility(visibility);
+        isBackLayoutHidden = visibility != VISIBLE;
+        backButtonFrameLayout.setVisibility(isSearchFieldVisible ? VISIBLE : visibility);
     }
 
     public int getBackLayoutWidth() {
@@ -405,6 +407,11 @@ public class ActionBarLayer extends FrameLayout {
             setDisplayHomeAsUpEnabled(true);
         } else {
             setDisplayHomeAsUpEnabled(oldUseBack);
+        }
+        if (visible) {
+            backButtonFrameLayout.setVisibility(VISIBLE);
+        } else {
+            backButtonFrameLayout.setVisibility(isBackLayoutHidden ? INVISIBLE : VISIBLE);
         }
         logoImageView.setImageResource(visible ? R.drawable.ic_ab_search : R.drawable.ic_ab_logo);
     }

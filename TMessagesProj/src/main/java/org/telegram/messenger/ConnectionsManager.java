@@ -147,7 +147,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
             if (datacenters != null) {
                 MessagesController.getInstance().updateTimerProc();
-                if (datacenterWithId(currentDatacenterId).authKey != null) {
+                Datacenter datacenter = datacenterWithId(currentDatacenterId);
+                if (datacenter != null && datacenter.authKey != null) {
                     if (lastPingTime < System.currentTimeMillis() - 19000) {
                         lastPingTime = System.currentTimeMillis();
                         generatePing();

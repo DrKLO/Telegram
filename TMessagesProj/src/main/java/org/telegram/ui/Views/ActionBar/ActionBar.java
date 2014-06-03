@@ -107,9 +107,10 @@ public class ActionBar extends FrameLayout {
 
     private void updateBackOverlay(int widthMeasureSpec, int heightMeasureSpec) {
         if (currentLayer != null) {
-            currentLayer.setBackLayoutVisible(currentBackOverlay == null ? VISIBLE : INVISIBLE);
+            currentLayer.setBackLayoutVisible(currentLayer.isSearchFieldVisible || currentBackOverlay == null ? VISIBLE : INVISIBLE);
         }
         if (currentBackOverlay != null) {
+            currentBackOverlay.setVisibility(currentLayer.isSearchFieldVisible ? GONE : VISIBLE);
             ViewGroup.LayoutParams layoutParams = currentBackOverlay.getLayoutParams();
             if (currentLayer != null) {
                 currentLayer.measure(widthMeasureSpec, heightMeasureSpec);

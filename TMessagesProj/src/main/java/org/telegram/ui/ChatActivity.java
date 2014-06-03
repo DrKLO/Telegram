@@ -1036,6 +1036,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
     private String getTrimmedString(String src) {
         String result = src.trim();
+        if (result.length() == 0) {
+            return result;
+        }
         while (src.startsWith("\n")) {
             src = src.substring(1);
         }
