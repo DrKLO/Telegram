@@ -211,8 +211,18 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             startSecretButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    creatingChat = true;
-                    MessagesController.getInstance().startSecretChat(getParentActivity(), MessagesController.getInstance().users.get(user_id));
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
+                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            creatingChat = true;
+                            MessagesController.getInstance().startSecretChat(getParentActivity(), MessagesController.getInstance().users.get(user_id));
+                        }
+                    });
+                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    builder.show().setCanceledOnTouchOutside(true);
                 }
             });
             if (dialog_id == 0) {

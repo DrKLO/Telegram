@@ -326,7 +326,7 @@ public class ActionBarActivity extends Activity {
                 });
                 velocityTracker.recycle();
                 velocityTracker = null;
-            } else if (ev == null) {
+            } else if (ev == null || ev != null && (ev.getAction() == MotionEvent.ACTION_CANCEL || ev.getAction() == MotionEvent.ACTION_UP)) {
                 maybeStartTracking = false;
                 startedTracking = false;
                 if (velocityTracker != null) {
