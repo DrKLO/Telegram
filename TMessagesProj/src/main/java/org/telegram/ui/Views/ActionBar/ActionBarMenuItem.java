@@ -23,7 +23,6 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import org.telegram.messenger.R;
@@ -41,7 +40,7 @@ public class ActionBarMenuItem extends ImageView {
 
     private LinearLayout popupLayout;
     private ActionBarMenu parentMenu;
-    private PopupWindow popupWindow;
+    private ActionBarPopupWindow popupWindow;
     private ActionBar parentActionBar;
     private EditText searchField;
     private boolean isSearchField = false;
@@ -120,12 +119,12 @@ public class ActionBarMenuItem extends ImageView {
             return;
         }
         if (popupWindow == null) {
-            popupWindow = new PopupWindow(popupLayout, FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+            popupWindow = new ActionBarPopupWindow(popupLayout, FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
             popupWindow.setFocusable(true);
             popupWindow.setBackgroundDrawable(new BitmapDrawable());
             popupWindow.setOutsideTouchable(true);
             popupWindow.setClippingEnabled(true);
-            popupWindow.setInputMethodMode(PopupWindow.INPUT_METHOD_NOT_NEEDED);
+            popupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
             popupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
         }
         if (popupLayout.getMeasuredWidth() == 0) {
@@ -177,7 +176,6 @@ public class ActionBarMenuItem extends ImageView {
             searchField.setTextSize(18);
             searchField.setTextColor(0xffffffff);
             searchField.setSingleLine(true);
-            searchField.setTextIsSelectable(false);
             searchField.setBackgroundResource(R.drawable.search_light_states);
             searchField.setPadding(Utilities.dp(6), 0, Utilities.dp(6), 0);
             searchField.setInputType(EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
@@ -220,10 +218,11 @@ public class ActionBarMenuItem extends ImageView {
                 mCursorDrawableRes.setAccessible(true);
                 mCursorDrawableRes.set(searchField, R.drawable.search_carret);
             } catch (Exception e) {
-                e.printStackTrace();
+                //nothing to do
             }
             if (Build.VERSION.SDK_INT >= 11) {
                 searchField.setImeOptions(EditorInfo.IME_FLAG_NO_FULLSCREEN | EditorInfo.IME_ACTION_SEARCH);
+                searchField.setTextIsSelectable(false);
             } else {
                 searchField.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
             }

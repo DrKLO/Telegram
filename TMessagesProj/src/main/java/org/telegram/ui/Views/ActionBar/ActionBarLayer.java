@@ -437,4 +437,10 @@ public class ActionBarLayer extends FrameLayout {
             menu.onMenuButtonPressed();
         }
     }
+
+    protected void onPause() {
+        if (menu != null) {
+            menu.hideAllPopupMenus();
+        }
+    }
 }

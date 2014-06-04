@@ -177,6 +177,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
 
     @Override
     public void onResume() {
+        super.onResume();
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         boolean animations = preferences.getBoolean("view_animations", true);
         if (!animations) {

@@ -424,6 +424,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
 
     @Override
     public void onResume() {
+        super.onResume();
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }

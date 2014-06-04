@@ -546,6 +546,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public void onResume() {
+        super.onResume();
         showActionBar();
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();

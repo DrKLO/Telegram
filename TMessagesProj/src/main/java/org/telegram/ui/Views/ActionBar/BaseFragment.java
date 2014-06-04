@@ -51,11 +51,11 @@ public class BaseFragment {
                 }
                 fragmentView = null;
             }
+            if (actionBarLayer != null) {
+                actionBarLayer.onDestroy();
+                actionBarLayer = null;
+            }
             if (parentActivity != null) {
-                if (actionBarLayer != null) {
-                    actionBarLayer.onDestroy();
-                    actionBarLayer = null;
-                }
                 actionBarLayer = parentActivity.getInternalActionBar().createLayer();
             }
         }
@@ -92,7 +92,10 @@ public class BaseFragment {
     }
 
     public void onPause() {
-
+        if (actionBarLayer != null) {
+            actionBarLayer.onPause();
+            actionBarLayer.closeSearchField();
+        }
     }
 
     public void onConfigurationChanged(android.content.res.Configuration newConfig) {

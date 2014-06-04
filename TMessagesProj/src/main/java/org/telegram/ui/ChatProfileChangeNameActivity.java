@@ -103,6 +103,7 @@ public class ChatProfileChangeNameActivity extends BaseFragment {
 
     @Override
     public void onResume() {
+        super.onResume();
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         boolean animations = preferences.getBoolean("view_animations", true);
         if (!animations) {

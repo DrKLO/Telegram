@@ -87,7 +87,7 @@ public class ActionBarMenu extends LinearLayout {
         return menuItem;
     }
 
-    public void onDestroy() {
+    public void hideAllPopupMenus() {
         for (int a = 0; a < getChildCount(); a++) {
             View view = getChildAt(a);
             if (view instanceof ActionBarMenuItem) {

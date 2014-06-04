@@ -33,10 +33,6 @@ import android.widget.FrameLayout;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ChatActivity;
-import org.telegram.ui.GroupCreateFinalActivity;
-import org.telegram.ui.SettingsActivity;
-import org.telegram.ui.SettingsWallpapersActivity;
 
 import java.util.ArrayList;
 
@@ -315,7 +311,7 @@ public class ActionBarActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (startedTracking || checkTransitionAnimation()) {
+        if (startedTracking || checkTransitionAnimation() || fragmentsStack.isEmpty()) {
             return;
         }
         if (actionBar.currentLayer != null && actionBar.currentLayer.isSearchFieldVisible) {
@@ -488,6 +484,15 @@ public class ActionBarActivity extends Activity {
         return true;
     }
 
+    public boolean addFragmentToStack(BaseFragment fragment) {
+        if (!fragment.onFragmentCreate()) {
+            return false;
+        }
+        fragment.setParentActivity(this);
+        fragmentsStack.add(fragment);
+        return true;
+    }
+
     private void closeLastFragmentInternalRemoveOld(BaseFragment fragment) {
         fragment.onPause();
         fragment.onFragmentDestroy();
@@ -566,9 +571,6 @@ public class ActionBarActivity extends Activity {
     }
 
     public void removeFragmentFromStack(BaseFragment fragment) {
-//        if (!fragmentsStack.isEmpty() && fragmentsStack.get(fragmentsStack.size() - 1) == fragment) {
-//            return;
-//        }
         fragment.onFragmentDestroy();
         fragment.setParentActivity(null);
         fragmentsStack.remove(fragment);

@@ -84,6 +84,7 @@ public class IdenticonActivity extends BaseFragment {
 
     @Override
     public void onResume() {
+        super.onResume();
         fixLayout();
     }
 

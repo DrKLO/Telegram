@@ -2655,6 +2655,8 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
     @Override
     public void onResume() {
+        super.onResume();
+
         showActionBar();
 
         checkActionBarMenu();
@@ -2741,6 +2743,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
     @Override
     public void onPause() {
+        super.onPause();
         actionBarLayer.hideActionMode();
         hideEmojiPopup();
         paused = true;

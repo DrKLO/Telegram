@@ -378,15 +378,11 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public void onResume() {
+        super.onResume();
         showActionBar();
         if (messagesListViewAdapter != null) {
             messagesListViewAdapter.notifyDataSetChanged();
         }
-    }
-
-    @Override
-    public void onPause() {
-        actionBarLayer.closeSearchField();
     }
 
     @Override

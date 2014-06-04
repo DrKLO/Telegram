@@ -197,14 +197,10 @@ public class LanguageSelectActivity extends BaseFragment {
 
     @Override
     public void onResume() {
+        super.onResume();
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
-    }
-
-    @Override
-    public void onPause() {
-        actionBarLayer.closeSearchField();
     }
 
     public void search(final String query) {

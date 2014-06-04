@@ -436,6 +436,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
 
     @Override
     public void onResume() {
+        super.onResume();
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }

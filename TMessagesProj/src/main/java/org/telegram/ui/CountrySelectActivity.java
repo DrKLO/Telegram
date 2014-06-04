@@ -245,14 +245,10 @@ public class CountrySelectActivity extends BaseFragment {
 
     @Override
     public void onResume() {
+        super.onResume();
         if (listViewAdapter != null) {
             listViewAdapter.notifyDataSetChanged();
         }
-    }
-
-    @Override
-    public void onPause() {
-        actionBarLayer.closeSearchField();
     }
 
     public void search(final String query) {

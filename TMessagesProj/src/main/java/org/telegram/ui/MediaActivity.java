@@ -253,6 +253,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
     @Override
     public void onResume() {
+        super.onResume();
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }

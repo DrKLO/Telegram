@@ -252,6 +252,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
 
     @Override
     public void onResume() {
+        super.onResume();
         if (listViewAdapter != null) {
             listViewAdapter.notifyDataSetChanged();
         }

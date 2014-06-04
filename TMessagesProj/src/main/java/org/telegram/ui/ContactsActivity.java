@@ -358,14 +358,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public void onResume() {
+        super.onResume();
         if (listViewAdapter != null) {
             listViewAdapter.notifyDataSetChanged();
         }
-    }
-
-    @Override
-    public void onPause() {
-        actionBarLayer.closeSearchField();
     }
 
     @Override

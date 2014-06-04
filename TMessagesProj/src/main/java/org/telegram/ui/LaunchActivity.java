@@ -120,13 +120,9 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
 
         if (fragmentsStack.isEmpty()) {
             if (!UserConfig.clientActivated) {
-                LoginActivity fragment = new LoginActivity();
-                fragment.onFragmentCreate();
-                fragmentsStack.add(fragment);
+                addFragmentToStack(new LoginActivity());
             } else {
-                MessagesActivity fragment = new MessagesActivity(null);
-                fragment.onFragmentCreate();
-                fragmentsStack.add(fragment);
+                addFragmentToStack(new MessagesActivity(null));
             }
 
             try {
@@ -137,37 +133,32 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                         if (fragmentName.equals("chat")) {
                             if (args != null) {
                                 ChatActivity chat = new ChatActivity(args);
-                                if (chat.onFragmentCreate()) {
-                                    fragmentsStack.add(chat);
+                                if (addFragmentToStack(chat)) {
                                     chat.restoreSelfArgs(savedInstanceState);
                                 }
                             }
                         } else if (fragmentName.equals("settings")) {
                             SettingsActivity settings = new SettingsActivity();
-                            settings.onFragmentCreate();
+                            addFragmentToStack(settings);
                             settings.restoreSelfArgs(savedInstanceState);
-                            fragmentsStack.add(settings);
                         } else if (fragmentName.equals("group")) {
                             if (args != null) {
                                 GroupCreateFinalActivity group = new GroupCreateFinalActivity(args);
-                                if (group.onFragmentCreate()) {
+                                if (addFragmentToStack(group)) {
                                     group.restoreSelfArgs(savedInstanceState);
-                                    fragmentsStack.add(group);
                                 }
                             }
                         } else if (fragmentName.equals("chat_profile")) {
                             if (args != null) {
                                 ChatProfileActivity profile = new ChatProfileActivity(args);
-                                if (profile.onFragmentCreate()) {
+                                if (addFragmentToStack(profile)) {
                                     profile.restoreSelfArgs(savedInstanceState);
-                                    fragmentsStack.add(profile);
                                 }
                             }
                         } else if (fragmentName.equals("wallpapers")) {
                             SettingsWallpapersActivity settings = new SettingsWallpapersActivity();
-                            settings.onFragmentCreate();
+                            addFragmentToStack(settings);
                             settings.restoreSelfArgs(savedInstanceState);
-                            fragmentsStack.add(settings);
                         }
                     }
                 }
