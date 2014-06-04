@@ -51,11 +51,11 @@ public class BaseFragment {
                 }
                 fragmentView = null;
             }
-            if (actionBarLayer != null) {
-                actionBarLayer.onDestroy();
-                actionBarLayer = null;
-            }
             if (parentActivity != null) {
+                if (actionBarLayer != null) {
+                    actionBarLayer.onDestroy();
+                    actionBarLayer = null;
+                }
                 actionBarLayer = parentActivity.getInternalActionBar().createLayer();
             }
         }

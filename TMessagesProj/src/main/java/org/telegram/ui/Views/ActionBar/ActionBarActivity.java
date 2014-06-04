@@ -12,6 +12,7 @@ import android.animation.Animator;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.app.Activity;
+import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.os.Build;
@@ -47,6 +48,7 @@ public class ActionBarActivity extends Activity {
     private Animation openAnimation;
     private Animation closeAnimation;
 
+    private boolean maybeStartTracking = false;
     private boolean startedTracking = false;
     private int startedTrackingX;
     private int prevOrientation = -10;
@@ -56,6 +58,24 @@ public class ActionBarActivity extends Activity {
     private boolean transitionAnimationInProgress = false;
     private long transitionAnimationStartTime;
     private boolean inActionMode = false;
+
+    private class FrameLayoutTouch extends FrameLayout {
+        public FrameLayoutTouch(Context context) {
+            super(context);
+        }
+
+        @Override
+        public boolean onInterceptTouchEvent(MotionEvent ev) {
+            return ((ActionBarActivity)getContext()).onTouchEvent(ev);
+            //return super.onInterceptTouchEvent(ev);
+        }
+
+        @Override
+        public void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+            ((ActionBarActivity)getContext()).onTouchEvent(null);
+            super.requestDisallowInterceptTouchEvent(disallowIntercept);
+        }
+    }
 
     public static ArrayList<BaseFragment> fragmentsStack = new ArrayList<BaseFragment>();
 
@@ -77,7 +97,7 @@ public class ActionBarActivity extends Activity {
         setTheme(R.style.Theme_TMessages);
         getWindow().setBackgroundDrawableResource(R.drawable.transparent);
 
-        contentView = new FrameLayout(this);
+        contentView = new FrameLayoutTouch(this);
         setContentView(contentView, new ViewGroup.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
 
         containerViewBack = new FrameLayout(this);
@@ -185,65 +205,69 @@ public class ActionBarActivity extends Activity {
         animationInProgress = false;
     }
 
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent ev) {
-        if(android.os.Build.VERSION.SDK_INT >= 11 && !checkTransitionAnimation() && !inActionMode) {
-            if (ev.getAction() == MotionEvent.ACTION_DOWN && !startedTracking && ev.getX() <= Utilities.dp(6) && fragmentsStack.size() > 1) {
-                startedTracking = true;
+    public boolean onTouchEvent(MotionEvent ev) {
+        if(android.os.Build.VERSION.SDK_INT >= 11 && !checkTransitionAnimation() && !inActionMode && fragmentsStack.size() > 1 && !animationInProgress) {
+            if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && !startedTracking && !maybeStartTracking) {
+                maybeStartTracking = true;
                 startedTrackingX = (int) ev.getX();
-                shadowView.setVisibility(View.VISIBLE);
-                shadowView.setX(-Utilities.dp(2));
-                containerViewBack.setVisibility(View.VISIBLE);
-                beginTrackingSent = false;
+            } else if (ev != null && ev.getAction() == MotionEvent.ACTION_MOVE) {
+                int dx = Math.max(0, (int) (ev.getX() - startedTrackingX));
+                if (maybeStartTracking && !startedTracking && dx >= Utilities.dp(10)) {
+                    maybeStartTracking = false;
+                    startedTracking = true;
+                    startedTrackingX = (int) ev.getX();
+                    shadowView.setVisibility(View.VISIBLE);
+                    shadowView.setX(-Utilities.dp(2));
+                    containerViewBack.setVisibility(View.VISIBLE);
+                    beginTrackingSent = false;
 
-                BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 2);
-                actionBar.prepareForMoving(lastFragment.actionBarLayer);
-                View fragmentView = lastFragment.createView(getLayoutInflater(), null);
-                ViewGroup parentView = (ViewGroup)fragmentView.getParent();
-                if (parentView != null) {
-                    parentView.removeView(fragmentView);
-                }
-                containerViewBack.addView(fragmentView);
-                ViewGroup.LayoutParams layoutParams = fragmentView.getLayoutParams();
-                layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-                layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-                fragmentView.setLayoutParams(layoutParams);
-                if (fragmentView.getBackground() == null) {
-                    fragmentView.setBackgroundColor(0xffffffff);
-                }
-                lastFragment.onResume();
+                    BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 2);
+                    actionBar.prepareForMoving(lastFragment.actionBarLayer);
+                    View fragmentView = lastFragment.createView(getLayoutInflater(), null);
+                    ViewGroup parentView = (ViewGroup)fragmentView.getParent();
+                    if (parentView != null) {
+                        parentView.removeView(fragmentView);
+                    }
+                    containerViewBack.addView(fragmentView);
+                    ViewGroup.LayoutParams layoutParams = fragmentView.getLayoutParams();
+                    layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+                    layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+                    fragmentView.setLayoutParams(layoutParams);
+                    if (fragmentView.getBackground() == null) {
+                        fragmentView.setBackgroundColor(0xffffffff);
+                    }
+                    lastFragment.onResume();
 
-                try {
-                    prevOrientation = getRequestedOrientation();
-                    WindowManager manager = (WindowManager)getSystemService(Activity.WINDOW_SERVICE);
-                    if (manager != null && manager.getDefaultDisplay() != null) {
-                        int rotation = manager.getDefaultDisplay().getRotation();
-                        if (rotation == Surface.ROTATION_270) {
-                            if (Build.VERSION.SDK_INT >= 9) {
-                                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                            } else {
+                    try {
+                        prevOrientation = getRequestedOrientation();
+                        WindowManager manager = (WindowManager)getSystemService(Activity.WINDOW_SERVICE);
+                        if (manager != null && manager.getDefaultDisplay() != null) {
+                            int rotation = manager.getDefaultDisplay().getRotation();
+                            if (rotation == Surface.ROTATION_270) {
+                                if (Build.VERSION.SDK_INT >= 9) {
+                                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                                } else {
+                                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                                }
+                            } else if (rotation == Surface.ROTATION_90) {
                                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                            }
-                        } else if (rotation == Surface.ROTATION_90) {
-                            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                        } else if (rotation == Surface.ROTATION_0) {
-                            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                        } else {
-                            if (Build.VERSION.SDK_INT >= 9) {
-                                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
+                            } else if (rotation == Surface.ROTATION_0) {
+                                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                            } else {
+                                if (Build.VERSION.SDK_INT >= 9) {
+                                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
+                                }
                             }
                         }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
                     }
-                } catch (Exception e) {
-                    FileLog.e("tmessages", e);
-                }
-                if (velocityTracker == null) {
-                    velocityTracker = VelocityTracker.obtain();
-                } else {
-                    velocityTracker.clear();
-                }
-            } else if (startedTracking && !animationInProgress) {
-                if (ev.getAction() == MotionEvent.ACTION_MOVE) {
+                    if (velocityTracker == null) {
+                        velocityTracker = VelocityTracker.obtain();
+                    } else {
+                        velocityTracker.clear();
+                    }
+                } else if (startedTracking) {
                     if (!beginTrackingSent) {
                         if (getCurrentFocus() != null) {
                             Utilities.hideKeyboard(getCurrentFocus());
@@ -253,60 +277,65 @@ public class ActionBarActivity extends Activity {
                         beginTrackingSent = true;
                     }
                     velocityTracker.addMovement(ev);
-                    int dx = Math.max(0, (int) (ev.getX() - startedTrackingX));
                     actionBar.moveActionBarByX(dx);
                     containerView.setX(dx);
                     shadowView.setX(dx - Utilities.dp(2));
-                } else if (ev.getAction() == MotionEvent.ACTION_CANCEL || ev.getAction() == MotionEvent.ACTION_UP) {
-                    velocityTracker.computeCurrentVelocity(1000);
-                    float x = containerView.getX();
-                    ArrayList<Animator> animators = new ArrayList<Animator>();
-                    final boolean backAnimation = x < containerView.getMeasuredWidth() / 3.0f && velocityTracker.getXVelocity() < 6000;
-                    float distToMove = 0;
-                    if (!backAnimation) {
-                        distToMove = containerView.getMeasuredWidth() - x;
-                        animators.add(ObjectAnimator.ofFloat(containerView, "x", containerView.getMeasuredWidth()));
-                        animators.add(ObjectAnimator.ofFloat(shadowView, "x", containerView.getMeasuredWidth() - Utilities.dp(2)));
-                    } else {
-                        distToMove = x;
-                        animators.add(ObjectAnimator.ofFloat(containerView, "x", 0));
-                        animators.add(ObjectAnimator.ofFloat(shadowView, "x", -Utilities.dp(2)));
+                }
+            } else if (ev != null && startedTracking && (ev.getAction() == MotionEvent.ACTION_CANCEL || ev.getAction() == MotionEvent.ACTION_UP)) {
+                velocityTracker.computeCurrentVelocity(1000);
+                float x = containerView.getX();
+                ArrayList<Animator> animators = new ArrayList<Animator>();
+                final boolean backAnimation = x < containerView.getMeasuredWidth() / 3.0f && velocityTracker.getXVelocity() < 6000;
+                float distToMove = 0;
+                if (!backAnimation) {
+                    distToMove = containerView.getMeasuredWidth() - x;
+                    animators.add(ObjectAnimator.ofFloat(containerView, "x", containerView.getMeasuredWidth()));
+                    animators.add(ObjectAnimator.ofFloat(shadowView, "x", containerView.getMeasuredWidth() - Utilities.dp(2)));
+                } else {
+                    distToMove = x;
+                    animators.add(ObjectAnimator.ofFloat(containerView, "x", 0));
+                    animators.add(ObjectAnimator.ofFloat(shadowView, "x", -Utilities.dp(2)));
+                }
+                actionBar.setupAnimations(animators, backAnimation);
+
+                AnimatorSet animatorSet = new AnimatorSet();
+                animatorSet.playTogether(animators);
+                animatorSet.setDuration((int)(200.0f / containerView.getMeasuredWidth() * distToMove));
+                animatorSet.start();
+                animationInProgress = true;
+                animatorSet.addListener(new Animator.AnimatorListener() {
+                    @Override
+                    public void onAnimationStart(Animator animator) {
+
                     }
-                    actionBar.setupAnimations(animators, backAnimation);
 
-                    AnimatorSet animatorSet = new AnimatorSet();
-                    animatorSet.playTogether(animators);
-                    animatorSet.setDuration((int)(200.0f / containerView.getMeasuredWidth() * distToMove));
-                    animatorSet.start();
-                    animationInProgress = true;
-                    animatorSet.addListener(new Animator.AnimatorListener() {
-                        @Override
-                        public void onAnimationStart(Animator animator) {
+                    @Override
+                    public void onAnimationEnd(Animator animator) {
+                        onSlideAnimationEnd(backAnimation);
+                    }
 
-                        }
+                    @Override
+                    public void onAnimationCancel(Animator animator) {
+                        onSlideAnimationEnd(backAnimation);
+                    }
 
-                        @Override
-                        public void onAnimationEnd(Animator animator) {
-                            onSlideAnimationEnd(backAnimation);
-                        }
+                    @Override
+                    public void onAnimationRepeat(Animator animator) {
 
-                        @Override
-                        public void onAnimationCancel(Animator animator) {
-                            onSlideAnimationEnd(backAnimation);
-                        }
-
-                        @Override
-                        public void onAnimationRepeat(Animator animator) {
-
-                        }
-                    });
+                    }
+                });
+                velocityTracker.recycle();
+                velocityTracker = null;
+            } else if (ev == null) {
+                maybeStartTracking = false;
+                startedTracking = false;
+                if (velocityTracker != null) {
                     velocityTracker.recycle();
-                    velocityTracker = null;
                 }
             }
-            return startedTracking || super.dispatchTouchEvent(ev);
+            return startedTracking;
         }
-        return super.dispatchTouchEvent(ev);
+        return false;
     }
 
     @Override

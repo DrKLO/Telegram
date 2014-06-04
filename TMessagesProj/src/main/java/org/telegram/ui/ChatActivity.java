@@ -35,6 +35,7 @@ import android.text.Html;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.ImageSpan;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -542,6 +543,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                 clipboard.setPrimaryClip(clip);
                             }
                         }
+                        actionBarLayer.hideActionMode();
                     } else if (id == delete) {
                         ArrayList<Integer> ids = new ArrayList<Integer>(selectedMessagesIds.keySet());
                         ArrayList<Long> random_ids = null;
@@ -555,6 +557,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                             }
                         }
                         MessagesController.getInstance().deleteMessages(ids, random_ids, currentEncryptedChat);
+                        actionBarLayer.hideActionMode();
                     } else if (id == forward) {
                         Bundle args = new Bundle();
                         args.putBoolean("onlySelect", true);
