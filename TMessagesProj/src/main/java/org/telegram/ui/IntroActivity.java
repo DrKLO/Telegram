@@ -8,12 +8,12 @@
 
 package org.telegram.ui;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.support.v7.app.ActionBarActivity;
 import android.text.Html;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,7 +26,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 
-public class IntroActivity extends ActionBarActivity {
+public class IntroActivity extends Activity {
     private ViewPager viewPager;
     private ImageView topImage1;
     private ImageView topImage2;
@@ -40,6 +40,7 @@ public class IntroActivity extends ActionBarActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        setTheme(R.style.Theme_TMessages);
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.intro_layout);
@@ -202,8 +203,6 @@ public class IntroActivity extends ActionBarActivity {
         });
 
         justCreated = true;
-
-        getSupportActionBar().hide();
     }
 
     @Override
