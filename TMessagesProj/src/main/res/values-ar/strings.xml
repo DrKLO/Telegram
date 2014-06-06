@@ -232,7 +232,15 @@
     <string name="InAppNotifications">إشعارات داخل التطبيق</string>
     <string name="InAppSounds">أصوات داخل التطبيق</string>
     <string name="InAppVibrate">اهتزاز داخل التطبيق</string>
-    <string name="Vibrate">اهتزاز</string>
+    <string name="Vibrate">Vibrate</string>
+    <string name="VibrateSpeed">Vibration speed</string>
+    <string name="VibrateSpeedTitle">Pick a speed</string>
+    <string name="VibrateSpeedFast">Fast</string>
+    <string name="VibrateSpeedMedium">Medium</string>
+    <string name="VibrateSpeedSlow">Slow</string>
+    <string name="VibrateSpeedDefault">Standard</string>
+    <string name="VibrateCount">Vibrations number</string>
+    <string name="VibrateCountTitle">Pick the number fo vibrations</string>
     <string name="InAppPreview">معاينة داخل التطبيق</string>
     <string name="Reset">إعادة تعيين</string>
     <string name="ResetAllNotifications">إعادة تعيين كافة الإشعارات</string>

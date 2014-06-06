@@ -233,6 +233,14 @@
     <string name="InAppSounds">In-App-Töne</string>
     <string name="InAppVibrate">In-App-Vibration</string>
     <string name="Vibrate">Vibrieren</string>
+    <string name="VibrateSpeed">Vibration speed</string>
+    <string name="VibrateSpeedTitle">Pick a speed</string>
+    <string name="VibrateSpeedFast">Fast</string>
+    <string name="VibrateSpeedMedium">Medium</string>
+    <string name="VibrateSpeedSlow">Slow</string>
+    <string name="VibrateSpeedDefault">Standard</string>
+    <string name="VibrateCount">Vibrations number</string>
+    <string name="VibrateCountTitle">Pick the number fo vibrations</string>
     <string name="InAppPreview">In-App-Vorschau</string>
     <string name="Reset">ZURÜCKSETZEN</string>
     <string name="ResetAllNotifications">Alle Benachrichtigungs-Einstellungen zurücksetzen</string>

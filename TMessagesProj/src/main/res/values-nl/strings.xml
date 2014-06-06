@@ -233,6 +233,14 @@
     <string name="InAppSounds">In-app geluiden</string>
     <string name="InAppVibrate">In-app trillen</string>
     <string name="Vibrate">Trillen</string>
+    <string name="VibrateSpeed">Vibration speed</string>
+    <string name="VibrateSpeedTitle">Pick a speed</string>
+    <string name="VibrateSpeedFast">Fast</string>
+    <string name="VibrateSpeedMedium">Medium</string>
+    <string name="VibrateSpeedSlow">Slow</string>
+    <string name="VibrateSpeedDefault">Standard</string>
+    <string name="VibrateCount">Vibrations number</string>
+    <string name="VibrateCountTitle">Pick the number fo vibrations</string>
     <string name="InAppPreview">In-app voorbeelden</string>
     <string name="Reset">RESETTEN</string>
     <string name="ResetAllNotifications">Alle meldingen resetten</string>
