@@ -9,55 +9,99 @@
 package org.telegram.ui;
 
 import android.animation.Animator;
-import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.Intent;
+import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Point;
 import android.os.Bundle;
-import android.support.v4.internal.view.SupportMenuItem;
-import android.support.v7.app.ActionBarActivity;
-import android.view.Display;
-import android.view.Menu;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBarMenu;
+import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.SlideView;
 
 import java.util.Map;
 import java.util.Set;
 
-public class LoginActivity extends ActionBarActivity implements SlideView.SlideViewDelegate {
+public class LoginActivity extends BaseFragment implements SlideView.SlideViewDelegate {
     private int currentViewNum = 0;
     private SlideView[] views = new SlideView[3];
 
+    private final static int done_button = 1;
+
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (currentViewNum == 0) {
-            if (resultCode == RESULT_OK) {
-                ((LoginActivityPhoneView)views[0]).selectCountry(data.getStringExtra("country"));
+    public boolean onFragmentCreate() {
+        return super.onFragmentCreate();
+    }
+
+    @Override
+    public void onFragmentDestroy() {
+        super.onFragmentDestroy();
+        for (SlideView v : views) {
+            if (v != null) {
+                v.onDestroyActivity();
             }
         }
+        Utilities.HideProgressDialog(getParentActivity());
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        Utilities.checkForCrashes(this);
-        Utilities.checkForUpdates(this);
-        ApplicationLoader.resetLastPauseTime();
-    }
+    public View createView(LayoutInflater inflater, ViewGroup container) {
+        if (fragmentView == null) {
+            actionBarLayer.setDisplayUseLogoEnabled(true);
+            actionBarLayer.setTitle(LocaleController.getString("AppName", R.string.AppName));
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        ApplicationLoader.lastPauseTime = System.currentTimeMillis();
+            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == done_button) {
+                        onNextAction();
+                    }
+                }
+            });
+
+            ActionBarMenu menu = actionBarLayer.createMenu();
+            View doneItem = menu.addItemResource(done_button, R.layout.group_create_done_layout);
+            TextView doneTextView = (TextView)doneItem.findViewById(R.id.done_button);
+            doneTextView.setText(LocaleController.getString("Done", R.string.Done));
+
+            fragmentView = inflater.inflate(R.layout.login_layout, container, false);
+
+            views[0] = (SlideView)fragmentView.findViewById(R.id.login_page1);
+            views[1] = (SlideView)fragmentView.findViewById(R.id.login_page2);
+            views[2] = (SlideView)fragmentView.findViewById(R.id.login_page3);
+
+            actionBarLayer.setTitle(views[0].getHeaderName());
+
+            Bundle savedInstanceState = loadCurrentState();
+            if (savedInstanceState != null) {
+                currentViewNum = savedInstanceState.getInt("currentViewNum", 0);
+            }
+            for (int a = 0; a < views.length; a++) {
+                SlideView v = views[a];
+                if (v != null) {
+                    if (savedInstanceState != null) {
+                        v.restoreStateParams(savedInstanceState);
+                    }
+                    v.delegate = this;
+                    v.setVisibility(currentViewNum == a ? View.VISIBLE : View.GONE);
+                }
+            }
+        } else {
+            ViewGroup parent = (ViewGroup)fragmentView.getParent();
+            if (parent != null) {
+                parent.removeView(fragmentView);
+            }
+        }
+        return fragmentView;
     }
 
     private void saveCurrentState() {
@@ -70,7 +114,7 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
                     v.saveStateParams(bundle);
                 }
             }
-            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("logininfo", MODE_PRIVATE);
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("logininfo", Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = preferences.edit();
             editor.clear();
             putBundleToEditor(bundle, editor, null);
@@ -83,7 +127,7 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
     private Bundle loadCurrentState() {
         try {
             Bundle bundle = new Bundle();
-            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("logininfo", MODE_PRIVATE);
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("logininfo", Context.MODE_PRIVATE);
             Map<String, ?> params = preferences.getAll();
             for (Map.Entry<String, ?> entry : params.entrySet()) {
                 String key = entry.getKey();
@@ -116,7 +160,7 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
     }
 
     private void clearCurrentState() {
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("logininfo", MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("logininfo", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
         editor.clear();
         editor.commit();
@@ -144,125 +188,58 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
         }
     }
 
-    public void ShowAlertDialog(final Activity activity, final String message) {
-        activity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (!isFinishing()) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                    builder.setMessage(message);
-                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-                    builder.show().setCanceledOnTouchOutside(true);
-                }
-            }
-        });
-    }
-
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.login_layout);
-        ApplicationLoader.applicationContext = this.getApplicationContext();
-
-        getSupportActionBar().setLogo(R.drawable.ab_icon_fixed2);
-        getSupportActionBar().show();
-
-        ImageView view = (ImageView)findViewById(16908332);
-        if (view == null) {
-            view = (ImageView)findViewById(R.id.home);
-        }
-        if (view != null) {
-            view.setPadding(Utilities.dp(6), 0, Utilities.dp(6), 0);
-        }
-
-        views[0] = (SlideView)findViewById(R.id.login_page1);
-        views[1] = (SlideView)findViewById(R.id.login_page2);
-        views[2] = (SlideView)findViewById(R.id.login_page3);
-
-        getSupportActionBar().setTitle(views[0].getHeaderName());
-
-        savedInstanceState = loadCurrentState();
-        if (savedInstanceState != null) {
-            currentViewNum = savedInstanceState.getInt("currentViewNum", 0);
-        }
-        for (int a = 0; a < views.length; a++) {
-            SlideView v = views[a];
-            if (v != null) {
-                if (savedInstanceState != null) {
-                    v.restoreStateParams(savedInstanceState);
-                }
-                v.delegate = this;
-                v.setVisibility(currentViewNum == a ? View.VISIBLE : View.GONE);
-            }
-        }
-
-        getWindow().setBackgroundDrawableResource(R.drawable.transparent);
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        SupportMenuItem doneItem = (SupportMenuItem)menu.add(Menu.NONE, 0, Menu.NONE, null);
-        doneItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
-        doneItem.setActionView(R.layout.group_create_done_layout);
-
-        TextView doneTextView = (TextView)doneItem.getActionView().findViewById(R.id.done_button);
-        doneTextView.setText(LocaleController.getString("Done", R.string.Done));
-        doneTextView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                onNextAction();
-            }
-        });
-        return super.onCreateOptionsMenu(menu);
-    }
-
-    @Override
-    public void onBackPressed() {
+    public boolean onBackPressed() {
         if (currentViewNum == 0) {
             for (SlideView v : views) {
                 if (v != null) {
                     v.onDestroyActivity();
                 }
             }
-            super.onBackPressed();
+            return true;
         } else if (currentViewNum != 1 && currentViewNum != 2) {
             setPage(0, true, null, true);
         }
+        return false;
     }
 
     @Override
-    public void needShowAlert(String text) {
+    public void needShowAlert(final String text) {
         if (text == null) {
             return;
         }
-        ShowAlertDialog(LoginActivity.this, text);
+        getParentActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                builder.setMessage(text);
+                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                builder.show().setCanceledOnTouchOutside(true);
+            }
+        });
     }
 
     @Override
     public void needShowProgress() {
-        Utilities.ShowProgressDialog(this, LocaleController.getString("Loading", R.string.Loading));
+        Utilities.ShowProgressDialog(getParentActivity(), LocaleController.getString("Loading", R.string.Loading));
     }
 
     @Override
     public void needHideProgress() {
-        Utilities.HideProgressDialog(this);
+        Utilities.HideProgressDialog(getParentActivity());
     }
 
     public void setPage(int page, boolean animated, Bundle params, boolean back) {
         if(android.os.Build.VERSION.SDK_INT > 13) {
-            Point displaySize = new Point();
-            Display display = getWindowManager().getDefaultDisplay();
-            display.getSize(displaySize);
-
             final SlideView outView = views[currentViewNum];
             final SlideView newView = views[page];
             currentViewNum = page;
 
             newView.setParams(params);
-            getSupportActionBar().setTitle(newView.getHeaderName());
+            actionBarLayer.setTitle(newView.getHeaderName());
             newView.onShow();
-            newView.setX(back ? -displaySize.x : displaySize.x);
+            newView.setX(back ? -Utilities.displaySize.x : Utilities.displaySize.x);
             outView.animate().setInterpolator(new AccelerateDecelerateInterpolator()).setListener(new Animator.AnimatorListener() {
                 @Override
                 public void onAnimationStart(Animator animator) {
@@ -281,7 +258,7 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
                 @Override
                 public void onAnimationRepeat(Animator animator) {
                 }
-            }).setDuration(300).translationX(back ? displaySize.x : -displaySize.x).start();
+            }).setDuration(300).translationX(back ? Utilities.displaySize.x : -Utilities.displaySize.x).start();
             newView.animate().setInterpolator(new AccelerateDecelerateInterpolator()).setListener(new Animator.AnimatorListener() {
                 @Override
                 public void onAnimationStart(Animator animator) {
@@ -305,7 +282,7 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
             currentViewNum = page;
             views[page].setParams(params);
             views[page].setVisibility(View.VISIBLE);
-            getSupportActionBar().setTitle(views[page].getHeaderName());
+            actionBarLayer.setTitle(views[page].getHeaderName());
             views[page].onShow();
         }
     }
@@ -316,27 +293,13 @@ public class LoginActivity extends ActionBarActivity implements SlideView.SlideV
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        for (SlideView v : views) {
-            if (v != null) {
-                v.onDestroyActivity();
-            }
-        }
-        Utilities.HideProgressDialog(this);
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
+    public void saveSelfArgs(Bundle outState) {
         saveCurrentState();
     }
 
     @Override
     public void needFinishActivity() {
-        Intent intent2 = new Intent(this, LaunchActivity.class);
-        startActivity(intent2);
-        finish();
         clearCurrentState();
+        presentFragment(new MessagesActivity(null), true);
     }
 }

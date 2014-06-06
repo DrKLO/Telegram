@@ -205,7 +205,7 @@ public class Utilities {
     }
 
     public static int dp(int value) {
-        return (int)(density * value);
+        return (int)(Math.max(1, density * value));
     }
 
     public static int dpf(float value) {

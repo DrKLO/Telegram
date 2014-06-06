@@ -17,8 +17,6 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.internal.view.SupportMenuItem;
-import android.support.v7.app.ActionBar;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -26,9 +24,6 @@ import android.text.SpannableStringBuilder;
 import android.text.TextWatcher;
 import android.text.style.ImageSpan;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -48,8 +43,10 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.BackupImageView;
-import org.telegram.ui.Views.BaseFragment;
+import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.PinnedHeaderListView;
 import org.telegram.ui.Views.SectionedBaseAdapter;
 
@@ -105,17 +102,14 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private CharSequence changeString;
     private int beforeChangeIndex;
 
-    public GroupCreateActivity() {
-        animationType = 1;
-    }
+    private final static int done_button = 1;
 
     @Override
     public boolean onFragmentCreate() {
-        super.onFragmentCreate();
         NotificationCenter.getInstance().addObserver(this, MessagesController.contactsDidLoaded);
         NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
         NotificationCenter.getInstance().addObserver(this, MessagesController.chatDidCreated);
-        return true;
+        return super.onFragmentCreate();
     }
 
     @Override
@@ -127,14 +121,33 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
+            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
+            actionBarLayer.setSubtitle(String.format("%d/200 %s", selectedContacts.size(), LocaleController.getString("Members", R.string.Members)));
+
+            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1) {
+                        finishFragment();
+                    } else if (id == done_button) {
+                        if (!selectedContacts.isEmpty()) {
+                            ArrayList<Integer> result = new ArrayList<Integer>();
+                            result.addAll(selectedContacts.keySet());
+                            Bundle args = new Bundle();
+                            args.putIntegerArrayList("result", result);
+                            presentFragment(new GroupCreateFinalActivity(args));
+                        }
+                    }
+                }
+            });
+
+            ActionBarMenu menu = actionBarLayer.createMenu();
+            View doneItem = menu.addItemResource(done_button, R.layout.group_create_done_layout);
+            TextView doneTextView = (TextView)doneItem.findViewById(R.id.done_button);
+            doneTextView.setText(LocaleController.getString("Next", R.string.Next));
 
             searching = false;
             searchWas = false;
@@ -186,10 +199,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                         selectedContacts.remove(sp.uid);
                                     }
                                 }
-                                if (parentActivity != null) {
-                                    ActionBar actionBar = parentActivity.getSupportActionBar();
-                                    actionBar.setSubtitle(String.format("%d/200 %s", selectedContacts.size(), LocaleController.getString("Members", R.string.Members)));
-                                }
+                                actionBarLayer.setSubtitle(String.format("%d/200 %s", selectedContacts.size(), LocaleController.getString("Members", R.string.Members)));
                                 listView.invalidateViews();
                             } else {
                                 search = true;
@@ -222,7 +232,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             listView.setEmptyView(emptyTextView);
             listView.setVerticalScrollBarEnabled(false);
 
-            listView.setAdapter(listViewAdapter = new ListAdapter(parentActivity));
+            listView.setAdapter(listViewAdapter = new ListAdapter(getParentActivity()));
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -255,10 +265,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         span.uid = user.id;
                         ignoreChange = false;
                     }
-                    if (parentActivity != null) {
-                        ActionBar actionBar = parentActivity.getSupportActionBar();
-                        actionBar.setSubtitle(String.format("%d/200 %s", selectedContacts.size(), LocaleController.getString("Members", R.string.Members)));
-                    }
+                    actionBarLayer.setSubtitle(String.format("%d/200 %s", selectedContacts.size(), LocaleController.getString("Members", R.string.Members)));
                     if (searching || searchWas) {
                         searching = false;
                         searchWas = false;
@@ -302,44 +309,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         return fragmentView;
     }
 
-    @Override
-    public void applySelfActionBar() {
-        if (parentActivity == null) {
-            return;
-        }
-        ActionBar actionBar = parentActivity.getSupportActionBar();
-        actionBar.setDisplayShowTitleEnabled(true);
-        actionBar.setDisplayShowHomeEnabled(false);
-        actionBar.setDisplayHomeAsUpEnabled(true);
-        actionBar.setDisplayUseLogoEnabled(false);
-        actionBar.setDisplayShowCustomEnabled(false);
-        actionBar.setCustomView(null);
-        actionBar.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
-        actionBar.setSubtitle(String.format("%d/200 %s", selectedContacts.size(), LocaleController.getString("Members", R.string.Members)));
-
-        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
-        if (title == null) {
-            final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
-            title = (TextView)parentActivity.findViewById(subtitleId);
-        }
-        if (title != null) {
-            title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
-            title.setCompoundDrawablePadding(0);
-        }
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (getActivity() == null) {
-            return;
-        }
-        ((LaunchActivity)parentActivity).showActionBar();
-        ((LaunchActivity)parentActivity).updateActionBar();
-    }
-
     public XImageSpan createAndPutChipForUser(TLRPC.User user) {
-        LayoutInflater lf = (LayoutInflater)parentActivity.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
+        LayoutInflater lf = (LayoutInflater)ApplicationLoader.applicationContext.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
         View textView = lf.inflate(R.layout.group_create_bubble, null);
         TextView text = (TextView)textView.findViewById(R.id.bubble_text_view);
         String name = Utilities.formatName(user.first_name, user.last_name);
@@ -447,41 +418,6 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 searchResult = users;
                 searchResultNames = names;
                 listViewAdapter.notifyDataSetChanged();
-            }
-        });
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int itemId = item.getItemId();
-        switch (itemId) {
-            case android.R.id.home:
-                finishFragment();
-                break;
-        }
-        return true;
-    }
-
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        SupportMenuItem doneItem = (SupportMenuItem)menu.add(Menu.NONE, 0, Menu.NONE, null);
-        doneItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
-        doneItem.setActionView(R.layout.group_create_done_layout);
-
-        TextView doneTextView = (TextView)doneItem.getActionView().findViewById(R.id.done_button);
-        doneTextView.setText(LocaleController.getString("Next", R.string.Next));
-        doneTextView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (!selectedContacts.isEmpty()) {
-                    ArrayList<Integer> result = new ArrayList<Integer>();
-                    result.addAll(selectedContacts.keySet());
-                    Bundle args = new Bundle();
-                    args.putIntegerArrayList("result", result);
-                    GroupCreateFinalActivity fragment = new GroupCreateFinalActivity();
-                    fragment.setArguments(args);
-                    ((LaunchActivity)parentActivity).presentFragment(fragment, "group_craate_final", false);
-                }
             }
         });
     }

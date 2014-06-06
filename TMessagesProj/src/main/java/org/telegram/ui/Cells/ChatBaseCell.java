@@ -30,7 +30,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.Views.ImageReceiver;
-import org.telegram.ui.Views.OnSwipeTouchListener;
 
 import java.lang.ref.WeakReference;
 
@@ -41,8 +40,6 @@ public class ChatBaseCell extends BaseCell {
         public abstract void didPressedCancelSendButton(ChatBaseCell cell);
         public abstract void didLongPressed(ChatBaseCell cell);
         public abstract boolean canPerformActions();
-        public boolean onSwipeLeft();
-        public boolean onSwipeRight();
     }
 
     public boolean isChat = false;
@@ -118,7 +115,6 @@ public class ChatBaseCell extends BaseCell {
     private int pressCount = 0;
     private CheckForLongPress pendingCheckForLongPress = null;
     private CheckForTap pendingCheckForTap = null;
-    private OnSwipeTouchListener onSwipeTouchListener;
 
     private final class CheckForTap implements Runnable {
         public void run() {
@@ -153,23 +149,6 @@ public class ChatBaseCell extends BaseCell {
         media = isMedia;
         avatarImage = new ImageReceiver();
         avatarImage.parentView = new WeakReference<View>(this);
-        onSwipeTouchListener = new OnSwipeTouchListener() {
-            public void onSwipeRight() {
-                if (delegate != null && delegate.onSwipeRight()) {
-                    MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
-                    onTouchEvent(event);
-                    event.recycle();
-                }
-            }
-
-            public void onSwipeLeft() {
-                if (delegate != null && delegate.onSwipeLeft()) {
-                    MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
-                    onTouchEvent(event);
-                    event.recycle();
-                }
-            }
-        };
     }
 
     @Override
@@ -382,10 +361,6 @@ public class ChatBaseCell extends BaseCell {
         if (pendingCheckForTap != null) {
             removeCallbacks(pendingCheckForTap);
         }
-    }
-
-    protected void checkSwipes(MotionEvent event) {
-        onSwipeTouchListener.onTouch(this, event);
     }
 
     @Override

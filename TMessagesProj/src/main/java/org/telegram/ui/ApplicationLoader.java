@@ -24,7 +24,6 @@ import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.PowerManager;
-import android.view.ViewConfiguration;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
@@ -41,10 +40,7 @@ import org.telegram.messenger.NativeLoader;
 import org.telegram.messenger.ScreenReceiver;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.Views.BaseFragment;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -63,8 +59,6 @@ public class ApplicationLoader extends Application {
     public static volatile Handler applicationHandler = null;
     private static volatile boolean applicationInited = false;
     public static volatile boolean isScreenOn = false;
-
-    public static ArrayList<BaseFragment> fragmentsStack = new ArrayList<BaseFragment>();
 
     public static void postInitApplication() {
         if (applicationInited) {
@@ -148,17 +142,6 @@ public class ApplicationLoader extends Application {
 
         java.lang.System.setProperty("java.net.preferIPv4Stack", "true");
         java.lang.System.setProperty("java.net.preferIPv6Addresses", "false");
-
-        try {
-            ViewConfiguration config = ViewConfiguration.get(this);
-            Field menuKeyField = ViewConfiguration.class.getDeclaredField("sHasPermanentMenuKey");
-            if(menuKeyField != null) {
-                menuKeyField.setAccessible(true);
-                menuKeyField.setBoolean(config, false);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
         startPushService();
     }

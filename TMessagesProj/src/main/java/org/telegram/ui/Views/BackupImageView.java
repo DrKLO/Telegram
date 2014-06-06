@@ -24,6 +24,7 @@ import org.telegram.messenger.Utilities;
 public class BackupImageView extends ImageView {
     boolean makeRequest = true;
     public String currentPath;
+    public boolean processDetach = true;
     private boolean isPlaceholder;
     private boolean ignoreLayout = true;
 
@@ -179,7 +180,9 @@ public class BackupImageView extends ImageView {
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        recycleBitmap(null);
+        if (processDetach) {
+            recycleBitmap(null);
+        }
     }
 
     @Override
