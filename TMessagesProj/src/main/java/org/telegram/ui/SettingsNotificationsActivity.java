@@ -182,7 +182,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         }
                         int currentSpeedIndex = currentSpeed.getValue();
 
-                        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity)
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity())
                             .setTitle(LocaleController.getString("VibrateSpeedTitle", R.string.VibrateSpeedTitle))
                             .setSingleChoiceItems(speeds, currentSpeedIndex, new DialogInterface.OnClickListener() {
                                 @Override
@@ -217,7 +217,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         for(int j = 0, vl = counts.length; j < vl; j++)
                             counts[j] = String.valueOf(j + 1);
 
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity())
                             .setTitle(LocaleController.getString("VibrateCountTitle", R.string.VibrateCountTitle))
                             .setSingleChoiceItems(counts, count - 1, new DialogInterface.OnClickListener() {
                                 @Override

@@ -310,7 +310,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                             currentSpeedIndex = currentSpeed.getValue() + 1; // index 0 is used to store the "Default" string
                         }
 
-                        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity)
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity())
                                 .setTitle(LocaleController.getString("VibrateSpeedTitle", R.string.VibrateSpeedTitle))
                                 .setSingleChoiceItems(speeds, currentSpeedIndex, new DialogInterface.OnClickListener() {
                                     @Override

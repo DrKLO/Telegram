@@ -314,7 +314,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                             currentSpeedIndex = currentSpeed.getValue() + 1; // index 0 is used to store the "Default" string
                         }
 
-                        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity)
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity())
                             .setTitle(LocaleController.getString("VibrateSpeedTitle", R.string.VibrateSpeedTitle))
                             .setSingleChoiceItems(speeds, currentSpeedIndex, new DialogInterface.OnClickListener() {
                                 @Override
@@ -353,7 +353,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
 
                         int count = preferences.getInt(key, 0);
 
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity())
                             .setTitle(LocaleController.getString("VibrateCountTitle", R.string.VibrateCountTitle))
                             .setSingleChoiceItems(counts, count, new DialogInterface.OnClickListener() {
                                 @Override
