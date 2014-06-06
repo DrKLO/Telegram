@@ -191,7 +191,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                                 }
                             }
                         });
-                        builder.show().setCanceledOnTouchOutside(true);
+                        showAlertDialog(builder);
 
                         return true;
                     }
@@ -269,7 +269,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        builder.show().setCanceledOnTouchOutside(true);
+                        showAlertDialog(builder);
                     }
                 }
             });
@@ -585,7 +585,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                                     processPhotoMenu(action);
                                 }
                             });
-                            builder.show().setCanceledOnTouchOutside(true);
+                            showAlertDialog(builder);
                         }
                     });
                 } else {
@@ -709,7 +709,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                                 }
                             });
                             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                            builder.show().setCanceledOnTouchOutside(true);
+                            showAlertDialog(builder);
                         }
                     });
                 }

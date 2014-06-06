@@ -3403,7 +3403,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                         ConnectionsManager.getInstance().connectionState = 0;
                                         processUpdatesQueue(true);
                                     } else if (res instanceof TLRPC.TL_updates_differenceSlice) {
-                                        //MessagesStorage.lastSeqValue = res.intermediate_state.seq;
                                         MessagesStorage.lastDateValue = res.intermediate_state.date;
                                         MessagesStorage.lastPtsValue = res.intermediate_state.pts;
                                         MessagesStorage.lastQtsValue = res.intermediate_state.qts;
@@ -3424,8 +3423,14 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     });
                 } else {
                     gettingDifference = false;
-                    getDifference();
-                    FileLog.e("tmessages", "get difference error, don't know what to do :(");
+                    ConnectionsManager.getInstance().connectionState = 0;
+                    final int stateCopy = ConnectionsManager.getInstance().connectionState;
+                    Utilities.RunOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            NotificationCenter.getInstance().postNotificationName(703, stateCopy);
+                        }
+                    });
                 }
             }
         }, null, true, RPCRequest.RPCRequestClassGeneric);

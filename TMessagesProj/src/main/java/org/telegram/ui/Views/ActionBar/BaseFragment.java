@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Views.ActionBar;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -15,6 +17,8 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.R;
 
 public class BaseFragment {
     private boolean isFinished = false;
@@ -23,6 +27,7 @@ public class BaseFragment {
     protected ActionBarLayer actionBarLayer;
     protected int classGuid = 0;
     protected Bundle arguments;
+    private AlertDialog visibleDialog = null;
 
     public BaseFragment() {
         classGuid = ConnectionsManager.getInstance().generateClassGuid();
@@ -54,9 +59,9 @@ public class BaseFragment {
             if (parentActivity != null) {
                 if (actionBarLayer != null) {
                     actionBarLayer.onDestroy();
-                    actionBarLayer = null;
                 }
                 actionBarLayer = parentActivity.getInternalActionBar().createLayer();
+                actionBarLayer.setBackgroundResource(R.color.header);
             }
         }
     }
@@ -95,6 +100,14 @@ public class BaseFragment {
         if (actionBarLayer != null) {
             actionBarLayer.onPause();
             actionBarLayer.closeSearchField();
+        }
+        try {
+            if (visibleDialog != null && visibleDialog.isShowing()) {
+                visibleDialog.dismiss();
+                visibleDialog = null;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
     }
 
@@ -156,7 +169,17 @@ public class BaseFragment {
     }
 
     public void onBeginSlide() {
-
+        try {
+            if (visibleDialog != null && visibleDialog.isShowing()) {
+                visibleDialog.dismiss();
+                visibleDialog = null;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        if (actionBarLayer != null) {
+            actionBarLayer.onPause();
+        }
     }
 
     public void onOpenAnimationEnd() {
@@ -165,5 +188,23 @@ public class BaseFragment {
 
     public void onLowMemory() {
 
+    }
+
+    protected void showAlertDialog(AlertDialog.Builder builder) {
+        if (parentActivity == null || parentActivity.checkTransitionAnimation() || parentActivity.animationInProgress || parentActivity.startedTracking) {
+            return;
+        }
+        if (visibleDialog != null && visibleDialog.isShowing()) {
+            visibleDialog.dismiss();
+            visibleDialog = null;
+        }
+        visibleDialog = builder.show();
+        visibleDialog.setCanceledOnTouchOutside(true);
+        visibleDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialog) {
+                visibleDialog = null;
+            }
+        });
     }
 }

@@ -96,62 +96,15 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            fragmentView = inflater.inflate(R.layout.settings_wallpapers_layout, container, false);
-            listAdapter = new ListAdapter(getParentActivity());
-
-            progressBar = (ProgressBar)fragmentView.findViewById(R.id.action_progress);
-            backgroundImage = (ImageView)fragmentView.findViewById(R.id.background_image);
-            listView = (HorizontalListView)fragmentView.findViewById(R.id.listView);
-            listView.setAdapter(listAdapter);
-            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    if (i == 0) {
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-
-                        CharSequence[] items = new CharSequence[] {LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley), LocaleController.getString("Cancel", R.string.Cancel)};
-
-                        builder.setItems(items, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                if (i == 0) {
-                                    Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                                    File image = Utilities.generatePicturePath();
-                                    if (image != null) {
-                                        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
-                                        currentPicturePath = image.getAbsolutePath();
-                                    }
-                                    getParentActivity().startActivityForResult(takePictureIntent, 10);
-                                } else if (i == 1) {
-                                    Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
-                                    photoPickerIntent.setType("image/*");
-                                    getParentActivity().startActivityForResult(photoPickerIntent, 11);
-                                }
-                            }
-                        });
-                        builder.show().setCanceledOnTouchOutside(true);
-                    } else {
-                        TLRPC.WallPaper wallPaper = wallPapers.get(i - 1);
-                        selectedBackground = wallPaper.id;
-                        listAdapter.notifyDataSetChanged();
-                        processSelectedBackground();
-                    }
-                }
-            });
-
-            TextView textView = (TextView)fragmentView.findViewById(R.id.done_button_text);
-            textView.setText(LocaleController.getString("Set", R.string.Set));
-
-            Button cancelButton = (Button)fragmentView.findViewById(R.id.cancel_button);
-            cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel));
+            actionBarLayer.setCustomView(R.layout.settings_do_action_layout);
+            Button cancelButton = (Button)actionBarLayer.findViewById(R.id.cancel_button);
             cancelButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     finishFragment();
                 }
             });
-
-            doneButton = fragmentView.findViewById(R.id.done_button);
+            doneButton = actionBarLayer.findViewById(R.id.done_button);
             doneButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -187,6 +140,53 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                         ApplicationLoader.cachedWallpaper = null;
                     }
                     finishFragment();
+                }
+            });
+
+            cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel));
+            TextView textView = (TextView)doneButton.findViewById(R.id.done_button_text);
+            textView.setText(LocaleController.getString("Set", R.string.Set));
+
+            fragmentView = inflater.inflate(R.layout.settings_wallpapers_layout, container, false);
+            listAdapter = new ListAdapter(getParentActivity());
+
+            progressBar = (ProgressBar)fragmentView.findViewById(R.id.action_progress);
+            backgroundImage = (ImageView)fragmentView.findViewById(R.id.background_image);
+            listView = (HorizontalListView)fragmentView.findViewById(R.id.listView);
+            listView.setAdapter(listAdapter);
+            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                    if (i == 0) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+
+                        CharSequence[] items = new CharSequence[] {LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley), LocaleController.getString("Cancel", R.string.Cancel)};
+
+                        builder.setItems(items, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                if (i == 0) {
+                                    Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                                    File image = Utilities.generatePicturePath();
+                                    if (image != null) {
+                                        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
+                                        currentPicturePath = image.getAbsolutePath();
+                                    }
+                                    getParentActivity().startActivityForResult(takePictureIntent, 10);
+                                } else if (i == 1) {
+                                    Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+                                    photoPickerIntent.setType("image/*");
+                                    getParentActivity().startActivityForResult(photoPickerIntent, 11);
+                                }
+                            }
+                        });
+                        showAlertDialog(builder);
+                    } else {
+                        TLRPC.WallPaper wallPaper = wallPapers.get(i - 1);
+                        selectedBackground = wallPaper.id;
+                        listAdapter.notifyDataSetChanged();
+                        processSelectedBackground();
+                    }
                 }
             });
 
@@ -428,7 +428,6 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
-        hideActionBar();
         processSelectedBackground();
         fixLayout();
     }

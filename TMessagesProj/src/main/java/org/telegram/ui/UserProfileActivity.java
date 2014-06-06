@@ -194,7 +194,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        builder.show().setCanceledOnTouchOutside(true);
+                        showAlertDialog(builder);
                     }
                 }
             });
@@ -222,7 +222,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    builder.show().setCanceledOnTouchOutside(true);
+                    showAlertDialog(builder);
                 }
             });
             if (dialog_id == 0) {
@@ -268,7 +268,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        builder.show().setCanceledOnTouchOutside(true);
+                        showAlertDialog(builder);
                     } else if (i == settingsSoundRow) {
                         try {
                             Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
@@ -351,7 +351,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        builder.show().setCanceledOnTouchOutside(true);
+                        showAlertDialog(builder);
                     }
                 }
             });
@@ -633,7 +633,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                                     }
                                 }
                             });
-                            builder.show().setCanceledOnTouchOutside(true);
+                            showAlertDialog(builder);
                         }
                     });
                 }

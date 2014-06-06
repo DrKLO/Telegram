@@ -48,7 +48,7 @@ public class ActionBarMenuItem extends ImageView {
 
     public ActionBarMenuItem(Context context, ActionBarMenu menu, ActionBar actionBar) {
         super(context);
-        setBackgroundResource(R.drawable.bar_selector);
+        setBackgroundResource(actionBar.itemsBackgroundResourceId);
         parentMenu = menu;
         parentActionBar = actionBar;
     }
