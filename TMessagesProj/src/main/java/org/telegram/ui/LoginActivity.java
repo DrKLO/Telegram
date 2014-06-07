@@ -215,7 +215,7 @@ public class LoginActivity extends BaseFragment implements SlideView.SlideViewDe
                 builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                 builder.setMessage(text);
                 builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-                builder.show().setCanceledOnTouchOutside(true);
+                showAlertDialog(builder);
             }
         });
     }

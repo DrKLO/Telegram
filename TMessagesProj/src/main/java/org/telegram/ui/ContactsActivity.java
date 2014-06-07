@@ -307,7 +307,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 }
                             });
                             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                            builder.show().setCanceledOnTouchOutside(true);
+                            showAlertDialog(builder);
                         }
                     }
                 }
@@ -346,7 +346,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 }
             });
             builder.setNegativeButton(R.string.Cancel, null);
-            builder.show().setCanceledOnTouchOutside(true);
+            showAlertDialog(builder);
         } else {
             if (delegate != null) {
                 delegate.didSelectContact(user);

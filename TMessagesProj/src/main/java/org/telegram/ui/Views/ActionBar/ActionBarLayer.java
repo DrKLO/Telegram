@@ -37,7 +37,7 @@ public class ActionBarLayer extends FrameLayout {
     private TextView subTitleTextView;
     private ActionBarMenu menu;
     private ActionBarMenu actionMode;
-    private ActionBar parentActionBar;
+    protected ActionBar parentActionBar;
     private boolean oldUseLogo;
     private boolean oldUseBack;
     private boolean isBackLayoutHidden = false;
@@ -53,8 +53,8 @@ public class ActionBarLayer extends FrameLayout {
         layoutParams.width = LayoutParams.WRAP_CONTENT;
         layoutParams.height = LayoutParams.FILL_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-        backButtonFrameLayout.setBackgroundResource(R.drawable.bar_selector);
         backButtonFrameLayout.setLayoutParams(layoutParams);
+        backButtonFrameLayout.setBackgroundResource(actionBar.itemsBackgroundResourceId);
         backButtonFrameLayout.setPadding(0, 0, Utilities.dp(4), 0);
         backButtonFrameLayout.setOnClickListener(new OnClickListener() {
             @Override
@@ -430,6 +430,16 @@ public class ActionBarLayer extends FrameLayout {
         positionMenu(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
         positionTitle(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
+
+    @Override
+    public void setAlpha(float alpha) {
+        if (menu != null) {
+            menu.setAlpha(alpha);
+        }
+        if (backButtonFrameLayout != null) {
+            backButtonFrameLayout.setAlpha(alpha);
+        }
     }
 
     public void onMenuButtonPressed() {

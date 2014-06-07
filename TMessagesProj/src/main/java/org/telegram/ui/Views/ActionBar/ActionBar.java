@@ -32,6 +32,7 @@ public class ActionBar extends FrameLayout {
     private View currentBackOverlay;
     private View shadowView = null;
     private int currentBackOverlayWidth;
+    protected int itemsBackgroundResourceId;
 
     public ActionBar(Context context) {
         super(context);
@@ -139,7 +140,6 @@ public class ActionBar extends FrameLayout {
         layoutParams.width = LayoutParams.MATCH_PARENT;
         layoutParams.height = LayoutParams.MATCH_PARENT;
         layer.setLayoutParams(layoutParams);
-        currentLayer.setBackgroundDrawable(getBackground());
         shadowView.setX(-Utilities.dp(2));
         shadowView.setVisibility(VISIBLE);
     }
@@ -148,7 +148,6 @@ public class ActionBar extends FrameLayout {
         if (currentLayer == null) {
             return;
         }
-        currentLayer.setBackgroundDrawable(null);
         currentLayer.setX(0);
         if (!backAnimation) {
             removeView(currentLayer);
@@ -205,5 +204,9 @@ public class ActionBar extends FrameLayout {
         if (currentLayer != null) {
             currentLayer.onMenuButtonPressed();
         }
+    }
+
+    public void setItemsBackground(int resourceId) {
+        itemsBackgroundResourceId = resourceId;
     }
 }

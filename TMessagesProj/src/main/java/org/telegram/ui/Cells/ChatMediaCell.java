@@ -39,7 +39,7 @@ import java.util.Locale;
 public class ChatMediaCell extends ChatBaseCell implements MediaController.FileDownloadProgressListener {
 
     public static interface ChatMediaCellDelegate {
-        public abstract void didPressedImage(ChatBaseCell cell);
+        public abstract void didPressedImage(ChatMediaCell cell, ImageReceiver imageReceiver);
     }
 
     private static Drawable placeholderInDrawable;
@@ -196,7 +196,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         if (currentMessageObject.type == 1) {
             if (buttonState == -1) {
                 if (mediaDelegate != null) {
-                    mediaDelegate.didPressedImage(this);
+                    mediaDelegate.didPressedImage(this, photoImage);
                 }
             } else if (buttonState == 0) {
                 didPressedButton();
@@ -217,7 +217,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             }
         } else if (currentMessageObject.type == 4) {
             if (mediaDelegate != null) {
-                mediaDelegate.didPressedImage(this);
+                mediaDelegate.didPressedImage(this, photoImage);
             }
         }
     }
@@ -271,7 +271,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             }
         } else if (buttonState == 3) {
             if (mediaDelegate != null) {
-                mediaDelegate.didPressedImage(this);
+                mediaDelegate.didPressedImage(this, photoImage);
             }
         }
     }
@@ -545,6 +545,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             canvas.restore();
         } else {
             photoImage.draw(canvas, photoImage.imageX, photoImage.imageY, photoWidth, photoHeight);
+            drawTime = photoImage.getVisible();
         }
 
         if (progressVisible) {

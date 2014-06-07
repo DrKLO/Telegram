@@ -200,7 +200,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                             }
                         }
                     });
-                    builder.show().setCanceledOnTouchOutside(true);
+                    showAlertDialog(builder);
                 }
             });
 

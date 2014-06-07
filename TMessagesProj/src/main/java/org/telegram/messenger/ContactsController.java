@@ -433,7 +433,12 @@ public class ContactsController {
                                 FileLog.e("tmessages", "detected account deletion!");
                                 currentAccount = new Account(UserConfig.currentUser.phone, "org.telegram.account");
                                 am.addAccountExplicitly(currentAccount, "", null);
-                                performWriteContactsToPhoneBookInternal();
+                                Utilities.RunOnUIThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        performWriteContactsToPhoneBook();
+                                    }
+                                });
                             }
                         }
                     } catch (Exception e) {
@@ -1149,7 +1154,7 @@ public class ContactsController {
         sortedUsersSectionsArray = sortedSectionsArray;
     }
 
-    private void performWriteContactsToPhoneBookInternal() {
+    private void performWriteContactsToPhoneBookInternal(ArrayList<TLRPC.TL_contact> contactsArray) {
         try {
             Uri rawContactUri = ContactsContract.RawContacts.CONTENT_URI.buildUpon().appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_NAME, currentAccount.name).appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_TYPE, currentAccount.type).build();
             Cursor c1 = ApplicationLoader.applicationContext.getContentResolver().query(rawContactUri, new String[]{BaseColumns._ID, ContactsContract.RawContacts.SYNC2}, null, null, null);
@@ -1160,7 +1165,7 @@ public class ContactsController {
                 }
                 c1.close();
 
-                for (TLRPC.TL_contact u : contacts) {
+                for (TLRPC.TL_contact u : contactsArray) {
                     if (!bookContacts.containsKey(u.user_id)) {
                         TLRPC.User user = MessagesController.getInstance().users.get(u.user_id);
                         addContactToPhoneBook(user, false);
@@ -1173,10 +1178,12 @@ public class ContactsController {
     }
 
     private void performWriteContactsToPhoneBook() {
+        final ArrayList<TLRPC.TL_contact> contactsArray = new ArrayList<TLRPC.TL_contact>();
+        contactsArray.addAll(contacts);
         Utilities.globalQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
-                performWriteContactsToPhoneBookInternal();
+                performWriteContactsToPhoneBookInternal(contactsArray);
             }
         });
     }

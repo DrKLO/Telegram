@@ -11,9 +11,10 @@ package org.telegram.messenger;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
 
 public class DispatchQueue extends Thread {
-    public Handler handler;
+    public volatile Handler handler = null;
     private final Object handlerSyncObject = new Object();
 
     public DispatchQueue(final String threadName) {
@@ -47,12 +48,14 @@ public class DispatchQueue extends Thread {
 
     public void postRunnable(Runnable runnable, int delay) {
         if (handler == null) {
-            try {
-                synchronized (handlerSyncObject) {
-                    handlerSyncObject.wait();
+            synchronized (handlerSyncObject) {
+                if (handler == null) {
+                    try {
+                        handlerSyncObject.wait();
+                    } catch (Throwable t) {
+                        t.printStackTrace();
+                    }
                 }
-            } catch (Throwable t) {
-                t.printStackTrace();
             }
         }
 
@@ -67,8 +70,8 @@ public class DispatchQueue extends Thread {
 
     public void run() {
         Looper.prepare();
-        handler = new Handler();
         synchronized (handlerSyncObject) {
+            handler = new Handler();
             handlerSyncObject.notify();
         }
         Looper.loop();

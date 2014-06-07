@@ -35,7 +35,6 @@ import android.text.Html;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.ImageSpan;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -91,6 +90,7 @@ import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.EmojiView;
+import org.telegram.ui.Views.ImageReceiver;
 import org.telegram.ui.Views.LayoutListView;
 import org.telegram.ui.Views.MessageActionLayout;
 import org.telegram.ui.Views.SizeNotifierRelativeLayout;
@@ -152,7 +152,6 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     private View pagedownButton;
     private TextView topPanelText;
     private long dialog_id;
-    AlertDialog visibleDialog = null;
     private SizeNotifierRelativeLayout sizeNotifierRelativeLayout;
     private HashMap<Integer, MessageObject> selectedMessagesIds = new HashMap<Integer, MessageObject>();
     private HashMap<Integer, MessageObject> selectedMessagesCanCopyIds = new HashMap<Integer, MessageObject>();
@@ -404,14 +403,6 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             sizeNotifierRelativeLayout = null;
         }
 
-        try {
-            if (visibleDialog != null) {
-                visibleDialog.dismiss();
-                visibleDialog = null;
-            }
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
         if (mWakeLock != null) {
             try {
                 mWakeLock.release();
@@ -543,7 +534,10 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                 clipboard.setPrimaryClip(clip);
                             }
                         }
+                        selectedMessagesIds.clear();
+                        selectedMessagesCanCopyIds.clear();
                         actionBarLayer.hideActionMode();
+                        updateVisibleRows();
                     } else if (id == delete) {
                         ArrayList<Integer> ids = new ArrayList<Integer>(selectedMessagesIds.keySet());
                         ArrayList<Long> random_ids = null;
@@ -1006,8 +1000,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    visibleDialog = builder.show();
-                    visibleDialog.setCanceledOnTouchOutside(true);
+                    showAlertDialog(builder);
                 }
             });
 
@@ -1336,8 +1329,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    visibleDialog = builder.show();
-                    visibleDialog.setCanceledOnTouchOutside(true);
+                    showAlertDialog(builder);
                 }
             });
             timerButton.setTime(currentEncryptedChat.ttl);
@@ -2584,8 +2576,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                     }
                                 });
                                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                                visibleDialog = builder.show();
-                                visibleDialog.setCanceledOnTouchOutside(true);
+                                showAlertDialog(builder);
                             }
                         });
                     }
@@ -2671,8 +2662,6 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     public void onResume() {
         super.onResume();
 
-        showActionBar();
-
         checkActionBarMenu();
         if (chatAdapter != null) {
             chatAdapter.notifyDataSetChanged();
@@ -2730,6 +2719,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
     @Override
     public void onBeginSlide() {
+        super.onBeginSlide();
         hideEmojiPopup();
     }
 
@@ -2806,6 +2796,12 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
             @Override
             public boolean onPreDraw() {
+                if (chatListView != null) {
+                    chatListView.getViewTreeObserver().removeOnPreDrawListener(this);
+                }
+                if (getParentActivity() == null) {
+                    return true;
+                }
                 int height = Utilities.dp(48);
                 if (getParentActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
                     height = Utilities.dp(40);
@@ -2819,7 +2815,6 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     params.height = height;
                     avatarImageView.setLayoutParams(params);
                 }
-                chatListView.getViewTreeObserver().removeOnPreDrawListener(this);
                 return false;
             }
         });
@@ -3011,15 +3006,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                                         builder.setMessage(LocaleController.getString("IncorrectLocalization", R.string.IncorrectLocalization));
                                         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-                                        visibleDialog = builder.show();
-                                        visibleDialog.setCanceledOnTouchOutside(true);
-
-                                        visibleDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                                            @Override
-                                            public void onDismiss(DialogInterface dialog) {
-                                                visibleDialog = null;
-                                            }
-                                        });
+                                        showAlertDialog(builder);
                                     }
                                 }
                             }
@@ -3028,15 +3015,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 });
 
                 builder.setTitle(LocaleController.getString("Message", R.string.Message));
-                visibleDialog = builder.show();
-                visibleDialog.setCanceledOnTouchOutside(true);
-
-                visibleDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                    @Override
-                    public void onDismiss(DialogInterface dialog) {
-                        visibleDialog = null;
-                    }
-                });
+                showAlertDialog(builder);
             }
             return;
         }
@@ -3272,9 +3251,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 }
             });
             builder.setNegativeButton(R.string.Cancel, null);
-            visibleDialog = builder.create();
-            visibleDialog.setCanceledOnTouchOutside(true);
-            visibleDialog.show();
+            showAlertDialog(builder);
             return false;
         }
     }
@@ -3387,15 +3364,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         } else {
             builder.setMessage(LocaleController.formatString("NoHandleAppInstalled", R.string.NoHandleAppInstalled, message.messageOwner.media.document.mime_type));
         }
-        visibleDialog = builder.show();
-        visibleDialog.setCanceledOnTouchOutside(true);
-
-        visibleDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-            @Override
-            public void onDismiss(DialogInterface dialog) {
-                visibleDialog = null;
-            }
-        });
+        showAlertDialog(builder);
     }
 
     private class ChatAdapter extends BaseAdapter {
@@ -3548,7 +3517,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 if (view instanceof ChatMediaCell) {
                     ((ChatMediaCell)view).mediaDelegate = new ChatMediaCell.ChatMediaCellDelegate() {
                         @Override
-                        public void didPressedImage(ChatBaseCell cell) {
+                        public void didPressedImage(ChatMediaCell cell, ImageReceiver imageReceiver) {
                             MessageObject message = cell.getMessageObject();
                             if (message.messageOwner.send_state == MessagesController.MESSAGE_SEND_STATE_SEND_ERROR) {
                                 createMenu(cell, false);
@@ -3557,6 +3526,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                 return;
                             }
                             if (message.type == 1) {
+//                                int coords[] = new int[2];
+//                                cell.getLocationInWindow(coords);
+//                                PhotoViewer.getInstance().openPhoto(imageReceiver, coords[0], coords[1] - Utilities.statusBarHeight, chatListView);
                                 NotificationCenter.getInstance().addToMemCache(51, message);
                                 Intent intent = new Intent(getParentActivity(), GalleryImageViewer.class);
                                 getParentActivity().startActivity(intent);
@@ -4061,37 +4033,31 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                     }
                                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                                     builder.setItems(new CharSequence[] {LocaleController.getString("Copy", R.string.Copy), LocaleController.getString("Call", R.string.Call)}, new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialogInterface, int i) {
-                                            if (i == 1) {
-                                                try {
-                                                    Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + message.messageOwner.media.phone_number));
-                                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                                    getParentActivity().startActivity(intent);
-                                                } catch (Exception e) {
-                                                    FileLog.e("tmessages", e);
-                                                }
-                                            } else if (i == 0) {
-                                                int sdk = android.os.Build.VERSION.SDK_INT;
-                                                if(sdk < android.os.Build.VERSION_CODES.HONEYCOMB) {
-                                                    android.text.ClipboardManager clipboard = (android.text.ClipboardManager)ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                                                    clipboard.setText(message.messageOwner.media.phone_number);
-                                                } else {
-                                                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager)ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                                                    android.content.ClipData clip = android.content.ClipData.newPlainText("label", message.messageOwner.media.phone_number);
-                                                    clipboard.setPrimaryClip(clip);
+                                                @Override
+                                                public void onClick(DialogInterface dialogInterface, int i) {
+                                                    if (i == 1) {
+                                                        try {
+                                                            Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + message.messageOwner.media.phone_number));
+                                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                                            getParentActivity().startActivity(intent);
+                                                        } catch (Exception e) {
+                                                            FileLog.e("tmessages", e);
+                                                        }
+                                                    } else if (i == 0) {
+                                                        int sdk = android.os.Build.VERSION.SDK_INT;
+                                                        if (sdk < android.os.Build.VERSION_CODES.HONEYCOMB) {
+                                                            android.text.ClipboardManager clipboard = (android.text.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                                                            clipboard.setText(message.messageOwner.media.phone_number);
+                                                        } else {
+                                                            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                                                            android.content.ClipData clip = android.content.ClipData.newPlainText("label", message.messageOwner.media.phone_number);
+                                                            clipboard.setPrimaryClip(clip);
+                                                        }
+                                                    }
                                                 }
                                             }
-                                        }
-                                    });
-                                    visibleDialog = builder.show();
-                                    visibleDialog.setCanceledOnTouchOutside(true);
-                                    visibleDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                                        @Override
-                                        public void onDismiss(DialogInterface dialog) {
-                                            visibleDialog = null;
-                                        }
-                                    });
+                                    );
+                                    showAlertDialog(builder);
                                 }
                             }
                         }

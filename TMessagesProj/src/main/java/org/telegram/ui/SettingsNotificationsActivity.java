@@ -361,7 +361,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                                 }
                             });
                             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                            builder.show().setCanceledOnTouchOutside(true);
+                            showAlertDialog(builder);
                         }
                     }
                 }

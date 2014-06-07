@@ -93,6 +93,12 @@ public class IdenticonActivity extends BaseFragment {
         obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
             @Override
             public boolean onPreDraw() {
+                if (fragmentView != null) {
+                    fragmentView.getViewTreeObserver().removeOnPreDrawListener(this);
+                }
+                if (getParentActivity() == null) {
+                    return true;
+                }
                 LinearLayout layout = (LinearLayout)fragmentView;
                 WindowManager manager = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
                 int rotation = manager.getDefaultDisplay().getRotation();
@@ -104,8 +110,6 @@ public class IdenticonActivity extends BaseFragment {
                 }
 
                 fragmentView.setPadding(fragmentView.getPaddingLeft(), 0, fragmentView.getPaddingRight(), fragmentView.getPaddingBottom());
-                fragmentView.getViewTreeObserver().removeOnPreDrawListener(this);
-
                 return false;
             }
         });

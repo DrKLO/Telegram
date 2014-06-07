@@ -168,6 +168,8 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         }
 
         handleIntent(getIntent(), false, savedInstanceState != null);
+
+        PhotoViewer.getInstance().setParentActivity(this);
     }
 
     private void handleIntent(Intent intent, boolean isNew, boolean restore) {
@@ -743,5 +745,23 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (PhotoViewer.getInstance().isVisible()) {
+            PhotoViewer.getInstance().closePhoto();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    @Override
+    public boolean onPreIme() {
+        if (PhotoViewer.getInstance().isVisible()) {
+            PhotoViewer.getInstance().closePhoto();
+            return true;
+        }
+        return super.onPreIme();
     }
 }

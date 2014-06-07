@@ -254,7 +254,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        builder.show().setCanceledOnTouchOutside(true);
+                        showAlertDialog(builder);
                     } else if (i == enableAnimationsRow) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                         boolean animations = preferences.getBoolean("view_animations", true);
@@ -286,7 +286,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        builder.show().setCanceledOnTouchOutside(true);
+                        showAlertDialog(builder);
                     } else if (i == sendLogsRow) {
                         sendLogs();
                     } else if (i == clearLogsRow) {
@@ -325,7 +325,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        builder.show().setCanceledOnTouchOutside(true);
+                        showAlertDialog(builder);
                     } else if (i == languageRow) {
                         presentFragment(new LanguageSelectActivity());
                     } else if (i == switchBackendButtonRow) {
@@ -339,7 +339,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        builder.show().setCanceledOnTouchOutside(true);
+                        showAlertDialog(builder);
                     } else if (i == telegramFaqRow) {
                         try {
                             Intent pickIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(LocaleController.getString("TelegramFaqUrl", R.string.TelegramFaqUrl)));
@@ -369,7 +369,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        builder.show().setCanceledOnTouchOutside(true);
+                        showAlertDialog(builder);
                     } else if (i == photoDownloadChatRow || i == photoDownloadPrivateRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
@@ -398,7 +398,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        builder.show().setCanceledOnTouchOutside(true);
+                        showAlertDialog(builder);
                     }
                 }
             });
@@ -547,7 +547,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onResume() {
         super.onResume();
-        showActionBar();
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
@@ -696,7 +695,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                     }
                                 }
                             });
-                            builder.show().setCanceledOnTouchOutside(true);
+                            showAlertDialog(builder);
                         }
                     });
                 }
@@ -844,12 +843,14 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 public void onClick(DialogInterface dialogInterface, int i) {
                                     NotificationCenter.getInstance().postNotificationName(1234);
                                     MessagesController.getInstance().unregistedPush();
-                                    listView.setAdapter(null);
+                                    MessagesStorage.getInstance().cleanUp();
+                                    MessagesController.getInstance().cleanUp();
+                                    ConnectionsManager.getInstance().cleanUp();
                                     UserConfig.clearConfig();
                                 }
                             });
                             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                            builder.show().setCanceledOnTouchOutside(true);
+                            showAlertDialog(builder);
                         }
                     });
                 }

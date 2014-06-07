@@ -151,7 +151,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                             }
                         }
                     });
-                    builder.show().setCanceledOnTouchOutside(true);
+                    showAlertDialog(builder);
 
                     return true;
                 }
