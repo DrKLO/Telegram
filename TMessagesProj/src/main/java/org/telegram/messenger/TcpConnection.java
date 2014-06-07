@@ -81,6 +81,11 @@ public class TcpConnection extends ConnectionContext {
     }
 
     public void connect() {
+        if(!ConnectionsManager.isNetworkOnline() && !tryWithNoNetworkAnyway) {
+            FileLog.d("tmessages", "Connection is not available, skipping task scheduling");
+            return;
+        }
+
         selector.scheduleTask(new Runnable() {
             @Override
             public void run() {
