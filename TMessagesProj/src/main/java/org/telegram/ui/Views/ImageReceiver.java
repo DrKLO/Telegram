@@ -10,6 +10,7 @@ package org.telegram.ui.Views;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -34,6 +35,8 @@ public class ImageReceiver {
     public Integer TAG = null;
     public WeakReference<View> parentView = null;
     public int imageX = 0, imageY = 0, imageW = 0, imageH = 0;
+    public Rect drawRegion = new Rect();
+    private boolean isVisible = true;
     private boolean selfSetting = false;
 
     public void setImage(TLRPC.FileLocation path, String filter, Drawable placeholder) {
@@ -172,6 +175,9 @@ public class ImageReceiver {
     }
 
     public void draw(Canvas canvas, int x, int y, int w, int h) {
+        if (!isVisible) {
+            return;
+        }
         try {
             if (currentImage != null) {
                 int bitmapW = currentImage.getIntrinsicWidth();
@@ -179,27 +185,29 @@ public class ImageReceiver {
                 float scaleW = bitmapW / (float)w;
                 float scaleH = bitmapH / (float)h;
 
-                if (Math.abs(scaleW - scaleH) > 0.05f) {
+                if (Math.abs(scaleW - scaleH) > 0.00001f) {
                     canvas.save();
                     canvas.clipRect(x, y, x + w, y + h);
 
                     if (bitmapW / scaleH > w) {
                         bitmapW /= scaleH;
-                        currentImage.setBounds(x - (bitmapW - w) / 2, y, x + (bitmapW + w) / 2, y + h);
+                        drawRegion.set(x - (bitmapW - w) / 2, y, x + (bitmapW + w) / 2, y + h);
                     } else {
                         bitmapH /= scaleW;
-                        currentImage.setBounds(x, y - (bitmapH - h) / 2, x + w, y + (bitmapH + h) / 2);
+                        drawRegion.set(x, y - (bitmapH - h) / 2, x + w, y + (bitmapH + h) / 2);
                     }
-
+                    currentImage.setBounds(drawRegion);
                     currentImage.draw(canvas);
 
                     canvas.restore();
                 } else {
-                    currentImage.setBounds(x, y, x + w, y + h);
+                    drawRegion.set(x, y, x + w, y + h);
+                    currentImage.setBounds(drawRegion);
                     currentImage.draw(canvas);
                 }
             } else if (last_placeholder != null) {
-                last_placeholder.setBounds(x, y, x + w, y + h);
+                drawRegion.set(x, y, x + w, y + h);
+                last_placeholder.setBounds(drawRegion);
                 last_placeholder.draw(canvas);
             }
         } catch (Exception e) {
@@ -210,5 +218,29 @@ public class ImageReceiver {
             setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size);
             FileLog.e("tmessages", e);
         }
+    }
+
+    public Bitmap getBitmap() {
+        if (currentImage != null && currentImage instanceof BitmapDrawable) {
+            return ((BitmapDrawable)currentImage).getBitmap();
+        } else if (isPlaceholder && last_placeholder != null && last_placeholder instanceof BitmapDrawable) {
+            return ((BitmapDrawable)last_placeholder).getBitmap();
+        }
+        return null;
+    }
+
+    public void setVisible(boolean value) {
+        if (isVisible == value) {
+            return;
+        }
+        isVisible = value;
+        View parent = parentView.get();
+        if (parent != null) {
+            parent.invalidate();
+        }
+    }
+
+    public boolean getVisible() {
+        return isVisible;
     }
 }

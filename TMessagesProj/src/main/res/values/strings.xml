@@ -269,7 +269,7 @@
     <string name="NotificationsServiceDisableInfo">If google play services are enough for you to receive notifications, you can disable Notifications Service. However we recommend you to leave it enabled to keep app running in background and receive instant notifications.</string>
     <string name="SortBy">Sort By</string>
     <string name="ImportContacts">Import Contacts</string>
-    <string name="WiFiOnly">via WiFi only</string>
+    <string name="WiFiOnly">Via WiFi only</string>
     <string name="SortFirstName">First name</string>
     <string name="SortLastName">Last name</string>
 

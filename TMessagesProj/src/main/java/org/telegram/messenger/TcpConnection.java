@@ -90,6 +90,10 @@ public class TcpConnection extends ConnectionContext {
 
                 connectionState = TcpConnectionState.TcpConnectionStageConnecting;
                 try {
+                    Datacenter datacenter = ConnectionsManager.getInstance().datacenterWithId(datacenterId);
+                    hostAddress = datacenter.getCurrentAddress();
+                    hostPort = datacenter.getCurrentPort();
+
                     if(android.os.Build.VERSION.SDK_INT < 11) {
                         if (!ConnectionsManager.isNetworkOnline() && !tryWithNoNetworkAnyway) {
                             handleConnectionError(null);
@@ -108,9 +112,7 @@ public class TcpConnection extends ConnectionContext {
                     } catch (Exception e2) {
                         FileLog.e("tmessages", e2);
                     }
-                    Datacenter datacenter = ConnectionsManager.getInstance().datacenterWithId(datacenterId);
-                    hostAddress = datacenter.getCurrentAddress();
-                    hostPort = datacenter.getCurrentPort();
+
                     FileLog.d("tmessages", String.format(TcpConnection.this + " Connecting (%s:%d)", hostAddress, hostPort));
                     firstPacket = true;
                     if (restOfTheData != null) {
@@ -292,6 +294,7 @@ public class TcpConnection extends ConnectionContext {
                 }
 
                 if (client == null || client.isDisconnected()) {
+                    BuffersStorage.getInstance().reuseFreeBuffer(buff);
                     return;
                 }
 

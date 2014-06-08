@@ -482,7 +482,7 @@ public class DialogCell extends BaseCell {
                                 messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#316f9f>%s:</font> <font color=#316f9f>%s</font>", name, message.messageText)), messagePaint.getFontMetricsInt(), Utilities.dp(20));
                             } else {
                                 if (message.messageOwner.message != null) {
-                                    messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#316f9f>%s:</font> <font color=#808080>%s</font>", name, message.messageOwner.message.replace("\n", " "))), messagePaint.getFontMetricsInt(), Utilities.dp(20));
+                                    messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#316f9f>%s:</font> <font color=#808080>%s</font>", name, message.messageOwner.message.replace("\n", " ").replace("<", "&lt;").replace(">", "&gt;"))), messagePaint.getFontMetricsInt(), Utilities.dp(20));
                                 }
                             }
                         } else {

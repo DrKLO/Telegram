@@ -29,7 +29,6 @@ import android.os.Build;
 import android.os.Vibrator;
 import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
-import android.support.v7.app.ActionBarActivity;
 import android.text.Html;
 import android.util.SparseArray;
 
@@ -3404,7 +3403,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                         ConnectionsManager.getInstance().connectionState = 0;
                                         processUpdatesQueue(true);
                                     } else if (res instanceof TLRPC.TL_updates_differenceSlice) {
-                                        //MessagesStorage.lastSeqValue = res.intermediate_state.seq;
                                         MessagesStorage.lastDateValue = res.intermediate_state.date;
                                         MessagesStorage.lastPtsValue = res.intermediate_state.pts;
                                         MessagesStorage.lastQtsValue = res.intermediate_state.qts;
@@ -3425,8 +3423,14 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     });
                 } else {
                     gettingDifference = false;
-                    getDifference();
-                    FileLog.e("tmessages", "get difference error, don't know what to do :(");
+                    ConnectionsManager.getInstance().connectionState = 0;
+                    final int stateCopy = ConnectionsManager.getInstance().connectionState;
+                    Utilities.RunOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            NotificationCenter.getInstance().postNotificationName(703, stateCopy);
+                        }
+                    });
                 }
             }
         }, null, true, RPCRequest.RPCRequestClassGeneric);
@@ -5072,7 +5076,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                 @Override
                                 public void run() {
                                     try {
-                                        if (!((ActionBarActivity) context).isFinishing()) {
+                                        if (!((Activity) context).isFinishing()) {
                                             progressDialog.dismiss();
                                         }
                                     } catch (Exception e) {
@@ -5113,7 +5117,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                     @Override
                                     public void run() {
                                         startingSecretChat = false;
-                                        if (!((ActionBarActivity) context).isFinishing()) {
+                                        if (!((Activity) context).isFinishing()) {
                                             try {
                                                 progressDialog.dismiss();
                                             } catch (Exception e) {
@@ -5168,7 +5172,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                 Utilities.RunOnUIThread(new Runnable() {
                                     @Override
                                     public void run() {
-                                        if (!((ActionBarActivity) context).isFinishing()) {
+                                        if (!((Activity) context).isFinishing()) {
                                             startingSecretChat = false;
                                             try {
                                                 progressDialog.dismiss();
@@ -5192,7 +5196,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         @Override
                         public void run() {
                             startingSecretChat = false;
-                            if (!((ActionBarActivity) context).isFinishing()) {
+                            if (!((Activity) context).isFinishing()) {
                                 try {
                                     progressDialog.dismiss();
                                 } catch (Exception e) {
