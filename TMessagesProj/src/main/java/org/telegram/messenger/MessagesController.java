@@ -4289,7 +4289,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
         if (ApplicationLoader.lastPauseTime != 0) {
             ApplicationLoader.lastPauseTime = System.currentTimeMillis();
-            FileLog.e("tmessages", "reset sleep timeout by recieved message");
+            FileLog.e("tmessages", "reset sleep timeout by received message");
         }
         if (messageObject == null) {
             return;

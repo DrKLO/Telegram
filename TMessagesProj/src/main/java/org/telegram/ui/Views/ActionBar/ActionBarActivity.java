@@ -31,6 +31,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 
+import org.telegram.messenger.ChangeAwareArrayList;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
@@ -90,7 +91,7 @@ public class ActionBarActivity extends Activity {
         }
     }
 
-    public static ArrayList<BaseFragment> fragmentsStack = new ArrayList<BaseFragment>();
+    public static ChangeAwareArrayList<BaseFragment> fragmentsStack = new ChangeAwareArrayList<BaseFragment>();
 
     protected void onCreateFinish(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
