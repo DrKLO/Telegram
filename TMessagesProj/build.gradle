@@ -52,9 +52,9 @@ android {
 
     buildTypes {
         debug {
-            debuggable false
+            debuggable true
             jniDebugBuild false
-            runProguard true
+            runProguard false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
             signingConfig signingConfigs.debug
         }
@@ -94,7 +94,7 @@ android {
         targetSdkVersion 19
         renderscriptTargetApi 19
         renderscriptSupportMode true
-        versionCode 219
-        versionName "1.5.5"
+        versionCode 220
+        versionName "1.5.51"
     }
 }
