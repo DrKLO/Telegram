@@ -680,8 +680,8 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                 onFinish();
             }
         } else if (id == 703) {
-            int state = (Integer)args[0];
-            if (currentConnectionState != state) {
+            if (fragmentsStack.isChanged()) {
+                int state = (Integer)args[0];
                 FileLog.e("tmessages", "switch to state " + state);
                 currentConnectionState = state;
                 updateActionBar();

@@ -83,6 +83,9 @@ public class TcpConnection extends ConnectionContext {
     public void connect() {
         if(!ConnectionsManager.isNetworkOnline() && !tryWithNoNetworkAnyway) {
             FileLog.d("tmessages", "Connection is not available, skipping task scheduling");
+
+            notifyConnectionError();
+
             return;
         }
 
@@ -155,6 +158,19 @@ public class TcpConnection extends ConnectionContext {
         });
     }
 
+    protected void notifyConnectionError() {
+        connectionState =  TcpConnectionState.TcpConnectionStageReconnecting;
+        if (delegate != null) {
+            final TcpConnectionDelegate finalDelegate = delegate;
+            Utilities.stageQueue.postRunnable(new Runnable() {
+                @Override
+                public void run() {
+                    finalDelegate.tcpConnectionClosed(TcpConnection.this);
+                }
+            });
+        }
+    }
+
     private void handleConnectionError(Exception e) {
         try {
             synchronized (timerSync) {
@@ -166,16 +182,8 @@ public class TcpConnection extends ConnectionContext {
         } catch (Exception e2) {
             FileLog.e("tmessages", e2);
         }
-        connectionState =  TcpConnectionState.TcpConnectionStageReconnecting;
-        if (delegate != null) {
-            final TcpConnectionDelegate finalDelegate = delegate;
-            Utilities.stageQueue.postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    finalDelegate.tcpConnectionClosed(TcpConnection.this);
-                }
-            });
-        }
+
+        notifyConnectionError();
 
         failedConnectionCount++;
         if (failedConnectionCount == 1) {
