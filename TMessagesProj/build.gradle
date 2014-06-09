@@ -94,7 +94,7 @@ android {
         targetSdkVersion 19
         renderscriptTargetApi 19
         renderscriptSupportMode true
-        versionCode 220
-        versionName "1.5.51"
+        versionCode 221
+        versionName "1.5.52"
     }
 }
