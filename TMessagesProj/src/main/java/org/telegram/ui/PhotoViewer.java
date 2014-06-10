@@ -142,6 +142,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private boolean doubleTap = false;
     private boolean invalidCoords = false;
     private boolean canDragDown = true;
+    private boolean zoomAnimation = false;
     private int switchImageAfterAnimation = 0;
     private VelocityTracker velocityTracker = null;
 
@@ -1409,20 +1410,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             doubleTap = false;
             moving = false;
             zooming = false;
-            float moveToX = translationX;
-            float moveToY = translationY;
-            updateMinMax(scale);
-            if (translationX < minX) {
-                moveToX = minX;
-            } else if (translationX > maxX) {
-                moveToX = maxX;
-            }
-            if (translationY < minY) {
-                moveToY = minY;
-            } else if (translationY > maxY) {
-                moveToY = maxY;
-            }
-            animateTo(scale, moveToX, moveToY);
+            checkMinMax(false);
             return true;
         }
 
@@ -1515,7 +1503,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 invalidCoords = true;
                 if (scale < 1.0f) {
                     updateMinMax(1.0f);
-                    animateTo(1.0f, 0, 0);
+                    animateTo(1.0f, 0, 0, true);
                 } else if(scale > 3.0f) {
                     float atx = (pinchCenterX - containerView.getWidth() / 2) - ((pinchCenterX - containerView.getWidth() / 2) - pinchStartX) * (3.0f / pinchStartScale);
                     float aty = (pinchCenterY - containerView.getHeight() / 2) - ((pinchCenterY - containerView.getHeight() / 2) - pinchStartY) * (3.0f / pinchStartScale);
@@ -1530,7 +1518,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     } else if (aty > maxY) {
                         aty = maxY;
                     }
-                    animateTo(3.0f, atx, aty);
+                    animateTo(3.0f, atx, aty, true);
+                } else {
+                    checkMinMax(true);
                 }
                 zooming = false;
             } else if (draggingDown) {
@@ -1579,6 +1569,23 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         return false;
     }
 
+    private void checkMinMax(boolean zoom) {
+        float moveToX = translationX;
+        float moveToY = translationY;
+        updateMinMax(scale);
+        if (translationX < minX) {
+            moveToX = minX;
+        } else if (translationX > maxX) {
+            moveToX = maxX;
+        }
+        if (translationY < minY) {
+            moveToY = minY;
+        } else if (translationY > maxY) {
+            moveToY = maxY;
+        }
+        animateTo(scale, moveToX, moveToY, zoom);
+    }
+
     private void goToNext() {
         float extra = 0;
         if (scale != 1) {
@@ -1598,6 +1605,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     private void animateTo(float newScale, float newTx, float newTy) {
+        animateTo(newScale, newTx, newTy, false);
+    }
+
+    private void animateTo(float newScale, float newTx, float newTy, boolean isZoom) {
         if (switchImageAfterAnimation == 0) {
             toggleOverlayView(true);
         }
@@ -1605,6 +1616,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             Utilities.unlockOrientation(parentActivity);
             return;
         }
+        zoomAnimation = isZoom;
         animateToScale = newScale;
         animateToX = newTx;
         animateToY = newTy;
@@ -1655,6 +1667,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 animationStartTime = 0;
                 updateMinMax(scale);
                 Utilities.unlockOrientation(parentActivity);
+                zoomAnimation = false;
             }
             if (switchImageAfterAnimation != 0) {
                 if (switchImageAfterAnimation == 1) {
@@ -1710,7 +1723,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 sideImage = rightImage;
             }
 
-            if (sideImage != null) {
+            if (!zoomAnimation && !zooming && sideImage != null) {
                 changingPage = true;
                 canvas.translate(k * containerView.getWidth() / 2, -currentTranslationY);
                 canvas.scale(1.0f / scale, 1.0f / scale);
