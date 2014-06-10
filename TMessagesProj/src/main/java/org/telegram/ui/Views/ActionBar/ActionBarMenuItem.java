@@ -79,6 +79,7 @@ public class ActionBarMenuItem extends ImageView {
             layoutParams.width = Utilities.dp(196);
             layoutParams.height = Utilities.density >= 3 ? 2 : 1;
             delimeter.setLayoutParams(layoutParams);
+            delimeter.setTag(100 + id);
         }
         TextView textView = new TextView(getContext());
         textView.setTextColor(0xff000000);
@@ -253,6 +254,28 @@ public class ActionBarMenuItem extends ImageView {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         if (popupWindow != null && popupWindow.isShowing()) {
             popupWindow.update(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), 0, -1, -1);
+        }
+    }
+
+    public void hideSubItem(int id) {
+        View view = popupLayout.findViewWithTag(id);
+        if (view != null) {
+            view.setVisibility(GONE);
+        }
+        view = popupLayout.findViewWithTag(100 + id);
+        if (view != null) {
+            view.setVisibility(GONE);
+        }
+    }
+
+    public void showSubItem(int id) {
+        View view = popupLayout.findViewWithTag(id);
+        if (view != null) {
+            view.setVisibility(VISIBLE);
+        }
+        view = popupLayout.findViewWithTag(100 + id);
+        if (view != null) {
+            view.setVisibility(VISIBLE);
         }
     }
 }

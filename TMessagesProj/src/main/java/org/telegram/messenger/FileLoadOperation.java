@@ -93,12 +93,7 @@ public class FileLoadOperation {
     }
 
     public FileLoadOperation(TLRPC.Audio audioLocation) {
-        if (audioLocation instanceof TLRPC.TL_audio) {
-            location = new TLRPC.TL_inputAudioFileLocation();
-            datacenter_id = audioLocation.dc_id;
-            location.id = audioLocation.id;
-            location.access_hash = audioLocation.access_hash;
-        } else if (audioLocation instanceof TLRPC.TL_audioEncrypted) {
+        if (audioLocation instanceof TLRPC.TL_audioEncrypted) {
             location = new TLRPC.TL_inputEncryptedFileLocation();
             location.id = audioLocation.id;
             location.access_hash = audioLocation.access_hash;
@@ -106,6 +101,11 @@ public class FileLoadOperation {
             iv = new byte[32];
             System.arraycopy(audioLocation.iv, 0, iv, 0, iv.length);
             key = audioLocation.key;
+        } else if (audioLocation instanceof TLRPC.TL_audio) {
+            location = new TLRPC.TL_inputAudioFileLocation();
+            datacenter_id = audioLocation.dc_id;
+            location.id = audioLocation.id;
+            location.access_hash = audioLocation.access_hash;
         }
         ext = ".m4a";
     }

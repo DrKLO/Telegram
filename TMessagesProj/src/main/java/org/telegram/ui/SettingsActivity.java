@@ -51,6 +51,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.objects.MessageObject;
 import org.telegram.objects.PhotoObject;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.AvatarUpdater;
@@ -61,7 +62,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Locale;
 
-public class SettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+public class SettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, PhotoViewer.PhotoViewerProvider {
     private ListView listView;
     private ListAdapter listAdapter;
     private AvatarUpdater avatarUpdater = new AvatarUpdater();
@@ -411,6 +412,38 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         return fragmentView;
     }
 
+    @Override
+    public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation) {
+        if (fileLocation == null) {
+            return null;
+        }
+        TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.clientUserId);
+        if (user != null && user.photo != null && user.photo.photo_big != null) {
+            TLRPC.FileLocation photoBig = user.photo.photo_big;
+            if (photoBig.local_id == fileLocation.local_id && photoBig.volume_id == fileLocation.volume_id && photoBig.dc_id == fileLocation.dc_id) {
+                int count = listView.getChildCount();
+                for (int a = 0; a < count; a++) {
+                    View view = listView.getChildAt(a);
+                    BackupImageView avatarImage = (BackupImageView)view.findViewById(R.id.settings_avatar_image);
+                    if (avatarImage != null) {
+                        int coords[] = new int[2];
+                        avatarImage.getLocationInWindow(coords);
+                        PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
+                        object.viewX = coords[0];
+                        object.viewY = coords[1] - Utilities.statusBarHeight;
+                        object.parentView = listView;
+                        object.imageReceiver = avatarImage.imageReceiver;
+                        object.user_id = UserConfig.clientUserId;
+                        object.thumb = object.imageReceiver.getBitmap();
+                        object.size = -1;
+                        return object;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     public void performAskAQuestion() {
         final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         int uid = preferences.getInt("support_id", 0);
@@ -638,10 +671,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                     if (i == 0 && full) {
                                         TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.clientUserId);
                                         if (user != null && user.photo != null && user.photo.photo_big != null) {
-                                            NotificationCenter.getInstance().addToMemCache(56, user.id);
-                                            NotificationCenter.getInstance().addToMemCache(53, user.photo.photo_big);
-                                            Intent intent = new Intent(getParentActivity(), GalleryImageViewer.class);
-                                            getParentActivity().startActivity(intent);
+                                            PhotoViewer.getInstance().openPhoto(user.photo.photo_big, SettingsActivity.this);
                                         }
                                     } else if (i == 0 && !full || i == 1 && full) {
                                         avatarUpdater.openCamera();
@@ -714,10 +744,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     BackupImageView avatarImage = (BackupImageView)view.findViewById(R.id.settings_avatar_image);
                     avatarImage.processDetach = false;
                     TLRPC.FileLocation photo = null;
+                    TLRPC.FileLocation photoBig = null;
                     if (user.photo != null) {
                         photo = user.photo.photo_small;
+                        photoBig = user.photo.photo_big;
                     }
-                    avatarImage.setImage(photo, null, Utilities.getUserAvatarForId(user.id));
+                    avatarImage.setImage(photo, "50_50", Utilities.getUserAvatarForId(user.id));
+                    avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
                 }
                 return view;
             } else if (type == 1) {

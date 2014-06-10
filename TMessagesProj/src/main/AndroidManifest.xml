@@ -100,11 +100,6 @@
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:screenOrientation="portrait">
         </activity>
-        <activity
-            android:name="org.telegram.ui.GalleryImageViewer"
-            android:theme="@style/Theme.TMessages.Gallery"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize">
-        </activity>
 
         <receiver android:name="org.telegram.messenger.SmsListener">
             <intent-filter>

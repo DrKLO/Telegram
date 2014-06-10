@@ -15,8 +15,6 @@ public class NotificationCenter {
 
     final private HashMap<Integer, ArrayList<Object>> observers = new HashMap<Integer, ArrayList<Object>>();
 
-    final private HashMap<String, Object> memCache = new HashMap<String, Object>();
-
     final private HashMap<Integer, Object> removeAfterBroadcast = new HashMap<Integer, Object>();
     final private HashMap<Integer, Object> addAfterBroadcast = new HashMap<Integer, Object>();
 
@@ -38,27 +36,6 @@ public class NotificationCenter {
 
     public interface NotificationCenterDelegate {
         public abstract void didReceivedNotification(int id, Object... args);
-    }
-
-    public void addToMemCache(int id, Object object) {
-        addToMemCache(String.valueOf(id), object);
-    }
-
-    public void addToMemCache(String id, Object object) {
-        memCache.put(id, object);
-    }
-
-    public Object getFromMemCache(int id) {
-        return getFromMemCache(String.valueOf(id), null);
-    }
-
-    public Object getFromMemCache(String id, Object defaultValue) {
-        Object obj = memCache.get(id);
-        if (obj != null) {
-            memCache.remove(id);
-            return obj;
-        }
-        return defaultValue;
     }
 
     public void postNotificationName(int id, Object... args) {

@@ -3,7 +3,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:0.10.+'
+        classpath 'com.android.tools.build:gradle:0.11.+'
     }
 }
 apply plugin: 'android'
@@ -18,7 +18,6 @@ tasks.withType(JavaCompile) {
 
 dependencies {
     compile 'com.android.support:support-v4:19.0.+'
-    compile 'com.android.support:appcompat-v7:19.0.+'
     compile 'com.google.android.gms:play-services:4.1.+'
     compile 'net.hockeyapp.android:HockeySDK:3.0.1'
 }
@@ -82,7 +81,7 @@ android {
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 19
-        versionCode 240
+        versionCode 243
         versionName "1.4.15"
     }
 }

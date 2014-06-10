@@ -28,6 +28,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.objects.PhotoObject;
+import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.Views.GifDrawable;
 import org.telegram.ui.Views.ImageReceiver;
 import org.telegram.ui.Views.ProgressView;
@@ -39,7 +40,7 @@ import java.util.Locale;
 public class ChatMediaCell extends ChatBaseCell implements MediaController.FileDownloadProgressListener {
 
     public static interface ChatMediaCellDelegate {
-        public abstract void didPressedImage(ChatMediaCell cell, ImageReceiver imageReceiver);
+        public abstract void didPressedImage(ChatMediaCell cell);
     }
 
     private static Drawable placeholderInDrawable;
@@ -196,7 +197,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         if (currentMessageObject.type == 1) {
             if (buttonState == -1) {
                 if (mediaDelegate != null) {
-                    mediaDelegate.didPressedImage(this, photoImage);
+                    mediaDelegate.didPressedImage(this);
                 }
             } else if (buttonState == 0) {
                 didPressedButton();
@@ -217,7 +218,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             }
         } else if (currentMessageObject.type == 4) {
             if (mediaDelegate != null) {
-                mediaDelegate.didPressedImage(this, photoImage);
+                mediaDelegate.didPressedImage(this);
             }
         }
     }
@@ -271,7 +272,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             }
         } else if (buttonState == 3) {
             if (mediaDelegate != null) {
-                mediaDelegate.didPressedImage(this, photoImage);
+                mediaDelegate.didPressedImage(this);
             }
         }
     }
@@ -421,6 +422,10 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         updateButtonState();
     }
 
+    public ImageReceiver getPhotoImage() {
+        return photoImage;
+    }
+
     public void updateButtonState() {
         String fileName = null;
         File cacheFile = null;
@@ -544,6 +549,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             gifDrawable.draw(canvas);
             canvas.restore();
         } else {
+            photoImage.setVisible(!PhotoViewer.getInstance().isShowingImage(currentMessageObject), false);
             photoImage.draw(canvas, photoImage.imageX, photoImage.imageY, photoWidth, photoHeight);
             drawTime = photoImage.getVisible();
         }

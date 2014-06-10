@@ -42,6 +42,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
+import org.telegram.objects.MessageObject;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
@@ -51,7 +52,7 @@ import org.telegram.ui.Views.IdenticonView;
 
 import java.util.ArrayList;
 
-public class UserProfileActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate {
+public class UserProfileActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate, PhotoViewer.PhotoViewerProvider {
     private ListView listView;
     private ListAdapter listAdapter;
     private int user_id;
@@ -452,6 +453,38 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         }
     }
 
+    @Override
+    public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation) {
+        if (fileLocation == null) {
+            return null;
+        }
+        TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+        if (user != null && user.photo != null && user.photo.photo_big != null) {
+            TLRPC.FileLocation photoBig = user.photo.photo_big;
+            if (photoBig.local_id == fileLocation.local_id && photoBig.volume_id == fileLocation.volume_id && photoBig.dc_id == fileLocation.dc_id) {
+                int count = listView.getChildCount();
+                for (int a = 0; a < count; a++) {
+                    View view = listView.getChildAt(a);
+                    BackupImageView avatarImage = (BackupImageView)view.findViewById(R.id.settings_avatar_image);
+                    if (avatarImage != null) {
+                        int coords[] = new int[2];
+                        avatarImage.getLocationInWindow(coords);
+                        PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
+                        object.viewX = coords[0];
+                        object.viewY = coords[1] - Utilities.statusBarHeight;
+                        object.parentView = listView;
+                        object.imageReceiver = avatarImage.imageReceiver;
+                        object.user_id = user_id;
+                        object.thumb = object.imageReceiver.getBitmap();
+                        object.size = -1;
+                        return object;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     private void createActionBarMenu() {
         ActionBarMenu menu = actionBarLayer.createMenu();
         menu.clearItems();
@@ -557,10 +590,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         public void onClick(View view) {
                             TLRPC.User user = MessagesController.getInstance().users.get(user_id);
                             if (user.photo != null && user.photo.photo_big != null) {
-                                NotificationCenter.getInstance().addToMemCache(56, user_id);
-                                NotificationCenter.getInstance().addToMemCache(53, user.photo.photo_big);
-                                Intent intent = new Intent(getParentActivity(), GalleryImageViewer.class);
-                                getParentActivity().startActivity(intent);
+                                PhotoViewer.getInstance().openPhoto(user.photo.photo_big, UserProfileActivity.this);
                             }
                         }
                     });
@@ -576,10 +606,13 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 onlineText.setText(LocaleController.formatUserStatus(user));
 
                 TLRPC.FileLocation photo = null;
+                TLRPC.FileLocation photoBig = null;
                 if (user.photo != null) {
                     photo = user.photo.photo_small;
+                    photoBig = user.photo.photo_big;
                 }
                 avatarImage.setImage(photo, "50_50", Utilities.getUserAvatarForId(user.id));
+                avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
                 return view;
             } else if (type == 1) {
                 if (view == null) {

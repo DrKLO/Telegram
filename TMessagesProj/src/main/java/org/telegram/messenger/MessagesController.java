@@ -852,7 +852,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
         ArrayList<Long> keys = new ArrayList<Long>(printingUsers.keySet());
         for (Long key : keys) {
-            if (key > 0) {
+            if (key > 0 || key.intValue() == 0) {
                 newPrintingStrings.put(key, LocaleController.getString("Typing", R.string.Typing));
             } else {
                 ArrayList<PrintingUser> arr = printingUsers.get(key);
@@ -3937,26 +3937,30 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     }
                 }
             } else if (update instanceof TLRPC.TL_updateEncryptedChatTyping) {
-                long uid = ((long)update.chat_id) << 32;
-                ArrayList<PrintingUser> arr = printingUsers.get(uid);
-                if (arr == null) {
-                    arr = new ArrayList<PrintingUser>();
-                    printingUsers.put(uid, arr);
-                }
-                boolean exist = false;
-                for (PrintingUser u : arr) {
-                    if (u.userId == update.user_id) {
-                        exist = true;
-                        u.lastTime = currentTime;
-                        break;
+                TLRPC.EncryptedChat encryptedChat = getEncryptedChat(update.chat_id);
+                if (encryptedChat != null) {
+                    update.user_id = encryptedChat.user_id;
+                    long uid = ((long) update.chat_id) << 32;
+                    ArrayList<PrintingUser> arr = printingUsers.get(uid);
+                    if (arr == null) {
+                        arr = new ArrayList<PrintingUser>();
+                        printingUsers.put(uid, arr);
                     }
-                }
-                if (!exist) {
-                    PrintingUser newUser = new PrintingUser();
-                    newUser.userId = update.user_id;
-                    newUser.lastTime = currentTime;
-                    arr.add(newUser);
-                    printChanged = true;
+                    boolean exist = false;
+                    for (PrintingUser u : arr) {
+                        if (u.userId == update.user_id) {
+                            exist = true;
+                            u.lastTime = currentTime;
+                            break;
+                        }
+                    }
+                    if (!exist) {
+                        PrintingUser newUser = new PrintingUser();
+                        newUser.userId = update.user_id;
+                        newUser.lastTime = currentTime;
+                        arr.add(newUser);
+                        printChanged = true;
+                    }
                 }
             } else if (update instanceof TLRPC.TL_updateEncryptedMessagesRead) {
                 markAsReadEncrypted.put(update.chat_id, Math.max(update.max_date, update.date));
@@ -3970,22 +3974,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             } else if (update instanceof TLRPC.TL_updateEncryption) {
                 final TLRPC.EncryptedChat newChat = update.chat;
                 long dialog_id = ((long)newChat.id) << 32;
-                TLRPC.EncryptedChat existingChat = encryptedChats.get(newChat.id);
-                if (existingChat == null) {
-                    Semaphore semaphore = new Semaphore(0);
-                    ArrayList<TLObject> result = new ArrayList<TLObject>();
-                    MessagesStorage.getInstance().getEncryptedChat(newChat.id, semaphore, result);
-                    try {
-                        semaphore.acquire();
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                    if (result.size() == 2) {
-                        existingChat = (TLRPC.EncryptedChat)result.get(0);
-                        TLRPC.User user = (TLRPC.User)result.get(1);
-                        users.putIfAbsent(user.id, user);
-                    }
-                }
+                TLRPC.EncryptedChat existingChat = getEncryptedChat(newChat.id);
 
                 if (newChat instanceof TLRPC.TL_encryptedChatRequested && existingChat == null) {
                     int user_id = newChat.participant_id;
@@ -4289,7 +4278,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
         if (ApplicationLoader.lastPauseTime != 0) {
             ApplicationLoader.lastPauseTime = System.currentTimeMillis();
-            FileLog.e("tmessages", "reset sleep timeout by recieved message");
+            FileLog.e("tmessages", "reset sleep timeout by received message");
         }
         if (messageObject == null) {
             return;
@@ -4654,12 +4643,12 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
     }
 
-    public TLRPC.Message decryptMessage(TLRPC.EncryptedMessage message) {
-        TLRPC.EncryptedChat chat = encryptedChats.get(message.chat_id);
+    public TLRPC.EncryptedChat getEncryptedChat(int chat_id) {
+        TLRPC.EncryptedChat chat = encryptedChats.get(chat_id);
         if (chat == null) {
             Semaphore semaphore = new Semaphore(0);
             ArrayList<TLObject> result = new ArrayList<TLObject>();
-            MessagesStorage.getInstance().getEncryptedChat(message.chat_id, semaphore, result);
+            MessagesStorage.getInstance().getEncryptedChat(chat_id, semaphore, result);
             try {
                 semaphore.acquire();
             } catch (Exception e) {
@@ -4672,6 +4661,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 users.putIfAbsent(user.id, user);
             }
         }
+        return chat;
+    }
+
+    public TLRPC.Message decryptMessage(TLRPC.EncryptedMessage message) {
+        TLRPC.EncryptedChat chat = getEncryptedChat(message.chat_id);
         if (chat == null) {
             return null;
         }

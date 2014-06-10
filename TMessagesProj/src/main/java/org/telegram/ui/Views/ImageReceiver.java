@@ -108,7 +108,7 @@ public class ImageReceiver {
         isPlaceholder = false;
         FileLoader.getInstance().incrementUseCount(currentPath);
         currentImage = new BitmapDrawable(null, bitmap);
-        if (!selfSetting && parentView.get() != null) {
+        if (!selfSetting && parentView != null && parentView.get() != null) {
             if (imageW != 0) {
                 parentView.get().invalidate(imageX, imageY, imageX + imageW, imageY + imageH);
             } else {
@@ -120,7 +120,12 @@ public class ImageReceiver {
     public void setImageBitmap(Bitmap bitmap) {
         FileLoader.getInstance().cancelLoadingForImageView(this);
         recycleBitmap(null);
-        last_placeholder = new BitmapDrawable(null, bitmap);
+        if (bitmap != null) {
+            last_placeholder = new BitmapDrawable(null, bitmap);
+        } else {
+            last_placeholder = null;
+        }
+        isPlaceholder = true;
         currentPath = null;
         last_path = null;
         last_httpUrl = null;
@@ -175,13 +180,14 @@ public class ImageReceiver {
     }
 
     public void draw(Canvas canvas, int x, int y, int w, int h) {
-        if (!isVisible) {
-            return;
-        }
         try {
-            if (currentImage != null) {
-                int bitmapW = currentImage.getIntrinsicWidth();
-                int bitmapH = currentImage.getIntrinsicHeight();
+            Drawable bitmapDrawable = currentImage;
+            if (bitmapDrawable == null && last_placeholder != null && last_placeholder instanceof BitmapDrawable) {
+                bitmapDrawable = last_placeholder;
+            }
+            if (bitmapDrawable != null) {
+                int bitmapW = bitmapDrawable.getIntrinsicWidth();
+                int bitmapH = bitmapDrawable.getIntrinsicHeight();
                 float scaleW = bitmapW / (float)w;
                 float scaleH = bitmapH / (float)h;
 
@@ -196,19 +202,25 @@ public class ImageReceiver {
                         bitmapH /= scaleW;
                         drawRegion.set(x, y - (bitmapH - h) / 2, x + w, y + (bitmapH + h) / 2);
                     }
-                    currentImage.setBounds(drawRegion);
-                    currentImage.draw(canvas);
+                    bitmapDrawable.setBounds(drawRegion);
+                    if (isVisible) {
+                        bitmapDrawable.draw(canvas);
+                    }
 
                     canvas.restore();
                 } else {
                     drawRegion.set(x, y, x + w, y + h);
-                    currentImage.setBounds(drawRegion);
-                    currentImage.draw(canvas);
+                    bitmapDrawable.setBounds(drawRegion);
+                    if (isVisible) {
+                        bitmapDrawable.draw(canvas);
+                    }
                 }
             } else if (last_placeholder != null) {
                 drawRegion.set(x, y, x + w, y + h);
                 last_placeholder.setBounds(drawRegion);
-                last_placeholder.draw(canvas);
+                if (isVisible) {
+                    last_placeholder.draw(canvas);
+                }
             }
         } catch (Exception e) {
             if (currentPath != null) {
@@ -229,18 +241,24 @@ public class ImageReceiver {
         return null;
     }
 
-    public void setVisible(boolean value) {
+    public void setVisible(boolean value, boolean invalidate) {
         if (isVisible == value) {
             return;
         }
         isVisible = value;
-        View parent = parentView.get();
-        if (parent != null) {
-            parent.invalidate();
+        if (invalidate) {
+            View parent = parentView.get();
+            if (parent != null) {
+                parent.invalidate();
+            }
         }
     }
 
     public boolean getVisible() {
         return isVisible;
+    }
+
+    public boolean hasImage() {
+        return currentImage != null || last_placeholder != null || currentPath != null;
     }
 }

@@ -26,8 +26,14 @@ import org.telegram.messenger.Utilities;
 
 public class ActionBarLayer extends FrameLayout {
 
-    public interface ActionBarMenuOnItemClick {
-        public abstract void onItemClick(int id);
+    public static class ActionBarMenuOnItemClick {
+        public void onItemClick(int id) {
+
+        }
+
+        public boolean canOpenMenu() {
+            return true;
+        }
     }
 
     private FrameLayout backButtonFrameLayout;

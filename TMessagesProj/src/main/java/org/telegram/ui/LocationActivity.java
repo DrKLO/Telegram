@@ -60,7 +60,6 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        messageObject = (MessageObject)NotificationCenter.getInstance().getFromMemCache(0);
         NotificationCenter.getInstance().addObserver(this, MessagesController.closeChats);
         if (messageObject != null) {
             NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
@@ -292,6 +291,10 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 }
             }
         }
+    }
+
+    public void setMessageObject(MessageObject message) {
+        messageObject = message;
     }
 
     @Override
