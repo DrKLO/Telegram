@@ -212,9 +212,13 @@ public class SettingsNotificationsActivity extends BaseFragment {
                                         SharedPreferences.Editor editor = preferences.edit();
                                         editor.clear();
                                         editor.commit();
-                                        listView.invalidateViews();
-                                        Toast toast = Toast.makeText(getParentActivity(), R.string.ResetNotificationsText, Toast.LENGTH_SHORT);
-                                        toast.show();
+                                        if (listView != null) {
+                                            listView.invalidateViews();
+                                        }
+                                        if (getParentActivity() != null) {
+                                            Toast toast = Toast.makeText(getParentActivity(), R.string.ResetNotificationsText, Toast.LENGTH_SHORT);
+                                            toast.show();
+                                        }
                                     }
                                 });
                             }

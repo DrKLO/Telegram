@@ -111,12 +111,13 @@ public class ActionBar extends FrameLayout {
             currentLayer.setBackLayoutVisible(currentLayer.isSearchFieldVisible || currentBackOverlay == null ? VISIBLE : INVISIBLE);
         }
         if (currentBackOverlay != null) {
-            currentBackOverlay.setVisibility(currentLayer.isSearchFieldVisible ? GONE : VISIBLE);
             ViewGroup.LayoutParams layoutParams = currentBackOverlay.getLayoutParams();
             if (currentLayer != null) {
+                currentBackOverlay.setVisibility(currentLayer.isSearchFieldVisible ? GONE : VISIBLE);
                 currentLayer.measure(widthMeasureSpec, heightMeasureSpec);
                 layoutParams.width = Math.min(currentBackOverlayWidth, currentLayer.getBackLayoutWidth());
             } else {
+                currentBackOverlay.setVisibility(VISIBLE);
                 layoutParams.width = LayoutParams.WRAP_CONTENT;
             }
             if (layoutParams.width != 0) {

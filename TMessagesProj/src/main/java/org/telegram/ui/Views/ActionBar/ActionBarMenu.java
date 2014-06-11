@@ -75,7 +75,9 @@ public class ActionBarMenu extends LinearLayout {
             public void onClick(View view) {
                 ActionBarMenuItem item = (ActionBarMenuItem)view;
                 if (item.hasSubMenu()) {
-                    item.toggleSubMenu();
+                    if (parentActionBarLayer.actionBarMenuOnItemClick.canOpenMenu()) {
+                        item.toggleSubMenu();
+                    }
                 } else if (item.isSearchField()) {
                     parentActionBarLayer.onSearchFieldVisibilityChanged(item.toggleSearch());
                 } else {

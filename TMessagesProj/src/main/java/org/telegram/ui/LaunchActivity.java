@@ -103,7 +103,6 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         NotificationCenter.getInstance().addObserver(this, 701);
         NotificationCenter.getInstance().addObserver(this, 702);
         NotificationCenter.getInstance().addObserver(this, 703);
-        NotificationCenter.getInstance().addObserver(this, GalleryImageViewer.needShowAllMedia);
 
         statusView = getLayoutInflater().inflate(R.layout.updating_state_layout, null);
         statusBackground = statusView.findViewById(R.id.back_button_background);
@@ -601,7 +600,6 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         NotificationCenter.getInstance().removeObserver(this, 701);
         NotificationCenter.getInstance().removeObserver(this, 702);
         NotificationCenter.getInstance().removeObserver(this, 703);
-        NotificationCenter.getInstance().removeObserver(this, GalleryImageViewer.needShowAllMedia);
         if (notificationView != null) {
             notificationView.hide(false);
             notificationView.destroy();
@@ -642,17 +640,13 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             startActivity(intent2);
             onFinish();
             finish();
-        } else if (id == GalleryImageViewer.needShowAllMedia) {
-            long dialog_id = (Long)args[0];
-            if (dialog_id != 0) {
-                Bundle args2 = new Bundle();
-                args2.putLong("dialog_id", dialog_id);
-                presentFragment(new MediaActivity(args2), false, true);
-            }
         } else if (id == 658) {
-            Integer push_user_id = (Integer)NotificationCenter.getInstance().getFromMemCache("push_user_id", 0);
-            Integer push_chat_id = (Integer)NotificationCenter.getInstance().getFromMemCache("push_chat_id", 0);
-            Integer push_enc_id = (Integer)NotificationCenter.getInstance().getFromMemCache("push_enc_id", 0);
+            if (PhotoViewer.getInstance().isVisible()) {
+                PhotoViewer.getInstance().closePhoto(false);
+            }
+            Integer push_chat_id = (Integer)args[0];
+            Integer push_user_id = (Integer)args[1];
+            Integer push_enc_id = (Integer)args[2];
 
             if (push_user_id != 0) {
                 NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
@@ -750,7 +744,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     @Override
     public void onBackPressed() {
         if (PhotoViewer.getInstance().isVisible()) {
-            PhotoViewer.getInstance().closePhoto();
+            PhotoViewer.getInstance().closePhoto(true);
         } else {
             super.onBackPressed();
         }
@@ -759,7 +753,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     @Override
     public boolean onPreIme() {
         if (PhotoViewer.getInstance().isVisible()) {
-            PhotoViewer.getInstance().closePhoto();
+            PhotoViewer.getInstance().closePhoto(true);
             return true;
         }
         return super.onPreIme();

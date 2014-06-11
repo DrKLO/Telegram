@@ -184,10 +184,10 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 if (paused) {
                     ApplicationLoader.lastPauseTime = System.currentTimeMillis();
                     nextSleepTimeout = 30000;
-                    FileLog.e("tmessages", "wakeup network in background by recieved push");
+                    FileLog.e("tmessages", "wakeup network in background by received push");
                 } else if (ApplicationLoader.lastPauseTime != 0) {
                     ApplicationLoader.lastPauseTime = System.currentTimeMillis();
-                    FileLog.e("tmessages", "reset sleep timeout by recieved push");
+                    FileLog.e("tmessages", "reset sleep timeout by received push");
                 }
             }
         });
@@ -849,7 +849,16 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     public static boolean isNetworkOnline() {
         try {
             ConnectivityManager cm = (ConnectivityManager)ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
-            NetworkInfo netInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+            NetworkInfo netInfo = cm.getActiveNetworkInfo();
+            if (netInfo != null && netInfo.isConnected()) {
+                return true;
+            }
+
+            netInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+            if (netInfo.isConnected()) {
+                return true;
+            }
+
             if (netInfo != null && netInfo.getState() == NetworkInfo.State.CONNECTED) {
                 return true;
             } else {

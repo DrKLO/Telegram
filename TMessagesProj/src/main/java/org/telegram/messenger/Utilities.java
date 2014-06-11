@@ -14,6 +14,7 @@ import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Point;
@@ -27,6 +28,7 @@ import android.text.Html;
 import android.text.SpannableStringBuilder;
 import android.util.Base64;
 import android.view.Display;
+import android.view.Surface;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
@@ -72,6 +74,7 @@ public class Utilities {
     public static Pattern pattern = Pattern.compile("[0-9]+");
     public static SecureRandom random = new SecureRandom();
     private final static Integer lock = 1;
+    private static int prevOrientation = -10;
 
     private static boolean waitingForSms = false;
     private static final Integer smsLock = 2;
@@ -151,6 +154,47 @@ public class Utilities {
     public native static byte[] aesIgeEncryption(byte[] _what, byte[] _key, byte[] _iv, boolean encrypt, boolean changeIv, int len);
     public native static void aesIgeEncryption2(ByteBuffer _what, byte[] _key, byte[] _iv, boolean encrypt, boolean changeIv, int len);
     public native static void loadBitmap(String path, Bitmap bitmap, int scale);
+
+    public static void lockOrientation(Activity activity) {
+        if (prevOrientation != -10) {
+            return;
+        }
+        try {
+            prevOrientation = activity.getRequestedOrientation();
+            WindowManager manager = (WindowManager)activity.getSystemService(Activity.WINDOW_SERVICE);
+            if (manager != null && manager.getDefaultDisplay() != null) {
+                int rotation = manager.getDefaultDisplay().getRotation();
+                if (rotation == Surface.ROTATION_270) {
+                    if (Build.VERSION.SDK_INT >= 9) {
+                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                    } else {
+                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                    }
+                } else if (rotation == Surface.ROTATION_90) {
+                    activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                } else if (rotation == Surface.ROTATION_0) {
+                    activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                } else {
+                    if (Build.VERSION.SDK_INT >= 9) {
+                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
+    public static void unlockOrientation(Activity activity) {
+        try {
+            if (prevOrientation != -10) {
+                activity.setRequestedOrientation(prevOrientation);
+                prevOrientation = -10;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
 
     public static boolean isWaitingForSms() {
         boolean value = false;

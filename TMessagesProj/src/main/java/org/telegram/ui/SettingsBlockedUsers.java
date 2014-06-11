@@ -184,10 +184,8 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                             if (progressView != null) {
                                 progressView.setVisibility(View.GONE);
                             }
-                            if (listView != null) {
-                                if (listView.getEmptyView() == null) {
-                                    listView.setEmptyView(emptyView);
-                                }
+                            if (listView != null && listView.getEmptyView() == null) {
+                                listView.setEmptyView(emptyView);
                             }
                             if (listViewAdapter != null) {
                                 listViewAdapter.notifyDataSetChanged();
@@ -212,10 +210,8 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                         if (progressView != null) {
                             progressView.setVisibility(View.GONE);
                         }
-                        if (listView != null) {
-                            if (listView.getEmptyView() == null) {
-                                listView.setEmptyView(emptyView);
-                            }
+                        if (listView != null && listView.getEmptyView() == null) {
+                            listView.setEmptyView(emptyView);
                         }
                         if (listViewAdapter != null) {
                             listViewAdapter.notifyDataSetChanged();
