@@ -199,7 +199,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     public static interface PhotoViewerProvider {
-        public abstract PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation);
+        public PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation);
+        public void willHidePhotoViewer();
     }
 
     private static class FrameLayoutTouchListener extends FrameLayout {
@@ -737,17 +738,30 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(message.messageOwner.action.photo.sizes, 800, 800);
                     if (sizeFull != null) {
                         size[0] = sizeFull.size;
+                        if (size[0] == 0) {
+                            size[0] = -1;
+                        }
                         return sizeFull.location;
+                    } else {
+                        size[0] = -1;
                     }
                 }
             } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && message.messageOwner.media.photo != null) {
                 TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, 800, 800);
                 if (sizeFull != null) {
                     size[0] = sizeFull.size;
+                    if (size[0] == 0) {
+                        size[0] = -1;
+                    }
                     return sizeFull.location;
+                } else {
+                    size[0] = -1;
                 }
             } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaVideo && message.messageOwner.media.video != null && message.messageOwner.media.video.thumb != null) {
                 size[0] = message.messageOwner.media.video.thumb.size;
+                if (size[0] == 0) {
+                    size[0] = -1;
+                }
                 return message.messageOwner.media.video.thumb.location;
             }
         }
@@ -1088,7 +1102,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                     imageReceiver.setImage(fileLocation, null, placeHolder != null ? new BitmapDrawable(null, placeHolder) : null, size[0]);
                 } else {
-                    imageReceiver.setImageBitmap((Bitmap)null);
+                    imageReceiver.setImageBitmap(parentActivity.getResources().getDrawable(R.drawable.photoview_placeholder));
                 }
             } else {
                 Bitmap placeHolder = null;
@@ -1101,7 +1115,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 imageReceiver.setImage(fileLocation, null, placeHolder != null ? new BitmapDrawable(null, placeHolder) : null, size[0]);
             }
         } else {
-            imageReceiver.setImageBitmap((Bitmap)null);
+            if (size[0] == 0) {
+                imageReceiver.setImageBitmap((Bitmap) null);
+            } else {
+                imageReceiver.setImageBitmap(parentActivity.getResources().getDrawable(R.drawable.photoview_placeholder));
+            }
         }
     }
 
@@ -1357,11 +1375,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     private void onPhotoClosed(PlaceProviderObject object) {
-        placeProvider = null;
+        disableShowCheck = true;
         currentMessageObject = null;
         currentFileLocation = null;
         currentThumb = null;
-        animatingImageView.setImageBitmap(null);
         centerImage.setImageBitmap((Bitmap)null);
         leftImage.setImageBitmap((Bitmap) null);
         rightImage.setImageBitmap((Bitmap)null);
@@ -1371,10 +1388,16 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         containerView.post(new Runnable() {
             @Override
             public void run() {
+                animatingImageView.setImageBitmap(null);
                 WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
                 wm.removeView(containerView);
             }
         });
+        if (placeProvider != null) {
+            placeProvider.willHidePhotoViewer();
+        }
+        placeProvider = null;
+        disableShowCheck = false;
     }
 
     public boolean isVisible() {

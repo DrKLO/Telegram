@@ -367,6 +367,11 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         return null;
     }
 
+    @Override
+    public void willHidePhotoViewer() {
+
+    }
+
     public void didReceivedNotification(int id, Object... args) {
         if (id == MessagesController.updateInterfaces) {
             int mask = (Integer)args[0];

@@ -485,6 +485,11 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         return null;
     }
 
+    @Override
+    public void willHidePhotoViewer() {
+
+    }
+
     private void createActionBarMenu() {
         ActionBarMenu menu = actionBarLayer.createMenu();
         menu.clearItems();

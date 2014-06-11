@@ -293,8 +293,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             }
         }
         return null;
-//        NotificationCenter.getInstance().addToMemCache(54, messages); TODO
-//        NotificationCenter.getInstance().addToMemCache(55, i);
+    }
+
+    @Override
+    public void willHidePhotoViewer() {
 
     }
 

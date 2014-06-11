@@ -444,6 +444,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         return null;
     }
 
+    @Override
+    public void willHidePhotoViewer() {
+
+    }
+
     public void performAskAQuestion() {
         final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         int uid = preferences.getInt("support_id", 0);

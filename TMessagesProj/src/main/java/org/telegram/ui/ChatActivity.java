@@ -3371,6 +3371,11 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         return null;
     }
 
+    @Override
+    public void willHidePhotoViewer() {
+        updateVisibleRows();
+    }
+
     private class ChatAdapter extends BaseAdapter {
 
         private Context mContext;
