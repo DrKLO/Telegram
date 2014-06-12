@@ -277,7 +277,7 @@
     <string name="NotificationsServiceDisableInfo">Se Google Play Service è sufficiente per ricevere le tue notifiche, puoi disabilitare il Servizio Notifiche. In ogni caso, ti raccomandiamo di lasciarlo abilitato per tenere l\'app attiva in ascolto per ricevere notifiche istantanee.</string>
     <string name="SortBy">Ordina per</string>
     <string name="ImportContacts">Importa contatti</string>
-    <string name="WiFiOnly">solo in WiFi</string>
+    <string name="WiFiOnly">Solo in WiFi</string>
     
     <!--media view-->
     <string name="NoMedia">Nessun media condiviso</string>
@@ -298,8 +298,8 @@
     <string name="SaveToGallery">Salva nella galleria</string>
     <string name="Of">%1$d di %2$d</string>
     <string name="Gallery">Galleria</string>
-    <string name="AllPhotos">All Photos</string>
-    <string name="NoPhotos">No photos yet</string>
+    <string name="AllPhotos">Tutte le foto</string>
+    <string name="NoPhotos">Ancora nessuna foto</string>
 
     <!--button titles-->
     <string name="Next">Avanti</string>
