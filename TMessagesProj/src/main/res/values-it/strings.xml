@@ -109,7 +109,7 @@
     <string name="YouWereKicked">Sei stato espulso da questo gruppo</string>
     <string name="YouLeft">Hai lasciato il gruppo</string>
     <string name="DeleteThisGroup">Elimina questo gruppo</string>
-    <string name="DeleteThisChat">Delete this chat</string>
+    <string name="DeleteThisChat">Elimina questa chat</string>
     <string name="SlideToCancel">TRASCINA PER ANNULLARE</string>
     <string name="SaveToDownloads">Salva in download</string>
     <string name="ApplyLocalizationFile">Applica file di localizzazione</string>
@@ -263,13 +263,15 @@
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
     <string name="DeleteLocalization">Eliminare la localizzazione?</string>
     <string name="IncorrectLocalization">File della localizzazione non valido</string>
-    <string name="Enabled">Enabled</string>
-    <string name="Disabled">Disabled</string>
-    <string name="NotificationsService">Notifications Service</string>
-    <string name="NotificationsServiceDisableInfo">If google play services are enough for you to receive notifications, you can disable Notifications Service. However we recommend you to leave it enabled to keep app running in background and receive instant notifications.</string>
-    <string name="SortBy">Sort By</string>
-    <string name="ImportContacts">Import Contacts</string>
-    <string name="WiFiOnly">via WiFi only</string>
+    <string name="Enabled">Abilitato</string>
+    <string name="Disabled">Disabilitato</string>
+    <string name="NotificationsService">Servizio notifiche</string>
+    <string name="NotificationsServiceDisableInfo">Se i servizi di Google Play ti bastano per ricevere le notifiche, puoi disabilitare il Servizio notifiche. Tuttavia sarebbe meglio lasciarlo abilitato al fine di mantenere l\'applicazione attiva in background e ricevere notifiche istantanee.</string>
+    <string name="SortBy">Ordina per</string>
+    <string name="ImportContacts">Importa contatti</string>
+    <string name="WiFiOnly">solo tramite WiFi</string>
+    <string name="SortFirstName">Nome</string>
+    <string name="SortLastName">Cognome</string>
 
     <!--media view-->
     <string name="NoMedia">Nessun media condiviso</string>
@@ -339,8 +341,8 @@
     <string name="AttachDocument">Documento</string>
     <string name="AttachAudio">Audio</string>
     <string name="FromYou">Tu</string>
-    <string name="ActionTakeScreenshootYou">You took a screenshot!</string>
-    <string name="ActionTakeScreenshoot">un1 took a screenshot!</string>
+    <string name="ActionTakeScreenshootYou">Hai catturato la schermata!</string>
+    <string name="ActionTakeScreenshoot">un1 ha catturato la schermata!</string>
 
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Numero di telefono non valido</string>

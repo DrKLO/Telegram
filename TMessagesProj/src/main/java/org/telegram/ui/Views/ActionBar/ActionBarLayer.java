@@ -48,9 +48,11 @@ public class ActionBarLayer extends FrameLayout {
     protected ActionBar parentActionBar;
     private boolean oldUseLogo;
     private boolean oldUseBack;
-    private boolean isBackLayoutHidden = false;
+    private View actionOverlay;
     protected boolean isSearchFieldVisible;
     protected int itemsBackgroundResourceId;
+    private boolean isBackOverlayVisible;
+    protected BaseFragment parentFragment;
     public ActionBarMenuOnItemClick actionBarMenuOnItemClick;
 
     public ActionBarLayer(Context context, ActionBar actionBar) {
@@ -340,18 +342,6 @@ public class ActionBarLayer extends FrameLayout {
         addView(view);
     }
 
-    public void setBackLayoutVisible(int visibility) {
-        isBackLayoutHidden = visibility != VISIBLE;
-        backButtonFrameLayout.setVisibility(isSearchFieldVisible ? VISIBLE : visibility);
-    }
-
-    public int getBackLayoutWidth() {
-        if (menu != null) {
-            return getMeasuredWidth() - menu.getMeasuredWidth();
-        }
-        return getMeasuredWidth();
-    }
-
     public ActionBarMenu createActionMode() {
         if (actionMode != null) {
             return actionMode;
@@ -419,11 +409,7 @@ public class ActionBarLayer extends FrameLayout {
         } else {
             setDisplayHomeAsUpEnabled(oldUseBack, backResourceId);
         }
-        if (visible) {
-            backButtonFrameLayout.setVisibility(VISIBLE);
-        } else {
-            backButtonFrameLayout.setVisibility(isBackLayoutHidden ? INVISIBLE : VISIBLE);
-        }
+        positionBackOverlay(getMeasuredWidth(), getMeasuredHeight());
     }
 
     public void closeSearchField() {
@@ -439,6 +425,7 @@ public class ActionBarLayer extends FrameLayout {
         positionBackImage(MeasureSpec.getSize(heightMeasureSpec));
         positionMenu(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
         positionTitle(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
+        positionBackOverlay(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
 
@@ -461,6 +448,45 @@ public class ActionBarLayer extends FrameLayout {
     protected void onPause() {
         if (menu != null) {
             menu.hideAllPopupMenus();
+        }
+    }
+
+    public void setBackOverlay(int resourceId) {
+        LayoutInflater li = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        actionOverlay = li.inflate(resourceId, null);
+        addView(actionOverlay);
+        actionOverlay.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (actionBarMenuOnItemClick != null) {
+                    actionBarMenuOnItemClick.onItemClick(-1);
+                }
+            }
+        });
+    }
+
+    public void setBackOverlayVisible(boolean visible) {
+        if (actionOverlay == null) {
+            return;
+        }
+        isBackOverlayVisible = visible;
+        positionBackOverlay(getMeasuredWidth(), getMeasuredHeight());
+        if (visible) {
+            ((ActionBarActivity)getContext()).onOverlayShow(actionOverlay, parentFragment);
+        }
+    }
+
+    private void positionBackOverlay(int widthMeasureSpec, int heightMeasureSpec) {
+        if (actionOverlay == null) {
+            return;
+        }
+        backButtonFrameLayout.setVisibility(isSearchFieldVisible || actionOverlay == null || actionOverlay.getVisibility() == GONE ? VISIBLE : INVISIBLE);
+        actionOverlay.setVisibility(!isSearchFieldVisible && isBackOverlayVisible ? VISIBLE : GONE);
+        if (actionOverlay.getVisibility() == VISIBLE) {
+            ViewGroup.LayoutParams layoutParams = actionOverlay.getLayoutParams();
+            layoutParams.width = widthMeasureSpec - (menu != null ? menu.getMeasuredWidth() : 0);
+            layoutParams.height = LayoutParams.MATCH_PARENT;
+            actionOverlay.setLayoutParams(layoutParams);
         }
     }
 

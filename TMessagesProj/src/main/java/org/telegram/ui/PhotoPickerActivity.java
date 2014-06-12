@@ -492,7 +492,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 MediaController.AlbumEntry albumEntry = albumsSorted.get(i);
                 BackupImageView imageView = (BackupImageView)view.findViewById(R.id.media_photo_image);
                 if (albumEntry.coverPhoto != null && albumEntry.coverPhoto.path != null) {
-                    imageView.setImage(albumEntry.coverPhoto.path, "150_150", R.drawable.nophotos);
+                    imageView.setImage("thumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, "150_150", R.drawable.nophotos);
                 } else {
                     imageView.setImageResource(R.drawable.nophotos);
                 }
@@ -534,7 +534,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 imageView.setTag(i);
                 view.setTag(i);
                 if (photoEntry.path != null) {
-                    imageView.setImage(photoEntry.path, "100_100", R.drawable.nophotos);
+                    imageView.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, "100_100", R.drawable.nophotos);
                 } else {
                     imageView.setImageResource(R.drawable.nophotos);
                 }

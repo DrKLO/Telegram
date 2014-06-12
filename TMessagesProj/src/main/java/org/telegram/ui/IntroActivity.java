@@ -17,6 +17,7 @@ import android.support.v4.view.ViewPager;
 import android.text.Html;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
@@ -42,6 +43,7 @@ public class IntroActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         setTheme(R.style.Theme_TMessages);
         super.onCreate(savedInstanceState);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         setContentView(R.layout.intro_layout);
 

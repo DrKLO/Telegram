@@ -109,7 +109,7 @@
     <string name="YouWereKicked">U bent verwijderd uit deze groep</string>
     <string name="YouLeft">U hebt deze groep verlaten</string>
     <string name="DeleteThisGroup">Deze groep verwijderen</string>
-    <string name="DeleteThisChat">Delete this chat</string>
+    <string name="DeleteThisChat">Verwijder dit gesprek</string>
     <string name="SlideToCancel">SLEEP OM TE ANNULEREN</string>
     <string name="SaveToDownloads">Opslaan in Downloads</string>
     <string name="ApplyLocalizationFile">Vertaling toepassen</string>
@@ -263,13 +263,15 @@
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
     <string name="DeleteLocalization">Verwijder vertaling?</string>
     <string name="IncorrectLocalization">Ongeldig vertalingsbestand</string>
-    <string name="Enabled">Enabled</string>
-    <string name="Disabled">Disabled</string>
-    <string name="NotificationsService">Notifications Service</string>
-    <string name="NotificationsServiceDisableInfo">If google play services are enough for you to receive notifications, you can disable Notifications Service. However we recommend you to leave it enabled to keep app running in background and receive instant notifications.</string>
-    <string name="SortBy">Sort By</string>
-    <string name="ImportContacts">Import Contacts</string>
-    <string name="WiFiOnly">via WiFi only</string>
+    <string name="Enabled">Inschakelen</string>
+    <string name="Disabled">Uitschakelen</string>
+    <string name="NotificationsService">Meldingen service</string>
+    <string name="NotificationsServiceDisableInfo">Als Google Play services genoeg is om notificaties te ontvang, kan de meldingen service worden uitgeschakeld. Echter, we adviseren de service ingeschakeld te laten zodat de app in de achtergrond blijft draaien en meldingen direct worden ontvangen.</string>
+    <string name="SortBy">Sorteren op</string>
+    <string name="ImportContacts">Importeer contacten</string>
+    <string name="WiFiOnly">alleen via WIFI</string>
+    <string name="SortFirstName">Voornaam</string>
+    <string name="SortLastName">Achternaam</string>
 
     <!--media view-->
     <string name="NoMedia">Nog geen media gedeeld</string>
@@ -339,8 +341,8 @@
     <string name="AttachDocument">Document</string>
     <string name="AttachAudio">Geluidsbestand</string>
     <string name="FromYou">U</string>
-    <string name="ActionTakeScreenshootYou">You took a screenshot!</string>
-    <string name="ActionTakeScreenshoot">un1 took a screenshot!</string>
+    <string name="ActionTakeScreenshootYou">U heeft een schermafbeelding gemaakt!</string>
+    <string name="ActionTakeScreenshoot">un1 maakte een schermafbeeling!</string>
 
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Ongeldig telefoonnummer</string>

@@ -61,6 +61,7 @@ public class BaseFragment {
                     actionBarLayer.onDestroy();
                 }
                 actionBarLayer = parentActivity.getInternalActionBar().createLayer();
+                actionBarLayer.parentFragment = this;
                 actionBarLayer.setBackgroundResource(R.color.header);
                 actionBarLayer.setItemsBackground(R.drawable.bar_selector);
             }

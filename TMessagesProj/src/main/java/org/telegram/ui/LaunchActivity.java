@@ -59,10 +59,6 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     private ArrayList<String> documentsPathArray = null;
     private ArrayList<TLRPC.User> contactsToSend = null;
     private int currentConnectionState;
-    private View statusView;
-    private View backStatusButton;
-    private View statusBackground;
-    private TextView statusText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,19 +99,6 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         NotificationCenter.getInstance().addObserver(this, 701);
         NotificationCenter.getInstance().addObserver(this, 702);
         NotificationCenter.getInstance().addObserver(this, 703);
-
-        statusView = getLayoutInflater().inflate(R.layout.updating_state_layout, null);
-        statusBackground = statusView.findViewById(R.id.back_button_background);
-        backStatusButton = statusView.findViewById(R.id.back_button);
-        statusText = (TextView)statusView.findViewById(R.id.status_text);
-        statusBackground.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (fragmentsStack.size() > 1) {
-                    onBackPressed();
-                }
-            }
-        });
 
         if (fragmentsStack.isEmpty()) {
             if (!UserConfig.clientActivated) {
@@ -186,7 +169,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         imagesPathArray = null;
         documentsPathArray = null;
 
-        if ((getIntent().getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0) {
+        if ((intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0) {
 
             if (intent != null && intent.getAction() != null && !restore) {
                 if (Intent.ACTION_SEND.equals(intent.getAction())) {
@@ -407,10 +390,10 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                 }
             }
 
-            if (getIntent().getAction() != null && getIntent().getAction().startsWith("com.tmessages.openchat") && !restore) {
-                int chatId = getIntent().getIntExtra("chatId", 0);
-                int userId = getIntent().getIntExtra("userId", 0);
-                int encId = getIntent().getIntExtra("encId", 0);
+            if (intent.getAction() != null && intent.getAction().startsWith("com.tmessages.openchat") && !restore) {
+                int chatId = intent.getIntExtra("chatId", 0);
+                int userId = intent.getIntExtra("userId", 0);
+                int encId = intent.getIntExtra("encId", 0);
                 if (chatId != 0) {
                     TLRPC.Chat chat = MessagesController.getInstance().chats.get(chatId);
                     if (chat != null) {
@@ -477,7 +460,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             showLastFragment();
         }
 
-        getIntent().setAction(null);
+        intent.setAction(null);
     }
 
     @Override
@@ -579,7 +562,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         Utilities.checkForCrashes(this);
         Utilities.checkForUpdates(this);
         ApplicationLoader.resetLastPauseTime();
-        updateActionBar();
+        actionBar.setBackOverlayVisible(currentConnectionState != 0);
         try {
             NotificationManager mNotificationManager = (NotificationManager)this.getSystemService(Context.NOTIFICATION_SERVICE);
             mNotificationManager.cancel(1);
@@ -678,39 +661,26 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             if (currentConnectionState != state) {
                 FileLog.e("tmessages", "switch to state " + state);
                 currentConnectionState = state;
-                updateActionBar();
+                actionBar.setBackOverlayVisible(currentConnectionState != 0);
             }
-        }
-    }
-
-    public void updateActionBar() {
-        if (currentConnectionState != 0 && statusView != null) {
-            onShowFragment();
-            if (currentConnectionState == 1) {
-                statusText.setText(getString(R.string.WaitingForNetwork));
-            } else if (currentConnectionState == 2) {
-                statusText.setText(getString(R.string.Connecting));
-            } else if (currentConnectionState == 3) {
-                statusText.setText(getString(R.string.Updating));
-            }
-
-            statusText.measure(View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.AT_MOST));
-            actionBar.setBackOverlay(statusView, (statusText.getMeasuredWidth() + Utilities.dp(54)));
-        } else {
-            actionBar.setBackOverlay(null, 0);
         }
     }
 
     @Override
-    protected void onShowFragment() {
-        if (statusView != null) {
-            if (fragmentsStack.size() > 1) {
-                backStatusButton.setVisibility(View.VISIBLE);
-                statusBackground.setEnabled(true);
-            } else {
-                backStatusButton.setVisibility(View.GONE);
-                statusBackground.setEnabled(false);
-            }
+    public void onOverlayShow(View view, BaseFragment fragment) {
+        if (view == null || fragment == null || fragmentsStack.isEmpty()) {
+            return;
+        }
+        View backStatusButton = view.findViewById(R.id.back_button);
+        TextView statusText = (TextView)view.findViewById(R.id.status_text);
+        backStatusButton.setVisibility(fragmentsStack.get(0) == fragment ? View.GONE : View.VISIBLE);
+        view.setEnabled(fragmentsStack.get(0) != fragment);
+        if (currentConnectionState == 1) {
+            statusText.setText(LocaleController.getString("WaitingForNetwork", R.string.WaitingForNetwork));
+        } else if (currentConnectionState == 2) {
+            statusText.setText(LocaleController.getString("Connecting", R.string.Connecting));
+        } else if (currentConnectionState == 3) {
+            statusText.setText(LocaleController.getString("Updating", R.string.Updating));
         }
     }
 
@@ -732,6 +702,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                 } else if (lastFragment instanceof SettingsWallpapersActivity) {
                     outState.putString("fragment", "wallpapers");
                 } else if (lastFragment instanceof ChatProfileActivity && args != null) {
+                    outState.putBundle("args", args);
                     outState.putString("fragment", "chat_profile");
                 }
                 lastFragment.saveSelfArgs(outState);

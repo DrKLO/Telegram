@@ -16,6 +16,7 @@
         android:numColumns="auto_fit"
         android:stretchMode="columnWidth"
         android:gravity="center"
+        android:listSelector="@drawable/list_selector"
         android:layout_gravity="top"/>
 
     <TextView android:layout_width="match_parent"

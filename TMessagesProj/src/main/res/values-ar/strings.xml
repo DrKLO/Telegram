@@ -109,7 +109,7 @@
     <string name="YouWereKicked">لقد تم إخراجك من هذه المجموعة</string>
     <string name="YouLeft">لقد قمت بمغادرة المجموعة</string>
     <string name="DeleteThisGroup">حذف المجموعة</string>
-    <string name="DeleteThisChat">Delete this chat</string>
+    <string name="DeleteThisChat">حذف هذه الدردشة</string>
     <string name="SlideToCancel">قم بالسحب للإلغاء</string>
     <string name="SaveToDownloads">حفظ في الجهاز</string>
     <string name="ApplyLocalizationFile">تطبيق ملف التعريب</string>
@@ -258,18 +258,20 @@
     <string name="Pebble">PEBBLE</string>
     <string name="Language">اللغة</string>
     <string name="AskAQuestionInfo">نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحاول الرد بسرعة قدر المستطاع، لكن ربما نستغرق القليل من الوقت.<![CDATA[<br><br>]]>يرجى الإطلاع على <![CDATA[<a href="http://telegram.org/faq/ar">صفحة الأسئلة الأكثر شيوعًا</a>]]>: يوجد بها حلول للمشاكل وإجابات لمعظم الأسئلة.</string>
-    <string name="AskButton">اسأل متطوع</string>
-    <string name="TelegramFaq">Telegram FAQ</string>
+    <string name="AskButton">اسأل أحد المتطوعين</string>
+    <string name="TelegramFaq">الأسئلة الشائعة عن تيليجرام</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq/ar</string>
-    <string name="DeleteLocalization">Delete localization?</string>
-    <string name="IncorrectLocalization">Incorrect localization file</string>
-    <string name="Enabled">Enabled</string>
-    <string name="Disabled">Disabled</string>
-    <string name="NotificationsService">Notifications Service</string>
-    <string name="NotificationsServiceDisableInfo">If google play services are enough for you to receive notifications, you can disable Notifications Service. However we recommend you to leave it enabled to keep app running in background and receive instant notifications.</string>
-    <string name="SortBy">Sort By</string>
-    <string name="ImportContacts">Import Contacts</string>
-    <string name="WiFiOnly">via WiFi only</string>
+    <string name="DeleteLocalization">حذف التعريب؟</string>
+    <string name="IncorrectLocalization">ملف التعريب غير صحيح</string>
+    <string name="Enabled">تمكين</string>
+    <string name="Disabled">تعطيل</string>
+    <string name="NotificationsService">خدمة الإشعارات</string>
+    <string name="NotificationsServiceDisableInfo">إذا كانت خدمات Google play كافية بالنسبة لك لتلقي الإشعارات ، يمكنك تعطيل " خدمة الإشعارات " . ومع ذلك نحن نوصي بترك هذه الخدمة مفعلة للحفاظ على تشغيل التطبيق في الخلفية ، ولتلقي إشعارات الدردشة .</string>
+    <string name="SortBy">فرز حسب</string>
+    <string name="ImportContacts">استيراد جهات الاتصال</string>
+    <string name="WiFiOnly">بواسطة WiFi فقط</string>
+    <string name="SortFirstName">الاسم الأول</string>
+    <string name="SortLastName">اسم العائلة</string>
 
     <!--media view-->
     <string name="NoMedia">لا توجد وسائط بعد</string>
@@ -339,8 +341,8 @@
     <string name="AttachDocument">مستند</string>
     <string name="AttachAudio">مقطع صوتي</string>
     <string name="FromYou">أنت</string>
-    <string name="ActionTakeScreenshootYou">You took a screenshot!</string>
-    <string name="ActionTakeScreenshoot">un1 took a screenshot!</string>
+    <string name="ActionTakeScreenshootYou">أنت أخذت لقطة للشاشة !</string>
+    <string name="ActionTakeScreenshoot">un1 أخذ لقطة للشاشة !</string>
 
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">رقم الهاتف غير صحيح</string>

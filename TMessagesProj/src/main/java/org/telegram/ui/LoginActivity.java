@@ -56,7 +56,7 @@ public class LoginActivity extends BaseFragment implements SlideView.SlideViewDe
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayUseLogoEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setDisplayUseLogoEnabled(true, R.drawable.ic_ab_logo);
             actionBarLayer.setTitle(LocaleController.getString("AppName", R.string.AppName));
 
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
@@ -71,7 +71,7 @@ public class LoginActivity extends BaseFragment implements SlideView.SlideViewDe
             ActionBarMenu menu = actionBarLayer.createMenu();
             View doneItem = menu.addItemResource(done_button, R.layout.group_create_done_layout);
             TextView doneTextView = (TextView)doneItem.findViewById(R.id.done_button);
-            doneTextView.setText(LocaleController.getString("Done", R.string.Done));
+            doneTextView.setText(LocaleController.getString("Done", R.string.Done).toUpperCase());
 
             fragmentView = inflater.inflate(R.layout.login_layout, container, false);
 

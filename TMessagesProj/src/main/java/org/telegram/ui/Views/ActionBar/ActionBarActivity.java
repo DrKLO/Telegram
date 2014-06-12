@@ -13,6 +13,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
@@ -24,6 +25,7 @@ import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -97,6 +99,7 @@ public class ActionBarActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         try {
             openAnimation = AnimationUtils.loadAnimation(this, R.anim.scale_in);
@@ -511,6 +514,7 @@ public class ActionBarActivity extends Activity {
                         transitionAnimationStartTime = 0;
                         fragment.onOpenAnimationEnd();
                         presentFragmentInternalRemoveOld(removeLast, currentFragment);
+                        listener = null;
                     }
                 }
 
@@ -585,6 +589,7 @@ public class ActionBarActivity extends Activity {
                         transitionAnimationInProgress = false;
                         transitionAnimationStartTime = 0;
                         closeLastFragmentInternalRemoveOld(currentFragment);
+                        listener = null;
                     }
                 }
 
@@ -653,6 +658,10 @@ public class ActionBarActivity extends Activity {
         return super.onKeyUp(keyCode, event);
     }
 
+    public void onOverlayShow(View view, BaseFragment fragment) {
+
+    }
+
     @Override
     public void onActionModeStarted(ActionMode mode) {
         super.onActionModeStarted(mode);
@@ -669,5 +678,15 @@ public class ActionBarActivity extends Activity {
 
     public boolean onPreIme() {
         return false;
+    }
+
+    @Override
+    public void startActivityForResult(Intent intent, int requestCode) {
+        if (transitionAnimationInProgress && listener != null) {
+            openAnimation.cancel();
+            closeAnimation.cancel();
+            listener.onAnimationEnd(null);
+        }
+        super.startActivityForResult(intent, requestCode);
     }
 }

@@ -418,6 +418,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
             actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
@@ -551,6 +552,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     }
                 }
             });
+
             updateSubtitle();
 
             if (currentEncryptedChat != null) {

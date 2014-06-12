@@ -67,9 +67,9 @@ public class ChatProfileChangeNameActivity extends BaseFragment {
                 }
             });
 
-            cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel));
+            cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
             TextView textView = (TextView)doneButton.findViewById(R.id.done_button_text);
-            textView.setText(LocaleController.getString("Done", R.string.Done));
+            textView.setText(LocaleController.getString("Done", R.string.Done).toUpperCase());
 
             fragmentView = inflater.inflate(R.layout.chat_profile_change_name_layout, container, false);
 

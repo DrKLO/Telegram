@@ -176,6 +176,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 item.addSubItem(messages_list_menu_contacts, LocaleController.getString("Contacts", R.string.Contacts), 0);
                 item.addSubItem(messages_list_menu_settings, LocaleController.getString("Settings", R.string.Settings), 0);
             }
+            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
 
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override

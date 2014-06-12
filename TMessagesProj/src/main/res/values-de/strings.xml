@@ -109,7 +109,7 @@
     <string name="YouWereKicked">Du wurdest aus der Gruppe entfernt</string>
     <string name="YouLeft">Du hast die Gruppe verlassen</string>
     <string name="DeleteThisGroup">Diese Gruppe löschen</string>
-    <string name="DeleteThisChat">Delete this chat</string>
+    <string name="DeleteThisChat">Diesen Chat löschen</string>
     <string name="SlideToCancel">WISCHEN UM ABZUBRECHEN</string>
     <string name="SaveToDownloads">In Ordner Downloads speichern</string>
     <string name="ApplyLocalizationFile">Sprachdatei benutzen</string>
@@ -263,13 +263,15 @@
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
     <string name="DeleteLocalization">Lokalisierung löschen?</string>
     <string name="IncorrectLocalization">Falsche Sprachdatei</string>
-    <string name="Enabled">Enabled</string>
-    <string name="Disabled">Disabled</string>
-    <string name="NotificationsService">Notifications Service</string>
-    <string name="NotificationsServiceDisableInfo">If google play services are enough for you to receive notifications, you can disable Notifications Service. However we recommend you to leave it enabled to keep app running in background and receive instant notifications.</string>
-    <string name="SortBy">Sort By</string>
-    <string name="ImportContacts">Import Contacts</string>
-    <string name="WiFiOnly">via WiFi only</string>
+    <string name="Enabled">Aktiviert</string>
+    <string name="Disabled">Deaktiviert</string>
+    <string name="NotificationsService">Benachrichtigungsdienst</string>
+    <string name="NotificationsServiceDisableInfo">Sofern Google Play Dienste ausreichend für deine Benachrichtigungen sind, kannst du unseren Benachrichtigungsdienst abschalten. Wir empfehlen allerdings, unseren Dienst dauerhaft aktiviert zu lassen um über neue Nachrichten in Echtzeit informiert zu werden.</string>
+    <string name="SortBy">sortiert nach</string>
+    <string name="ImportContacts">Kontakte importieren</string>
+    <string name="WiFiOnly">nur über WLAN</string>
+    <string name="SortFirstName">Vorname</string>
+    <string name="SortLastName">Nachname</string>
 
     <!--media view-->
     <string name="NoMedia">Noch keine geteilten Medien vorhanden</string>
@@ -339,8 +341,8 @@
     <string name="AttachDocument">Dokument</string>
     <string name="AttachAudio">Audio</string>
     <string name="FromYou">Du</string>
-    <string name="ActionTakeScreenshootYou">You took a screenshot!</string>
-    <string name="ActionTakeScreenshoot">un1 took a screenshot!</string>
+    <string name="ActionTakeScreenshootYou">Du hast ein Bildschirmfoto gemacht!</string>
+    <string name="ActionTakeScreenshoot">un1 hat ein Bildschirmfoto gemacht!</string>
 
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Ungültige Telefonnummer</string>

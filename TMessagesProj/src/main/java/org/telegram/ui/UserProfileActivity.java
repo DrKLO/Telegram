@@ -135,6 +135,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
             actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             if (dialog_id != 0) {
                 actionBarLayer.setTitle(LocaleController.getString("SecretTitle", R.string.SecretTitle));
                 actionBarLayer.setTitleIcon(R.drawable.ic_lock_white, Utilities.dp(4));
