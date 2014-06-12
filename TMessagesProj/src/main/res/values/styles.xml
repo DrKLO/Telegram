@@ -24,48 +24,12 @@
         <item name="android:actionBarItemBackground">@drawable/bar_selector</item>
     </style>
 
-    <style name="Theme.TMessages.Gallery" parent="Theme.AppCompat">
-        <item name="android:actionBarStyle">@style/ActionBar.Transparent.TMessages.Gallery</item>
-        <item name="android:windowActionBarOverlay">true</item>
-        <item name="android:colorBackground">@color/gallery_background_color</item>
-        <item name="android:windowBackground">@color/gallery_background_color</item>
-        <item name="android:homeAsUpIndicator">@drawable/ab_icon_up_gallery</item>
-        <item name="android:actionOverflowButtonStyle">@style/ActionBar.Transparent.TMessages.Gallery.ActionButtonOverflow</item>
-        <item name="android:listChoiceBackgroundIndicator">@drawable/list_selector</item>
-        <item name="android:editTextStyle">@style/Theme.TMessages.EditText</item>
-
-        <item name="actionBarStyle">@style/ActionBar.Transparent.TMessages.Gallery</item>
-        <item name="windowActionBarOverlay">true</item>
-        <item name="homeAsUpIndicator">@drawable/ab_icon_up_gallery</item>
-        <item name="actionOverflowButtonStyle">@style/ActionBar.Transparent.TMessages.Gallery.ActionButtonOverflow</item>
-        <item name="listChoiceBackgroundIndicator">@drawable/list_selector</item>
-
-        <!--<item name="android:windowIsTranslucent">true</item>-->
-        <!--<item name="android:backgroundDimEnabled">false</item>-->
-    </style>
-
     <!--ACTION BAR-->
 
     <style name="ActionBar.Transparent.TMessages.Start" parent="android:style/Widget.Holo.Light.ActionBar">
         <item name="android:background">@color/header</item>
         <item name="android:logo">@drawable/transparent</item>
-        <item name="android:titleTextStyle">@style/ActionBar.Transparent.TMessages.Gallery.Title</item>
-        <item name="android:subtitleTextStyle">@style/ActionBar.Transparent.TMessages.Gallery.Subtitle</item>
         <item name="android:title">""</item>
-
-        <item name="background">@color/header</item>
-        <item name="logo">@drawable/transparent</item>
-        <item name="title">""</item>
-        <item name="titleTextStyle">@style/ActionBar.Transparent.TMessages.Gallery.Title</item>
-        <item name="subtitleTextStyle">@style/ActionBar.Transparent.TMessages.Gallery.Subtitle</item>
-    </style>
-
-    <style name="ActionBar.Transparent.TMessages.Gallery" parent="Widget.AppCompat.Light.ActionBar">
-        <item name="android:background">#dd000000</item>
-        <item name="android:titleTextStyle">@style/ActionBar.Transparent.TMessages.Gallery.Title</item>
-
-        <item name="background">@drawable/gallery_action_bar</item>
-        <item name="titleTextStyle">@style/ActionBar.Transparent.TMessages.Gallery.Title</item>
     </style>
 
     <!--ACTION BAR ITEMS-->
@@ -73,18 +37,6 @@
     <style name="ActionBar.Transparent.TMessages.Item" parent="@android:TextAppearance.Widget.IconMenu.Item">
         <item name="android:textColor">#000000</item>
         <item name="android:textSize">18sp</item>
-    </style>
-
-    <style name="ActionBar.Transparent.TMessages.Gallery.ActionButtonOverflow" parent="Widget.AppCompat.ActionButton.Overflow">
-        <item name="android:src">@drawable/ic_ab_other_white</item>
-    </style>
-
-    <style name="ActionBar.Transparent.TMessages.Gallery.Title" parent="TextAppearance.AppCompat.Widget.ActionBar.Title">
-        <item name="android:textColor">#ffffffff</item>
-    </style>
-
-    <style name="ActionBar.Transparent.TMessages.Gallery.Subtitle" parent="TextAppearance.AppCompat.Widget.ActionBar.Subtitle">
-        <item name="android:textColor">#ffd7e8f7</item>
     </style>
 
     <!--LIST VIEW-->

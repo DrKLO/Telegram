@@ -59,7 +59,6 @@ public class TcpConnection extends ConnectionContext {
     private boolean firstPacket;
 
     private Timer reconnectTimer;
-    private boolean tryWithNoNetworkAnyway = false;
 
     public TcpConnection(int did) {
         if (selector == null) {
@@ -81,6 +80,43 @@ public class TcpConnection extends ConnectionContext {
     }
 
     public void connect() {
+        if (!ConnectionsManager.isNetworkOnline()) {
+            synchronized (timerSync) {
+                reconnectTimer = new Timer();
+                reconnectTimer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        selector.scheduleTask(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    synchronized (timerSync) {
+                                        if (reconnectTimer != null) {
+                                            reconnectTimer.cancel();
+                                            reconnectTimer = null;
+                                        }
+                                    }
+                                } catch (Exception e2) {
+                                    FileLog.e("tmessages", e2);
+                                }
+                                connect();
+                            }
+                        });
+                    }
+                }, 500);
+            }
+            if (delegate != null) {
+                final TcpConnectionDelegate finalDelegate = delegate;
+                Utilities.stageQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        finalDelegate.tcpConnectionClosed(TcpConnection.this);
+                    }
+                });
+            }
+            return;
+        }
+
         selector.scheduleTask(new Runnable() {
             @Override
             public void run() {
@@ -94,14 +130,6 @@ public class TcpConnection extends ConnectionContext {
                     hostAddress = datacenter.getCurrentAddress();
                     hostPort = datacenter.getCurrentPort();
 
-                    if(android.os.Build.VERSION.SDK_INT < 11) {
-                        if (!ConnectionsManager.isNetworkOnline() && !tryWithNoNetworkAnyway) {
-                            handleConnectionError(null);
-                            tryWithNoNetworkAnyway = true;
-                            return;
-                        }
-                        tryWithNoNetworkAnyway = false;
-                    }
                     try {
                         synchronized (timerSync) {
                             if (reconnectTimer != null) {
@@ -637,28 +665,30 @@ public class TcpConnection extends ConnectionContext {
             }
             FileLog.d("tmessages", "Reconnect " + hostAddress + ":" + hostPort + " " + TcpConnection.this);
             try {
-                reconnectTimer = new Timer();
-                reconnectTimer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        selector.scheduleTask(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    synchronized (timerSync) {
-                                        if (reconnectTimer != null) {
-                                            reconnectTimer.cancel();
-                                            reconnectTimer = null;
+                synchronized (timerSync) {
+                    reconnectTimer = new Timer();
+                    reconnectTimer.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            selector.scheduleTask(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        synchronized (timerSync) {
+                                            if (reconnectTimer != null) {
+                                                reconnectTimer.cancel();
+                                                reconnectTimer = null;
+                                            }
                                         }
+                                    } catch (Exception e2) {
+                                        FileLog.e("tmessages", e2);
                                     }
-                                } catch (Exception e2) {
-                                    FileLog.e("tmessages", e2);
+                                    connect();
                                 }
-                                connect();
-                            }
-                        });
-                    }
-                }, failedConnectionCount > 3 ? 500 : 300, failedConnectionCount > 3 ? 500 : 300);
+                            });
+                        }
+                    }, failedConnectionCount > 3 ? 500 : 300, failedConnectionCount > 3 ? 500 : 300);
+                }
             } catch (Exception e3) {
                 FileLog.e("tmessages", e3);
             }

@@ -32,7 +32,6 @@ public class ActionBar extends FrameLayout {
     private View currentBackOverlay;
     private View shadowView = null;
     private int currentBackOverlayWidth;
-    protected int itemsBackgroundResourceId;
 
     public ActionBar(Context context) {
         super(context);
@@ -111,12 +110,13 @@ public class ActionBar extends FrameLayout {
             currentLayer.setBackLayoutVisible(currentLayer.isSearchFieldVisible || currentBackOverlay == null ? VISIBLE : INVISIBLE);
         }
         if (currentBackOverlay != null) {
-            currentBackOverlay.setVisibility(currentLayer.isSearchFieldVisible ? GONE : VISIBLE);
             ViewGroup.LayoutParams layoutParams = currentBackOverlay.getLayoutParams();
             if (currentLayer != null) {
+                currentBackOverlay.setVisibility(currentLayer.isSearchFieldVisible ? GONE : VISIBLE);
                 currentLayer.measure(widthMeasureSpec, heightMeasureSpec);
                 layoutParams.width = Math.min(currentBackOverlayWidth, currentLayer.getBackLayoutWidth());
             } else {
+                currentBackOverlay.setVisibility(VISIBLE);
                 layoutParams.width = LayoutParams.WRAP_CONTENT;
             }
             if (layoutParams.width != 0) {
@@ -204,9 +204,5 @@ public class ActionBar extends FrameLayout {
         if (currentLayer != null) {
             currentLayer.onMenuButtonPressed();
         }
-    }
-
-    public void setItemsBackground(int resourceId) {
-        itemsBackgroundResourceId = resourceId;
     }
 }

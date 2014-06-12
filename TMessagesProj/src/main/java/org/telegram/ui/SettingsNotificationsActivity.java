@@ -106,7 +106,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
             actionBarLayer.setTitle(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds));
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
@@ -294,9 +294,13 @@ public class SettingsNotificationsActivity extends BaseFragment {
                                         SharedPreferences.Editor editor = preferences.edit();
                                         editor.clear();
                                         editor.commit();
-                                        listView.invalidateViews();
-                                        Toast toast = Toast.makeText(getParentActivity(), R.string.ResetNotificationsText, Toast.LENGTH_SHORT);
-                                        toast.show();
+                                        if (listView != null) {
+                                            listView.invalidateViews();
+                                        }
+                                        if (getParentActivity() != null) {
+                                            Toast toast = Toast.makeText(getParentActivity(), R.string.ResetNotificationsText, Toast.LENGTH_SHORT);
+                                            toast.show();
+                                        }
                                     }
                                 });
                             }

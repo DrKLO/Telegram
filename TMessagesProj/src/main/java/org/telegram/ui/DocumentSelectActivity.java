@@ -21,7 +21,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -127,7 +126,7 @@ public class DocumentSelectActivity extends BaseFragment {
         }
 
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
             actionBarLayer.setTitle(LocaleController.getString("SelectFile", R.string.SelectFile));
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
@@ -423,12 +422,10 @@ public class DocumentSelectActivity extends BaseFragment {
                 imageView.setImageBitmap(null);
                 typeTextView.setText(item.ext.toUpperCase().substring(0, Math.min(item.ext.length(), 4)));
                 imageView.setImage(item.thumb, "55_42", 0);
-                imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
                 imageView.setVisibility(View.VISIBLE);
                 typeTextView.setVisibility(View.VISIBLE);
             } else if (item.icon != 0) {
                 imageView.setImageResource(item.icon);
-                imageView.setScaleType(ImageView.ScaleType.CENTER);
                 imageView.setVisibility(View.VISIBLE);
                 typeTextView.setVisibility(View.GONE);
             } else {

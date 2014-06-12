@@ -39,6 +39,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.objects.MessageObject;
 import org.telegram.objects.VibrationOptions;
 import org.telegram.ui.Cells.ChatOrUserCell;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
@@ -52,7 +53,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 
-public class ChatProfileActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ContactsActivity.ContactsActivityDelegate {
+public class ChatProfileActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ContactsActivity.ContactsActivityDelegate, PhotoViewer.PhotoViewerProvider {
     private ListView listView;
     private ListAdapter listViewAdapter;
     private int chat_id;
@@ -93,7 +94,6 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         NotificationCenter.getInstance().addObserver(this, MessagesController.closeChats);
 
         chat_id = getArguments().getInt("chat_id", 0);
-        info = (TLRPC.ChatParticipants)NotificationCenter.getInstance().getFromMemCache(5);
         updateOnlineCount();
         MessagesController.getInstance().getMediaCount(-chat_id, classGuid, true);
         avatarUpdater.delegate = new AvatarUpdater.AvatarUpdaterDelegate() {
@@ -149,7 +149,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
             actionBarLayer.setTitle(LocaleController.getString("GroupInfo", R.string.GroupInfo));
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
@@ -429,6 +429,58 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         }
     }
 
+    @Override
+    public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+        if (fileLocation == null) {
+            return null;
+        }
+        TLRPC.Chat chat = MessagesController.getInstance().chats.get(chat_id);
+        if (chat != null && chat.photo != null && chat.photo.photo_big != null) {
+            TLRPC.FileLocation photoBig = chat.photo.photo_big;
+            if (photoBig.local_id == fileLocation.local_id && photoBig.volume_id == fileLocation.volume_id && photoBig.dc_id == fileLocation.dc_id) {
+                int count = listView.getChildCount();
+                for (int a = 0; a < count; a++) {
+                    View view = listView.getChildAt(a);
+                    BackupImageView avatarImage = (BackupImageView)view.findViewById(R.id.settings_avatar_image);
+                    if (avatarImage != null) {
+                        int coords[] = new int[2];
+                        avatarImage.getLocationInWindow(coords);
+                        PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
+                        object.viewX = coords[0];
+                        object.viewY = coords[1] - Utilities.statusBarHeight;
+                        object.parentView = listView;
+                        object.imageReceiver = avatarImage.imageReceiver;
+                        object.thumb = object.imageReceiver.getBitmap();
+                        object.size = -1;
+                        return object;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) { }
+
+    @Override
+    public void willHidePhotoViewer() { }
+
+    @Override
+    public boolean isPhotoChecked(int index) { return false; }
+
+    @Override
+    public void setPhotoChecked(int index) { }
+
+    @Override
+    public void cancelButtonPressed() { }
+
+    @Override
+    public void sendButtonPressed(int index) { }
+
+    @Override
+    public int getSelectedCount() { return 0; }
+
     public void didReceivedNotification(int id, Object... args) {
         if (id == MessagesController.updateInterfaces) {
             int mask = (Integer)args[0];
@@ -468,6 +520,10 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         if (listViewAdapter != null) {
             listViewAdapter.notifyDataSetChanged();
         }
+    }
+
+    public void setChatInfo(TLRPC.ChatParticipants chatParticipants) {
+        info = chatParticipants;
     }
 
     private void updateVisibleRows(int mask) {
@@ -534,9 +590,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         if (action == 0) {
             TLRPC.Chat chat = MessagesController.getInstance().chats.get(chat_id);
             if (chat.photo != null && chat.photo.photo_big != null) {
-                NotificationCenter.getInstance().addToMemCache(53, chat.photo.photo_big);
-                Intent intent = new Intent(getParentActivity(), GalleryImageViewer.class);
-                getParentActivity().startActivity(intent);
+                PhotoViewer.getInstance().openPhoto(chat.photo.photo_big, this);
             }
         } else if (action == 1) {
             avatarUpdater.openCamera();
@@ -699,10 +753,13 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 }
 
                 TLRPC.FileLocation photo = null;
+                TLRPC.FileLocation photoBig = null;
                 if (chat.photo != null) {
                     photo = chat.photo.photo_small;
+                    photoBig = chat.photo.photo_big;
                 }
                 avatarImage.setImage(photo, "50_50", Utilities.getGroupAvatarForId(chat.id));
+                avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
                 return view;
             } else if (type == 1) {
                 if (view == null) {

@@ -67,7 +67,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
             actionBarLayer.setTitle(LocaleController.getString("BlockedUsers", R.string.BlockedUsers));
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
@@ -184,10 +184,8 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                             if (progressView != null) {
                                 progressView.setVisibility(View.GONE);
                             }
-                            if (listView != null) {
-                                if (listView.getEmptyView() == null) {
-                                    listView.setEmptyView(emptyView);
-                                }
+                            if (listView != null && listView.getEmptyView() == null) {
+                                listView.setEmptyView(emptyView);
                             }
                             if (listViewAdapter != null) {
                                 listViewAdapter.notifyDataSetChanged();
@@ -212,10 +210,8 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                         if (progressView != null) {
                             progressView.setVisibility(View.GONE);
                         }
-                        if (listView != null) {
-                            if (listView.getEmptyView() == null) {
-                                listView.setEmptyView(emptyView);
-                            }
+                        if (listView != null && listView.getEmptyView() == null) {
+                            listView.setEmptyView(emptyView);
                         }
                         if (listViewAdapter != null) {
                             listViewAdapter.notifyDataSetChanged();

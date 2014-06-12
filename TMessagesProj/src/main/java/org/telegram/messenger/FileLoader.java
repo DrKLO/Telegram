@@ -20,7 +20,6 @@ import android.os.ParcelFileDescriptor;
 
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.ApplicationLoader;
-import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ImageReceiver;
 
 import java.io.ByteArrayOutputStream;
@@ -34,6 +33,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 
 public class FileLoader {
     public LruCache memCache;
@@ -132,10 +132,10 @@ public class FileLoader {
 
     private class CacheImage {
         public String key;
-        final public ArrayList<Object> imageViewArray = new ArrayList<Object>();
+        final public ArrayList<ImageReceiver> imageViewArray = new ArrayList<ImageReceiver>();
         public FileLoadOperation loadOperation;
 
-        public void addImageView(Object imageView) {
+        public void addImageView(ImageReceiver imageView) {
             synchronized (imageViewArray) {
                 boolean exist = false;
                 for (Object v : imageViewArray) {
@@ -166,9 +166,7 @@ public class FileLoader {
             synchronized (imageViewArray) {
                 if (image != null) {
                     for (Object imgView : imageViewArray) {
-                        if (imgView instanceof BackupImageView) {
-                            ((BackupImageView)imgView).setImageBitmap(image, key);
-                        } else if (imgView instanceof ImageReceiver) {
+                        if (imgView instanceof ImageReceiver) {
                             ((ImageReceiver)imgView).setImageBitmap(image, key);
                         }
                     }
@@ -481,8 +479,22 @@ public class FileLoader {
         });
     }
 
-    public boolean isLoadingFile(String fileName) {
-        return loadOperationPaths.containsKey(fileName);
+    public boolean isLoadingFile(final String fileName) {
+        final Semaphore semaphore = new Semaphore(0);
+        final Boolean[] result = new Boolean[1];
+        fileLoaderQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                result[0] = loadOperationPaths.containsKey(fileName);
+                semaphore.release();
+            }
+        });
+        try {
+            semaphore.acquire();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return result[0];
     }
 
     public void loadFile(final TLRPC.Video video, final TLRPC.PhotoSize photo, final TLRPC.Document document, final TLRPC.Audio audio) {
@@ -676,34 +688,16 @@ public class FileLoader {
         memCache.evictAll();
     }
 
-    private Integer getTag(Object obj) {
-        if (obj instanceof BackupImageView) {
-            return (Integer)((BackupImageView)obj).getTag(R.string.CacheTag);
-        } else if (obj instanceof ImageReceiver) {
-            return ((ImageReceiver)obj).TAG;
-        }
-        return 0;
-    }
-
-    private void setTag(Object obj, Integer tag) {
-        if (obj instanceof BackupImageView) {
-            ((BackupImageView)obj).setTag(R.string.CacheTag, tag);
-        } else if (obj instanceof ImageReceiver) {
-            ((ImageReceiver)obj).TAG = tag;
-        }
-    }
-
-    public void cancelLoadingForImageView(final Object imageView) {
+    public void cancelLoadingForImageView(final ImageReceiver imageView) {
         if (imageView == null) {
             return;
         }
         fileLoaderQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
-                Integer TAG = getTag(imageView);
+                Integer TAG = imageView.TAG;
                 if (TAG == null) {
-                    TAG = lastImageNum;
-                    setTag(imageView, TAG);
+                    imageView.TAG = TAG = lastImageNum;
                     lastImageNum++;
                     if (lastImageNum == Integer.MAX_VALUE) {
                         lastImageNum = 0;
@@ -723,15 +717,15 @@ public class FileLoader {
         });
     }
 
-    public Bitmap getImageFromMemory(TLRPC.FileLocation url, Object imageView, String filter, boolean cancel) {
+    public Bitmap getImageFromMemory(TLRPC.FileLocation url, ImageReceiver imageView, String filter, boolean cancel) {
         return getImageFromMemory(url, null, imageView, filter, cancel);
     }
 
-    public Bitmap getImageFromMemory(String url, Object imageView, String filter, boolean cancel) {
+    public Bitmap getImageFromMemory(String url, ImageReceiver imageView, String filter, boolean cancel) {
         return getImageFromMemory(null, url, imageView, filter, cancel);
     }
 
-    public Bitmap getImageFromMemory(TLRPC.FileLocation url, String httpUrl, Object imageView, String filter, boolean cancel) {
+    public Bitmap getImageFromMemory(TLRPC.FileLocation url, String httpUrl, ImageReceiver imageView, String filter, boolean cancel) {
         if (url == null && httpUrl == null) {
             return null;
         }
@@ -783,19 +777,19 @@ public class FileLoader {
         });
     }
 
-    public void loadImage(final String url, final Object imageView, final String filter, final boolean cancel) {
+    public void loadImage(final String url, final ImageReceiver imageView, final String filter, final boolean cancel) {
         loadImage(null, url, imageView, filter, cancel, 0);
     }
 
-    public void loadImage(final TLRPC.FileLocation url, final Object imageView, final String filter, final boolean cancel) {
+    public void loadImage(final TLRPC.FileLocation url, final ImageReceiver imageView, final String filter, final boolean cancel) {
         loadImage(url, null, imageView, filter, cancel, 0);
     }
 
-    public void loadImage(final TLRPC.FileLocation url, final Object imageView, final String filter, final boolean cancel, final int size) {
+    public void loadImage(final TLRPC.FileLocation url, final ImageReceiver imageView, final String filter, final boolean cancel, final int size) {
         loadImage(url, null, imageView, filter, cancel, size);
     }
 
-    public void loadImage(final TLRPC.FileLocation url, final String httpUrl, final Object imageView, final String filter, final boolean cancel, final int size) {
+    public void loadImage(final TLRPC.FileLocation url, final String httpUrl, final ImageReceiver imageView, final String filter, final boolean cancel, final int size) {
         if ((url == null && httpUrl == null) || imageView == null || (url != null && !(url instanceof TLRPC.TL_fileLocation) && !(url instanceof TLRPC.TL_fileEncryptedLocation))) {
             return;
         }
@@ -814,10 +808,9 @@ public class FileLoader {
                     key += "@" + filter;
                 }
 
-                Integer TAG = getTag(imageView);
+                Integer TAG = imageView.TAG;
                 if (TAG == null) {
-                    TAG = lastImageNum;
-                    setTag(imageView, TAG);
+                    TAG = imageView.TAG = lastImageNum;
                     lastImageNum++;
                     if (lastImageNum == Integer.MAX_VALUE)
                         lastImageNum = 0;
@@ -878,8 +871,8 @@ public class FileLoader {
                                     if (arg3 != null) {
                                         loadOperationPaths.remove(arg3);
                                     }
-                                    for (Object v : img.imageViewArray) {
-                                        imageLoadingByKeys.remove(getTag(v));
+                                    for (ImageReceiver v : img.imageViewArray) {
+                                        imageLoadingByKeys.remove(v.TAG);
                                     }
                                     checkOperationsAndClear(img.loadOperation);
                                     imageLoading.remove(arg2);
@@ -906,8 +899,8 @@ public class FileLoader {
                                     if (arg3 != null) {
                                         loadOperationPaths.remove(arg3);
                                     }
-                                    for (Object view : img.imageViewArray) {
-                                        imageLoadingByKeys.remove(getTag(view));
+                                    for (ImageReceiver view : img.imageViewArray) {
+                                        imageLoadingByKeys.remove(view.TAG);
                                         imageLoading.remove(arg2);
                                         checkOperationsAndClear(operation);
                                     }

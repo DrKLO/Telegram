@@ -60,7 +60,6 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        messageObject = (MessageObject)NotificationCenter.getInstance().getFromMemCache(0);
         NotificationCenter.getInstance().addObserver(this, MessagesController.closeChats);
         if (messageObject != null) {
             NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
@@ -81,7 +80,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
             if (messageObject != null) {
                 actionBarLayer.setTitle(LocaleController.getString("ChatLocation", R.string.ChatLocation));
             } else {
@@ -292,6 +291,10 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 }
             }
         }
+    }
+
+    public void setMessageObject(MessageObject message) {
+        messageObject = message;
     }
 
     @Override

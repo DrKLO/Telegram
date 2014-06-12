@@ -13,7 +13,6 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.content.Context;
-import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
@@ -21,7 +20,6 @@ import android.view.ActionMode;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.view.Surface;
 import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewGroup;
@@ -51,7 +49,6 @@ public class ActionBarActivity extends Activity {
     private boolean maybeStartTracking = false;
     protected boolean startedTracking = false;
     private int startedTrackingX;
-    private int prevOrientation = -10;
     protected boolean animationInProgress = false;
     private VelocityTracker velocityTracker = null;
     private boolean beginTrackingSent = false;
@@ -59,6 +56,7 @@ public class ActionBarActivity extends Activity {
     private long transitionAnimationStartTime;
     private boolean inActionMode = false;
     private int startedTrackingPointerId;
+    private Animation.AnimationListener listener;
 
     private class FrameLayoutTouch extends FrameLayout {
         public FrameLayoutTouch(Context context) {
@@ -129,7 +127,6 @@ public class ActionBarActivity extends Activity {
         shadowView.setVisibility(View.INVISIBLE);
 
         actionBar = new ActionBar(this);
-        actionBar.setItemsBackground(R.drawable.bar_selector);
         contentView.addView(actionBar);
         layoutParams = actionBar.getLayoutParams();
         layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
@@ -156,6 +153,11 @@ public class ActionBarActivity extends Activity {
     protected void onResume() {
         super.onResume();
         fixLayout();
+        if (transitionAnimationInProgress && listener != null) {
+            openAnimation.cancel();
+            closeAnimation.cancel();
+            listener.onAnimationEnd(null);
+        }
         if (!fragmentsStack.isEmpty()) {
             BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
             lastFragment.onResume();
@@ -206,14 +208,7 @@ public class ActionBarActivity extends Activity {
             }
         }
         containerViewBack.setVisibility(View.GONE);
-        try {
-            if (prevOrientation != -10) {
-                setRequestedOrientation(prevOrientation);
-                prevOrientation = -10;
-            }
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
+        Utilities.unlockOrientation(this);
         startedTracking = false;
         animationInProgress = false;
     }
@@ -244,30 +239,7 @@ public class ActionBarActivity extends Activity {
         }
         lastFragment.onResume();
 
-        try {
-            prevOrientation = getRequestedOrientation();
-            WindowManager manager = (WindowManager)getSystemService(Activity.WINDOW_SERVICE);
-            if (manager != null && manager.getDefaultDisplay() != null) {
-                int rotation = manager.getDefaultDisplay().getRotation();
-                if (rotation == Surface.ROTATION_270) {
-                    if (Build.VERSION.SDK_INT >= 9) {
-                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                    } else {
-                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                    }
-                } else if (rotation == Surface.ROTATION_90) {
-                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                } else if (rotation == Surface.ROTATION_0) {
-                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                } else {
-                    if (Build.VERSION.SDK_INT >= 9) {
-                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
+        Utilities.lockOrientation(this);
     }
 
     public boolean onTouchEvent(MotionEvent ev) {
@@ -526,7 +498,7 @@ public class ActionBarActivity extends Activity {
             transitionAnimationStartTime = System.currentTimeMillis();
             transitionAnimationInProgress = true;
             openAnimation.reset();
-            openAnimation.setAnimationListener(new Animation.AnimationListener() {
+            openAnimation.setAnimationListener(listener = new Animation.AnimationListener() {
                 @Override
                 public void onAnimationStart(Animation animation) {
 
@@ -534,10 +506,12 @@ public class ActionBarActivity extends Activity {
 
                 @Override
                 public void onAnimationEnd(Animation animation) {
-                    transitionAnimationInProgress = false;
-                    transitionAnimationStartTime = 0;
-                    fragment.onOpenAnimationEnd();
-                    presentFragmentInternalRemoveOld(removeLast, currentFragment);
+                    if (transitionAnimationInProgress) {
+                        transitionAnimationInProgress = false;
+                        transitionAnimationStartTime = 0;
+                        fragment.onOpenAnimationEnd();
+                        presentFragmentInternalRemoveOld(removeLast, currentFragment);
+                    }
                 }
 
                 @Override
@@ -599,7 +573,7 @@ public class ActionBarActivity extends Activity {
             transitionAnimationStartTime = System.currentTimeMillis();
             transitionAnimationInProgress = true;
             closeAnimation.reset();
-            closeAnimation.setAnimationListener(new Animation.AnimationListener() {
+            closeAnimation.setAnimationListener(listener = new Animation.AnimationListener() {
                 @Override
                 public void onAnimationStart(Animation animation) {
 
@@ -607,9 +581,11 @@ public class ActionBarActivity extends Activity {
 
                 @Override
                 public void onAnimationEnd(Animation animation) {
-                    transitionAnimationInProgress = false;
-                    transitionAnimationStartTime = 0;
-                    closeLastFragmentInternalRemoveOld(currentFragment);
+                    if (transitionAnimationInProgress) {
+                        transitionAnimationInProgress = false;
+                        transitionAnimationStartTime = 0;
+                        closeLastFragmentInternalRemoveOld(currentFragment);
+                    }
                 }
 
                 @Override
