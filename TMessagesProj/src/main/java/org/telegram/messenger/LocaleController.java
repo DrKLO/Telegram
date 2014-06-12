@@ -160,6 +160,22 @@ public class LocaleController {
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "Português (Brasil)";
+        localeInfo.nameEnglish = "Portuguese (Brazil)";
+        localeInfo.shortName = "pt_BR";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "Português (Portugal)";
+        localeInfo.nameEnglish = "Portuguese (Portugal)";
+        localeInfo.shortName = "pt_PT";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
         loadOtherLanguages();
 
         for (LocaleInfo locale : otherLanguages) {
@@ -382,7 +398,12 @@ public class LocaleController {
         try {
             Locale newLocale = null;
             if (localeInfo.shortName != null) {
-                newLocale = new Locale(localeInfo.shortName);
+                String[] args = localeInfo.shortName.split("_");
+                if (args.length == 1) {
+                    newLocale = new Locale(localeInfo.shortName);
+                } else {
+                    newLocale = new Locale(args[0], args[1]);
+                }
                 if (newLocale != null) {
                     if (override) {
                         languageOverride = localeInfo.shortName;

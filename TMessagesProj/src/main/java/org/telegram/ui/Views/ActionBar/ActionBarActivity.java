@@ -17,6 +17,7 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.ActionMode;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -442,7 +443,7 @@ public class ActionBarActivity extends Activity {
         return actionBar;
     }
 
-    private void presentFragmentInternalRemoveOld(boolean removeLast, BaseFragment fragment) {
+    private void presentFragmentInternalRemoveOld(boolean removeLast, final BaseFragment fragment) {
         if (fragment == null) {
             return;
         }
@@ -513,7 +514,12 @@ public class ActionBarActivity extends Activity {
                         transitionAnimationInProgress = false;
                         transitionAnimationStartTime = 0;
                         fragment.onOpenAnimationEnd();
-                        presentFragmentInternalRemoveOld(removeLast, currentFragment);
+                        new Handler().post(new Runnable() {
+                            @Override
+                            public void run() {
+                                presentFragmentInternalRemoveOld(removeLast, currentFragment);
+                            }
+                        });
                         listener = null;
                     }
                 }
@@ -577,6 +583,7 @@ public class ActionBarActivity extends Activity {
             transitionAnimationStartTime = System.currentTimeMillis();
             transitionAnimationInProgress = true;
             closeAnimation.reset();
+            closeAnimation.setFillAfter(true);
             closeAnimation.setAnimationListener(listener = new Animation.AnimationListener() {
                 @Override
                 public void onAnimationStart(Animation animation) {
@@ -588,7 +595,11 @@ public class ActionBarActivity extends Activity {
                     if (transitionAnimationInProgress) {
                         transitionAnimationInProgress = false;
                         transitionAnimationStartTime = 0;
-                        closeLastFragmentInternalRemoveOld(currentFragment);
+                        new Handler().post(new Runnable() {
+                            public void run() {
+                                closeLastFragmentInternalRemoveOld(currentFragment);
+                            }
+                        });
                         listener = null;
                     }
                 }

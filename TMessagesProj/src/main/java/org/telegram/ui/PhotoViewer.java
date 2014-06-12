@@ -102,6 +102,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
     private int animationInProgress = 0;
     private boolean disableShowCheck = false;
+    private Animation.AnimationListener animationListener;
 
     private ImageReceiver leftImage = new ImageReceiver();
     private ImageReceiver centerImage = new ImageReceiver();
@@ -243,6 +244,14 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         public FrameLayoutDrawer(Context context) {
             super(context);
             setWillNotDraw(false);
+        }
+
+        @Override
+        protected void onAnimationEnd() {
+            super.onAnimationEnd();
+            if (getInstance().animationListener != null) {
+                getInstance().animationListener.onAnimationEnd(null);
+            }
         }
 
         @Override
@@ -725,19 +734,21 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (overlayViewVisible == show) {
             return;
         }
-        overlayViewVisible = show;
-        if (android.os.Build.VERSION.SDK_INT >= 11) {
-            AnimatorSet animatorSet = new AnimatorSet();
-            animatorSet.playTogether(
-                    ObjectAnimator.ofFloat(currentOverlay, "alpha", show ? 1.0f : 0.0f)
-            );
-            animatorSet.setDuration(200);
-            animatorSet.start();
-        } else {
-            AlphaAnimation animation = new AlphaAnimation(show ? 0.0f : 1.0f, show ? 1.0f : 0.0f);
-            animation.setDuration(200);
-            animation.setFillAfter(true);
-            currentOverlay.startAnimation(animation);
+        if (currentOverlay.getVisibility() == View.VISIBLE) {
+            overlayViewVisible = show;
+            if (android.os.Build.VERSION.SDK_INT >= 11) {
+                AnimatorSet animatorSet = new AnimatorSet();
+                animatorSet.playTogether(
+                        ObjectAnimator.ofFloat(currentOverlay, "alpha", show ? 1.0f : 0.0f)
+                );
+                animatorSet.setDuration(200);
+                animatorSet.start();
+            } else {
+                AlphaAnimation animation = new AlphaAnimation(show ? 0.0f : 1.0f, show ? 1.0f : 0.0f);
+                animation.setDuration(200);
+                animation.setFillAfter(true);
+                currentOverlay.startAnimation(animation);
+            }
         }
     }
 
@@ -1122,7 +1133,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
                 actionBarLayer.setTitle(LocaleController.formatString("Of", R.string.Of, (totalImagesCount - imagesArr.size()) + currentIndex + 1, totalImagesCount));
             }
-            updateActionOverlays();
         } else if (!imagesArrLocations.isEmpty()) {
             currentFileLocation = imagesArrLocations.get(index);
             actionBarLayer.setTitle(LocaleController.formatString("Of", R.string.Of, currentIndex + 1, imagesArrLocations.size()));
@@ -1563,7 +1573,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             animationSet.addAnimation(scaleAnimation);
             animationSet.setDuration(150);
             animationInProgress = 2;
-            animationSet.setAnimationListener(new Animation.AnimationListener() {
+            animationSet.setAnimationListener(animationListener = new Animation.AnimationListener() {
                 @Override
                 public void onAnimationStart(Animation animation) {
 
@@ -1571,8 +1581,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
                 @Override
                 public void onAnimationEnd(Animation animation) {
-                    animationInProgress = 0;
-                    onPhotoClosed(object);
+                    if (animationListener != null) {
+                        animationInProgress = 0;
+                        onPhotoClosed(object);
+                        animationListener = null;
+                    }
                 }
 
                 @Override

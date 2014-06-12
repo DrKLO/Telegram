@@ -949,6 +949,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     currentTotalPcmDuration = getTotalPcmDuration();
 
                     audioTrackPlayer = new AudioTrack(AudioManager.STREAM_MUSIC, 48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT, playerBufferSize, AudioTrack.MODE_STREAM);
+                    audioTrackPlayer.setStereoVolume(1.0f, 1.0f);
                     //audioTrackPlayer.setNotificationMarkerPosition((int)currentTotalPcmDuration);
                     audioTrackPlayer.setPlaybackPositionUpdateListener(new AudioTrack.OnPlaybackPositionUpdateListener() {
                         @Override
@@ -1606,7 +1607,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                             long dateTaken = cursor.getLong(dateColumn);
                             int orientation = cursor.getInt(orientationColumn);
 
-                            if (path == null || path.isEmpty()) {
+                            if (path == null || path.length() == 0) {
                                 continue;
                             }
 
