@@ -387,6 +387,10 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                             w = (int) (currentPhotoObject.photoOwner.w / hScale);
                         }
                     }
+                    int timeWidthTotal = timeWidth + Utilities.dp(14 + (currentMessageObject.isOut() ? 20 : 0));
+                    if (w < timeWidthTotal) {
+                        w = timeWidthTotal;
+                    }
 
                     photoWidth = w;
                     photoHeight = h;

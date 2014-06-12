@@ -118,7 +118,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
             actionBarLayer.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
 
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {

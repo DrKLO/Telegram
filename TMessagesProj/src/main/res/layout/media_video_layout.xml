@@ -6,8 +6,7 @@
     <org.telegram.ui.Views.BackupImageView
         android:id="@+id/media_photo_image"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:scaleType="centerCrop"/>
+        android:layout_height="fill_parent"/>
 
     <LinearLayout
         android:layout_width="wrap_content"

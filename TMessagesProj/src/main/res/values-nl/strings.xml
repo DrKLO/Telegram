@@ -290,6 +290,8 @@
     <string name="SaveToGallery">Opslaan in galerij</string>
     <string name="Of">%1$d van %2$d</string>
     <string name="Gallery">Galerij</string>
+    <string name="AllPhotos">All Photos</string>
+    <string name="NoPhotos">No photos yet</string>
 
     <!--button titles-->
     <string name="Next">Volgende</string>

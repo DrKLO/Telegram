@@ -4516,9 +4516,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
             if (choosenSoundPath != null && !choosenSoundPath.equals("NoSound")) {
                 if (choosenSoundPath.equals(defaultPath)) {
-                    mBuilder.setSound(Settings.System.DEFAULT_NOTIFICATION_URI);
+                    mBuilder.setSound(Settings.System.DEFAULT_NOTIFICATION_URI, AudioManager.STREAM_NOTIFICATION);
                 } else {
-                    mBuilder.setSound(Uri.parse(choosenSoundPath));
+                    mBuilder.setSound(Uri.parse(choosenSoundPath), AudioManager.STREAM_NOTIFICATION);
                 }
             }
 

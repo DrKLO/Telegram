@@ -46,9 +46,9 @@ public class ActionBarMenuItem extends ImageView {
     private boolean isSearchField = false;
     private ActionBarMenuItemSearchListener listener;
 
-    public ActionBarMenuItem(Context context, ActionBarMenu menu, ActionBar actionBar) {
+    public ActionBarMenuItem(Context context, ActionBarMenu menu, ActionBar actionBar, int background) {
         super(context);
-        setBackgroundResource(actionBar.itemsBackgroundResourceId);
+        setBackgroundResource(background);
         parentMenu = menu;
         parentActionBar = actionBar;
     }

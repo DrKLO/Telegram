@@ -259,6 +259,6 @@ public class ImageReceiver {
     }
 
     public boolean hasImage() {
-        return currentImage != null || last_placeholder != null || currentPath != null;
+        return currentImage != null || last_placeholder != null || currentPath != null || last_httpUrl != null;
     }
 }

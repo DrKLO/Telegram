@@ -290,6 +290,8 @@
     <string name="SaveToGallery">حفظ في الجهاز</string>
     <string name="Of">%1$d من %2$d</string>
     <string name="Gallery">الألبوم</string>
+    <string name="AllPhotos">All Photos</string>
+    <string name="NoPhotos">No photos yet</string>
 
     <!--button titles-->
     <string name="Next">التالي</string>

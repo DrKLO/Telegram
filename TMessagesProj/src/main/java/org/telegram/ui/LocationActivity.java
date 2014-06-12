@@ -80,7 +80,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
             if (messageObject != null) {
                 actionBarLayer.setTitle(LocaleController.getString("ChatLocation", R.string.ChatLocation));
             } else {

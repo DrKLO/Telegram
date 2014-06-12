@@ -56,7 +56,7 @@ public class LoginActivity extends BaseFragment implements SlideView.SlideViewDe
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayUseLogoEnabled(true);
+            actionBarLayer.setDisplayUseLogoEnabled(true, R.drawable.ic_ab_back);
             actionBarLayer.setTitle(LocaleController.getString("AppName", R.string.AppName));
 
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {

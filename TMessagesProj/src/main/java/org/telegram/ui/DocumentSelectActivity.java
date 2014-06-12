@@ -126,7 +126,7 @@ public class DocumentSelectActivity extends BaseFragment {
         }
 
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
             actionBarLayer.setTitle(LocaleController.getString("SelectFile", R.string.SelectFile));
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override

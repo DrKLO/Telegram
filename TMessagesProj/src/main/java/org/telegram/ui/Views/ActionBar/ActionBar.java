@@ -32,7 +32,6 @@ public class ActionBar extends FrameLayout {
     private View currentBackOverlay;
     private View shadowView = null;
     private int currentBackOverlayWidth;
-    protected int itemsBackgroundResourceId;
 
     public ActionBar(Context context) {
         super(context);
@@ -205,9 +204,5 @@ public class ActionBar extends FrameLayout {
         if (currentLayer != null) {
             currentLayer.onMenuButtonPressed();
         }
-    }
-
-    public void setItemsBackground(int resourceId) {
-        itemsBackgroundResourceId = resourceId;
     }
 }

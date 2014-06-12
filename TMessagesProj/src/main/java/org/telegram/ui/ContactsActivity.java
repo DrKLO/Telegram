@@ -115,7 +115,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
             if (destroyAfterSelect) {
                 actionBarLayer.setTitle(LocaleController.getString("SelectContact", R.string.SelectContact));
             } else {

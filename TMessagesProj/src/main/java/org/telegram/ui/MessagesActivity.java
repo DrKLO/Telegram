@@ -164,10 +164,10 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 }
             });
             if (onlySelect) {
-                actionBarLayer.setDisplayHomeAsUpEnabled(true);
+                actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
                 actionBarLayer.setTitle(LocaleController.getString("SelectChat", R.string.SelectChat));
             } else {
-                actionBarLayer.setDisplayUseLogoEnabled(true);
+                actionBarLayer.setDisplayUseLogoEnabled(true, R.drawable.ic_ab_logo);
                 actionBarLayer.setTitle(LocaleController.getString("AppName", R.string.AppName));
                 menu.addItem(messages_list_menu_new_messages, R.drawable.ic_ab_compose);
                 ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);

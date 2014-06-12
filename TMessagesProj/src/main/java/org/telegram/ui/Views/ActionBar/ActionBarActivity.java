@@ -56,6 +56,7 @@ public class ActionBarActivity extends Activity {
     private long transitionAnimationStartTime;
     private boolean inActionMode = false;
     private int startedTrackingPointerId;
+    private Animation.AnimationListener listener;
 
     private class FrameLayoutTouch extends FrameLayout {
         public FrameLayoutTouch(Context context) {
@@ -126,7 +127,6 @@ public class ActionBarActivity extends Activity {
         shadowView.setVisibility(View.INVISIBLE);
 
         actionBar = new ActionBar(this);
-        actionBar.setItemsBackground(R.drawable.bar_selector);
         contentView.addView(actionBar);
         layoutParams = actionBar.getLayoutParams();
         layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
@@ -153,6 +153,11 @@ public class ActionBarActivity extends Activity {
     protected void onResume() {
         super.onResume();
         fixLayout();
+        if (transitionAnimationInProgress && listener != null) {
+            openAnimation.cancel();
+            closeAnimation.cancel();
+            listener.onAnimationEnd(null);
+        }
         if (!fragmentsStack.isEmpty()) {
             BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
             lastFragment.onResume();
@@ -493,7 +498,7 @@ public class ActionBarActivity extends Activity {
             transitionAnimationStartTime = System.currentTimeMillis();
             transitionAnimationInProgress = true;
             openAnimation.reset();
-            openAnimation.setAnimationListener(new Animation.AnimationListener() {
+            openAnimation.setAnimationListener(listener = new Animation.AnimationListener() {
                 @Override
                 public void onAnimationStart(Animation animation) {
 
@@ -501,10 +506,12 @@ public class ActionBarActivity extends Activity {
 
                 @Override
                 public void onAnimationEnd(Animation animation) {
-                    transitionAnimationInProgress = false;
-                    transitionAnimationStartTime = 0;
-                    fragment.onOpenAnimationEnd();
-                    presentFragmentInternalRemoveOld(removeLast, currentFragment);
+                    if (transitionAnimationInProgress) {
+                        transitionAnimationInProgress = false;
+                        transitionAnimationStartTime = 0;
+                        fragment.onOpenAnimationEnd();
+                        presentFragmentInternalRemoveOld(removeLast, currentFragment);
+                    }
                 }
 
                 @Override
@@ -566,7 +573,7 @@ public class ActionBarActivity extends Activity {
             transitionAnimationStartTime = System.currentTimeMillis();
             transitionAnimationInProgress = true;
             closeAnimation.reset();
-            closeAnimation.setAnimationListener(new Animation.AnimationListener() {
+            closeAnimation.setAnimationListener(listener = new Animation.AnimationListener() {
                 @Override
                 public void onAnimationStart(Animation animation) {
 
@@ -574,9 +581,11 @@ public class ActionBarActivity extends Activity {
 
                 @Override
                 public void onAnimationEnd(Animation animation) {
-                    transitionAnimationInProgress = false;
-                    transitionAnimationStartTime = 0;
-                    closeLastFragmentInternalRemoveOld(currentFragment);
+                    if (transitionAnimationInProgress) {
+                        transitionAnimationInProgress = false;
+                        transitionAnimationStartTime = 0;
+                        closeLastFragmentInternalRemoveOld(currentFragment);
+                    }
                 }
 
                 @Override

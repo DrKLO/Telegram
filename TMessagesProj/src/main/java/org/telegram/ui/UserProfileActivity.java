@@ -134,7 +134,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
             if (dialog_id != 0) {
                 actionBarLayer.setTitle(LocaleController.getString("SecretTitle", R.string.SecretTitle));
                 actionBarLayer.setTitleIcon(R.drawable.ic_lock_white, Utilities.dp(4));
@@ -454,7 +454,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation) {
+    public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
         if (fileLocation == null) {
             return null;
         }
@@ -486,9 +486,25 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public void willHidePhotoViewer() {
+    public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) { }
 
-    }
+    @Override
+    public void willHidePhotoViewer() { }
+
+    @Override
+    public boolean isPhotoChecked(int index) { return false; }
+
+    @Override
+    public void setPhotoChecked(int index) { }
+
+    @Override
+    public void cancelButtonPressed() { }
+
+    @Override
+    public void sendButtonPressed(int index) { }
+
+    @Override
+    public int getSelectedCount() { return 0; }
 
     private void createActionBarMenu() {
         ActionBarMenu menu = actionBarLayer.createMenu();

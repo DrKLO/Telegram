@@ -220,7 +220,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
             actionBarLayer.setTitle(LocaleController.getString("Settings", R.string.Settings));
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
@@ -413,7 +413,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation) {
+    public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
         if (fileLocation == null) {
             return null;
         }
@@ -445,9 +445,25 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public void willHidePhotoViewer() {
+    public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) { }
 
-    }
+    @Override
+    public void willHidePhotoViewer() { }
+
+    @Override
+    public boolean isPhotoChecked(int index) { return false; }
+
+    @Override
+    public void setPhotoChecked(int index) { }
+
+    @Override
+    public void cancelButtonPressed() { }
+
+    @Override
+    public void sendButtonPressed(int index) { }
+
+    @Override
+    public int getSelectedCount() { return 0; }
 
     public void performAskAQuestion() {
         final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);

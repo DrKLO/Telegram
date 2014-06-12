@@ -43,11 +43,14 @@ public class ActionBarLayer extends FrameLayout {
     private TextView subTitleTextView;
     private ActionBarMenu menu;
     private ActionBarMenu actionMode;
+    private int logoResourceId;
+    private int backResourceId;
     protected ActionBar parentActionBar;
     private boolean oldUseLogo;
     private boolean oldUseBack;
     private boolean isBackLayoutHidden = false;
     protected boolean isSearchFieldVisible;
+    protected int itemsBackgroundResourceId;
     public ActionBarMenuOnItemClick actionBarMenuOnItemClick;
 
     public ActionBarLayer(Context context, ActionBar actionBar) {
@@ -60,7 +63,6 @@ public class ActionBarLayer extends FrameLayout {
         layoutParams.height = LayoutParams.FILL_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         backButtonFrameLayout.setLayoutParams(layoutParams);
-        backButtonFrameLayout.setBackgroundResource(actionBar.itemsBackgroundResourceId);
         backButtonFrameLayout.setPadding(0, 0, Utilities.dp(4), 0);
         backButtonFrameLayout.setOnClickListener(new OnClickListener() {
             @Override
@@ -207,28 +209,31 @@ public class ActionBarLayer extends FrameLayout {
         menu.measure(width, height);
     }
 
-    public void setDisplayUseLogoEnabled(boolean value) {
+    public void setDisplayUseLogoEnabled(boolean value, int resource) {
         if (value && logoImageView == null) {
+            logoResourceId = resource;
             logoImageView = new ImageView(getContext());
             logoImageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-            logoImageView.setImageResource(R.drawable.ic_ab_logo);
             backButtonFrameLayout.addView(logoImageView);
-            positionLogoImage(getMeasuredHeight());
-        } else if (logoImageView != null) {
+        }
+        if (logoImageView != null) {
             logoImageView.setVisibility(value ? VISIBLE : GONE);
+            logoImageView.setImageResource(resource);
+            positionLogoImage(getMeasuredHeight());
         }
     }
 
-    public void setDisplayHomeAsUpEnabled(boolean value) {
+    public void setDisplayHomeAsUpEnabled(boolean value, int resource) {
         if (value && backButtonImageView == null) {
+            backResourceId = resource;
             backButtonImageView = new ImageView(getContext());
-            backButtonImageView.setImageResource(R.drawable.ic_ab_back);
             backButtonFrameLayout.addView(backButtonImageView);
-            positionBackImage(getMeasuredHeight());
         }
         if (backButtonImageView != null) {
             backButtonImageView.setVisibility(value ? VISIBLE : GONE);
             backButtonFrameLayout.setEnabled(value);
+            backButtonImageView.setImageResource(resource);
+            positionBackImage(getMeasuredHeight());
         }
     }
 
@@ -404,22 +409,21 @@ public class ActionBarLayer extends FrameLayout {
         backButtonFrameLayout.setPadding(0, 0, visible ? 0 : Utilities.dp(4), 0);
         if (visible) {
             oldUseLogo = logoImageView != null && logoImageView.getVisibility() == VISIBLE;
-            setDisplayUseLogoEnabled(true);
+            setDisplayUseLogoEnabled(true, R.drawable.ic_ab_search);
         } else {
-            setDisplayUseLogoEnabled(oldUseLogo);
+            setDisplayUseLogoEnabled(oldUseLogo, logoResourceId);
         }
         if (visible) {
             oldUseBack = backButtonImageView != null && backButtonImageView.getVisibility() == VISIBLE;
-            setDisplayHomeAsUpEnabled(true);
+            setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
         } else {
-            setDisplayHomeAsUpEnabled(oldUseBack);
+            setDisplayHomeAsUpEnabled(oldUseBack, backResourceId);
         }
         if (visible) {
             backButtonFrameLayout.setVisibility(VISIBLE);
         } else {
             backButtonFrameLayout.setVisibility(isBackLayoutHidden ? INVISIBLE : VISIBLE);
         }
-        logoImageView.setImageResource(visible ? R.drawable.ic_ab_search : R.drawable.ic_ab_logo);
     }
 
     public void closeSearchField() {
@@ -458,5 +462,10 @@ public class ActionBarLayer extends FrameLayout {
         if (menu != null) {
             menu.hideAllPopupMenus();
         }
+    }
+
+    public void setItemsBackground(int resourceId) {
+        itemsBackgroundResourceId = resourceId;
+        backButtonFrameLayout.setBackgroundResource(itemsBackgroundResourceId);
     }
 }

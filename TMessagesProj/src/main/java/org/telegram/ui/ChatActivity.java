@@ -101,7 +101,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.concurrent.Semaphore;
 
-public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLayout.SizeNotifierRelativeLayoutDelegate, NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate, DocumentSelectActivity.DocumentSelectActivityDelegate, PhotoViewer.PhotoViewerProvider {
+public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLayout.SizeNotifierRelativeLayoutDelegate,
+        NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate,
+        DocumentSelectActivity.DocumentSelectActivityDelegate, PhotoViewer.PhotoViewerProvider,
+        PhotoPickerActivity.PhotoPickerActivityDelegate {
 
     private View timeItem;
     private View menuItem;
@@ -414,7 +417,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
@@ -438,13 +441,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                             FileLog.e("tmessages", e);
                         }
                     } else if (id == attach_gallery) {
-                        try {
-                            Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
-                            photoPickerIntent.setType("image/*");
-                            getParentActivity().startActivityForResult(photoPickerIntent, 1);
-                        } catch (Exception e) {
-                            FileLog.e("tmessages", e);
-                        }
+                        PhotoPickerActivity fragment = new PhotoPickerActivity();
+                        fragment.setDelegate(ChatActivity.this);
+                        presentFragment(fragment);
                     } else if (id == attach_video) {
                         try {
                             Intent pickIntent = new Intent();
@@ -1987,7 +1986,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                             View firstVisView = chatListView.getChildAt(chatListView.getChildCount() - 1);
                             int top = ((firstVisView == null) ? 0 : firstVisView.getTop()) - chatListView.getPaddingTop();
                             chatAdapter.notifyDataSetChanged();
-                            chatListView.setSelectionFromTop(firstVisPos + newRowsCount, top);
+                            chatListView.setSelectionFromTop(firstVisPos + newRowsCount - (endReached ? 1 : 0), top);
                         }
 
                         if (paused) {
@@ -2677,6 +2676,24 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     }
 
     @Override
+    public void didSelectPhotos(ArrayList<String> photos) {
+        for (String path : photos) {
+            processSendingPhoto(path, null);
+        }
+    }
+
+    @Override
+    public void startPhotoSelectActivity() {
+        try {
+            Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+            photoPickerIntent.setType("image/*");
+            getParentActivity().startActivityForResult(photoPickerIntent, 1);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
+    @Override
     public void onBeginSlide() {
         super.onBeginSlide();
         hideEmojiPopup();
@@ -3327,7 +3344,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     }
 
     @Override
-    public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation) {
+    public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
         if (messageObject == null) {
             return null;
         }
@@ -3372,9 +3389,25 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     }
 
     @Override
-    public void willHidePhotoViewer() {
-        updateVisibleRows();
-    }
+    public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) { }
+
+    @Override
+    public void willHidePhotoViewer() { }
+
+    @Override
+    public boolean isPhotoChecked(int index) { return false; }
+
+    @Override
+    public void setPhotoChecked(int index) { }
+
+    @Override
+    public void cancelButtonPressed() { }
+
+    @Override
+    public void sendButtonPressed(int index) { }
+
+    @Override
+    public int getSelectedCount() { return 0; }
 
     private class ChatAdapter extends BaseAdapter {
 
