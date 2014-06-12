@@ -61,6 +61,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     private TextView doneButtonTextView;
     private TextView doneButtonBadgeTextView;
     private int itemWidth = 100;
+    private boolean sendPressed = false;
 
     private PhotoPickerActivityDelegate delegate;
 
@@ -162,7 +163,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     }
                 }
             });
-            if (loading && albumsSorted != null && albumsSorted.isEmpty()) {
+            if (loading && (albumsSorted == null || albumsSorted != null && albumsSorted.isEmpty())) {
                 progressView.setVisibility(View.VISIBLE);
                 listView.setEmptyView(null);
             } else {
@@ -213,6 +214,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 if (listAdapter != null) {
                     listAdapter.notifyDataSetChanged();
                 }
+                loading = false;
             }
         } else if (id == MessagesController.closeChats) {
             removeSelfFromStack();
@@ -351,9 +353,10 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     }
 
     private void sendSelectedPhotos() {
-        if (selectedPhotos.isEmpty() || delegate == null) {
+        if (selectedPhotos.isEmpty() || delegate == null || sendPressed) {
             return;
         }
+        sendPressed = true;
         ArrayList<String> photos = new ArrayList<String>();
         for (HashMap.Entry<Integer, MediaController.PhotoEntry> entry : selectedPhotos.entrySet()) {
             MediaController.PhotoEntry photoEntry = entry.getValue();
@@ -385,6 +388,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         if (getParentActivity() == null) {
             return;
         }
+        int position = listView.getFirstVisiblePosition();
         WindowManager manager = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
         int rotation = manager.getDefaultDisplay().getRotation();
 
@@ -405,6 +409,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         listView.setColumnWidth(itemWidth);
 
         listAdapter.notifyDataSetChanged();
+        listView.setSelection(position);
     }
 
     private void updateSelectedCount() {
@@ -492,7 +497,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 MediaController.AlbumEntry albumEntry = albumsSorted.get(i);
                 BackupImageView imageView = (BackupImageView)view.findViewById(R.id.media_photo_image);
                 if (albumEntry.coverPhoto != null && albumEntry.coverPhoto.path != null) {
-                    imageView.setImage("thumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, "150_150", R.drawable.nophotos);
+                    imageView.setImage("thumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, R.drawable.nophotos);
                 } else {
                     imageView.setImageResource(R.drawable.nophotos);
                 }
@@ -509,7 +514,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.photo_picker_photo_layout, viewGroup, false);
-                    ImageView checkImageView = (ImageView)view.findViewById(R.id.photo_check);
+                    View checkImageView = view.findViewById(R.id.photo_check_frame);
                     checkImageView.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
@@ -534,7 +539,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 imageView.setTag(i);
                 view.setTag(i);
                 if (photoEntry.path != null) {
-                    imageView.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, "100_100", R.drawable.nophotos);
+                    imageView.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, null, R.drawable.nophotos);
                 } else {
                     imageView.setImageResource(R.drawable.nophotos);
                 }

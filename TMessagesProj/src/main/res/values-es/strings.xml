@@ -94,7 +94,7 @@
     <string name="Message">Mensaje</string>
     <string name="TypeMessage">Escribe un mensaje</string>
     <string name="DOWNLOAD">Descargar</string>
-    <string name="Selected">Elegidos: %d</string>
+    <string name="Selected">Seleccionado: %d</string>
     <string name="ShareMyContactInfo">COMPARTIR MI INFORMACIÓN DE CONTACTO</string>
     <string name="AddToContacts">AÑADIR A CONTACTOS</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s te ha invitado a un chat secreto.</string>
@@ -112,7 +112,7 @@
     <string name="DeleteThisChat">Eliminar esta conversación</string>
     <string name="SlideToCancel">DESLIZA PARA CANCELAR</string>
     <string name="SaveToDownloads">Guardar en descargas</string>
-    <string name="ApplyLocalizationFile">Aplicar fichero de localización</string>
+    <string name="ApplyLocalizationFile">Aplicar archivo de traducción</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Chat secreto solicitado</string>
@@ -247,7 +247,7 @@
     <string name="Support">SOPORTE</string>
     <string name="ChatBackground">Fondo de chat</string>
     <string name="MessagesSettings">MENSAJES</string>
-    <string name="SendByEnter">Enviar con ‘Enter’</string>
+    <string name="SendByEnter">Enviar con \'Intro\'</string>
     <string name="TerminateAllSessions">Cerrar todas las otras sesiones</string>
     <string name="AutomaticPhotoDownload">DESCARGA AUTOMÁTICA DE FOTOS</string>
     <string name="AutomaticAudioDownload">DESCARGA AUTOMÁTICA DE AUDIO</string>
@@ -257,12 +257,12 @@
     <string name="ContactJoined">Un contacto se unió a Telegram</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Idioma</string>
-    <string name="AskAQuestionInfo">Por favor, ten en cuenta que el Soporte de Telegram está hecho por voluntarios. Intentamos responder lo antes posible, pero puede tomar un tiempo.<![CDATA[<br><br>]]>Por favor, echa un vistazo a las <![CDATA[<a href=“http://telegram.org/faq/es”>Preguntas Frecuentes de Telegram</a>]]>: tiene importantes <![CDATA[<a href=“http://telegram.org/faq/es#solucin-de-problemas”>Soluciones a problemas</a>]]> y respuestas para la mayoría de las preguntas.</string>
+    <string name="AskAQuestionInfo">Por favor, ten en cuenta que el Soporte de Telegram está hecho por voluntarios. Intentamos responder lo antes posible, pero puede tomar un tiempo.<![CDATA[<br><br>]]>Por favor, echa un vistazo a las <![CDATA[<a href=“http://telegram.org/faq/es”>Preguntas Frecuentes de Telegram</a>]]>: tienen importantes <![CDATA[<a href=“http://telegram.org/faq/es#solucin-de-problemas”>soluciones a problemas</a>]]> y respuestas para la mayoría de las preguntas.</string>
     <string name="AskButton">Preguntar</string>
     <string name="TelegramFaq">Preguntas frecuentes</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq/es</string>
-    <string name="DeleteLocalization">¿Eliminar localización?</string>
-    <string name="IncorrectLocalization">Fichero de localización incorrecto</string>
+    <string name="DeleteLocalization">¿Eliminar traducción?</string>
+    <string name="IncorrectLocalization">Archivo de traducción incorrecto</string>
     <string name="Enabled">Activado</string>
     <string name="Disabled">Desactivado</string>
     <string name="NotificationsService">Servicio de notificaciones</string>
@@ -294,6 +294,7 @@
     <string name="Gallery">Galería</string>
     <string name="AllPhotos">All Photos</string>
     <string name="NoPhotos">No photos yet</string>
+    <string name="SendingPhotos">Sending photos... %1$d of %2$d</string>
 
     <!--button titles-->
     <string name="Next">Siguiente</string>
@@ -333,7 +334,7 @@
     <string name="ActionYouCreateGroup">Creaste el grupo</string>
     <string name="ActionKickUserYou">un1 te expulsó</string>
     <string name="ActionAddUserYou">un1 te añadió</string>
-    <string name="UnsuppotedMedia">Este mensaje no está soportado en tu versión de Telegram.</string>
+    <string name="UnsuppotedMedia">Este mensaje no lo admite tu versión de Telegram. Actualiza la app para verlo: http://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Vídeo</string>
     <string name="AttachLocation">Ubicación</string>
@@ -370,12 +371,12 @@
     <string name="Page6Title">Basada en la nube</string>
     <string name="Page7Title">Privada</string>
     <string name="Page1Message">Bienvenidos a la era de la mensajería rápida y segura.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> entrega mensajes más rápido que cualquier otra aplicación.</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> es gratis para siempre. Sin publicidad. Sin cuotas de suscripción.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> mantiene tus mensajes a salvo del ataque de hackers.</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> no tiene límites en el tamaño de tus chats y archivos.</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> te permite acceder a tus mensajes desde múltiples dispositivos.</string>
-    <string name="Page7Message">Los mensajes de <![CDATA[<b>Telegram</b>]]> están fuertemente cifrados y se pueden autodestruir.</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> entrega mensajes más rápido que<![CDATA[<br/>]]>cualquier otra aplicación.</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> es gratis para siempre. Sin publicidad.<![CDATA[<br/>]]>Sin cuotas de suscripción.</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> mantiene tus mensajes<![CDATA[<br/>]]>a salvo del ataque de hackers.</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> no tiene límites en el tamaño de tus<![CDATA[<br/>]]>chats y archivos.</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> te permite acceder a tus mensajes<![CDATA[<br/>]]>desde múltiples dispositivos.</string>
+    <string name="Page7Message">Los mensajes de <![CDATA[<b>Telegram</b>]]> están fuertemente<![CDATA[<br/>]]>cifrados y se pueden autodestruir.</string>
     <string name="StartMessaging">Empieza a conversar</string>
 
     <!--Don't change this! Not for localization!-->

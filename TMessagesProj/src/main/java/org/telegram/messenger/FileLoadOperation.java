@@ -12,6 +12,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.provider.MediaStore;
+import android.util.Log;
 
 import org.telegram.ui.ApplicationLoader;
 
@@ -265,7 +266,7 @@ public class FileLoadOperation {
                             }
                             opts.inDither = false;
                             if (mediaIdFinal != null) {
-                                image = MediaStore.Images.Thumbnails.getThumbnail(ApplicationLoader.applicationContext.getContentResolver(), mediaIdFinal, MediaStore.Images.Thumbnails.MINI_KIND, opts);
+                                image = MediaStore.Images.Thumbnails.getThumbnail(ApplicationLoader.applicationContext.getContentResolver(), mediaIdFinal, MediaStore.Images.Thumbnails.MINI_KIND, null);
                             }
                             if (image == null) {
                                 FileInputStream is = new FileInputStream(cacheFileFinal);
@@ -277,7 +278,7 @@ public class FileLoadOperation {
                                    cacheFileFinal.delete();
                                 }
                             } else {
-                                if (filter != null && image != null) {
+                                if (filter != null) {
                                     float bitmapW = image.getWidth();
                                     float bitmapH = image.getHeight();
                                     if (bitmapW != w_filter && bitmapW > w_filter) {

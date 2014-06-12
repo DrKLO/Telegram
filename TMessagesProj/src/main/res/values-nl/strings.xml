@@ -294,6 +294,7 @@
     <string name="Gallery">Galerij</string>
     <string name="AllPhotos">All Photos</string>
     <string name="NoPhotos">No photos yet</string>
+    <string name="SendingPhotos">Sending photos... %1$d of %2$d</string>
 
     <!--button titles-->
     <string name="Next">Volgende</string>

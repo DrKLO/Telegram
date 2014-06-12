@@ -501,9 +501,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                 fragment.processSendingDocument(documentPath);
             }
             if (imagesPathArray != null) {
-                for (Uri path : imagesPathArray) {
-                    fragment.processSendingPhoto(null, path);
-                }
+                fragment.processSendingPhotos(null, imagesPathArray);
             }
             if (documentsPathArray != null) {
                 for (String path : documentsPathArray) {

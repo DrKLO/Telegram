@@ -97,7 +97,7 @@ public class ChatOrUserCell extends BaseCell {
 
         if (avatarImage == null) {
             avatarImage = new ImageReceiver();
-            avatarImage.parentView = new WeakReference<View>(this);
+            avatarImage.parentView = this;
         }
 
         if (cellLayout == null) {

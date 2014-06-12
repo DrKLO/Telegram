@@ -102,7 +102,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         TAG = MediaController.getInstance().generateObserverTag();
 
         photoImage = new ImageReceiver();
-        photoImage.parentView = new WeakReference<View>(this);
+        photoImage.parentView = this;
         progressView = new ProgressView();
         progressView.setProgressColors(0x802a2a2a, 0xffffffff);
     }

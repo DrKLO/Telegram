@@ -14,13 +14,21 @@
         android:layout_width="fill_parent"
         android:id="@+id/photo_frame"/>
 
-    <ImageView
-        android:layout_height="30dp"
-        android:layout_width="30dp"
-        android:id="@+id/photo_check"
+    <FrameLayout
+        android:layout_width="42dp"
+        android:layout_height="42dp"
         android:layout_gravity="right"
-        android:layout_marginTop="2dp"
-        android:scaleType="center"
-        android:layout_marginRight="2dp"/>
+        android:id="@+id/photo_check_frame">
+
+        <ImageView
+            android:layout_height="30dp"
+            android:layout_width="30dp"
+            android:id="@+id/photo_check"
+            android:layout_gravity="right"
+            android:layout_marginTop="2dp"
+            android:scaleType="center"
+            android:layout_marginRight="2dp"/>
+
+    </FrameLayout>
 
 </FrameLayout>

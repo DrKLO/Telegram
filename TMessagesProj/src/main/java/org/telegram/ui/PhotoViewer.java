@@ -66,7 +66,6 @@ import org.telegram.ui.Views.ClippingImageView;
 import org.telegram.ui.Views.ImageReceiver;
 
 import java.io.File;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -630,7 +629,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         dateTextView.setLayoutParams(layoutParams);
 
         pickerView = parentActivity.getLayoutInflater().inflate(R.layout.photo_picker_bottom_layout, null);
-        bottomLayout.addView(pickerView);
+        containerView.addView(pickerView);
         Button cancelButton = (Button)pickerView.findViewById(R.id.cancel_button);
         cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -651,6 +650,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
             }
         });
+
+        layoutParams = (FrameLayout.LayoutParams)pickerView.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = Utilities.dp(48);
+        layoutParams.gravity = Gravity.BOTTOM;
+        pickerView.setLayoutParams(layoutParams);
 
         cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
         doneButtonTextView = (TextView)doneButton.findViewById(R.id.done_button_text);
@@ -674,9 +679,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         gestureDetector = new GestureDetector(containerView.getContext(), this);
         gestureDetector.setOnDoubleTapListener(this);
 
-        centerImage.parentView = new WeakReference<View>(containerView);
-        leftImage.parentView = new WeakReference<View>(containerView);
-        rightImage.parentView = new WeakReference<View>(containerView);
+        centerImage.parentView = containerView;
+        leftImage.parentView = containerView;
+        rightImage.parentView = containerView;
 
         currentOverlay = new OverlayView(containerView.getContext());
         containerView.addView(currentOverlay);
@@ -1075,6 +1080,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             imagesArrLocals.addAll(photos);
             setImageIndex(index, true);
             pickerView.setVisibility(View.VISIBLE);
+            bottomLayout.setVisibility(View.GONE);
+            canShowBottom = false;
             updateSelectedCount();
         }
 
@@ -1456,6 +1463,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             velocityTracker.recycle();
             velocityTracker = null;
         }
+        ConnectionsManager.getInstance().cancelRpcsForClassGuid(classGuid);
 
         final PlaceProviderObject object = placeProvider.getPlaceForPhoto(currentMessageObject, currentFileLocation, currentIndex);
 
@@ -1464,6 +1472,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
             animationInProgress = 1;
             animatingImageView.setVisibility(View.VISIBLE);
+            containerView.invalidate();
 
             AnimatorSet animatorSet = new AnimatorSet();
 

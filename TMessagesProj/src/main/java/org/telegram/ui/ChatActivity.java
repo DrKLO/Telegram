@@ -450,18 +450,18 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                             Intent pickIntent = new Intent();
                             pickIntent.setType("video/*");
                             pickIntent.setAction(Intent.ACTION_GET_CONTENT);
-                            pickIntent.putExtra(MediaStore.EXTRA_SIZE_LIMIT, (long)(1024 * 1024 * 1000));
+                            pickIntent.putExtra(MediaStore.EXTRA_SIZE_LIMIT, (long) (1024 * 1024 * 1000));
                             Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
                             File video = Utilities.generateVideoPath();
                             if (video != null) {
-                                if(android.os.Build.VERSION.SDK_INT > 16) {
+                                if (android.os.Build.VERSION.SDK_INT > 16) {
                                     takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(video));
                                 }
-                                takeVideoIntent.putExtra(MediaStore.EXTRA_SIZE_LIMIT, (long)(1024 * 1024 * 1000));
+                                takeVideoIntent.putExtra(MediaStore.EXTRA_SIZE_LIMIT, (long) (1024 * 1024 * 1000));
                                 currentPicturePath = video.getAbsolutePath();
                             }
                             Intent chooserIntent = Intent.createChooser(pickIntent, "");
-                            chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[] { takeVideoIntent });
+                            chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{takeVideoIntent});
 
                             getParentActivity().startActivityForResult(chooserIntent, 2);
                         } catch (Exception e) {
@@ -514,11 +514,11 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                             str += messageObject.messageOwner.message;
                         }
                         if (str.length() != 0) {
-                            if(android.os.Build.VERSION.SDK_INT < 11) {
-                                android.text.ClipboardManager clipboard = (android.text.ClipboardManager)ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                            if (android.os.Build.VERSION.SDK_INT < 11) {
+                                android.text.ClipboardManager clipboard = (android.text.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
                                 clipboard.setText(str);
                             } else {
-                                android.content.ClipboardManager clipboard = (android.content.ClipboardManager)ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
                                 android.content.ClipData clip = android.content.ClipData.newPlainText("label", str);
                                 clipboard.setPrimaryClip(clip);
                             }
@@ -1721,6 +1721,48 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         }
     }
 
+    public void processSendingPhotos(ArrayList<String> paths, ArrayList<Uri> uris) {
+        if (paths == null && uris == null || paths != null && paths.isEmpty() || uris != null && uris.isEmpty()) {
+            return;
+        }
+        final ArrayList<String> pathsCopy = new ArrayList<String>();
+        final ArrayList<Uri> urisCopy = new ArrayList<Uri>();
+        if (paths != null) {
+            pathsCopy.addAll(paths);
+        }
+        if (uris != null) {
+            urisCopy.addAll(uris);
+        }
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                int count = !pathsCopy.isEmpty() ? pathsCopy.size() : urisCopy.size();
+                String path = null;
+                Uri uri = null;
+                for (int a = 0; a < count; a++) {
+                    if (!pathsCopy.isEmpty()) {
+                        path = pathsCopy.get(a);
+                    } else if (!urisCopy.isEmpty()) {
+                        uri = urisCopy.get(a);
+                    }
+                    final TLRPC.TL_photo photo = MessagesController.getInstance().generatePhotoSizes(path, uri);
+                    Utilities.RunOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (photo != null) {
+                                MessagesController.getInstance().sendMessage(photo, dialog_id);
+                                if (chatListView != null) {
+                                    chatListView.setSelection(messages.size() + 1);
+                                }
+                                scrollToTopOnResume = true;
+                            }
+                        }
+                    });
+                }
+            }
+        }).start();
+    }
+
     public void processSendingDocument(String documentFilePath) {
         if (documentFilePath == null || documentFilePath.length() == 0) {
             return;
@@ -2679,9 +2721,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
     @Override
     public void didSelectPhotos(ArrayList<String> photos) {
-        for (String path : photos) {
-            processSendingPhoto(path, null);
-        }
+        processSendingPhotos(photos, null);
     }
 
     @Override
