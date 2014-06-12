@@ -361,7 +361,9 @@ public class GifDrawable extends Drawable implements Animatable, MediaController
             }
             canvas.translate(mDstRect.left, mDstRect.top);
             canvas.scale(mSx, mSy);
-            canvas.drawBitmap(mColors, 0, mMetaData[0], 0f, 0f, mMetaData[0], mMetaData[1], true, mPaint);
+            if (mMetaData[0] > 0 && mMetaData[1] > 0) {
+                canvas.drawBitmap(mColors, 0, mMetaData[0], 0f, 0f, mMetaData[0], mMetaData[1], true, mPaint);
+            }
             if (mMetaData[4] >= 0 && mMetaData[2] > 1) {
                 UI_HANDLER.postDelayed(mInvalidateTask, mMetaData[4]);
             }

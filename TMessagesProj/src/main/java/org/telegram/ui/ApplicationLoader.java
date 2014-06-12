@@ -9,7 +9,9 @@
 package org.telegram.ui;
 
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.app.Application;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -22,12 +24,13 @@ import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.PowerManager;
-import android.view.ViewConfiguration;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 
+import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.NotificationsService;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
@@ -37,10 +40,8 @@ import org.telegram.messenger.NativeLoader;
 import org.telegram.messenger.ScreenReceiver;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.Views.BaseFragment;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ApplicationLoader extends Application {
@@ -58,8 +59,6 @@ public class ApplicationLoader extends Application {
     public static volatile Handler applicationHandler = null;
     private static volatile boolean applicationInited = false;
     public static volatile boolean isScreenOn = false;
-
-    public static ArrayList<BaseFragment> fragmentsStack = new ArrayList<BaseFragment>();
 
     public static void postInitApplication() {
         if (applicationInited) {
@@ -125,10 +124,12 @@ public class ApplicationLoader extends Application {
 
             MessagesController.getInstance().users.put(UserConfig.clientUserId, UserConfig.currentUser);
             ConnectionsManager.getInstance().applyCountryPortNumber(UserConfig.currentUser.phone);
+            ConnectionsManager.getInstance().initPushConnection();
         }
 
         ApplicationLoader app = (ApplicationLoader)ApplicationLoader.applicationContext;
         app.initPlayServices();
+        FileLog.e("tmessages", "app initied");
     }
 
     @Override
@@ -142,16 +143,32 @@ public class ApplicationLoader extends Application {
         java.lang.System.setProperty("java.net.preferIPv4Stack", "true");
         java.lang.System.setProperty("java.net.preferIPv6Addresses", "false");
 
-        try {
-            ViewConfiguration config = ViewConfiguration.get(this);
-            Field menuKeyField = ViewConfiguration.class.getDeclaredField("sHasPermanentMenuKey");
-            if(menuKeyField != null) {
-                menuKeyField.setAccessible(true);
-                menuKeyField.setBoolean(config, false);
+        startPushService();
+    }
+
+    public static void startPushService() {
+        SharedPreferences preferences = applicationContext.getSharedPreferences("Notifications", MODE_PRIVATE);
+
+        if (preferences.getBoolean("pushService", true)) {
+            applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
+
+            if (android.os.Build.VERSION.SDK_INT >= 19) {
+                Calendar cal = Calendar.getInstance();
+                PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
+                AlarmManager alarm = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
+                alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30000, pintent);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } else {
+            stopPushService();
         }
+    }
+
+    public static void stopPushService() {
+        applicationContext.stopService(new Intent(applicationContext, NotificationsService.class));
+
+        PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
+        AlarmManager alarm = (AlarmManager)applicationContext.getSystemService(Context.ALARM_SERVICE);
+        alarm.cancel(pintent);
     }
 
     @Override
@@ -166,6 +183,9 @@ public class ApplicationLoader extends Application {
     }
 
     public static void resetLastPauseTime() {
+        if (lastPauseTime != 0 && System.currentTimeMillis() - lastPauseTime > 5000) {
+            ContactsController.getInstance().checkContacts();
+        }
         lastPauseTime = 0;
         ConnectionsManager.getInstance().applicationMovedToForeground();
     }
@@ -258,7 +278,13 @@ public class ApplicationLoader extends Application {
                 }
                 return false;
             }
-        }.execute(null, null, null);
+        };
+
+        if (android.os.Build.VERSION.SDK_INT >= 11) {
+            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
+        } else {
+            task.execute(null, null, null);
+        }
     }
 
     private void sendRegistrationIdToBackend(final boolean isNew) {

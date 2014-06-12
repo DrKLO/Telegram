@@ -10,12 +10,9 @@ package org.telegram.ui;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v7.app.ActionBar;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,22 +31,21 @@ import org.telegram.objects.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.objects.PhotoObject;
+import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.BackupImageView;
-import org.telegram.ui.Views.BaseFragment;
-import org.telegram.ui.Views.OnSwipeTouchListener;
-import org.w3c.dom.Text;
+import org.telegram.ui.Views.ActionBar.BaseFragment;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class MediaActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+public class MediaActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, PhotoViewer.PhotoViewerProvider {
     private GridView listView;
     private ListAdapter listAdapter;
     private ArrayList<MessageObject> messages = new ArrayList<MessageObject>();
     private HashMap<Integer, MessageObject> messagesDict = new HashMap<Integer, MessageObject>();
     private long dialog_id;
     private int totalCount = 0;
-    private int orientation = 0;
     private int itemWidth = 100;
     private boolean loading = false;
     private boolean endReached = false;
@@ -57,6 +53,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     private int max_id = Integer.MAX_VALUE;
     private View progressView;
     private TextView emptyView;
+
+    public MediaActivity(Bundle args) {
+        super(args);
+    }
 
     @Override
     public boolean onFragmentCreate() {
@@ -84,14 +84,25 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
+            actionBarLayer.setTitle(LocaleController.getString("SharedMedia", R.string.SharedMedia));
+            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1) {
+                        if (Build.VERSION.SDK_INT < 11) {
+                            listView.setAdapter(null);
+                            listView = null;
+                            listAdapter = null;
+                        }
+                        finishFragment();
+                    }
+                }
+            });
+
             fragmentView = inflater.inflate(R.layout.media_layout, container, false);
 
             emptyView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
@@ -99,14 +110,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             listView = (GridView)fragmentView.findViewById(R.id.media_grid);
             progressView = fragmentView.findViewById(R.id.progressLayout);
 
-            listView.setAdapter(listAdapter = new ListAdapter(parentActivity));
+            listView.setAdapter(listAdapter = new ListAdapter(getParentActivity()));
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    NotificationCenter.getInstance().addToMemCache(54, messages);
-                    NotificationCenter.getInstance().addToMemCache(55, i);
-                    Intent intent = new Intent(parentActivity, GalleryImageViewer.class);
-                    startActivity(intent);
+                    PhotoViewer.getInstance().openPhoto(messages, i, MediaActivity.this);
                 }
             });
             if (loading && messages.isEmpty()) {
@@ -129,17 +137,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         loading = true;
                         MessagesController.getInstance().loadMedia(dialog_id, 0, 50, max_id, !cacheEndReached, classGuid);
                     }
-                }
-            });
-
-            listView.setOnTouchListener(new OnSwipeTouchListener() {
-                public void onSwipeRight() {
-                    finishFragment(true);
-                }
-            });
-            emptyView.setOnTouchListener(new OnSwipeTouchListener() {
-                public void onSwipeRight() {
-                    finishFragment(true);
                 }
             });
         } else {
@@ -252,43 +249,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     }
 
     @Override
-    public void applySelfActionBar() {
-        if (parentActivity == null) {
-            return;
-        }
-        ActionBar actionBar = parentActivity.getSupportActionBar();
-        actionBar.setDisplayShowTitleEnabled(true);
-        actionBar.setDisplayShowHomeEnabled(false);
-        actionBar.setDisplayHomeAsUpEnabled(true);
-        actionBar.setDisplayUseLogoEnabled(false);
-        actionBar.setDisplayShowCustomEnabled(false);
-        actionBar.setCustomView(null);
-        actionBar.setTitle(LocaleController.getString("SharedMedia", R.string.SharedMedia));
-        actionBar.setSubtitle(null);
-
-        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
-        if (title == null) {
-            final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
-            title = (TextView)parentActivity.findViewById(subtitleId);
-        }
-        if (title != null) {
-            title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
-            title.setCompoundDrawablePadding(0);
-        }
-    }
-
-    @Override
     public void onResume() {
         super.onResume();
-        if (getActivity() == null) {
-            return;
-        }
-        if (!firstStart && listAdapter != null) {
+        if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
-        firstStart = false;
-        ((LaunchActivity)parentActivity).showActionBar();
-        ((LaunchActivity)parentActivity).updateActionBar();
         fixLayout();
     }
 
@@ -298,30 +263,80 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         fixLayout();
     }
 
+    @Override
+    public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+        if (messageObject == null) {
+            return null;
+        }
+        int count = listView.getChildCount();
+
+        for (int a = 0; a < count; a++) {
+            View view = listView.getChildAt(a);
+            BackupImageView imageView = (BackupImageView)view.findViewById(R.id.media_photo_image);
+            if (imageView != null) {
+                int num = (Integer)imageView.getTag();
+                if (num < 0 || num >= messages.size()) {
+                    continue;
+                }
+                MessageObject message = messages.get(num);
+                if (message != null && message.messageOwner.id == messageObject.messageOwner.id) {
+                    int coords[] = new int[2];
+                    imageView.getLocationInWindow(coords);
+                    PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
+                    object.viewX = coords[0];
+                    object.viewY = coords[1] - Utilities.statusBarHeight;
+                    object.parentView = listView;
+                    object.imageReceiver = imageView.imageReceiver;
+                    object.thumb = object.imageReceiver.getBitmap();
+                    return object;
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) { }
+
+    @Override
+    public void willHidePhotoViewer() { }
+
+    @Override
+    public boolean isPhotoChecked(int index) { return false; }
+
+    @Override
+    public void setPhotoChecked(int index) { }
+
+    @Override
+    public void cancelButtonPressed() { }
+
+    @Override
+    public void sendButtonPressed(int index) { }
+
+    @Override
+    public int getSelectedCount() { return 0; }
+
     private void fixLayout() {
         if (listView != null) {
             ViewTreeObserver obs = listView.getViewTreeObserver();
             obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
                 @Override
                 public boolean onPreDraw() {
-                    if (parentActivity != null) {
-                        WindowManager manager = (WindowManager)parentActivity.getSystemService(Activity.WINDOW_SERVICE);
-                        int rotation = manager.getDefaultDisplay().getRotation();
+                    WindowManager manager = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
+                    int rotation = manager.getDefaultDisplay().getRotation();
 
-                        if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                            orientation = 1;
-                            listView.setNumColumns(6);
-                            itemWidth = getResources().getDisplayMetrics().widthPixels / 6 - Utilities.dp(2) * 5;
-                            listView.setColumnWidth(itemWidth);
-                        } else {
-                            orientation = 0;
-                            listView.setNumColumns(4);
-                            itemWidth = getResources().getDisplayMetrics().widthPixels / 4 - Utilities.dp(2) * 3;
-                            listView.setColumnWidth(itemWidth);
-                        }
-                        listView.setPadding(listView.getPaddingLeft(), Utilities.dp(4), listView.getPaddingRight(), listView.getPaddingBottom());
-                        listAdapter.notifyDataSetChanged();
+                    if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
+                        listView.setNumColumns(6);
+                        itemWidth = getParentActivity().getResources().getDisplayMetrics().widthPixels / 6 - Utilities.dp(2) * 5;
+                        listView.setColumnWidth(itemWidth);
+                    } else {
+                        listView.setNumColumns(4);
+                        itemWidth = getParentActivity().getResources().getDisplayMetrics().widthPixels / 4 - Utilities.dp(2) * 3;
+                        listView.setColumnWidth(itemWidth);
                     }
+                    listView.setPadding(listView.getPaddingLeft(), Utilities.dp(4), listView.getPaddingRight(), listView.getPaddingBottom());
+                    listAdapter.notifyDataSetChanged();
+
                     if (listView != null) {
                         listView.getViewTreeObserver().removeOnPreDrawListener(this);
                     }
@@ -330,22 +345,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 }
             });
         }
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int itemId = item.getItemId();
-        switch (itemId) {
-            case android.R.id.home:
-                if (Build.VERSION.SDK_INT < 11) {
-                    listView.setAdapter(null);
-                    listView = null;
-                    listAdapter = null;
-                }
-                finishFragment();
-                break;
-        }
-        return true;
     }
 
     private class ListAdapter extends BaseAdapter {
@@ -400,27 +399,20 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 view.setLayoutParams(params);
 
                 BackupImageView imageView = (BackupImageView)view.findViewById(R.id.media_photo_image);
+                imageView.setTag(i);
 
                 if (message.messageOwner.media != null && message.messageOwner.media.photo != null && !message.messageOwner.media.photo.sizes.isEmpty()) {
                     ArrayList<TLRPC.PhotoSize> sizes = message.messageOwner.media.photo.sizes;
-                    boolean set = false;
-//                    for (TLRPC.PhotoSize size : sizes) {
-//                        if (size.type != null && size.type.equals("m")) {
-//                            set = true;
-//                            imageView.setImage(size.location, null, R.drawable.photo_placeholder);
-//                            break;
-//                        }
-//                    }
-                    if (!set) {
-                        if (message.imagePreview != null) {
-                            imageView.setImageBitmap(message.imagePreview);
-                        } else {
-                            imageView.setImage(message.messageOwner.media.photo.sizes.get(0).location, null, R.drawable.photo_placeholder_in);
-                        }
+                    if (message.imagePreview != null) {
+                        imageView.setImageBitmap(message.imagePreview);
+                    } else {
+                        TLRPC.PhotoSize photoSize = PhotoObject.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, 80, 80);
+                        imageView.setImage(photoSize.location, null, R.drawable.photo_placeholder_in);
                     }
                 } else {
                     imageView.setImageResource(R.drawable.photo_placeholder_in);
                 }
+                imageView.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(message), false);
             } else if (type == 1) {
                 MessageObject message = messages.get(i);
                 if (view == null) {
@@ -434,6 +426,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
                 TextView textView = (TextView)view.findViewById(R.id.chat_video_time);
                 BackupImageView imageView = (BackupImageView)view.findViewById(R.id.media_photo_image);
+                imageView.setTag(i);
 
                 if (message.messageOwner.media.video != null && message.messageOwner.media.video.thumb != null) {
                     int duration = message.messageOwner.media.video.duration;
@@ -450,6 +443,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     textView.setVisibility(View.GONE);
                     imageView.setImageResource(R.drawable.photo_placeholder_in);
                 }
+                imageView.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(message), false);
             } else if (type == 2) {
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);

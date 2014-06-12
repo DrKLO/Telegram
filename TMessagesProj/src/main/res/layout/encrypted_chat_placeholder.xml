@@ -27,48 +27,96 @@
         android:textSize="15dp"
         android:id="@+id/secret_title"/>
 
-    <TextView android:layout_height="wrap_content"
+    <LinearLayout
+        android:layout_height="wrap_content"
         android:layout_width="wrap_content"
-        android:layout_marginTop="8dp"
-        android:maxWidth="260dp"
-        android:gravity="center_vertical"
-        android:textColor="#ffffff"
-        android:textSize="15dp"
-        android:id="@+id/secret_description1"
-        android:drawableLeft="@drawable/ic_lock_white"
-        android:drawablePadding="8dp"/>
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp">
 
-    <TextView android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
-        android:layout_marginTop="4dp"
-        android:maxWidth="260dp"
-        android:gravity="center_vertical"
-        android:textColor="#ffffff"
-        android:textSize="15dp"
-        android:id="@+id/secret_description2"
-        android:drawableLeft="@drawable/ic_lock_white"
-        android:drawablePadding="8dp"/>
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_lock_white"
+            android:layout_marginRight="8dp"
+            android:layout_marginTop="4dp"/>
 
-    <TextView android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
-        android:layout_marginTop="4dp"
-        android:maxWidth="260dp"
-        android:gravity="center_vertical"
-        android:textColor="#ffffff"
-        android:textSize="15dp"
-        android:id="@+id/secret_description3"
-        android:drawableLeft="@drawable/ic_lock_white"
-        android:drawablePadding="8dp"/>
+        <TextView android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:maxWidth="260dp"
+            android:gravity="center_vertical"
+            android:textColor="#ffffff"
+            android:textSize="15dp"
+            android:id="@+id/secret_description1"/>
 
-    <TextView android:layout_height="wrap_content"
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_height="wrap_content"
         android:layout_width="wrap_content"
-        android:layout_marginTop="4dp"
-        android:maxWidth="260dp"
-        android:gravity="center_vertical"
-        android:textColor="#ffffff"
-        android:textSize="15dp"
-        android:id="@+id/secret_description4"
-        android:drawableLeft="@drawable/ic_lock_white"
-        android:drawablePadding="8dp" />
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_lock_white"
+            android:layout_marginRight="8dp"
+            android:layout_marginTop="4dp"/>
+
+        <TextView android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:maxWidth="260dp"
+            android:gravity="center_vertical"
+            android:textColor="#ffffff"
+            android:textSize="15dp"
+            android:id="@+id/secret_description2"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_lock_white"
+            android:layout_marginRight="8dp"
+            android:layout_marginTop="4dp"/>
+
+        <TextView android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:maxWidth="260dp"
+            android:gravity="center_vertical"
+            android:textColor="#ffffff"
+            android:textSize="15dp"
+            android:id="@+id/secret_description3"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_lock_white"
+            android:layout_marginRight="8dp"
+            android:layout_marginTop="4dp"/>
+
+        <TextView android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:maxWidth="260dp"
+            android:gravity="center_vertical"
+            android:textColor="#ffffff"
+            android:textSize="15dp"
+            android:id="@+id/secret_description4"/>
+
+    </LinearLayout>
 
 </LinearLayout>

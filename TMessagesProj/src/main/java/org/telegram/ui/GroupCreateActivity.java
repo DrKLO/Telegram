@@ -12,11 +12,11 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.internal.view.SupportMenuItem;
-import android.support.v7.app.ActionBar;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -24,11 +24,9 @@ import android.text.SpannableStringBuilder;
 import android.text.TextWatcher;
 import android.text.style.ImageSpan;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -39,15 +37,16 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.BackupImageView;
-import org.telegram.ui.Views.BaseFragment;
+import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.PinnedHeaderListView;
 import org.telegram.ui.Views.SectionedBaseAdapter;
 
@@ -57,14 +56,42 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class GroupCreateActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+
+    public static class XImageSpan extends ImageSpan {
+        public int uid;
+
+        public XImageSpan(Drawable d, int verticalAlignment) {
+            super(d, verticalAlignment);
+        }
+
+        @Override
+        public int getSize(Paint paint, CharSequence text, int start, int end, Paint.FontMetricsInt fm) {
+            if (fm == null) {
+                fm = new Paint.FontMetricsInt();
+            }
+
+            int sz = super.getSize(paint, text, start, end, fm);
+
+            int offset = Utilities.dp(6);
+            int w = (fm.bottom - fm.top) / 2;
+            fm.top = -w - offset;
+            fm.bottom = w - offset;
+            fm.ascent = -w - offset;
+            fm.leading = 0;
+            fm.descent = w - offset;
+
+            return sz;
+        }
+    }
+
     private SectionedBaseAdapter listViewAdapter;
     private PinnedHeaderListView listView;
     private TextView emptyTextView;
     private EditText userSelectEditText;
     private boolean ignoreChange = false;
 
-    private HashMap<Integer, Emoji.XImageSpan> selectedContacts =  new HashMap<Integer, Emoji.XImageSpan>();
-    private ArrayList<Emoji.XImageSpan> allSpans = new ArrayList<Emoji.XImageSpan>();
+    private HashMap<Integer, XImageSpan> selectedContacts =  new HashMap<Integer, XImageSpan>();
+    private ArrayList<XImageSpan> allSpans = new ArrayList<XImageSpan>();
 
     private boolean searchWas;
     private boolean searching;
@@ -75,17 +102,14 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private CharSequence changeString;
     private int beforeChangeIndex;
 
-    public GroupCreateActivity() {
-        animationType = 1;
-    }
+    private final static int done_button = 1;
 
     @Override
     public boolean onFragmentCreate() {
-        super.onFragmentCreate();
         NotificationCenter.getInstance().addObserver(this, MessagesController.contactsDidLoaded);
         NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
         NotificationCenter.getInstance().addObserver(this, MessagesController.chatDidCreated);
-        return true;
+        return super.onFragmentCreate();
     }
 
     @Override
@@ -97,14 +121,34 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
+            actionBarLayer.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
+            actionBarLayer.setSubtitle(String.format("%d/200 %s", selectedContacts.size(), LocaleController.getString("Members", R.string.Members)));
+
+            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1) {
+                        finishFragment();
+                    } else if (id == done_button) {
+                        if (!selectedContacts.isEmpty()) {
+                            ArrayList<Integer> result = new ArrayList<Integer>();
+                            result.addAll(selectedContacts.keySet());
+                            Bundle args = new Bundle();
+                            args.putIntegerArrayList("result", result);
+                            presentFragment(new GroupCreateFinalActivity(args));
+                        }
+                    }
+                }
+            });
+
+            ActionBarMenu menu = actionBarLayer.createMenu();
+            View doneItem = menu.addItemResource(done_button, R.layout.group_create_done_layout);
+            TextView doneTextView = (TextView)doneItem.findViewById(R.id.done_button);
+            doneTextView.setText(LocaleController.getString("Next", R.string.Next));
 
             searching = false;
             searchWas = false;
@@ -150,16 +194,13 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                 }
                                 Spannable span = userSelectEditText.getText();
                                 for (int a = 0; a < allSpans.size(); a++) {
-                                    Emoji.XImageSpan sp = allSpans.get(a);
+                                    XImageSpan sp = allSpans.get(a);
                                     if (span.getSpanStart(sp) == -1) {
                                         allSpans.remove(sp);
                                         selectedContacts.remove(sp.uid);
                                     }
                                 }
-                                if (parentActivity != null) {
-                                    ActionBar actionBar = parentActivity.getSupportActionBar();
-                                    actionBar.setSubtitle(String.format("%d/200 %s", selectedContacts.size(), LocaleController.getString("Members", R.string.Members)));
-                                }
+                                actionBarLayer.setSubtitle(String.format("%d/200 %s", selectedContacts.size(), LocaleController.getString("Members", R.string.Members)));
                                 listView.invalidateViews();
                             } else {
                                 search = true;
@@ -192,7 +233,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             listView.setEmptyView(emptyTextView);
             listView.setVerticalScrollBarEnabled(false);
 
-            listView.setAdapter(listViewAdapter = new ListAdapter(parentActivity));
+            listView.setAdapter(listViewAdapter = new ListAdapter(getParentActivity()));
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -207,7 +248,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         listView.invalidateViews();
                     }
                     if (selectedContacts.containsKey(user.id)) {
-                        Emoji.XImageSpan span = selectedContacts.get(user.id);
+                        XImageSpan span = selectedContacts.get(user.id);
                         selectedContacts.remove(user.id);
                         SpannableStringBuilder text = new SpannableStringBuilder(userSelectEditText.getText());
                         text.delete(text.getSpanStart(span), text.getSpanEnd(span));
@@ -221,14 +262,11 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                             return;
                         }
                         ignoreChange = true;
-                        Emoji.XImageSpan span = createAndPutChipForUser(user);
+                        XImageSpan span = createAndPutChipForUser(user);
                         span.uid = user.id;
                         ignoreChange = false;
                     }
-                    if (parentActivity != null) {
-                        ActionBar actionBar = parentActivity.getSupportActionBar();
-                        actionBar.setSubtitle(String.format("%d/200 %s", selectedContacts.size(), LocaleController.getString("Members", R.string.Members)));
-                    }
+                    actionBarLayer.setSubtitle(String.format("%d/200 %s", selectedContacts.size(), LocaleController.getString("Members", R.string.Members)));
                     if (searching || searchWas) {
                         searching = false;
                         searchWas = false;
@@ -250,6 +288,19 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     }
                 }
             });
+
+            listView.setOnScrollListener(new AbsListView.OnScrollListener() {
+                @Override
+                public void onScrollStateChanged(AbsListView absListView, int i) {
+                    if (i == SCROLL_STATE_TOUCH_SCROLL) {
+                        Utilities.hideKeyboard(userSelectEditText);
+                    }
+                }
+
+                @Override
+                public void onScroll(AbsListView absListView, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                }
+            });
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
             if (parent != null) {
@@ -259,44 +310,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         return fragmentView;
     }
 
-    @Override
-    public void applySelfActionBar() {
-        if (parentActivity == null) {
-            return;
-        }
-        ActionBar actionBar = parentActivity.getSupportActionBar();
-        actionBar.setDisplayShowTitleEnabled(true);
-        actionBar.setDisplayShowHomeEnabled(false);
-        actionBar.setDisplayHomeAsUpEnabled(true);
-        actionBar.setDisplayUseLogoEnabled(false);
-        actionBar.setDisplayShowCustomEnabled(false);
-        actionBar.setCustomView(null);
-        actionBar.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
-        actionBar.setSubtitle(String.format("%d/200 %s", selectedContacts.size(), LocaleController.getString("Members", R.string.Members)));
-
-        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
-        if (title == null) {
-            final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
-            title = (TextView)parentActivity.findViewById(subtitleId);
-        }
-        if (title != null) {
-            title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
-            title.setCompoundDrawablePadding(0);
-        }
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (getActivity() == null) {
-            return;
-        }
-        ((LaunchActivity)parentActivity).showActionBar();
-        ((LaunchActivity)parentActivity).updateActionBar();
-    }
-
-    public Emoji.XImageSpan createAndPutChipForUser(TLRPC.User user) {
-        LayoutInflater lf = (LayoutInflater)parentActivity.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
+    public XImageSpan createAndPutChipForUser(TLRPC.User user) {
+        LayoutInflater lf = (LayoutInflater)ApplicationLoader.applicationContext.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
         View textView = lf.inflate(R.layout.group_create_bubble, null);
         TextView text = (TextView)textView.findViewById(R.id.bubble_text_view);
         String name = Utilities.formatName(user.first_name, user.last_name);
@@ -321,7 +336,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         bmpDrawable.setBounds(0, 0, b.getWidth(), b.getHeight());
 
         SpannableStringBuilder ssb = new SpannableStringBuilder("");
-        Emoji.XImageSpan span = new Emoji.XImageSpan(bmpDrawable, ImageSpan.ALIGN_BASELINE);
+        XImageSpan span = new XImageSpan(bmpDrawable, ImageSpan.ALIGN_BASELINE);
         allSpans.add(span);
         selectedContacts.put(user.id, span);
         for (ImageSpan sp : allSpans) {
@@ -404,41 +419,6 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 searchResult = users;
                 searchResultNames = names;
                 listViewAdapter.notifyDataSetChanged();
-            }
-        });
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int itemId = item.getItemId();
-        switch (itemId) {
-            case android.R.id.home:
-                finishFragment();
-                break;
-        }
-        return true;
-    }
-
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        SupportMenuItem doneItem = (SupportMenuItem)menu.add(Menu.NONE, 0, Menu.NONE, null);
-        doneItem.setShowAsAction(SupportMenuItem.SHOW_AS_ACTION_ALWAYS);
-        doneItem.setActionView(R.layout.group_create_done_layout);
-
-        TextView doneTextView = (TextView)doneItem.getActionView().findViewById(R.id.done_button);
-        doneTextView.setText(LocaleController.getString("Next", R.string.Next));
-        doneTextView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (!selectedContacts.isEmpty()) {
-                    ArrayList<Integer> result = new ArrayList<Integer>();
-                    result.addAll(selectedContacts.keySet());
-                    Bundle args = new Bundle();
-                    args.putIntegerArrayList("result", result);
-                    GroupCreateFinalActivity fragment = new GroupCreateFinalActivity();
-                    fragment.setArguments(args);
-                    ((LaunchActivity)parentActivity).presentFragment(fragment, "group_craate_final", false);
-                }
             }
         });
     }
@@ -559,22 +539,11 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             int placeHolderId = Utilities.getUserAvatarForId(user.id);
             holder.avatarImage.setImage(photo, "50_50", placeHolderId);
 
-            if (user.status == null) {
-                holder.messageTextView.setText(LocaleController.getString("Offline", R.string.Offline));
-                holder.messageTextView.setTextColor(0xff808080);
+            holder.messageTextView.setText(LocaleController.formatUserStatus(user));
+            if (user.status != null && user.status.expires > ConnectionsManager.getInstance().getCurrentTime()) {
+                holder.messageTextView.setTextColor(0xff357aa8);
             } else {
-                int currentTime = ConnectionsManager.getInstance().getCurrentTime();
-                if (user.status.expires > currentTime) {
-                    holder.messageTextView.setTextColor(0xff357aa8);
-                    holder.messageTextView.setText(LocaleController.getString("Online", R.string.Online));
-                } else {
-                    if (user.status.expires <= 10000) {
-                        holder.messageTextView.setText(LocaleController.getString("Invisible", R.string.Invisible));
-                    } else {
-                        holder.messageTextView.setText(LocaleController.formatDateOnline(user.status.expires));
-                    }
-                    holder.messageTextView.setTextColor(0xff808080);
-                }
+                holder.messageTextView.setTextColor(0xff808080);
             }
 
             return convertView;

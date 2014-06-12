@@ -30,6 +30,7 @@ public abstract class AbsSerializedData {
     public abstract String readString();
     public abstract byte[] readByteArray();
     public abstract ByteBufferDesc readByteBuffer();
+    public abstract void writeByteBuffer(ByteBufferDesc buffer);
     public abstract double readDouble();
     public abstract int length();
 }

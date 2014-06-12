@@ -13,7 +13,6 @@ import android.accounts.AccountManager;
 import android.content.ContentProviderOperation;
 import android.content.ContentProviderResult;
 import android.content.ContentResolver;
-import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.BaseColumns;
@@ -37,6 +36,10 @@ public class ContactsController {
     private final Integer observerLock = 1;
     public boolean contactsLoaded = false;
     private boolean contactsBookLoaded = false;
+    private int lastContactsPhonesCount = -1;
+    private int lastContactsPhonesMaxId = -1;
+    private int lastContactsNamesCount = -1;
+    private int lastContactsNamesMaxId = -1;
     private ArrayList<Integer> delayedContactsUpdate = new ArrayList<Integer>();
 
     public static class Contact {
@@ -75,37 +78,6 @@ public class ContactsController {
 
     public HashMap<String, TLRPC.TL_contact> contactsByPhone = new HashMap<String, TLRPC.TL_contact>();
 
-    private class MyContentObserver extends ContentObserver {
-
-        public MyContentObserver() {
-            super(null);
-        }
-
-        @Override
-        public void onChange(boolean selfChange) {
-            super.onChange(selfChange);
-            synchronized (observerLock) {
-                if (ignoreChanges) {
-                    FileLog.e("tmessages", "contacts changed - ignore");
-                    return;
-                }
-            }
-
-            Utilities.stageQueue.postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    MessagesController.getInstance().scheduleContactsReload = System.currentTimeMillis() + 2000;
-                    FileLog.e("tmessages", "contacts changed schedule - apply in " + MessagesController.getInstance().scheduleContactsReload);
-                }
-            });
-        }
-
-        @Override
-        public boolean deliverSelfNotifications() {
-            return false;
-        }
-    }
-
     private static volatile ContactsController Instance = null;
     public static ContactsController getInstance() {
         ContactsController localInstance = Instance;
@@ -118,15 +90,6 @@ public class ContactsController {
             }
         }
         return localInstance;
-    }
-
-    public ContactsController() {
-        Utilities.globalQueue.postRunnable(new Runnable() {
-            @Override
-            public void run() {
-                ApplicationLoader.applicationContext.getContentResolver().registerContentObserver(ContactsContract.Contacts.CONTENT_URI, true, new MyContentObserver());
-            }
-        });
     }
 
     public void cleanup() {
@@ -145,11 +108,15 @@ public class ContactsController {
         contactsSyncInProgress = false;
         contactsLoaded = false;
         contactsBookLoaded = false;
+        lastContactsPhonesCount = -1;
+        lastContactsPhonesMaxId = -1;
+        lastContactsNamesCount = -1;
+        lastContactsNamesMaxId = -1;
     }
 
     public void checkAppAccount() {
         AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
-        Account[] accounts = am.getAccountsByType("org.telegram.messenger.account");
+        Account[] accounts = am.getAccountsByType("org.telegram.account");
         boolean recreateAccount = false;
         if (UserConfig.currentUser != null) {
             if (accounts.length == 1) {
@@ -173,10 +140,93 @@ public class ContactsController {
                 am.removeAccount(c, null, null);
             }
             if (UserConfig.currentUser != null) {
-                currentAccount = new Account(UserConfig.currentUser.phone, "org.telegram.messenger.account");
-                am.addAccountExplicitly(currentAccount, "", null);
+                try {
+                    currentAccount = new Account(UserConfig.currentUser.phone, "org.telegram.account");
+                    am.addAccountExplicitly(currentAccount, "", null);
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
             }
         }
+    }
+
+    public void checkContacts() {
+        Utilities.globalQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                if (checkContactsInternal()) {
+                    FileLog.e("tmessages", "detected contacts change");
+                    ContactsController.getInstance().performSyncPhoneBook(ContactsController.getInstance().getContactsCopy(ContactsController.getInstance().contactsBook), true, false, true);
+                }
+            }
+        });
+    }
+
+    private boolean checkContactsInternal() {
+        boolean reload = false;
+        try {
+            ContentResolver cr = ApplicationLoader.applicationContext.getContentResolver();
+            Cursor pCur = null;
+            try {
+                pCur = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, new String[]{ContactsContract.CommonDataKinds.Phone._ID}, null, null, ContactsContract.CommonDataKinds.Phone._ID + " desc LIMIT 1");
+                if (pCur != null) {
+                    if (pCur.getCount() > 0 && pCur.moveToFirst()) {
+                        int value = pCur.getInt(0);
+                        if (lastContactsPhonesMaxId != -1 && value != lastContactsPhonesMaxId) {
+                            reload = true;
+                        }
+                        lastContactsPhonesMaxId = value;
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+            try {
+                pCur = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, new String[]{ContactsContract.CommonDataKinds.Phone._COUNT}, null, null, null);
+                if (pCur != null) {
+                    if (pCur.getCount() > 0 && pCur.moveToFirst()) {
+                        int value = pCur.getInt(0);
+                        if (lastContactsPhonesCount != -1 && value != lastContactsPhonesCount) {
+                            reload = true;
+                        }
+                        lastContactsPhonesCount = value;
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+            try {
+                pCur = cr.query(ContactsContract.Data.CONTENT_URI, new String[]{ContactsContract.Data._COUNT}, ContactsContract.Data.MIMETYPE + " = '" + ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE + "'", null, null);
+                if (pCur != null) {
+                    if (pCur.getCount() > 0 && pCur.moveToFirst()) {
+                        int value = pCur.getInt(0);
+                        if (lastContactsNamesCount != -1 && value != lastContactsNamesCount) {
+                            reload = true;
+                        }
+                        lastContactsNamesCount = value;
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+            try {
+                pCur = cr.query(ContactsContract.Data.CONTENT_URI, new String[]{ContactsContract.Data._ID}, ContactsContract.Data.MIMETYPE + " = '" + ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE + "'", null, ContactsContract.Data._ID + " desc LIMIT 1");
+                if (pCur != null) {
+                    if (pCur.getCount() > 0 && pCur.moveToFirst()) {
+                        int value = pCur.getInt(0);
+                        if (lastContactsNamesMaxId != -1 && value != lastContactsNamesMaxId) {
+                            reload = true;
+                        }
+                        lastContactsNamesMaxId = value;
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return reload;
     }
 
     public void readContacts() {
@@ -376,14 +426,19 @@ public class ContactsController {
                 if (schedule) {
                     try {
                         AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
-                        Account[] accounts = am.getAccountsByType("org.telegram.messenger.account");
+                        Account[] accounts = am.getAccountsByType("org.telegram.account");
                         boolean recreateAccount = false;
                         if (UserConfig.currentUser != null) {
                             if (accounts.length != 1) {
                                 FileLog.e("tmessages", "detected account deletion!");
-                                currentAccount = new Account(UserConfig.currentUser.phone, "org.telegram.messenger.account");
+                                currentAccount = new Account(UserConfig.currentUser.phone, "org.telegram.account");
                                 am.addAccountExplicitly(currentAccount, "", null);
-                                performWriteContactsToPhoneBookInternal();
+                                Utilities.RunOnUIThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        performWriteContactsToPhoneBook();
+                                    }
+                                });
                             }
                         }
                     } catch (Exception e) {
@@ -410,6 +465,9 @@ public class ContactsController {
                 }
 
                 FileLog.e("tmessages", "start read contacts from phone");
+                if (!schedule) {
+                    checkContactsInternal();
+                }
                 final HashMap<Integer, Contact> contactsMap = readContactsFromPhoneBook();
                 final HashMap<String, Contact> contactsBookShort = new HashMap<String, Contact>();
                 int oldCount = contactHashMap.size();
@@ -1096,7 +1154,7 @@ public class ContactsController {
         sortedUsersSectionsArray = sortedSectionsArray;
     }
 
-    private void performWriteContactsToPhoneBookInternal() {
+    private void performWriteContactsToPhoneBookInternal(ArrayList<TLRPC.TL_contact> contactsArray) {
         try {
             Uri rawContactUri = ContactsContract.RawContacts.CONTENT_URI.buildUpon().appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_NAME, currentAccount.name).appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_TYPE, currentAccount.type).build();
             Cursor c1 = ApplicationLoader.applicationContext.getContentResolver().query(rawContactUri, new String[]{BaseColumns._ID, ContactsContract.RawContacts.SYNC2}, null, null, null);
@@ -1107,7 +1165,7 @@ public class ContactsController {
                 }
                 c1.close();
 
-                for (TLRPC.TL_contact u : contacts) {
+                for (TLRPC.TL_contact u : contactsArray) {
                     if (!bookContacts.containsKey(u.user_id)) {
                         TLRPC.User user = MessagesController.getInstance().users.get(u.user_id);
                         addContactToPhoneBook(user, false);
@@ -1120,10 +1178,12 @@ public class ContactsController {
     }
 
     private void performWriteContactsToPhoneBook() {
+        final ArrayList<TLRPC.TL_contact> contactsArray = new ArrayList<TLRPC.TL_contact>();
+        contactsArray.addAll(contacts);
         Utilities.globalQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
-                performWriteContactsToPhoneBookInternal();
+                performWriteContactsToPhoneBookInternal(contactsArray);
             }
         });
     }

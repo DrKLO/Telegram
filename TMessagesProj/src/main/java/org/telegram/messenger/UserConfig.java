@@ -21,6 +21,7 @@ public class UserConfig {
     public static int clientUserId = 0;
     public static boolean clientActivated = false;
     public static boolean registeredForPush = false;
+    public static boolean registeredForInternalPush = false;
     public static String pushString = "";
     public static int lastSendMessageId = -210000;
     public static int lastLocalId = -210000;
@@ -56,6 +57,7 @@ public class UserConfig {
                 editor.putString("importHash", importHash);
                 editor.putBoolean("saveIncomingPhotos", saveIncomingPhotos);
                 editor.putInt("contactsVersion", contactsVersion);
+                editor.putBoolean("registeredForInternalPush", registeredForInternalPush);
                 if (currentUser != null) {
                     if (withFile) {
                         SerializedData data = new SerializedData();
@@ -155,6 +157,7 @@ public class UserConfig {
                 importHash = preferences.getString("importHash", "");
                 saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
                 contactsVersion = preferences.getInt("contactsVersion", 0);
+                registeredForInternalPush = preferences.getBoolean("registeredForInternalPush", false);
                 String user = preferences.getString("user", null);
                 if (user != null) {
                     byte[] userBytes = Base64.decode(user, Base64.DEFAULT);
@@ -177,6 +180,7 @@ public class UserConfig {
         clientUserId = 0;
         clientActivated = false;
         currentUser = null;
+        registeredForInternalPush = false;
         registeredForPush = false;
         contactsHash = "";
         importHash = "";

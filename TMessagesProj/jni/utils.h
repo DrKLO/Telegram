@@ -2,6 +2,7 @@
 #define log_h
 
 #include <android/log.h>
+#include <jni.h>
 
 #define LOG_TAG "tmessages_native"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -15,5 +16,7 @@
 #ifndef min
 #define min(x, y) ((x) < (y)) ? (x) : (y)
 #endif
+
+void throwException(JNIEnv *env, char *format, ...);
 
 #endif

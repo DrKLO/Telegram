@@ -119,6 +119,25 @@ public class SerializedData extends AbsSerializedData {
         }
     }
 
+    public void writeByteBuffer(ByteBufferDesc buffer) {
+        if (!justCalc) {
+            //TODO ?
+        } else {
+            int l = buffer.limit();
+            if (l <= 253) {
+                len += 1;
+            } else {
+                len += 4;
+            }
+            len += l;
+            int i = l <= 253 ? 1 : 4;
+            while((l + i) % 4 != 0) {
+                len += 1;
+                i++;
+            }
+        }
+    }
+
     public int readInt32() {
         return readInt32(null);
     }

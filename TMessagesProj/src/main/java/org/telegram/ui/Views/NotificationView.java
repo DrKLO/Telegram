@@ -106,16 +106,7 @@ public class NotificationView extends LinearLayout {
                 }
                 hide(true);
 
-                if (currentChatId != 0) {
-                    NotificationCenter.getInstance().addToMemCache("push_chat_id", currentChatId);
-                }
-                if (currentUserId != 0) {
-                    NotificationCenter.getInstance().addToMemCache("push_user_id", currentUserId);
-                }
-                if (currentEncId != 0) {
-                    NotificationCenter.getInstance().addToMemCache("push_enc_id", currentEncId);
-                }
-                NotificationCenter.getInstance().postNotificationName(658);
+                NotificationCenter.getInstance().postNotificationName(658, currentChatId, currentUserId, currentEncId);
             }
         });
 

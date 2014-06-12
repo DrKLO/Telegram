@@ -10,8 +10,6 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.os.Parcel;
-import android.os.Parcelable;
 import android.text.Html;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
@@ -51,7 +49,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
 
     private Timer timeTimer;
     private final Integer timerSync = 1;
-    private int time = 60000;
+    private volatile int time = 60000;
     private double lastCurrentTime;
     private boolean waitingForSms = false;
 
@@ -102,11 +100,14 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
 
     @Override
     public String getHeaderName() {
-        return getResources().getString(R.string.YourCode);
+        return LocaleController.getString("YourCode", R.string.YourCode);
     }
 
     @Override
     public void setParams(Bundle params) {
+        if (params == null) {
+            return;
+        }
         codeField.setText("");
         Utilities.setWaitingForSms(true);
         NotificationCenter.getInstance().addObserver(this, 998);
@@ -118,8 +119,12 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         registered = params.getString("registered");
         time = params.getInt("calltime");
 
+        if (phone == null) {
+            return;
+        }
+
         String number = PhoneFormat.getInstance().format(phone);
-        confirmTextView.setText(Html.fromHtml(String.format(ApplicationLoader.applicationContext.getResources().getString(R.string.SentSmsCode) + " <b>%s</b>", number)));
+        confirmTextView.setText(Html.fromHtml(String.format(LocaleController.getString("SentSmsCode", R.string.SentSmsCode) + " <b>%s</b>", number)));
 
         Utilities.showKeyboard(codeField);
         codeField.requestFocus();
@@ -134,7 +139,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
-        timeText.setText(String.format("%s 1:00", ApplicationLoader.applicationContext.getResources().getString(R.string.CallText)));
+        timeText.setText(String.format("%s 1:00", LocaleController.getString("CallText", R.string.CallText)));
         lastCurrentTime = System.currentTimeMillis();
         timeTimer = new Timer();
         timeTimer.schedule(new TimerTask() {
@@ -150,9 +155,9 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                         if (time >= 1000) {
                             int minutes = time / 1000 / 60;
                             int seconds = time / 1000 - minutes * 60;
-                            timeText.setText(String.format("%s %d:%02d", ApplicationLoader.applicationContext.getResources().getString(R.string.CallText), minutes, seconds));
+                            timeText.setText(String.format("%s %d:%02d", LocaleController.getString("CallText", R.string.CallText), minutes, seconds));
                         } else {
-                            timeText.setText(ApplicationLoader.applicationContext.getResources().getString(R.string.Calling));
+                            timeText.setText(LocaleController.getString("Calling", R.string.Calling));
                             synchronized(timerSync) {
                                 if (timeTimer != null) {
                                     timeTimer.cancel();
@@ -236,6 +241,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                             if (delegate != null) {
                                 delegate.needFinishActivity();
                             }
+                            ConnectionsManager.getInstance().initPushConnection();
                         }
                     });
                 } else {
@@ -276,9 +282,9 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                                             if (time >= 1000) {
                                                 int minutes = time / 1000 / 60;
                                                 int seconds = time / 1000 - minutes * 60;
-                                                timeText.setText(String.format("%s %d:%02d", ApplicationLoader.applicationContext.getResources().getString(R.string.CallText), minutes, seconds));
+                                                timeText.setText(String.format("%s %d:%02d", LocaleController.getString("CallText", R.string.CallText), minutes, seconds));
                                             } else {
-                                                timeText.setText(ApplicationLoader.applicationContext.getResources().getString(R.string.Calling));
+                                                timeText.setText(LocaleController.getString("Calling", R.string.Calling));
                                                 synchronized(timerSync) {
                                                     if (timeTimer != null) {
                                                         timeTimer.cancel();
@@ -380,47 +386,32 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     }
 
     @Override
-    protected Parcelable onSaveInstanceState() {
-        Parcelable superState = super.onSaveInstanceState();
-        return new SavedState(superState, currentParams);
+    public void saveStateParams(Bundle bundle) {
+        String code = codeField.getText().toString();
+        if (code != null && code.length() != 0) {
+            bundle.putString("smsview_code", code);
+        }
+        if (currentParams != null) {
+            bundle.putBundle("smsview_params", currentParams);
+        }
+        if (time != 0) {
+            bundle.putInt("time", time);
+        }
     }
 
     @Override
-    protected void onRestoreInstanceState(Parcelable state) {
-        SavedState savedState = (SavedState) state;
-        super.onRestoreInstanceState(savedState.getSuperState());
-        currentParams = savedState.params;
+    public void restoreStateParams(Bundle bundle) {
+        currentParams = bundle.getBundle("smsview_params");
         if (currentParams != null) {
             setParams(currentParams);
         }
-    }
-
-    protected static class SavedState extends BaseSavedState {
-        public Bundle params;
-
-        private SavedState(Parcelable superState, Bundle p1) {
-            super(superState);
-            params = p1;
+        String code = bundle.getString("smsview_code");
+        if (code != null) {
+            codeField.setText(code);
         }
-
-        private SavedState(Parcel in) {
-            super(in);
-            params = in.readBundle();
+        Integer t = bundle.getInt("time");
+        if (t != 0) {
+            time = t;
         }
-
-        @Override
-        public void writeToParcel(Parcel destination, int flags) {
-            super.writeToParcel(destination, flags);
-            destination.writeBundle(params);
-        }
-
-        public static final Parcelable.Creator<SavedState> CREATOR = new Creator<SavedState>() {
-            public SavedState createFromParcel(Parcel in) {
-                return new SavedState(in);
-            }
-            public SavedState[] newArray(int size) {
-                return new SavedState[size];
-            }
-        };
     }
 }

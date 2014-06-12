@@ -5,4 +5,5 @@
     <color name="gallery_background_color">#ff000000</color>
     <color name="settings_background_color">#ffffffff</color>
     <color name="divider">#dcdcdc</color>
+    <color name="header">#ff54759e</color>
 </resources>

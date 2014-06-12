@@ -10,6 +10,7 @@ package org.telegram.ui.Views;
 import java.util.HashMap;
 import java.util.LinkedList;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.graphics.Rect;
@@ -139,6 +140,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
 
 
 
+    @SuppressLint("DrawAllocation")
     @Override
     protected synchronized void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
@@ -306,6 +308,12 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
         boolean handled = super.dispatchTouchEvent(ev);
         handled |= mGesture.onTouchEvent(ev);
         return handled;
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        requestDisallowInterceptTouchEvent(true);
+        return super.onInterceptTouchEvent(ev);
     }
 
     protected boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,

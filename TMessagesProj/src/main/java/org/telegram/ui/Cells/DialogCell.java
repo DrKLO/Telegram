@@ -16,7 +16,6 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.view.View;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.LocaleController;
@@ -29,8 +28,6 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.Views.ImageReceiver;
-
-import java.lang.ref.WeakReference;
 
 public class DialogCell extends BaseCell {
     private static TextPaint namePaint;
@@ -134,7 +131,7 @@ public class DialogCell extends BaseCell {
 
         if (avatarImage == null) {
             avatarImage = new ImageReceiver();
-            avatarImage.parentView = new WeakReference<View>(this);
+            avatarImage.parentView = this;
         }
 
         if (cellLayout == null) {
@@ -465,7 +462,7 @@ public class DialogCell extends BaseCell {
                     } else {
                         if (chat != null) {
                             String name = "";
-                            if (message.messageOwner.from_id == UserConfig.clientUserId) {
+                            if (message.isFromMe()) {
                                 name = LocaleController.getString("FromYou", R.string.FromYou);
                             } else {
                                 if (fromUser != null) {
@@ -476,13 +473,13 @@ public class DialogCell extends BaseCell {
                                     }
                                 }
                             }
+                            checkMessage = false;
                             if (message.messageOwner.media != null && !(message.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
-                                messageString = message.messageText;
                                 currentMessagePaint = messagePrintingPaint;
+                                messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#316f9f>%s:</font> <font color=#316f9f>%s</font>", name, message.messageText)), messagePaint.getFontMetricsInt(), Utilities.dp(20));
                             } else {
-                                checkMessage = false;
                                 if (message.messageOwner.message != null) {
-                                    messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#316f9f>%s:</font> <font color=#808080>%s</font>", name, message.messageOwner.message.replace("\n", " "))));
+                                    messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#316f9f>%s:</font> <font color=#808080>%s</font>", name, message.messageOwner.message.replace("\n", " ").replace("<", "&lt;").replace(">", "&gt;"))), messagePaint.getFontMetricsInt(), Utilities.dp(20));
                                 }
                             }
                         } else {
@@ -507,7 +504,7 @@ public class DialogCell extends BaseCell {
                     }
                 }
 
-                if (message.messageOwner.from_id == UserConfig.clientUserId) {
+                if (message.isFromMe()) {
                     if (message.messageOwner.send_state == MessagesController.MESSAGE_SEND_STATE_SENDING) {
                         drawCheck1 = false;
                         drawCheck2 = false;
@@ -662,7 +659,7 @@ public class DialogCell extends BaseCell {
                 if (mess.length() > 150) {
                     mess = mess.substring(0, 150);
                 }
-                messageString = Emoji.replaceEmoji(mess);
+                messageString = Emoji.replaceEmoji(mess, messagePaint.getFontMetricsInt(), Utilities.dp(20));
             }
 
             CharSequence messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - Utilities.dp(12), TextUtils.TruncateAt.END);

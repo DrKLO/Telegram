@@ -11,6 +11,10 @@ package org.telegram.messenger;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
+import android.provider.MediaStore;
+import android.util.Log;
+
+import org.telegram.ui.ApplicationLoader;
 
 import java.io.RandomAccessFile;
 import java.net.URL;
@@ -93,12 +97,7 @@ public class FileLoadOperation {
     }
 
     public FileLoadOperation(TLRPC.Audio audioLocation) {
-        if (audioLocation instanceof TLRPC.TL_audio) {
-            location = new TLRPC.TL_inputAudioFileLocation();
-            datacenter_id = audioLocation.dc_id;
-            location.id = audioLocation.id;
-            location.access_hash = audioLocation.access_hash;
-        } else if (audioLocation instanceof TLRPC.TL_audioEncrypted) {
+        if (audioLocation instanceof TLRPC.TL_audioEncrypted) {
             location = new TLRPC.TL_inputEncryptedFileLocation();
             location.id = audioLocation.id;
             location.access_hash = audioLocation.access_hash;
@@ -106,6 +105,11 @@ public class FileLoadOperation {
             iv = new byte[32];
             System.arraycopy(audioLocation.iv, 0, iv, 0, iv.length);
             key = audioLocation.key;
+        } else if (audioLocation instanceof TLRPC.TL_audio) {
+            location = new TLRPC.TL_inputAudioFileLocation();
+            datacenter_id = audioLocation.dc_id;
+            location.id = audioLocation.id;
+            location.access_hash = audioLocation.access_hash;
         }
         ext = ".m4a";
     }
@@ -158,14 +162,24 @@ public class FileLoadOperation {
         boolean ignoreCache = false;
         boolean onlyCache = false;
         boolean isLocalFile = false;
+        Long mediaId = null;
         String fileNameFinal = null;
         String fileNameTemp = null;
         String fileNameIv = null;
         if (httpUrl != null) {
             if (!httpUrl.startsWith("http")) {
+                if (httpUrl.startsWith("thumb://")) {
+                    int idx = httpUrl.indexOf(":", 8);
+                    if (idx >= 0) {
+                        String media = httpUrl.substring(8, idx);
+                        mediaId = Long.parseLong(media);
+                        fileNameFinal = httpUrl.substring(idx + 1);
+                    }
+                } else {
+                    fileNameFinal = httpUrl;
+                }
                 onlyCache = true;
                 isLocalFile = true;
-                fileNameFinal = httpUrl;
             } else {
                 fileNameFinal = Utilities.MD5(httpUrl);
                 fileNameTemp = fileNameFinal + "_temp.jpg";
@@ -197,6 +211,7 @@ public class FileLoadOperation {
             cacheFileFinal = new File(Utilities.getCacheDir(), fileNameFinal);
         }
         final boolean dontDelete = isLocalFile;
+        final Long mediaIdFinal = mediaId;
         if ((exist = cacheFileFinal.exists()) && !ignoreCache) {
             FileLoader.cacheOutQueue.postRunnable(new Runnable() {
                 @Override
@@ -206,26 +221,34 @@ public class FileLoadOperation {
                         if (FileLoader.getInstance().runtimeHack != null) {
                             delay = 60;
                         }
-                        if (FileLoader.lastCacheOutTime != 0 && FileLoader.lastCacheOutTime > System.currentTimeMillis() - delay) {
+                        if (mediaIdFinal != null) {
+                            delay = 0;
+                        }
+                        if (delay != 0 && FileLoader.lastCacheOutTime != 0 && FileLoader.lastCacheOutTime > System.currentTimeMillis() - delay) {
                             Thread.sleep(delay);
                         }
                         FileLoader.lastCacheOutTime = System.currentTimeMillis();
                         if (state != 1) {
                             return;
                         }
+
                         if (needBitmapCreate) {
-                            FileInputStream is = new FileInputStream(cacheFileFinal);
                             BitmapFactory.Options opts = new BitmapFactory.Options();
 
                             float w_filter = 0;
-                            float h_filter;
+                            float h_filter = 0;
                             if (filter != null) {
                                 String args[] = filter.split("_");
                                 w_filter = Float.parseFloat(args[0]) * Utilities.density;
                                 h_filter = Float.parseFloat(args[1]) * Utilities.density;
-
                                 opts.inJustDecodeBounds = true;
-                                BitmapFactory.decodeFile(cacheFileFinal.getAbsolutePath(), opts);
+
+                                if (mediaIdFinal != null) {
+                                    MediaStore.Images.Thumbnails.getThumbnail(ApplicationLoader.applicationContext.getContentResolver(), mediaIdFinal, MediaStore.Images.Thumbnails.MINI_KIND, opts);
+                                } else {
+                                    BitmapFactory.decodeFile(cacheFileFinal.getAbsolutePath(), opts);
+                                }
+
                                 float photoW = opts.outWidth;
                                 float photoH = opts.outHeight;
                                 float scaleFactor = Math.max(photoW / w_filter, photoH / h_filter);
@@ -242,19 +265,25 @@ public class FileLoadOperation {
                                 opts.inPreferredConfig = Bitmap.Config.RGB_565;
                             }
                             opts.inDither = false;
-                            image = BitmapFactory.decodeStream(is, null, opts);
-                            is.close();
+                            if (mediaIdFinal != null) {
+                                image = MediaStore.Images.Thumbnails.getThumbnail(ApplicationLoader.applicationContext.getContentResolver(), mediaIdFinal, MediaStore.Images.Thumbnails.MINI_KIND, null);
+                            }
+                            if (image == null) {
+                                FileInputStream is = new FileInputStream(cacheFileFinal);
+                                image = BitmapFactory.decodeStream(is, null, opts);
+                                is.close();
+                            }
                             if (image == null) {
                                 if (!dontDelete && (cacheFileFinal.length() == 0 || filter == null)) {
                                    cacheFileFinal.delete();
                                 }
                             } else {
-                                if (filter != null && image != null) {
+                                if (filter != null) {
                                     float bitmapW = image.getWidth();
                                     float bitmapH = image.getHeight();
                                     if (bitmapW != w_filter && bitmapW > w_filter) {
                                         float scaleFactor = bitmapW / w_filter;
-                                        Bitmap scaledBitmap = Bitmap.createScaledBitmap(image, (int)w_filter, (int)(bitmapH / scaleFactor), true);
+                                        Bitmap scaledBitmap = Bitmap.createScaledBitmap(image, (int)w_filter, (int)(bitmapH / scaleFactor), false);
                                         if (image != scaledBitmap) {
                                             if (Build.VERSION.SDK_INT < 11) {
                                                 image.recycle();
@@ -283,6 +312,12 @@ public class FileLoadOperation {
                         if (!dontDelete && cacheFileFinal.length() == 0) {
                             cacheFileFinal.delete();
                         }
+                        Utilities.stageQueue.postRunnable(new Runnable() {
+                            @Override
+                            public void run() {
+                                delegate.didFailedLoadingFile(FileLoadOperation.this);
+                            }
+                        });
                         FileLog.e("tmessages", e);
                     }
                 }
@@ -461,7 +496,7 @@ public class FileLoadOperation {
                             float bitmapH = image.getHeight();
                             if (bitmapW != w_filter && bitmapW > w_filter) {
                                 float scaleFactor = bitmapW / w_filter;
-                                Bitmap scaledBitmap = Bitmap.createScaledBitmap(image, (int) w_filter, (int) (bitmapH / scaleFactor), true);
+                                Bitmap scaledBitmap = Bitmap.createScaledBitmap(image, (int) w_filter, (int) (bitmapH / scaleFactor), false);
                                 if (image != scaledBitmap) {
                                     if (Build.VERSION.SDK_INT < 11) {
                                         image.recycle();

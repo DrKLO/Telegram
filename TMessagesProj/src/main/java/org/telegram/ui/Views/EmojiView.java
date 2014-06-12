@@ -26,6 +26,7 @@ import android.widget.TextView;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.Utilities;
 
 import java.util.ArrayList;
 
@@ -109,8 +110,8 @@ public class EmojiView extends LinearLayout {
                 tabs.setViewPager(this.pager);
                 tabs.setShouldExpand(true);
                 tabs.setIndicatorColor(0xff33b5e5);
-                tabs.setIndicatorHeight(Emoji.scale(2.0F));
-                tabs.setUnderlineHeight(Emoji.scale(2.0F));
+                tabs.setIndicatorHeight(Utilities.dpf(2.0f));
+                tabs.setUnderlineHeight(Utilities.dpf(2.0f));
                 tabs.setUnderlineColor(1711276032);
                 tabs.setTabBackground(0);
                 LinearLayout localLinearLayout = new LinearLayout(getContext());
@@ -133,23 +134,23 @@ public class EmojiView extends LinearLayout {
                         return true;
                     }
                 });
-                localLinearLayout.addView(localImageView, new LinearLayout.LayoutParams(Emoji.scale(61.0F), -1));
+                localLinearLayout.addView(localImageView, new LinearLayout.LayoutParams(Utilities.dpf(61.0f), -1));
                 this.recentsWrap = new FrameLayout(getContext());
                 this.recentsWrap.addView(this.views.get(0));
                 TextView localTextView = new TextView(getContext());
                 localTextView.setText(LocaleController.getString("NoRecent", R.string.NoRecent));
-                localTextView.setTextSize(18.0F);
+                localTextView.setTextSize(18.0f);
                 localTextView.setTextColor(-7829368);
                 localTextView.setGravity(17);
                 this.recentsWrap.addView(localTextView);
                 this.views.get(0).setEmptyView(localTextView);
-                addView(localLinearLayout, new LinearLayout.LayoutParams(-1, Emoji.scale(48.0F)));
+                addView(localLinearLayout, new LinearLayout.LayoutParams(-1, Utilities.dpf(48.0f)));
                 addView(this.pager);
                 loadRecents();
                 return;
             }
             GridView localGridView = new GridView(getContext());
-            localGridView.setColumnWidth(Emoji.scale(45.0F));
+            localGridView.setColumnWidth(Utilities.dpf(45.0f));
             localGridView.setNumColumns(-1);
             EmojiGridAdapter localEmojiGridAdapter = new EmojiGridAdapter(Emoji.data[i]);
             localGridView.setAdapter(localEmojiGridAdapter);

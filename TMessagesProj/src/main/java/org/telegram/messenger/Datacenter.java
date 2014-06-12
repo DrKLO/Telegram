@@ -27,9 +27,6 @@ public class Datacenter {
     public int[] defaultPorts =   new int[] {-1, 80, -1, 443, -1, 443, -1, 80, -1, 443, -1};
     public int[] defaultPorts8888 = new int[] {-1, 8888, -1, 443, -1, 8888,  -1, 80, -1, 8888,  -1};
     public boolean authorized;
-    public long authSessionId;
-    public long authDownloadSessionId;
-    public long authUploadSessionId;
     public byte[] authKey;
     public long authKeyId;
     public int lastInitVersion = 0;
@@ -40,6 +37,7 @@ public class Datacenter {
     public TcpConnection connection;
     public TcpConnection downloadConnection;
     public TcpConnection uploadConnection;
+    public TcpConnection pushConnection;
 
     private ArrayList<ServerSalt> authServerSaltSet = new ArrayList<ServerSalt>();
 

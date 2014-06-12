@@ -131,11 +131,12 @@ public class ChatMessageCell extends ChatBaseCell {
             }
             pressedLink = null;
             int maxWidth;
-            if (isChat && !messageObject.messageOwner.out) {
+            if (isChat && !messageObject.isOut()) {
                 maxWidth = Utilities.displaySize.x - Utilities.dp(122);
                 drawName = true;
             } else {
                 maxWidth = Utilities.displaySize.x - Utilities.dp(80);
+                drawName = false;
             }
 
             backgroundWidth = maxWidth;
@@ -149,7 +150,7 @@ public class ChatMessageCell extends ChatBaseCell {
             maxChildWidth = Math.max(maxChildWidth, forwardedNameWidth);
 
             int timeMore = timeWidth + Utilities.dp(6);
-            if (messageObject.messageOwner.out) {
+            if (messageObject.isOut()) {
                 timeMore += Utilities.dpf(20.5f);
             }
 
@@ -176,7 +177,7 @@ public class ChatMessageCell extends ChatBaseCell {
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
 
-        if (currentMessageObject.messageOwner.out) {
+        if (currentMessageObject.isOut()) {
             textX = layoutWidth - backgroundWidth + Utilities.dp(10);
             textY = Utilities.dp(10) + namesOffset;
         } else {
@@ -192,7 +193,7 @@ public class ChatMessageCell extends ChatBaseCell {
             return;
         }
 
-        if (currentMessageObject.messageOwner.out) {
+        if (currentMessageObject.isOut()) {
             textX = layoutWidth - backgroundWidth + Utilities.dp(10);
             textY = Utilities.dp(10) + namesOffset;
         } else {

@@ -56,25 +56,6 @@ public class PyroSelector {
 
     //
 
-    public ByteBuffer malloc(int size) {
-        return ByteBuffer.allocate(size);
-    }
-
-    public ByteBuffer malloc(byte[] array) {
-        ByteBuffer copy = this.malloc(array.length);
-        copy.put(array);
-        copy.flip();
-        return copy;
-    }
-
-    public ByteBuffer copy(ByteBuffer buffer) {
-        ByteBuffer copy = this.malloc(buffer.remaining());
-        copy.put(buffer);
-        buffer.position(buffer.position() - copy.remaining());
-        copy.flip();
-        return copy;
-    }
-
     public final boolean isNetworkThread() {
         return DO_NOT_CHECK_NETWORK_THREAD || networkThread == Thread.currentThread();
     }
@@ -102,7 +83,7 @@ public class PyroSelector {
     }
 
     public void select() {
-        this.select(10);
+        this.select(0);
     }
 
     public void select(long eventTimeout) {

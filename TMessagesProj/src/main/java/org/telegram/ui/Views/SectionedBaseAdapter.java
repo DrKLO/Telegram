@@ -11,7 +11,6 @@ package org.telegram.ui.Views;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
 
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 
@@ -223,5 +222,4 @@ public abstract class SectionedBaseAdapter extends BaseFragmentAdapter implement
         mSectionCount = getSectionCount();
         return mSectionCount;
     }
-
 }

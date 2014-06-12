@@ -94,7 +94,7 @@
     <string name="Message">Message</string>
     <string name="TypeMessage">Type message</string>
     <string name="DOWNLOAD">Download</string>
-    <string name="Selected">Selected:</string>
+    <string name="Selected">Selected: %d</string>
     <string name="ShareMyContactInfo">SHARE MY CONTACT INFO</string>
     <string name="AddToContacts">ADD TO CONTACTS</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s invited you to join a secret chat.</string>
@@ -109,6 +109,7 @@
     <string name="YouWereKicked">You were removed from this group</string>
     <string name="YouLeft">You left this group</string>
     <string name="DeleteThisGroup">Delete this group</string>
+    <string name="DeleteThisChat">Delete this chat</string>
     <string name="SlideToCancel">SLIDE TO CANCEL</string>
     <string name="SaveToDownloads">Save to downloads</string>
     <string name="ApplyLocalizationFile">Apply localization file</string>
@@ -262,6 +263,15 @@
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
     <string name="DeleteLocalization">Delete localization?</string>
     <string name="IncorrectLocalization">Incorrect localization file</string>
+    <string name="Enabled">Enabled</string>
+    <string name="Disabled">Disabled</string>
+    <string name="NotificationsService">Notifications Service</string>
+    <string name="NotificationsServiceDisableInfo">If google play services are enough for you to receive notifications, you can disable Notifications Service. However we recommend you to leave it enabled to keep app running in background and receive instant notifications.</string>
+    <string name="SortBy">Sort By</string>
+    <string name="ImportContacts">Import Contacts</string>
+    <string name="WiFiOnly">Via WiFi only</string>
+    <string name="SortFirstName">First name</string>
+    <string name="SortLastName">Last name</string>
 
     <!--media view-->
     <string name="NoMedia">No shared media yet</string>
@@ -282,6 +292,8 @@
     <string name="SaveToGallery">Save to gallery</string>
     <string name="Of">%1$d of %2$d</string>
     <string name="Gallery">Gallery</string>
+    <string name="AllPhotos">All Photos</string>
+    <string name="NoPhotos">No photos yet</string>
 
     <!--button titles-->
     <string name="Next">Next</string>
@@ -329,6 +341,8 @@
     <string name="AttachDocument">Document</string>
     <string name="AttachAudio">Audio</string>
     <string name="FromYou">You</string>
+    <string name="ActionTakeScreenshootYou">You took a screenshot!</string>
+    <string name="ActionTakeScreenshoot">un1 took a screenshot!</string>
 
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Invalid phone number</string>

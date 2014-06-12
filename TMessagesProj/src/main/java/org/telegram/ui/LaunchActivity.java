@@ -8,36 +8,29 @@
 
 package org.telegram.ui;
 
-import android.app.Activity;
 import android.app.NotificationManager;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.database.Cursor;
-import android.graphics.PixelFormat;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.provider.ContactsContract;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarActivity;
 import android.view.Surface;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -45,18 +38,15 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
-import org.telegram.ui.Views.BaseFragment;
+import org.telegram.ui.Views.ActionBar.ActionBarActivity;
+import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.NotificationView;
-
-import net.hockeyapp.android.CrashManager;
-import net.hockeyapp.android.UpdateManager;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Map;
 
 public class LaunchActivity extends ActionBarActivity implements NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate {
     private boolean finished = false;
@@ -69,32 +59,32 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     private ArrayList<String> documentsPathArray = null;
     private ArrayList<TLRPC.User> contactsToSend = null;
     private int currentConnectionState;
-    private View statusView;
-    private View backStatusButton;
-    private View statusBackground;
-    private TextView statusText;
-    private View containerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
         ApplicationLoader.postInitApplication();
-
-        this.setTheme(R.style.Theme_TMessages);
-        getWindow().setBackgroundDrawableResource(R.drawable.transparent);
-        getWindow().setFormat(PixelFormat.RGB_565);
 
         if (!UserConfig.clientActivated) {
             Intent intent = getIntent();
             if (intent != null && intent.getAction() != null && (Intent.ACTION_SEND.equals(intent.getAction()) || intent.getAction().equals(Intent.ACTION_SEND_MULTIPLE))) {
+                super.onCreateFinish(savedInstanceState);
                 finish();
                 return;
             }
-            Intent intent2 = new Intent(this, IntroActivity.class);
-            startActivity(intent2);
-            finish();
-            return;
+            if (intent != null && !intent.getBooleanExtra("fromIntro", false)) {
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("logininfo", MODE_PRIVATE);
+                Map<String, ?> state = preferences.getAll();
+                if (state.isEmpty()) {
+                    Intent intent2 = new Intent(this, IntroActivity.class);
+                    startActivity(intent2);
+                    super.onCreateFinish(savedInstanceState);
+                    finish();
+                    return;
+                }
+            }
         }
+
+        super.onCreate(savedInstanceState);
 
         int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
         if (resourceId > 0) {
@@ -103,43 +93,19 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
 
         NotificationCenter.getInstance().postNotificationName(702, this);
         currentConnectionState = ConnectionsManager.getInstance().connectionState;
-        for (BaseFragment fragment : ApplicationLoader.fragmentsStack) {
-            if (fragment.fragmentView != null) {
-                ViewGroup parent = (ViewGroup)fragment.fragmentView.getParent();
-                if (parent != null) {
-                    parent.removeView(fragment.fragmentView);
-                }
-                fragment.fragmentView = null;
-            }
-            fragment.parentActivity = this;
-        }
-        setContentView(R.layout.application_layout);
+
         NotificationCenter.getInstance().addObserver(this, 1234);
         NotificationCenter.getInstance().addObserver(this, 658);
         NotificationCenter.getInstance().addObserver(this, 701);
         NotificationCenter.getInstance().addObserver(this, 702);
         NotificationCenter.getInstance().addObserver(this, 703);
-        NotificationCenter.getInstance().addObserver(this, GalleryImageViewer.needShowAllMedia);
-        getSupportActionBar().setLogo(R.drawable.ab_icon_fixed2);
 
-        statusView = getLayoutInflater().inflate(R.layout.updating_state_layout, null);
-        statusBackground = statusView.findViewById(R.id.back_button_background);
-        backStatusButton = statusView.findViewById(R.id.back_button);
-        containerView = findViewById(R.id.container);
-        statusText = (TextView)statusView.findViewById(R.id.status_text);
-        statusBackground.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (ApplicationLoader.fragmentsStack.size() > 1) {
-                    onBackPressed();
-                }
+        if (fragmentsStack.isEmpty()) {
+            if (!UserConfig.clientActivated) {
+                addFragmentToStack(new LoginActivity());
+            } else {
+                addFragmentToStack(new MessagesActivity(null));
             }
-        });
-
-        if (ApplicationLoader.fragmentsStack.isEmpty()) {
-            MessagesActivity fragment = new MessagesActivity();
-            fragment.onFragmentCreate();
-            ApplicationLoader.fragmentsStack.add(fragment);
 
             try {
                 if (savedInstanceState != null) {
@@ -148,32 +114,33 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                         Bundle args = savedInstanceState.getBundle("args");
                         if (fragmentName.equals("chat")) {
                             if (args != null) {
-                                ChatActivity chat = new ChatActivity();
-                                chat.setArguments(args);
-                                if (chat.onFragmentCreate()) {
-                                    ApplicationLoader.fragmentsStack.add(chat);
+                                ChatActivity chat = new ChatActivity(args);
+                                if (addFragmentToStack(chat)) {
                                     chat.restoreSelfArgs(savedInstanceState);
                                 }
                             }
                         } else if (fragmentName.equals("settings")) {
                             SettingsActivity settings = new SettingsActivity();
-                            settings.onFragmentCreate();
+                            addFragmentToStack(settings);
                             settings.restoreSelfArgs(savedInstanceState);
-                            ApplicationLoader.fragmentsStack.add(settings);
                         } else if (fragmentName.equals("group")) {
                             if (args != null) {
-                                GroupCreateFinalActivity group = new GroupCreateFinalActivity();
-                                group.setArguments(args);
-                                if (group.onFragmentCreate()) {
+                                GroupCreateFinalActivity group = new GroupCreateFinalActivity(args);
+                                if (addFragmentToStack(group)) {
                                     group.restoreSelfArgs(savedInstanceState);
-                                    ApplicationLoader.fragmentsStack.add(group);
+                                }
+                            }
+                        } else if (fragmentName.equals("chat_profile")) {
+                            if (args != null) {
+                                ChatProfileActivity profile = new ChatProfileActivity(args);
+                                if (addFragmentToStack(profile)) {
+                                    profile.restoreSelfArgs(savedInstanceState);
                                 }
                             }
                         } else if (fragmentName.equals("wallpapers")) {
                             SettingsWallpapersActivity settings = new SettingsWallpapersActivity();
-                            settings.onFragmentCreate();
+                            addFragmentToStack(settings);
                             settings.restoreSelfArgs(savedInstanceState);
-                            ApplicationLoader.fragmentsStack.add(settings);
                         }
                     }
                 }
@@ -183,35 +150,8 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         }
 
         handleIntent(getIntent(), false, savedInstanceState != null);
-    }
 
-    @SuppressWarnings("unchecked")
-    private void prepareForHideShowActionBar() {
-        try {
-            Class firstClass = getSupportActionBar().getClass();
-            Class aClass = firstClass.getSuperclass();
-            if (aClass == android.support.v7.app.ActionBar.class) {
-                Method method = firstClass.getDeclaredMethod("setShowHideAnimationEnabled", boolean.class);
-                method.invoke(getSupportActionBar(), false);
-            } else {
-                Field field = aClass.getDeclaredField("mActionBar");
-                field.setAccessible(true);
-                Method method = field.get(getSupportActionBar()).getClass().getDeclaredMethod("setShowHideAnimationEnabled", boolean.class);
-                method.invoke(field.get(getSupportActionBar()), false);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void showActionBar() {
-        prepareForHideShowActionBar();
-        getSupportActionBar().show();
-    }
-
-    public void hideActionBar() {
-        prepareForHideShowActionBar();
-        getSupportActionBar().hide();
+        PhotoViewer.getInstance().setParentActivity(this);
     }
 
     private void handleIntent(Intent intent, boolean isNew, boolean restore) {
@@ -229,87 +169,196 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         imagesPathArray = null;
         documentsPathArray = null;
 
-        if (intent != null && intent.getAction() != null && !restore) {
-            if (Intent.ACTION_SEND.equals(intent.getAction())) {
-                boolean error = false;
-                String type = intent.getType();
-                if (type != null && type.equals("text/plain")) {
-                    String text = intent.getStringExtra(Intent.EXTRA_TEXT);
-                    String subject = intent.getStringExtra(Intent.EXTRA_SUBJECT);
+        if ((intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0) {
 
-                    if (text != null && text.length() != 0) {
-                        if ((text.startsWith("http://") || text.startsWith("https://")) && subject != null && subject.length() != 0) {
-                            text = subject + "\n" + text;
+            if (intent != null && intent.getAction() != null && !restore) {
+                if (Intent.ACTION_SEND.equals(intent.getAction())) {
+                    boolean error = false;
+                    String type = intent.getType();
+                    if (type != null && type.equals("text/plain")) {
+                        String text = intent.getStringExtra(Intent.EXTRA_TEXT);
+                        String subject = intent.getStringExtra(Intent.EXTRA_SUBJECT);
+
+                        if (text != null && text.length() != 0) {
+                            if ((text.startsWith("http://") || text.startsWith("https://")) && subject != null && subject.length() != 0) {
+                                text = subject + "\n" + text;
+                            }
+                            sendingText = text;
+                        } else {
+                            error = true;
                         }
-                        sendingText = text;
-                    } else {
-                        error = true;
-                    }
-                } else if (type != null && type.equals(ContactsContract.Contacts.CONTENT_VCARD_TYPE)) {
-                    try {
-                        Uri uri = (Uri)intent.getExtras().get(Intent.EXTRA_STREAM);
-                        if (uri != null) {
-                            ContentResolver cr = getContentResolver();
-                            InputStream stream = cr.openInputStream(uri);
+                    } else if (type != null && type.equals(ContactsContract.Contacts.CONTENT_VCARD_TYPE)) {
+                        try {
+                            Uri uri = (Uri) intent.getExtras().get(Intent.EXTRA_STREAM);
+                            if (uri != null) {
+                                ContentResolver cr = getContentResolver();
+                                InputStream stream = cr.openInputStream(uri);
 
-                            String name = null;
-                            String nameEncoding = null;
-                            String nameCharset = null;
-                            ArrayList<String> phones = new ArrayList<String>();
-                            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
-                            String line = null;
-                            while ((line = bufferedReader.readLine()) != null) {
-                                String[] args = line.split(":");
-                                if (args.length != 2) {
-                                    continue;
+                                String name = null;
+                                String nameEncoding = null;
+                                String nameCharset = null;
+                                ArrayList<String> phones = new ArrayList<String>();
+                                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
+                                String line = null;
+                                while ((line = bufferedReader.readLine()) != null) {
+                                    String[] args = line.split(":");
+                                    if (args.length != 2) {
+                                        continue;
+                                    }
+                                    if (args[0].startsWith("FN")) {
+                                        String[] params = args[0].split(";");
+                                        for (String param : params) {
+                                            String[] args2 = param.split("=");
+                                            if (args2.length != 2) {
+                                                continue;
+                                            }
+                                            if (args2[0].equals("CHARSET")) {
+                                                nameCharset = args2[1];
+                                            } else if (args2[0].equals("ENCODING")) {
+                                                nameEncoding = args2[1];
+                                            }
+                                        }
+                                        name = args[1];
+                                        if (nameEncoding != null && nameEncoding.equalsIgnoreCase("QUOTED-PRINTABLE")) {
+                                            while (name.endsWith("=") && nameEncoding != null) {
+                                                name = name.substring(0, name.length() - 1);
+                                                line = bufferedReader.readLine();
+                                                if (line == null) {
+                                                    break;
+                                                }
+                                                name += line;
+                                            }
+                                            byte[] bytes = Utilities.decodeQuotedPrintable(name.getBytes());
+                                            if (bytes != null && bytes.length != 0) {
+                                                String decodedName = new String(bytes, nameCharset);
+                                                if (decodedName != null) {
+                                                    name = decodedName;
+                                                }
+                                            }
+                                        }
+                                    } else if (args[0].startsWith("TEL")) {
+                                        String phone = PhoneFormat.stripExceptNumbers(args[1], true);
+                                        if (phone.length() > 0) {
+                                            phones.add(phone);
+                                        }
+                                    }
                                 }
-                                if (args[0].startsWith("FN")) {
-                                    String[] params = args[0].split(";");
-                                    for (String param : params) {
-                                        String[] args2 = param.split("=");
-                                        if (args2.length != 2) {
-                                            continue;
-                                        }
-                                        if (args2[0].equals("CHARSET")) {
-                                            nameCharset = args2[1];
-                                        } else if (args2[0].equals("ENCODING")) {
-                                            nameEncoding = args2[1];
-                                        }
+                                if (name != null && !phones.isEmpty()) {
+                                    contactsToSend = new ArrayList<TLRPC.User>();
+                                    for (String phone : phones) {
+                                        TLRPC.User user = new TLRPC.TL_userContact();
+                                        user.phone = phone;
+                                        user.first_name = name;
+                                        user.last_name = "";
+                                        user.id = 0;
+                                        contactsToSend.add(user);
                                     }
-                                    name = args[1];
-                                    if (nameEncoding != null && nameEncoding.equalsIgnoreCase("QUOTED-PRINTABLE")) {
-                                        while (name.endsWith("=") && nameEncoding != null) {
-                                            name = name.substring(0, name.length() - 1);
-                                            line = bufferedReader.readLine();
-                                            if (line == null) {
-                                                break;
-                                            }
-                                            name += line;
-                                        }
-                                        byte[] bytes = Utilities.decodeQuotedPrintable(name.getBytes());
-                                        if (bytes != null && bytes.length != 0) {
-                                            String decodedName = new String(bytes, nameCharset);
-                                            if (decodedName != null) {
-                                                name = decodedName;
-                                            }
-                                        }
-                                    }
-                                } else if (args[0].startsWith("TEL")) {
-                                    String phone = PhoneFormat.stripExceptNumbers(args[1], true);
-                                    if (phone.length() > 0) {
-                                        phones.add(phone);
-                                    }
+                                }
+                            } else {
+                                error = true;
+                            }
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                            error = true;
+                        }
+                    } else {
+                        Parcelable parcelable = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+                        if (parcelable == null) {
+                            return;
+                        }
+                        String path = null;
+                        if (!(parcelable instanceof Uri)) {
+                            parcelable = Uri.parse(parcelable.toString());
+                        }
+                        Uri uri = (Uri) parcelable;
+                        if (uri != null && type != null && type.startsWith("image/")) {
+                            String tempPath = Utilities.getPath(uri);
+                            boolean isGif = false;
+                            if (tempPath != null && tempPath.endsWith(".gif")) {
+                                isGif = true;
+                                documentPath = tempPath;
+                            } else if (tempPath == null) {
+                                isGif = MediaController.isGif(uri);
+                                if (isGif) {
+                                    documentPath = MediaController.copyDocumentToCache(uri);
                                 }
                             }
-                            if (name != null && !phones.isEmpty()) {
-                                contactsToSend = new ArrayList<TLRPC.User>();
-                                for (String phone : phones) {
-                                    TLRPC.User user = new TLRPC.TL_userContact();
-                                    user.phone = phone;
-                                    user.first_name = name;
-                                    user.last_name = "";
-                                    user.id = 0;
-                                    contactsToSend.add(user);
+                            if (!isGif || documentPath == null) {
+                                photoPath = uri;
+                            }
+                        } else {
+                            path = Utilities.getPath(uri);
+                            if (path != null) {
+                                if (path.startsWith("file:")) {
+                                    path = path.replace("file://", "");
+                                }
+                                if (type != null && type.startsWith("video/")) {
+                                    videoPath = path;
+                                } else {
+                                    documentPath = path;
+                                }
+                            } else {
+                                error = true;
+                            }
+                        }
+                        if (error) {
+                            Toast.makeText(this, "Unsupported content", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                } else if (intent.getAction().equals(Intent.ACTION_SEND_MULTIPLE)) {
+                    boolean error = false;
+                    try {
+                        ArrayList<Parcelable> uris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
+                        String type = intent.getType();
+                        if (uris != null) {
+                            if (type != null && type.startsWith("image/")) {
+                                for (Parcelable parcelable : uris) {
+                                    if (!(parcelable instanceof Uri)) {
+                                        parcelable = Uri.parse(parcelable.toString());
+                                    }
+                                    Uri uri = (Uri) parcelable;
+                                    String tempPath = Utilities.getPath(uri);
+
+                                    boolean isGif = false;
+                                    if (tempPath != null && tempPath.endsWith(".gif")) {
+                                        isGif = true;
+                                    } else if (tempPath == null) {
+                                        isGif = MediaController.isGif(uri);
+                                        if (isGif) {
+                                            tempPath = MediaController.copyDocumentToCache(uri);
+                                        }
+                                    }
+                                    if (isGif && tempPath != null) {
+                                        if (documentsPathArray == null) {
+                                            documentsPathArray = new ArrayList<String>();
+                                        }
+                                        try {
+                                            documentsPathArray.add(tempPath);
+                                        } catch (Exception e) {
+                                            FileLog.e("tmessages", e);
+                                        }
+                                    } else {
+                                        if (imagesPathArray == null) {
+                                            imagesPathArray = new ArrayList<Uri>();
+                                        }
+                                        imagesPathArray.add(uri);
+                                    }
+                                }
+                            } else {
+                                for (Parcelable parcelable : uris) {
+                                    if (!(parcelable instanceof Uri)) {
+                                        parcelable = Uri.parse(parcelable.toString());
+                                    }
+                                    String path = Utilities.getPath((Uri) parcelable);
+                                    if (path != null) {
+                                        if (path.startsWith("file:")) {
+                                            path = path.replace("file://", "");
+                                        }
+                                        if (documentsPathArray == null) {
+                                            documentsPathArray = new ArrayList<String>();
+                                        }
+                                        documentsPathArray.add(path);
+                                    }
                                 }
                             }
                         } else {
@@ -319,141 +368,50 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                         FileLog.e("tmessages", e);
                         error = true;
                     }
-                } else {
-                    Parcelable parcelable = intent.getParcelableExtra(Intent.EXTRA_STREAM);
-                    if (parcelable == null) {
-                        return;
-                    }
-                    String path = null;
-                    if (!(parcelable instanceof Uri)) {
-                        parcelable = Uri.parse(parcelable.toString());
-                    }
-                    if (parcelable != null && type != null && type.startsWith("image/")) {
-                        if (type.equals("image/gif")) {
-                            try {
-                                documentPath = Utilities.getPath((Uri)parcelable);
-                            } catch (Exception e) {
-                                FileLog.e("tmessages", e);
-                            }
-                            if (documentPath == null) {
-                                photoPath = (Uri) parcelable;
-                            }
-                        } else {
-                            photoPath = (Uri) parcelable;
-                        }
-                    } else {
-                        path = Utilities.getPath((Uri)parcelable);
-                        if (path != null) {
-                            if (path.startsWith("file:")) {
-                                path = path.replace("file://", "");
-                            }
-                            if (type != null && type.startsWith("video/")) {
-                                videoPath = path;
-                            } else {
-                                documentPath = path;
-                            }
-                        } else {
-                            error = true;
-                        }
-                    }
                     if (error) {
                         Toast.makeText(this, "Unsupported content", Toast.LENGTH_SHORT).show();
                     }
-                }
-            } else if (intent.getAction().equals(Intent.ACTION_SEND_MULTIPLE)) {
-                boolean error = false;
-                try {
-                    ArrayList<Parcelable> uris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
-                    String type = intent.getType();
-                    if (uris != null) {
-                        if (type != null && type.startsWith("image/")) {
-                            for (Parcelable parcelable : uris) {
-                                if (!(parcelable instanceof Uri)) {
-                                    parcelable = Uri.parse(parcelable.toString());
-                                }
-                                if (type.equals("image/gif")) {
-                                    if (documentsPathArray == null) {
-                                        documentsPathArray = new ArrayList<String>();
-                                    }
-                                    try {
-                                        documentsPathArray.add(Utilities.getPath((Uri) parcelable));
-                                    } catch (Exception e) {
-                                        FileLog.e("tmessages", e);
-                                    }
-                                } else {
-                                    if (imagesPathArray == null) {
-                                        imagesPathArray = new ArrayList<Uri>();
-                                    }
-                                    imagesPathArray.add((Uri) parcelable);
-                                }
+                } else if (Intent.ACTION_VIEW.equals(intent.getAction())) {
+                    try {
+                        Cursor cursor = getContentResolver().query(intent.getData(), null, null, null, null);
+                        if (cursor != null) {
+                            if (cursor.moveToFirst()) {
+                                int userId = cursor.getInt(cursor.getColumnIndex("DATA4"));
+                                NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
+                                push_user_id = userId;
                             }
-                        } else {
-                            for (Parcelable parcelable : uris) {
-                                if (!(parcelable instanceof Uri)) {
-                                    parcelable = Uri.parse(parcelable.toString());
-                                }
-                                String path = Utilities.getPath((Uri) parcelable);
-                                if (path != null) {
-                                    if (path.startsWith("file:")) {
-                                        path = path.replace("file://", "");
-                                    }
-                                    if (documentsPathArray == null) {
-                                        documentsPathArray = new ArrayList<String>();
-                                    }
-                                    documentsPathArray.add(path);
-                                }
-                            }
+                            cursor.close();
                         }
-                    } else {
-                        error = true;
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
                     }
-                } catch (Exception e) {
-                    FileLog.e("tmessages", e);
-                    error = true;
+                } else if (intent.getAction().equals("org.telegram.messenger.OPEN_ACCOUNT")) {
+                    open_settings = 1;
                 }
-                if (error) {
-                    Toast.makeText(this, "Unsupported content", Toast.LENGTH_SHORT).show();
-                }
-            } else if (Intent.ACTION_VIEW.equals(intent.getAction())) {
-                try {
-                    Cursor cursor = getContentResolver().query(intent.getData(), null, null, null, null);
-                    if (cursor != null) {
-                        if (cursor.moveToFirst()) {
-                            int userId = cursor.getInt(cursor.getColumnIndex("DATA4"));
-                            NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
-                            push_user_id = userId;
-                        }
-                        cursor.close();
-                    }
-                } catch (Exception e) {
-                    FileLog.e("tmessages", e);
-                }
-            } else if (intent.getAction().equals("org.telegram.messenger.OPEN_ACCOUNT")) {
-                open_settings = 1;
             }
-        }
 
-        if (getIntent().getAction() != null && getIntent().getAction().startsWith("com.tmessages.openchat") && (getIntent().getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0 && !restore) {
-            int chatId = getIntent().getIntExtra("chatId", 0);
-            int userId = getIntent().getIntExtra("userId", 0);
-            int encId = getIntent().getIntExtra("encId", 0);
-            if (chatId != 0) {
-                TLRPC.Chat chat = MessagesController.getInstance().chats.get(chatId);
-                if (chat != null) {
-                    NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
-                    push_chat_id = chatId;
-                }
-            } else if (userId != 0) {
-                TLRPC.User user = MessagesController.getInstance().users.get(userId);
-                if (user != null) {
-                    NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
-                    push_user_id = userId;
-                }
-            } else if (encId != 0) {
-                TLRPC.EncryptedChat chat = MessagesController.getInstance().encryptedChats.get(encId);
-                if (chat != null) {
-                    NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
-                    push_enc_id = encId;
+            if (intent.getAction() != null && intent.getAction().startsWith("com.tmessages.openchat") && !restore) {
+                int chatId = intent.getIntExtra("chatId", 0);
+                int userId = intent.getIntExtra("userId", 0);
+                int encId = intent.getIntExtra("encId", 0);
+                if (chatId != 0) {
+                    TLRPC.Chat chat = MessagesController.getInstance().chats.get(chatId);
+                    if (chat != null) {
+                        NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
+                        push_chat_id = chatId;
+                    }
+                } else if (userId != 0) {
+                    TLRPC.User user = MessagesController.getInstance().users.get(userId);
+                    if (user != null) {
+                        NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
+                        push_user_id = userId;
+                    }
+                } else if (encId != 0) {
+                    TLRPC.EncryptedChat chat = MessagesController.getInstance().encryptedChats.get(encId);
+                    if (chat != null) {
+                        NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
+                        push_enc_id = encId;
+                    }
                 }
             }
         }
@@ -462,64 +420,47 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             if (push_user_id == UserConfig.clientUserId) {
                 open_settings = 1;
             } else {
-                ChatActivity fragment = new ChatActivity();
-                Bundle bundle = new Bundle();
-                bundle.putInt("user_id", push_user_id);
-                fragment.setArguments(bundle);
-                if (fragment.onFragmentCreate()) {
+                Bundle args = new Bundle();
+                args.putInt("user_id", push_user_id);
+                ChatActivity fragment = new ChatActivity(args);
+                if (presentFragment(fragment, false, true)) {
                     pushOpened = true;
-                    ApplicationLoader.fragmentsStack.add(fragment);
-                    getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
                 }
             }
         } else if (push_chat_id != 0) {
-            ChatActivity fragment = new ChatActivity();
-            Bundle bundle = new Bundle();
-            bundle.putInt("chat_id", push_chat_id);
-            fragment.setArguments(bundle);
-            if (fragment.onFragmentCreate()) {
+            Bundle args = new Bundle();
+            args.putInt("chat_id", push_chat_id);
+            ChatActivity fragment = new ChatActivity(args);
+            if (presentFragment(fragment, false, true)) {
                 pushOpened = true;
-                ApplicationLoader.fragmentsStack.add(fragment);
-                getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
             }
-        }  else if (push_enc_id != 0) {
-            ChatActivity fragment = new ChatActivity();
-            Bundle bundle = new Bundle();
-            bundle.putInt("enc_id", push_enc_id);
-            fragment.setArguments(bundle);
-            if (fragment.onFragmentCreate()) {
+        } else if (push_enc_id != 0) {
+            Bundle args = new Bundle();
+            args.putInt("enc_id", push_enc_id);
+            ChatActivity fragment = new ChatActivity(args);
+            if (presentFragment(fragment, false, true)) {
                 pushOpened = true;
-                ApplicationLoader.fragmentsStack.add(fragment);
-                getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
             }
         }
         if (videoPath != null || photoPath != null || sendingText != null || documentPath != null || documentsPathArray != null || imagesPathArray != null || contactsToSend != null) {
-            MessagesActivity fragment = new MessagesActivity();
-            fragment.selectAlertString = R.string.ForwardMessagesTo;
-            fragment.selectAlertStringDesc = "ForwardMessagesTo";
-            fragment.animationType = 1;
+            NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
             Bundle args = new Bundle();
             args.putBoolean("onlySelect", true);
-            fragment.setArguments(args);
-            fragment.delegate = this;
-            ApplicationLoader.fragmentsStack.add(fragment);
-            fragment.onFragmentCreate();
-            getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, fragment.getTag()).commitAllowingStateLoss();
+            args.putString("selectAlertString", LocaleController.getString("ForwardMessagesTo", R.string.ForwardMessagesTo));
+            MessagesActivity fragment = new MessagesActivity(args);
+            fragment.setDelegate(this);
+            presentFragment(fragment, false, true);
             pushOpened = true;
         }
         if (open_settings != 0) {
-            SettingsActivity fragment = new SettingsActivity();
-            ApplicationLoader.fragmentsStack.add(fragment);
-            fragment.onFragmentCreate();
-            getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "settings").commitAllowingStateLoss();
+            presentFragment(new SettingsActivity(), false, true);
             pushOpened = true;
         }
         if (!pushOpened && !isNew) {
-            BaseFragment fragment = ApplicationLoader.fragmentsStack.get(ApplicationLoader.fragmentsStack.size() - 1);
-            getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, fragment.getTag()).commitAllowingStateLoss();
+            showLastFragment();
         }
 
-        getIntent().setAction(null);
+        intent.setAction(null);
     }
 
     @Override
@@ -533,30 +474,20 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         if (dialog_id != 0) {
             int lower_part = (int)dialog_id;
 
-            ChatActivity fragment = new ChatActivity();
-            Bundle bundle = new Bundle();
+            Bundle args = new Bundle();
+            args.putBoolean("scrollToTopOnResume", true);
+            NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
             if (lower_part != 0) {
                 if (lower_part > 0) {
-                    NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
-                    bundle.putInt("user_id", lower_part);
-                    fragment.setArguments(bundle);
-                    fragment.scrollToTopOnResume = true;
-                    presentFragment(fragment, "chat" + Math.random(), true, false);
+                    args.putInt("user_id", lower_part);
                 } else if (lower_part < 0) {
-                    NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
-                    bundle.putInt("chat_id", -lower_part);
-                    fragment.setArguments(bundle);
-                    fragment.scrollToTopOnResume = true;
-                    presentFragment(fragment, "chat" + Math.random(), true, false);
+                    args.putInt("chat_id", -lower_part);
                 }
             } else {
-                NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
-                int chat_id = (int)(dialog_id >> 32);
-                bundle.putInt("enc_id", chat_id);
-                fragment.setArguments(bundle);
-                fragment.scrollToTopOnResume = true;
-                presentFragment(fragment, "chat" + Math.random(), true, false);
+                args.putInt("enc_id", (int)(dialog_id >> 32));
             }
+            ChatActivity fragment = new ChatActivity(args);
+            presentFragment(fragment, true);
             if (photoPath != null) {
                 fragment.processSendingPhoto(null, photoPath);
             }
@@ -570,9 +501,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                 fragment.processSendingDocument(documentPath);
             }
             if (imagesPathArray != null) {
-                for (Uri path : imagesPathArray) {
-                    fragment.processSendingPhoto(null, path);
-                }
+                fragment.processSendingPhotos(null, imagesPathArray);
             }
             if (documentsPathArray != null) {
                 for (String path : documentsPathArray) {
@@ -594,21 +523,11 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         }
     }
 
-    private void checkForCrashes() {
-        CrashManager.register(this, BuildVars.HOCKEY_APP_HASH);
-    }
-
-    private void checkForUpdates() {
-        if (BuildVars.DEBUG_VERSION) {
-            UpdateManager.register(this, BuildVars.HOCKEY_APP_HASH);
-        }
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (ApplicationLoader.fragmentsStack.size() != 0) {
-            BaseFragment fragment = ApplicationLoader.fragmentsStack.get(ApplicationLoader.fragmentsStack.size() - 1);
+        if (fragmentsStack.size() != 0) {
+            BaseFragment fragment = fragmentsStack.get(fragmentsStack.size() - 1);
             fragment.onActivityResultFragment(requestCode, resultCode, data);
         }
     }
@@ -629,7 +548,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        processOnFinish();
+        onFinish();
     }
 
     @Override
@@ -638,12 +557,10 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         if (notificationView == null && getLayoutInflater() != null) {
             notificationView = (NotificationView) getLayoutInflater().inflate(R.layout.notification_layout, null);
         }
-        fixLayout();
-        checkForCrashes();
-        checkForUpdates();
+        Utilities.checkForCrashes(this);
+        Utilities.checkForUpdates(this);
         ApplicationLoader.resetLastPauseTime();
-        supportInvalidateOptionsMenu();
-        updateActionBar();
+        actionBar.setBackOverlayVisible(currentConnectionState != 0);
         try {
             NotificationManager mNotificationManager = (NotificationManager)this.getSystemService(Context.NOTIFICATION_SERVICE);
             mNotificationManager.cancel(1);
@@ -653,7 +570,8 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         }
     }
 
-    private void processOnFinish() {
+    @Override
+    protected void onFinish() {
         if (finished) {
             return;
         }
@@ -663,7 +581,6 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         NotificationCenter.getInstance().removeObserver(this, 701);
         NotificationCenter.getInstance().removeObserver(this, 702);
         NotificationCenter.getInstance().removeObserver(this, 703);
-        NotificationCenter.getInstance().removeObserver(this, GalleryImageViewer.needShowAllMedia);
         if (notificationView != null) {
             notificationView.hide(false);
             notificationView.destroy();
@@ -675,40 +592,20 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     public void onConfigurationChanged(android.content.res.Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         Utilities.checkDisplaySize();
-        fixLayout();
     }
 
-    private void fixLayout() {
-        if (containerView != null) {
-            ViewTreeObserver obs = containerView.getViewTreeObserver();
-            obs.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    WindowManager manager = (WindowManager) getSystemService(WINDOW_SERVICE);
-                    int rotation = manager.getDefaultDisplay().getRotation();
+    @Override
+    public void needLayout() {
+        super.needLayout();
+        if (notificationView != null) {
+            WindowManager manager = (WindowManager) getSystemService(WINDOW_SERVICE);
+            int rotation = manager.getDefaultDisplay().getRotation();
 
-                    int height;
-                    int currentActionBarHeight = getSupportActionBar().getHeight();
-                    if (currentActionBarHeight != Utilities.dp(48) && currentActionBarHeight != Utilities.dp(40)) {
-                        height = currentActionBarHeight;
-                    } else {
-                        height = Utilities.dp(48);
-                        if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                            height = Utilities.dp(40);
-                        }
-                    }
-
-                    if (notificationView != null) {
-                        notificationView.applyOrientationPaddings(rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90, height);
-                    }
-
-                    if (Build.VERSION.SDK_INT < 16) {
-                        containerView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
-                    } else {
-                        containerView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                    }
-                }
-            });
+            int height = Utilities.dp(48);
+            if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                height = Utilities.dp(40);
+            }
+            notificationView.applyOrientationPaddings(rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90, height);
         }
     }
 
@@ -716,70 +613,37 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     @SuppressWarnings("unchecked")
     public void didReceivedNotification(int id, Object... args) {
         if (id == 1234) {
-            for (BaseFragment fragment : ApplicationLoader.fragmentsStack) {
+            for (BaseFragment fragment : fragmentsStack) {
                 fragment.onFragmentDestroy();
             }
-            ApplicationLoader.fragmentsStack.clear();
+            fragmentsStack.clear();
             Intent intent2 = new Intent(this, IntroActivity.class);
             startActivity(intent2);
-            processOnFinish();
+            onFinish();
             finish();
-        } else if (id == GalleryImageViewer.needShowAllMedia) {
-            long dialog_id = (Long)args[0];
-            MediaActivity fragment = new MediaActivity();
-            Bundle bundle = new Bundle();
-            if (dialog_id != 0) {
-                bundle.putLong("dialog_id", dialog_id);
-                fragment.setArguments(bundle);
-                presentFragment(fragment, "media_" + dialog_id, false);
-            }
         } else if (id == 658) {
-            Integer push_user_id = (Integer)NotificationCenter.getInstance().getFromMemCache("push_user_id", 0);
-            Integer push_chat_id = (Integer)NotificationCenter.getInstance().getFromMemCache("push_chat_id", 0);
-            Integer push_enc_id = (Integer)NotificationCenter.getInstance().getFromMemCache("push_enc_id", 0);
+            if (PhotoViewer.getInstance().isVisible()) {
+                PhotoViewer.getInstance().closePhoto(false);
+            }
+            Integer push_chat_id = (Integer)args[0];
+            Integer push_user_id = (Integer)args[1];
+            Integer push_enc_id = (Integer)args[2];
 
             if (push_user_id != 0) {
                 NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
-                ChatActivity fragment = new ChatActivity();
-                Bundle bundle = new Bundle();
-                bundle.putInt("user_id", push_user_id);
-                fragment.setArguments(bundle);
-                if (fragment.onFragmentCreate()) {
-                    if (ApplicationLoader.fragmentsStack.size() > 0) {
-                        BaseFragment lastFragment = ApplicationLoader.fragmentsStack.get(ApplicationLoader.fragmentsStack.size() - 1);
-                        lastFragment.willBeHidden();
-                    }
-                    ApplicationLoader.fragmentsStack.add(fragment);
-                    getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
-                }
+                Bundle args2 = new Bundle();
+                args2.putInt("user_id", push_user_id);
+                presentFragment(new ChatActivity(args2), false, true);
             } else if (push_chat_id != 0) {
                 NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
-                ChatActivity fragment = new ChatActivity();
-                Bundle bundle = new Bundle();
-                bundle.putInt("chat_id", push_chat_id);
-                fragment.setArguments(bundle);
-                if (fragment.onFragmentCreate()) {
-                    if (ApplicationLoader.fragmentsStack.size() > 0) {
-                        BaseFragment lastFragment = ApplicationLoader.fragmentsStack.get(ApplicationLoader.fragmentsStack.size() - 1);
-                        lastFragment.willBeHidden();
-                    }
-                    ApplicationLoader.fragmentsStack.add(fragment);
-                    getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
-                }
-            }  else if (push_enc_id != 0) {
+                Bundle args2 = new Bundle();
+                args2.putInt("chat_id", push_chat_id);
+                presentFragment(new ChatActivity(args2), false, true);
+            } else if (push_enc_id != 0) {
                 NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
-                ChatActivity fragment = new ChatActivity();
-                Bundle bundle = new Bundle();
-                bundle.putInt("enc_id", push_enc_id);
-                fragment.setArguments(bundle);
-                if (fragment.onFragmentCreate()) {
-                    if (ApplicationLoader.fragmentsStack.size() > 0) {
-                        BaseFragment lastFragment = ApplicationLoader.fragmentsStack.get(ApplicationLoader.fragmentsStack.size() - 1);
-                        lastFragment.willBeHidden();
-                    }
-                    ApplicationLoader.fragmentsStack.add(fragment);
-                    getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chat" + Math.random()).commitAllowingStateLoss();
-                }
+                Bundle args2 = new Bundle();
+                args2.putInt("enc_id", push_enc_id);
+                presentFragment(new ChatActivity(args2), false, true);
             }
         } else if (id == 701) {
             if (notificationView != null) {
@@ -788,220 +652,33 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             }
         } else if (id == 702) {
             if (args[0] != this) {
-                processOnFinish();
+                onFinish();
             }
         } else if (id == 703) {
             int state = (Integer)args[0];
             if (currentConnectionState != state) {
                 FileLog.e("tmessages", "switch to state " + state);
                 currentConnectionState = state;
-                updateActionBar();
+                actionBar.setBackOverlayVisible(currentConnectionState != 0);
             }
         }
-    }
-
-    public void fixBackButton() {
-        if(android.os.Build.VERSION.SDK_INT == 19) {
-            //workaround for back button dissapear
-            try {
-                Class firstClass = getSupportActionBar().getClass();
-                Class aClass = firstClass.getSuperclass();
-                if (aClass == android.support.v7.app.ActionBar.class) {
-
-                } else {
-                    Field field = aClass.getDeclaredField("mActionBar");
-                    field.setAccessible(true);
-                    android.app.ActionBar bar = (android.app.ActionBar)field.get(getSupportActionBar());
-
-                    field = bar.getClass().getDeclaredField("mActionView");
-                    field.setAccessible(true);
-                    View v = (View)field.get(bar);
-                    aClass = v.getClass();
-
-                    field = aClass.getDeclaredField("mHomeLayout");
-                    field.setAccessible(true);
-                    v = (View)field.get(v);
-                    v.setVisibility(View.VISIBLE);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    public void updateActionBar() {
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar == null) {
-            return;
-        }
-        BaseFragment currentFragment = null;
-        if (!ApplicationLoader.fragmentsStack.isEmpty()) {
-            currentFragment = ApplicationLoader.fragmentsStack.get(ApplicationLoader.fragmentsStack.size() - 1);
-        }
-        boolean canApplyLoading = true;
-        if (currentFragment != null && (currentConnectionState == 0 || !currentFragment.canApplyUpdateStatus() || statusView == null)) {
-            currentFragment.applySelfActionBar();
-            canApplyLoading = false;
-        }
-        if (canApplyLoading) {
-            if (statusView != null) {
-                statusView.setVisibility(View.VISIBLE);
-                actionBar.setDisplayShowTitleEnabled(false);
-                actionBar.setDisplayShowHomeEnabled(false);
-                actionBar.setDisplayHomeAsUpEnabled(false);
-                actionBar.setDisplayUseLogoEnabled(false);
-                actionBar.setDisplayShowCustomEnabled(true);
-                actionBar.setSubtitle(null);
-
-                if (ApplicationLoader.fragmentsStack.size() > 1) {
-                    backStatusButton.setVisibility(View.VISIBLE);
-                    statusBackground.setEnabled(true);
-                } else {
-                    backStatusButton.setVisibility(View.GONE);
-                    statusBackground.setEnabled(false);
-                }
-
-                if (currentConnectionState == 1) {
-                    statusText.setText(getString(R.string.WaitingForNetwork));
-                } else if (currentConnectionState == 2) {
-                    statusText.setText(getString(R.string.Connecting));
-                } else if (currentConnectionState == 3) {
-                    statusText.setText(getString(R.string.Updating));
-                }
-                if (actionBar.getCustomView() != statusView) {
-                    actionBar.setCustomView(statusView);
-                }
-
-                try {
-                    if (statusView.getLayoutParams() instanceof android.support.v7.app.ActionBar.LayoutParams) {
-                        android.support.v7.app.ActionBar.LayoutParams statusParams = (android.support.v7.app.ActionBar.LayoutParams)statusView.getLayoutParams();
-                        statusText.measure(View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.AT_MOST));
-                        statusParams.width = (statusText.getMeasuredWidth() + Utilities.dp(54));
-                        if (statusParams.height == 0) {
-                            statusParams.height = actionBar.getHeight();
-                        }
-                        if (statusParams.width <= 0) {
-                            statusParams.width = Utilities.dp(100);
-                        }
-                        statusParams.topMargin = 0;
-                        statusParams.leftMargin = 0;
-                        statusView.setLayoutParams(statusParams);
-                    } else if (statusView.getLayoutParams() instanceof android.app.ActionBar.LayoutParams) {
-                        android.app.ActionBar.LayoutParams statusParams = (android.app.ActionBar.LayoutParams)statusView.getLayoutParams();
-                        statusText.measure(View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.AT_MOST));
-                        statusParams.width = (statusText.getMeasuredWidth() + Utilities.dp(54));
-                        if (statusParams.height == 0) {
-                            statusParams.height = actionBar.getHeight();
-                        }
-                        if (statusParams.width <= 0) {
-                            statusParams.width = Utilities.dp(100);
-                        }
-                        statusParams.topMargin = 0;
-                        statusParams.leftMargin = 0;
-                        statusView.setLayoutParams(statusParams);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
-    public void presentFragment(BaseFragment fragment, String tag, boolean bySwipe) {
-        presentFragment(fragment, tag, false, bySwipe);
-    }
-
-    public void presentFragment(BaseFragment fragment, String tag, boolean removeLast, boolean bySwipe) {
-        if (getCurrentFocus() != null) {
-            Utilities.hideKeyboard(getCurrentFocus());
-        }
-        if (!fragment.onFragmentCreate()) {
-            return;
-        }
-        BaseFragment current = null;
-        if (!ApplicationLoader.fragmentsStack.isEmpty()) {
-            current = ApplicationLoader.fragmentsStack.get(ApplicationLoader.fragmentsStack.size() - 1);
-        }
-        if (current != null) {
-            current.willBeHidden();
-        }
-        FragmentManager fm = getSupportFragmentManager();
-        FragmentTransaction fTrans = fm.beginTransaction();
-        if (removeLast && current != null) {
-            ApplicationLoader.fragmentsStack.remove(ApplicationLoader.fragmentsStack.size() - 1);
-            current.onFragmentDestroy();
-        }
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-        boolean animations = preferences.getBoolean("view_animations", true);
-        if (animations) {
-            if (bySwipe) {
-                fTrans.setCustomAnimations(R.anim.slide_left, R.anim.no_anim);
-            } else {
-                fTrans.setCustomAnimations(R.anim.scale_in, R.anim.no_anim);
-            }
-        }
-        try {
-            fTrans.replace(R.id.container, fragment, tag);
-            fTrans.commitAllowingStateLoss();
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
-        ApplicationLoader.fragmentsStack.add(fragment);
-    }
-
-    public void removeFromStack(BaseFragment fragment) {
-        ApplicationLoader.fragmentsStack.remove(fragment);
-        fragment.onFragmentDestroy();
-    }
-
-    public void finishFragment(boolean bySwipe) {
-        if (getCurrentFocus() != null) {
-            Utilities.hideKeyboard(getCurrentFocus());
-        }
-        if (ApplicationLoader.fragmentsStack.size() < 2) {
-            for (BaseFragment fragment : ApplicationLoader.fragmentsStack) {
-                fragment.onFragmentDestroy();
-            }
-            ApplicationLoader.fragmentsStack.clear();
-            MessagesActivity fragment = new MessagesActivity();
-            fragment.onFragmentCreate();
-            ApplicationLoader.fragmentsStack.add(fragment);
-            getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, "chats").commitAllowingStateLoss();
-            return;
-        }
-        BaseFragment fragment = ApplicationLoader.fragmentsStack.get(ApplicationLoader.fragmentsStack.size() - 1);
-        fragment.onFragmentDestroy();
-        BaseFragment prev = ApplicationLoader.fragmentsStack.get(ApplicationLoader.fragmentsStack.size() - 2);
-        FragmentManager fm = getSupportFragmentManager();
-        FragmentTransaction fTrans = fm.beginTransaction();
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-        boolean animations = preferences.getBoolean("view_animations", true);
-        if (animations) {
-            if (bySwipe) {
-                fTrans.setCustomAnimations(R.anim.no_anim_show, R.anim.slide_right_away);
-            } else {
-                fTrans.setCustomAnimations(R.anim.no_anim_show, R.anim.scale_out);
-            }
-        }
-        fTrans.replace(R.id.container, prev, prev.getTag());
-        fTrans.commitAllowingStateLoss();
-        ApplicationLoader.fragmentsStack.remove(ApplicationLoader.fragmentsStack.size() - 1);
     }
 
     @Override
-    public void onBackPressed() {
-        if (ApplicationLoader.fragmentsStack.size() == 1) {
-            ApplicationLoader.fragmentsStack.get(0).onFragmentDestroy();
-            ApplicationLoader.fragmentsStack.clear();
-            processOnFinish();
-            finish();
+    public void onOverlayShow(View view, BaseFragment fragment) {
+        if (view == null || fragment == null || fragmentsStack.isEmpty()) {
             return;
         }
-        if (!ApplicationLoader.fragmentsStack.isEmpty()) {
-            BaseFragment lastFragment = ApplicationLoader.fragmentsStack.get(ApplicationLoader.fragmentsStack.size() - 1);
-            if (lastFragment.onBackPressed()) {
-                finishFragment(false);
-            }
+        View backStatusButton = view.findViewById(R.id.back_button);
+        TextView statusText = (TextView)view.findViewById(R.id.status_text);
+        backStatusButton.setVisibility(fragmentsStack.get(0) == fragment ? View.GONE : View.VISIBLE);
+        view.setEnabled(fragmentsStack.get(0) != fragment);
+        if (currentConnectionState == 1) {
+            statusText.setText(LocaleController.getString("WaitingForNetwork", R.string.WaitingForNetwork));
+        } else if (currentConnectionState == 2) {
+            statusText.setText(LocaleController.getString("Connecting", R.string.Connecting));
+        } else if (currentConnectionState == 3) {
+            statusText.setText(LocaleController.getString("Updating", R.string.Updating));
         }
     }
 
@@ -1009,8 +686,8 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     protected void onSaveInstanceState(Bundle outState) {
         try {
             super.onSaveInstanceState(outState);
-            if (!ApplicationLoader.fragmentsStack.isEmpty()) {
-                BaseFragment lastFragment = ApplicationLoader.fragmentsStack.get(ApplicationLoader.fragmentsStack.size() - 1);
+            if (!fragmentsStack.isEmpty()) {
+                BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
                 Bundle args = lastFragment.getArguments();
                 if (lastFragment instanceof ChatActivity && args != null) {
                     outState.putBundle("args", args);
@@ -1022,11 +699,32 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                     outState.putString("fragment", "group");
                 } else if (lastFragment instanceof SettingsWallpapersActivity) {
                     outState.putString("fragment", "wallpapers");
+                } else if (lastFragment instanceof ChatProfileActivity && args != null) {
+                    outState.putBundle("args", args);
+                    outState.putString("fragment", "chat_profile");
                 }
                 lastFragment.saveSelfArgs(outState);
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (PhotoViewer.getInstance().isVisible()) {
+            PhotoViewer.getInstance().closePhoto(true);
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    @Override
+    public boolean onPreIme() {
+        if (PhotoViewer.getInstance().isVisible()) {
+            PhotoViewer.getInstance().closePhoto(true);
+            return true;
+        }
+        return super.onPreIme();
     }
 }

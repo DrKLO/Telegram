@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.telegram.messenger">
+    package="org.telegram.messenger"
+    android:installLocation="auto">
 
     <supports-screens android:anyDensity="true"
                       android:smallScreens="true"
@@ -37,6 +38,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="false"
@@ -94,27 +96,9 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="org.telegram.ui.LoginActivity"
-            android:windowSoftInputMode="adjustResize"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
-            android:screenOrientation="portrait">
-        </activity>
-        <activity
-            android:name="org.telegram.ui.CountrySelectActivity"
-            android:windowSoftInputMode="adjustResize"
-            android:theme="@style/Theme.TMessages"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
-            android:screenOrientation="portrait">
-        </activity>
-        <activity
             android:name="org.telegram.ui.IntroActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:screenOrientation="portrait">
-        </activity>
-        <activity
-            android:name="org.telegram.ui.GalleryImageViewer"
-            android:theme="@style/Theme.TMessages.Gallery"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize">
         </activity>
 
         <receiver android:name="org.telegram.messenger.SmsListener">
@@ -142,6 +126,15 @@
             <meta-data android:name="android.provider.CONTACTS_STRUCTURE"
                 android:resource="@xml/contacts" />
         </service>
+
+        <service android:name="org.telegram.messenger.NotificationsService" android:enabled="true"/>
+
+        <receiver android:name="org.telegram.messenger.AppStartReceiver" android:enabled="true">
+            <intent-filter>
+                <action android:name="org.telegram.start" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
     </application>
 
