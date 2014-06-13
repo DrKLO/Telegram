@@ -29,9 +29,8 @@ public class ActionBar extends FrameLayout {
     private static Drawable logoDrawable;
     protected ActionBarLayer currentLayer = null;
     private ActionBarLayer previousLayer = null;
-    private View currentBackOverlay;
     private View shadowView = null;
-    private int currentBackOverlayWidth;
+    private boolean isBackOverlayVisible;
 
     public ActionBar(Context context) {
         super(context);
@@ -87,42 +86,19 @@ public class ActionBar extends FrameLayout {
         layoutParams.height = LayoutParams.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         layer.setLayoutParams(layoutParams);
-        updateBackOverlay(MeasureSpec.makeMeasureSpec(getMeasuredWidth(), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
+        currentLayer.setBackOverlayVisible(isBackOverlayVisible);
         if(android.os.Build.VERSION.SDK_INT >= 11) {
             layer.setAlpha(1);
         }
     }
 
-    public void setBackOverlay(View view, int width) {
-        if (currentBackOverlay != null) {
-            removeView(currentBackOverlay);
-        }
-        if (view != null) {
-            addView(view);
-        }
-        currentBackOverlayWidth = width;
-        currentBackOverlay = view;
-        updateBackOverlay(MeasureSpec.makeMeasureSpec(getMeasuredWidth(), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
-    }
-
-    private void updateBackOverlay(int widthMeasureSpec, int heightMeasureSpec) {
+    public void setBackOverlayVisible(boolean visible) {
+        isBackOverlayVisible = visible;
         if (currentLayer != null) {
-            currentLayer.setBackLayoutVisible(currentLayer.isSearchFieldVisible || currentBackOverlay == null ? VISIBLE : INVISIBLE);
+            currentLayer.setBackOverlayVisible(visible);
         }
-        if (currentBackOverlay != null) {
-            ViewGroup.LayoutParams layoutParams = currentBackOverlay.getLayoutParams();
-            if (currentLayer != null) {
-                currentBackOverlay.setVisibility(currentLayer.isSearchFieldVisible ? GONE : VISIBLE);
-                currentLayer.measure(widthMeasureSpec, heightMeasureSpec);
-                layoutParams.width = Math.min(currentBackOverlayWidth, currentLayer.getBackLayoutWidth());
-            } else {
-                currentBackOverlay.setVisibility(VISIBLE);
-                layoutParams.width = LayoutParams.WRAP_CONTENT;
-            }
-            if (layoutParams.width != 0) {
-                layoutParams.height = LayoutParams.MATCH_PARENT;
-                currentBackOverlay.setLayoutParams(layoutParams);
-            }
+        if (previousLayer != null) {
+            previousLayer.setBackOverlayVisible(visible);
         }
     }
 
@@ -142,6 +118,7 @@ public class ActionBar extends FrameLayout {
         layer.setLayoutParams(layoutParams);
         shadowView.setX(-Utilities.dp(2));
         shadowView.setVisibility(VISIBLE);
+        previousLayer.setBackOverlayVisible(isBackOverlayVisible);
     }
 
     public void stopMoving(boolean backAnimation) {
@@ -153,6 +130,7 @@ public class ActionBar extends FrameLayout {
             removeView(currentLayer);
             currentLayer = previousLayer;
             currentLayer.setAlpha(1);
+            previousLayer = null;
         } else {
             removeView(previousLayer);
             previousLayer = null;
@@ -192,7 +170,6 @@ public class ActionBar extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        updateBackOverlay(widthMeasureSpec, heightMeasureSpec);
         if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Utilities.dp(40), MeasureSpec.EXACTLY));
         } else {

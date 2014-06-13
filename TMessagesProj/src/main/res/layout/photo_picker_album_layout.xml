@@ -25,6 +25,7 @@
             android:textColor="#ffffffff"
             android:layout_weight="1"
             android:singleLine="true"
+            android:ellipsize="end"
             android:maxLines="1"
             android:layout_marginLeft="8dp"/>
 

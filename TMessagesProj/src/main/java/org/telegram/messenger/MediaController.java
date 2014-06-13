@@ -949,6 +949,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     currentTotalPcmDuration = getTotalPcmDuration();
 
                     audioTrackPlayer = new AudioTrack(AudioManager.STREAM_MUSIC, 48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT, playerBufferSize, AudioTrack.MODE_STREAM);
+                    audioTrackPlayer.setStereoVolume(1.0f, 1.0f);
                     //audioTrackPlayer.setNotificationMarkerPosition((int)currentTotalPcmDuration);
                     audioTrackPlayer.setPlaybackPositionUpdateListener(new AudioTrack.OnPlaybackPositionUpdateListener() {
                         @Override
@@ -1578,7 +1579,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     }
 
     public static void loadGalleryPhotosAlbums(final int guid) {
-        Utilities.globalQueue.postRunnable(new Runnable() {
+        new Thread(new Runnable() {
             @Override
             public void run() {
                 final ArrayList<AlbumEntry> albumsSorted = new ArrayList<AlbumEntry>();
@@ -1605,6 +1606,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                             String path = cursor.getString(dataColumn);
                             long dateTaken = cursor.getLong(dateColumn);
                             int orientation = cursor.getInt(orientationColumn);
+
+                            if (path == null || path.length() == 0) {
+                                continue;
+                            }
 
                             PhotoEntry photoEntry = new PhotoEntry(bucketId, imageId, dateTaken, path, orientation);
 
@@ -1650,6 +1655,6 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     }
                 });
             }
-        });
+        }).start();
     }
 }

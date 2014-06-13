@@ -109,7 +109,7 @@
     <string name="YouWereKicked">Sei stato espulso da questo gruppo</string>
     <string name="YouLeft">Hai lasciato il gruppo</string>
     <string name="DeleteThisGroup">Elimina questo gruppo</string>
-    <string name="DeleteThisChat">Elimina questa conversazione</string>
+    <string name="DeleteThisChat">Elimina questa chat</string>
     <string name="SlideToCancel">TRASCINA PER ANNULLARE</string>
     <string name="SaveToDownloads">Salva in download</string>
     <string name="ApplyLocalizationFile">Applica file di localizzazione</string>
@@ -233,14 +233,6 @@
     <string name="InAppSounds">Suoni in-app</string>
     <string name="InAppVibrate">Vibrazione in-app</string>
     <string name="Vibrate">Vibrazione</string>
-    <string name="VibrateSpeed">Velocità vibrazione</string>
-    <string name="VibrateSpeedTitle">Seleziona una velocità</string>
-    <string name="VibrateSpeedFast">Veloce</string>
-    <string name="VibrateSpeedMedium">Media</string>
-    <string name="VibrateSpeedSlow">Lenta</string>
-    <string name="VibrateSpeedDefault">Standard</string>
-    <string name="VibrateCount">Numero di vibrazioni</string>
-    <string name="VibrateCountTitle">Seleziona il numero di vibrazioni</string>
     <string name="InAppPreview">Anteprima in-app</string>
     <string name="Reset">RIPRISTINA</string>
     <string name="ResetAllNotifications">Ripristina tutte le notifiche</string>
@@ -274,11 +266,13 @@
     <string name="Enabled">Abilitato</string>
     <string name="Disabled">Disabilitato</string>
     <string name="NotificationsService">Servizio notifiche</string>
-    <string name="NotificationsServiceDisableInfo">Se Google Play Service è sufficiente per ricevere le tue notifiche, puoi disabilitare il Servizio Notifiche. In ogni caso, ti raccomandiamo di lasciarlo abilitato per tenere l\'app attiva in ascolto per ricevere notifiche istantanee.</string>
+    <string name="NotificationsServiceDisableInfo">Se i servizi di Google Play ti bastano per ricevere le notifiche, puoi disabilitare il Servizio notifiche. Tuttavia sarebbe meglio lasciarlo abilitato al fine di mantenere l\'applicazione attiva in background e ricevere notifiche istantanee.</string>
     <string name="SortBy">Ordina per</string>
     <string name="ImportContacts">Importa contatti</string>
-    <string name="WiFiOnly">Solo in WiFi</string>
-    
+    <string name="WiFiOnly">solo tramite WiFi</string>
+    <string name="SortFirstName">Nome</string>
+    <string name="SortLastName">Cognome</string>
+
     <!--media view-->
     <string name="NoMedia">Nessun media condiviso</string>
     <string name="CancelDownload">Annulla scaricamento</string>
@@ -298,8 +292,8 @@
     <string name="SaveToGallery">Salva nella galleria</string>
     <string name="Of">%1$d di %2$d</string>
     <string name="Gallery">Galleria</string>
-    <string name="AllPhotos">Tutte le foto</string>
-    <string name="NoPhotos">Ancora nessuna foto</string>
+    <string name="AllPhotos">All Photos</string>
+    <string name="NoPhotos">No photos yet</string>
 
     <!--button titles-->
     <string name="Next">Avanti</string>
@@ -347,8 +341,8 @@
     <string name="AttachDocument">Documento</string>
     <string name="AttachAudio">Audio</string>
     <string name="FromYou">Tu</string>
-    <string name="ActionTakeScreenshootYou">You took a screenshot!</string>
-    <string name="ActionTakeScreenshoot">un1 took a screenshot!</string>
+    <string name="ActionTakeScreenshootYou">Hai catturato la schermata!</string>
+    <string name="ActionTakeScreenshoot">un1 ha catturato la schermata!</string>
 
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Numero di telefono non valido</string>

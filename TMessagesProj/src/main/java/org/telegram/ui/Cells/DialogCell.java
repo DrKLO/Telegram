@@ -16,7 +16,6 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.view.View;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.LocaleController;
@@ -29,8 +28,6 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.Views.ImageReceiver;
-
-import java.lang.ref.WeakReference;
 
 public class DialogCell extends BaseCell {
     private static TextPaint namePaint;
@@ -134,7 +131,7 @@ public class DialogCell extends BaseCell {
 
         if (avatarImage == null) {
             avatarImage = new ImageReceiver();
-            avatarImage.parentView = new WeakReference<View>(this);
+            avatarImage.parentView = this;
         }
 
         if (cellLayout == null) {

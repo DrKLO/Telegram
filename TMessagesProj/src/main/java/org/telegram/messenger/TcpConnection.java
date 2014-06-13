@@ -81,30 +81,6 @@ public class TcpConnection extends ConnectionContext {
 
     public void connect() {
         if (!ConnectionsManager.isNetworkOnline()) {
-            synchronized (timerSync) {
-                reconnectTimer = new Timer();
-                reconnectTimer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        selector.scheduleTask(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    synchronized (timerSync) {
-                                        if (reconnectTimer != null) {
-                                            reconnectTimer.cancel();
-                                            reconnectTimer = null;
-                                        }
-                                    }
-                                } catch (Exception e2) {
-                                    FileLog.e("tmessages", e2);
-                                }
-                                connect();
-                            }
-                        });
-                    }
-                }, 500);
-            }
             if (delegate != null) {
                 final TcpConnectionDelegate finalDelegate = delegate;
                 Utilities.stageQueue.postRunnable(new Runnable() {

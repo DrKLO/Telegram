@@ -41,7 +41,7 @@ public class BackupImageView extends View {
 
     private void init() {
         imageReceiver = new ImageReceiver();
-        imageReceiver.parentView = new WeakReference<View>(this);
+        imageReceiver.parentView = this;
     }
 
     public void setImage(TLRPC.FileLocation path, String filter, int placeholder) {
@@ -98,31 +98,4 @@ public class BackupImageView extends View {
         imageReceiver.imageH = getHeight();
         imageReceiver.draw(canvas, 0, 0, imageReceiver.imageW, imageReceiver.imageH);
     }
-
-    /*
-
-    public void setImageResourceMy(int resId) {
-        if (ignoreLayout) {
-            makeRequest = false;
-        }
-        super.setImageResource(resId);
-        if (ignoreLayout) {
-            makeRequest = true;
-        }
-    }
-
-
-
-    public void setImageBitmapMy(Bitmap bitmap) {
-        if (ignoreLayout) {
-            makeRequest = false;
-        }
-        super.setImageBitmap(bitmap);
-        if (ignoreLayout) {
-            makeRequest = true;
-        }
-    }
-
-    @Override
-    */
 }

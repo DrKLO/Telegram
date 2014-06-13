@@ -119,6 +119,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
             actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             actionBarLayer.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
 
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
@@ -167,7 +168,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             View doneItem = menu.addItemResource(done_button, R.layout.group_create_done_layout);
 
             TextView doneTextView = (TextView)doneItem.findViewById(R.id.done_button);
-            doneTextView.setText(LocaleController.getString("Done", R.string.Done));
+            doneTextView.setText(LocaleController.getString("Done", R.string.Done).toUpperCase());
 
             fragmentView = inflater.inflate(R.layout.group_create_final_layout, container, false);
 

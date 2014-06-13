@@ -22,7 +22,8 @@
         android:stretchMode="columnWidth"
         android:gravity="center"
         android:layout_gravity="top"
-        android:scrollbars="none"/>
+        android:scrollbars="none"
+        android:listSelector="@drawable/list_selector"/>
 
     <TextView
         android:layout_width="match_parent"

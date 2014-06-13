@@ -148,15 +148,33 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             if (datacenters != null) {
                 MessagesController.getInstance().updateTimerProc();
                 Datacenter datacenter = datacenterWithId(currentDatacenterId);
-                if (datacenter != null && datacenter.authKey != null) {
-                    if (lastPingTime < System.currentTimeMillis() - 19000) {
-                        lastPingTime = System.currentTimeMillis();
-                        generatePing();
+                if (datacenter != null) {
+                    if (datacenter.authKey != null) {
+                        if (lastPingTime < System.currentTimeMillis() - 19000) {
+                            lastPingTime = System.currentTimeMillis();
+                            generatePing();
+                        }
+                        if (!updatingDcSettings && lastDcUpdateTime < (int) (System.currentTimeMillis() / 1000) - DC_UPDATE_TIME) {
+                            updateDcSettings(0);
+                        }
+                        processRequestQueue(0, 0);
+                    } else {
+                        boolean notFound = true;
+                        for (Action actor : actionQueue) {
+                            if (actor instanceof HandshakeAction) {
+                                HandshakeAction eactor = (HandshakeAction)actor;
+                                if (eactor.datacenter.datacenterId == datacenter.datacenterId) {
+                                    notFound = false;
+                                    break;
+                                }
+                            }
+                        }
+                        if (notFound) {
+                            HandshakeAction actor = new HandshakeAction(datacenter);
+                            actor.delegate = ConnectionsManager.this;
+                            dequeueActor(actor, true);
+                        }
                     }
-                    if (!updatingDcSettings && lastDcUpdateTime < (int)(System.currentTimeMillis() / 1000) - DC_UPDATE_TIME) {
-                        updateDcSettings(0);
-                    }
-                    processRequestQueue(0, 0);
                 }
             }
 

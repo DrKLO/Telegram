@@ -143,9 +143,9 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 }
             });
 
-            cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel));
+            cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
             TextView textView = (TextView)doneButton.findViewById(R.id.done_button_text);
-            textView.setText(LocaleController.getString("Set", R.string.Set));
+            textView.setText(LocaleController.getString("Set", R.string.Set).toUpperCase());
 
             fragmentView = inflater.inflate(R.layout.settings_wallpapers_layout, container, false);
             listAdapter = new ListAdapter(getParentActivity());

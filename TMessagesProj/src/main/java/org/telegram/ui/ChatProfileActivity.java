@@ -150,6 +150,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
             actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             actionBarLayer.setTitle(LocaleController.getString("GroupInfo", R.string.GroupInfo));
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
@@ -424,6 +425,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
     @Override
     public void restoreSelfArgs(Bundle args) {
+        MessagesController.getInstance().loadChatInfo(chat_id);
         if (avatarUpdater != null) {
             avatarUpdater.currentPicturePath = args.getString("path");
         }

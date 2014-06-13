@@ -21,8 +21,6 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
 
-import java.lang.ref.WeakReference;
-
 public class ImageReceiver {
     private TLRPC.FileLocation last_path = null;
     private String last_httpUrl = null;
@@ -33,7 +31,7 @@ public class ImageReceiver {
     private boolean isPlaceholder = false;
     private Drawable currentImage = null;
     public Integer TAG = null;
-    public WeakReference<View> parentView = null;
+    public View parentView = null;
     public int imageX = 0, imageY = 0, imageW = 0, imageH = 0;
     public Rect drawRegion = new Rect();
     private boolean isVisible = true;
@@ -94,10 +92,16 @@ public class ImageReceiver {
         if (img == null) {
             isPlaceholder = true;
             FileLoader.getInstance().loadImage(path, httpUrl, this, filter, true, size);
+            if (parentView != null) {
+                parentView.invalidate();
+            }
         } else {
             selfSetting = true;
             setImageBitmap(img, currentPath);
             selfSetting = false;
+            if (parentView != null) {
+                parentView.invalidate();
+            }
         }
     }
 
@@ -108,12 +112,8 @@ public class ImageReceiver {
         isPlaceholder = false;
         FileLoader.getInstance().incrementUseCount(currentPath);
         currentImage = new BitmapDrawable(null, bitmap);
-        if (!selfSetting && parentView != null && parentView.get() != null) {
-            if (imageW != 0) {
-                parentView.get().invalidate(imageX, imageY, imageX + imageW, imageY + imageH);
-            } else {
-                parentView.get().invalidate();
-            }
+        if (!selfSetting && parentView != null) {
+            parentView.invalidate();
         }
     }
 
@@ -246,11 +246,8 @@ public class ImageReceiver {
             return;
         }
         isVisible = value;
-        if (invalidate) {
-            View parent = parentView.get();
-            if (parent != null) {
-                parent.invalidate();
-            }
+        if (invalidate && parentView != null) {
+            parentView.invalidate();
         }
     }
 
