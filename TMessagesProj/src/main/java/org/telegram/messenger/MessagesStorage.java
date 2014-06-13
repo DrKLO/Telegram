@@ -781,7 +781,7 @@ public class MessagesStorage {
                                 if (userData != null) {
                                     SerializedData data = new SerializedData(userData);
                                     TLRPC.User user = (TLRPC.User)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                                    if (user.id == UserConfig.clientUserId) {
+                                    if (user.id == UserConfig.getClientUserId()) {
                                         continue;
                                     }
                                     if (user.status != null) {
@@ -1018,7 +1018,7 @@ public class MessagesStorage {
                     String uids = "";
                     while (cursor.next()) {
                         int user_id = cursor.intValue(0);
-                        if (user_id == UserConfig.clientUserId) {
+                        if (user_id == UserConfig.getClientUserId()) {
                             continue;
                         }
                         TLRPC.TL_contact contact = new TLRPC.TL_contact();
@@ -2484,7 +2484,7 @@ public class MessagesStorage {
                 ArrayList<TLRPC.EncryptedChat> encryptedChats = new ArrayList<TLRPC.EncryptedChat>();
                 try {
                     ArrayList<Integer> usersToLoad = new ArrayList<Integer>();
-                    usersToLoad.add(UserConfig.clientUserId);
+                    usersToLoad.add(UserConfig.getClientUserId());
                     ArrayList<Integer> chatsToLoad = new ArrayList<Integer>();
                     ArrayList<Integer> encryptedToLoad = new ArrayList<Integer>();
                     SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT d.did, d.last_mid, d.unread_count, d.date, m.data, m.read_state, m.mid, m.send_state FROM dialogs as d LEFT JOIN messages as m ON d.last_mid = m.mid ORDER BY d.date DESC LIMIT %d,%d", offset, count));

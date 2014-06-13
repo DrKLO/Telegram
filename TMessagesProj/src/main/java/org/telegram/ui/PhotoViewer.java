@@ -1038,7 +1038,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (messageObject.messageOwner.to_id.chat_id != 0) {
                         currentDialogId = -messageObject.messageOwner.to_id.chat_id;
                     } else {
-                        if (messageObject.messageOwner.to_id.user_id == UserConfig.clientUserId) {
+                        if (messageObject.messageOwner.to_id.user_id == UserConfig.getClientUserId()) {
                             currentDialogId = messageObject.messageOwner.from_id;
                         } else {
                             currentDialogId = messageObject.messageOwner.to_id.user_id;
@@ -1076,7 +1076,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 if (messageObject.messageOwner.to_id.chat_id != 0) {
                     currentDialogId = -messageObject.messageOwner.to_id.chat_id;
                 } else {
-                    if (messageObject.messageOwner.to_id.user_id == UserConfig.clientUserId) {
+                    if (messageObject.messageOwner.to_id.user_id == UserConfig.getClientUserId()) {
                         currentDialogId = messageObject.messageOwner.from_id;
                     } else {
                         currentDialogId = messageObject.messageOwner.to_id.user_id;

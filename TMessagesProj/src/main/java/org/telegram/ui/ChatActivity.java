@@ -686,7 +686,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 View v = contentView.findViewById(R.id.secret_placeholder);
                 v.setVisibility(View.VISIBLE);
 
-                if (currentEncryptedChat.admin_id == UserConfig.clientUserId) {
+                if (currentEncryptedChat.admin_id == UserConfig.getClientUserId()) {
                     if (currentUser.first_name.length() > 0) {
                         secretViewStatusTextView.setText(LocaleController.formatString("EncryptedPlaceholderTitleOutgoing", R.string.EncryptedPlaceholderTitleOutgoing, currentUser.first_name));
                     } else {
@@ -1337,7 +1337,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         int currentTime = ConnectionsManager.getInstance().getCurrentTime();
         for (TLRPC.TL_chatParticipant participant : info.participants) {
             TLRPC.User user = MessagesController.getInstance().users.get(participant.user_id);
-            if (user != null && user.status != null && (user.status.expires > currentTime || user.id == UserConfig.clientUserId) && user.status.expires > 10000) {
+            if (user != null && user.status != null && (user.status.expires > currentTime || user.id == UserConfig.getClientUserId()) && user.status.expires > 10000) {
                 onlineCount++;
             }
         }
@@ -1495,7 +1495,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         if (currentChat != null) {
             actionBarLayer.setTitle(currentChat.title);
         } else if (currentUser != null) {
-            if (currentUser.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(currentUser.id) == null && (ContactsController.getInstance().contactsDict.size() != 0 || !ContactsController.getInstance().loadingContacts)) {
+            if (currentUser.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(currentUser.id) == null && (ContactsController.getInstance().contactsDict.size() != 0 || !ContactsController.getInstance().isLoadingContacts())) {
                 if (currentUser.phone != null && currentUser.phone.length() != 0) {
                     actionBarLayer.setTitle(PhoneFormat.getInstance().format("+" + currentUser.phone));
                 } else {
@@ -1782,7 +1782,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         }
         TLRPC.TL_document document = new TLRPC.TL_document();
         document.id = 0;
-        document.user_id = UserConfig.clientUserId;
+        document.user_id = UserConfig.getClientUserId();
         document.date = ConnectionsManager.getInstance().getCurrentTime();
         document.file_name = name;
         document.size = (int)f.length();
@@ -2517,7 +2517,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     || currentUser instanceof TLRPC.TL_userEmpty || currentUser instanceof TLRPC.TL_userDeleted
                     || (currentUser.phone != null && currentUser.phone.length() != 0 &&
                     ContactsController.getInstance().contactsDict.get(currentUser.id) != null &&
-                    (ContactsController.getInstance().contactsDict.size() != 0 || !ContactsController.getInstance().loadingContacts))) {
+                    (ContactsController.getInstance().contactsDict.size() != 0 || !ContactsController.getInstance().isLoadingContacts()))) {
                 topPanel.setVisibility(View.GONE);
             } else {
                 topPanel.setVisibility(View.VISIBLE);
@@ -2568,7 +2568,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                     public void onClick(DialogInterface dialogInterface, int i) {
                                         MessagesController.getInstance().hidenAddToContacts.put(currentUser.id, currentUser);
                                         topPanel.setVisibility(View.GONE);
-                                        MessagesController.getInstance().sendMessage(UserConfig.currentUser, dialog_id);
+                                        MessagesController.getInstance().sendMessage(UserConfig.getCurrentUser(), dialog_id);
                                         chatListView.post(new Runnable() {
                                             @Override
                                             public void run() {
@@ -3137,7 +3137,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         activity.finishFragment();
         TLRPC.TL_document document = new TLRPC.TL_document();
         document.id = 0;
-        document.user_id = UserConfig.clientUserId;
+        document.user_id = UserConfig.getClientUserId();
         document.date = ConnectionsManager.getInstance().getCurrentTime();
         document.file_name = name;
         document.size = (int)size;
@@ -3573,7 +3573,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 ((ChatBaseCell)view).delegate = new ChatBaseCell.ChatBaseCellDelegate() {
                     @Override
                     public void didPressedUserAvatar(ChatBaseCell cell, TLRPC.User user) {
-                        if (user != null && user.id != UserConfig.clientUserId) {
+                        if (user != null && user.id != UserConfig.getClientUserId()) {
                             Bundle args = new Bundle();
                             args.putInt("user_id", user.id);
                             presentFragment(new UserProfileActivity(args));
@@ -3784,7 +3784,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     }
                     int placeHolderId = Utilities.getUserAvatarForId(contactUser.id);
                     contactAvatar.setImage(photo, "50_50", placeHolderId);
-                    if (contactUser.id != UserConfig.clientUserId && ContactsController.getInstance().contactsDict.get(contactUser.id) == null) {
+                    if (contactUser.id != UserConfig.getClientUserId() && ContactsController.getInstance().contactsDict.get(contactUser.id) == null) {
                         addContactView.setVisibility(View.VISIBLE);
                     } else {
                         addContactView.setVisibility(View.GONE);
@@ -4090,7 +4090,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                 processRowSelect(view);
                                 return;
                             }
-                            if (message.messageOwner.media.user_id != UserConfig.clientUserId) {
+                            if (message.messageOwner.media.user_id != UserConfig.getClientUserId()) {
                                 TLRPC.User user = null;
                                 if (message.messageOwner.media.user_id != 0) {
                                     user = MessagesController.getInstance().users.get(message.messageOwner.media.user_id);

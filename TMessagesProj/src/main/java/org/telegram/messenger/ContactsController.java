@@ -30,7 +30,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ContactsController {
     private Account currentAccount;
-    public boolean loadingContacts = false;
+    private boolean loadingContacts = false;
+    private static final Integer loadContactsSync = 1;
     private boolean ignoreChanges = false;
     private boolean contactsSyncInProgress = false;
     private final Integer observerLock = 1;
@@ -118,10 +119,10 @@ public class ContactsController {
         AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
         Account[] accounts = am.getAccountsByType("org.telegram.account");
         boolean recreateAccount = false;
-        if (UserConfig.currentUser != null) {
+        if (UserConfig.isClientActivated()) {
             if (accounts.length == 1) {
                 Account acc = accounts[0];
-                if (!acc.name.equals(UserConfig.currentUser.phone)) {
+                if (!acc.name.equals(UserConfig.getCurrentUser().phone)) {
                     recreateAccount = true;
                 } else {
                     currentAccount = acc;
@@ -139,9 +140,9 @@ public class ContactsController {
             for (Account c : accounts) {
                 am.removeAccount(c, null, null);
             }
-            if (UserConfig.currentUser != null) {
+            if (UserConfig.isClientActivated()) {
                 try {
-                    currentAccount = new Account(UserConfig.currentUser.phone, "org.telegram.account");
+                    currentAccount = new Account(UserConfig.getCurrentUser().phone, "org.telegram.account");
                     am.addAccountExplicitly(currentAccount, "", null);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -230,13 +231,20 @@ public class ContactsController {
     }
 
     public void readContacts() {
-        if (loadingContacts) {
-            return;
+        synchronized (loadContactsSync) {
+            if (loadingContacts) {
+                return;
+            }
+            loadingContacts = true;
         }
+
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
                 if (!contacts.isEmpty() || contactsLoaded) {
+                    synchronized (loadContactsSync) {
+                        loadingContacts = false;
+                    }
                     return;
                 }
                 loadContacts(true, false);
@@ -423,15 +431,15 @@ public class ContactsController {
             public void run() {
 
                 boolean disableDeletion = true; //disable contacts deletion, because phone numbers can't be compared due to different numbers format
-                if (schedule) {
+                /*if (schedule) {
                     try {
                         AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
                         Account[] accounts = am.getAccountsByType("org.telegram.account");
                         boolean recreateAccount = false;
-                        if (UserConfig.currentUser != null) {
+                        if (UserConfig.isClientActivated()) {
                             if (accounts.length != 1) {
                                 FileLog.e("tmessages", "detected account deletion!");
-                                currentAccount = new Account(UserConfig.currentUser.phone, "org.telegram.account");
+                                currentAccount = new Account(UserConfig.getCurrentUser().phone, "org.telegram.account");
                                 am.addAccountExplicitly(currentAccount, "", null);
                                 Utilities.RunOnUIThread(new Runnable() {
                                     @Override
@@ -444,7 +452,7 @@ public class ContactsController {
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
                     }
-                }
+                }*/
 
                 boolean request = requ;
                 if (request && first) {
@@ -748,13 +756,16 @@ public class ContactsController {
         });
     }
 
+    public boolean isLoadingContacts() {
+        synchronized (loadContactsSync) {
+            return loadingContacts;
+        }
+    }
+
     public void loadContacts(boolean fromCache, boolean cacheEmpty) {
-        Utilities.RunOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                loadingContacts = true;
-            }
-        });
+        synchronized (loadContactsSync) {
+            loadingContacts = true;
+        }
         if (fromCache) {
             FileLog.e("tmessages", "load contacts from cache");
             MessagesStorage.getInstance().getContacts();
@@ -776,7 +787,9 @@ public class ContactsController {
                             Utilities.RunOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    loadingContacts = false;
+                                    synchronized (loadContactsSync) {
+                                        loadingContacts = false;
+                                    }
                                     NotificationCenter.getInstance().postNotificationName(MessagesController.contactsDidLoaded);
                                 }
                             });
@@ -800,8 +813,8 @@ public class ContactsController {
                         MessagesController.getInstance().users.putIfAbsent(user.id, user);
                     } else {
                         MessagesController.getInstance().users.put(user.id, user);
-                        if (user.id == UserConfig.clientUserId) {
-                            UserConfig.currentUser = user;
+                        if (user.id == UserConfig.getClientUserId()) {
+                            UserConfig.setCurrentUser(user);
                         }
                     }
                 }
@@ -840,7 +853,7 @@ public class ContactsController {
                         }
 
                         for (TLRPC.TL_contact contact : contactsArr) {
-                            if (usersDict.get(contact.user_id) == null && contact.user_id != UserConfig.clientUserId) {
+                            if (usersDict.get(contact.user_id) == null && contact.user_id != UserConfig.getClientUserId()) {
                                 loadContacts(false, true);
                                 FileLog.e("tmessages", "contacts are broken, load from server");
                                 return;
@@ -953,7 +966,9 @@ public class ContactsController {
                                 usersSectionsDict = sectionsDict;
                                 sortedUsersSectionsArray = sortedSectionsArray;
                                 if (from != 2) {
-                                    loadingContacts = false;
+                                    synchronized (loadContactsSync) {
+                                        loadingContacts = false;
+                                    }
                                 }
                                 performWriteContactsToPhoneBook();
                                 updateUnregisteredContacts(contactsArr);
@@ -1180,7 +1195,7 @@ public class ContactsController {
     private void performWriteContactsToPhoneBook() {
         final ArrayList<TLRPC.TL_contact> contactsArray = new ArrayList<TLRPC.TL_contact>();
         contactsArray.addAll(contacts);
-        Utilities.globalQueue.postRunnable(new Runnable() {
+        Utilities.photoBookQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
                 performWriteContactsToPhoneBookInternal(contactsArray);
@@ -1237,7 +1252,7 @@ public class ContactsController {
         }
 
         for (final Integer uid : contactsTD) {
-            Utilities.globalQueue.postRunnable(new Runnable() {
+            Utilities.photoBookQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
                     deleteContactFromPhoneBook(uid);
@@ -1467,7 +1482,7 @@ public class ContactsController {
 //                }
 
                 for (final TLRPC.User u : res.users) {
-                    Utilities.globalQueue.postRunnable(new Runnable() {
+                    Utilities.photoBookQueue.postRunnable(new Runnable() {
                         @Override
                         public void run() {
                             addContactToPhoneBook(u, true);
@@ -1533,7 +1548,7 @@ public class ContactsController {
                     return;
                 }
                 MessagesStorage.getInstance().deleteContacts(uids);
-                Utilities.globalQueue.postRunnable(new Runnable() {
+                Utilities.photoBookQueue.postRunnable(new Runnable() {
                     @Override
                     public void run() {
                         for (TLRPC.User user : users) {

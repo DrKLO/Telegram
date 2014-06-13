@@ -94,7 +94,7 @@
     <string name="Message">Messaggio</string>
     <string name="TypeMessage">Scrivi il messaggio</string>
     <string name="DOWNLOAD">Scarica</string>
-    <string name="Selected">Selezionato: %d</string>
+    <string name="Selected">Selezionati: %d</string>
     <string name="ShareMyContactInfo">CONDIVIDI LE MIE INFORMAZIONI DI CONTATTO</string>
     <string name="AddToContacts">AGGIUNGI AI CONTATTI</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s ti ha mandato un invito a una chat privata.</string>
@@ -269,7 +269,7 @@
     <string name="NotificationsServiceDisableInfo">Se i servizi di Google Play ti bastano per ricevere le notifiche, puoi disabilitare il Servizio notifiche. Tuttavia sarebbe meglio lasciarlo abilitato al fine di mantenere l\'applicazione attiva in background e ricevere notifiche istantanee.</string>
     <string name="SortBy">Ordina per</string>
     <string name="ImportContacts">Importa contatti</string>
-    <string name="WiFiOnly">solo tramite WiFi</string>
+    <string name="WiFiOnly">Solo tramite WiFi</string>
     <string name="SortFirstName">Nome</string>
     <string name="SortLastName">Cognome</string>
 
@@ -292,8 +292,8 @@
     <string name="SaveToGallery">Salva nella galleria</string>
     <string name="Of">%1$d di %2$d</string>
     <string name="Gallery">Galleria</string>
-    <string name="AllPhotos">All Photos</string>
-    <string name="NoPhotos">No photos yet</string>
+    <string name="AllPhotos">Tutte le foto</string>
+    <string name="NoPhotos">Ancora nessuna foto</string>
 
     <!--button titles-->
     <string name="Next">Avanti</string>

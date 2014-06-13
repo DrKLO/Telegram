@@ -205,7 +205,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                     if (searching && searchWas) {
                         TLRPC.User user = searchListViewAdapter.getItem(i);
-                        if (user == null || user.id == UserConfig.clientUserId) {
+                        if (user == null || user.id == UserConfig.getClientUserId()) {
                             return;
                         }
                         if (returnAsResult) {
@@ -263,7 +263,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         }
 
                         if (user != null) {
-                            if (user.id == UserConfig.clientUserId) {
+                            if (user.id == UserConfig.getClientUserId()) {
                                 return;
                             }
                             if (returnAsResult) {

@@ -87,6 +87,8 @@ public class Utilities {
 
     public static volatile DispatchQueue stageQueue = new DispatchQueue("stageQueue");
     public static volatile DispatchQueue globalQueue = new DispatchQueue("globalQueue");
+    public static volatile DispatchQueue searchQueue = new DispatchQueue("searchQueue");
+    public static volatile DispatchQueue photoBookQueue = new DispatchQueue("photoBookQueue");
 
     public static int[] arrColors = {0xffee4928, 0xff41a903, 0xffe09602, 0xff0f94ed, 0xff8f3bf7, 0xfffc4380, 0xff00a1c4, 0xffeb7002};
     public static int[] arrUsersAvatars = {
@@ -668,7 +670,7 @@ public class Utilities {
         try {
             String str;
             if (id >= 0) {
-                str = String.format(Locale.US, "%d%d", id, UserConfig.clientUserId);
+                str = String.format(Locale.US, "%d%d", id, UserConfig.getClientUserId());
             } else {
                 str = String.format(Locale.US, "%d", id);
             }

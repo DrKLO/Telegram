@@ -209,7 +209,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 ByteBuffer data = ByteBuffer.wrap(resPq.pq);
                 final long pqf = data.getLong();
                 final long messageIdf = messageId;
-                Utilities.globalQueue.postRunnable(new Runnable() {
+                new Thread(new Runnable() {
                     @Override
                     public void run() {
 
@@ -281,7 +281,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                             }
                         });
                     }
-                });
+                }).start();
             } else {
                 FileLog.e("tmessages", "***** Error: invalid handshake nonce");
                 beginHandshake(false);

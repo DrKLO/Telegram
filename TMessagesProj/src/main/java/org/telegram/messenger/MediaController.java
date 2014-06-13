@@ -1143,7 +1143,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 recordingAudio = new TLRPC.TL_audio();
                 recordingAudio.dc_id = Integer.MIN_VALUE;
                 recordingAudio.id = UserConfig.lastLocalId;
-                recordingAudio.user_id = UserConfig.clientUserId;
+                recordingAudio.user_id = UserConfig.getClientUserId();
                 UserConfig.lastLocalId--;
                 UserConfig.saveConfig(false);
 
@@ -1352,7 +1352,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
             final ProgressDialog finalProgress = progressDialog;
 
-            Utilities.globalQueue.postRunnable(new Runnable() {
+            new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -1427,7 +1427,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                         });
                     }
                 }
-            });
+            }).start();
         }
     }
 

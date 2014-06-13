@@ -10,6 +10,7 @@ package org.telegram.ui;
 
 import android.animation.Animator;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -34,6 +35,7 @@ import java.util.Set;
 public class LoginActivity extends BaseFragment implements SlideView.SlideViewDelegate {
     private int currentViewNum = 0;
     private SlideView[] views = new SlideView[3];
+    private ProgressDialog progressDialog;
 
     private final static int done_button = 1;
 
@@ -205,29 +207,38 @@ public class LoginActivity extends BaseFragment implements SlideView.SlideViewDe
 
     @Override
     public void needShowAlert(final String text) {
-        if (text == null) {
+        if (text == null || getParentActivity() == null) {
             return;
         }
-        getParentActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                builder.setMessage(text);
-                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-                showAlertDialog(builder);
-            }
-        });
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+        builder.setMessage(text);
+        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+        showAlertDialog(builder);
     }
 
     @Override
     public void needShowProgress() {
-        Utilities.ShowProgressDialog(getParentActivity(), LocaleController.getString("Loading", R.string.Loading));
+        if (getParentActivity() == null || getParentActivity().isFinishing() || progressDialog != null) {
+            return;
+        }
+        progressDialog = new ProgressDialog(getParentActivity());
+        progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
+        progressDialog.setCanceledOnTouchOutside(false);
+        progressDialog.setCancelable(false);
+        progressDialog.show();
     }
 
     @Override
     public void needHideProgress() {
-        Utilities.HideProgressDialog(getParentActivity());
+        if (progressDialog == null) {
+            return;
+        }
+        try {
+            progressDialog.dismiss();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     public void setPage(int page, boolean animated, Bundle params, boolean back) {

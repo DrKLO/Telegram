@@ -17,7 +17,7 @@ import java.util.Map;
 public class SQLiteDatabase {
 	private final int sqliteHandle;
 
-	private final Map<String, SQLitePreparedStatement> preparedMap;
+	private final Map<String, SQLitePreparedStatement> preparedMap = new HashMap<String, SQLitePreparedStatement>();
 	private boolean isOpen = false;
     private boolean inTransaction = false;
 
@@ -28,7 +28,6 @@ public class SQLiteDatabase {
 	public SQLiteDatabase(String fileName) throws SQLiteException {
 		sqliteHandle = opendb(fileName, ApplicationLoader.applicationContext.getFilesDir().getPath());
 		isOpen = true;
-		preparedMap = new HashMap<String, SQLitePreparedStatement>();
 	}
 
 	public boolean tableExists(String tableName) throws SQLiteException {
@@ -47,7 +46,7 @@ public class SQLiteDatabase {
 		}
 	}
 
-    public SQLitePreparedStatement executeFast(String sql) throws SQLiteException{
+    public SQLitePreparedStatement executeFast(String sql) throws SQLiteException {
         return new SQLitePreparedStatement(this, sql, true);
     }
 
@@ -59,29 +58,6 @@ public class SQLiteDatabase {
 				return null;
 			}
 			return cursor.intValue(0);
-		} finally {
-			cursor.dispose();
-		}
-	}
-
-	public int executeIntOrThrow(String sql, Object... args) throws SQLiteException, SQLiteNoRowException {
-		checkOpened();
-		Integer val = executeInt(sql, args);
-		if (val != null) {
-			return val;
-		}
-
-		throw new SQLiteNoRowException();
-	}
-
-	public String executeString(String sql, Object... args) throws SQLiteException {
-		checkOpened();
-		SQLiteCursor cursor = query(sql, args);
-		try {
-			if (!cursor.next()) {
-				return null;
-			}
-			return cursor.stringValue(0);
 		} finally {
 			cursor.dispose();
 		}
@@ -110,6 +86,7 @@ public class SQLiteDatabase {
 				for (SQLitePreparedStatement stmt : preparedMap.values()) {
 					stmt.finalizeQuery();
 				}
+                commitTransaction();
 				closedb(sqliteHandle);
 			} catch (SQLiteException e) {
                 FileLog.e("tmessages", e.getMessage(), e);
@@ -139,6 +116,9 @@ public class SQLiteDatabase {
     }
 
     public void commitTransaction() {
+        if (!inTransaction) {
+            return;
+        }
         inTransaction = false;
         commitTransaction(sqliteHandle);
     }

@@ -173,10 +173,10 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
                     if (i > membersSectionRow && i < addMemberRow) {
                         TLRPC.TL_chatParticipant user = info.participants.get(sortedUsers.get(i - membersSectionRow - 1));
-                        if (user.user_id == UserConfig.clientUserId) {
+                        if (user.user_id == UserConfig.getClientUserId()) {
                             return false;
                         }
-                        if (info.admin_id != UserConfig.clientUserId && user.inviter_id != UserConfig.clientUserId) {
+                        if (info.admin_id != UserConfig.getClientUserId() && user.inviter_id != UserConfig.getClientUserId()) {
                             return false;
                         }
                         selectedUser = user;
@@ -240,7 +240,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         openAddMenu();
                     } else if (i > membersSectionRow && i < addMemberRow) {
                         int user_id = info.participants.get(sortedUsers.get(i - membersSectionRow - 1)).user_id;
-                        if (user_id == UserConfig.clientUserId) {
+                        if (user_id == UserConfig.getClientUserId()) {
                             return;
                         }
                         Bundle args = new Bundle();
@@ -458,7 +458,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         int i = 0;
         for (TLRPC.TL_chatParticipant participant : info.participants) {
             TLRPC.User user = MessagesController.getInstance().users.get(participant.user_id);
-            if (user != null && user.status != null && (user.status.expires > currentTime || user.id == UserConfig.clientUserId) && user.status.expires > 10000) {
+            if (user != null && user.status != null && (user.status.expires > currentTime || user.id == UserConfig.getClientUserId()) && user.status.expires > 10000) {
                 onlineCount++;
             }
             sortedUsers.add(i);
@@ -473,14 +473,14 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 Integer status1 = 0;
                 Integer status2 = 0;
                 if (user1 != null && user1.status != null) {
-                    if (user1.id == UserConfig.clientUserId) {
+                    if (user1.id == UserConfig.getClientUserId()) {
                         status1 = ConnectionsManager.getInstance().getCurrentTime() + 50000;
                     } else {
                         status1 = user1.status.expires;
                     }
                 }
                 if (user2 != null && user2.status != null) {
-                    if (user2.id == UserConfig.clientUserId) {
+                    if (user2.id == UserConfig.getClientUserId()) {
                         status2 = ConnectionsManager.getInstance().getCurrentTime() + 50000;
                     } else {
                         status2 = user2.status.expires;
@@ -535,7 +535,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         } else {
             NotificationCenter.getInstance().removeObserver(this, MessagesController.closeChats);
             NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
-            MessagesController.getInstance().deleteUserFromChat(chat_id, MessagesController.getInstance().users.get(UserConfig.clientUserId), info);
+            MessagesController.getInstance().deleteUserFromChat(chat_id, MessagesController.getInstance().users.get(UserConfig.getClientUserId()), info);
             MessagesController.getInstance().deleteDialog(-chat_id, 0, false);
             finishFragment();
         }

@@ -93,7 +93,7 @@ public class ApplicationLoader extends Application {
         }
 
         UserConfig.loadConfig();
-        if (UserConfig.currentUser != null) {
+        if (UserConfig.getCurrentUser() != null) {
             boolean changed = false;
             SharedPreferences preferences = applicationContext.getSharedPreferences("Notifications", MODE_PRIVATE);
             int v = preferences.getInt("v", 0);
@@ -122,8 +122,8 @@ public class ApplicationLoader extends Application {
                 editor.commit();
             }
 
-            MessagesController.getInstance().users.put(UserConfig.clientUserId, UserConfig.currentUser);
-            ConnectionsManager.getInstance().applyCountryPortNumber(UserConfig.currentUser.phone);
+            MessagesController.getInstance().users.put(UserConfig.getClientUserId(), UserConfig.getCurrentUser());
+            ConnectionsManager.getInstance().applyCountryPortNumber(UserConfig.getCurrentUser().phone);
             ConnectionsManager.getInstance().initPushConnection();
         }
 
