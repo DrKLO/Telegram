@@ -4529,7 +4529,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             notification.ledOnMS = 1000;
             notification.ledOffMS = 1000;
             if (needVibrate) {
-                notification.defaults = Notification.DEFAULT_VIBRATE;
                 notification.vibrate = new long[]{0, 100, 0, 100};
             } else {
                 notification.vibrate = new long[]{0, 0};

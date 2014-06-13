@@ -40,9 +40,21 @@ import java.util.ArrayList;
 
 public class ActionBarActivity extends Activity {
 
+    private class FrameLayoutAnimationListener extends FrameLayout {
+        public FrameLayoutAnimationListener(Context context) {
+            super(context);
+        }
+
+        @Override
+        protected void onAnimationEnd() {
+            super.onAnimationEnd();
+            ActionBarActivity.this.onAnimationEnd();
+        }
+    }
+
     protected ActionBar actionBar;
-    private FrameLayout containerView;
-    private FrameLayout containerViewBack;
+    private FrameLayoutAnimationListener containerView;
+    private FrameLayoutAnimationListener containerViewBack;
     protected FrameLayout contentView;
     private View shadowView;
 
@@ -116,10 +128,10 @@ public class ActionBarActivity extends Activity {
         contentView = new FrameLayoutTouch(this);
         setContentView(contentView, new ViewGroup.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
 
-        containerViewBack = new FrameLayout(this);
+        containerViewBack = new FrameLayoutAnimationListener(this);
         contentView.addView(containerViewBack);
 
-        containerView = new FrameLayout(this);
+        containerView = new FrameLayoutAnimationListener(this);
         contentView.addView(containerView);
 
         shadowView = new FrameLayout(this);
@@ -172,7 +184,6 @@ public class ActionBarActivity extends Activity {
             lastFragment.onResume();
 
             actionBar.setCurrentActionBarLayer(lastFragment.actionBarLayer);
-            onShowFragment();
         }
     }
 
@@ -198,7 +209,7 @@ public class ActionBarActivity extends Activity {
             lastFragment.setParentActivity(null);
             fragmentsStack.remove(fragmentsStack.size() - 1);
 
-            FrameLayout temp = containerView;
+            FrameLayoutAnimationListener temp = containerView;
             containerView = containerViewBack;
             containerViewBack = temp;
             ViewGroup parent = (ViewGroup)containerView.getParent();
@@ -391,6 +402,7 @@ public class ActionBarActivity extends Activity {
     public boolean checkTransitionAnimation() {
         if (transitionAnimationInProgress && transitionAnimationStartTime < System.currentTimeMillis() - 400) {
             transitionAnimationInProgress = false;
+            onAnimationEnd();
         }
         return transitionAnimationInProgress;
     }
@@ -465,6 +477,7 @@ public class ActionBarActivity extends Activity {
                 }
             }
         }
+        containerViewBack.setVisibility(View.GONE);
     }
 
     public boolean presentFragment(BaseFragment fragment) {
@@ -485,13 +498,10 @@ public class ActionBarActivity extends Activity {
         boolean needAnimation = openAnimation != null && !forceWithoutAnimation && getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).getBoolean("view_animations", true);
 
         final BaseFragment currentFragment = !fragmentsStack.isEmpty() ? fragmentsStack.get(fragmentsStack.size() - 1) : null;
-        if (!needAnimation) {
-            presentFragmentInternalRemoveOld(removeLast, currentFragment);
-        }
 
         fragment.setParentActivity(this);
         View fragmentView = fragment.createView(getLayoutInflater(), null);
-        containerView.addView(fragmentView);
+        containerViewBack.addView(fragmentView);
         ViewGroup.LayoutParams layoutParams = fragmentView.getLayoutParams();
         layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
         layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
@@ -502,7 +512,19 @@ public class ActionBarActivity extends Activity {
         if (fragmentView.getBackground() == null) {
             fragmentView.setBackgroundColor(0xffffffff);
         }
-        onShowFragment();
+
+        FrameLayoutAnimationListener temp = containerView;
+        containerView = containerViewBack;
+        containerViewBack = temp;
+        containerView.setVisibility(View.VISIBLE);
+        ViewGroup parent = (ViewGroup)containerView.getParent();
+        parent.removeView(containerView);
+        parent.addView(containerView, 1);
+
+        if (!needAnimation) {
+            presentFragmentInternalRemoveOld(removeLast, currentFragment);
+        }
+
         if (needAnimation) {
             transitionAnimationStartTime = System.currentTimeMillis();
             transitionAnimationInProgress = true;
@@ -514,23 +536,7 @@ public class ActionBarActivity extends Activity {
                 }
             };
             openAnimation.reset();
-            openAnimation.setAnimationListener(new Animation.AnimationListener() {
-                @Override
-                public void onAnimationStart(Animation animation) {
-
-                }
-
-                @Override
-                public void onAnimationEnd(Animation animation) {
-                    onOpenAnimationEnd(true);
-                }
-
-                @Override
-                public void onAnimationRepeat(Animation animation) {
-
-                }
-            });
-            fragmentView.startAnimation(openAnimation);
+            containerView.startAnimation(openAnimation);
         } else {
             fragment.onOpenAnimationEnd();
         }
@@ -551,6 +557,10 @@ public class ActionBarActivity extends Activity {
         fragment.onFragmentDestroy();
         fragment.setParentActivity(null);
         fragmentsStack.remove(fragment);
+        containerViewBack.setVisibility(View.GONE);
+        ViewGroup parent = (ViewGroup)containerView.getParent();
+        parent.removeView(containerViewBack);
+        parent.addView(containerViewBack, 0);
     }
 
     public void closeLastFragment(boolean animated) {
@@ -563,13 +573,15 @@ public class ActionBarActivity extends Activity {
         boolean needAnimation = animated && closeAnimation != null && getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).getBoolean("view_animations", true);
         final BaseFragment currentFragment = fragmentsStack.get(fragmentsStack.size() - 1);
         BaseFragment previousFragment = fragmentsStack.get(fragmentsStack.size() - 2);
-        if (!needAnimation) {
-            closeLastFragmentInternalRemoveOld(currentFragment);
-        }
+
+        FrameLayoutAnimationListener temp = containerView;
+        containerView = containerViewBack;
+        containerViewBack = temp;
+        containerView.setVisibility(View.VISIBLE);
 
         previousFragment.setParentActivity(this);
         View fragmentView = previousFragment.createView(getLayoutInflater(), null);
-        containerView.addView(fragmentView, 0);
+        containerView.addView(fragmentView);
         ViewGroup.LayoutParams layoutParams = fragmentView.getLayoutParams();
         layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
         layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
@@ -579,35 +591,22 @@ public class ActionBarActivity extends Activity {
         if (fragmentView.getBackground() == null) {
             fragmentView.setBackgroundColor(0xffffffff);
         }
-        onShowFragment();
+
+        if (!needAnimation) {
+            closeLastFragmentInternalRemoveOld(currentFragment);
+        }
+
         if (needAnimation) {
             transitionAnimationStartTime = System.currentTimeMillis();
             transitionAnimationInProgress = true;
             closeAnimation.reset();
-            closeAnimation.setFillAfter(true);
             onCloseAnimationEndRunnable = new Runnable() {
                 @Override
                 public void run() {
                     closeLastFragmentInternalRemoveOld(currentFragment);
                 }
             };
-            closeAnimation.setAnimationListener(new Animation.AnimationListener() {
-                @Override
-                public void onAnimationStart(Animation animation) {
-
-                }
-
-                @Override
-                public void onAnimationEnd(Animation animation) {
-                    onCloseAnimationEnd(true);
-                }
-
-                @Override
-                public void onAnimationRepeat(Animation animation) {
-
-                }
-            });
-            currentFragment.fragmentView.startAnimation(closeAnimation);
+            containerViewBack.startAnimation(closeAnimation);
         }
     }
 
@@ -625,7 +624,6 @@ public class ActionBarActivity extends Activity {
         if (fragmentView.getBackground() == null) {
             fragmentView.setBackgroundColor(0xffffffff);
         }
-        onShowFragment();
     }
 
     public void removeFragmentFromStack(BaseFragment fragment) {
@@ -642,10 +640,6 @@ public class ActionBarActivity extends Activity {
     }
 
     protected void onFinish() {
-
-    }
-
-    protected void onShowFragment() {
 
     }
 
@@ -723,6 +717,11 @@ public class ActionBarActivity extends Activity {
                 onOpenAnimationEndRunnable = null;
             }
         }
+    }
+
+    private void onAnimationEnd() {
+        onCloseAnimationEnd(false);
+        onOpenAnimationEnd(false);
     }
 
     @Override

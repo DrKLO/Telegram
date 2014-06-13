@@ -2859,7 +2859,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     }
 
     public void createMenu(View v, boolean single) {
-        if (actionBarLayer.isActionModeShowed()) {
+        if (getParentActivity() == null || actionBarLayer.isActionModeShowed()) {
             return;
         }
 

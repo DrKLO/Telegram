@@ -128,13 +128,12 @@ public class ActionBarMenuItem extends ImageView {
             popupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
             popupLayout.measure(MeasureSpec.makeMeasureSpec(Utilities.dp(1000), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(Utilities.dp(1000), MeasureSpec.AT_MOST));
         }
+        popupWindow.setFocusable(true);
         if (popupLayout.getMeasuredWidth() == 0) {
             popupWindow.showAsDropDown(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), 0);
             popupWindow.update(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), 0, -1, -1);
-            popupWindow.setFocusable(true);
         } else {
             popupWindow.showAsDropDown(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), 0);
-            popupWindow.setFocusable(true);
         }
     }
 
