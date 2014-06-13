@@ -875,20 +875,17 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         try {
             ConnectivityManager cm = (ConnectivityManager)ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo netInfo = cm.getActiveNetworkInfo();
-            if (netInfo != null && netInfo.isConnected()) {
+            if (netInfo != null && (netInfo.isConnectedOrConnecting() || netInfo.isRoaming() || netInfo.isAvailable())) {
                 return true;
             }
 
             netInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
-            if (netInfo.isConnected()) {
-                return true;
-            }
 
-            if (netInfo != null && netInfo.getState() == NetworkInfo.State.CONNECTED) {
+            if (netInfo != null && (netInfo.isConnectedOrConnecting() || netInfo.isRoaming() || netInfo.isAvailable())) {
                 return true;
             } else {
                 netInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-                if(netInfo != null && netInfo.getState() == NetworkInfo.State.CONNECTED) {
+                if(netInfo != null && (netInfo.isConnectedOrConnecting() || netInfo.isRoaming() || netInfo.isAvailable())) {
                     return true;
                 }
             }
@@ -2604,6 +2601,13 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     }
                 });
             }
+        }
+        if (length == 4) {
+            int error = data.readInt32();
+            FileLog.e("tmessages", "mtproto error = " + error);
+            connection.suspendConnection(true);
+            connection.connect();
+            return;
         }
         Datacenter datacenter = datacenterWithId(connection.getDatacenterId());
 

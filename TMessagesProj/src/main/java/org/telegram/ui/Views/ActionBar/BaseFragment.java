@@ -69,10 +69,14 @@ public class BaseFragment {
     }
 
     public void finishFragment() {
+        finishFragment(true);
+    }
+
+    public void finishFragment(boolean animated) {
         if (isFinished || parentActivity == null) {
             return;
         }
-        parentActivity.closeLastFragment();
+        parentActivity.closeLastFragment(animated);
     }
 
     public void removeSelfFromStack() {
@@ -192,13 +196,17 @@ public class BaseFragment {
 
     }
 
-    protected void showAlertDialog(AlertDialog.Builder builder) {
+    protected boolean showAlertDialog(AlertDialog.Builder builder) {
         if (parentActivity == null || parentActivity.checkTransitionAnimation() || parentActivity.animationInProgress || parentActivity.startedTracking) {
-            return;
+            return false;
         }
-        if (visibleDialog != null && visibleDialog.isShowing()) {
-            visibleDialog.dismiss();
-            visibleDialog = null;
+        try {
+            if (visibleDialog != null) {
+                visibleDialog.dismiss();
+                visibleDialog = null;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
         visibleDialog = builder.show();
         visibleDialog.setCanceledOnTouchOutside(true);
@@ -208,5 +216,6 @@ public class BaseFragment {
                 visibleDialog = null;
             }
         });
+        return true;
     }
 }

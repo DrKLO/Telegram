@@ -121,7 +121,6 @@ public class ActionBarMenuItem extends ImageView {
         }
         if (popupWindow == null) {
             popupWindow = new ActionBarPopupWindow(popupLayout, FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
-            popupWindow.setFocusable(true);
             popupWindow.setBackgroundDrawable(new BitmapDrawable());
             popupWindow.setOutsideTouchable(true);
             popupWindow.setClippingEnabled(true);
@@ -132,8 +131,10 @@ public class ActionBarMenuItem extends ImageView {
         if (popupLayout.getMeasuredWidth() == 0) {
             popupWindow.showAsDropDown(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), 0);
             popupWindow.update(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), 0, -1, -1);
+            popupWindow.setFocusable(true);
         } else {
             popupWindow.showAsDropDown(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), 0);
+            popupWindow.setFocusable(true);
         }
     }
 

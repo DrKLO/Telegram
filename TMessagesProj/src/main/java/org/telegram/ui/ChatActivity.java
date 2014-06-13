@@ -2682,9 +2682,6 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             scrollToTopUnReadOnResume = false;
             scrollToTopOnResume = false;
         }
-        if (emojiView != null) {
-            emojiView.loadRecents();
-        }
         paused = false;
         if (readWhenResume && !messages.isEmpty()) {
             readWhenResume = false;
@@ -2866,10 +2863,6 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             return;
         }
 
-        selectedObject = null;
-        forwaringMessage = null;
-        selectedMessagesCanCopyIds.clear();
-        selectedMessagesIds.clear();
         View parentView = getRowParentView(v);
         if (parentView == null) {
             return;
@@ -2882,6 +2875,12 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             message = holder.message;
         }
         final int type = getMessageType(message);
+
+        selectedObject = null;
+        forwaringMessage = null;
+        selectedMessagesCanCopyIds.clear();
+        selectedMessagesIds.clear();
+
         if (single || type < 2) {
             if (type >= 0) {
                 selectedObject = message;
@@ -2924,6 +2923,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 builder.setItems(items, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
+                        if (selectedObject == null) {
+                            return;
+                        }
                         if (type == 0) {
                             if (i == 0) {
                                 processSelectedOption(0);

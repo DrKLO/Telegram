@@ -126,23 +126,33 @@ public class BuffersStorage {
         }
         if (buffer.buffer.capacity() == 128) {
             synchronized (freeBuffers128) {
-                freeBuffers128.add(buffer);
+                if (freeBuffers128.size() < 10) {
+                    freeBuffers128.add(buffer);
+                }
             }
         } else if (buffer.buffer.capacity() == 1024 + 200) {
             synchronized (freeBuffers1024) {
-                freeBuffers1024.add(buffer);
+                if (freeBuffers1024.size() < 10) {
+                    freeBuffers1024.add(buffer);
+                }
             }
         } else if (buffer.buffer.capacity() == 4096 + 200) {
             synchronized (freeBuffers4096) {
-                freeBuffers4096.add(buffer);
+                if (freeBuffers4096.size() < 10) {
+                    freeBuffers4096.add(buffer);
+                }
             }
         } else if (buffer.buffer.capacity() == 16384 + 200) {
             synchronized (freeBuffers16384) {
-                freeBuffers16384.add(buffer);
+                if (freeBuffers16384.size() < 10) {
+                    freeBuffers16384.add(buffer);
+                }
             }
         } else if (buffer.buffer.capacity() == 40000) {
             synchronized (freeBuffers32768) {
-                freeBuffers32768.add(buffer);
+                if (freeBuffers32768.size() < 10) {
+                    freeBuffers32768.add(buffer);
+                }
             }
         }
     }

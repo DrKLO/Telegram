@@ -393,52 +393,57 @@ public class Emoji {
         }
         long buf = 0;
         int emojiCount = 0;
-        for (int i = 0; i < cs.length(); i++) {
-            char c = cs.charAt(i);
-            if (c == 0xD83C || c == 0xD83D || (buf != 0 && (buf & 0xFFFFFFFF00000000L) == 0 && (c >= 0xDDE6 && c <= 0xDDFA))) {
-                buf <<= 16;
-                buf |= c;
-            } else if (buf > 0 && (c & 0xF000) == 0xD000) {
-                buf <<= 16;
-                buf |= c;
-                Drawable d = Emoji.getEmojiDrawable(buf);
-                if (d != null) {
-                    EmojiSpan span = new EmojiSpan(d, DynamicDrawableSpan.ALIGN_BOTTOM, size, fontMetrics);
-                    emojiCount++;
-                    if (c>= 0xDDE6 && c <= 0xDDFA) {
-                        s.setSpan(span, i - 3, i + 1, 0);
-                    } else {
-                        s.setSpan(span, i - 1, i + 1, 0);
-                    }
-                }
-                buf = 0;
-            } else if (c == 0x20E3) {
-                if (i > 0) {
-                    char c2 = cs.charAt(i - 1);
-                    if ((c2 >= '0' && c2 <= '9') || c2 == '#') {
-                        buf = c2;
-                        buf <<= 16;
-                        buf |= c;
-                        Drawable d = Emoji.getEmojiDrawable(buf);
-                        if (d != null) {
-                            EmojiSpan span = new EmojiSpan(d, DynamicDrawableSpan.ALIGN_BOTTOM, size, fontMetrics);
-                            emojiCount++;
+        try {
+            for (int i = 0; i < cs.length(); i++) {
+                char c = cs.charAt(i);
+                if (c == 0xD83C || c == 0xD83D || (buf != 0 && (buf & 0xFFFFFFFF00000000L) == 0 && (c >= 0xDDE6 && c <= 0xDDFA))) {
+                    buf <<= 16;
+                    buf |= c;
+                } else if (buf > 0 && (c & 0xF000) == 0xD000) {
+                    buf <<= 16;
+                    buf |= c;
+                    Drawable d = Emoji.getEmojiDrawable(buf);
+                    if (d != null) {
+                        EmojiSpan span = new EmojiSpan(d, DynamicDrawableSpan.ALIGN_BOTTOM, size, fontMetrics);
+                        emojiCount++;
+                        if (c>= 0xDDE6 && c <= 0xDDFA) {
+                            s.setSpan(span, i - 3, i + 1, 0);
+                        } else {
                             s.setSpan(span, i - 1, i + 1, 0);
                         }
-                        buf = 0;
+                    }
+                    buf = 0;
+                } else if (c == 0x20E3) {
+                    if (i > 0) {
+                        char c2 = cs.charAt(i - 1);
+                        if ((c2 >= '0' && c2 <= '9') || c2 == '#') {
+                            buf = c2;
+                            buf <<= 16;
+                            buf |= c;
+                            Drawable d = Emoji.getEmojiDrawable(buf);
+                            if (d != null) {
+                                EmojiSpan span = new EmojiSpan(d, DynamicDrawableSpan.ALIGN_BOTTOM, size, fontMetrics);
+                                emojiCount++;
+                                s.setSpan(span, i - 1, i + 1, 0);
+                            }
+                            buf = 0;
+                        }
+                    }
+                } else if (inArray(c, emojiChars)) {
+                    Drawable d = Emoji.getEmojiDrawable(c);
+                    if (d != null) {
+                        EmojiSpan span = new EmojiSpan(d, DynamicDrawableSpan.ALIGN_BOTTOM, size, fontMetrics);
+                        emojiCount++;
+                        s.setSpan(span, i, i + 1, 0);
                     }
                 }
-            } else if (inArray(c, emojiChars)) {
-                Drawable d = Emoji.getEmojiDrawable(c);
-                if (d != null) {
-                    EmojiSpan span = new EmojiSpan(d, DynamicDrawableSpan.ALIGN_BOTTOM, size, fontMetrics);
-                    emojiCount++;
-                    s.setSpan(span, i, i + 1, 0);
+                if (emojiCount >= 50) {
+                    break;
                 }
             }
-            if (emojiCount >= 50) {
-                break;
-            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+            return cs;
         }
         return s;
     }

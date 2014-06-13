@@ -59,7 +59,8 @@ public class ActionBarActivity extends Activity {
     private long transitionAnimationStartTime;
     private boolean inActionMode = false;
     private int startedTrackingPointerId;
-    private Animation.AnimationListener listener;
+    private Runnable onCloseAnimationEndRunnable = null;
+    private Runnable onOpenAnimationEndRunnable = null;
 
     private class FrameLayoutTouch extends FrameLayout {
         public FrameLayoutTouch(Context context) {
@@ -157,10 +158,14 @@ public class ActionBarActivity extends Activity {
     protected void onResume() {
         super.onResume();
         fixLayout();
-        if (transitionAnimationInProgress && listener != null) {
-            openAnimation.cancel();
-            closeAnimation.cancel();
-            listener.onAnimationEnd(null);
+        if (transitionAnimationInProgress) {
+            if (onCloseAnimationEndRunnable != null) {
+                closeAnimation.cancel();
+                onCloseAnimationEnd(false);
+            } else if (onOpenAnimationEndRunnable != null) {
+                openAnimation.cancel();
+                onOpenAnimationEnd(false);
+            }
         }
         if (!fragmentsStack.isEmpty()) {
             BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
@@ -370,7 +375,7 @@ public class ActionBarActivity extends Activity {
                 onFinish();
                 finish();
             } else if (!fragmentsStack.isEmpty()) {
-                closeLastFragment();
+                closeLastFragment(true);
             }
         }
     }
@@ -501,8 +506,15 @@ public class ActionBarActivity extends Activity {
         if (needAnimation) {
             transitionAnimationStartTime = System.currentTimeMillis();
             transitionAnimationInProgress = true;
+            onOpenAnimationEndRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    presentFragmentInternalRemoveOld(removeLast, currentFragment);
+                    fragment.onOpenAnimationEnd();
+                }
+            };
             openAnimation.reset();
-            openAnimation.setAnimationListener(listener = new Animation.AnimationListener() {
+            openAnimation.setAnimationListener(new Animation.AnimationListener() {
                 @Override
                 public void onAnimationStart(Animation animation) {
 
@@ -510,18 +522,7 @@ public class ActionBarActivity extends Activity {
 
                 @Override
                 public void onAnimationEnd(Animation animation) {
-                    if (transitionAnimationInProgress) {
-                        transitionAnimationInProgress = false;
-                        transitionAnimationStartTime = 0;
-                        fragment.onOpenAnimationEnd();
-                        new Handler().post(new Runnable() {
-                            @Override
-                            public void run() {
-                                presentFragmentInternalRemoveOld(removeLast, currentFragment);
-                            }
-                        });
-                        listener = null;
-                    }
+                    onOpenAnimationEnd(true);
                 }
 
                 @Override
@@ -552,14 +553,14 @@ public class ActionBarActivity extends Activity {
         fragmentsStack.remove(fragment);
     }
 
-    public void closeLastFragment() {
+    public void closeLastFragment(boolean animated) {
         if (fragmentsStack.size() <= 1 || checkTransitionAnimation()) {
             return;
         }
         if (getCurrentFocus() != null) {
             Utilities.hideKeyboard(getCurrentFocus());
         }
-        boolean needAnimation = openAnimation != null && getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).getBoolean("view_animations", true);
+        boolean needAnimation = animated && closeAnimation != null && getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).getBoolean("view_animations", true);
         final BaseFragment currentFragment = fragmentsStack.get(fragmentsStack.size() - 1);
         BaseFragment previousFragment = fragmentsStack.get(fragmentsStack.size() - 2);
         if (!needAnimation) {
@@ -584,7 +585,13 @@ public class ActionBarActivity extends Activity {
             transitionAnimationInProgress = true;
             closeAnimation.reset();
             closeAnimation.setFillAfter(true);
-            closeAnimation.setAnimationListener(listener = new Animation.AnimationListener() {
+            onCloseAnimationEndRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    closeLastFragmentInternalRemoveOld(currentFragment);
+                }
+            };
+            closeAnimation.setAnimationListener(new Animation.AnimationListener() {
                 @Override
                 public void onAnimationStart(Animation animation) {
 
@@ -592,16 +599,7 @@ public class ActionBarActivity extends Activity {
 
                 @Override
                 public void onAnimationEnd(Animation animation) {
-                    if (transitionAnimationInProgress) {
-                        transitionAnimationInProgress = false;
-                        transitionAnimationStartTime = 0;
-                        new Handler().post(new Runnable() {
-                            public void run() {
-                                closeLastFragmentInternalRemoveOld(currentFragment);
-                            }
-                        });
-                        listener = null;
-                    }
+                    onCloseAnimationEnd(true);
                 }
 
                 @Override
@@ -691,13 +689,56 @@ public class ActionBarActivity extends Activity {
         return false;
     }
 
-    @Override
-    public void startActivityForResult(Intent intent, int requestCode) {
-        if (transitionAnimationInProgress && listener != null) {
-            openAnimation.cancel();
-            closeAnimation.cancel();
-            listener.onAnimationEnd(null);
+    private void onCloseAnimationEnd(boolean post) {
+        if (transitionAnimationInProgress && onCloseAnimationEndRunnable != null) {
+            transitionAnimationInProgress = false;
+            transitionAnimationStartTime = 0;
+            if (post) {
+                new Handler().post(new Runnable() {
+                    public void run() {
+                        onCloseAnimationEndRunnable.run();
+                        onCloseAnimationEndRunnable = null;
+                    }
+                });
+            } else {
+                onCloseAnimationEndRunnable.run();
+                onCloseAnimationEndRunnable = null;
+            }
         }
-        super.startActivityForResult(intent, requestCode);
+    }
+
+    private void onOpenAnimationEnd(boolean post) {
+        if (transitionAnimationInProgress && onOpenAnimationEndRunnable != null) {
+            transitionAnimationInProgress = false;
+            transitionAnimationStartTime = 0;
+            if (post) {
+                new Handler().post(new Runnable() {
+                    public void run() {
+                        onOpenAnimationEndRunnable.run();
+                        onOpenAnimationEndRunnable = null;
+                    }
+                });
+            } else {
+                onOpenAnimationEndRunnable.run();
+                onOpenAnimationEndRunnable = null;
+            }
+        }
+    }
+
+    @Override
+    public void startActivityForResult(final Intent intent, final int requestCode) {
+        if (transitionAnimationInProgress) {
+            if (onCloseAnimationEndRunnable != null) {
+                closeAnimation.cancel();
+                onCloseAnimationEnd(false);
+            } else if (onOpenAnimationEndRunnable != null) {
+                openAnimation.cancel();
+                onOpenAnimationEnd(false);
+            }
+            containerView.invalidate();
+            ActionBarActivity.super.startActivityForResult(intent, requestCode);
+        } else {
+            super.startActivityForResult(intent, requestCode);
+        }
     }
 }
