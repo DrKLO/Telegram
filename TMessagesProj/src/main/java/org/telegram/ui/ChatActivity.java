@@ -65,6 +65,8 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.RPCRequest;
+import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
@@ -181,7 +183,6 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     private float startedDraggingX = -1;
     private float distCanMove = Utilities.dp(80);
     private PowerManager.WakeLock mWakeLock = null;
-
     private String currentPicturePath;
 
     private TLRPC.ChatParticipants info = null;

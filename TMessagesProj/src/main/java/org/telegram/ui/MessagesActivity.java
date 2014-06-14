@@ -101,6 +101,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             ContactsController.getInstance().checkAppAccount();
             dialogsLoaded = true;
         }
+        // Force update of blocked user cache
+        ContactsController.getInstance().addBlockedContacts();
         return true;
     }
 

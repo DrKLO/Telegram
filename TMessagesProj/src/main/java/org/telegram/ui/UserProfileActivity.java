@@ -51,6 +51,7 @@ import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.IdenticonView;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class UserProfileActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate, PhotoViewer.PhotoViewerProvider {
     private ListView listView;
@@ -61,12 +62,14 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     private boolean creatingChat = false;
     private long dialog_id;
     private TLRPC.EncryptedChat currentEncryptedChat;
+    private Boolean blocked = false;
 
     private final static int add_contact = 1;
     private final static int block_contact = 2;
     private final static int share_contact = 3;
     private final static int edit_contact = 4;
     private final static int delete_contact = 5;
+    private final static int unblock_contact = 6;
 
     private int avatarRow;
     private int phoneSectionRow;
@@ -92,11 +95,13 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         NotificationCenter.getInstance().addObserver(this, MessagesController.mediaCountDidLoaded);
         NotificationCenter.getInstance().addObserver(this, MessagesController.encryptedChatCreated);
         NotificationCenter.getInstance().addObserver(this, MessagesController.encryptedChatUpdated);
+        NotificationCenter.getInstance().addObserver(this, MessagesController.blockedContactsDidLoaded);
         user_id = arguments.getInt("user_id", 0);
         dialog_id = arguments.getLong("dialog_id", 0);
         if (dialog_id != 0) {
             currentEncryptedChat = MessagesController.getInstance().encryptedChats.get((int)(dialog_id >> 32));
         }
+        blocked = MessagesStorage.getInstance().getBlockedContact(user_id);
         updateRowsIds();
         return MessagesController.getInstance().users.get(user_id) != null && super.onFragmentCreate();
     }
@@ -109,6 +114,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         NotificationCenter.getInstance().removeObserver(this, MessagesController.mediaCountDidLoaded);
         NotificationCenter.getInstance().removeObserver(this, MessagesController.encryptedChatCreated);
         NotificationCenter.getInstance().removeObserver(this, MessagesController.encryptedChatUpdated);
+        NotificationCenter.getInstance().removeObserver(this, MessagesController.blockedContactsDidLoaded);
     }
 
     private void updateRowsIds() {
@@ -147,7 +153,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 public void onItemClick(int id) {
                     if (id == -1) {
                         finishFragment();
-                    } else if (id == block_contact) {
+                    } else if (id == block_contact) { // If we want to lock the contact
                         TLRPC.User user = MessagesController.getInstance().users.get(user_id);
                         if (user == null) {
                             return;
@@ -156,11 +162,31 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         req.id = MessagesController.getInputUser(user);
                         TLRPC.TL_contactBlocked blocked = new TLRPC.TL_contactBlocked();
                         blocked.user_id = user_id;
-                        blocked.date = (int)(System.currentTimeMillis() / 1000);
+                        blocked.date = (int) (System.currentTimeMillis() / 1000);
+                        updateBlockedUnblocked(true);
                         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                             @Override
                             public void run(TLObject response, TLRPC.TL_error error) {
-
+                                // Force update of blocked user cache
+                                ContactsController.getInstance().addBlockedContacts();
+                            }
+                        }, null, true, RPCRequest.RPCRequestClassGeneric);
+                    } else if (id == unblock_contact) { // If we want to unlock the contact
+                        TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+                        if (user == null) {
+                            return;
+                        }
+                        TLRPC.TL_contacts_unblock req = new TLRPC.TL_contacts_unblock();
+                        req.id = MessagesController.getInputUser(user);
+                        TLRPC.TL_contactBlocked blocked = new TLRPC.TL_contactBlocked();
+                        blocked.user_id = user_id;
+                        blocked.date = (int) (System.currentTimeMillis() / 1000);
+                        updateBlockedUnblocked(false);
+                        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                            @Override
+                            public void run(TLObject response, TLRPC.TL_error error) {
+                                // Force update of blocked user cache
+                                ContactsController.getInstance().addBlockedContacts();
                             }
                         }, null, true, RPCRequest.RPCRequestClassGeneric);
                     } else if (id == add_contact) {
@@ -371,6 +397,15 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         return fragmentView;
     }
 
+    /**
+     * Modify the option block/unblock contact and recreate the Menu to fix this modification
+     * @param newState New state of current contact
+     */
+    public void updateBlockedUnblocked(boolean newState) {
+        blocked = newState;
+        createActionBarMenu();
+    }
+
     @Override
     public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
         if (resultCode == Activity.RESULT_OK) {
@@ -443,6 +478,9 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     listAdapter.notifyDataSetChanged();
                 }
             }
+        } else if (id == MessagesController.blockedContactsDidLoaded) {
+            blocked = MessagesStorage.getInstance().getBlockedContact(user_id);
+            createActionBarMenu();
         }
     }
 
@@ -508,28 +546,42 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     public int getSelectedCount() { return 0; }
 
     private void createActionBarMenu() {
-        ActionBarMenu menu = actionBarLayer.createMenu();
-        menu.clearItems();
+        final ActionBarMenu menu = actionBarLayer.createMenu();
+        Utilities.RunOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                menu.clearItems();
+                if (ContactsController.getInstance().contactsDict.get(user_id) == null) {
+                    TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+                    if (user == null) {
+                        return;
+                    }
+                    ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
+                    if (user.phone != null && user.phone.length() != 0) {
+                        item.addSubItem(add_contact, LocaleController.getString("AddContact", R.string.AddContact), 0);
+                        if (blocked) // If the user is blocked, show "Unblock"
+                            item.addSubItem(unblock_contact, LocaleController.getString("Unblock", R.string.Unblock), 0);
+                        else // Otherwise show "Block"
+                            item.addSubItem(block_contact, LocaleController.getString("BlockContact", R.string.BlockContact), 0);
+                    } else {
+                        if (blocked) // If the user is blocked, show "Unblock"
+                            item.addSubItem(unblock_contact, LocaleController.getString("Unblock", R.string.Unblock), 0);
+                        else // Otherwise show "Block"
+                            item.addSubItem(block_contact, LocaleController.getString("BlockContact", R.string.BlockContact), 0);
+                    }
+                } else {
+                    ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
+                    item.addSubItem(share_contact, LocaleController.getString("ShareContact", R.string.ShareContact), 0);
+                    if (blocked) // If the user is blocked, show "Unblock"
+                        item.addSubItem(unblock_contact, LocaleController.getString("Unblock", R.string.Unblock), 0);
+                    else // Otherwise show "Block"
+                        item.addSubItem(block_contact, LocaleController.getString("BlockContact", R.string.BlockContact), 0);
+                    item.addSubItem(edit_contact, LocaleController.getString("EditContact", R.string.EditContact), 0);
+                    item.addSubItem(delete_contact, LocaleController.getString("DeleteContact", R.string.DeleteContact), 0);
+                }
+            }
+        });
 
-        if (ContactsController.getInstance().contactsDict.get(user_id) == null) {
-            TLRPC.User user = MessagesController.getInstance().users.get(user_id);
-            if (user == null) {
-                return;
-            }
-            ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
-            if (user.phone != null && user.phone.length() != 0) {
-                item.addSubItem(add_contact, LocaleController.getString("AddContact", R.string.AddContact), 0);
-                item.addSubItem(block_contact, LocaleController.getString("BlockContact", R.string.BlockContact), 0);
-            } else {
-                item.addSubItem(block_contact, LocaleController.getString("BlockContact", R.string.BlockContact), 0);
-            }
-        } else {
-            ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
-            item.addSubItem(share_contact, LocaleController.getString("ShareContact", R.string.ShareContact), 0);
-            item.addSubItem(block_contact, LocaleController.getString("BlockContact", R.string.BlockContact), 0);
-            item.addSubItem(edit_contact, LocaleController.getString("EditContact", R.string.EditContact), 0);
-            item.addSubItem(delete_contact, LocaleController.getString("DeleteContact", R.string.DeleteContact), 0);
-        }
     }
 
     @Override
