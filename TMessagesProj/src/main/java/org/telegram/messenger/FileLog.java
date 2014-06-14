@@ -110,7 +110,7 @@ public class FileLog {
         }
     }
 
-    public static void e(final String tag, final Exception e) {
+    public static void e(final String tag, final Throwable e) {
         if (!BuildVars.DEBUG_VERSION) {
             return;
         }

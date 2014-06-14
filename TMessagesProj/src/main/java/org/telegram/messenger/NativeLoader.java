@@ -55,6 +55,12 @@ public class NativeLoader {
         }
 
         try {
+            System.loadLibrary("jnigraphics");
+        } catch (Error e) {
+            FileLog.e("tmessages", e);
+        }
+
+        try {
             String folder = null;
             long libSize = 0;
             long libSize2 = 0;
@@ -96,8 +102,8 @@ public class NativeLoader {
                         System.loadLibrary("tmessages");
                         nativeLoaded = true;
                         return;
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    } catch (Error e) {
+                        FileLog.e("tmessages", e);
                     }
                 }
             }
@@ -110,8 +116,8 @@ public class NativeLoader {
                         System.load(destLocalFile.getAbsolutePath());
                         nativeLoaded = true;
                         return;
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    } catch (Error e) {
+                        FileLog.e("tmessages", e);
                     }
                 } else {
                     destLocalFile.delete();
@@ -139,8 +145,12 @@ public class NativeLoader {
                 }
                 out.close();
 
-                System.load(destLocalFile.getAbsolutePath());
-                nativeLoaded = true;
+                try {
+                    System.load(destLocalFile.getAbsolutePath());
+                    nativeLoaded = true;
+                } catch (Error e) {
+                    FileLog.e("tmessages", e);
+                }
                 return;
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
@@ -164,7 +174,11 @@ public class NativeLoader {
             e.printStackTrace();
         }
 
-        System.loadLibrary("tmessages");
-        nativeLoaded = true;
+        try {
+            System.loadLibrary("tmessages");
+            nativeLoaded = true;
+        } catch (Error e) {
+            FileLog.e("tmessages", e);
+        }
     }
 }

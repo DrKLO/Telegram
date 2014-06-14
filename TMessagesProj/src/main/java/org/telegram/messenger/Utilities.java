@@ -262,10 +262,17 @@ public class Utilities {
     public static File getCacheDir() {
         if (externalCacheNotAvailableState == 1 || externalCacheNotAvailableState == 0 && Environment.getExternalStorageState().startsWith(Environment.MEDIA_MOUNTED)) {
             externalCacheNotAvailableState = 1;
-            return ApplicationLoader.applicationContext.getExternalCacheDir();
+            File file = ApplicationLoader.applicationContext.getExternalCacheDir();
+            if (file != null) {
+                return file;
+            }
         }
         externalCacheNotAvailableState = 2;
-        return ApplicationLoader.applicationContext.getCacheDir();
+        File file = ApplicationLoader.applicationContext.getCacheDir();
+        if (file != null) {
+            return file;
+        }
+        return new File("");
     }
 
     public static String bytesToHex(byte[] bytes) {
