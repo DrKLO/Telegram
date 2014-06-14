@@ -141,7 +141,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                                     return;
                                 }
                                 req.id = MessagesController.getInputUser(user);
-                                blockedContacts.remove(selectedUserId);
+                                blockedContacts.remove(blockedContacts.indexOf(selectedUserId));
                                 listViewAdapter.notifyDataSetChanged();
                                 ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                                     @Override
