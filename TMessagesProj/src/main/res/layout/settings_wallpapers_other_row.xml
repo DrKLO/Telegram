@@ -6,7 +6,6 @@
     <org.telegram.ui.Views.BackupImageView
         android:layout_height="100dp"
         android:layout_width="100dp"
-        android:scaleType="centerCrop"
         android:id="@+id/image"
         android:layout_gravity="bottom"
         android:background="#5A475866"/>

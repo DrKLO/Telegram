@@ -81,7 +81,7 @@ android {
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 19
-        versionCode 255
+        versionCode 256
         versionName "1.5.3"
     }
 }

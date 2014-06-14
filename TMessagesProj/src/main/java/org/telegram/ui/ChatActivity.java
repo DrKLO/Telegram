@@ -2335,9 +2335,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         dayArr.remove(obj);
                         if (dayArr.isEmpty()) {
                             messagesByDays.remove(obj.dateKey);
-                            if (index != -1) {
-                                messages.remove(index);
-                            }
+                            messages.remove(index);
                         }
                         updated = true;
                     }

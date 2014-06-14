@@ -10,7 +10,6 @@
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:id="@+id/messages_list_row_avatar"
-        android:contentDescription=""
         android:layout_marginTop="8dp"
         android:layout_gravity="top"/>
 

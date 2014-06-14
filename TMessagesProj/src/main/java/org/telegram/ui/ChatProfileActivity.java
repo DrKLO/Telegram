@@ -31,6 +31,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
@@ -51,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.concurrent.Semaphore;
 
 public class ChatProfileActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ContactsActivity.ContactsActivityDelegate, PhotoViewer.PhotoViewerProvider {
     private ListView listView;
@@ -63,6 +65,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
     private int totalMediaCount = -1;
     private int onlineCount = -1;
     private ArrayList<Integer> sortedUsers = new ArrayList<Integer>();
+    private TLRPC.Chat currentChat;
 
     private int avatarRow;
     private int settingsSectionRow;
@@ -85,12 +88,35 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
+
+        chat_id = getArguments().getInt("chat_id", 0);
+        currentChat = MessagesController.getInstance().chats.get(chat_id);
+        if (currentChat == null) {
+            final Semaphore semaphore = new Semaphore(0);
+            MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
+                @Override
+                public void run() {
+                    currentChat = MessagesStorage.getInstance().getChat(chat_id);
+                    semaphore.release();
+                }
+            });
+            try {
+                semaphore.acquire();
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+            if (currentChat != null) {
+                MessagesController.getInstance().chats.put(currentChat.id, currentChat);
+            } else {
+                return false;
+            }
+        }
+
         NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
         NotificationCenter.getInstance().addObserver(this, MessagesController.chatInfoDidLoaded);
         NotificationCenter.getInstance().addObserver(this, MessagesController.mediaCountDidLoaded);
         NotificationCenter.getInstance().addObserver(this, MessagesController.closeChats);
 
-        chat_id = getArguments().getInt("chat_id", 0);
         updateOnlineCount();
         MessagesController.getInstance().getMediaCount(-chat_id, classGuid, true);
         avatarUpdater.delegate = new AvatarUpdater.AvatarUpdaterDelegate() {

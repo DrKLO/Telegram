@@ -232,11 +232,11 @@ public class EmojiView extends LinearLayout {
                     }
                 };
                 localObject.setOnClickListener(new View.OnClickListener() {
-                    public void onClick(View paramAnonymousView) {
+                    public void onClick(View view) {
                         if (EmojiView.this.listener != null) {
-                            EmojiView.this.listener.onEmojiSelected(EmojiView.this.convert((Long)paramAnonymousView.getTag()));
+                            EmojiView.this.listener.onEmojiSelected(EmojiView.this.convert((Long)view.getTag()));
                         }
-                        EmojiView.this.addToRecent((Long)paramAnonymousView.getTag());
+                        EmojiView.this.addToRecent((Long)view.getTag());
                     }
                 });
                 localObject.setBackgroundResource(R.drawable.list_selector);

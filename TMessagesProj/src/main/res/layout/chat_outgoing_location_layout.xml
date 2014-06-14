@@ -39,7 +39,6 @@
             android:layout_width="wrap_content"
             android:layout_margin="6dp"
             android:layout_gravity="top"
-            android:scaleType="centerCrop"
             android:minHeight="100dp"
             android:minWidth="100dp"
             android:id="@+id/chat_photo_image"/>

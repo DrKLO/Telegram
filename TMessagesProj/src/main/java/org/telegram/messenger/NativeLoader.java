@@ -55,12 +55,6 @@ public class NativeLoader {
         }
 
         try {
-            System.loadLibrary("jnigraphics");
-        } catch (Error e) {
-            FileLog.e("tmessages", e);
-        }
-
-        try {
             String folder = null;
             long libSize = 0;
             long libSize2 = 0;

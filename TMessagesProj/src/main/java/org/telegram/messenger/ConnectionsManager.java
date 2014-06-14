@@ -65,6 +65,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     private long lastPingTime = System.currentTimeMillis();
     private long lastPushPingTime = System.currentTimeMillis();
     private int nextSleepTimeout = 30000;
+    private long nextPingId = 0;
 
     private static volatile ConnectionsManager Instance = null;
     public static ConnectionsManager getInstance() {
@@ -2337,7 +2338,6 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         }
     }
 
-    static long nextPingId = 0;
     private ByteBufferDesc generatePingData(TcpConnection connection) {
         if (connection == null) {
             return null;
@@ -2347,6 +2347,17 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         ping.ping_id = nextPingId++;
         ping.disconnect_delay = 35;
         pingIdToDate.put(ping.ping_id, (int)(System.currentTimeMillis() / 1000));
+        if (pingIdToDate.size() > 20) {
+            ArrayList<Long> itemsToDelete = new ArrayList<Long>();
+            for (Long pid : pingIdToDate.keySet()) {
+                if (pid < nextPingId - 10) {
+                    itemsToDelete.add(pid);
+                }
+            }
+            for (Long pid : itemsToDelete) {
+                pingIdToDate.remove(pid);
+            }
+        }
 
         NetworkMessage networkMessage = new NetworkMessage();
         networkMessage.protoMessage = wrapMessage(ping, connection, false);

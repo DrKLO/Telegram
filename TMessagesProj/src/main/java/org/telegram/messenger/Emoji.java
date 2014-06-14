@@ -13,7 +13,6 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Locale;
 
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
@@ -34,8 +33,21 @@ public class Emoji {
 	private static int drawImgSize, bigImgSize;
 	private static boolean inited = false;
 	private static Paint placeholderPaint;
-	private static Bitmap emojiBmp[] = new Bitmap[5];
+	private static EmojiBitmap emojiBmp[] = new EmojiBitmap[5];
 	private static boolean loadingEmoji[] = new boolean[5];
+    private static int emojiFullSize;
+
+    private static class EmojiBitmap {
+        public int[] colors;
+        public int width;
+        public int height;
+
+        public EmojiBitmap(int[] colors, int width, int height) {
+            this.colors = colors;
+            this.width = width;
+            this.height = height;
+        }
+    }
 
     private static final int[] cols = {
             13, 10, 15, 10, 14
@@ -190,22 +202,21 @@ public class Emoji {
                     0x00000000D83DDD34L, 0x00000000D83DDD35L, 0x00000000D83DDD3BL, 0x00000000D83DDD36L, 0x00000000D83DDD37L, 0x00000000D83DDD38L, 0x00000000D83DDD39L}};
 	
 	static {
-        int imgSize = 30;
         if (Utilities.density <= 1.0f) {
-            imgSize = 30;
+            emojiFullSize = 30;
         } else if (Utilities.density <= 1.5f) {
-            imgSize = 45;
+            emojiFullSize = 45;
         } else if (Utilities.density <= 2.0f) {
-            imgSize = 60;
+            emojiFullSize = 60;
         } else {
-            imgSize = 90;
+            emojiFullSize = 90;
         }
 		drawImgSize = Utilities.dp(20);
 		bigImgSize = Utilities.dp(30);
 
 		for (int j = 1; j < data.length; j++) {
 			for (int i = 0; i < data[j].length; i++) {
-				Rect rect = new Rect((i % cols[j - 1]) * imgSize, (i / cols[j - 1]) * imgSize, (i % cols[j - 1] + 1) * imgSize, (i / cols[j - 1] + 1) * imgSize);
+				Rect rect = new Rect((i % cols[j - 1]) * emojiFullSize, (i / cols[j - 1]) * emojiFullSize, emojiFullSize, emojiFullSize);
 				rects.put(data[j][i], new DrawableInfo(rect, (byte)(j - 1)));
 			}
 		}
@@ -213,7 +224,7 @@ public class Emoji {
 		placeholderPaint.setColor(0x00000000);
 	}
 
-	private static Bitmap loadEmoji(final int page) {
+	private static void loadEmoji(final int page) {
 		try {
             float scale = 1.0f;
             int imageResize = 1;
@@ -241,8 +252,10 @@ public class Emoji {
             opts.inJustDecodeBounds = true;
             BitmapFactory.decodeFile(imageFile.getAbsolutePath(), opts);
 
-            final Bitmap colorsBitmap = Bitmap.createBitmap(opts.outWidth / imageResize, opts.outHeight / imageResize, Bitmap.Config.ARGB_8888);
-            Utilities.loadBitmap(imageFile.getAbsolutePath(), colorsBitmap, imageResize);
+            int width = opts.outWidth / imageResize;
+            int height = opts.outHeight / imageResize;
+            int[] bitmap = new int[width * height];
+            Utilities.loadBitmap(imageFile.getAbsolutePath(), bitmap, imageResize, 0, width, height);
 
             imageName = String.format(Locale.US, "emoji%.01fx_a_%d.jpg", scale, page);
             imageFile = ApplicationLoader.applicationContext.getFileStreamPath(imageName);
@@ -252,21 +265,19 @@ public class Emoji {
                 is.close();
             }
 
-            Utilities.loadBitmap(imageFile.getAbsolutePath(), colorsBitmap, imageResize);
+            Utilities.loadBitmap(imageFile.getAbsolutePath(), bitmap, imageResize, 0, width, height);
 
+            final EmojiBitmap emojiBitmap = new EmojiBitmap(bitmap, width, height);
             Utilities.RunOnUIThread(new Runnable() {
                 @Override
                 public void run() {
-                    emojiBmp[page] = colorsBitmap;
+                    emojiBmp[page] = emojiBitmap;
                     NotificationCenter.getInstance().postNotificationName(999);
                 }
             });
-
-			return colorsBitmap;
 		} catch(Throwable x) {
             FileLog.e("tmessages", "Error loading emoji", x);
         }
-		return null;
 	}
 	
 	private static void loadEmojiAsync(final int page) {
@@ -318,7 +329,7 @@ public class Emoji {
         private DrawableInfo info;
 		boolean fullSize = false;
 		private static Paint paint;
-		
+
 		static {
 			paint = new Paint();
             paint.setFlags(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
@@ -330,20 +341,20 @@ public class Emoji {
 		
 		@Override
 		public void draw(Canvas canvas) {
-			if (emojiBmp[info.page] == null) {
+            EmojiBitmap bitmap = emojiBmp[info.page];
+			if (bitmap == null) {
                 loadEmojiAsync(info.page);
 				canvas.drawRect(getBounds(), placeholderPaint);
 				return;
 			}
-			Rect b = copyBounds();
-			int cX = b.centerX(), cY = b.centerY();
-			b.left = cX - (fullSize ? bigImgSize : drawImgSize) / 2;
-			b.right = cX + (fullSize ? bigImgSize : drawImgSize) / 2;
-			b.top = cY - (fullSize ? bigImgSize : drawImgSize) / 2;
-			b.bottom = cY + (fullSize ? bigImgSize : drawImgSize) / 2;
-            if (!canvas.quickReject(b.left, b.top, b.right, b.bottom, Canvas.EdgeType.AA)) {
-                canvas.drawBitmap(emojiBmp[info.page], info.rect, b, paint);
-            }
+            int size = fullSize ? bigImgSize : drawImgSize;
+            float scale = (float)size / (float)emojiFullSize;
+            int offset = (getBounds().width() - size) / 2;
+
+            canvas.save();
+            canvas.scale(scale, scale);
+            canvas.drawBitmap(bitmap.colors, info.rect.top * bitmap.width + info.rect.left, bitmap.width, offset, offset, info.rect.right, info.rect.bottom, true, paint);
+            canvas.restore();
 		}
 
 		@Override

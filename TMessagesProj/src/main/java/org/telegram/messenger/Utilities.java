@@ -17,7 +17,6 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.database.Cursor;
-import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.Typeface;
 import android.net.Uri;
@@ -156,7 +155,7 @@ public class Utilities {
     public native static long doPQNative(long _what);
     public native static byte[] aesIgeEncryption(byte[] _what, byte[] _key, byte[] _iv, boolean encrypt, boolean changeIv, int len);
     public native static void aesIgeEncryption2(ByteBuffer _what, byte[] _key, byte[] _iv, boolean encrypt, boolean changeIv, int len);
-    public native static void loadBitmap(String path, Bitmap bitmap, int scale);
+    public native static void loadBitmap(String path, int[] bitmap, int scale, int format, int width, int height);
 
     public static void lockOrientation(Activity activity) {
         if (prevOrientation != -10) {

@@ -80,8 +80,6 @@
                 android:layout_width="42dp"
                 android:layout_height="42dp"
                 android:background="#408ed057"
-                android:src="@drawable/doc_green"
-                android:scaleType="center"
                 android:id="@+id/contact_avatar"/>
 
             <org.telegram.ui.Views.TightTextView
