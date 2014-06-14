@@ -172,6 +172,10 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 @Override
                 public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
                     if (i > membersSectionRow && i < addMemberRow) {
+                        if (getParentActivity() == null) {
+                            return false;
+                        }
+
                         TLRPC.TL_chatParticipant user = info.participants.get(sortedUsers.get(i - membersSectionRow - 1));
                         if (user.user_id == UserConfig.getClientUserId()) {
                             return false;
@@ -247,6 +251,9 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         args.putInt("user_id", user_id);
                         presentFragment(new UserProfileActivity(args));
                     } else if (i == settingsVibrateRow || i == settingsNotificationsRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                         builder.setItems(new CharSequence[] {
@@ -604,6 +611,9 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     button2.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
+                            if (getParentActivity() == null) {
+                                return;
+                            }
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                             CharSequence[] items;
                             int type;
@@ -758,6 +768,9 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     textView.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
+                            if (getParentActivity() == null) {
+                                return;
+                            }
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                             builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
                             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));

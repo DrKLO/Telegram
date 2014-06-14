@@ -181,7 +181,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         presentFragment(new ContactAddActivity(args));
                     } else if (id == delete_contact) {
                         final TLRPC.User user = MessagesController.getInstance().users.get(user_id);
-                        if (user == null) {
+                        if (user == null || getParentActivity() == null) {
                             return;
                         }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
@@ -213,6 +213,9 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             startSecretButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
@@ -239,6 +242,9 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
                     if (i == settingsVibrateRow || i == settingsNotificationsRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                         builder.setItems(new CharSequence[] {
@@ -313,6 +319,9 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         args.putInt("chat_id", (int)(dialog_id >> 32));
                         presentFragment(new IdenticonActivity(args));
                     } else if (i == settingsTimerRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("MessageLifetime", R.string.MessageLifetime));
                         builder.setItems(new CharSequence[]{
@@ -657,7 +666,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     view.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            if (user.phone == null || user.phone.length() == 0) {
+                            if (user.phone == null || user.phone.length() == 0 || getParentActivity() == null) {
                                 return;
                             }
                             selectedPhone = user.phone;

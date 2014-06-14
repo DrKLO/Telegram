@@ -280,7 +280,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                             } else if (tempPath == null) {
                                 isGif = MediaController.isGif(uri);
                                 if (isGif) {
-                                    documentPath = MediaController.copyDocumentToCache(uri);
+                                    documentPath = MediaController.copyDocumentToCache(uri, "gif");
                                 }
                             }
                             if (!isGif || documentPath == null) {
@@ -325,7 +325,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                                     } else if (tempPath == null) {
                                         isGif = MediaController.isGif(uri);
                                         if (isGif) {
-                                            tempPath = MediaController.copyDocumentToCache(uri);
+                                            tempPath = MediaController.copyDocumentToCache(uri, "gif");
                                         }
                                     }
                                     if (isGif && tempPath != null) {

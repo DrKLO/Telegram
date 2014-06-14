@@ -113,6 +113,7 @@
     <string name="SlideToCancel">WISCHEN UM ABZUBRECHEN</string>
     <string name="SaveToDownloads">Im Ordner Downloads speichern</string>
     <string name="ApplyLocalizationFile">Standort-Datei benutzen</string>
+    <string name="UnsupportedAttachment">Unsupported attachment</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Geheimen Chat angefordert</string>

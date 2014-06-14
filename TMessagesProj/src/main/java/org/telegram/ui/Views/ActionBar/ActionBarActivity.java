@@ -735,9 +735,21 @@ public class ActionBarActivity extends Activity {
                 onOpenAnimationEnd(false);
             }
             containerView.invalidate();
-            ActionBarActivity.super.startActivityForResult(intent, requestCode);
+            if (intent != null) {
+                try {
+                    ActionBarActivity.super.startActivityForResult(intent, requestCode);
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
         } else {
-            super.startActivityForResult(intent, requestCode);
+            if (intent != null) {
+                try {
+                    super.startActivityForResult(intent, requestCode);
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
         }
     }
 }

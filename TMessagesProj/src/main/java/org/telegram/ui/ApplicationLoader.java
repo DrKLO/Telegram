@@ -21,6 +21,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.PowerManager;
@@ -53,7 +54,7 @@ public class ApplicationLoader extends Application {
     private static final String PROPERTY_APP_VERSION = "appVersion";
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     public static long lastPauseTime;
-    public static Bitmap cachedWallpaper = null;
+    public static Drawable cachedWallpaper = null;
 
     public static volatile Context applicationContext = null;
     public static volatile Handler applicationHandler = null;

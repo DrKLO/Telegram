@@ -196,9 +196,9 @@ public class BaseFragment {
 
     }
 
-    protected boolean showAlertDialog(AlertDialog.Builder builder) {
+    protected void showAlertDialog(AlertDialog.Builder builder) {
         if (parentActivity == null || parentActivity.checkTransitionAnimation() || parentActivity.animationInProgress || parentActivity.startedTracking) {
-            return false;
+            return;
         }
         try {
             if (visibleDialog != null) {
@@ -216,6 +216,5 @@ public class BaseFragment {
                 visibleDialog = null;
             }
         });
-        return true;
     }
 }

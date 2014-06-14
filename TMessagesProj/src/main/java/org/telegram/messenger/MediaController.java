@@ -1536,7 +1536,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         return false;
     }
 
-    public static String copyDocumentToCache(Uri uri) {
+    public static String copyDocumentToCache(Uri uri, String ext) {
         ParcelFileDescriptor parcelFD = null;
         FileInputStream input = null;
         FileOutputStream output = null;
@@ -1545,7 +1545,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             UserConfig.lastLocalId--;
             parcelFD = ApplicationLoader.applicationContext.getContentResolver().openFileDescriptor(uri, "r");
             input = new FileInputStream(parcelFD.getFileDescriptor());
-            File f = new File(Utilities.getCacheDir(), String.format(Locale.US, "%d.gif", id));
+            File f = new File(Utilities.getCacheDir(), String.format(Locale.US, "%d.%s", id, ext));
             output = new FileOutputStream(f);
             input.getChannel().transferTo(0, input.getChannel().size(), output.getChannel());
             UserConfig.saveConfig(false);

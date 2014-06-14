@@ -240,6 +240,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
                     if (i == textSizeRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("TextSize", R.string.TextSize));
                         builder.setItems(new CharSequence[]{String.format("%d", 12), String.format("%d", 13), String.format("%d", 14), String.format("%d", 15), String.format("%d", 16), String.format("%d", 17), String.format("%d", 18), String.format("%d", 19), String.format("%d", 20), String.format("%d", 21), String.format("%d", 22), String.format("%d", 23), String.format("%d", 24)}, new DialogInterface.OnClickListener() {
@@ -273,6 +276,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else if (i == backgroundRow) {
                         presentFragment(new SettingsWallpapersActivity());
                     } else if (i == askQuestionRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
                         final TextView message = new TextView(getParentActivity());
                         message.setText(Html.fromHtml(LocaleController.getString("AskAQuestionInfo", R.string.AskAQuestionInfo)));
                         message.setTextSize(18);
@@ -303,6 +309,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             listView.invalidateViews();
                         }
                     } else if (i == terminateSessionsRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
@@ -312,16 +321,27 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 TLRPC.TL_auth_resetAuthorizations req = new TLRPC.TL_auth_resetAuthorizations();
                                 ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                                     @Override
-                                    public void run(TLObject response, TLRPC.TL_error error) {
-                                        if (error == null && response instanceof TLRPC.TL_boolTrue) {
-                                            Toast toast = Toast.makeText(getParentActivity(), R.string.TerminateAllSessions, Toast.LENGTH_SHORT);
-                                            toast.show();
-                                        } else {
-                                            Toast toast = Toast.makeText(getParentActivity(), R.string.UnknownError, Toast.LENGTH_SHORT);
-                                            toast.show();
-                                        }
+                                    public void run(final TLObject response, final TLRPC.TL_error error) {
+                                        Utilities.RunOnUIThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                if (getParentActivity() == null) {
+                                                    return;
+                                                }
+                                                if (error == null && response instanceof TLRPC.TL_boolTrue) {
+                                                    Toast toast = Toast.makeText(getParentActivity(), LocaleController.getString("TerminateAllSessions", R.string.TerminateAllSessions), Toast.LENGTH_SHORT);
+                                                    toast.show();
+                                                } else {
+                                                    Toast toast = Toast.makeText(getParentActivity(), LocaleController.getString("UnknownError", R.string.UnknownError), Toast.LENGTH_SHORT);
+                                                    toast.show();
+                                                }
+                                            }
+                                        });
                                         UserConfig.registeredForPush = false;
+                                        UserConfig.registeredForInternalPush = false;
+                                        UserConfig.saveConfig(false);
                                         MessagesController.getInstance().registerForPush(UserConfig.pushString);
+                                        ConnectionsManager.getInstance().initPushConnection();
                                     }
                                 }, null, true, RPCRequest.RPCRequestClassGeneric);
                             }
@@ -331,6 +351,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else if (i == languageRow) {
                         presentFragment(new LanguageSelectActivity());
                     } else if (i == switchBackendButtonRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
@@ -352,6 +375,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else if (i == contactsReimportRow) {
 
                     } else if (i == contactsSortRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("SortBy", R.string.SortBy));
                         builder.setItems(new CharSequence[] {
@@ -373,6 +399,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         showAlertDialog(builder);
                     } else if (i == photoDownloadChatRow || i == photoDownloadPrivateRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                         builder.setItems(new CharSequence[] {
@@ -667,6 +696,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     button2.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
+                            if (getParentActivity() == null) {
+                                return;
+                            }
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
 
                             CharSequence[] items;
@@ -890,6 +922,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     textView.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
+                            if (getParentActivity() == null) {
+                                return;
+                            }
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                             builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
                             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));

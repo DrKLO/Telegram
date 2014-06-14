@@ -212,15 +212,12 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                 Utilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        nextPressed = false;
-                        if (delegate != null) {
-                            delegate.needHideProgress();
+                        if (delegate == null) {
+                            return;
                         }
+                        nextPressed = false;
                         if (error == null) {
                             TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization)response;
-                            if (delegate == null) {
-                                return;
-                            }
                             try {
                                 synchronized(timerSync) {
                                     if (timeTimer != null) {
@@ -242,9 +239,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                             MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
                             MessagesController.getInstance().users.put(res.user.id, res.user);
                             ContactsController.getInstance().checkAppAccount();
-                            if (delegate != null) {
-                                delegate.needFinishActivity();
-                            }
+                            delegate.needFinishActivity();
                             ConnectionsManager.getInstance().initPushConnection();
                         } else {
                             if (error.text.contains("PHONE_NUMBER_UNOCCUPIED") && registered == null) {
@@ -302,18 +297,16 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                                         }
                                     }, 0, 1000);
                                 }
-                                if (delegate != null) {
-                                    if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                                        delegate.needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
-                                    } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                                        delegate.needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
-                                    } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                                        delegate.needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
-                                    } else if (error.text.startsWith("FLOOD_WAIT")) {
-                                        delegate.needShowAlert(LocaleController.getString("FloodWait", R.string.FloodWait));
-                                    } else {
-                                        delegate.needShowAlert(error.text);
-                                    }
+                                if (error.text.contains("PHONE_NUMBER_INVALID")) {
+                                    delegate.needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
+                                } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
+                                    delegate.needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
+                                } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                                    delegate.needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
+                                } else if (error.text.startsWith("FLOOD_WAIT")) {
+                                    delegate.needShowAlert(LocaleController.getString("FloodWait", R.string.FloodWait));
+                                } else {
+                                    delegate.needShowAlert(error.text);
                                 }
                             }
                         }

@@ -312,13 +312,18 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 imagesArrLocations.clear();
                 imagesArrLocationsSizes.clear();
                 for (TLRPC.Photo photo : photos) {
-                    if (photo instanceof TLRPC.TL_photoEmpty) {
+                    if (photo instanceof TLRPC.TL_photoEmpty || photo.sizes == null) {
                         continue;
                     }
                     TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(photo.sizes, 640, 640);
                     if (sizeFull != null) {
-                        if (currentFileLocation != null && sizeFull.location.local_id == currentFileLocation.local_id && sizeFull.location.volume_id == currentFileLocation.volume_id) {
-                            setToImage = imagesArrLocations.size();
+                        if (currentFileLocation != null) {
+                            for (TLRPC.PhotoSize size : photo.sizes) {
+                                if (size.location.local_id == currentFileLocation.local_id && size.location.volume_id == currentFileLocation.volume_id) {
+                                    setToImage = imagesArrLocations.size();
+                                    break;
+                                }
+                            }
                         }
                         imagesArrLocations.add(sizeFull.location);
                         imagesArrLocationsSizes.add(sizeFull.size);
@@ -330,6 +335,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     setImageIndex(setToImage, true);
                 } else {
                     imagesArrLocations.add(0, currentFileLocation);
+                    imagesArrLocationsSizes.add(0, 0);
                     setImageIndex(0, true);
                 }
                 if (fromCache) {

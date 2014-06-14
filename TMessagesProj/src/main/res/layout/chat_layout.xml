@@ -4,12 +4,6 @@
     android:layout_height="match_parent"
     android:id="@+id/chat_layout">
 
-    <ImageView
-        android:layout_height="fill_parent"
-        android:layout_width="fill_parent"
-        android:id="@+id/background_image"
-        android:scaleType="centerCrop"/>
-
     <org.telegram.ui.Views.FrameLayoutFixed
         android:layout_height="fill_parent"
         android:layout_width="fill_parent"

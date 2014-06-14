@@ -18,6 +18,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
+import android.widget.FrameLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import org.telegram.messenger.FileLog;
@@ -80,6 +82,19 @@ public class LoginActivity extends BaseFragment implements SlideView.SlideViewDe
             views[0] = (SlideView)fragmentView.findViewById(R.id.login_page1);
             views[1] = (SlideView)fragmentView.findViewById(R.id.login_page2);
             views[2] = (SlideView)fragmentView.findViewById(R.id.login_page3);
+
+            try {
+                if (views[0] == null || views[1] == null || views[2] == null) {
+                    FrameLayout parent = (FrameLayout)((ScrollView) fragmentView).getChildAt(0);
+                    for (int a = 0; a < views.length; a++) {
+                        if (views[a] == null) {
+                            views[a] = (SlideView)parent.getChildAt(a);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
 
             actionBarLayer.setTitle(views[0].getHeaderName());
 
