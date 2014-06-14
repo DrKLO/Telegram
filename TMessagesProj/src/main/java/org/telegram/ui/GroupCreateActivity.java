@@ -123,7 +123,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             actionBarLayer.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
             actionBarLayer.setSubtitle(String.format("%d/200 %s", selectedContacts.size(), LocaleController.getString("Members", R.string.Members)));
 
@@ -381,7 +382,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             public void run() {
                 final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<TLRPC.TL_contact>();
                 contactsCopy.addAll(ContactsController.getInstance().contacts);
-                Utilities.globalQueue.postRunnable(new Runnable() {
+                Utilities.searchQueue.postRunnable(new Runnable() {
                     @Override
                     public void run() {
                         if (query.length() == 0) {
@@ -396,7 +397,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         for (TLRPC.TL_contact contact : contactsCopy) {
                             TLRPC.User user = MessagesController.getInstance().users.get(contact.user_id);
                             if (user.first_name.toLowerCase().startsWith(q) || user.last_name.toLowerCase().startsWith(q)) {
-                                if (user.id == UserConfig.clientUserId) {
+                                if (user.id == UserConfig.getClientUserId()) {
                                     continue;
                                 }
                                 resultArrayNames.add(Utilities.generateSearchName(user.first_name, user.last_name, q));

@@ -16,7 +16,6 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.view.View;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.LocaleController;
@@ -29,8 +28,6 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.Views.ImageReceiver;
-
-import java.lang.ref.WeakReference;
 
 public class DialogCell extends BaseCell {
     private static TextPaint namePaint;
@@ -134,7 +131,7 @@ public class DialogCell extends BaseCell {
 
         if (avatarImage == null) {
             avatarImage = new ImageReceiver();
-            avatarImage.parentView = new WeakReference<View>(this);
+            avatarImage.parentView = this;
         }
 
         if (cellLayout == null) {
@@ -426,7 +423,7 @@ public class DialogCell extends BaseCell {
                         } else if (encryptedChat instanceof TLRPC.TL_encryptedChatDiscarded) {
                             messageString = LocaleController.getString("EncryptionRejected", R.string.EncryptionRejected);
                         } else if (encryptedChat instanceof TLRPC.TL_encryptedChat) {
-                            if (encryptedChat.admin_id == UserConfig.clientUserId) {
+                            if (encryptedChat.admin_id == UserConfig.getClientUserId()) {
                                 if (user != null && user.first_name != null) {
                                     messageString = LocaleController.formatString("EncryptedChatStartedOutgoing", R.string.EncryptedChatStartedOutgoing, user.first_name);
                                 } else {
@@ -550,7 +547,7 @@ public class DialogCell extends BaseCell {
                 nameString = chat.title;
             } else if (user != null) {
                 if (user.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(user.id) == null) {
-                    if (ContactsController.getInstance().contactsDict.size() == 0 && (!ContactsController.getInstance().contactsLoaded || ContactsController.getInstance().loadingContacts)) {
+                    if (ContactsController.getInstance().contactsDict.size() == 0 && (!ContactsController.getInstance().contactsLoaded || ContactsController.getInstance().isLoadingContacts())) {
                         nameString = Utilities.formatName(user.first_name, user.last_name);
                     } else {
                         if (user.phone != null && user.phone.length() != 0) {

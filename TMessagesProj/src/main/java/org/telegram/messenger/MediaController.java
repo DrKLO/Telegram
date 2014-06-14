@@ -79,6 +79,48 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         long pcmOffset;
     }
 
+    private static final String[] projectionPhotos = {
+            MediaStore.Images.Media._ID,
+            MediaStore.Images.Media.BUCKET_ID,
+            MediaStore.Images.Media.BUCKET_DISPLAY_NAME,
+            MediaStore.Images.Media.DATA,
+            MediaStore.Images.Media.DATE_TAKEN,
+            MediaStore.Images.Media.ORIENTATION
+    };
+
+    public static class AlbumEntry {
+        public int bucketId;
+        public String bucketName;
+        public PhotoEntry coverPhoto;
+        public ArrayList<PhotoEntry> photos = new ArrayList<PhotoEntry>();
+
+        public AlbumEntry(int bucketId, String bucketName, PhotoEntry coverPhoto) {
+            this.bucketId = bucketId;
+            this.bucketName = bucketName;
+            this.coverPhoto = coverPhoto;
+        }
+
+        public void addPhoto(PhotoEntry photoEntry) {
+            photos.add(photoEntry);
+        }
+    }
+
+    public static class PhotoEntry {
+        public int bucketId;
+        public int imageId;
+        public long dateTaken;
+        public String path;
+        public int orientation;
+
+        public PhotoEntry(int bucketId, int imageId, long dateTaken, String path, int orientation) {
+            this.bucketId = bucketId;
+            this.imageId = imageId;
+            this.dateTaken = dateTaken;
+            this.path = path;
+            this.orientation = orientation;
+        }
+    }
+
     public final static int audioProgressDidChanged = 50001;
     public final static int audioDidReset = 50002;
     public final static int recordProgressChanged = 50003;
@@ -86,6 +128,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     public final static int recordStartError = 50005;
     public final static int recordStopped = 50006;
     public final static int screenshotTook = 50007;
+    public final static int albumsDidLoaded = 50008;
 
     private HashMap<String, ArrayList<WeakReference<FileDownloadProgressListener>>> loadingFileObservers = new HashMap<String, ArrayList<WeakReference<FileDownloadProgressListener>>>();
     private HashMap<Integer, String> observersByTag = new HashMap<Integer, String>();
@@ -412,7 +455,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     }
 
     public void stopMediaObserver() {
-        if (android.os.Build.VERSION.SDK_INT < 10) { //disable while it's not perferct
+        if (android.os.Build.VERSION.SDK_INT > 0) { //disable while it's not perferct
             return;
         }
         if (stopMediaObserverRunnable == null) {
@@ -906,6 +949,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     currentTotalPcmDuration = getTotalPcmDuration();
 
                     audioTrackPlayer = new AudioTrack(AudioManager.STREAM_MUSIC, 48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT, playerBufferSize, AudioTrack.MODE_STREAM);
+                    audioTrackPlayer.setStereoVolume(1.0f, 1.0f);
                     //audioTrackPlayer.setNotificationMarkerPosition((int)currentTotalPcmDuration);
                     audioTrackPlayer.setPlaybackPositionUpdateListener(new AudioTrack.OnPlaybackPositionUpdateListener() {
                         @Override
@@ -1099,7 +1143,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 recordingAudio = new TLRPC.TL_audio();
                 recordingAudio.dc_id = Integer.MIN_VALUE;
                 recordingAudio.id = UserConfig.lastLocalId;
-                recordingAudio.user_id = UserConfig.clientUserId;
+                recordingAudio.user_id = UserConfig.getClientUserId();
                 UserConfig.lastLocalId--;
                 UserConfig.saveConfig(false);
 
@@ -1308,7 +1352,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
             final ProgressDialog finalProgress = progressDialog;
 
-            Utilities.globalQueue.postRunnable(new Runnable() {
+            new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -1383,7 +1427,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                         });
                     }
                 }
-            });
+            }).start();
         }
     }
 
@@ -1492,7 +1536,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         return false;
     }
 
-    public static String copyDocumentToCache(Uri uri) {
+    public static String copyDocumentToCache(Uri uri, String ext) {
         ParcelFileDescriptor parcelFD = null;
         FileInputStream input = null;
         FileOutputStream output = null;
@@ -1501,7 +1545,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             UserConfig.lastLocalId--;
             parcelFD = ApplicationLoader.applicationContext.getContentResolver().openFileDescriptor(uri, "r");
             input = new FileInputStream(parcelFD.getFileDescriptor());
-            File f = new File(Utilities.getCacheDir(), String.format(Locale.US, "%d.gif", id));
+            File f = new File(Utilities.getCacheDir(), String.format(Locale.US, "%d.%s", id, ext));
             output = new FileOutputStream(f);
             input.getChannel().transferTo(0, input.getChannel().size(), output.getChannel());
             UserConfig.saveConfig(false);
@@ -1532,5 +1576,85 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             }
         }
         return null;
+    }
+
+    public static void loadGalleryPhotosAlbums(final int guid) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final ArrayList<AlbumEntry> albumsSorted = new ArrayList<AlbumEntry>();
+                HashMap<Integer, AlbumEntry> albums = new HashMap<Integer, AlbumEntry>();
+                AlbumEntry allPhotosAlbum = null;
+                String cameraFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath() + "/" + "Camera/";
+                Integer cameraAlbumId = null;
+
+                Cursor cursor = null;
+                try {
+                    cursor = MediaStore.Images.Media.query(ApplicationLoader.applicationContext.getContentResolver(), MediaStore.Images.Media.EXTERNAL_CONTENT_URI, projectionPhotos, "", null, MediaStore.Images.Media.DATE_TAKEN + " DESC");
+                    if (cursor != null) {
+                        int imageIdColumn = cursor.getColumnIndex(MediaStore.Images.Media._ID);
+                        int bucketIdColumn = cursor.getColumnIndex(MediaStore.Images.Media.BUCKET_ID);
+                        int bucketNameColumn = cursor.getColumnIndex(MediaStore.Images.Media.BUCKET_DISPLAY_NAME);
+                        int dataColumn = cursor.getColumnIndex(MediaStore.Images.Media.DATA);
+                        int dateColumn = cursor.getColumnIndex(MediaStore.Images.Media.DATE_TAKEN);
+                        int orientationColumn = cursor.getColumnIndex(MediaStore.Images.Media.ORIENTATION);
+
+                        while (cursor.moveToNext()) {
+                            int imageId = cursor.getInt(imageIdColumn);
+                            int bucketId = cursor.getInt(bucketIdColumn);
+                            String bucketName = cursor.getString(bucketNameColumn);
+                            String path = cursor.getString(dataColumn);
+                            long dateTaken = cursor.getLong(dateColumn);
+                            int orientation = cursor.getInt(orientationColumn);
+
+                            if (path == null || path.length() == 0) {
+                                continue;
+                            }
+
+                            PhotoEntry photoEntry = new PhotoEntry(bucketId, imageId, dateTaken, path, orientation);
+
+                            if (allPhotosAlbum == null) {
+                                allPhotosAlbum = new AlbumEntry(0, LocaleController.getString("AllPhotos", R.string.AllPhotos), photoEntry);
+                                albumsSorted.add(0, allPhotosAlbum);
+                            }
+                            if (allPhotosAlbum != null) {
+                                allPhotosAlbum.addPhoto(photoEntry);
+                            }
+
+                            AlbumEntry albumEntry = albums.get(bucketId);
+                            if (albumEntry == null) {
+                                albumEntry = new AlbumEntry(bucketId, bucketName, photoEntry);
+                                albums.put(bucketId, albumEntry);
+                                if (cameraAlbumId == null && cameraFolder != null && path != null && path.startsWith(cameraFolder)) {
+                                    albumsSorted.add(0, albumEntry);
+                                    cameraAlbumId = bucketId;
+                                } else {
+                                    albumsSorted.add(albumEntry);
+                                }
+                            }
+
+                            albumEntry.addPhoto(photoEntry);
+                        }
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                } finally {
+                    if (cursor != null) {
+                        try {
+                            cursor.close();
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
+                    }
+                }
+                final Integer cameraAlbumIdFinal = cameraAlbumId;
+                Utilities.RunOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        NotificationCenter.getInstance().postNotificationName(albumsDidLoaded, guid, albumsSorted, cameraAlbumIdFinal);
+                    }
+                });
+            }
+        }).start();
     }
 }

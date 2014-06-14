@@ -1,0 +1,69 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_gravity="bottom"
+    android:orientation="horizontal"
+    android:layout_width="fill_parent"
+    android:layout_height="48dp"
+    android:background="#ff333333">
+
+    <Button
+        android:textSize="14dp"
+        android:textColor="#ffffff"
+        android:id="@+id/cancel_button"
+        android:background="@drawable/bar_selector_picker"
+        android:paddingLeft="3dp"
+        android:layout_width="0.0dip"
+        android:layout_height="fill_parent"
+        android:layout_weight="1.0"
+        android:textStyle="bold"/>
+
+    <View
+        android:layout_gravity="center_vertical"
+        android:background="#5c5c5c"
+        android:layout_width="1px"
+        android:layout_height="28dp" />
+
+    <FrameLayout
+        android:id="@+id/done_button"
+        android:background="@drawable/bar_selector_picker"
+        android:paddingRight="3dp"
+        android:clickable="true"
+        android:layout_width="0.0dip"
+        android:layout_height="fill_parent"
+        android:layout_weight="1.0">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_gravity="center">
+
+            <TextView
+                android:textSize="13dp"
+                android:textColor="#ffffff"
+                android:gravity="center"
+                android:background="@drawable/photobadge"
+                android:layout_gravity="center"
+                android:layout_width="wrap_content"
+                android:layout_height="19dp"
+                android:id="@+id/done_button_badge"
+                android:paddingLeft="6dp"
+                android:paddingRight="6dp"
+                android:textStyle="bold"
+                android:layout_marginRight="10dp"/>
+
+            <TextView
+                android:textSize="14dp"
+                android:textColor="#ffffff"
+                android:gravity="center"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/done_button_text"
+                android:drawablePadding="8dp"
+                android:textStyle="bold"/>
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+</LinearLayout>

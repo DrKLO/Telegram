@@ -16,15 +16,17 @@
         android:layout_gravity="center_vertical|left"
         android:layout_marginLeft="12dp"/>
 
-    <ImageView android:layout_height="wrap_content"
+    <ImageView
+        android:layout_height="wrap_content"
         android:layout_width="wrap_content"
         android:src="@drawable/ic_ab_back"
         android:layout_gravity="center_vertical|left"
         android:layout_marginLeft="3dp"
         android:id="@+id/back_button"/>
 
-    <TextView android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
+    <TextView
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
         android:layout_marginLeft="52dp"
         android:textColor="#ffffff"
         android:textSize="17dp"

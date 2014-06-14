@@ -152,6 +152,7 @@ public class ActionBarPopupWindow extends PopupWindow {
 
     @Override
     public void dismiss() {
+        setFocusable(false);
         super.dismiss();
         unregisterListener();
     }

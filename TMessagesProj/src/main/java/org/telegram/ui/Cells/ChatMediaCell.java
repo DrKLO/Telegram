@@ -102,7 +102,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         TAG = MediaController.getInstance().generateObserverTag();
 
         photoImage = new ImageReceiver();
-        photoImage.parentView = new WeakReference<View>(this);
+        photoImage.parentView = this;
         progressView = new ProgressView();
         progressView.setProgressColors(0x802a2a2a, 0xffffffff);
     }
@@ -386,6 +386,10 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                         if (currentPhotoObject.photoOwner.w / hScale < photoWidth) {
                             w = (int) (currentPhotoObject.photoOwner.w / hScale);
                         }
+                    }
+                    int timeWidthTotal = timeWidth + Utilities.dp(14 + (currentMessageObject.isOut() ? 20 : 0));
+                    if (w < timeWidthTotal) {
+                        w = timeWidthTotal;
                     }
 
                     photoWidth = w;

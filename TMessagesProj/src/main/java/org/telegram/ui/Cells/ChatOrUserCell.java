@@ -16,7 +16,6 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.view.View;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.LocaleController;
@@ -27,8 +26,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.ImageReceiver;
-
-import java.lang.ref.WeakReference;
 
 public class ChatOrUserCell extends BaseCell {
     private static TextPaint namePaint;
@@ -97,7 +94,7 @@ public class ChatOrUserCell extends BaseCell {
 
         if (avatarImage == null) {
             avatarImage = new ImageReceiver();
-            avatarImage.parentView = new WeakReference<View>(this);
+            avatarImage.parentView = this;
         }
 
         if (cellLayout == null) {
@@ -347,7 +344,7 @@ public class ChatOrUserCell extends BaseCell {
                     onlineString = subLabel;
                 } else {
                     onlineString = LocaleController.formatUserStatus(user);
-                    if (user != null && (user.id == UserConfig.clientUserId || user.status != null && user.status.expires > ConnectionsManager.getInstance().getCurrentTime())) {
+                    if (user != null && (user.id == UserConfig.getClientUserId() || user.status != null && user.status.expires > ConnectionsManager.getInstance().getCurrentTime())) {
                         currentOnlinePaint = onlinePaint;
                         onlineString = LocaleController.getString("Online", R.string.Online);
                     }

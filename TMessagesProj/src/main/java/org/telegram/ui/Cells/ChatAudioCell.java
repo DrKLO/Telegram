@@ -65,7 +65,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         TAG = MediaController.getInstance().generateObserverTag();
 
         avatarImage = new ImageReceiver();
-        avatarImage.parentView = new WeakReference<View>(this);
+        avatarImage.parentView = this;
         seekBar = new SeekBar(context);
         seekBar.delegate = this;
         progressView = new ProgressView();

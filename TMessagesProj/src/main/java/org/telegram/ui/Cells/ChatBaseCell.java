@@ -20,7 +20,6 @@ import android.text.TextUtils;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
-import android.view.View;
 import android.view.ViewConfiguration;
 
 import org.telegram.messenger.LocaleController;
@@ -30,8 +29,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.Views.ImageReceiver;
-
-import java.lang.ref.WeakReference;
 
 public class ChatBaseCell extends BaseCell {
 
@@ -149,7 +146,7 @@ public class ChatBaseCell extends BaseCell {
         init();
         media = isMedia;
         avatarImage = new ImageReceiver();
-        avatarImage.parentView = new WeakReference<View>(this);
+        avatarImage.parentView = this;
     }
 
     @Override
@@ -236,7 +233,7 @@ public class ChatBaseCell extends BaseCell {
 
         newUser = MessagesController.getInstance().users.get(currentMessageObject.messageOwner.fwd_from_id);
         newNameString = null;
-        if (drawForwardedName && currentMessageObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
+        if (newUser != null && drawForwardedName && currentMessageObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
             newNameString = Utilities.formatName(newUser.first_name, newUser.last_name);
         }
         return currentForwardNameString == null && newNameString != null || currentForwardNameString != null && newNameString == null || currentForwardNameString != null && newNameString != null && !currentForwardNameString.equals(newNameString);

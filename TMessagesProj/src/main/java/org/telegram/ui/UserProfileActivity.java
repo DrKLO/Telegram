@@ -134,7 +134,8 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             if (dialog_id != 0) {
                 actionBarLayer.setTitle(LocaleController.getString("SecretTitle", R.string.SecretTitle));
                 actionBarLayer.setTitleIcon(R.drawable.ic_lock_white, Utilities.dp(4));
@@ -180,7 +181,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         presentFragment(new ContactAddActivity(args));
                     } else if (id == delete_contact) {
                         final TLRPC.User user = MessagesController.getInstance().users.get(user_id);
-                        if (user == null) {
+                        if (user == null || getParentActivity() == null) {
                             return;
                         }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
@@ -212,6 +213,9 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             startSecretButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
@@ -238,6 +242,9 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
                     if (i == settingsVibrateRow || i == settingsNotificationsRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                         builder.setItems(new CharSequence[] {
@@ -312,6 +319,9 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         args.putInt("chat_id", (int)(dialog_id >> 32));
                         presentFragment(new IdenticonActivity(args));
                     } else if (i == settingsTimerRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("MessageLifetime", R.string.MessageLifetime));
                         builder.setItems(new CharSequence[]{
@@ -454,7 +464,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation) {
+    public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
         if (fileLocation == null) {
             return null;
         }
@@ -486,9 +496,25 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public void willHidePhotoViewer() {
+    public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) { }
 
-    }
+    @Override
+    public void willHidePhotoViewer() { }
+
+    @Override
+    public boolean isPhotoChecked(int index) { return false; }
+
+    @Override
+    public void setPhotoChecked(int index) { }
+
+    @Override
+    public void cancelButtonPressed() { }
+
+    @Override
+    public void sendButtonPressed(int index) { }
+
+    @Override
+    public int getSelectedCount() { return 0; }
 
     private void createActionBarMenu() {
         ActionBarMenu menu = actionBarLayer.createMenu();
@@ -640,7 +666,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     view.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            if (user.phone == null || user.phone.length() == 0) {
+                            if (user.phone == null || user.phone.length() == 0 || getParentActivity() == null) {
                                 return;
                             }
                             selectedPhone = user.phone;

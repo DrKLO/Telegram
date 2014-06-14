@@ -67,7 +67,8 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             actionBarLayer.setTitle(LocaleController.getString("BlockedUsers", R.string.BlockedUsers));
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
@@ -119,7 +120,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
             listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
                 @Override
                 public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    if (i >= blockedContacts.size()) {
+                    if (i >= blockedContacts.size() || getParentActivity() == null) {
                         return true;
                     }
                     selectedUserId = blockedContacts.get(i).user_id;

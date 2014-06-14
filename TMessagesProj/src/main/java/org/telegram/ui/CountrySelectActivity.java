@@ -118,7 +118,8 @@ public class CountrySelectActivity extends BaseFragment {
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             actionBarLayer.setTitle(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
 
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
@@ -279,7 +280,7 @@ public class CountrySelectActivity extends BaseFragment {
     }
 
     private void processSearch(final String query) {
-        Utilities.globalQueue.postRunnable(new Runnable() {
+        Utilities.searchQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
 

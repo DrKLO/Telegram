@@ -353,9 +353,9 @@ public class PhotoCropActivity extends BaseFragment {
                 }
             });
 
-            cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel));
+            cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
             TextView textView = (TextView)doneButton.findViewById(R.id.done_button_text);
-            textView.setText(LocaleController.getString("Done", R.string.Done));
+            textView.setText(LocaleController.getString("Done", R.string.Done).toUpperCase());
 
             fragmentView = view = new PhotoCropView(getParentActivity());
             fragmentView.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));

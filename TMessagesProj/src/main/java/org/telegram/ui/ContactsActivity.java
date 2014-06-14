@@ -115,7 +115,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             if (destroyAfterSelect) {
                 actionBarLayer.setTitle(LocaleController.getString("SelectContact", R.string.SelectContact));
             } else {
@@ -145,6 +146,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     searchWas = false;
                     ViewGroup group = (ViewGroup) listView.getParent();
                     listView.setAdapter(listViewAdapter);
+                    listViewAdapter.notifyDataSetChanged();
                     if (!LocaleController.isRTL) {
                         listView.setPadding(Utilities.dp(16), listView.getPaddingTop(), Utilities.dp(30), listView.getPaddingBottom());
                     } else {
@@ -170,6 +172,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         if (listView != null) {
                             listView.setPadding(Utilities.dp(16), listView.getPaddingTop(), Utilities.dp(16), listView.getPaddingBottom());
                             listView.setAdapter(searchListViewAdapter);
+                            searchListViewAdapter.notifyDataSetChanged();
                             if(android.os.Build.VERSION.SDK_INT >= 11) {
                                 listView.setFastScrollAlwaysVisible(false);
                             }
@@ -204,7 +207,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                     if (searching && searchWas) {
                         TLRPC.User user = searchListViewAdapter.getItem(i);
-                        if (user == null || user.id == UserConfig.clientUserId) {
+                        if (user == null || user.id == UserConfig.getClientUserId()) {
                             return;
                         }
                         if (returnAsResult) {
@@ -262,7 +265,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         }
 
                         if (user != null) {
-                            if (user.id == UserConfig.clientUserId) {
+                            if (user.id == UserConfig.getClientUserId()) {
                                 return;
                             }
                             if (returnAsResult) {
@@ -287,7 +290,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                             if (!contact.phones.isEmpty()) {
                                 usePhone = contact.phones.get(0);
                             }
-                            if (usePhone == null) {
+                            if (usePhone == null || getParentActivity() == null) {
                                 return;
                             }
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
@@ -336,6 +339,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
     private void didSelectResult(final TLRPC.User user, boolean useAlert) {
         if (useAlert && selectAlertString != null) {
+            if (getParentActivity() == null) {
+                return;
+            }
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
             builder.setMessage(LocaleController.formatStringSimple(selectAlertString, Utilities.formatName(user.first_name, user.last_name)));

@@ -97,7 +97,8 @@ public class SettingsNotificationsActivity extends BaseFragment {
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             actionBarLayer.setTitle(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds));
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
@@ -216,7 +217,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                                             listView.invalidateViews();
                                         }
                                         if (getParentActivity() != null) {
-                                            Toast toast = Toast.makeText(getParentActivity(), R.string.ResetNotificationsText, Toast.LENGTH_SHORT);
+                                            Toast toast = Toast.makeText(getParentActivity(), LocaleController.getString("ResetNotificationsText", R.string.ResetNotificationsText), Toast.LENGTH_SHORT);
                                             toast.show();
                                         }
                                     }
@@ -269,6 +270,9 @@ public class SettingsNotificationsActivity extends BaseFragment {
                             listView.invalidateViews();
                             ApplicationLoader.startPushService();
                         } else {
+                            if (getParentActivity() == null) {
+                                return;
+                            }
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                             builder.setMessage(LocaleController.getString("NotificationsServiceDisableInfo", R.string.NotificationsServiceDisableInfo));
                             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));

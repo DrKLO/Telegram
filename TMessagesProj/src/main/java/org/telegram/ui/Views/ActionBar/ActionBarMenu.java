@@ -49,7 +49,7 @@ public class ActionBarMenu extends LinearLayout {
         addView(view);
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)view.getLayoutParams();
         layoutParams.height = FrameLayout.LayoutParams.FILL_PARENT;
-        view.setBackgroundResource(parentActionBar.itemsBackgroundResourceId);
+        view.setBackgroundResource(parentActionBarLayer.itemsBackgroundResourceId);
         view.setLayoutParams(layoutParams);
         view.setOnClickListener(new OnClickListener() {
             @Override
@@ -61,7 +61,7 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     public ActionBarMenuItem addItem(int id, int icon) {
-        ActionBarMenuItem menuItem = new ActionBarMenuItem(getContext(), this, parentActionBar);
+        ActionBarMenuItem menuItem = new ActionBarMenuItem(getContext(), this, parentActionBar, parentActionBarLayer.itemsBackgroundResourceId);
         menuItem.setTag(id);
         menuItem.setScaleType(ImageView.ScaleType.CENTER);
         menuItem.setImageResource(icon);

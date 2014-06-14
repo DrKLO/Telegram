@@ -164,10 +164,10 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 }
             });
             if (onlySelect) {
-                actionBarLayer.setDisplayHomeAsUpEnabled(true);
+                actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
                 actionBarLayer.setTitle(LocaleController.getString("SelectChat", R.string.SelectChat));
             } else {
-                actionBarLayer.setDisplayUseLogoEnabled(true);
+                actionBarLayer.setDisplayUseLogoEnabled(true, R.drawable.ic_ab_logo);
                 actionBarLayer.setTitle(LocaleController.getString("AppName", R.string.AppName));
                 menu.addItem(messages_list_menu_new_messages, R.drawable.ic_ab_compose);
                 ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
@@ -176,6 +176,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 item.addSubItem(messages_list_menu_contacts, LocaleController.getString("Contacts", R.string.Contacts), 0);
                 item.addSubItem(messages_list_menu_settings, LocaleController.getString("Settings", R.string.Settings), 0);
             }
+            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
 
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
@@ -296,7 +297,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             messagesListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
                 @Override
                 public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    if (onlySelect || searching && searchWas) {
+                    if (onlySelect || searching && searchWas || getParentActivity() == null) {
                         return false;
                     }
                     TLRPC.TL_dialog dialog;
@@ -323,7 +324,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                                 if (which == 0) {
                                     MessagesController.getInstance().deleteDialog(selectedDialog, 0, true);
                                 } else if (which == 1) {
-                                    MessagesController.getInstance().deleteUserFromChat((int) -selectedDialog, MessagesController.getInstance().users.get(UserConfig.clientUserId), null);
+                                    MessagesController.getInstance().deleteUserFromChat((int) -selectedDialog, MessagesController.getInstance().users.get(UserConfig.getClientUserId()), null);
                                     MessagesController.getInstance().deleteDialog(selectedDialog, 0, false);
                                 }
                             }
@@ -454,6 +455,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
     private void didSelectResult(final long dialog_id, boolean useAlert) {
         if (useAlert && selectAlertString != null) {
+            if (getParentActivity() == null) {
+                return;
+            }
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
             int lower_part = (int)dialog_id;

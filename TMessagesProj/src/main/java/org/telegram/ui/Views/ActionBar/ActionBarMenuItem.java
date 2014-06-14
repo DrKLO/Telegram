@@ -46,9 +46,9 @@ public class ActionBarMenuItem extends ImageView {
     private boolean isSearchField = false;
     private ActionBarMenuItemSearchListener listener;
 
-    public ActionBarMenuItem(Context context, ActionBarMenu menu, ActionBar actionBar) {
+    public ActionBarMenuItem(Context context, ActionBarMenu menu, ActionBar actionBar, int background) {
         super(context);
-        setBackgroundResource(actionBar.itemsBackgroundResourceId);
+        setBackgroundResource(background);
         parentMenu = menu;
         parentActionBar = actionBar;
     }
@@ -121,13 +121,14 @@ public class ActionBarMenuItem extends ImageView {
         }
         if (popupWindow == null) {
             popupWindow = new ActionBarPopupWindow(popupLayout, FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
-            popupWindow.setFocusable(true);
             popupWindow.setBackgroundDrawable(new BitmapDrawable());
             popupWindow.setOutsideTouchable(true);
             popupWindow.setClippingEnabled(true);
             popupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
             popupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
+            popupLayout.measure(MeasureSpec.makeMeasureSpec(Utilities.dp(1000), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(Utilities.dp(1000), MeasureSpec.AT_MOST));
         }
+        popupWindow.setFocusable(true);
         if (popupLayout.getMeasuredWidth() == 0) {
             popupWindow.showAsDropDown(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), 0);
             popupWindow.update(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), 0, -1, -1);

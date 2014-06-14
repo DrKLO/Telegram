@@ -80,7 +80,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true);
+            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             if (messageObject != null) {
                 actionBarLayer.setTitle(LocaleController.getString("ChatLocation", R.string.ChatLocation));
             } else {
@@ -313,7 +314,11 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     public void onPause() {
         super.onPause();
         if (mapView != null) {
-            mapView.onPause();
+            try {
+                mapView.onPause();
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
         }
     }
 
