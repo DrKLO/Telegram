@@ -347,9 +347,14 @@ public class Emoji {
 				canvas.drawRect(getBounds(), placeholderPaint);
 				return;
 			}
-            int size = fullSize ? bigImgSize : drawImgSize;
-            float scale = (float)size / (float)emojiFullSize;
-            int offset = (getBounds().width() - size) / 2;
+            float scale = 1;
+            int offset = 0;
+            if (fullSize) {
+                scale = (float) bigImgSize / (float) emojiFullSize;
+                offset = (getBounds().width() - bigImgSize) / 2;
+            } else {
+                scale = (float) getBounds().width() / (float) emojiFullSize;
+            }
 
             canvas.save();
             canvas.scale(scale, scale);
@@ -461,12 +466,17 @@ public class Emoji {
 
     public static class EmojiSpan extends ImageSpan {
         private Paint.FontMetricsInt fontMetrics = null;
-        private int size = Utilities.dp(20);
+        int size = Utilities.dp(20);
 
         public EmojiSpan(Drawable d, int verticalAlignment, int s, Paint.FontMetricsInt original) {
             super(d, verticalAlignment);
             fontMetrics = original;
-            size = s;
+            if (original != null) {
+                size = Math.abs(fontMetrics.descent) + Math.abs(fontMetrics.ascent);
+                if (size == 0) {
+                    size = Utilities.dp(20);
+                }
+            }
         }
 
         @Override
@@ -494,6 +504,9 @@ public class Emoji {
 
                     fm.top = fontMetrics.top;
                     fm.bottom = fontMetrics.bottom;
+                }
+                if (getDrawable() != null) {
+                    getDrawable().setBounds(0, 0, size, size);
                 }
                 return size;
             }

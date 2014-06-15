@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -29,6 +30,49 @@ public class NativeLoader {
     };
 
     private static volatile boolean nativeLoaded = false;
+
+    public static void cleanNativeLog(Context context) {
+        try {
+            File sdCard = context.getFilesDir();
+            if (sdCard == null) {
+                return;
+            }
+            File file = new File(sdCard, "nativeer.log");
+            if (file == null || !file.exists()) {
+                return;
+            }
+            file.delete();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void writeNativeError(Context context, String info, Throwable throwable) {
+        try {
+            File sdCard = context.getFilesDir();
+            if (sdCard == null) {
+                return;
+            }
+            File file = new File(sdCard, "nativeer.log");
+            if (file == null) {
+                return;
+            }
+
+            FileOutputStream stream = new FileOutputStream(file);
+            OutputStreamWriter streamWriter = new OutputStreamWriter(stream);
+            streamWriter.write("info" + "\n");
+            streamWriter.write(throwable + "\n");
+            StackTraceElement[] stack = throwable.getStackTrace();
+            for (StackTraceElement el : stack) {
+                streamWriter.write(el + "\n");
+            }
+            streamWriter.flush();
+            streamWriter.close();
+            stream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     private static File getNativeLibraryDir(Context context) {
         File f = null;
@@ -48,6 +92,55 @@ public class NativeLoader {
         return null;
     }
 
+    private static boolean loadFromZip(Context context, File destLocalFile, String folder) {
+        ZipFile zipFile = null;
+        InputStream stream = null;
+        try {
+            zipFile = new ZipFile(context.getApplicationInfo().sourceDir);
+            ZipEntry entry = zipFile.getEntry("lib/" + folder + "/libtmessages.so");
+            if (entry == null) {
+                throw new Exception("Unable to find file in apk:" + "lib/" + folder + "/libtmessages.so");
+            }
+            stream = zipFile.getInputStream(entry);
+
+            OutputStream out = new FileOutputStream(destLocalFile);
+            byte[] buf = new byte[4096];
+            int len;
+            while ((len = stream.read(buf)) > 0) {
+                Thread.yield();
+                out.write(buf, 0, len);
+            }
+            out.close();
+
+            try {
+                System.load(destLocalFile.getAbsolutePath());
+                nativeLoaded = true;
+            } catch (Error e) {
+                FileLog.e("tmessages", e);
+                writeNativeError(context, "after zip", e);
+            }
+            return true;
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+            writeNativeError(context, "zip", e);
+        } finally {
+            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+            if (zipFile != null) {
+                try {
+                    zipFile.close();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        }
+        return false;
+    }
 
     public static synchronized void initNativeLibs(Context context) {
         if (nativeLoaded) {
@@ -55,6 +148,8 @@ public class NativeLoader {
         }
 
         try {
+            cleanNativeLog(context);
+
             String folder = null;
             long libSize = 0;
             long libSize2 = 0;
@@ -82,6 +177,7 @@ public class NativeLoader {
                 }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
+                writeNativeError(context, "arch", e);
                 folder = "armeabi";
                 libSize = sizes[0];
                 libSize2 = sizes[1];
@@ -98,6 +194,7 @@ public class NativeLoader {
                         return;
                     } catch (Error e) {
                         FileLog.e("tmessages", e);
+                        writeNativeError(context, "normal", e);
                     }
                 }
             }
@@ -112,6 +209,7 @@ public class NativeLoader {
                         return;
                     } catch (Error e) {
                         FileLog.e("tmessages", e);
+                        writeNativeError(context, "local", e);
                     }
                 } else {
                     destLocalFile.delete();
@@ -120,58 +218,20 @@ public class NativeLoader {
 
             FileLog.e("tmessages", "Library not found, arch = " + folder);
 
-            ZipFile zipFile = null;
-            InputStream stream = null;
-            try {
-                zipFile = new ZipFile(context.getApplicationInfo().sourceDir);
-                ZipEntry entry = zipFile.getEntry("lib/" + folder + "/libtmessages.so");
-                if (entry == null) {
-                    throw new Exception("Unable to find file in apk:" + "lib/" + folder + "/libtmessages.so");
-                }
-                stream = zipFile.getInputStream(entry);
-
-                OutputStream out = new FileOutputStream(destLocalFile);
-                byte[] buf = new byte[4096];
-                int len;
-                while ((len = stream.read(buf)) > 0) {
-                    Thread.yield();
-                    out.write(buf, 0, len);
-                }
-                out.close();
-
-                try {
-                    System.load(destLocalFile.getAbsolutePath());
-                    nativeLoaded = true;
-                } catch (Error e) {
-                    FileLog.e("tmessages", e);
-                }
-                return;
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
-            } finally {
-                if (stream != null) {
-                    try {
-                        stream.close();
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                }
-                if (zipFile != null) {
-                    try {
-                        zipFile.close();
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                }
+            if (!loadFromZip(context, destLocalFile, folder) && folder.equals("armeabi-v7a")) {
+                folder = "armeabi";
+                loadFromZip(context, destLocalFile, folder);
             }
         } catch (Throwable e) {
             e.printStackTrace();
+            writeNativeError(context, "", e);
         }
 
         try {
             System.loadLibrary("tmessages");
             nativeLoaded = true;
         } catch (Error e) {
+            writeNativeError(context, "last chance", e);
             FileLog.e("tmessages", e);
         }
     }

@@ -20,7 +20,6 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Handler;
@@ -295,12 +294,14 @@ public class ApplicationLoader extends Application {
                 UserConfig.pushString = regid;
                 UserConfig.registeredForPush = !isNew;
                 UserConfig.saveConfig(false);
-                Utilities.RunOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        MessagesController.getInstance().registerForPush(regid);
-                    }
-                });
+                if (UserConfig.getClientUserId() != 0) {
+                    Utilities.RunOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            MessagesController.getInstance().registerForPush(regid);
+                        }
+                    });
+                }
             }
         });
     }
