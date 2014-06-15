@@ -297,7 +297,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             messagesListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
                 @Override
                 public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    if (onlySelect || searching && searchWas) {
+                    if (onlySelect || searching && searchWas || getParentActivity() == null) {
                         return false;
                     }
                     TLRPC.TL_dialog dialog;
@@ -324,7 +324,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                                 if (which == 0) {
                                     MessagesController.getInstance().deleteDialog(selectedDialog, 0, true);
                                 } else if (which == 1) {
-                                    MessagesController.getInstance().deleteUserFromChat((int) -selectedDialog, MessagesController.getInstance().users.get(UserConfig.clientUserId), null);
+                                    MessagesController.getInstance().deleteUserFromChat((int) -selectedDialog, MessagesController.getInstance().users.get(UserConfig.getClientUserId()), null);
                                     MessagesController.getInstance().deleteDialog(selectedDialog, 0, false);
                                 }
                             }
@@ -455,6 +455,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
     private void didSelectResult(final long dialog_id, boolean useAlert) {
         if (useAlert && selectAlertString != null) {
+            if (getParentActivity() == null) {
+                return;
+            }
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
             int lower_part = (int)dialog_id;

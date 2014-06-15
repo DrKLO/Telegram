@@ -31,6 +31,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
@@ -52,6 +53,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.concurrent.Semaphore;
 
 public class ChatProfileActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ContactsActivity.ContactsActivityDelegate, PhotoViewer.PhotoViewerProvider {
     private ListView listView;
@@ -64,6 +66,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
     private int totalMediaCount = -1;
     private int onlineCount = -1;
     private ArrayList<Integer> sortedUsers = new ArrayList<Integer>();
+    private TLRPC.Chat currentChat;
 
     private int avatarRow;
     private int settingsSectionRow;
@@ -88,12 +91,35 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
+
+        chat_id = getArguments().getInt("chat_id", 0);
+        currentChat = MessagesController.getInstance().chats.get(chat_id);
+        if (currentChat == null) {
+            final Semaphore semaphore = new Semaphore(0);
+            MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
+                @Override
+                public void run() {
+                    currentChat = MessagesStorage.getInstance().getChat(chat_id);
+                    semaphore.release();
+                }
+            });
+            try {
+                semaphore.acquire();
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+            if (currentChat != null) {
+                MessagesController.getInstance().chats.put(currentChat.id, currentChat);
+            } else {
+                return false;
+            }
+        }
+
         NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
         NotificationCenter.getInstance().addObserver(this, MessagesController.chatInfoDidLoaded);
         NotificationCenter.getInstance().addObserver(this, MessagesController.mediaCountDidLoaded);
         NotificationCenter.getInstance().addObserver(this, MessagesController.closeChats);
 
-        chat_id = getArguments().getInt("chat_id", 0);
         updateOnlineCount();
         MessagesController.getInstance().getMediaCount(-chat_id, classGuid, true);
         avatarUpdater.delegate = new AvatarUpdater.AvatarUpdaterDelegate() {
@@ -177,11 +203,15 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 @Override
                 public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
                     if (i > membersSectionRow && i < addMemberRow) {
-                        TLRPC.TL_chatParticipant user = info.participants.get(sortedUsers.get(i - membersSectionRow - 1));
-                        if (user.user_id == UserConfig.clientUserId) {
+                        if (getParentActivity() == null) {
                             return false;
                         }
-                        if (info.admin_id != UserConfig.clientUserId && user.inviter_id != UserConfig.clientUserId) {
+
+                        TLRPC.TL_chatParticipant user = info.participants.get(sortedUsers.get(i - membersSectionRow - 1));
+                        if (user.user_id == UserConfig.getClientUserId()) {
+                            return false;
+                        }
+                        if (info.admin_id != UserConfig.getClientUserId() && user.inviter_id != UserConfig.getClientUserId()) {
                             return false;
                         }
                         selectedUser = user;
@@ -245,13 +275,16 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         openAddMenu();
                     } else if (i > membersSectionRow && i < addMemberRow) {
                         int user_id = info.participants.get(sortedUsers.get(i - membersSectionRow - 1)).user_id;
-                        if (user_id == UserConfig.clientUserId) {
+                        if (user_id == UserConfig.getClientUserId()) {
                             return;
                         }
                         Bundle args = new Bundle();
                         args.putInt("user_id", user_id);
                         presentFragment(new UserProfileActivity(args));
                     } else if (i == settingsVibrateRow || i == settingsNotificationsRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
                         final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
 
                         final String key;
@@ -551,7 +584,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         int i = 0;
         for (TLRPC.TL_chatParticipant participant : info.participants) {
             TLRPC.User user = MessagesController.getInstance().users.get(participant.user_id);
-            if (user != null && user.status != null && (user.status.expires > currentTime || user.id == UserConfig.clientUserId) && user.status.expires > 10000) {
+            if (user != null && user.status != null && (user.status.expires > currentTime || user.id == UserConfig.getClientUserId()) && user.status.expires > 10000) {
                 onlineCount++;
             }
             sortedUsers.add(i);
@@ -566,14 +599,14 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 Integer status1 = 0;
                 Integer status2 = 0;
                 if (user1 != null && user1.status != null) {
-                    if (user1.id == UserConfig.clientUserId) {
+                    if (user1.id == UserConfig.getClientUserId()) {
                         status1 = ConnectionsManager.getInstance().getCurrentTime() + 50000;
                     } else {
                         status1 = user1.status.expires;
                     }
                 }
                 if (user2 != null && user2.status != null) {
-                    if (user2.id == UserConfig.clientUserId) {
+                    if (user2.id == UserConfig.getClientUserId()) {
                         status2 = ConnectionsManager.getInstance().getCurrentTime() + 50000;
                     } else {
                         status2 = user2.status.expires;
@@ -628,7 +661,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         } else {
             NotificationCenter.getInstance().removeObserver(this, MessagesController.closeChats);
             NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
-            MessagesController.getInstance().deleteUserFromChat(chat_id, MessagesController.getInstance().users.get(UserConfig.clientUserId), info);
+            MessagesController.getInstance().deleteUserFromChat(chat_id, MessagesController.getInstance().users.get(UserConfig.getClientUserId()), info);
             MessagesController.getInstance().deleteDialog(-chat_id, 0, false);
             finishFragment();
         }
@@ -697,6 +730,9 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     button2.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
+                            if (getParentActivity() == null) {
+                                return;
+                            }
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                             CharSequence[] items;
                             int type;
@@ -873,6 +909,9 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     textView.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
+                            if (getParentActivity() == null) {
+                                return;
+                            }
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                             builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
                             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));

@@ -57,6 +57,7 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
     private boolean ignoreSelection = false;
     private boolean ignoreOnTextChange = false;
     private boolean ignoreOnPhoneChange = false;
+    private boolean nextPressed = false;
 
     public LoginActivityPhoneView(Context context) {
         super(context);
@@ -319,6 +320,9 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
 
     @Override
     public void onNextPressed() {
+        if (nextPressed) {
+            return;
+        }
         if (countryState == 1) {
             delegate.needShowAlert(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
             return;
@@ -345,48 +349,47 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
         final Bundle params = new Bundle();
         params.putString("phone", "+" + codeField.getText() + phoneField.getText());
         params.putString("phoneFormated", phone);
-
+        nextPressed = true;
         delegate.needShowProgress();
         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
-            public void run(TLObject response, TLRPC.TL_error error) {
-                if (error == null) {
-                    final TLRPC.TL_auth_sentCode res = (TLRPC.TL_auth_sentCode)response;
-                    params.putString("phoneHash", res.phone_code_hash);
-                    params.putInt("calltime", res.send_call_timeout * 1000);
-                    if (res.phone_registered) {
-                        params.putString("registered", "true");
-                    }
-                    Utilities.RunOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
+            public void run(final TLObject response, final TLRPC.TL_error error) {
+                Utilities.RunOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        nextPressed = false;
+                        if (error == null) {
+                            final TLRPC.TL_auth_sentCode res = (TLRPC.TL_auth_sentCode)response;
+                            params.putString("phoneHash", res.phone_code_hash);
+                            params.putInt("calltime", res.send_call_timeout * 1000);
+                            if (res.phone_registered) {
+                                params.putString("registered", "true");
+                            }
                             if (delegate != null) {
                                 delegate.setPage(1, true, params, false);
                             }
-                        }
-                    });
-                } else {
-                    if (delegate != null) {
-                        if (error.text != null) {
-                            if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                                delegate.needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
-                            } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                                delegate.needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
-                            } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                                delegate.needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
-                            } else if (error.text.contains("FLOOD_WAIT")) {
-                                delegate.needShowAlert(LocaleController.getString("FloodWait", R.string.FloodWait));
-                            } else {
-                                delegate.needShowAlert(error.text);
+                        } else {
+                            if (delegate != null && error.text != null) {
+                                if (error.text.contains("PHONE_NUMBER_INVALID")) {
+                                    delegate.needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
+                                } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
+                                    delegate.needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
+                                } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                                    delegate.needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
+                                } else if (error.text.startsWith("FLOOD_WAIT")) {
+                                    delegate.needShowAlert(LocaleController.getString("FloodWait", R.string.FloodWait));
+                                } else {
+                                    delegate.needShowAlert(error.text);
+                                }
                             }
                         }
+                        if (delegate != null) {
+                            delegate.needHideProgress();
+                        }
                     }
-                }
-                if (delegate != null) {
-                    delegate.needHideProgress();
-                }
+                });
             }
-        }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
+        }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
     }
 
     @Override

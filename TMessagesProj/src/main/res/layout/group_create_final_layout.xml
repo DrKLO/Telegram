@@ -21,8 +21,7 @@
             <org.telegram.ui.Views.BackupImageView
                 android:id="@+id/settings_avatar_image"
                 android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:src="@drawable/group_blue"/>
+                android:layout_height="fill_parent"/>
 
             <ImageButton
                 android:id="@+id/settings_change_avatar_button"

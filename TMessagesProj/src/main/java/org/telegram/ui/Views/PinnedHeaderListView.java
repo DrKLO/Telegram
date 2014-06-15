@@ -17,6 +17,8 @@ import android.view.ViewGroup;
 import android.widget.*;
 import android.widget.AbsListView.OnScrollListener;
 
+import org.telegram.messenger.FileLog;
+
 public class PinnedHeaderListView extends ListView implements OnScrollListener, View.OnTouchListener {
 
     private OnScrollListener mOnScrollListener;
@@ -69,6 +71,9 @@ public class PinnedHeaderListView extends ListView implements OnScrollListener, 
 
     @Override
     public void setAdapter(ListAdapter adapter) {
+        if (mAdapter == adapter) {
+            return;
+        }
         mCurrentHeader = null;
         if (adapter instanceof PinnedSectionedHeaderAdapter) {
             mAdapter = (PinnedSectionedHeaderAdapter) adapter;
@@ -80,14 +85,14 @@ public class PinnedHeaderListView extends ListView implements OnScrollListener, 
 
     @Override
     public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-        if (mAdapter == null) {
-            return;
-        }
         if (mOnScrollListener != null) {
             mOnScrollListener.onScroll(view, firstVisibleItem, visibleItemCount, totalItemCount);
         }
+        if (mAdapter == null) {
+            return;
+        }
 
-        if (mAdapter == null || mAdapter.getCount() == 0 || !mShouldPin || (firstVisibleItem < getHeaderViewsCount())) {
+        if (mAdapter.getCount() == 0 || !mShouldPin || (firstVisibleItem < getHeaderViewsCount())) {
             mCurrentHeader = null;
             mHeaderOffset = 0.0f;
             for (int i = firstVisibleItem; i < firstVisibleItem + visibleItemCount; i++) {
@@ -131,9 +136,6 @@ public class PinnedHeaderListView extends ListView implements OnScrollListener, 
 
     @Override
     public void onScrollStateChanged(AbsListView view, int scrollState) {
-        if (mAdapter == null) {
-            return;
-        }
         if (mOnScrollListener != null) {
             mOnScrollListener.onScrollStateChanged(view, scrollState);
         }
@@ -173,7 +175,11 @@ public class PinnedHeaderListView extends ListView implements OnScrollListener, 
             } else {
                 heightSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
             }
-            header.measure(widthSpec, heightSpec);
+            try {
+                header.measure(widthSpec, heightSpec);
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
             header.layout(0, 0, header.getMeasuredWidth(), header.getMeasuredHeight());
         }
     }

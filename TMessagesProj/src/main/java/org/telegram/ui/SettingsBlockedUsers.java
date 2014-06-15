@@ -120,7 +120,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
             listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
                 @Override
                 public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    if (i >= blockedContacts.size()) {
+                    if (i >= blockedContacts.size() || getParentActivity() == null) {
                         return true;
                     }
                     selectedUserId = blockedContacts.get(i).user_id;

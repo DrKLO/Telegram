@@ -36,6 +36,11 @@ public class MessagesStorage {
     public static byte[] secretPBytes = null;
     public static int secretG = 0;
 
+    private int lastSavedSeq = 0;
+    private int lastSavedPts = 0;
+    private int lastSavedDate = 0;
+    private int lastSavedQts = 0;
+
     public static final int wallpapersDidLoaded = 171;
 
     private static volatile MessagesStorage Instance = null;
@@ -168,6 +173,7 @@ public class MessagesStorage {
     }
 
     public void cleanUp() {
+        storageQueue.cleanupQueue();
         storageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -176,6 +182,12 @@ public class MessagesStorage {
                 lastPtsValue = 0;
                 lastQtsValue = 0;
                 lastSecretVersion = 0;
+
+                lastSavedSeq = 0;
+                lastSavedPts = 0;
+                lastSavedDate = 0;
+                lastSavedQts = 0;
+
                 secretPBytes = null;
                 secretG = 0;
                 if (database != null) {
@@ -186,6 +198,7 @@ public class MessagesStorage {
                     cacheFile.delete();
                     cacheFile = null;
                 }
+                storageQueue.cleanupQueue();
                 openDatabase();
             }
         });
@@ -218,6 +231,9 @@ public class MessagesStorage {
             @Override
             public void run() {
                 try {
+                    if (lastSavedSeq == seq && lastSavedPts == pts && lastSavedDate == date && lastQtsValue == qts) {
+                        return;
+                    }
                     SQLitePreparedStatement state = database.executeFast("UPDATE params SET seq = ?, pts = ?, date = ?, qts = ? WHERE id = 1");
                     state.bindInteger(1, seq);
                     state.bindInteger(2, pts);
@@ -225,6 +241,10 @@ public class MessagesStorage {
                     state.bindInteger(4, qts);
                     state.step();
                     state.dispose();
+                    lastSavedSeq = seq;
+                    lastSavedPts = pts;
+                    lastSavedDate = date;
+                    lastSavedQts = qts;
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
@@ -781,7 +801,7 @@ public class MessagesStorage {
                                 if (userData != null) {
                                     SerializedData data = new SerializedData(userData);
                                     TLRPC.User user = (TLRPC.User)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                                    if (user.id == UserConfig.clientUserId) {
+                                    if (user.id == UserConfig.getClientUserId()) {
                                         continue;
                                     }
                                     if (user.status != null) {
@@ -1018,7 +1038,7 @@ public class MessagesStorage {
                     String uids = "";
                     while (cursor.next()) {
                         int user_id = cursor.intValue(0);
-                        if (user_id == UserConfig.clientUserId) {
+                        if (user_id == UserConfig.getClientUserId()) {
                             continue;
                         }
                         TLRPC.TL_contact contact = new TLRPC.TL_contact();
@@ -1838,6 +1858,7 @@ public class MessagesStorage {
                         state.bindInteger(2, count);
                         state.step();
                     }
+                    cursor.dispose();
                 }
                 state.dispose();
             }
@@ -2484,7 +2505,7 @@ public class MessagesStorage {
                 ArrayList<TLRPC.EncryptedChat> encryptedChats = new ArrayList<TLRPC.EncryptedChat>();
                 try {
                     ArrayList<Integer> usersToLoad = new ArrayList<Integer>();
-                    usersToLoad.add(UserConfig.clientUserId);
+                    usersToLoad.add(UserConfig.getClientUserId());
                     ArrayList<Integer> chatsToLoad = new ArrayList<Integer>();
                     ArrayList<Integer> encryptedToLoad = new ArrayList<Integer>();
                     SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT d.did, d.last_mid, d.unread_count, d.date, m.data, m.read_state, m.mid, m.send_state FROM dialogs as d LEFT JOIN messages as m ON d.last_mid = m.mid ORDER BY d.date DESC LIMIT %d,%d", offset, count));

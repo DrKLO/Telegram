@@ -233,7 +233,7 @@ public class ChatBaseCell extends BaseCell {
 
         newUser = MessagesController.getInstance().users.get(currentMessageObject.messageOwner.fwd_from_id);
         newNameString = null;
-        if (drawForwardedName && currentMessageObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
+        if (newUser != null && drawForwardedName && currentMessageObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
             newNameString = Utilities.formatName(newUser.first_name, newUser.last_name);
         }
         return currentForwardNameString == null && newNameString != null || currentForwardNameString != null && newNameString == null || currentForwardNameString != null && newNameString != null && !currentForwardNameString.equals(newNameString);

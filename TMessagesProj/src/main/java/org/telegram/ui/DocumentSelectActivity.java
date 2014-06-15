@@ -29,6 +29,8 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBarMenu;
+import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 
@@ -44,6 +46,7 @@ public class DocumentSelectActivity extends BaseFragment {
 
     public static abstract interface DocumentSelectActivityDelegate {
         public void didSelectFile(DocumentSelectActivity activity, String path, String name, String ext, long size);
+        public void startDocumentSelectActivity();
     }
 
     private ListView listView;
@@ -134,9 +137,16 @@ public class DocumentSelectActivity extends BaseFragment {
                 public void onItemClick(int id) {
                     if (id == -1) {
                         finishFragment();
+                    } else if (id == 1) {
+                        if (delegate != null) {
+                            delegate.startDocumentSelectActivity();
+                        }
+                        finishFragment(false);
                     }
                 }
             });
+            ActionBarMenu menu = actionBarLayer.createMenu();
+            ActionBarMenuItem item = menu.addItem(1, R.drawable.ic_ab_other);
 
             fragmentView = inflater.inflate(R.layout.document_select_layout, container, false);
             listAdapter = new ListAdapter(getParentActivity());
@@ -290,7 +300,10 @@ public class DocumentSelectActivity extends BaseFragment {
         return true;
     }
 
-    private void showErrorBox(String error){
+    private void showErrorBox(String error) {
+        if (getParentActivity() == null) {
+            return;
+        }
         new AlertDialog.Builder(getParentActivity())
                 .setTitle(LocaleController.getString("AppName", R.string.AppName))
                 .setMessage(error)

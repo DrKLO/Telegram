@@ -28,6 +28,7 @@ public class RPCRequest {
     public static int RPCRequestClassFailOnServerErrors = 16;
     public static int RPCRequestClassCanCompress = 32;
     public static int RPCRequestClassPush = 64;
+    public static int RPCRequestClassWithoutLogin = 128;
 
     static int RPCRequestClassTransportMask = (RPCRequestClassGeneric | RPCRequestClassDownloadMedia | RPCRequestClassUploadMedia);
 

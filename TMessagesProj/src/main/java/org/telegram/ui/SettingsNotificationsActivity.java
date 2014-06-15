@@ -299,7 +299,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                                             listView.invalidateViews();
                                         }
                                         if (getParentActivity() != null) {
-                                            Toast toast = Toast.makeText(getParentActivity(), R.string.ResetNotificationsText, Toast.LENGTH_SHORT);
+                                            Toast toast = Toast.makeText(getParentActivity(), LocaleController.getString("ResetNotificationsText", R.string.ResetNotificationsText), Toast.LENGTH_SHORT);
                                             toast.show();
                                         }
                                     }
@@ -352,6 +352,9 @@ public class SettingsNotificationsActivity extends BaseFragment {
                             listView.invalidateViews();
                             ApplicationLoader.startPushService();
                         } else {
+                            if (getParentActivity() == null) {
+                                return;
+                            }
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                             builder.setMessage(LocaleController.getString("NotificationsServiceDisableInfo", R.string.NotificationsServiceDisableInfo));
                             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));

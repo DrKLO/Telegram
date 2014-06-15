@@ -64,7 +64,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     protected void onCreate(Bundle savedInstanceState) {
         ApplicationLoader.postInitApplication();
 
-        if (!UserConfig.clientActivated) {
+        if (!UserConfig.isClientActivated()) {
             Intent intent = getIntent();
             if (intent != null && intent.getAction() != null && (Intent.ACTION_SEND.equals(intent.getAction()) || intent.getAction().equals(Intent.ACTION_SEND_MULTIPLE))) {
                 super.onCreateFinish(savedInstanceState);
@@ -101,7 +101,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         NotificationCenter.getInstance().addObserver(this, 703);
 
         if (fragmentsStack.isEmpty()) {
-            if (!UserConfig.clientActivated) {
+            if (!UserConfig.isClientActivated()) {
                 addFragmentToStack(new LoginActivity());
             } else {
                 addFragmentToStack(new MessagesActivity(null));
@@ -280,7 +280,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                             } else if (tempPath == null) {
                                 isGif = MediaController.isGif(uri);
                                 if (isGif) {
-                                    documentPath = MediaController.copyDocumentToCache(uri);
+                                    documentPath = MediaController.copyDocumentToCache(uri, "gif");
                                 }
                             }
                             if (!isGif || documentPath == null) {
@@ -325,7 +325,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                                     } else if (tempPath == null) {
                                         isGif = MediaController.isGif(uri);
                                         if (isGif) {
-                                            tempPath = MediaController.copyDocumentToCache(uri);
+                                            tempPath = MediaController.copyDocumentToCache(uri, "gif");
                                         }
                                     }
                                     if (isGif && tempPath != null) {
@@ -417,7 +417,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         }
 
         if (push_user_id != 0) {
-            if (push_user_id == UserConfig.clientUserId) {
+            if (push_user_id == UserConfig.getClientUserId()) {
                 open_settings = 1;
             } else {
                 Bundle args = new Bundle();

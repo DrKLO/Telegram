@@ -59,7 +59,6 @@
         android:id="@+id/docs_item_thumb"
         android:layout_width="55dp"
         android:layout_height="42dp"
-        android:scaleType="centerCrop"
         android:layout_marginTop="11dp"
         android:layout_gravity="top|left"/>
 

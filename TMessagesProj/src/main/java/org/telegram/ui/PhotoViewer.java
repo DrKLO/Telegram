@@ -101,6 +101,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private boolean overlayViewVisible = true;
 
     private int animationInProgress = 0;
+    private PlaceProviderObject showAfterAnimation;
+    private PlaceProviderObject hideAfterAnimation;
     private boolean disableShowCheck = false;
     private Animation.AnimationListener animationListener;
 
@@ -310,13 +312,18 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 imagesArrLocations.clear();
                 imagesArrLocationsSizes.clear();
                 for (TLRPC.Photo photo : photos) {
-                    if (photo instanceof TLRPC.TL_photoEmpty) {
+                    if (photo instanceof TLRPC.TL_photoEmpty || photo.sizes == null) {
                         continue;
                     }
                     TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(photo.sizes, 640, 640);
                     if (sizeFull != null) {
-                        if (currentFileLocation != null && sizeFull.location.local_id == currentFileLocation.local_id && sizeFull.location.volume_id == currentFileLocation.volume_id) {
-                            setToImage = imagesArrLocations.size();
+                        if (currentFileLocation != null) {
+                            for (TLRPC.PhotoSize size : photo.sizes) {
+                                if (size.location.local_id == currentFileLocation.local_id && size.location.volume_id == currentFileLocation.volume_id) {
+                                    setToImage = imagesArrLocations.size();
+                                    break;
+                                }
+                            }
                         }
                         imagesArrLocations.add(sizeFull.location);
                         imagesArrLocationsSizes.add(sizeFull.size);
@@ -327,6 +334,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 if (setToImage != -1) {
                     setImageIndex(setToImage, true);
                 } else {
+                    imagesArrLocations.add(0, currentFileLocation);
+                    imagesArrLocationsSizes.add(0, 0);
                     setImageIndex(0, true);
                 }
                 if (fromCache) {
@@ -1038,7 +1047,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (messageObject.messageOwner.to_id.chat_id != 0) {
                         currentDialogId = -messageObject.messageOwner.to_id.chat_id;
                     } else {
-                        if (messageObject.messageOwner.to_id.user_id == UserConfig.clientUserId) {
+                        if (messageObject.messageOwner.to_id.user_id == UserConfig.getClientUserId()) {
                             currentDialogId = messageObject.messageOwner.from_id;
                         } else {
                             currentDialogId = messageObject.messageOwner.to_id.user_id;
@@ -1076,7 +1085,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 if (messageObject.messageOwner.to_id.chat_id != 0) {
                     currentDialogId = -messageObject.messageOwner.to_id.chat_id;
                 } else {
-                    if (messageObject.messageOwner.to_id.user_id == UserConfig.clientUserId) {
+                    if (messageObject.messageOwner.to_id.user_id == UserConfig.getClientUserId()) {
                         currentDialogId = messageObject.messageOwner.from_id;
                     } else {
                         currentDialogId = messageObject.messageOwner.to_id.user_id;
@@ -1147,15 +1156,20 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
         }
 
-        if (!init) {
-            if (android.os.Build.VERSION.SDK_INT >= 11 && currentPlaceObject != null) {
+
+        if (android.os.Build.VERSION.SDK_INT >= 11 && currentPlaceObject != null) {
+            if (animationInProgress == 0) {
                 currentPlaceObject.imageReceiver.setVisible(true, true);
+            } else {
+                showAfterAnimation = currentPlaceObject;
             }
         }
         currentPlaceObject = placeProvider.getPlaceForPhoto(currentMessageObject, currentFileLocation, currentIndex);
-        if (!init) {
-            if (android.os.Build.VERSION.SDK_INT >= 11 && currentPlaceObject != null) {
+        if (android.os.Build.VERSION.SDK_INT >= 11 && currentPlaceObject != null) {
+            if (animationInProgress == 0) {
                 currentPlaceObject.imageReceiver.setVisible(false, true);
+            } else {
+                hideAfterAnimation = currentPlaceObject;
             }
         }
 
@@ -1343,6 +1357,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
 
         disableShowCheck = true;
+        animationInProgress = 1;
         onPhotoShow(messageObject, fileLocation, messages, photos, index, object);
         isVisible = true;
         backgroundDrawable.setAlpha(255);
@@ -1351,8 +1366,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
         if(android.os.Build.VERSION.SDK_INT >= 11) {
             Utilities.lockOrientation(parentActivity);
-
-            animationInProgress = 1;
 
             animatingImageView.setVisibility(View.VISIBLE);
             animatingImageView.setImageBitmap(object.thumb);
@@ -1419,6 +1432,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                             containerView.invalidate();
                             animatingImageView.setVisibility(View.GONE);
                             Utilities.unlockOrientation(parentActivity);
+                            if (showAfterAnimation != null) {
+                                showAfterAnimation.imageReceiver.setVisible(true, true);
+                            }
+                            if (hideAfterAnimation != null) {
+                                hideAfterAnimation.imageReceiver.setVisible(false, true);
+                            }
                         }
                     });
                     animatorSet.start();
@@ -1437,6 +1456,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
             });
         } else {
+            animationInProgress = 0;
             containerView.invalidate();
             AnimationSet animationSet = new AnimationSet(true);
             AlphaAnimation animation = new AlphaAnimation(0.0f, 1.0f);

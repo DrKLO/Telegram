@@ -113,6 +113,7 @@
     <string name="SlideToCancel">DESLIZA PARA CANCELAR</string>
     <string name="SaveToDownloads">Guardar en descargas</string>
     <string name="ApplyLocalizationFile">Aplicar archivo de traducción</string>
+    <string name="UnsupportedAttachment">Unsupported attachment</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Chat secreto solicitado</string>

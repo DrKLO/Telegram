@@ -314,7 +314,11 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     public void onPause() {
         super.onPause();
         if (mapView != null) {
-            mapView.onPause();
+            try {
+                mapView.onPause();
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
         }
     }
 
