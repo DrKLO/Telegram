@@ -241,7 +241,7 @@
     <string name="VibrateSpeedSlow">Slow</string>
     <string name="VibrateSpeedDefault">Standard</string>
     <string name="VibrateCount">Vibrations number</string>
-    <string name="VibrateCountTitle">Pick the number fo vibrations</string>
+    <string name="VibrateCountTitle">Pick the number of vibrations</string>
     <string name="InAppPreview">Vista previa en la app</string>
     <string name="Reset">RESTABLECER</string>
     <string name="ResetAllNotifications">Restablecer todas las notificaciones</string>
