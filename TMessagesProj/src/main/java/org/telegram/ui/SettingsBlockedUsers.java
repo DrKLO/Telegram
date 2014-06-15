@@ -21,7 +21,9 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
@@ -36,7 +38,6 @@ import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class SettingsBlockedUsers extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ContactsActivity.ContactsActivityDelegate {
     private ListView listView;
@@ -44,8 +45,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
     private boolean loading;
     private View progressView;
     private TextView emptyView;
-    private ArrayList<TLRPC.TL_contactBlocked> blockedContacts = new ArrayList<TLRPC.TL_contactBlocked>();
-    private HashMap<Integer, TLRPC.TL_contactBlocked> blockedContactsDict = new HashMap<Integer, TLRPC.TL_contactBlocked>();
+    private ArrayList<Integer> blockedContacts = new ArrayList<Integer>();
     private int selectedUserId;
 
     private final static int block_user = 1;
@@ -54,7 +54,8 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
         NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
-        loadBlockedContacts(0, 200);
+        NotificationCenter.getInstance().addObserver(this, MessagesController.blockedContactsDidLoaded);
+        loadBlockedContacts();
         return true;
     }
 
@@ -62,6 +63,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
         NotificationCenter.getInstance().removeObserver(this, MessagesController.updateInterfaces);
+        NotificationCenter.getInstance().removeObserver(this, MessagesController.blockedContactsDidLoaded);
     }
 
     @Override
@@ -111,7 +113,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                     if (i < blockedContacts.size()) {
                         Bundle args = new Bundle();
-                        args.putInt("user_id", blockedContacts.get(i).user_id);
+                        args.putInt("user_id", blockedContacts.get(i));
                         presentFragment(new UserProfileActivity(args));
                     }
                 }
@@ -123,7 +125,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                     if (i >= blockedContacts.size() || getParentActivity() == null) {
                         return true;
                     }
-                    selectedUserId = blockedContacts.get(i).user_id;
+                    selectedUserId = blockedContacts.get(i);
 
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
 
@@ -139,14 +141,13 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                                     return;
                                 }
                                 req.id = MessagesController.getInputUser(user);
-                                TLRPC.TL_contactBlocked blocked = blockedContactsDict.get(selectedUserId);
-                                blockedContactsDict.remove(selectedUserId);
-                                blockedContacts.remove(blocked);
+                                blockedContacts.remove(blockedContacts.indexOf(selectedUserId));
                                 listViewAdapter.notifyDataSetChanged();
                                 ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                                     @Override
                                     public void run(TLObject response, TLRPC.TL_error error) {
-
+                                        // Force update of blocked user cache
+                                        ContactsController.getInstance().addBlockedContacts();
                                     }
                                 }, null, true, RPCRequest.RPCRequestClassGeneric);
                             }
@@ -166,62 +167,25 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
         return fragmentView;
     }
 
-    private void loadBlockedContacts(int offset, int count) {
-        if (loading) {
-            return;
-        }
-        loading = true;
-        TLRPC.TL_contacts_getBlocked req = new TLRPC.TL_contacts_getBlocked();
-        req.offset = offset;
-        req.limit = count;
-        long requestId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+    private void loadBlockedContacts() {
+
+        Utilities.RunOnUIThread(new Runnable() {
             @Override
-            public void run(TLObject response, TLRPC.TL_error error) {
-                if (error != null) {
-                    Utilities.RunOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            loading = false;
-                            if (progressView != null) {
-                                progressView.setVisibility(View.GONE);
-                            }
-                            if (listView != null && listView.getEmptyView() == null) {
-                                listView.setEmptyView(emptyView);
-                            }
-                            if (listViewAdapter != null) {
-                                listViewAdapter.notifyDataSetChanged();
-                            }
-                        }
-                    });
+            public void run() {
+                blockedContacts.clear();
+                blockedContacts.addAll(MessagesStorage.getInstance().getBlockedContacts());
+
+                if (progressView != null) {
+                    progressView.setVisibility(View.GONE);
                 }
-                final TLRPC.contacts_Blocked res = (TLRPC.contacts_Blocked)response;
-                Utilities.RunOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        loading = false;
-                        for (TLRPC.User user : res.users) {
-                            MessagesController.getInstance().users.put(user.id, user);
-                        }
-                        for (TLRPC.TL_contactBlocked blocked : res.blocked) {
-                            if (!blockedContactsDict.containsKey(blocked.user_id)) {
-                                blockedContacts.add(blocked);
-                                blockedContactsDict.put(blocked.user_id, blocked);
-                            }
-                        }
-                        if (progressView != null) {
-                            progressView.setVisibility(View.GONE);
-                        }
-                        if (listView != null && listView.getEmptyView() == null) {
-                            listView.setEmptyView(emptyView);
-                        }
-                        if (listViewAdapter != null) {
-                            listViewAdapter.notifyDataSetChanged();
-                        }
-                    }
-                });
+                if (listView != null && listView.getEmptyView() == null) {
+                    listView.setEmptyView(emptyView);
+                }
+                if (listViewAdapter != null) {
+                    listViewAdapter.notifyDataSetChanged();
+                }
             }
-        }, null, true, RPCRequest.RPCRequestClassGeneric);
-        ConnectionsManager.getInstance().bindRequestToGuid(requestId, classGuid);
+        });
     }
 
     @Override
@@ -231,7 +195,10 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
                 updateVisibleRows(mask);
             }
+        } else if (id == MessagesController.blockedContactsDidLoaded) {
+            loadBlockedContacts();
         }
+
     }
 
     private void updateVisibleRows(int mask) {
@@ -257,21 +224,19 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
 
     @Override
     public void didSelectContact(TLRPC.User user) {
-        if (user == null || blockedContactsDict.containsKey(user.id)) {
+        if (user == null || blockedContacts.contains(user.id)) {
             return;
         }
         TLRPC.TL_contacts_block req = new TLRPC.TL_contacts_block();
         req.id = MessagesController.getInputUser(user);
         TLRPC.TL_contactBlocked blocked = new TLRPC.TL_contactBlocked();
-        blocked.user_id = user.id;
-        blocked.date = (int)(System.currentTimeMillis() / 1000);
-        blockedContactsDict.put(blocked.user_id, blocked);
-        blockedContacts.add(blocked);
+        blockedContacts.add(user.id);
         listViewAdapter.notifyDataSetChanged();
         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
-
+                // Force update of blocked user cache
+                ContactsController.getInstance().addBlockedContacts();
             }
         }, null, true, RPCRequest.RPCRequestClassGeneric);
     }
@@ -325,7 +290,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                     ((ChatOrUserCell)view).usePadding = false;
                     ((ChatOrUserCell)view).useSeparator = true;
                 }
-                TLRPC.User user = MessagesController.getInstance().users.get(blockedContacts.get(i).user_id);
+                TLRPC.User user = MessagesController.getInstance().users.get(blockedContacts.get(i));
                 ((ChatOrUserCell)view).setData(user, null, null, null, user.phone != null && user.phone.length() != 0 ? PhoneFormat.getInstance().format("+" + user.phone) : "Unknown");
             } else if (type == 1) {
                 if (view == null) {

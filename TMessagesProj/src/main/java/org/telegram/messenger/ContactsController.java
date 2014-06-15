@@ -1527,6 +1527,49 @@ public class ContactsController {
         }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassCanCompress);
     }
 
+    /**
+     * Fetch 100 first blocked contacts from server
+     */
+    public void addBlockedContacts() {
+
+        TLRPC.TL_contacts_getBlocked req = new TLRPC.TL_contacts_getBlocked();
+        req.offset = 0;
+        req.limit = 100;
+        long requestId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            @Override
+            public void run(TLObject response, TLRPC.TL_error error) {
+                final TLRPC.contacts_Blocked res = (TLRPC.contacts_Blocked) response;
+                for (TLRPC.User user : res.users) {
+                    MessagesController.getInstance().users.put(user.id, user);
+                }
+                MessagesStorage.getInstance().putBlockedContacts(res.blocked,1);
+            }
+        }, null, true, RPCRequest.RPCRequestClassGeneric);
+    }
+
+    /**
+     * If more than 100 blocked contacts, this method is called until all of them have been fetched.
+     * @param times Number of times blocked contacts have been fetched from server during the update.
+     */
+    public void addBlockedContactsTimes(final int times) {
+
+        TLRPC.TL_contacts_getBlocked req = new TLRPC.TL_contacts_getBlocked();
+        req.offset = 100*(times-1);
+        req.limit = 100*times;
+        long requestId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            @Override
+            public void run(TLObject response, TLRPC.TL_error error) {
+                final TLRPC.contacts_Blocked res = (TLRPC.contacts_Blocked) response;
+                for (TLRPC.User user : res.users) {
+                    MessagesController.getInstance().users.put(user.id, user);
+                }
+                MessagesStorage.getInstance().putBlockedContacts(res.blocked, times);
+            }
+        }, null, true, RPCRequest.RPCRequestClassGeneric);
+    }
+
+
+
     public void deleteContact(final ArrayList<TLRPC.User> users) {
         if (users == null || users.isEmpty()) {
             return;

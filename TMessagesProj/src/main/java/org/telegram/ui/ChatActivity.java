@@ -182,7 +182,6 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     private float startedDraggingX = -1;
     private float distCanMove = Utilities.dp(80);
     private PowerManager.WakeLock mWakeLock = null;
-
     private String currentPicturePath;
 
     private TLRPC.ChatParticipants info = null;

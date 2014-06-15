@@ -167,6 +167,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
     public static final int removeAllMessagesFromDialog = 25;
 
+    // Notification ID when blocked contacts cache is updated
+    public static final int blockedContactsDidLoaded = 26;
+
     private static volatile MessagesController Instance = null;
     public static MessagesController getInstance() {
         MessagesController localInstance = Instance;

@@ -14,6 +14,7 @@ import android.util.SparseArray;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
+import org.telegram.SQLite.SQLiteException;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.ApplicationLoader;
@@ -91,6 +92,7 @@ public class MessagesStorage {
                 database.executeFast("CREATE TABLE randoms(random_id INTEGER PRIMARY KEY, mid INTEGER)").stepThis().dispose();
                 database.executeFast("CREATE TABLE enc_tasks(date INTEGER, data BLOB)").stepThis().dispose();
                 database.executeFast("CREATE TABLE params(id INTEGER PRIMARY KEY, seq INTEGER, pts INTEGER, date INTEGER, qts INTEGER, lsv INTEGER, sg INTEGER, pbytes BLOB)").stepThis().dispose();
+                database.executeFast("CREATE TABLE blocked(uid INTEGER PRIMARY KEY)").stepThis().dispose();
                 database.executeFast("INSERT INTO params VALUES(1, 0, 0, 0, 0, 0, 0, NULL)").stepThis().dispose();
                 database.executeFast("CREATE TABLE user_photos(uid INTEGER, id INTEGER, data BLOB, PRIMARY KEY (uid, id))").stepThis().dispose();
 
@@ -902,6 +904,80 @@ public class MessagesStorage {
             }
         });
     }
+
+    /**
+     * Add blocked contacts to database
+     * @param contacts Array of TL_contactBlocked
+     * @param times Number of times this method have been called until now during the same update.
+     *
+     * @note If less than 100 contacts, a notification is posted, otherwise, it call "addBlockedContactsTimes"
+     * with times+1
+     */
+    public void putBlockedContacts(final ArrayList<TLRPC.TL_contactBlocked> contacts, final int times) {
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (times == 1)
+                        database.executeFast("DELETE FROM blocked").stepThis().dispose();
+                    database.beginTransaction();
+                    SQLitePreparedStatement state = database.executeFast("INSERT INTO blocked VALUES(?)");
+                    for (TLRPC.TL_contactBlocked contact : contacts) {
+                        state.requery();
+                        state.bindInteger(1, contact.user_id);
+                        state.step();
+                    }
+                    state.dispose();
+                    database.commitTransaction();
+                    if (contacts.size() < 100)
+                        NotificationCenter.getInstance().postNotificationName(MessagesController.blockedContactsDidLoaded);
+                    else
+                        ContactsController.getInstance().addBlockedContactsTimes(times+1);
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        });
+    }
+
+    /**
+     * Return an ArrayList with the IDs of all blocked users in cache
+     * @return ArraList<Integer>
+     */
+    public ArrayList<Integer> getBlockedContacts(){
+        ArrayList<Integer> blockedContacts = new ArrayList<Integer>();
+        SQLiteCursor cursor = null;
+        try {
+            cursor = database.queryFinalized("SELECT * FROM blocked");
+            while (cursor.next()) {
+                blockedContacts.add(cursor.intValue(0));
+            }
+        } catch (SQLiteException e) {
+            e.printStackTrace();
+        }
+        return blockedContacts;
+    }
+
+    /**
+     * Return if a contact is blocked or not
+     * @param user_id ID of the contact to check
+     * @return True if the contact is blocked, False otherwise
+     */
+    public Boolean getBlockedContact(int user_id) {
+        Boolean blocked = false;
+        try {
+            SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT * FROM blocked WHERE uid = %d", user_id));
+            while (cursor.next()) {
+                if (user_id == cursor.intValue(0))
+                    blocked = true;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return blocked;
+    }
+
+
 
     public void deleteContacts(final ArrayList<Integer> uids) {
         if (uids == null || uids.isEmpty()) {
