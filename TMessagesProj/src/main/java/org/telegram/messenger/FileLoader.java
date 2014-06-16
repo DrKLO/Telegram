@@ -337,7 +337,7 @@ public class FileLoader {
         return memCache.get(key) != null;
     }
 
-    public void uploadFile(final String location, final String originalLocation, final boolean encrypted) {
+    public void uploadFile(final String location, final boolean encrypted) {
         fileLoaderQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -350,7 +350,7 @@ public class FileLoader {
                         return;
                     }
                 }
-                FileUploadOperation operation = new FileUploadOperation(location, originalLocation, encrypted);
+                FileUploadOperation operation = new FileUploadOperation(location, encrypted);
                 if (encrypted) {
                     uploadOperationPathsEnc.put(location, operation);
                 } else {

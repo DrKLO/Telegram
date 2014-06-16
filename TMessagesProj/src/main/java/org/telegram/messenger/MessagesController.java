@@ -127,7 +127,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         public TLRPC.TL_messages_sendMedia sendRequest;
         public TLRPC.TL_decryptedMessage sendEncryptedRequest;
         public int type;
-        public String originalPath;
         public TLRPC.FileLocation location;
         public TLRPC.TL_video videoLocation;
         public TLRPC.TL_audio audioLocation;
@@ -588,7 +587,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     public void uploadAndApplyUserAvatar(TLRPC.PhotoSize bigPhoto) {
         if (bigPhoto != null) {
             uploadingAvatar = Utilities.getCacheDir() + "/" + bigPhoto.location.volume_id + "_" + bigPhoto.location.local_id + ".jpg";
-            FileLoader.getInstance().uploadFile(uploadingAvatar, null, false);
+            FileLoader.getInstance().uploadFile(uploadingAvatar, false);
         }
     }
 
@@ -1732,7 +1731,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             type = 2;
             newMsg.message = "-1";
             TLRPC.FileLocation location1 = photo.sizes.get(photo.sizes.size() - 1).location;
-            newMsg.attachPath = originalPath;
+            newMsg.attachPath = Utilities.getCacheDir() + "/" + location1.volume_id + "_" + location1.local_id + ".jpg";
         } else if (video != null) {
             newMsg = new TLRPC.TL_message();
             newMsg.media = new TLRPC.TL_messageMediaVideo();
@@ -1883,7 +1882,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 } else if (type == 2) {
                     reqSend.media = new TLRPC.TL_inputMediaUploadedPhoto();
                     DelayedMessage delayedMessage = new DelayedMessage();
-                    delayedMessage.originalPath = originalPath;
                     delayedMessage.sendRequest = reqSend;
                     delayedMessage.type = 0;
                     delayedMessage.obj = newMsgObj;
@@ -1895,7 +1893,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     reqSend.media.w = video.w;
                     reqSend.media.h = video.h;
                     DelayedMessage delayedMessage = new DelayedMessage();
-                    delayedMessage.originalPath = originalPath;
                     delayedMessage.sendRequest = reqSend;
                     delayedMessage.type = 1;
                     delayedMessage.obj = newMsgObj;
@@ -1924,7 +1921,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     reqSend.media.mime_type = document.mime_type;
                     reqSend.media.file_name = document.file_name;
                     DelayedMessage delayedMessage = new DelayedMessage();
-                    delayedMessage.originalPath = originalPath;
                     delayedMessage.sendRequest = reqSend;
                     delayedMessage.type = 2;
                     delayedMessage.obj = newMsgObj;
@@ -1935,7 +1931,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     reqSend.media = new TLRPC.TL_inputMediaUploadedAudio();
                     reqSend.media.duration = audio.duration;
                     DelayedMessage delayedMessage = new DelayedMessage();
-                    delayedMessage.originalPath = originalPath;
                     delayedMessage.sendRequest = reqSend;
                     delayedMessage.type = 3;
                     delayedMessage.obj = newMsgObj;
@@ -1965,7 +1960,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     reqSend.media.size = big.size;
 
                     DelayedMessage delayedMessage = new DelayedMessage();
-                    delayedMessage.originalPath = originalPath;
                     delayedMessage.sendEncryptedRequest = reqSend;
                     delayedMessage.type = 0;
                     delayedMessage.obj = newMsgObj;
@@ -1983,7 +1977,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     reqSend.media.thumb_w = video.thumb.w;
 
                     DelayedMessage delayedMessage = new DelayedMessage();
-                    delayedMessage.originalPath = originalPath;
                     delayedMessage.sendEncryptedRequest = reqSend;
                     delayedMessage.type = 1;
                     delayedMessage.obj = newMsgObj;
@@ -2015,7 +2008,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     reqSend.media.mime_type = document.mime_type;
 
                     DelayedMessage delayedMessage = new DelayedMessage();
-                    delayedMessage.originalPath = originalPath;
                     delayedMessage.sendEncryptedRequest = reqSend;
                     delayedMessage.type = 2;
                     delayedMessage.obj = newMsgObj;
@@ -2028,7 +2020,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     reqSend.media.size = audio.size;
 
                     DelayedMessage delayedMessage = new DelayedMessage();
-                    delayedMessage.originalPath = originalPath;
                     delayedMessage.sendEncryptedRequest = reqSend;
                     delayedMessage.type = 3;
                     delayedMessage.obj = newMsgObj;
@@ -2463,23 +2454,23 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             String location = Utilities.getCacheDir() + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
             putToDelayedMessages(location, message);
             if (message.sendRequest != null) {
-                FileLoader.getInstance().uploadFile(location, message.originalPath, false);
+                FileLoader.getInstance().uploadFile(location, false);
             } else {
-                FileLoader.getInstance().uploadFile(location, message.originalPath, true);
+                FileLoader.getInstance().uploadFile(location, true);
             }
         } else if (message.type == 1) {
             if (message.sendRequest != null) {
                 if (message.sendRequest.media.thumb == null) {
                     String location = Utilities.getCacheDir() + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
                     putToDelayedMessages(location, message);
-                    FileLoader.getInstance().uploadFile(location, message.originalPath + "thumb", false);
+                    FileLoader.getInstance().uploadFile(location, false);
                 } else {
                     String location = message.videoLocation.path;
                     if (location == null) {
                         location = Utilities.getCacheDir() + "/" + message.videoLocation.id + ".mp4";
                     }
                     putToDelayedMessages(location, message);
-                    FileLoader.getInstance().uploadFile(location, message.originalPath, false);
+                    FileLoader.getInstance().uploadFile(location, false);
                 }
             } else {
                 String location = message.videoLocation.path;
@@ -2487,29 +2478,29 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     location = Utilities.getCacheDir() + "/" + message.videoLocation.id + ".mp4";
                 }
                 putToDelayedMessages(location, message);
-                FileLoader.getInstance().uploadFile(location, message.originalPath, true);
+                FileLoader.getInstance().uploadFile(location, true);
             }
         } else if (message.type == 2) {
             if (message.sendRequest != null && message.sendRequest.media.thumb == null && message.location != null) {
                 String location = Utilities.getCacheDir() + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
                 putToDelayedMessages(location, message);
-                FileLoader.getInstance().uploadFile(location, message.originalPath + "thumb", false);
+                FileLoader.getInstance().uploadFile(location, false);
             } else {
                 String location = message.documentLocation.path;
                 putToDelayedMessages(location, message);
                 if (message.sendRequest != null) {
-                    FileLoader.getInstance().uploadFile(location, message.originalPath, false);
+                    FileLoader.getInstance().uploadFile(location, false);
                 } else {
-                    FileLoader.getInstance().uploadFile(location, message.originalPath, true);
+                    FileLoader.getInstance().uploadFile(location, true);
                 }
             }
         } else if (message.type == 3) {
             String location = message.audioLocation.path;
             putToDelayedMessages(location, message);
             if (message.sendRequest != null) {
-                FileLoader.getInstance().uploadFile(location, null, false);
+                FileLoader.getInstance().uploadFile(location, false);
             } else {
-                FileLoader.getInstance().uploadFile(location, null, true);
+                FileLoader.getInstance().uploadFile(location, true);
             }
         }
     }

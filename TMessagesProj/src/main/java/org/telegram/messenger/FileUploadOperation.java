@@ -13,14 +13,11 @@ import java.io.FileInputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.Locale;
-import java.util.concurrent.Semaphore;
 
 public class FileUploadOperation {
     private int uploadChunkSize = 1024 * 32;
     private String uploadingFilePath;
-    private String originalPath;
     public int state = 0;
     private byte[] readBuffer;
     public FileUploadOperationDelegate delegate;
@@ -45,9 +42,8 @@ public class FileUploadOperation {
         public abstract void didChangedUploadProgress(FileUploadOperation operation, float progress);
     }
 
-    public FileUploadOperation(String location, String originalLocaltion, boolean encrypted) {
+    public FileUploadOperation(String location, boolean encrypted) {
         uploadingFilePath = location;
-        originalPath = originalLocaltion;
         if (encrypted) {
             iv = new byte[32];
             key = new byte[32];
@@ -106,26 +102,6 @@ public class FileUploadOperation {
 
         try {
             if (stream == null) {
-                if (originalPath != null) {
-                    Semaphore semaphore = new Semaphore(0);
-                    ArrayList<TLObject> result = new ArrayList<TLObject>();
-                    String path = originalPath;
-                    if (key != null) {
-                        path += "e";
-                    }
-                    MessagesStorage.getInstance().getSentFile(path, semaphore, result);
-                    semaphore.acquire();
-                    if (!result.isEmpty()) {
-                        TLObject object = result.get(0);
-                        if (object instanceof TLRPC.InputFile) {
-                            delegate.didFinishUploadingFile(FileUploadOperation.this, (TLRPC.InputFile) object, null);
-                            return;
-                        } else if (object instanceof TLRPC.InputEncryptedFile) {
-                            delegate.didFinishUploadingFile(FileUploadOperation.this, null, (TLRPC.InputEncryptedFile) object);
-                            return;
-                        }
-                    }
-                }
                 File cacheFile = new File(uploadingFilePath);
                 stream = new FileInputStream(cacheFile);
                 totalFileSize = cacheFile.length();
@@ -210,9 +186,6 @@ public class FileUploadOperation {
                                 result.id = currentFileId;
                                 result.name = uploadingFilePath.substring(uploadingFilePath.lastIndexOf("/") + 1);
                                 delegate.didFinishUploadingFile(FileUploadOperation.this, result, null);
-                                if (originalPath != null) {
-                                    MessagesStorage.getInstance().putSentFile(originalPath, result, null, null);
-                                }
                             } else {
                                 TLRPC.InputEncryptedFile result;
                                 if (isBigFile) {
@@ -227,9 +200,6 @@ public class FileUploadOperation {
                                 result.iv = iv;
                                 result.key = key;
                                 delegate.didFinishUploadingFile(FileUploadOperation.this, null, result);
-                                if (originalPath != null) {
-                                    MessagesStorage.getInstance().putSentFile(originalPath + "e", result, key, iv);
-                                }
                             }
                         } else {
                             startUploadRequest();
