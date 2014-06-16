@@ -97,6 +97,8 @@ public class MessagesStorage {
                 database.executeFast("CREATE TABLE user_contacts_v6(uid INTEGER PRIMARY KEY, fname TEXT, sname TEXT)").stepThis().dispose();
                 database.executeFast("CREATE TABLE user_phones_v6(uid INTEGER, phone TEXT, sphone TEXT, deleted INTEGER, PRIMARY KEY (uid, phone))").stepThis().dispose();
 
+                database.executeFast("CREATE TABLE sent_files(uid TEXT PRIMARY KEY, data BLOB, key BLOB, iv BLOB)").stepThis().dispose();
+
                 database.executeFast("CREATE INDEX IF NOT EXISTS mid_idx_randoms ON randoms(mid);").stepThis().dispose();
 
                 database.executeFast("CREATE INDEX IF NOT EXISTS sphone_deleted_idx_user_phones ON user_phones_v6(sphone, deleted);").stepThis().dispose();
@@ -166,6 +168,8 @@ public class MessagesStorage {
                 database.executeFast("CREATE INDEX IF NOT EXISTS sphone_deleted_idx_user_phones ON user_phones_v6(sphone, deleted);").stepThis().dispose();
 
                 database.executeFast("CREATE INDEX IF NOT EXISTS mid_idx_randoms ON randoms(mid);").stepThis().dispose();
+
+                database.executeFast("CREATE TABLE IF NOT EXISTS sent_files(uid TEXT PRIMARY KEY, data BLOB, key BLOB, iv BLOB)").stepThis().dispose();
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -1491,6 +1495,80 @@ public class MessagesStorage {
                     if (state != null) {
                         state.dispose();
                     }
+                }
+            }
+        });
+    }
+
+    public void getSentFile(final String path, final Semaphore semaphore, final ArrayList<TLObject> result) {
+        if (path == null || semaphore == null || result == null) {
+            return;
+        }
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    String id = Utilities.MD5(path);
+                    if (id != null) {
+                        SQLiteCursor cursor = database.queryFinalized("SELECT data, key, iv FROM sent_files WHERE uid = '" + id + "'");
+                        if (cursor.next()) {
+                            byte[] fileData = cursor.byteArrayValue(0);
+                            if (fileData != null) {
+                                SerializedData data = new SerializedData(fileData);
+                                TLObject file = TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                                if (file instanceof TLRPC.InputEncryptedFile) {
+                                    TLRPC.InputEncryptedFile encFile = (TLRPC.InputEncryptedFile)file;
+                                    encFile.key = cursor.byteArrayValue(1);
+                                    encFile.iv = cursor.byteArrayValue(2);
+                                    if (encFile.key != null && encFile.iv != null) {
+                                        result.add(file);
+                                    }
+                                } else if (file instanceof TLRPC.InputFile) {
+                                    result.add(file);
+                                }
+                            }
+                        }
+                        cursor.dispose();
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                } finally {
+                    semaphore.release();
+                }
+            }
+        });
+    }
+
+    public void putSentFile(final String path, final TLObject file, final byte[] key, final byte[] iv) {
+        if (path == null || file == null) {
+            return;
+        }
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    String id = Utilities.MD5(path);
+                    if (id != null) {
+                        SQLitePreparedStatement state = null;
+                        if (key != null && iv != null) {
+                            state = database.executeFast("REPLACE INTO sent_files VALUES(?, ?, ?, ?)");
+                        } else {
+                            state = database.executeFast("REPLACE INTO sent_files VALUES(?, ?, NULL, NULL)");
+                        }
+                        state.requery();
+                        SerializedData data = new SerializedData();
+                        file.serializeToStream(data);
+                        state.bindString(1, id);
+                        state.bindByteArray(2, data.toByteArray());
+                        if (key != null && iv != null) {
+                            state.bindByteArray(3, key);
+                            state.bindByteArray(4, iv);
+                        }
+                        state.step();
+                        state.dispose();
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
                 }
             }
         });

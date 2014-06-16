@@ -63,7 +63,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
     private boolean paused = false;
     private long lastPingTime = System.currentTimeMillis();
-    private long lastPushPingTime = System.currentTimeMillis();
+    private long lastPushPingTime = 0;
+    private boolean sendingPushPing = false;
     private int nextSleepTimeout = 30000;
     private long nextPingId = 0;
 
@@ -88,7 +89,11 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             Utilities.stageQueue.handler.removeCallbacks(stageRunnable);
             t = System.currentTimeMillis();
             if (datacenters != null) {
-                if (lastPushPingTime < System.currentTimeMillis() - 29000) {
+                if (sendingPushPing && lastPushPingTime < System.currentTimeMillis() - 30000 || Math.abs(lastPushPingTime - System.currentTimeMillis()) > 60000 * 4) {
+                    lastPushPingTime = 0;
+                    sendingPushPing = false;
+                }
+                if (lastPushPingTime < System.currentTimeMillis() - 60000 * 3) {
                     lastPushPingTime = System.currentTimeMillis();
                     Datacenter datacenter = datacenterWithId(currentDatacenterId);
                     if (datacenter != null) {
@@ -1955,31 +1960,35 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             if (UserConfig.isClientActivated() && !UserConfig.registeredForInternalPush && (connection.transportRequestClass & RPCRequest.RPCRequestClassPush) != 0) {
                 registerForPush();
             }
-            TLRPC.TL_pong pong = (TLRPC.TL_pong)message;
-            long pingId = pong.ping_id;
+            if ((connection.transportRequestClass & RPCRequest.RPCRequestClassPush) == 0) {
+                TLRPC.TL_pong pong = (TLRPC.TL_pong) message;
+                long pingId = pong.ping_id;
 
-            ArrayList<Long> itemsToDelete = new ArrayList<Long>();
-            for (Long pid : pingIdToDate.keySet()) {
-                if (pid == pingId) {
-                    int time = pingIdToDate.get(pid);
-                    int pingTime = (int)(System.currentTimeMillis() / 1000) - time;
+                ArrayList<Long> itemsToDelete = new ArrayList<Long>();
+                for (Long pid : pingIdToDate.keySet()) {
+                    if (pid == pingId) {
+                        int time = pingIdToDate.get(pid);
+                        int pingTime = (int) (System.currentTimeMillis() / 1000) - time;
 
-                    if (Math.abs(pingTime) < 10) {
-                        currentPingTime = (pingTime + currentPingTime) / 2;
+                        if (Math.abs(pingTime) < 10) {
+                            currentPingTime = (pingTime + currentPingTime) / 2;
 
-                        if (messageId != 0) {
-                            long timeMessage = getTimeFromMsgId(messageId);
-                            long currentTime = System.currentTimeMillis();
-                            timeDifference = (int)((timeMessage - currentTime) / 1000 - currentPingTime / 2.0);
+                            if (messageId != 0) {
+                                long timeMessage = getTimeFromMsgId(messageId);
+                                long currentTime = System.currentTimeMillis();
+                                timeDifference = (int) ((timeMessage - currentTime) / 1000 - currentPingTime / 2.0);
+                            }
                         }
+                        itemsToDelete.add(pid);
+                    } else if (pid < pingId) {
+                        itemsToDelete.add(pid);
                     }
-                    itemsToDelete.add(pid);
-                } else if (pid < pingId) {
-                    itemsToDelete.add(pid);
                 }
-            }
-            for (Long pid : itemsToDelete) {
-                pingIdToDate.remove(pid);
+                for (Long pid : itemsToDelete) {
+                    pingIdToDate.remove(pid);
+                }
+            } else {
+                sendingPushPing = false;
             }
         } else if (message instanceof TLRPC.TL_futuresalts) {
             TLRPC.TL_futuresalts futureSalts = (TLRPC.TL_futuresalts)message;
@@ -2345,17 +2354,21 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
         TLRPC.TL_ping_delay_disconnect ping = new TLRPC.TL_ping_delay_disconnect();
         ping.ping_id = nextPingId++;
-        ping.disconnect_delay = 35;
-        pingIdToDate.put(ping.ping_id, (int)(System.currentTimeMillis() / 1000));
-        if (pingIdToDate.size() > 20) {
-            ArrayList<Long> itemsToDelete = new ArrayList<Long>();
-            for (Long pid : pingIdToDate.keySet()) {
-                if (pid < nextPingId - 10) {
-                    itemsToDelete.add(pid);
+        if ((connection.transportRequestClass & RPCRequest.RPCRequestClassPush) != 0) {
+            ping.disconnect_delay = 60 * 7;
+        } else {
+            ping.disconnect_delay = 35;
+            pingIdToDate.put(ping.ping_id, (int) (System.currentTimeMillis() / 1000));
+            if (pingIdToDate.size() > 20) {
+                ArrayList<Long> itemsToDelete = new ArrayList<Long>();
+                for (Long pid : pingIdToDate.keySet()) {
+                    if (pid < nextPingId - 10) {
+                        itemsToDelete.add(pid);
+                    }
                 }
-            }
-            for (Long pid : itemsToDelete) {
-                pingIdToDate.remove(pid);
+                for (Long pid : itemsToDelete) {
+                    pingIdToDate.remove(pid);
+                }
             }
         }
 
@@ -2377,6 +2390,9 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         if (connection != null && (push || !push && connection.channelToken != 0)) {
             ByteBufferDesc transportData = generatePingData(connection);
             if (transportData != null) {
+                if (push) {
+                    sendingPushPing = true;
+                }
                 connection.sendData(null, transportData, false);
             }
         }
@@ -2558,6 +2574,9 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     NotificationCenter.getInstance().postNotificationName(703, stateCopy);
                 }
             });
+        } else if ((connection.transportRequestClass & RPCRequest.RPCRequestClassPush) != 0) {
+            sendingPushPing = false;
+            lastPushPingTime = System.currentTimeMillis() - 60000 * 3 + 5000;
         }
     }
 
@@ -2566,6 +2585,10 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         Datacenter datacenter = datacenterWithId(connection.getDatacenterId());
         if (datacenter.authKey != null) {
             processRequestQueue(connection.transportRequestClass, connection.getDatacenterId());
+            if ((connection.transportRequestClass & RPCRequest.RPCRequestClassPush) != 0) {
+                sendingPushPing = false;
+                lastPushPingTime = System.currentTimeMillis() - 60000 * 3 + 10000;
+            }
         }
     }
 

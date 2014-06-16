@@ -148,21 +148,31 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     if (id == -1) {
                         finishFragment();
                     } else if (id == block_contact) {
-                        TLRPC.User user = MessagesController.getInstance().users.get(user_id);
-                        if (user == null) {
-                            return;
-                        }
-                        TLRPC.TL_contacts_block req = new TLRPC.TL_contacts_block();
-                        req.id = MessagesController.getInputUser(user);
-                        TLRPC.TL_contactBlocked blocked = new TLRPC.TL_contactBlocked();
-                        blocked.user_id = user_id;
-                        blocked.date = (int)(System.currentTimeMillis() / 1000);
-                        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
+                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                             @Override
-                            public void run(TLObject response, TLRPC.TL_error error) {
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+                                if (user == null) {
+                                    return;
+                                }
+                                TLRPC.TL_contacts_block req = new TLRPC.TL_contacts_block();
+                                req.id = MessagesController.getInputUser(user);
+                                TLRPC.TL_contactBlocked blocked = new TLRPC.TL_contactBlocked();
+                                blocked.user_id = user_id;
+                                blocked.date = (int)(System.currentTimeMillis() / 1000);
+                                ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                                    @Override
+                                    public void run(TLObject response, TLRPC.TL_error error) {
 
+                                    }
+                                }, null, true, RPCRequest.RPCRequestClassGeneric);
                             }
-                        }, null, true, RPCRequest.RPCRequestClassGeneric);
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showAlertDialog(builder);
                     } else if (id == add_contact) {
                         TLRPC.User user = MessagesController.getInstance().users.get(user_id);
                         Bundle args = new Bundle();

@@ -377,7 +377,7 @@ public class ActionBarLayer extends FrameLayout {
         }
         actionMode.setVisibility(GONE);
         if (backButtonFrameLayout != null) {
-            backButtonFrameLayout.setVisibility(VISIBLE);
+            backButtonFrameLayout.setVisibility(isSearchFieldVisible || actionOverlay == null || actionOverlay.getVisibility() == GONE ? VISIBLE : INVISIBLE);
         }
         if (menu != null) {
             menu.setVisibility(VISIBLE);
@@ -471,10 +471,10 @@ public class ActionBarLayer extends FrameLayout {
             return;
         }
         isBackOverlayVisible = visible;
-        positionBackOverlay(getMeasuredWidth(), getMeasuredHeight());
         if (visible) {
             ((ActionBarActivity)getContext()).onOverlayShow(actionOverlay, parentFragment);
         }
+        positionBackOverlay(getMeasuredWidth(), getMeasuredHeight());
     }
 
     private void positionBackOverlay(int widthMeasureSpec, int heightMeasureSpec) {

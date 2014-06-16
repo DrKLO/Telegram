@@ -13,11 +13,14 @@ import java.io.FileInputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Locale;
+import java.util.concurrent.Semaphore;
 
 public class FileUploadOperation {
     private int uploadChunkSize = 1024 * 32;
     private String uploadingFilePath;
+    private String originalPath;
     public int state = 0;
     private byte[] readBuffer;
     public FileUploadOperationDelegate delegate;
@@ -30,6 +33,7 @@ public class FileUploadOperation {
     private long currentUploaded = 0;
     private byte[] key;
     private byte[] iv;
+    private byte[] ivChange;
     private int fingerprint;
     private boolean isBigFile = false;
     FileInputStream stream;
@@ -41,12 +45,16 @@ public class FileUploadOperation {
         public abstract void didChangedUploadProgress(FileUploadOperation operation, float progress);
     }
 
-    public FileUploadOperation(String location, byte[] keyarr, byte[] ivarr) {
+    public FileUploadOperation(String location, String originalLocaltion, boolean encrypted) {
         uploadingFilePath = location;
-        if (ivarr != null && keyarr != null) {
+        originalPath = originalLocaltion;
+        if (encrypted) {
             iv = new byte[32];
-            key = keyarr;
-            System.arraycopy(ivarr, 0, iv, 0, 32);
+            key = new byte[32];
+            ivChange = new byte[32];
+            Utilities.random.nextBytes(iv);
+            Utilities.random.nextBytes(key);
+            System.arraycopy(iv, 0, ivChange, 0, 32);
             try {
                 java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
                 byte[] arr = new byte[64];
@@ -98,6 +106,26 @@ public class FileUploadOperation {
 
         try {
             if (stream == null) {
+                if (originalPath != null) {
+                    Semaphore semaphore = new Semaphore(0);
+                    ArrayList<TLObject> result = new ArrayList<TLObject>();
+                    String path = originalPath;
+                    if (key != null) {
+                        path += "e";
+                    }
+                    MessagesStorage.getInstance().getSentFile(path, semaphore, result);
+                    semaphore.acquire();
+                    if (!result.isEmpty()) {
+                        TLObject object = result.get(0);
+                        if (object instanceof TLRPC.InputFile) {
+                            delegate.didFinishUploadingFile(FileUploadOperation.this, (TLRPC.InputFile) object, null);
+                            return;
+                        } else if (object instanceof TLRPC.InputEncryptedFile) {
+                            delegate.didFinishUploadingFile(FileUploadOperation.this, null, (TLRPC.InputEncryptedFile) object);
+                            return;
+                        }
+                    }
+                }
                 File cacheFile = new File(uploadingFilePath);
                 stream = new FileInputStream(cacheFile);
                 totalFileSize = cacheFile.length();
@@ -106,7 +134,7 @@ public class FileUploadOperation {
                     isBigFile = true;
                 }
 
-                uploadChunkSize = (int)Math.max(32, Math.ceil(totalFileSize / (1024.0f * 3000)));
+                uploadChunkSize = (int) Math.max(32, Math.ceil(totalFileSize / (1024.0f * 3000)));
                 if (1024 % uploadChunkSize != 0) {
                     int chunkSize = 64;
                     while (uploadChunkSize > chunkSize) {
@@ -116,7 +144,7 @@ public class FileUploadOperation {
                 }
 
                 uploadChunkSize *= 1024;
-                totalPartsCount = (int)Math.ceil((float)totalFileSize / (float)uploadChunkSize);
+                totalPartsCount = (int) Math.ceil((float) totalFileSize / (float) uploadChunkSize);
                 readBuffer = new byte[uploadChunkSize];
             }
 
@@ -134,7 +162,7 @@ public class FileUploadOperation {
                 for (int a = 0; a < toAdd; a++) {
                     sendBuffer.writeByte(0);
                 }
-                Utilities.aesIgeEncryption2(sendBuffer.buffer, key, iv, true, true, readed + toAdd);
+                Utilities.aesIgeEncryption2(sendBuffer.buffer, key, ivChange, true, true, readed + toAdd);
             }
             sendBuffer.rewind();
             if (!isBigFile) {
@@ -161,55 +189,63 @@ public class FileUploadOperation {
             return;
         }
         requestToken = ConnectionsManager.getInstance().performRpc(finalRequest, new RPCRequest.RPCRequestDelegate() {
-                    @Override
-                    public void run(TLObject response, TLRPC.TL_error error) {
-                        requestToken = 0;
-                        if (error == null) {
-                            if (response instanceof TLRPC.TL_boolTrue) {
-                                currentPartNum++;
-                                delegate.didChangedUploadProgress(FileUploadOperation.this, (float)currentUploaded / (float)totalFileSize);
-                                if (isLastPart) {
-                                    state = 3;
-                                    if (key == null) {
-                                        TLRPC.InputFile result;
-                                        if (isBigFile) {
-                                            result = new TLRPC.TL_inputFileBig();
-                                        } else {
-                                            result = new TLRPC.TL_inputFile();
-                                            result.md5_checksum = String.format(Locale.US, "%32s", new BigInteger(1, mdEnc.digest()).toString(16)).replace(' ', '0');
-                                        }
-                                        result.parts = currentPartNum;
-                                        result.id = currentFileId;
-                                        result.name = uploadingFilePath.substring(uploadingFilePath.lastIndexOf("/") + 1);
-                                        delegate.didFinishUploadingFile(FileUploadOperation.this, result, null);
-                                    } else {
-                                        TLRPC.InputEncryptedFile result;
-                                        if (isBigFile) {
-                                            result = new TLRPC.TL_inputEncryptedFileBigUploaded();
-                                        } else {
-                                            result = new TLRPC.TL_inputEncryptedFileUploaded();
-                                            result.md5_checksum = String.format(Locale.US, "%32s", new BigInteger(1, mdEnc.digest()).toString(16)).replace(' ', '0');
-                                        }
-                                        result.parts = currentPartNum;
-                                        result.id = currentFileId;
-                                        result.key_fingerprint = fingerprint;
-                                        delegate.didFinishUploadingFile(FileUploadOperation.this, null, result);
-                                    }
+            @Override
+            public void run(TLObject response, TLRPC.TL_error error) {
+                requestToken = 0;
+                if (error == null) {
+                    if (response instanceof TLRPC.TL_boolTrue) {
+                        currentPartNum++;
+                        delegate.didChangedUploadProgress(FileUploadOperation.this, (float) currentUploaded / (float) totalFileSize);
+                        if (isLastPart) {
+                            state = 3;
+                            if (key == null) {
+                                TLRPC.InputFile result;
+                                if (isBigFile) {
+                                    result = new TLRPC.TL_inputFileBig();
                                 } else {
-                                    startUploadRequest();
+                                    result = new TLRPC.TL_inputFile();
+                                    result.md5_checksum = String.format(Locale.US, "%32s", new BigInteger(1, mdEnc.digest()).toString(16)).replace(' ', '0');
+                                }
+                                result.parts = currentPartNum;
+                                result.id = currentFileId;
+                                result.name = uploadingFilePath.substring(uploadingFilePath.lastIndexOf("/") + 1);
+                                delegate.didFinishUploadingFile(FileUploadOperation.this, result, null);
+                                if (originalPath != null) {
+                                    MessagesStorage.getInstance().putSentFile(originalPath, result, null, null);
                                 }
                             } else {
-                                delegate.didFailedUploadingFile(FileUploadOperation.this);
+                                TLRPC.InputEncryptedFile result;
+                                if (isBigFile) {
+                                    result = new TLRPC.TL_inputEncryptedFileBigUploaded();
+                                } else {
+                                    result = new TLRPC.TL_inputEncryptedFileUploaded();
+                                    result.md5_checksum = String.format(Locale.US, "%32s", new BigInteger(1, mdEnc.digest()).toString(16)).replace(' ', '0');
+                                }
+                                result.parts = currentPartNum;
+                                result.id = currentFileId;
+                                result.key_fingerprint = fingerprint;
+                                result.iv = iv;
+                                result.key = key;
+                                delegate.didFinishUploadingFile(FileUploadOperation.this, null, result);
+                                if (originalPath != null) {
+                                    MessagesStorage.getInstance().putSentFile(originalPath + "e", result, key, iv);
+                                }
                             }
                         } else {
-                            delegate.didFailedUploadingFile(FileUploadOperation.this);
+                            startUploadRequest();
                         }
+                    } else {
+                        delegate.didFailedUploadingFile(FileUploadOperation.this);
                     }
-                }, new RPCRequest.RPCProgressDelegate() {
-                    @Override
-                    public void progress(int length, int progress) {
+                } else {
+                    delegate.didFailedUploadingFile(FileUploadOperation.this);
+                }
+            }
+        }, new RPCRequest.RPCProgressDelegate() {
+            @Override
+            public void progress(int length, int progress) {
 
-                    }
-                }, null, true, RPCRequest.RPCRequestClassUploadMedia, ConnectionsManager.DEFAULT_DATACENTER_ID);
+            }
+        }, null, true, RPCRequest.RPCRequestClassUploadMedia, ConnectionsManager.DEFAULT_DATACENTER_ID);
     }
 }

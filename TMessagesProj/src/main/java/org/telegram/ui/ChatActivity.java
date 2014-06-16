@@ -1646,17 +1646,19 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 String tempPath = Utilities.getPath(data.getData());
 
                 boolean isGif = false;
+                String originalPath = null;
                 if (tempPath != null && tempPath.endsWith(".gif")) {
                     isGif = true;
                 } else if (tempPath == null) {
                     isGif = MediaController.isGif(data.getData());
                     if (isGif) {
+                        originalPath = data.toString();
                         tempPath = MediaController.copyDocumentToCache(data.getData(), "gif");
                     }
                 }
 
                 if (tempPath != null && isGif) {
-                    processSendingDocument(tempPath);
+                    processSendingDocument(tempPath, originalPath);
                 } else {
                     processSendingPhoto(null, data.getData());
                 }
@@ -1699,15 +1701,17 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     showAttachmentError();
                     return;
                 }
+                String originalPath = null;
                 String tempPath = Utilities.getPath(data.getData());
                 if (tempPath == null) {
+                    originalPath = data.toString();
                     tempPath = MediaController.copyDocumentToCache(data.getData(), "file");
                 }
                 if (tempPath == null) {
                     showAttachmentError();
                     return;
                 }
-                processSendingDocument(tempPath);
+                processSendingDocument(tempPath, originalPath);
             }
         }
     }
@@ -1751,7 +1755,11 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         }
         TLRPC.TL_photo photo = MessagesController.getInstance().generatePhotoSizes(imageFilePath, imageUri);
         if (photo != null) {
-            MessagesController.getInstance().sendMessage(photo, dialog_id);
+            String originalPath = imageFilePath;
+            if (originalPath == null && imageUri != null) {
+                originalPath = imageUri.toString();
+            }
+            MessagesController.getInstance().sendMessage(photo, originalPath, dialog_id);
             if (chatListView != null) {
                 chatListView.setSelection(messages.size() + 1);
             }
@@ -1790,16 +1798,21 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         Utilities.RunOnUIThread(new Runnable() {
                             @Override
                             public void run() {
-                                processSendingDocument(finalPath);
+                                processSendingDocument(finalPath, null);
                             }
                         });
                     } else {
                         final TLRPC.TL_photo photo = MessagesController.getInstance().generatePhotoSizes(path, uri);
+                        String originalPath = path;
+                        if (originalPath == null && uri != null) {
+                            originalPath = uri.toString();
+                        }
+                        final String originalPathFinal = originalPath;
                         Utilities.RunOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 if (photo != null) {
-                                    MessagesController.getInstance().sendMessage(photo, dialog_id);
+                                    MessagesController.getInstance().sendMessage(photo, originalPathFinal, dialog_id);
                                     if (chatListView != null) {
                                         chatListView.setSelection(messages.size() + 1);
                                     }
@@ -1813,7 +1826,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         }).start();
     }
 
-    public void processSendingDocument(String documentFilePath) {
+    public void processSendingDocument(String documentFilePath, String originalPathOverride) {
         if (documentFilePath == null || documentFilePath.length() == 0) {
             return;
         }
@@ -1864,7 +1877,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             document.thumb = new TLRPC.TL_photoSizeEmpty();
             document.thumb.type = "s";
         }
-        MessagesController.getInstance().sendMessage(document, dialog_id);
+        MessagesController.getInstance().sendMessage(document, originalPathOverride == null ? (documentFilePath + document.size) : originalPathOverride, dialog_id);
     }
 
     public void processSendingVideo(final String videoPath) {
@@ -1899,7 +1912,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         mp.release();
 
         MediaStore.Video.Media media = new MediaStore.Video.Media();
-        MessagesController.getInstance().sendMessage(video, dialog_id);
+        MessagesController.getInstance().sendMessage(video, videoPath, dialog_id);
         if (chatListView != null) {
             chatListView.setSelection(messages.size() + 1);
         }
@@ -3127,7 +3140,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         MessagesController.getInstance().sendMessage(selectedObject, dialog_id);
                     } else {
                         TLRPC.TL_photo photo = (TLRPC.TL_photo)selectedObject.messageOwner.media.photo;
-                        MessagesController.getInstance().sendMessage(photo, dialog_id);
+                        MessagesController.getInstance().sendMessage(photo, selectedObject.messageOwner.attachPath, dialog_id);
                     }
                 } else if (selectedObject.type == 3) {
                     if (selectedObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
@@ -3135,7 +3148,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     } else {
                         TLRPC.TL_video video = (TLRPC.TL_video)selectedObject.messageOwner.media.video;
                         video.path = selectedObject.messageOwner.attachPath;
-                        MessagesController.getInstance().sendMessage(video, dialog_id);
+                        MessagesController.getInstance().sendMessage(video, video.path, dialog_id);
                     }
                 } else if (selectedObject.type == 12 || selectedObject.type == 13) {
                     TLRPC.User user = MessagesController.getInstance().users.get(selectedObject.messageOwner.media.user_id);
@@ -3143,7 +3156,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 } else if (selectedObject.type == 8 || selectedObject.type == 9) {
                     TLRPC.TL_document document = (TLRPC.TL_document)selectedObject.messageOwner.media.document;
                     document.path = selectedObject.messageOwner.attachPath;
-                    MessagesController.getInstance().sendMessage(document, dialog_id);
+                    MessagesController.getInstance().sendMessage(document, document.path, dialog_id);
                 } else if (selectedObject.type == 2) {
                     TLRPC.TL_audio audio = (TLRPC.TL_audio)selectedObject.messageOwner.media.audio;
                     audio.path = selectedObject.messageOwner.attachPath;
@@ -3201,43 +3214,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     }
 
     @Override
-    public void didSelectFile(DocumentSelectActivity activity, String path, String name, String ext, long size) {
+    public void didSelectFile(DocumentSelectActivity activity, String path) {
         activity.finishFragment();
-        TLRPC.TL_document document = new TLRPC.TL_document();
-        document.id = 0;
-        document.user_id = UserConfig.getClientUserId();
-        document.date = ConnectionsManager.getInstance().getCurrentTime();
-        document.file_name = name;
-        document.size = (int)size;
-        document.dc_id = 0;
-        document.path = path;
-        if (ext.length() != 0) {
-            MimeTypeMap myMime = MimeTypeMap.getSingleton();
-            String mimeType = myMime.getMimeTypeFromExtension(ext.toLowerCase());
-            if (mimeType != null) {
-                document.mime_type = mimeType;
-            } else {
-                document.mime_type = "application/octet-stream";
-            }
-        } else {
-            document.mime_type = "application/octet-stream";
-        }
-        if (document.mime_type.equals("image/gif")) {
-            try {
-                Bitmap bitmap = FileLoader.loadBitmap(path, null, 90, 90);
-                if (bitmap != null) {
-                    document.thumb = FileLoader.scaleAndSaveImage(bitmap, 90, 90, 80, currentEncryptedChat != null);
-                    document.thumb.type = "s";
-                }
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
-            }
-        }
-        if (document.thumb == null) {
-            document.thumb = new TLRPC.TL_photoSizeEmpty();
-            document.thumb.type = "s";
-        }
-        MessagesController.getInstance().sendMessage(document, dialog_id);
+        processSendingDocument(path, null);
     }
 
     @Override
@@ -3841,10 +3820,14 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         photoImage.setImage(message.messageOwner.action.newUserPhoto.photo_small, "50_50", Utilities.getUserAvatarForId(currentUser.id));
                     } else {
                         PhotoObject photo = PhotoObject.getClosestImageWithSize(message.photoThumbs, Utilities.dp(64), Utilities.dp(64));
-                        if (photo.image != null) {
-                            photoImage.setImageBitmap(photo.image);
+                        if (photo != null) {
+                            if (photo.image != null) {
+                                photoImage.setImageBitmap(photo.image);
+                            } else {
+                                photoImage.setImage(photo.photoOwner.location, "50_50", Utilities.getGroupAvatarForId(currentChat.id));
+                            }
                         } else {
-                            photoImage.setImage(photo.photoOwner.location, "50_50", Utilities.getGroupAvatarForId(currentChat.id));
+                            photoImage.setImageResource(Utilities.getGroupAvatarForId(currentChat.id));
                         }
                     }
                     photoImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(message), false);

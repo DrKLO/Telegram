@@ -747,6 +747,9 @@ public class Utilities {
     }
 
     public static String MD5(String md5) {
+        if (md5 == null) {
+            return null;
+        }
         try {
             java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
             byte[] array = md.digest(md5.getBytes());

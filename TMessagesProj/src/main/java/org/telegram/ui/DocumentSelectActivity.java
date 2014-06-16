@@ -45,7 +45,7 @@ import java.util.HashMap;
 public class DocumentSelectActivity extends BaseFragment {
 
     public static abstract interface DocumentSelectActivityDelegate {
-        public void didSelectFile(DocumentSelectActivity activity, String path, String name, String ext, long size);
+        public void didSelectFile(DocumentSelectActivity activity, String path);
         public void startDocumentSelectActivity();
     }
 
@@ -186,7 +186,7 @@ public class DocumentSelectActivity extends BaseFragment {
                             return;
                         }
                         if (delegate != null) {
-                            delegate.didSelectFile(DocumentSelectActivity.this, file.getAbsolutePath(), item.title, item.ext, file.length());
+                            delegate.didSelectFile(DocumentSelectActivity.this, file.getAbsolutePath());
                         }
                     }
                 }

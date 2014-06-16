@@ -47,28 +47,44 @@ public class NativeLoader {
         }
     }
 
+    private static OutputStreamWriter streamWriter = null;
+    private static FileOutputStream stream = null;
+
+    private static void closeStream() {
+        try {
+            if (stream != null) {
+                streamWriter.close();
+                stream.close();
+                stream = null;
+                streamWriter = null;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void writeNativeError(Context context, String info, Throwable throwable) {
         try {
-            File sdCard = context.getFilesDir();
-            if (sdCard == null) {
-                return;
-            }
-            File file = new File(sdCard, "nativeer.log");
-            if (file == null) {
-                return;
-            }
+            if (stream == null) {
+                File sdCard = context.getFilesDir();
+                if (sdCard == null) {
+                    return;
+                }
+                File file = new File(sdCard, "nativeer.log");
+                if (file == null) {
+                    return;
+                }
 
-            FileOutputStream stream = new FileOutputStream(file);
-            OutputStreamWriter streamWriter = new OutputStreamWriter(stream);
-            streamWriter.write("info" + "\n");
+                stream = new FileOutputStream(file);
+                streamWriter = new OutputStreamWriter(stream);
+            }
+            streamWriter.write(info + "\n");
             streamWriter.write(throwable + "\n");
             StackTraceElement[] stack = throwable.getStackTrace();
             for (StackTraceElement el : stack) {
                 streamWriter.write(el + "\n");
             }
             streamWriter.flush();
-            streamWriter.close();
-            stream.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -147,9 +163,9 @@ public class NativeLoader {
             return;
         }
 
-        try {
-            cleanNativeLog(context);
+        cleanNativeLog(context);
 
+        try {
             String folder = null;
             long libSize = 0;
             long libSize2 = 0;
@@ -191,6 +207,7 @@ public class NativeLoader {
                     try {
                         System.loadLibrary("tmessages");
                         nativeLoaded = true;
+                        closeStream();
                         return;
                     } catch (Error e) {
                         FileLog.e("tmessages", e);
@@ -206,6 +223,7 @@ public class NativeLoader {
                         FileLog.d("tmessages", "Load local lib");
                         System.load(destLocalFile.getAbsolutePath());
                         nativeLoaded = true;
+                        closeStream();
                         return;
                     } catch (Error e) {
                         FileLog.e("tmessages", e);
@@ -230,6 +248,7 @@ public class NativeLoader {
         try {
             System.loadLibrary("tmessages");
             nativeLoaded = true;
+            closeStream();
         } catch (Error e) {
             writeNativeError(context, "last chance", e);
             FileLog.e("tmessages", e);

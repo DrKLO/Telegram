@@ -85,7 +85,7 @@ public class CountrySelectActivity extends BaseFragment {
                 }
                 arr.add(c);
             }
-            reader.close();//TODO
+            reader.close();
             stream.close();
         } catch (Exception e) {
             FileLog.e("tmessages", e);
