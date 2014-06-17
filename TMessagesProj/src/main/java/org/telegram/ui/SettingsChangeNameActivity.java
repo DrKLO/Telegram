@@ -65,9 +65,9 @@ public class SettingsChangeNameActivity extends BaseFragment {
 
             fragmentView = inflater.inflate(R.layout.settings_change_name_layout, container, false);
 
-            TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.clientUserId);
+            TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.getClientUserId());
             if (user == null) {
-                user = UserConfig.currentUser;
+                user = UserConfig.getCurrentUser();
             }
 
             firstNameField = (EditText)fragmentView.findViewById(R.id.first_name_field);
@@ -126,12 +126,12 @@ public class SettingsChangeNameActivity extends BaseFragment {
 
     private void saveName() {
         TLRPC.TL_account_updateProfile req = new TLRPC.TL_account_updateProfile();
-        if (UserConfig.currentUser == null || lastNameField.getText() == null || firstNameField.getText() == null) {
+        if (UserConfig.getCurrentUser() == null || lastNameField.getText() == null || firstNameField.getText() == null) {
             return;
         }
-        UserConfig.currentUser.first_name = req.first_name = firstNameField.getText().toString();
-        UserConfig.currentUser.last_name = req.last_name = lastNameField.getText().toString();
-        TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.clientUserId);
+        UserConfig.getCurrentUser().first_name = req.first_name = firstNameField.getText().toString();
+        UserConfig.getCurrentUser().last_name = req.last_name = lastNameField.getText().toString();
+        TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.getClientUserId());
         if (user != null) {
             user.first_name = req.first_name;
             user.last_name = req.last_name;

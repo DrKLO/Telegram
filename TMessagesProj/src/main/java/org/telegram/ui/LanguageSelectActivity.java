@@ -143,7 +143,7 @@ public class LanguageSelectActivity extends BaseFragment {
                             localeInfo = LocaleController.getInstance().sortedLanguages.get(i);
                         }
                     }
-                    if (localeInfo == null || localeInfo.pathToFile == null) {
+                    if (localeInfo == null || localeInfo.pathToFile == null || getParentActivity() == null) {
                         return false;
                     }
                     final LocaleController.LocaleInfo finalLocaleInfo = localeInfo;
@@ -232,7 +232,7 @@ public class LanguageSelectActivity extends BaseFragment {
     }
 
     private void processSearch(final String query) {
-        Utilities.globalQueue.postRunnable(new Runnable() {
+        Utilities.searchQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
 

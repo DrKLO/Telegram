@@ -107,7 +107,7 @@ public class MessageObject {
                         if (who != null && fromUser != null) {
                             if (isFromMe()) {
                                 messageText = LocaleController.getString("ActionYouKickUser", R.string.ActionYouKickUser).replace("un2", Utilities.formatName(who.first_name, who.last_name));
-                            } else if (message.action.user_id == UserConfig.clientUserId) {
+                            } else if (message.action.user_id == UserConfig.getClientUserId()) {
                                 messageText = LocaleController.getString("ActionKickUserYou", R.string.ActionKickUserYou).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
                             } else {
                                 messageText = LocaleController.getString("ActionKickUser", R.string.ActionKickUser).replace("un2", Utilities.formatName(who.first_name, who.last_name)).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
@@ -124,7 +124,7 @@ public class MessageObject {
                     if (whoUser != null && fromUser != null) {
                         if (isFromMe()) {
                             messageText = LocaleController.getString("ActionYouAddUser", R.string.ActionYouAddUser).replace("un2", Utilities.formatName(whoUser.first_name, whoUser.last_name));
-                        } else if (message.action.user_id == UserConfig.clientUserId) {
+                        } else if (message.action.user_id == UserConfig.getClientUserId()) {
                             messageText = LocaleController.getString("ActionAddUserYou", R.string.ActionAddUserYou).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
                         } else {
                             messageText = LocaleController.getString("ActionAddUser", R.string.ActionAddUser).replace("un2", Utilities.formatName(whoUser.first_name, whoUser.last_name)).replace("un1", Utilities.formatName(fromUser.first_name, fromUser.last_name));
@@ -206,7 +206,7 @@ public class MessageObject {
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionLoginUnknownLocation) {
                     String date = String.format("%s %s %s", LocaleController.formatterYear.format(((long)message.date) * 1000), LocaleController.getString("OtherAt", R.string.OtherAt), LocaleController.formatterDay.format(((long)message.date) * 1000));
-                    messageText = LocaleController.formatString("NotificationUnrecognizedDevice", R.string.NotificationUnrecognizedDevice, UserConfig.currentUser.first_name, date, message.action.title, message.action.address);
+                    messageText = LocaleController.formatString("NotificationUnrecognizedDevice", R.string.NotificationUnrecognizedDevice, UserConfig.getCurrentUser().first_name, date, message.action.title, message.action.address);
                 } else if (message.action instanceof TLRPC.TL_messageActionUserJoined) {
                     if (fromUser != null) {
                         messageText = LocaleController.formatString("NotificationContactJoined", R.string.NotificationContactJoined, Utilities.formatName(fromUser.first_name, fromUser.last_name));
@@ -537,6 +537,6 @@ public class MessageObject {
     }
 
     public boolean isFromMe() {
-        return messageOwner.from_id == UserConfig.clientUserId;
+        return messageOwner.from_id == UserConfig.getClientUserId();
     }
 }

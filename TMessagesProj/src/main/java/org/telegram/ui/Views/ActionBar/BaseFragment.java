@@ -28,6 +28,7 @@ public class BaseFragment {
     protected int classGuid = 0;
     protected Bundle arguments;
     private AlertDialog visibleDialog = null;
+    protected boolean swipeBackEnabled = true;
 
     public BaseFragment() {
         classGuid = ConnectionsManager.getInstance().generateClassGuid();
@@ -69,10 +70,14 @@ public class BaseFragment {
     }
 
     public void finishFragment() {
+        finishFragment(true);
+    }
+
+    public void finishFragment(boolean animated) {
         if (isFinished || parentActivity == null) {
             return;
         }
-        parentActivity.closeLastFragment();
+        parentActivity.closeLastFragment(animated);
     }
 
     public void removeSelfFromStack() {
@@ -196,9 +201,13 @@ public class BaseFragment {
         if (parentActivity == null || parentActivity.checkTransitionAnimation() || parentActivity.animationInProgress || parentActivity.startedTracking) {
             return;
         }
-        if (visibleDialog != null && visibleDialog.isShowing()) {
-            visibleDialog.dismiss();
-            visibleDialog = null;
+        try {
+            if (visibleDialog != null) {
+                visibleDialog.dismiss();
+                visibleDialog = null;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
         visibleDialog = builder.show();
         visibleDialog.setCanceledOnTouchOutside(true);

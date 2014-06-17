@@ -48,6 +48,7 @@ import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.Views.ColorPickerView;
 import org.telegram.ui.Views.IdenticonView;
 
 import java.util.ArrayList;
@@ -79,6 +80,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     private int settingsSoundRow;
     private int sharedMediaSectionRow;
     private int sharedMediaRow;
+    private int settingsLedRow;
     private int rowCount = 0;
 
     public UserProfileActivity(Bundle args) {
@@ -126,6 +128,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         }
         settingsNotificationsRow = rowCount++;
         settingsVibrateRow = rowCount++;
+        settingsLedRow = rowCount++;
         settingsSoundRow = rowCount++;
         sharedMediaSectionRow = rowCount++;
         sharedMediaRow = rowCount++;
@@ -148,21 +151,31 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     if (id == -1) {
                         finishFragment();
                     } else if (id == block_contact) {
-                        TLRPC.User user = MessagesController.getInstance().users.get(user_id);
-                        if (user == null) {
-                            return;
-                        }
-                        TLRPC.TL_contacts_block req = new TLRPC.TL_contacts_block();
-                        req.id = MessagesController.getInputUser(user);
-                        TLRPC.TL_contactBlocked blocked = new TLRPC.TL_contactBlocked();
-                        blocked.user_id = user_id;
-                        blocked.date = (int)(System.currentTimeMillis() / 1000);
-                        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
+                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                             @Override
-                            public void run(TLObject response, TLRPC.TL_error error) {
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+                                if (user == null) {
+                                    return;
+                                }
+                                TLRPC.TL_contacts_block req = new TLRPC.TL_contacts_block();
+                                req.id = MessagesController.getInputUser(user);
+                                TLRPC.TL_contactBlocked blocked = new TLRPC.TL_contactBlocked();
+                                blocked.user_id = user_id;
+                                blocked.date = (int)(System.currentTimeMillis() / 1000);
+                                ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                                    @Override
+                                    public void run(TLObject response, TLRPC.TL_error error) {
 
+                                    }
+                                }, null, true, RPCRequest.RPCRequestClassGeneric);
                             }
-                        }, null, true, RPCRequest.RPCRequestClassGeneric);
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showAlertDialog(builder);
                     } else if (id == add_contact) {
                         TLRPC.User user = MessagesController.getInstance().users.get(user_id);
                         Bundle args = new Bundle();
@@ -181,7 +194,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         presentFragment(new ContactAddActivity(args));
                     } else if (id == delete_contact) {
                         final TLRPC.User user = MessagesController.getInstance().users.get(user_id);
-                        if (user == null) {
+                        if (user == null || getParentActivity() == null) {
                             return;
                         }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
@@ -213,6 +226,9 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             startSecretButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
@@ -239,6 +255,9 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
                     if (i == settingsVibrateRow || i == settingsNotificationsRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                         builder.setItems(new CharSequence[] {
@@ -313,6 +332,9 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         args.putInt("chat_id", (int)(dialog_id >> 32));
                         presentFragment(new IdenticonActivity(args));
                     } else if (i == settingsTimerRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("MessageLifetime", R.string.MessageLifetime));
                         builder.setItems(new CharSequence[]{
@@ -353,6 +375,57 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showAlertDialog(builder);
+                    } else if (i == settingsLedRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        view = li.inflate(R.layout.settings_color_dialog_layout, null, false);
+                        final ColorPickerView colorPickerView = (ColorPickerView)view.findViewById(R.id.color_picker);
+
+                        final String key = dialog_id == 0 ? "color_" + user_id : "color_" + dialog_id;
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        if (preferences.contains(key)) {
+                            colorPickerView.setOldCenterColor(preferences.getInt(key, 0xff00ff00));
+                        } else {
+                            colorPickerView.setOldCenterColor(preferences.getInt("MessagesLed", 0xff00ff00));
+                        }
+
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("LedColor", R.string.LedColor));
+                        builder.setView(view);
+                        builder.setPositiveButton(LocaleController.getString("Set", R.string.Set), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int which) {
+                                final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                editor.putInt(key, colorPickerView.getColor());
+                                editor.commit();
+                                listView.invalidateViews();
+                            }
+                        });
+                        builder.setNeutralButton(LocaleController.getString("Disabled", R.string.Disabled), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                editor.putInt(key, 0);
+                                editor.commit();
+                                listView.invalidateViews();
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Default", R.string.Default), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                editor.remove(key);
+                                editor.commit();
+                                listView.invalidateViews();
+                            }
+                        });
                         showAlertDialog(builder);
                     }
                 }
@@ -570,7 +643,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
 
         @Override
         public boolean isEnabled(int i) {
-            return i == phoneRow || i == settingsTimerRow || i == settingsKeyRow || i == settingsNotificationsRow || i == sharedMediaRow || i == settingsSoundRow || i == settingsVibrateRow;
+            return i == phoneRow || i == settingsTimerRow || i == settingsKeyRow || i == settingsNotificationsRow || i == sharedMediaRow || i == settingsSoundRow || i == settingsVibrateRow || i == settingsLedRow;
         }
 
         @Override
@@ -657,7 +730,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     view.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            if (user.phone == null || user.phone.length() == 0) {
+                            if (user.phone == null || user.phone.length() == 0 || getParentActivity() == null) {
                                 return;
                             }
                             selectedPhone = user.phone;
@@ -827,8 +900,25 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     textView.setText(LocaleController.getString("Sound", R.string.Sound));
                     divider.setVisibility(View.INVISIBLE);
                 }
-            }
+            } else if (type == 6) {
+                if (view == null) {
+                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                    view = li.inflate(R.layout.settings_row_color_layout, viewGroup, false);
+                }
+                TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
+                View colorView = view.findViewById(R.id.settings_color);
+                View divider = view.findViewById(R.id.settings_row_divider);
+                textView.setText(LocaleController.getString("LedColor", R.string.LedColor));
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
 
+                String key = dialog_id == 0 ? "color_" + user_id : "color_" + dialog_id;
+                if (preferences.contains(key)) {
+                    colorView.setBackgroundColor(preferences.getInt(key, 0xff00ff00));
+                } else {
+                    colorView.setBackgroundColor(preferences.getInt("MessagesLed", 0xff00ff00));
+                }
+                divider.setVisibility(View.VISIBLE);
+            }
             return view;
         }
 
@@ -846,13 +936,15 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 return 4;
             } else if (i == settingsSoundRow) {
                 return 5;
+            } else if (i == settingsLedRow) {
+                return 6;
             }
             return 0;
         }
 
         @Override
         public int getViewTypeCount() {
-            return 6;
+            return 7;
         }
 
         @Override

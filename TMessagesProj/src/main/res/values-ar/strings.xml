@@ -64,7 +64,7 @@
     <string name="NoFiles">لا يوجد ملفات بعد...</string>
     <string name="FileUploadLimit">حجم الملف لا يمكن أن يكون أكبر من %1$s</string>
     <string name="NotMounted">الذاكرة غير مثبتة</string>
-    <string name="UsbActive">نقل اليو إس بي مفعل</string>
+    <string name="UsbActive">نقل USB مفعل</string>
     <string name="InternalStorage">الذاكرة الداخلية</string>
     <string name="ExternalStorage">الذاكرة الخارجية</string>
     <string name="SystemRoot">جذر النظام</string>
@@ -94,7 +94,7 @@
     <string name="Message">الرسالة</string>
     <string name="TypeMessage">أكتب رسالة</string>
     <string name="DOWNLOAD">تحميل</string>
-    <string name="Selected">محددة: %d</string>
+    <string name="Selected">تم تحديد : %d</string>
     <string name="ShareMyContactInfo">شارك جهة الاتصال الخاصة بي</string>
     <string name="AddToContacts">أضف لجهات الاتصال</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s قام بدعوتك لمحادثة سرية</string>
@@ -108,11 +108,12 @@
     <string name="FewNewMessages">%1$d رسائل جديدة</string>
     <string name="YouWereKicked">لقد تم إخراجك من هذه المجموعة</string>
     <string name="YouLeft">لقد قمت بمغادرة المجموعة</string>
-    <string name="DeleteThisGroup">حذف المجموعة</string>
+    <string name="DeleteThisGroup">حذف هذه المجموعة</string>
     <string name="DeleteThisChat">حذف هذه الدردشة</string>
     <string name="SlideToCancel">قم بالسحب للإلغاء</string>
     <string name="SaveToDownloads">حفظ في الجهاز</string>
     <string name="ApplyLocalizationFile">تطبيق ملف التعريب</string>
+    <string name="UnsupportedAttachment">Unsupported attachment</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">تم طلب محادثة سرية</string>
@@ -133,7 +134,7 @@
     <string name="NotificationMessagePhoto">%1$s قام بإرسال صورة لك</string>
     <string name="NotificationMessageVideo">%1$s قام بإرسال مقطع مرئي لك</string>
     <string name="NotificationMessageContact">%1$s قام بإرسال جهة اتصال لك</string>
-    <string name="NotificationMessageMap">%1$s قام بإرسال خريطة لك</string>
+    <string name="NotificationMessageMap">%1$s قام بإرسال موقع لك</string>
     <string name="NotificationMessageDocument">%1$s قام بإرسال مستند لك</string>
     <string name="NotificationMessageAudio">%1$s قام بإرسال مقطع صوتي لك</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
@@ -141,7 +142,7 @@
     <string name="NotificationMessageGroupPhoto">%1$s قام بإرسال صورة للمجموعة %2$s</string>
     <string name="NotificationMessageGroupVideo">%1$s قام بإرسال مقطع مرئي للمجموعة %2$s</string>
     <string name="NotificationMessageGroupContact">%1$s قام بإرسال جهة اتصال للمجموعة %2$s</string>
-    <string name="NotificationMessageGroupMap">%1$s قام بإرسال خريطة للمجموعة %2$s</string>
+    <string name="NotificationMessageGroupMap">%1$s قام بإرسال موقع للمجموعة %2$s</string>
     <string name="NotificationMessageGroupDocument">%1$s قام بإرسال مستند للمجموعة %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s قام بإرسال مقطع صوتي للمجموعة %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s قام بدعوتك للمجموعة %2$s</string>
@@ -250,14 +251,14 @@
     <string name="SendByEnter">أرسل بزر الإدخال</string>
     <string name="TerminateAllSessions">سجل الخروج من كافة الأجهزة الأخرى</string>
     <string name="AutomaticPhotoDownload">تنزيل الصور تلقائيًا</string>
-    <string name="AutomaticAudioDownload">تنزيل رسائل الصوت تلقائيا</string>
+    <string name="AutomaticAudioDownload">تنزيل رسائل الصوت تلقائياً</string>
     <string name="AutomaticPhotoDownloadGroups">المجموعات</string>
     <string name="AutomaticPhotoDownloadPrivateChats">المحادثات</string>
     <string name="Events">الأحداث</string>
     <string name="ContactJoined">اشترك صديق في تيليجرام</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">اللغة</string>
-    <string name="AskAQuestionInfo">نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحاول الرد بسرعة قدر المستطاع، لكن ربما نستغرق القليل من الوقت.<![CDATA[<br><br>]]>يرجى الإطلاع على <![CDATA[<a href="http://telegram.org/faq/ar">صفحة الأسئلة الأكثر شيوعًا</a>]]>: يوجد بها حلول للمشاكل وإجابات لمعظم الأسئلة.</string>
+    <string name="AskAQuestionInfo">نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحاول الرد بسرعة قدر المستطاع، لكن ربما نستغرق القليل من الوقت.<![CDATA[<br><br>]]>يرجى الإطلاع على <![CDATA[<a href="http://telegram.org/faq/ar">الأسئلة الشائعة عن تيليجرام</a>]]>: يوجد بها حلول للمشاكل وإجابات لمعظم الأسئلة.</string>
     <string name="AskButton">اسأل أحد المتطوعين</string>
     <string name="TelegramFaq">الأسئلة الشائعة عن تيليجرام</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq/ar</string>
@@ -266,12 +267,13 @@
     <string name="Enabled">تمكين</string>
     <string name="Disabled">تعطيل</string>
     <string name="NotificationsService">خدمة الإشعارات</string>
-    <string name="NotificationsServiceDisableInfo">إذا كانت خدمات Google play كافية بالنسبة لك لتلقي الإشعارات ، يمكنك تعطيل " خدمة الإشعارات " . ومع ذلك نحن نوصي بترك هذه الخدمة مفعلة للحفاظ على تشغيل التطبيق في الخلفية ، ولتلقي إشعارات الدردشة .</string>
+    <string name="NotificationsServiceDisableInfo">إذا كانت خدمات Google play كافية بالنسبة لك لتلقي الإشعارات ، يمكنك تعطيل \" خدمة الإشعارات \" . ومع ذلك نحن نوصي بترك هذه الخدمة مفعلة للحفاظ على تشغيل التطبيق في الخلفية ، ولتلقي إشعارات الدردشة .</string>
     <string name="SortBy">فرز حسب</string>
     <string name="ImportContacts">استيراد جهات الاتصال</string>
     <string name="WiFiOnly">بواسطة WiFi فقط</string>
     <string name="SortFirstName">الاسم الأول</string>
     <string name="SortLastName">اسم العائلة</string>
+    <string name="LedColor">LED Color</string>
 
     <!--media view-->
     <string name="NoMedia">لا توجد وسائط بعد</string>
@@ -317,7 +319,7 @@
     <string name="OK">موافق</string>
 
     <!--messages-->
-    <string name="ActionKickUser">un1 قام بإخراج un2</string>
+    <string name="ActionKickUser">un1 أزال un2</string>
     <string name="ActionLeftUser">غادر المجموعة العضو un1</string>
     <string name="ActionAddUser">un1 قام بإضافة un2</string>
     <string name="ActionRemovedPhoto">تمت إزالة صورة المجموعة من قِبَل un1</string>
@@ -333,7 +335,7 @@
     <string name="ActionYouCreateGroup">لقد قمت بإنشاء المجموعة</string>
     <string name="ActionKickUserYou">un1 قام بإخراجك</string>
     <string name="ActionAddUserYou">un1 قام بإضافتك</string>
-    <string name="UnsuppotedMedia">نسخة تيليجرام التي تستخدمها لا تدعم هذه الرسالة</string>
+    <string name="UnsuppotedMedia">نسخة تيليجرام الموجودة لديك لا تدعم هذه الرسالة. الرجاء التحديث لأحدث نسخة:\nhttp://telegram.org/update</string>
     <string name="AttachPhoto">صورة</string>
     <string name="AttachVideo">مقطع مرئي</string>
     <string name="AttachLocation">موقع</string>
@@ -356,10 +358,10 @@
     <string name="NoHandleAppInstalled">لا يوجد لديك تطبيق يمكنه فتح \'%1$s\'، يرجى تنزيل تطبيق مناسب للإستمرار</string>
     <string name="InviteUser">هذا المستخدم ليس لديه تيليجرام بعد ، هل ترغب في دعوته الآن؟</string>
     <string name="AreYouSure">هل أنت متأكد؟</string>
-    <string name="DeleteChatQuestion">هل تريد حذف هذه الدردشة؟</string>
     <string name="AddContactQ">هل تريد إضافة جهة اتصال؟</string>
     <string name="AddToTheGroup">إلى المجموعة؟ %1$s هل تريد إضافة</string>
     <string name="ForwardMessagesTo">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
+    <string name="DeleteChatQuestion">هل تريد حذف هذه الدردشة؟</string>
 
     <!--Intro view-->
     <string name="Page1Title">تيليجرام</string>

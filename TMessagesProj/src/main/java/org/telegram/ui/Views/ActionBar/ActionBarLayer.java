@@ -377,7 +377,7 @@ public class ActionBarLayer extends FrameLayout {
         }
         actionMode.setVisibility(GONE);
         if (backButtonFrameLayout != null) {
-            backButtonFrameLayout.setVisibility(VISIBLE);
+            backButtonFrameLayout.setVisibility(isSearchFieldVisible || actionOverlay == null || actionOverlay.getVisibility() == GONE ? VISIBLE : INVISIBLE);
         }
         if (menu != null) {
             menu.setVisibility(VISIBLE);
@@ -455,6 +455,7 @@ public class ActionBarLayer extends FrameLayout {
         LayoutInflater li = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         actionOverlay = li.inflate(resourceId, null);
         addView(actionOverlay);
+        actionOverlay.setVisibility(GONE);
         actionOverlay.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -470,10 +471,10 @@ public class ActionBarLayer extends FrameLayout {
             return;
         }
         isBackOverlayVisible = visible;
-        positionBackOverlay(getMeasuredWidth(), getMeasuredHeight());
         if (visible) {
             ((ActionBarActivity)getContext()).onOverlayShow(actionOverlay, parentFragment);
         }
+        positionBackOverlay(getMeasuredWidth(), getMeasuredHeight());
     }
 
     private void positionBackOverlay(int widthMeasureSpec, int heightMeasureSpec) {
@@ -484,8 +485,11 @@ public class ActionBarLayer extends FrameLayout {
         actionOverlay.setVisibility(!isSearchFieldVisible && isBackOverlayVisible ? VISIBLE : GONE);
         if (actionOverlay.getVisibility() == VISIBLE) {
             ViewGroup.LayoutParams layoutParams = actionOverlay.getLayoutParams();
-            layoutParams.width = widthMeasureSpec - (menu != null ? menu.getMeasuredWidth() : 0);
+            layoutParams.width = LayoutParams.WRAP_CONTENT;
             layoutParams.height = LayoutParams.MATCH_PARENT;
+            actionOverlay.setLayoutParams(layoutParams);
+            actionOverlay.measure(widthMeasureSpec, heightMeasureSpec);
+            layoutParams.width = Math.min(actionOverlay.getMeasuredWidth() + Utilities.dp(4), widthMeasureSpec - (menu != null ? menu.getMeasuredWidth() : 0));
             actionOverlay.setLayoutParams(layoutParams);
         }
     }

@@ -158,6 +158,9 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                     if (i == 0) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
 
                         CharSequence[] items = new CharSequence[] {LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley), LocaleController.getString("Cancel", R.string.Cancel)};

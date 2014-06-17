@@ -20,7 +20,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.PowerManager;
@@ -53,7 +53,7 @@ public class ApplicationLoader extends Application {
     private static final String PROPERTY_APP_VERSION = "appVersion";
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     public static long lastPauseTime;
-    public static Bitmap cachedWallpaper = null;
+    public static Drawable cachedWallpaper = null;
 
     public static volatile Context applicationContext = null;
     public static volatile Handler applicationHandler = null;
@@ -93,7 +93,7 @@ public class ApplicationLoader extends Application {
         }
 
         UserConfig.loadConfig();
-        if (UserConfig.currentUser != null) {
+        if (UserConfig.getCurrentUser() != null) {
             boolean changed = false;
             SharedPreferences preferences = applicationContext.getSharedPreferences("Notifications", MODE_PRIVATE);
             int v = preferences.getInt("v", 0);
@@ -122,8 +122,8 @@ public class ApplicationLoader extends Application {
                 editor.commit();
             }
 
-            MessagesController.getInstance().users.put(UserConfig.clientUserId, UserConfig.currentUser);
-            ConnectionsManager.getInstance().applyCountryPortNumber(UserConfig.currentUser.phone);
+            MessagesController.getInstance().users.put(UserConfig.getClientUserId(), UserConfig.getCurrentUser());
+            ConnectionsManager.getInstance().applyCountryPortNumber(UserConfig.getCurrentUser().phone);
             ConnectionsManager.getInstance().initPushConnection();
         }
 
@@ -294,12 +294,14 @@ public class ApplicationLoader extends Application {
                 UserConfig.pushString = regid;
                 UserConfig.registeredForPush = !isNew;
                 UserConfig.saveConfig(false);
-                Utilities.RunOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        MessagesController.getInstance().registerForPush(regid);
-                    }
-                });
+                if (UserConfig.getClientUserId() != 0) {
+                    Utilities.RunOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            MessagesController.getInstance().registerForPush(regid);
+                        }
+                    });
+                }
             }
         });
     }

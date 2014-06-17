@@ -21,7 +21,8 @@
             android:id="@+id/shared_layout"
             android:layout_weight="1">
 
-            <org.telegram.ui.Views.BackupImageView android:layout_height="42dp"
+            <org.telegram.ui.Views.BackupImageView
+                android:layout_height="42dp"
                 android:layout_width="42dp"
                 android:id="@+id/contact_avatar"/>
 
@@ -57,18 +58,21 @@
         </FrameLayout>
 
 
-        <FrameLayout android:layout_width="wrap_content"
+        <FrameLayout
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="8dp"
             android:layout_gravity="top"
             android:id="@+id/add_contact_view">
 
-            <FrameLayout android:layout_height="54dp"
+            <FrameLayout
+                android:layout_height="54dp"
                 android:layout_width="1dp"
                 android:background="#e8e8e8"
                 android:paddingRight="8dp"/>
 
-            <ImageView android:layout_width="38dp"
+            <ImageView
+                android:layout_width="38dp"
                 android:layout_height="54dp"
                 android:src="@drawable/ic_ab_add_member"
                 android:scaleType="center"
@@ -79,4 +83,5 @@
         </FrameLayout>
 
     </LinearLayout>
+
 </FrameLayout>

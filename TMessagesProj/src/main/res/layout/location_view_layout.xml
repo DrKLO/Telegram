@@ -22,7 +22,6 @@
         <org.telegram.ui.Views.BackupImageView
             android:layout_width="64dp"
             android:layout_height="64dp"
-            android:contentDescription=""
             android:id="@+id/location_avatar_view"
             android:layout_marginLeft="12dp"
             android:layout_marginTop="16dp"

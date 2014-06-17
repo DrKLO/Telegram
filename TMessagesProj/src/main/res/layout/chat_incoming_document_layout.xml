@@ -29,7 +29,6 @@
                 android:layout_height="42dp"
                 android:background="#40b7c9d7"
                 android:src="@drawable/doc_blue"
-                android:scaleType="center"
                 android:id="@+id/contact_avatar"/>
 
             <TextView
