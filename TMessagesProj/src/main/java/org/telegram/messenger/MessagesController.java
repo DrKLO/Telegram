@@ -4452,6 +4452,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
             boolean needVibrate = false;
             String choosenSoundPath = null;
+            int ledColor = 0xff00ff00;
 
             if (chat_id != 0) {
                 choosenSoundPath = preferences.getString("sound_chat_path_" + chat_id, null);
@@ -4461,6 +4462,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     choosenSoundPath = preferences.getString("GroupSoundPath", defaultPath);
                 }
                 needVibrate = preferences.getBoolean("EnableVibrateGroup", true);
+                ledColor = preferences.getInt("GroupLed", 0xff00ff00);
             } else if (user_id != 0) {
                 choosenSoundPath = preferences.getString("sound_path_" + user_id, null);
                 if (choosenSoundPath != null && choosenSoundPath.equals(defaultPath)) {
@@ -4469,6 +4471,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     choosenSoundPath = preferences.getString("GlobalSoundPath", defaultPath);
                 }
                 needVibrate = preferences.getBoolean("EnableVibrateAll", true);
+                ledColor = preferences.getInt("MessagesLed", 0xff00ff00);
+            }
+            if (preferences.contains("color_" + dialog_id)) {
+                ledColor = preferences.getInt("color_" + dialog_id, 0);
             }
 
             if (!needVibrate && vibrate_override == 1) {
@@ -4478,6 +4484,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             }
 
             String name = Utilities.formatName(user.first_name, user.last_name);
+            if ((int)dialog_id == 0) {
+                name = LocaleController.getString("AppName", R.string.AppName);
+            }
             String msgShort = msg.replace(name + ": ", "").replace(name + " ", "");
 
             intent.setAction("com.tmessages.openchat" + Math.random() + Integer.MAX_VALUE);
@@ -4511,7 +4520,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             mBuilder.setContentIntent(contentIntent);
             mNotificationManager.cancel(1);
             Notification notification = mBuilder.build();
-            notification.ledARGB = 0xff00ff00;
+            if (ledColor != 0) {
+                notification.ledARGB = ledColor;
+            }
             notification.ledOnMS = 1000;
             notification.ledOffMS = 1000;
             if (needVibrate) {

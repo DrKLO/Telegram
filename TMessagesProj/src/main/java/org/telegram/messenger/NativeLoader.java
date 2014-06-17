@@ -16,79 +16,19 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public class NativeLoader {
 
     private static final long sizes[] = new long[] {
-            922256,     //armeabi
-            991908,     //armeabi-v7a
-            1713204,    //x86
+            795280,     //armeabi
+            844452,     //armeabi-v7a
+            1242164,    //x86
             0,          //mips
     };
 
     private static volatile boolean nativeLoaded = false;
-
-    public static void cleanNativeLog(Context context) {
-        try {
-            File sdCard = context.getFilesDir();
-            if (sdCard == null) {
-                return;
-            }
-            File file = new File(sdCard, "nativeer.log");
-            if (file == null || !file.exists()) {
-                return;
-            }
-            file.delete();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static OutputStreamWriter streamWriter = null;
-    private static FileOutputStream stream = null;
-
-    private static void closeStream() {
-        try {
-            if (stream != null) {
-                streamWriter.close();
-                stream.close();
-                stream = null;
-                streamWriter = null;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void writeNativeError(Context context, String info, Throwable throwable) {
-        try {
-            if (stream == null) {
-                File sdCard = context.getFilesDir();
-                if (sdCard == null) {
-                    return;
-                }
-                File file = new File(sdCard, "nativeer.log");
-                if (file == null) {
-                    return;
-                }
-
-                stream = new FileOutputStream(file);
-                streamWriter = new OutputStreamWriter(stream);
-            }
-            streamWriter.write(info + "\n");
-            streamWriter.write(throwable + "\n");
-            StackTraceElement[] stack = throwable.getStackTrace();
-            for (StackTraceElement el : stack) {
-                streamWriter.write(el + "\n");
-            }
-            streamWriter.flush();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     private static File getNativeLibraryDir(Context context) {
         File f = null;
@@ -133,12 +73,10 @@ public class NativeLoader {
                 nativeLoaded = true;
             } catch (Error e) {
                 FileLog.e("tmessages", e);
-                writeNativeError(context, "after zip", e);
             }
             return true;
         } catch (Exception e) {
             FileLog.e("tmessages", e);
-            writeNativeError(context, "zip", e);
         } finally {
             if (stream != null) {
                 try {
@@ -162,8 +100,6 @@ public class NativeLoader {
         if (nativeLoaded) {
             return;
         }
-
-        cleanNativeLog(context);
 
         try {
             String folder = null;
@@ -193,10 +129,15 @@ public class NativeLoader {
                 }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
-                writeNativeError(context, "arch", e);
                 folder = "armeabi";
                 libSize = sizes[0];
                 libSize2 = sizes[1];
+            }
+
+            String javaArch = System.getProperty("os.arch");
+            if (javaArch != null && javaArch.contains("686")) {
+                folder = "x86";
+                libSize = sizes[2];
             }
 
             File destFile = getNativeLibraryDir(context);
@@ -207,27 +148,23 @@ public class NativeLoader {
                     try {
                         System.loadLibrary("tmessages");
                         nativeLoaded = true;
-                        closeStream();
                         return;
                     } catch (Error e) {
                         FileLog.e("tmessages", e);
-                        writeNativeError(context, "normal", e);
                     }
                 }
             }
 
             File destLocalFile = new File(context.getFilesDir().getAbsolutePath() + "/libtmessages.so");
-            if (destLocalFile.exists()) {
+            if (destLocalFile != null && destLocalFile.exists()) {
                 if (destLocalFile.length() == libSize) {
                     try {
                         FileLog.d("tmessages", "Load local lib");
                         System.load(destLocalFile.getAbsolutePath());
                         nativeLoaded = true;
-                        closeStream();
                         return;
                     } catch (Error e) {
                         FileLog.e("tmessages", e);
-                        writeNativeError(context, "local", e);
                     }
                 } else {
                     destLocalFile.delete();
@@ -236,21 +173,23 @@ public class NativeLoader {
 
             FileLog.e("tmessages", "Library not found, arch = " + folder);
 
-            if (!loadFromZip(context, destLocalFile, folder) && folder.equals("armeabi-v7a")) {
-                folder = "armeabi";
-                loadFromZip(context, destLocalFile, folder);
+            if (!loadFromZip(context, destLocalFile, folder)) {
+                folder = "x86";
+                destLocalFile = new File(context.getFilesDir().getAbsolutePath() + "/libtmessages86.so");
+                if (!loadFromZip(context, destLocalFile, folder)) {
+                    destLocalFile = new File(context.getFilesDir().getAbsolutePath() + "/libtmessagesarm.so");
+                    folder = "armeabi";
+                    loadFromZip(context, destLocalFile, folder);
+                }
             }
         } catch (Throwable e) {
             e.printStackTrace();
-            writeNativeError(context, "", e);
         }
 
         try {
             System.loadLibrary("tmessages");
             nativeLoaded = true;
-            closeStream();
         } catch (Error e) {
-            writeNativeError(context, "last chance", e);
             FileLog.e("tmessages", e);
         }
     }

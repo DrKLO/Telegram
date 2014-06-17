@@ -273,6 +273,7 @@
     <string name="WiFiOnly">بواسطة WiFi فقط</string>
     <string name="SortFirstName">الاسم الأول</string>
     <string name="SortLastName">اسم العائلة</string>
+    <string name="LedColor">LED Color</string>
 
     <!--media view-->
     <string name="NoMedia">لا توجد وسائط بعد</string>

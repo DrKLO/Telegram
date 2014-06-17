@@ -39,7 +39,6 @@ import net.hockeyapp.android.UpdateManager;
 
 import org.telegram.ui.ApplicationLoader;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -47,7 +46,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -996,41 +994,6 @@ public class Utilities {
             @Override
             public boolean includeDeviceData() {
                 return true;
-            }
-
-            @Override
-            public String getDescription() {
-                String description = "";
-
-                try {
-                    File sdCard = ApplicationLoader.applicationContext.getFilesDir();
-                    if (sdCard == null) {
-                        return description;
-                    }
-                    File file = new File(sdCard, "nativeer.log");
-                    if (file == null || !file.exists()) {
-                        return description;
-                    }
-
-                    FileInputStream inputStream = new FileInputStream(file);
-                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-
-                    StringBuilder log = new StringBuilder();
-                    String line;
-                    while ((line = bufferedReader.readLine()) != null) {
-                        log.append(line);
-                        log.append("\n");
-                    }
-                    bufferedReader.close();
-                    inputStream.close();
-                    description = log.toString();
-
-                    NativeLoader.cleanNativeLog(ApplicationLoader.applicationContext);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                return description;
             }
         });
     }

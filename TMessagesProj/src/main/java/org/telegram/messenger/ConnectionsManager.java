@@ -2584,10 +2584,11 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     public void tcpConnectionConnected(TcpConnection connection) {
         Datacenter datacenter = datacenterWithId(connection.getDatacenterId());
         if (datacenter.authKey != null) {
-            processRequestQueue(connection.transportRequestClass, connection.getDatacenterId());
             if ((connection.transportRequestClass & RPCRequest.RPCRequestClassPush) != 0) {
                 sendingPushPing = false;
                 lastPushPingTime = System.currentTimeMillis() - 60000 * 3 + 10000;
+            } else {
+                processRequestQueue(connection.transportRequestClass, connection.getDatacenterId());
             }
         }
     }
