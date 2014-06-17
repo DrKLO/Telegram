@@ -28,6 +28,7 @@ public class BaseFragment {
     protected int classGuid = 0;
     protected Bundle arguments;
     private AlertDialog visibleDialog = null;
+    protected boolean swipeBackEnabled = true;
 
     public BaseFragment() {
         classGuid = ConnectionsManager.getInstance().generateClassGuid();
