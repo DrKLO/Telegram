@@ -337,11 +337,11 @@ public class FileLoader {
         return memCache.get(key) != null;
     }
 
-    public void uploadFile(final String location, final byte[] key, final byte[] iv) {
+    public void uploadFile(final String location, final boolean encrypted) {
         fileLoaderQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
-                if (key != null) {
+                if (encrypted) {
                     if (uploadOperationPathsEnc.containsKey(location)) {
                         return;
                     }
@@ -350,8 +350,8 @@ public class FileLoader {
                         return;
                     }
                 }
-                FileUploadOperation operation = new FileUploadOperation(location, key, iv);
-                if (key != null) {
+                FileUploadOperation operation = new FileUploadOperation(location, encrypted);
+                if (encrypted) {
                     uploadOperationPathsEnc.put(location, operation);
                 } else {
                     uploadOperationPaths.put(location, operation);
@@ -369,7 +369,7 @@ public class FileLoader {
                                         fileProgresses.remove(location);
                                     }
                                 });
-                                if (key != null) {
+                                if (encrypted) {
                                     uploadOperationPathsEnc.remove(location);
                                 } else {
                                     uploadOperationPaths.remove(location);
@@ -396,11 +396,11 @@ public class FileLoader {
                                     public void run() {
                                         fileProgresses.remove(location);
                                         if (operation.state != 2) {
-                                            NotificationCenter.getInstance().postNotificationName(FileDidFailUpload, location, key != null);
+                                            NotificationCenter.getInstance().postNotificationName(FileDidFailUpload, location, encrypted);
                                         }
                                     }
                                 });
-                                if (key != null) {
+                                if (encrypted) {
                                     uploadOperationPathsEnc.remove(location);
                                 } else {
                                     uploadOperationPaths.remove(location);
@@ -428,7 +428,7 @@ public class FileLoader {
                             Utilities.RunOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    NotificationCenter.getInstance().postNotificationName(FileUploadProgressChanged, location, progress, key != null);
+                                    NotificationCenter.getInstance().postNotificationName(FileUploadProgressChanged, location, progress, encrypted);
                                 }
                             });
                         }

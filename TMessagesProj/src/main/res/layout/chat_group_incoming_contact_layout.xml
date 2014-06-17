@@ -14,7 +14,6 @@
         android:layout_height="42dp"
         android:layout_marginLeft="6dp"
         android:id="@+id/chat_group_avatar_image"
-        android:scaleType="fitCenter"
         android:layout_marginBottom="2dp"
         android:layout_marginRight="4dp"
         android:layout_gravity="bottom"/>
@@ -34,7 +33,8 @@
             android:id="@+id/shared_layout"
             android:layout_weight="1">
 
-            <org.telegram.ui.Views.BackupImageView android:layout_height="42dp"
+            <org.telegram.ui.Views.BackupImageView
+                android:layout_height="42dp"
                 android:layout_width="42dp"
                 android:id="@+id/contact_avatar"/>
 

@@ -19,9 +19,11 @@ public class ScreenReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
             FileLog.e("tmessages", "screen off");
+            ApplicationLoader.lastPauseTime = System.currentTimeMillis();
             ApplicationLoader.isScreenOn = false;
         } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
             FileLog.e("tmessages", "screen on");
+            ApplicationLoader.resetLastPauseTime();
             ApplicationLoader.isScreenOn = true;
         }
     }

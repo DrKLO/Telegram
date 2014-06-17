@@ -37,7 +37,6 @@
         android:layout_width="64dp"
         android:layout_height="64dp"
         android:layout_marginTop="5dp"
-        android:scaleType="fitCenter"
         android:id="@+id/chat_photo_image"/>
 
 </LinearLayout>

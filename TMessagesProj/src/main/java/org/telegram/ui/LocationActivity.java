@@ -60,6 +60,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
+        swipeBackEnabled = false;
         NotificationCenter.getInstance().addObserver(this, MessagesController.closeChats);
         if (messageObject != null) {
             NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);

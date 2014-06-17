@@ -181,6 +181,10 @@ public class ContactsController {
                 }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
+            } finally {
+                if (pCur != null) {
+                    pCur.close();
+                }
             }
             try {
                 pCur = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, new String[]{ContactsContract.CommonDataKinds.Phone._COUNT}, null, null, null);
@@ -195,6 +199,10 @@ public class ContactsController {
                 }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
+            } finally {
+                if (pCur != null) {
+                    pCur.close();
+                }
             }
             try {
                 pCur = cr.query(ContactsContract.Data.CONTENT_URI, new String[]{ContactsContract.Data._COUNT}, ContactsContract.Data.MIMETYPE + " = '" + ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE + "'", null, null);
@@ -209,6 +217,10 @@ public class ContactsController {
                 }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
+            } finally {
+                if (pCur != null) {
+                    pCur.close();
+                }
             }
             try {
                 pCur = cr.query(ContactsContract.Data.CONTENT_URI, new String[]{ContactsContract.Data._ID}, ContactsContract.Data.MIMETYPE + " = '" + ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE + "'", null, ContactsContract.Data._ID + " desc LIMIT 1");
@@ -223,6 +235,10 @@ public class ContactsController {
                 }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
+            } finally {
+                if (pCur != null) {
+                    pCur.close();
+                }
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);

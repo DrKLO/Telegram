@@ -273,6 +273,7 @@
     <string name="WiFiOnly">Unicamente com WiFi</string>
     <string name="SortFirstName">Nome</string>
     <string name="SortLastName">Apelidos</string>
+    <string name="LedColor">LED Color</string>
 
     <!--media view-->
     <string name="NoMedia">Ainda não há multimédia partilhado</string>

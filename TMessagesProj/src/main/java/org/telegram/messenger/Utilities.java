@@ -17,7 +17,6 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.database.Cursor;
-import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.Typeface;
 import android.net.Uri;
@@ -35,6 +34,7 @@ import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 
 import net.hockeyapp.android.CrashManager;
+import net.hockeyapp.android.CrashManagerListener;
 import net.hockeyapp.android.UpdateManager;
 
 import org.telegram.ui.ApplicationLoader;
@@ -156,7 +156,7 @@ public class Utilities {
     public native static long doPQNative(long _what);
     public native static byte[] aesIgeEncryption(byte[] _what, byte[] _key, byte[] _iv, boolean encrypt, boolean changeIv, int len);
     public native static void aesIgeEncryption2(ByteBuffer _what, byte[] _key, byte[] _iv, boolean encrypt, boolean changeIv, int len);
-    public native static void loadBitmap(String path, Bitmap bitmap, int scale);
+    public native static void loadBitmap(String path, int[] bitmap, int scale, int format, int width, int height);
 
     public static void lockOrientation(Activity activity) {
         if (prevOrientation != -10) {
@@ -262,10 +262,17 @@ public class Utilities {
     public static File getCacheDir() {
         if (externalCacheNotAvailableState == 1 || externalCacheNotAvailableState == 0 && Environment.getExternalStorageState().startsWith(Environment.MEDIA_MOUNTED)) {
             externalCacheNotAvailableState = 1;
-            return ApplicationLoader.applicationContext.getExternalCacheDir();
+            File file = ApplicationLoader.applicationContext.getExternalCacheDir();
+            if (file != null) {
+                return file;
+            }
         }
         externalCacheNotAvailableState = 2;
-        return ApplicationLoader.applicationContext.getCacheDir();
+        File file = ApplicationLoader.applicationContext.getCacheDir();
+        if (file != null) {
+            return file;
+        }
+        return new File("");
     }
 
     public static String bytesToHex(byte[] bytes) {
@@ -738,6 +745,9 @@ public class Utilities {
     }
 
     public static String MD5(String md5) {
+        if (md5 == null) {
+            return null;
+        }
         try {
             java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
             byte[] array = md.digest(md5.getBytes());
@@ -980,7 +990,12 @@ public class Utilities {
     }
 
     public static void checkForCrashes(Activity context) {
-        CrashManager.register(context, BuildVars.HOCKEY_APP_HASH);
+        CrashManager.register(context, BuildVars.HOCKEY_APP_HASH, new CrashManagerListener() {
+            @Override
+            public boolean includeDeviceData() {
+                return true;
+            }
+        });
     }
 
     public static void checkForUpdates(Activity context) {

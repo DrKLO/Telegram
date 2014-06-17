@@ -3783,14 +3783,6 @@ public class TLRPC {
         }
     }
 
-    public static class InputEncryptedFile extends TLObject {
-        public long id;
-        public long access_hash;
-        public int parts;
-        public int key_fingerprint;
-        public String md5_checksum;
-    }
-
     public static class TL_inputEncryptedFile extends InputEncryptedFile {
         public static int constructor = 0x5a17b5e5;
 
@@ -9211,5 +9203,15 @@ public class TLRPC {
                 bytes = null;
             }
         }
+    }
+
+    public static class InputEncryptedFile extends TLObject {
+        public long id;
+        public long access_hash;
+        public int parts;
+        public int key_fingerprint;
+        public String md5_checksum;
+        public byte[] key;
+        public byte[] iv;
     }
 }

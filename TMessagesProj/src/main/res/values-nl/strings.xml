@@ -273,6 +273,7 @@
     <string name="WiFiOnly">Alleen via WiFi</string>
     <string name="SortFirstName">Voornaam</string>
     <string name="SortLastName">Achternaam</string>
+    <string name="LedColor">LED Color</string>
 
     <!--media view-->
     <string name="NoMedia">Nog geen media gedeeld</string>
