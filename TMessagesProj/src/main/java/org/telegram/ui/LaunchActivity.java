@@ -535,7 +535,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     @Override
     protected void onPause() {
         super.onPause();
-        ApplicationLoader.lastPauseTime = System.currentTimeMillis();
+        ConnectionsManager.setAppPaused(true);
         if (notificationView != null) {
             notificationView.hide(false);
         }
@@ -559,7 +559,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         }
         Utilities.checkForCrashes(this);
         Utilities.checkForUpdates(this);
-        ApplicationLoader.resetLastPauseTime();
+        ConnectionsManager.setAppPaused(false);
         actionBar.setBackOverlayVisible(currentConnectionState != 0);
         try {
             NotificationManager mNotificationManager = (NotificationManager)this.getSystemService(Context.NOTIFICATION_SERVICE);

@@ -68,6 +68,9 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     private int nextSleepTimeout = 30000;
     private long nextPingId = 0;
 
+    public static long lastPauseTime = System.currentTimeMillis();
+    public static boolean appPaused = true;
+
     private static volatile ConnectionsManager Instance = null;
     public static ConnectionsManager getInstance() {
         ConnectionsManager localInstance = Instance;
@@ -103,7 +106,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             }
 
             long currentTime = System.currentTimeMillis();
-            if (ApplicationLoader.lastPauseTime != 0 && ApplicationLoader.lastPauseTime < currentTime - nextSleepTimeout) {
+            if (lastPauseTime != 0 && lastPauseTime < currentTime - nextSleepTimeout) {
                 boolean dontSleep = false;
                 for (RPCRequest request : runningRequests) {
                     if (request.retryCount < 10 && (request.runningStartTime + 60 > (int)(currentTime / 1000)) && ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0 || (request.flags & RPCRequest.RPCRequestClassUploadMedia) != 0)) {
@@ -142,7 +145,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                         FileLog.e("tmessages", e);
                     }
                 } else {
-                    ApplicationLoader.lastPauseTime += 30 * 1000;
+                    lastPauseTime += 30 * 1000;
                     FileLog.e("tmessages", "don't sleep 30 seconds because of upload or download request");
                 }
             }
@@ -206,11 +209,11 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             @Override
             public void run() {
                 if (paused) {
-                    ApplicationLoader.lastPauseTime = System.currentTimeMillis();
+                    lastPauseTime = System.currentTimeMillis();
                     nextSleepTimeout = 30000;
                     FileLog.e("tmessages", "wakeup network in background by received push");
-                } else if (ApplicationLoader.lastPauseTime != 0) {
-                    ApplicationLoader.lastPauseTime = System.currentTimeMillis();
+                } else if (lastPauseTime != 0) {
+                    lastPauseTime = System.currentTimeMillis();
                     FileLog.e("tmessages", "reset sleep timeout by received push");
                 }
             }
@@ -228,6 +231,28 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 }
             }
         });
+    }
+
+    public static void resetLastPauseTime() {
+        if (appPaused) {
+            return;
+        }
+        FileLog.e("tmessages", "reset app pause time");
+        if (lastPauseTime != 0 && System.currentTimeMillis() - lastPauseTime > 5000) {
+            ContactsController.getInstance().checkContacts();
+        }
+        lastPauseTime = 0;
+        ConnectionsManager.getInstance().applicationMovedToForeground();
+    }
+
+    public static void setAppPaused(boolean value) {
+        appPaused = value;
+        FileLog.e("tmessages", "app paused = " + value);
+        if (!appPaused) {
+            resetLastPauseTime();
+        } else {
+            lastPauseTime = System.currentTimeMillis();
+        }
     }
 
     //================================================================================
@@ -816,7 +841,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 requestQueue.add(request);
 
                 if (paused && ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0 || (request.flags & RPCRequest.RPCRequestClassUploadMedia) != 0)) {
-                    ApplicationLoader.lastPauseTime = System.currentTimeMillis();
+                    lastPauseTime = System.currentTimeMillis();
                     nextSleepTimeout = 30000;
                     FileLog.e("tmessages", "wakeup by download or upload request");
                 }
@@ -887,11 +912,11 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
             netInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
 
-            if (netInfo != null && (netInfo.isConnectedOrConnecting() || netInfo.isRoaming() || netInfo.isAvailable())) {
+            if (netInfo != null && (netInfo.isConnectedOrConnecting() || netInfo.isRoaming())) {
                 return true;
             } else {
                 netInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-                if(netInfo != null && (netInfo.isConnectedOrConnecting() || netInfo.isRoaming() || netInfo.isAvailable())) {
+                if(netInfo != null && (netInfo.isConnectedOrConnecting() || netInfo.isRoaming())) {
                     return true;
                 }
             }
@@ -2588,6 +2613,9 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 sendingPushPing = false;
                 lastPushPingTime = System.currentTimeMillis() - 60000 * 3 + 10000;
             } else {
+                if (paused && connection.getDatacenterId() == currentDatacenterId && (connection.transportRequestClass & RPCRequest.RPCRequestClassGeneric) != 0) {
+                    resumeNetworkMaybe();
+                }
                 processRequestQueue(connection.transportRequestClass, connection.getDatacenterId());
             }
         }

@@ -760,7 +760,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         checkDeletingTask();
 
         if (UserConfig.isClientActivated()) {
-            if (ApplicationLoader.lastPauseTime == 0) {
+            if (ConnectionsManager.lastPauseTime == 0) {
                 if (statusSettingState != 1 && (lastStatusUpdateTime == 0 || lastStatusUpdateTime <= System.currentTimeMillis() - 55000 || offlineSent)) {
                     statusSettingState = 1;
 
@@ -786,7 +786,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         }
                     }, null, true, RPCRequest.RPCRequestClassGeneric);
                 }
-            } else if (statusSettingState != 2 && !offlineSent && ApplicationLoader.lastPauseTime <= System.currentTimeMillis() - 2000) {
+            } else if (statusSettingState != 2 && !offlineSent && ConnectionsManager.lastPauseTime <= System.currentTimeMillis() - 2000) {
                 statusSettingState = 2;
                 if (statusRequest != 0) {
                     ConnectionsManager.getInstance().cancelRpc(statusRequest, true);
@@ -3323,7 +3323,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                             }
 
                                             if (!(res instanceof TLRPC.TL_updates_differenceSlice)) {
-                                                if ((dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0) && !obj.isOut() && obj.messageOwner.unread && (lastMessage == null || lastMessage.messageOwner.date < obj.messageOwner.date)) {
+                                                if ((dialog_id != openned_dialog_id || ConnectionsManager.lastPauseTime != 0) && !obj.isOut() && obj.messageOwner.unread && (lastMessage == null || lastMessage.messageOwner.date < obj.messageOwner.date)) {
                                                     if (!readMessages.contains(obj.messageOwner.id)) {
                                                         lastMessage = obj;
                                                     }
@@ -3471,7 +3471,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                 } else {
                                     dialog_id = obj.messageOwner.to_id.user_id;
                                 }
-                                if (dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0 || !ApplicationLoader.isScreenOn) {
+                                if (dialog_id != openned_dialog_id || ConnectionsManager.lastPauseTime != 0 || !ApplicationLoader.isScreenOn) {
                                     showInAppNotification(obj);
                                 }
                             }
@@ -3534,7 +3534,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                 } else {
                                     dialog_id = obj.messageOwner.to_id.user_id;
                                 }
-                                if (dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0 || !ApplicationLoader.isScreenOn) {
+                                if (dialog_id != openned_dialog_id || ConnectionsManager.lastPauseTime != 0 || !ApplicationLoader.isScreenOn) {
                                     showInAppNotification(obj);
                                 }
                             }
@@ -3738,7 +3738,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 arr.add(obj);
                 MessagesStorage.lastPtsValue = update.pts;
                 if (upd.message.from_id != UserConfig.getClientUserId() && upd.message.to_id != null) {
-                    if (uid != openned_dialog_id || ApplicationLoader.lastPauseTime != 0) {
+                    if (uid != openned_dialog_id || ConnectionsManager.lastPauseTime != 0) {
                         lastMessage = obj;
                     }
                 }
@@ -3846,7 +3846,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     }
                     arr.add(obj);
                     if (newMessage.from_id != UserConfig.getClientUserId() && newMessage.to_id != null) {
-                        if (newMessage.dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0) {
+                        if (newMessage.dialog_id != openned_dialog_id || ConnectionsManager.lastPauseTime != 0) {
                             lastMessage = obj;
                         }
                     }
@@ -3895,7 +3895,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
                 arr.add(obj);
                 if (newMessage.from_id != UserConfig.getClientUserId() && newMessage.to_id != null) {
-                    if (newMessage.dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0) {
+                    if (newMessage.dialog_id != openned_dialog_id || ConnectionsManager.lastPauseTime != 0) {
                         lastMessage = obj;
                     }
                 }
@@ -3916,7 +3916,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     }
                     arr.add(obj);
                     if (message.from_id != UserConfig.getClientUserId() && message.to_id != null) {
-                        if (uid != openned_dialog_id || ApplicationLoader.lastPauseTime != 0) {
+                        if (uid != openned_dialog_id || ConnectionsManager.lastPauseTime != 0) {
                             lastMessage = obj;
                         }
                     }
@@ -4261,8 +4261,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         if (!UserConfig.isClientActivated()) {
             return;
         }
-        if (ApplicationLoader.lastPauseTime != 0) {
-            ApplicationLoader.lastPauseTime = System.currentTimeMillis();
+        if (ConnectionsManager.lastPauseTime != 0) {
+            ConnectionsManager.lastPauseTime = System.currentTimeMillis();
             FileLog.e("tmessages", "reset sleep timeout by received message");
         }
         if (messageObject == null) {
@@ -4308,7 +4308,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
         int vibrate_override = preferences.getInt("vibrate_" + dialog_id, 0);
 
-        if (ApplicationLoader.lastPauseTime == 0 && ApplicationLoader.isScreenOn) {
+        if (ConnectionsManager.lastPauseTime == 0 && ApplicationLoader.isScreenOn) {
             boolean inAppSounds = preferences.getBoolean("EnableInAppSounds", true);
             boolean inAppVibrate = preferences.getBoolean("EnableInAppVibrate", true);
             boolean inAppPreview = preferences.getBoolean("EnableInAppPreview", true);
