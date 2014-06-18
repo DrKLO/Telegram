@@ -29,7 +29,6 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 
-import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.NotificationsService;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
@@ -52,12 +51,12 @@ public class ApplicationLoader extends Application {
     public static final String PROPERTY_REG_ID = "registration_id";
     private static final String PROPERTY_APP_VERSION = "appVersion";
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
-    public static long lastPauseTime;
     public static Drawable cachedWallpaper = null;
 
     public static volatile Context applicationContext = null;
     public static volatile Handler applicationHandler = null;
     private static volatile boolean applicationInited = false;
+
     public static volatile boolean isScreenOn = false;
 
     public static void postInitApplication() {
@@ -135,7 +134,6 @@ public class ApplicationLoader extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        lastPauseTime = System.currentTimeMillis();
         applicationContext = getApplicationContext();
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
@@ -180,14 +178,6 @@ public class ApplicationLoader extends Application {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    public static void resetLastPauseTime() {
-        if (lastPauseTime != 0 && System.currentTimeMillis() - lastPauseTime > 5000) {
-            ContactsController.getInstance().checkContacts();
-        }
-        lastPauseTime = 0;
-        ConnectionsManager.getInstance().applicationMovedToForeground();
     }
 
     private void initPlayServices() {

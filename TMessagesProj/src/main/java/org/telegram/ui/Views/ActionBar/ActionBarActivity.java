@@ -265,6 +265,10 @@ public class ActionBarActivity extends Activity {
     public boolean onTouchEvent(MotionEvent ev) {
         if(android.os.Build.VERSION.SDK_INT >= 11 && !checkTransitionAnimation() && !inActionMode && fragmentsStack.size() > 1 && !animationInProgress) {
             if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && !startedTracking && !maybeStartTracking) {
+                BaseFragment currentFragment = fragmentsStack.get(fragmentsStack.size() - 1);
+                if (!currentFragment.swipeBackEnabled) {
+                    return false;
+                }
                 startedTrackingPointerId = ev.getPointerId(0);
                 maybeStartTracking = true;
                 startedTrackingX = (int) ev.getX();

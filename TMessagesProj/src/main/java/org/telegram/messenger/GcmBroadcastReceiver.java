@@ -12,7 +12,6 @@ import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.os.PowerManager;
 
 import org.json.JSONObject;
 import org.telegram.ui.ApplicationLoader;
@@ -20,7 +19,6 @@ import org.telegram.ui.ApplicationLoader;
 public class GcmBroadcastReceiver extends BroadcastReceiver {
 
     public static final int NOTIFICATION_ID = 1;
-    private static PowerManager.WakeLock wakeLock = null;
     private static final Integer sync = 1;
 
     @Override
@@ -28,27 +26,6 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
         FileLog.d("tmessages", "GCM received intent: " + intent);
 
         if (intent.getAction().equals("com.google.android.c2dm.intent.RECEIVE")) {
-            synchronized (sync) {
-                try {
-                    if (wakeLock == null) {
-                        PowerManager pm = (PowerManager)context.getSystemService(Context.POWER_SERVICE);
-                        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "lock");
-                    }
-                    if (!wakeLock.isHeld()) {
-                        wakeLock.acquire(5000);
-                    }
-                } catch (Exception e) {
-                    try {
-                        if (wakeLock != null) {
-                            wakeLock.release();
-                        }
-                    } catch (Exception e2) {
-                        FileLog.e("tmessages", e2);
-                    }
-                    FileLog.e("tmessages", e);
-                }
-            }
-
             Utilities.RunOnUIThread(new Runnable() {
                 @Override
                 public void run() {

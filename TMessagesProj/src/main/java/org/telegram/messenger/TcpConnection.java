@@ -135,7 +135,7 @@ public class TcpConnection extends ConnectionContext {
                     client.addListener(TcpConnection.this);
                     if ((transportRequestClass & RPCRequest.RPCRequestClassPush) != 0) {
                         if (isNextPort) {
-                            client.setTimeout(15000);
+                            client.setTimeout(20000);
                         } else {
                             client.setTimeout(30000);
                         }
@@ -424,7 +424,7 @@ public class TcpConnection extends ConnectionContext {
                 datacenter.storeCurrentAddressAndPortNum();
                 isNextPort = false;
                 if ((transportRequestClass & RPCRequest.RPCRequestClassPush) != 0) {
-                    client.setTimeout(40000);
+                    client.setTimeout(60000 * 3 + 20000);
                 } else {
                     client.setTimeout(25000);
                 }

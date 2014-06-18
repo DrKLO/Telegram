@@ -48,6 +48,7 @@ import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.AvatarUpdater;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.Views.ColorPickerView;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -74,10 +75,12 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
     private int settingsVibrateRow;
     private int settingsVibrationSpeedRow;
     private int settingsVibrationCountRow;
+    private int settingsLedRow;
     private int settingsSoundRow;
     private int sharedMediaSectionRow;
     private int sharedMediaRow;
     private int membersSectionRow;
+    private int membersEndRow;
     private int addMemberRow;
     private int leaveGroupRow;
     private int rowCount = 0;
@@ -145,18 +148,21 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         settingsVibrateRow = rowCount++;
         settingsVibrationSpeedRow = rowCount++;
         settingsVibrationCountRow = rowCount++;
+        settingsLedRow = rowCount++;
         settingsSoundRow = rowCount++;
         sharedMediaSectionRow = rowCount++;
         sharedMediaRow = rowCount++;
         if (info != null && !(info instanceof TLRPC.TL_chatParticipantsForbidden)) {
             membersSectionRow = rowCount++;
             rowCount += info.participants.size();
+            membersEndRow = rowCount;
             if (info.participants.size() < 200) {
                 addMemberRow = rowCount++;
             } else {
                 addMemberRow = -1;
             }
         } else {
+            membersEndRow = -1;
             addMemberRow = -1;
             membersSectionRow = -1;
         }
@@ -202,7 +208,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
             listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
                 @Override
                 public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    if (i > membersSectionRow && i < addMemberRow) {
+                    if (i > membersSectionRow && i < membersEndRow) {
                         if (getParentActivity() == null) {
                             return false;
                         }
@@ -273,7 +279,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         presentFragment(new MediaActivity(args));
                     } else if (i == addMemberRow) {
                         openAddMenu();
-                    } else if (i > membersSectionRow && i < addMemberRow) {
+                    } else if (i > membersSectionRow && i < membersEndRow) {
                         int user_id = info.participants.get(sortedUsers.get(i - membersSectionRow - 1)).user_id;
                         if (user_id == UserConfig.getClientUserId()) {
                             return;
@@ -396,6 +402,56 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                                         dialog.dismiss();
                                     }
                                 }).setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showAlertDialog(builder);
+                    } else if (i == settingsLedRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        view = li.inflate(R.layout.settings_color_dialog_layout, null, false);
+                        final ColorPickerView colorPickerView = (ColorPickerView)view.findViewById(R.id.color_picker);
+
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        if (preferences.contains("color_" + (-chat_id))) {
+                            colorPickerView.setOldCenterColor(preferences.getInt("color_" + (-chat_id), 0xff00ff00));
+                        } else {
+                            colorPickerView.setOldCenterColor(preferences.getInt("GroupLed", 0xff00ff00));
+                        }
+
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("LedColor", R.string.LedColor));
+                        builder.setView(view);
+                        builder.setPositiveButton(LocaleController.getString("Set", R.string.Set), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int which) {
+                                final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                editor.putInt("color_" + (-chat_id), colorPickerView.getColor());
+                                editor.commit();
+                                listView.invalidateViews();
+                            }
+                        });
+                        builder.setNeutralButton(LocaleController.getString("Disabled", R.string.Disabled), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                editor.putInt("color_" + (-chat_id), 0);
+                                editor.commit();
+                                listView.invalidateViews();
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Default", R.string.Default), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                editor.remove("color_" + (-chat_id));
+                                editor.commit();
+                                listView.invalidateViews();
+                            }
+                        });
                         showAlertDialog(builder);
                     }
                 }
@@ -681,7 +737,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
         @Override
         public boolean isEnabled(int i) {
-            return i == settingsNotificationsRow || i == settingsSoundRow || i == sharedMediaRow || i > membersSectionRow && i <= addMemberRow || i == settingsVibrateRow || i == settingsVibrationSpeedRow || i == settingsVibrationCountRow;
+            return i == settingsNotificationsRow || i == settingsSoundRow || i == sharedMediaRow || i == addMemberRow || i > membersSectionRow && i < membersEndRow || i == settingsVibrateRow || i == settingsVibrationSpeedRow || i == settingsVibrationCountRow || i == settingsLedRow ;
         }
 
         @Override
@@ -945,6 +1001,23 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     textView.setText(LocaleController.getString("Sound", R.string.Sound));
                     divider.setVisibility(View.INVISIBLE);
                 }
+            } else if (type == 7) {
+                if (view == null) {
+                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                    view = li.inflate(R.layout.settings_row_color_layout, viewGroup, false);
+                }
+                TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
+                View colorView = view.findViewById(R.id.settings_color);
+                View divider = view.findViewById(R.id.settings_row_divider);
+                textView.setText(LocaleController.getString("LedColor", R.string.LedColor));
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+
+                if (preferences.contains("color_" + (-chat_id))) {
+                    colorView.setBackgroundColor(preferences.getInt("color_" + (-chat_id), 0xff00ff00));
+                } else {
+                    colorView.setBackgroundColor(preferences.getInt("GroupLed", 0xff00ff00));
+                }
+                divider.setVisibility(View.VISIBLE);
             }
             return view;
         }
@@ -963,15 +1036,17 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 return 4;
             } else if (i == leaveGroupRow) {
                 return 5;
-            } else if (i > membersSectionRow && i < addMemberRow) {
+            } else if (i > membersSectionRow && i < membersEndRow) {
                 return 3;
+            } else if (i == settingsLedRow) {
+                return 7;
             }
             return 0;
         }
 
         @Override
         public int getViewTypeCount() {
-            return 7;
+            return 8;
         }
 
         @Override

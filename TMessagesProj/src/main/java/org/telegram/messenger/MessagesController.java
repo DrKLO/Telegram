@@ -588,7 +588,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     public void uploadAndApplyUserAvatar(TLRPC.PhotoSize bigPhoto) {
         if (bigPhoto != null) {
             uploadingAvatar = Utilities.getCacheDir() + "/" + bigPhoto.location.volume_id + "_" + bigPhoto.location.local_id + ".jpg";
-            FileLoader.getInstance().uploadFile(uploadingAvatar, null, null);
+            FileLoader.getInstance().uploadFile(uploadingAvatar, false);
         }
     }
 
@@ -761,7 +761,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         checkDeletingTask();
 
         if (UserConfig.isClientActivated()) {
-            if (ApplicationLoader.lastPauseTime == 0) {
+            if (ConnectionsManager.lastPauseTime == 0) {
                 if (statusSettingState != 1 && (lastStatusUpdateTime == 0 || lastStatusUpdateTime <= System.currentTimeMillis() - 55000 || offlineSent)) {
                     statusSettingState = 1;
 
@@ -787,7 +787,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         }
                     }, null, true, RPCRequest.RPCRequestClassGeneric);
                 }
-            } else if (statusSettingState != 2 && !offlineSent && ApplicationLoader.lastPauseTime <= System.currentTimeMillis() - 2000) {
+            } else if (statusSettingState != 2 && !offlineSent && ConnectionsManager.lastPauseTime <= System.currentTimeMillis() - 2000) {
                 statusSettingState = 2;
                 if (statusRequest != 0) {
                     ConnectionsManager.getInstance().cancelRpc(statusRequest, true);
@@ -1547,39 +1547,39 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     public void sendMessage(TLRPC.User user, long peer) {
-        sendMessage(null, 0, 0, null, null, null, null, user, null, null, peer);
+        sendMessage(null, 0, 0, null, null, null, null, user, null, null, null, peer);
     }
 
     public void sendMessage(MessageObject message, long peer) {
-        sendMessage(null, 0, 0, null, null, message, null, null, null, null, peer);
+        sendMessage(null, 0, 0, null, null, message, null, null, null, null, null, peer);
     }
 
-    public void sendMessage(TLRPC.TL_document document, long peer) {
-        sendMessage(null, 0, 0, null, null, null, null, null, document, null, peer);
+    public void sendMessage(TLRPC.TL_document document, String originalPath, long peer) {
+        sendMessage(null, 0, 0, null, null, null, null, null, document, null, originalPath, peer);
     }
 
     public void sendMessage(String message, long peer) {
-        sendMessage(message, 0, 0, null, null, null, null, null, null, null, peer);
+        sendMessage(message, 0, 0, null, null, null, null, null, null, null, null, peer);
     }
 
     public void sendMessage(TLRPC.FileLocation location, long peer) {
-        sendMessage(null, 0, 0, null, null, null, location, null, null, null, peer);
+        sendMessage(null, 0, 0, null, null, null, location, null, null, null, null, peer);
     }
 
     public void sendMessage(double lat, double lon, long peer) {
-        sendMessage(null, lat, lon, null, null, null, null, null, null, null, peer);
+        sendMessage(null, lat, lon, null, null, null, null, null, null, null, null, peer);
     }
 
-    public void sendMessage(TLRPC.TL_photo photo, long peer) {
-        sendMessage(null, 0, 0, photo, null, null, null, null, null, null, peer);
+    public void sendMessage(TLRPC.TL_photo photo, String originalPath, long peer) {
+        sendMessage(null, 0, 0, photo, null, null, null, null, null, null, originalPath, peer);
     }
 
-    public void sendMessage(TLRPC.TL_video video, long peer) {
-        sendMessage(null, 0, 0, null, video, null, null, null, null, null, peer);
+    public void sendMessage(TLRPC.TL_video video, String originalPath, long peer) {
+        sendMessage(null, 0, 0, null, video, null, null, null, null, null, originalPath, peer);
     }
 
     public void sendMessage(TLRPC.TL_audio audio, long peer) {
-        sendMessage(null, 0, 0, null, null, null, null, null, null, audio, peer);
+        sendMessage(null, 0, 0, null, null, null, null, null, null, audio, null, peer);
     }
 
     private void processPendingEncMessages() {
@@ -1709,7 +1709,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         performSendEncryptedRequest(reqSend, newMsgObj, encryptedChat, null);
     }
 
-    private void sendMessage(String message, double lat, double lon, TLRPC.TL_photo photo, TLRPC.TL_video video, MessageObject msgObj, TLRPC.FileLocation location, TLRPC.User user, TLRPC.TL_document document, TLRPC.TL_audio audio, long peer) {
+    private void sendMessage(String message, double lat, double lon, TLRPC.TL_photo photo, TLRPC.TL_video video, MessageObject msgObj, TLRPC.FileLocation location, TLRPC.User user, TLRPC.TL_document document, TLRPC.TL_audio audio, String originalPath, long peer) {
         TLRPC.Message newMsg = null;
         int type = -1;
         if (message != null) {
@@ -1951,10 +1951,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     performSendEncryptedRequest(reqSend, newMsgObj, encryptedChat, null);
                 } else if (type == 2) {
                     reqSend.media = new TLRPC.TL_decryptedMessageMediaPhoto();
-                    reqSend.media.iv = new byte[32];
-                    reqSend.media.key = new byte[32];
-                    Utilities.random.nextBytes(reqSend.media.iv);
-                    Utilities.random.nextBytes(reqSend.media.key);
                     TLRPC.PhotoSize small = photo.sizes.get(0);
                     TLRPC.PhotoSize big = photo.sizes.get(photo.sizes.size() - 1);
                     reqSend.media.thumb = small.bytes;
@@ -1973,10 +1969,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     performSendDelayedMessage(delayedMessage);
                 } else if (type == 3) {
                     reqSend.media = new TLRPC.TL_decryptedMessageMediaVideo();
-                    reqSend.media.iv = new byte[32];
-                    reqSend.media.key = new byte[32];
-                    Utilities.random.nextBytes(reqSend.media.iv);
-                    Utilities.random.nextBytes(reqSend.media.key);
                     reqSend.media.duration = video.duration;
                     reqSend.media.size = video.size;
                     reqSend.media.w = video.w;
@@ -2003,10 +1995,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     performSendEncryptedRequest(reqSend, newMsgObj, encryptedChat, null);
                 } else if (type == 7) {
                     reqSend.media = new TLRPC.TL_decryptedMessageMediaDocument();
-                    reqSend.media.iv = new byte[32];
-                    reqSend.media.key = new byte[32];
-                    Utilities.random.nextBytes(reqSend.media.iv);
-                    Utilities.random.nextBytes(reqSend.media.key);
                     reqSend.media.size = document.size;
                     if (!(document.thumb instanceof TLRPC.TL_photoSizeEmpty)) {
                         reqSend.media.thumb = document.thumb.bytes;
@@ -2029,10 +2017,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     performSendDelayedMessage(delayedMessage);
                 } else if (type == 8) {
                     reqSend.media = new TLRPC.TL_decryptedMessageMediaAudio();
-                    reqSend.media.iv = new byte[32];
-                    reqSend.media.key = new byte[32];
-                    Utilities.random.nextBytes(reqSend.media.iv);
-                    Utilities.random.nextBytes(reqSend.media.key);
                     reqSend.media.duration = audio.duration;
                     reqSend.media.size = audio.size;
 
@@ -2471,23 +2455,23 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             String location = Utilities.getCacheDir() + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
             putToDelayedMessages(location, message);
             if (message.sendRequest != null) {
-                FileLoader.getInstance().uploadFile(location, null, null);
+                FileLoader.getInstance().uploadFile(location, false);
             } else {
-                FileLoader.getInstance().uploadFile(location, message.sendEncryptedRequest.media.key, message.sendEncryptedRequest.media.iv);
+                FileLoader.getInstance().uploadFile(location, true);
             }
         } else if (message.type == 1) {
             if (message.sendRequest != null) {
                 if (message.sendRequest.media.thumb == null) {
                     String location = Utilities.getCacheDir() + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
                     putToDelayedMessages(location, message);
-                    FileLoader.getInstance().uploadFile(location, null, null);
+                    FileLoader.getInstance().uploadFile(location, false);
                 } else {
                     String location = message.videoLocation.path;
                     if (location == null) {
                         location = Utilities.getCacheDir() + "/" + message.videoLocation.id + ".mp4";
                     }
                     putToDelayedMessages(location, message);
-                    FileLoader.getInstance().uploadFile(location, null, null);
+                    FileLoader.getInstance().uploadFile(location, false);
                 }
             } else {
                 String location = message.videoLocation.path;
@@ -2495,29 +2479,29 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     location = Utilities.getCacheDir() + "/" + message.videoLocation.id + ".mp4";
                 }
                 putToDelayedMessages(location, message);
-                FileLoader.getInstance().uploadFile(location, message.sendEncryptedRequest.media.key, message.sendEncryptedRequest.media.iv);
+                FileLoader.getInstance().uploadFile(location, true);
             }
         } else if (message.type == 2) {
             if (message.sendRequest != null && message.sendRequest.media.thumb == null && message.location != null) {
                 String location = Utilities.getCacheDir() + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
                 putToDelayedMessages(location, message);
-                FileLoader.getInstance().uploadFile(location, null, null);
+                FileLoader.getInstance().uploadFile(location, false);
             } else {
                 String location = message.documentLocation.path;
                 putToDelayedMessages(location, message);
                 if (message.sendRequest != null) {
-                    FileLoader.getInstance().uploadFile(location, null, null);
+                    FileLoader.getInstance().uploadFile(location, false);
                 } else {
-                    FileLoader.getInstance().uploadFile(location, message.sendEncryptedRequest.media.key, message.sendEncryptedRequest.media.iv);
+                    FileLoader.getInstance().uploadFile(location, true);
                 }
             }
         } else if (message.type == 3) {
             String location = message.audioLocation.path;
             putToDelayedMessages(location, message);
             if (message.sendRequest != null) {
-                FileLoader.getInstance().uploadFile(location, null, null);
+                FileLoader.getInstance().uploadFile(location, false);
             } else {
-                FileLoader.getInstance().uploadFile(location, message.sendEncryptedRequest.media.key, message.sendEncryptedRequest.media.iv);
+                FileLoader.getInstance().uploadFile(location, true);
             }
         }
     }
@@ -2634,6 +2618,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                 arr.remove(a);
                                 a--;
                             } else if (encryptedFile != null && message.sendEncryptedRequest != null) {
+                                message.sendEncryptedRequest.media.key = encryptedFile.key;
+                                message.sendEncryptedRequest.media.iv = encryptedFile.iv;
                                 performSendEncryptedRequest(message.sendEncryptedRequest, message.obj, message.encryptedChat, encryptedFile);
                                 arr.remove(a);
                                 a--;
@@ -3338,7 +3324,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                             }
 
                                             if (!(res instanceof TLRPC.TL_updates_differenceSlice)) {
-                                                if ((dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0) && !obj.isOut() && obj.messageOwner.unread && (lastMessage == null || lastMessage.messageOwner.date < obj.messageOwner.date)) {
+                                                if ((dialog_id != openned_dialog_id || ConnectionsManager.lastPauseTime != 0) && !obj.isOut() && obj.messageOwner.unread && (lastMessage == null || lastMessage.messageOwner.date < obj.messageOwner.date)) {
                                                     if (!readMessages.contains(obj.messageOwner.id)) {
                                                         lastMessage = obj;
                                                     }
@@ -3486,7 +3472,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                 } else {
                                     dialog_id = obj.messageOwner.to_id.user_id;
                                 }
-                                if (dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0 || !ApplicationLoader.isScreenOn) {
+                                if (dialog_id != openned_dialog_id || ConnectionsManager.lastPauseTime != 0 || !ApplicationLoader.isScreenOn) {
                                     showInAppNotification(obj);
                                 }
                             }
@@ -3549,7 +3535,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                 } else {
                                     dialog_id = obj.messageOwner.to_id.user_id;
                                 }
-                                if (dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0 || !ApplicationLoader.isScreenOn) {
+                                if (dialog_id != openned_dialog_id || ConnectionsManager.lastPauseTime != 0 || !ApplicationLoader.isScreenOn) {
                                     showInAppNotification(obj);
                                 }
                             }
@@ -3753,7 +3739,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 arr.add(obj);
                 MessagesStorage.lastPtsValue = update.pts;
                 if (upd.message.from_id != UserConfig.getClientUserId() && upd.message.to_id != null) {
-                    if (uid != openned_dialog_id || ApplicationLoader.lastPauseTime != 0) {
+                    if (uid != openned_dialog_id || ConnectionsManager.lastPauseTime != 0) {
                         lastMessage = obj;
                     }
                 }
@@ -3861,7 +3847,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     }
                     arr.add(obj);
                     if (newMessage.from_id != UserConfig.getClientUserId() && newMessage.to_id != null) {
-                        if (newMessage.dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0) {
+                        if (newMessage.dialog_id != openned_dialog_id || ConnectionsManager.lastPauseTime != 0) {
                             lastMessage = obj;
                         }
                     }
@@ -3910,7 +3896,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
                 arr.add(obj);
                 if (newMessage.from_id != UserConfig.getClientUserId() && newMessage.to_id != null) {
-                    if (newMessage.dialog_id != openned_dialog_id || ApplicationLoader.lastPauseTime != 0) {
+                    if (newMessage.dialog_id != openned_dialog_id || ConnectionsManager.lastPauseTime != 0) {
                         lastMessage = obj;
                     }
                 }
@@ -3931,7 +3917,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     }
                     arr.add(obj);
                     if (message.from_id != UserConfig.getClientUserId() && message.to_id != null) {
-                        if (uid != openned_dialog_id || ApplicationLoader.lastPauseTime != 0) {
+                        if (uid != openned_dialog_id || ConnectionsManager.lastPauseTime != 0) {
                             lastMessage = obj;
                         }
                     }
@@ -4276,8 +4262,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         if (!UserConfig.isClientActivated()) {
             return;
         }
-        if (ApplicationLoader.lastPauseTime != 0) {
-            ApplicationLoader.lastPauseTime = System.currentTimeMillis();
+        if (ConnectionsManager.lastPauseTime != 0) {
+            ConnectionsManager.lastPauseTime = System.currentTimeMillis();
             FileLog.e("tmessages", "reset sleep timeout by received message");
         }
         if (messageObject == null) {
@@ -4323,7 +4309,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
         int vibrate_override = preferences.getInt("vibrate_" + dialog_id, 0);
 
-        if (ApplicationLoader.lastPauseTime == 0 && ApplicationLoader.isScreenOn) {
+        if (ConnectionsManager.lastPauseTime == 0 && ApplicationLoader.isScreenOn) {
             boolean inAppSounds = preferences.getBoolean("EnableInAppSounds", true);
             boolean inAppVibrate = preferences.getBoolean("EnableInAppVibrate", true);
             boolean inAppPreview = preferences.getBoolean("EnableInAppPreview", true);
@@ -4467,6 +4453,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
             boolean needVibrate = false;
             String choosenSoundPath = null;
+            int ledColor = 0xff00ff00;
 
             if (chat_id != 0) {
                 choosenSoundPath = preferences.getString("sound_chat_path_" + chat_id, null);
@@ -4476,7 +4463,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     choosenSoundPath = preferences.getString("GroupSoundPath", defaultPath);
                 }
                 needVibrate = preferences.getBoolean("EnableVibrateGroup", true);
-
+                ledColor = preferences.getInt("GroupLed", 0xff00ff00);
             } else if (user_id != 0) {
                 choosenSoundPath = preferences.getString("sound_path_" + user_id, null);
                 if (choosenSoundPath != null && choosenSoundPath.equals(defaultPath)) {
@@ -4485,7 +4472,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     choosenSoundPath = preferences.getString("GlobalSoundPath", defaultPath);
                 }
                 needVibrate = preferences.getBoolean("EnableVibrateAll", true);
-
+                ledColor = preferences.getInt("MessagesLed", 0xff00ff00);
+            }
+            if (preferences.contains("color_" + dialog_id)) {
+                ledColor = preferences.getInt("color_" + dialog_id, 0);
             }
 
             if (!needVibrate && vibrate_override == 1) {
@@ -4509,6 +4499,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             }
 
             String name = Utilities.formatName(user.first_name, user.last_name);
+            if ((int)dialog_id == 0) {
+                name = LocaleController.getString("AppName", R.string.AppName);
+            }
             String msgShort = msg.replace(name + ": ", "").replace(name + " ", "");
 
             intent.setAction("com.tmessages.openchat" + Math.random() + Integer.MAX_VALUE);
@@ -4542,7 +4535,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             mBuilder.setContentIntent(contentIntent);
             mNotificationManager.cancel(1);
             Notification notification = mBuilder.build();
-            notification.ledARGB = 0xff00ff00;
+            if (ledColor != 0) {
+                notification.ledARGB = ledColor;
+            }
             notification.ledOnMS = 1000;
             notification.ledOffMS = 1000;
             if (needVibrate) {
