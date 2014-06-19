@@ -34,6 +34,7 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     private int lastVisibleBlockNum = 0;
     private int firstVisibleBlockNum = 0;
     private int totalVisibleBlocksCount = 0;
+    private long clickDownEventTIme = -1;
 
     public ChatMessageCell(Context context, boolean isChat) {
         super(context, isChat);
@@ -82,12 +83,13 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
 
                             if (iconInfos.length != 0) {
                                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                                    clickDownEventTIme = event.getEventTime();
                                     pressedIcon = iconInfos[0];
                                     return true;
                                 } else {
                                     if (iconInfos[0] == pressedIcon) {
                                         try {
-                                            pressedIcon.onClick(this);
+                                            pressedIcon.onClick(this, clickDownEventTIme);
                                         } catch (Exception e) {
                                             FileLog.e("tmessages", e);
                                         }
