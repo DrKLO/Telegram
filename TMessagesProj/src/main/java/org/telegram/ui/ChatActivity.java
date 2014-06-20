@@ -50,7 +50,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.webkit.MimeTypeMap;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -79,6 +78,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.ChatAudioCell;
 import org.telegram.ui.Cells.ChatBaseCell;
 import org.telegram.ui.Cells.ChatMediaCell;
@@ -1643,25 +1643,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     showAttachmentError();
                     return;
                 }
-                String tempPath = Utilities.getPath(data.getData());
-
-                boolean isGif = false;
-                String originalPath = null;
-                if (tempPath != null && tempPath.endsWith(".gif")) {
-                    isGif = true;
-                } else if (tempPath == null) {
-                    isGif = MediaController.isGif(data.getData());
-                    if (isGif) {
-                        originalPath = data.toString();
-                        tempPath = MediaController.copyDocumentToCache(data.getData(), "gif");
-                    }
-                }
-
-                if (tempPath != null && isGif) {
-                    processSendingDocument(tempPath, originalPath);
-                } else {
-                    processSendingPhoto(null, data.getData());
-                }
+                processSendingPhoto(null, data.getData());
             } else if (requestCode == 2) {
                 String videoPath = null;
                 if (data != null) {
@@ -1701,8 +1683,8 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     showAttachmentError();
                     return;
                 }
-                String originalPath = null;
                 String tempPath = Utilities.getPath(data.getData());
+                String originalPath = tempPath;
                 if (tempPath == null) {
                     originalPath = data.toString();
                     tempPath = MediaController.copyDocumentToCache(data.getData(), "file");
@@ -1750,21 +1732,17 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     }
 
     public void processSendingPhoto(String imageFilePath, Uri imageUri) {
-        if ((imageFilePath == null || imageFilePath.length() == 0) && imageUri == null) {
-            return;
+        ArrayList<String> paths = null;
+        ArrayList<Uri> uris = null;
+        if (imageFilePath != null && imageFilePath.length() != 0) {
+            paths = new ArrayList<String>();
+            paths.add(imageFilePath);
         }
-        TLRPC.TL_photo photo = MessagesController.getInstance().generatePhotoSizes(imageFilePath, imageUri);
-        if (photo != null) {
-            String originalPath = imageFilePath;
-            if (originalPath == null && imageUri != null) {
-                originalPath = imageUri.toString();
-            }
-            MessagesController.getInstance().sendMessage(photo, originalPath, dialog_id);
-            if (chatListView != null) {
-                chatListView.setSelection(messages.size() + 1);
-            }
-            scrollToTopOnResume = true;
+        if (imageUri != null) {
+            uris = new ArrayList<Uri>();
+            uris.add(imageUri);
         }
+        processSendingPhotos(paths, uris);
     }
 
     public void processSendingPhotos(ArrayList<String> paths, ArrayList<Uri> uris) {
@@ -1782,6 +1760,8 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         new Thread(new Runnable() {
             @Override
             public void run() {
+                ArrayList<String> sendAsDocuments = null;
+                ArrayList<String> sendAsDocumentsOriginal = null;
                 int count = !pathsCopy.isEmpty() ? pathsCopy.size() : urisCopy.size();
                 String path = null;
                 Uri uri = null;
@@ -1792,131 +1772,222 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         uri = urisCopy.get(a);
                     }
 
+                    String originalPath = path;
+                    String tempPath = path;
+                    if (tempPath == null && uri != null) {
+                        tempPath = Utilities.getPath(uri);
+                        originalPath = uri.toString();
+                    }
+
                     boolean isGif = false;
-                    if (path != null && path.endsWith(".gif")) {
-                        final String finalPath = path;
-                        Utilities.RunOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                processSendingDocument(finalPath, null);
-                            }
-                        });
-                    } else {
-                        final TLRPC.TL_photo photo = MessagesController.getInstance().generatePhotoSizes(path, uri);
-                        String originalPath = path;
-                        if (originalPath == null && uri != null) {
+                    if (tempPath != null && tempPath.endsWith(".gif")) {
+                        isGif = true;
+                    } else if (tempPath == null && uri != null) {
+                        isGif = MediaController.isGif(uri);
+                        if (isGif) {
                             originalPath = uri.toString();
+                            tempPath = MediaController.copyDocumentToCache(uri, "gif");
                         }
-                        final String originalPathFinal = originalPath;
-                        Utilities.RunOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (photo != null) {
-                                    MessagesController.getInstance().sendMessage(photo, originalPathFinal, dialog_id);
+                    }
+
+                    if (isGif) {
+                        if (sendAsDocuments == null) {
+                            sendAsDocuments = new ArrayList<String>();
+                            sendAsDocumentsOriginal = new ArrayList<String>();
+                        }
+                        sendAsDocuments.add(tempPath);
+                        sendAsDocumentsOriginal.add(originalPath);
+                    } else {
+                        TLRPC.TL_photo photo = (TLRPC.TL_photo)MessagesStorage.getInstance().getSentFile(originalPath, currentEncryptedChat == null ? 0 : 3);
+                        if (photo == null && uri != null) {
+                            photo = (TLRPC.TL_photo)MessagesStorage.getInstance().getSentFile(Utilities.getPath(uri), currentEncryptedChat == null ? 0 : 3);
+                        }
+                        if (photo == null) {
+                            photo = MessagesController.getInstance().generatePhotoSizes(path, uri);
+                        }
+                        if (photo != null) {
+                            final String originalPathFinal = originalPath;
+                            final TLRPC.TL_photo photoFinal = photo;
+                            Utilities.RunOnUIThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    MessagesController.getInstance().sendMessage(photoFinal, originalPathFinal, dialog_id);
                                     if (chatListView != null) {
                                         chatListView.setSelection(messages.size() + 1);
                                     }
-                                    scrollToTopOnResume = true;
+                                    if (paused) {
+                                        scrollToTopOnResume = true;
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        }
+                    }
+                }
+                if (sendAsDocuments != null && !sendAsDocuments.isEmpty()) {
+                    for (int a = 0; a < sendAsDocuments.size(); a++) {
+                        processSendingDocumentInternal(sendAsDocuments.get(a), sendAsDocumentsOriginal.get(a));
                     }
                 }
             }
         }).start();
     }
 
-    public void processSendingDocument(String documentFilePath, String originalPathOverride) {
-        if (documentFilePath == null || documentFilePath.length() == 0) {
+    private void processSendingDocumentInternal(String path, String originalPath) {
+        if (path == null || path.length() == 0) {
             return;
         }
-        File f = new File(documentFilePath);
+        final File f = new File(path);
         if (!f.exists() || f.length() == 0) {
             return;
         }
+
         String name = f.getName();
         if (name == null) {
             name = "noname";
         }
         String ext = "";
-        int idx = documentFilePath.lastIndexOf(".");
+        int idx = path.lastIndexOf(".");
         if (idx != -1) {
-            ext = documentFilePath.substring(idx + 1);
+            ext = path.substring(idx + 1);
         }
-        TLRPC.TL_document document = new TLRPC.TL_document();
-        document.id = 0;
-        document.user_id = UserConfig.getClientUserId();
-        document.date = ConnectionsManager.getInstance().getCurrentTime();
-        document.file_name = name;
-        document.size = (int)f.length();
-        document.dc_id = 0;
-        document.path = documentFilePath;
-        if (ext.length() != 0) {
-            MimeTypeMap myMime = MimeTypeMap.getSingleton();
-            String mimeType = myMime.getMimeTypeFromExtension(ext.toLowerCase());
-            if (mimeType != null) {
-                document.mime_type = mimeType;
+        if (originalPath != null) {
+            originalPath += "" + f.length();
+        }
+
+        TLRPC.TL_document document = (TLRPC.TL_document)MessagesStorage.getInstance().getSentFile(originalPath, currentEncryptedChat == null ? 1 : 4);
+        if (document == null && !path.equals(originalPath)) {
+            document = (TLRPC.TL_document)MessagesStorage.getInstance().getSentFile(path + f.length(), currentEncryptedChat == null ? 1 : 4);
+        }
+        if (document == null) {
+            document = new TLRPC.TL_document();
+            document.id = 0;
+            document.user_id = UserConfig.getClientUserId();
+            document.date = ConnectionsManager.getInstance().getCurrentTime();
+            document.file_name = name;
+            document.size = (int)f.length();
+            document.dc_id = 0;
+            if (ext.length() != 0) {
+                MimeTypeMap myMime = MimeTypeMap.getSingleton();
+                String mimeType = myMime.getMimeTypeFromExtension(ext.toLowerCase());
+                if (mimeType != null) {
+                    document.mime_type = mimeType;
+                } else {
+                    document.mime_type = "application/octet-stream";
+                }
             } else {
                 document.mime_type = "application/octet-stream";
             }
-        } else {
-            document.mime_type = "application/octet-stream";
-        }
-        if (document.mime_type.equals("image/gif")) {
-            try {
-                Bitmap bitmap = FileLoader.loadBitmap(f.getAbsolutePath(), null, 90, 90);
-                if (bitmap != null) {
-                    document.thumb = FileLoader.scaleAndSaveImage(bitmap, 90, 90, 55, currentEncryptedChat != null);
-                    document.thumb.type = "s";
+            if (document.mime_type.equals("image/gif")) {
+                try {
+                    Bitmap bitmap = FileLoader.loadBitmap(f.getAbsolutePath(), null, 90, 90);
+                    if (bitmap != null) {
+                        document.thumb = FileLoader.scaleAndSaveImage(bitmap, 90, 90, 55, currentEncryptedChat != null);
+                        document.thumb.type = "s";
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
                 }
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
+            }
+            if (document.thumb == null) {
+                document.thumb = new TLRPC.TL_photoSizeEmpty();
+                document.thumb.type = "s";
             }
         }
-        if (document.thumb == null) {
-            document.thumb = new TLRPC.TL_photoSizeEmpty();
-            document.thumb.type = "s";
+        document.path = path;
+
+        final TLRPC.TL_document documentFinal = document;
+        final String originalPathFinal = originalPath;
+        Utilities.RunOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                MessagesController.getInstance().sendMessage(documentFinal, originalPathFinal, dialog_id);
+                if (chatListView != null) {
+                    chatListView.setSelection(messages.size() + 1);
+                }
+                if (paused) {
+                    scrollToTopOnResume = true;
+                }
+            }
+        });
+    }
+
+    public void processSendingDocument(String path, String originalPath) {
+        if (path == null || originalPath == null) {
+            return;
         }
-        MessagesController.getInstance().sendMessage(document, originalPathOverride == null ? (documentFilePath + document.size) : originalPathOverride, dialog_id);
+        ArrayList<String> paths = new ArrayList<String>();
+        ArrayList<String> originalPaths = new ArrayList<String>();
+        paths.add(path);
+        originalPaths.add(originalPath);
+        processSendingDocuments(paths, originalPaths);
+    }
+
+    public void processSendingDocuments(final ArrayList<String> paths, final ArrayList<String> originalPaths) {
+        if (paths == null && originalPaths == null || paths != null && originalPaths != null && paths.size() != originalPaths.size()) {
+            return;
+        }
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (int a = 0; a < paths.size(); a++) {
+                    processSendingDocumentInternal(paths.get(a), originalPaths.get(a));
+                }
+            }
+        }).start();
     }
 
     public void processSendingVideo(final String videoPath) {
         if (videoPath == null || videoPath.length() == 0) {
             return;
         }
-        Bitmap thumb = ThumbnailUtils.createVideoThumbnail(videoPath, MediaStore.Video.Thumbnails.MINI_KIND);
-        TLRPC.PhotoSize size = FileLoader.scaleAndSaveImage(thumb, 90, 90, 55, currentEncryptedChat != null);
-        if (size == null) {
-            return;
-        }
-        size.type = "s";
-        TLRPC.TL_video video = new TLRPC.TL_video();
-        video.thumb = size;
-        video.caption = "";
-        video.id = 0;
-        video.path = videoPath;
-        File temp = new File(videoPath);
-        if (temp != null && temp.exists()) {
-            video.size = (int)temp.length();
-        }
-        UserConfig.lastLocalId--;
-        UserConfig.saveConfig(false);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                TLRPC.TL_video video = (TLRPC.TL_video)MessagesStorage.getInstance().getSentFile(videoPath, currentEncryptedChat == null ? 2 : 5);
+                if (video == null) {
+                    Bitmap thumb = ThumbnailUtils.createVideoThumbnail(videoPath, MediaStore.Video.Thumbnails.MINI_KIND);
+                    TLRPC.PhotoSize size = FileLoader.scaleAndSaveImage(thumb, 90, 90, 55, currentEncryptedChat != null);
+                    if (size == null) {
+                        return;
+                    }
+                    size.type = "s";
+                    video = new TLRPC.TL_video();
+                    video.thumb = size;
+                    video.caption = "";
+                    video.id = 0;
+                    File temp = new File(videoPath);
+                    if (temp != null && temp.exists()) {
+                        video.size = (int) temp.length();
+                    }
+                    UserConfig.lastLocalId--;
+                    UserConfig.saveConfig(false);
 
-        MediaPlayer mp = MediaPlayer.create(ApplicationLoader.applicationContext, Uri.fromFile(new File(videoPath)));
-        if (mp == null) {
-            return;
-        }
-        video.duration = (int)Math.ceil(mp.getDuration() / 1000.0f);
-        video.w = mp.getVideoWidth();
-        video.h = mp.getVideoHeight();
-        mp.release();
+                    MediaPlayer mp = MediaPlayer.create(ApplicationLoader.applicationContext, Uri.fromFile(new File(videoPath)));
+                    if (mp == null) {
+                        return;
+                    }
+                    video.duration = (int) Math.ceil(mp.getDuration() / 1000.0f);
+                    video.w = mp.getVideoWidth();
+                    video.h = mp.getVideoHeight();
+                    mp.release();
+                }
+                video.path = videoPath;
 
-        MediaStore.Video.Media media = new MediaStore.Video.Media();
-        MessagesController.getInstance().sendMessage(video, videoPath, dialog_id);
-        if (chatListView != null) {
-            chatListView.setSelection(messages.size() + 1);
-        }
-        scrollToTopOnResume = true;
+                final TLRPC.TL_video videoFinal = video;
+                Utilities.RunOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        MessagesController.getInstance().sendMessage(videoFinal, videoPath, dialog_id);
+                        if (chatListView != null) {
+                            chatListView.setSelection(messages.size() + 1);
+                        }
+                        if (paused) {
+                            scrollToTopOnResume = true;
+                        }
+                    }
+                });
+            }
+        }).start();
     }
 
     private void removeUnreadPlane(boolean reload) {
@@ -2752,7 +2823,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             MessagesController.getInstance().markDialogAsRead(dialog_id, messages.get(0).messageOwner.id, readWithMid, 0, readWithDate, true);
         }
 
-        fixLayout();
+        fixLayout(true);
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         String lastMessageText = preferences.getString("dialog_" + dialog_id, null);
         if (lastMessageText != null) {
@@ -2870,7 +2941,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         MediaController.getInstance().setLastEncryptedChatParams(chatEnterTime, chatLeaveTime, currentEncryptedChat, visibleMessages);
     }
 
-    private void fixLayout() {
+    private void fixLayout(final boolean resume) {
         final int lastPos = chatListView.getLastVisiblePosition();
         ViewTreeObserver obs = chatListView.getViewTreeObserver();
         obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
@@ -2883,7 +2954,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     return true;
                 }
                 int height = Utilities.dp(48);
-                if (getParentActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                if (!Utilities.isTablet(getParentActivity()) && getParentActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
                     height = Utilities.dp(40);
                     selectedMessagesCountTextView.setTextSize(16);
                 } else {
@@ -2895,7 +2966,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     params.height = height;
                     avatarImageView.setLayoutParams(params);
                 }
-                if (lastPos >= messages.size() - 1) {
+                if (!resume && lastPos >= messages.size() - 1) {
                     chatListView.post(new Runnable() {
                         @Override
                         public void run() {
@@ -2910,7 +2981,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
     @Override
     public void onConfigurationChanged(android.content.res.Configuration newConfig) {
-        fixLayout();
+        fixLayout(false);
     }
 
     private View getRowParentView(View v) {
@@ -3216,7 +3287,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     @Override
     public void didSelectFile(DocumentSelectActivity activity, String path) {
         activity.finishFragment();
-        processSendingDocument(path, null);
+        processSendingDocument(path, path);
     }
 
     @Override
@@ -3515,7 +3586,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     @Override
     public int getSelectedCount() { return 0; }
 
-    private class ChatAdapter extends BaseAdapter {
+    private class ChatAdapter extends BaseFragmentAdapter {
 
         private Context mContext;
 
@@ -3938,14 +4009,17 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                             if (actionView != null) {
                                 actionView.setVisibility(View.VISIBLE);
                             }
-                            Float progress = FileLoader.getInstance().fileProgresses.get(message.messageOwner.attachPath);
+                            Float progress = null;
+                            if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
+                                progress = FileLoader.getInstance().fileProgresses.get(message.messageOwner.attachPath);
+                                progressByTag.put((Integer)actionProgress.getTag(), message.messageOwner.attachPath);
+                                progressBarMap.put(message.messageOwner.attachPath, actionProgress);
+                            }
                             if (progress != null) {
                                 actionProgress.setProgress((int)(progress * 100));
                             } else {
                                 actionProgress.setProgress(0);
                             }
-                            progressByTag.put((Integer)actionProgress.getTag(), message.messageOwner.attachPath);
-                            progressBarMap.put(message.messageOwner.attachPath, actionProgress);
                         }
                         if (actionAttachButton != null) {
                             actionAttachButton.setVisibility(View.GONE);

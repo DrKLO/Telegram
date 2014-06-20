@@ -17,7 +17,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -33,6 +32,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.ChatOrUserCell;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
@@ -558,7 +558,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    private class MessagesAdapter extends BaseAdapter {
+    private class MessagesAdapter extends BaseFragmentAdapter {
         private Context mContext;
 
         public MessagesAdapter(Context context) {

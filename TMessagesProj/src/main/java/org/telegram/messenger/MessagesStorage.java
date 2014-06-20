@@ -97,6 +97,8 @@ public class MessagesStorage {
                 database.executeFast("CREATE TABLE user_contacts_v6(uid INTEGER PRIMARY KEY, fname TEXT, sname TEXT)").stepThis().dispose();
                 database.executeFast("CREATE TABLE user_phones_v6(uid INTEGER, phone TEXT, sphone TEXT, deleted INTEGER, PRIMARY KEY (uid, phone))").stepThis().dispose();
 
+                database.executeFast("CREATE TABLE sent_files_v2(uid TEXT, type INTEGER, data BLOB, PRIMARY KEY (uid, type))").stepThis().dispose();
+
                 database.executeFast("CREATE INDEX IF NOT EXISTS mid_idx_randoms ON randoms(mid);").stepThis().dispose();
 
                 database.executeFast("CREATE INDEX IF NOT EXISTS sphone_deleted_idx_user_phones ON user_phones_v6(sphone, deleted);").stepThis().dispose();
@@ -166,6 +168,8 @@ public class MessagesStorage {
                 database.executeFast("CREATE INDEX IF NOT EXISTS sphone_deleted_idx_user_phones ON user_phones_v6(sphone, deleted);").stepThis().dispose();
 
                 database.executeFast("CREATE INDEX IF NOT EXISTS mid_idx_randoms ON randoms(mid);").stepThis().dispose();
+
+                database.executeFast("CREATE TABLE IF NOT EXISTS sent_files_v2(uid TEXT, type INTEGER, data BLOB, PRIMARY KEY (uid, type))").stepThis().dispose();
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -1433,6 +1437,73 @@ public class MessagesStorage {
         } else {
             database.commitTransaction();
         }
+    }
+
+    public TLObject getSentFile(final String path, final int type) {
+        if (path == null) {
+            return null;
+        }
+        final Semaphore semaphore = new Semaphore(0);
+        final ArrayList<TLObject> result = new ArrayList<TLObject>();
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    String id = Utilities.MD5(path);
+                    if (id != null) {
+                        SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT data FROM sent_files_v2 WHERE uid = '%s' AND type = %d", id, type));
+                        if (cursor.next()) {
+                            byte[] fileData = cursor.byteArrayValue(0);
+                            if (fileData != null) {
+                                SerializedData data = new SerializedData(fileData);
+                                TLObject file = TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                                if (file != null) {
+                                    result.add(file);
+                                }
+                            }
+                        }
+                        cursor.dispose();
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                } finally {
+                    semaphore.release();
+                }
+            }
+        });
+        try {
+            semaphore.acquire();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return !result.isEmpty() ? result.get(0) : null;
+    }
+
+    public void putSentFile(final String path, final TLObject file, final int type) {
+        if (path == null || file == null) {
+            return;
+        }
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    String id = Utilities.MD5(path);
+                    if (id != null) {
+                        SQLitePreparedStatement state = database.executeFast("REPLACE INTO sent_files_v2 VALUES(?, ?, ?)");
+                        state.requery();
+                        SerializedData data = new SerializedData();
+                        file.serializeToStream(data);
+                        state.bindString(1, id);
+                        state.bindInteger(2, type);
+                        state.bindByteArray(3, data.toByteArray());
+                        state.step();
+                        state.dispose();
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        });
     }
 
     public void updateEncryptedChatTTL(final TLRPC.EncryptedChat chat) {

@@ -12,7 +12,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.provider.MediaStore;
-import android.util.Log;
 
 import org.telegram.ui.ApplicationLoader;
 
@@ -79,12 +78,7 @@ public class FileLoadOperation {
     }
 
     public FileLoadOperation(TLRPC.Video videoLocation) {
-        if (videoLocation instanceof TLRPC.TL_video) {
-            location = new TLRPC.TL_inputVideoFileLocation();
-            datacenter_id = videoLocation.dc_id;
-            location.id = videoLocation.id;
-            location.access_hash = videoLocation.access_hash;
-        } else if (videoLocation instanceof TLRPC.TL_videoEncrypted) {
+        if (videoLocation instanceof TLRPC.TL_videoEncrypted) {
             location = new TLRPC.TL_inputEncryptedFileLocation();
             location.id = videoLocation.id;
             location.access_hash = videoLocation.access_hash;
@@ -92,6 +86,11 @@ public class FileLoadOperation {
             iv = new byte[32];
             System.arraycopy(videoLocation.iv, 0, iv, 0, iv.length);
             key = videoLocation.key;
+        } else if (videoLocation instanceof TLRPC.TL_video) {
+            location = new TLRPC.TL_inputVideoFileLocation();
+            datacenter_id = videoLocation.dc_id;
+            location.id = videoLocation.id;
+            location.access_hash = videoLocation.access_hash;
         }
         ext = ".mp4";
     }
@@ -115,12 +114,7 @@ public class FileLoadOperation {
     }
 
     public FileLoadOperation(TLRPC.Document documentLocation) {
-        if (documentLocation instanceof TLRPC.TL_document) {
-            location = new TLRPC.TL_inputDocumentFileLocation();
-            datacenter_id = documentLocation.dc_id;
-            location.id = documentLocation.id;
-            location.access_hash = documentLocation.access_hash;
-        } else if (documentLocation instanceof TLRPC.TL_documentEncrypted) {
+        if (documentLocation instanceof TLRPC.TL_documentEncrypted) {
             location = new TLRPC.TL_inputEncryptedFileLocation();
             location.id = documentLocation.id;
             location.access_hash = documentLocation.access_hash;
@@ -128,6 +122,11 @@ public class FileLoadOperation {
             iv = new byte[32];
             System.arraycopy(documentLocation.iv, 0, iv, 0, iv.length);
             key = documentLocation.key;
+        } else if (documentLocation instanceof TLRPC.TL_document) {
+            location = new TLRPC.TL_inputDocumentFileLocation();
+            datacenter_id = documentLocation.dc_id;
+            location.id = documentLocation.id;
+            location.access_hash = documentLocation.access_hash;
         }
         ext = documentLocation.file_name;
         int idx = -1;
@@ -675,6 +674,9 @@ public class FileLoadOperation {
                             delegate.didFailedLoadingFile(FileLoadOperation.this);
                         }
                     } else {
+                        if (location != null) {
+                            FileLog.e("tmessages", "" + location + " id = " + location.id + " access_hash = " + location.access_hash + " volume_id = " + location.local_id + " secret = " + location.secret);
+                        }
                         cleanup();
                         delegate.didFailedLoadingFile(FileLoadOperation.this);
                     }

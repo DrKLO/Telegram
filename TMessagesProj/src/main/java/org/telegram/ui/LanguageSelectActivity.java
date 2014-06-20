@@ -16,7 +16,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -25,6 +24,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
@@ -35,11 +35,11 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class LanguageSelectActivity extends BaseFragment {
-    private BaseAdapter listAdapter;
+    private BaseFragmentAdapter listAdapter;
     private ListView listView;
     private boolean searchWas;
     private boolean searching;
-    private BaseAdapter searchListViewAdapter;
+    private BaseFragmentAdapter searchListViewAdapter;
     private TextView emptyTextView;
 
     private Timer searchTimer;
@@ -265,7 +265,7 @@ public class LanguageSelectActivity extends BaseFragment {
         });
     }
 
-    private class SearchAdapter extends BaseAdapter {
+    private class SearchAdapter extends BaseFragmentAdapter {
         private Context mContext;
 
         public SearchAdapter(Context context) {
@@ -341,7 +341,7 @@ public class LanguageSelectActivity extends BaseFragment {
         }
     }
 
-    private class ListAdapter extends BaseAdapter {
+    private class ListAdapter extends BaseFragmentAdapter {
         private Context mContext;
 
         public ListAdapter(Context context) {

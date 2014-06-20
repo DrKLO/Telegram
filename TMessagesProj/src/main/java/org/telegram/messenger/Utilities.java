@@ -1003,4 +1003,8 @@ public class Utilities {
             UpdateManager.register(context, BuildVars.HOCKEY_APP_HASH);
         }
     }
+
+    public static boolean isTablet(Context context) {
+        return (context.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_LARGE;
+    }
 }

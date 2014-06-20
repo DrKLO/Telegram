@@ -22,6 +22,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
@@ -321,7 +322,7 @@ public class CountrySelectActivity extends BaseFragment {
         });
     }
 
-    private class SearchAdapter extends BaseAdapter {
+    private class SearchAdapter extends BaseFragmentAdapter {
         private Context mContext;
 
         public SearchAdapter(Context context) {

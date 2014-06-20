@@ -8,23 +8,17 @@
 
 package org.telegram.ui;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Typeface;
-import android.media.Ringtone;
-import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -43,12 +37,12 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
-import org.telegram.ui.Views.ColorPickerView;
 import org.telegram.ui.Views.IdenticonView;
 
 import java.util.ArrayList;
@@ -76,11 +70,8 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     private int settingsTimerRow;
     private int settingsKeyRow;
     private int settingsNotificationsRow;
-    private int settingsVibrateRow;
-    private int settingsSoundRow;
     private int sharedMediaSectionRow;
     private int sharedMediaRow;
-    private int settingsLedRow;
     private int rowCount = 0;
 
     public UserProfileActivity(Bundle args) {
@@ -127,9 +118,6 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             settingsKeyRow = -1;
         }
         settingsNotificationsRow = rowCount++;
-        settingsVibrateRow = rowCount++;
-        settingsLedRow = rowCount++;
-        settingsSoundRow = rowCount++;
         sharedMediaSectionRow = rowCount++;
         sharedMediaRow = rowCount++;
     }
@@ -254,72 +242,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
-                    if (i == settingsVibrateRow || i == settingsNotificationsRow) {
-                        if (getParentActivity() == null) {
-                            return;
-                        }
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                        builder.setItems(new CharSequence[] {
-                                LocaleController.getString("Default", R.string.Default),
-                                LocaleController.getString("Enabled", R.string.Enabled),
-                                LocaleController.getString("Disabled", R.string.Disabled)
-                        }, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                                SharedPreferences.Editor editor = preferences.edit();
-                                if (i == settingsVibrateRow) {
-                                    if (dialog_id == 0) {
-                                        editor.putInt("vibrate_" + user_id, which);
-                                    } else {
-                                        editor.putInt("vibrate_" + dialog_id, which);
-                                    }
-                                } else if (i == settingsNotificationsRow) {
-                                    if (dialog_id == 0) {
-                                        editor.putInt("notify2_" + user_id, which);
-                                    } else {
-                                        editor.putInt("notify2_" + dialog_id, which);
-                                    }
-                                }
-                                editor.commit();
-                                if (listView != null) {
-                                    listView.invalidateViews();
-                                }
-                            }
-                        });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        showAlertDialog(builder);
-                    } else if (i == settingsSoundRow) {
-                        try {
-                            Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
-                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
-                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
-                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
-                            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                            Uri currentSound = null;
-
-                            String defaultPath = null;
-                            Uri defaultUri = Settings.System.DEFAULT_NOTIFICATION_URI;
-                            if (defaultUri != null) {
-                                defaultPath = defaultUri.getPath();
-                            }
-
-                            String path = preferences.getString("sound_path_" + user_id, defaultPath);
-                            if (path != null && !path.equals("NoSound")) {
-                                if (path.equals(defaultPath)) {
-                                    currentSound = defaultUri;
-                                } else {
-                                    currentSound = Uri.parse(path);
-                                }
-                            }
-
-                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentSound);
-                            getParentActivity().startActivityForResult(tmpIntent, 12);
-                        } catch (Exception e) {
-                            FileLog.e("tmessages", e);
-                        }
-                    } else if (i == sharedMediaRow) {
+                    if (i == sharedMediaRow) {
                         Bundle args = new Bundle();
                         if (dialog_id != 0) {
                             args.putLong("dialog_id", dialog_id);
@@ -376,57 +299,10 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         showAlertDialog(builder);
-                    } else if (i == settingsLedRow) {
-                        if (getParentActivity() == null) {
-                            return;
-                        }
-
-                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                        view = li.inflate(R.layout.settings_color_dialog_layout, null, false);
-                        final ColorPickerView colorPickerView = (ColorPickerView)view.findViewById(R.id.color_picker);
-
-                        final String key = dialog_id == 0 ? "color_" + user_id : "color_" + dialog_id;
-                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                        if (preferences.contains(key)) {
-                            colorPickerView.setOldCenterColor(preferences.getInt(key, 0xff00ff00));
-                        } else {
-                            colorPickerView.setOldCenterColor(preferences.getInt("MessagesLed", 0xff00ff00));
-                        }
-
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setTitle(LocaleController.getString("LedColor", R.string.LedColor));
-                        builder.setView(view);
-                        builder.setPositiveButton(LocaleController.getString("Set", R.string.Set), new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int which) {
-                                final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                                SharedPreferences.Editor editor = preferences.edit();
-                                editor.putInt(key, colorPickerView.getColor());
-                                editor.commit();
-                                listView.invalidateViews();
-                            }
-                        });
-                        builder.setNeutralButton(LocaleController.getString("Disabled", R.string.Disabled), new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                                SharedPreferences.Editor editor = preferences.edit();
-                                editor.putInt(key, 0);
-                                editor.commit();
-                                listView.invalidateViews();
-                            }
-                        });
-                        builder.setNegativeButton(LocaleController.getString("Default", R.string.Default), new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                                SharedPreferences.Editor editor = preferences.edit();
-                                editor.remove(key);
-                                editor.commit();
-                                listView.invalidateViews();
-                            }
-                        });
-                        showAlertDialog(builder);
+                    } else if (i == settingsNotificationsRow) {
+                        Bundle args = new Bundle();
+                        args.putLong("dialog_id", dialog_id == 0 ? user_id : dialog_id);
+                        presentFragment(new ProfileNotificationsActivity(args));
                     }
                 }
             });
@@ -442,43 +318,6 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             }
         }
         return fragmentView;
-    }
-
-    @Override
-    public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
-        if (resultCode == Activity.RESULT_OK) {
-            if (data == null) {
-                return;
-            }
-            Uri ringtone = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);
-            String name = null;
-            if (ringtone != null) {
-                Ringtone rng = RingtoneManager.getRingtone(ApplicationLoader.applicationContext, ringtone);
-                if (rng != null) {
-                    if(ringtone.equals(Settings.System.DEFAULT_NOTIFICATION_URI)) {
-                        name = LocaleController.getString("Default", R.string.Default);
-                    } else {
-                        name = rng.getTitle(getParentActivity());
-                    }
-                    rng.stop();
-                }
-            }
-
-            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-            SharedPreferences.Editor editor = preferences.edit();
-
-            if (requestCode == 12) {
-                if (name != null && ringtone != null) {
-                    editor.putString("sound_" + user_id, name);
-                    editor.putString("sound_path_" + user_id, ringtone.toString());
-                } else {
-                    editor.putString("sound_" + user_id, "NoSound");
-                    editor.putString("sound_path_" + user_id, "NoSound");
-                }
-            }
-            editor.commit();
-            listView.invalidateViews();
-        }
     }
 
     public void didReceivedNotification(int id, Object... args) {
@@ -629,7 +468,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         }
     }
 
-    private class ListAdapter extends BaseAdapter {
+    private class ListAdapter extends BaseFragmentAdapter {
         private Context mContext;
 
         public ListAdapter(Context context) {
@@ -643,7 +482,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
 
         @Override
         public boolean isEnabled(int i) {
-            return i == phoneRow || i == settingsTimerRow || i == settingsKeyRow || i == settingsNotificationsRow || i == sharedMediaRow || i == settingsSoundRow || i == settingsVibrateRow || i == settingsLedRow;
+            return i == phoneRow || i == settingsTimerRow || i == settingsKeyRow || i == settingsNotificationsRow || i == sharedMediaRow;
         }
 
         @Override
@@ -829,44 +668,6 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     } else {
                         detailTextView.setText(String.format("%d", encryptedChat.ttl));
                     }
-                } else if (i == settingsVibrateRow) {
-                    textView.setText(LocaleController.getString("Vibrate", R.string.Vibrate));
-                    divider.setVisibility(View.VISIBLE);
-                    SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-
-                    String key;
-                    if (dialog_id == 0) {
-                        key = "vibrate_" + user_id;
-                    } else {
-                        key = "vibrate_" + dialog_id;
-                    }
-
-                    int value = preferences.getInt(key, 0);
-                    if (value == 0) {
-                        detailTextView.setText(LocaleController.getString("Default", R.string.Default));
-                    } else if (value == 1) {
-                        detailTextView.setText(LocaleController.getString("Enabled", R.string.Enabled));
-                    } else if (value == 2) {
-                        detailTextView.setText(LocaleController.getString("Disabled", R.string.Disabled));
-                    }
-                } else if (i == settingsNotificationsRow) {
-                    textView.setText(LocaleController.getString("Notifications", R.string.Notifications));
-                    divider.setVisibility(View.VISIBLE);
-                    SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                    String key;
-                    if (dialog_id == 0) {
-                        key = "notify2_" + user_id;
-                    } else {
-                        key = "notify2_" + dialog_id;
-                    }
-                    int value = preferences.getInt(key, 0);
-                    if (value == 0) {
-                        detailTextView.setText(LocaleController.getString("Default", R.string.Default));
-                    } else if (value == 1) {
-                        detailTextView.setText(LocaleController.getString("Enabled", R.string.Enabled));
-                    } else if (value == 2) {
-                        detailTextView.setText(LocaleController.getString("Disabled", R.string.Disabled));
-                    }
                 }
             } else if (type == 4) {
                 if (view == null) {
@@ -883,41 +684,14 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             } else if (type == 5) {
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = li.inflate(R.layout.settings_row_detail_layout, viewGroup, false);
+                    view = li.inflate(R.layout.settings_row_button_layout, viewGroup, false);
                 }
                 TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
-                TextView detailTextView = (TextView)view.findViewById(R.id.settings_row_text_detail);
-
                 View divider = view.findViewById(R.id.settings_row_divider);
-                if (i == settingsSoundRow) {
-                    SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                    String name = preferences.getString("sound_" + user_id, LocaleController.getString("Default", R.string.Default));
-                    if (name.equals("NoSound")) {
-                        detailTextView.setText(LocaleController.getString("NoSound", R.string.NoSound));
-                    } else {
-                        detailTextView.setText(name);
-                    }
-                    textView.setText(LocaleController.getString("Sound", R.string.Sound));
+                if (i == settingsNotificationsRow) {
+                    textView.setText(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds));
                     divider.setVisibility(View.INVISIBLE);
                 }
-            } else if (type == 6) {
-                if (view == null) {
-                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = li.inflate(R.layout.settings_row_color_layout, viewGroup, false);
-                }
-                TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
-                View colorView = view.findViewById(R.id.settings_color);
-                View divider = view.findViewById(R.id.settings_row_divider);
-                textView.setText(LocaleController.getString("LedColor", R.string.LedColor));
-                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-
-                String key = dialog_id == 0 ? "color_" + user_id : "color_" + dialog_id;
-                if (preferences.contains(key)) {
-                    colorView.setBackgroundColor(preferences.getInt(key, 0xff00ff00));
-                } else {
-                    colorView.setBackgroundColor(preferences.getInt("MessagesLed", 0xff00ff00));
-                }
-                divider.setVisibility(View.VISIBLE);
             }
             return view;
         }
@@ -930,21 +704,19 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 return 1;
             } else if (i == phoneRow) {
                 return 2;
-            } else if (i == sharedMediaRow || i == settingsTimerRow || i == settingsNotificationsRow || i == settingsVibrateRow) {
+            } else if (i == sharedMediaRow || i == settingsTimerRow) {
                 return 3;
             } else if (i == settingsKeyRow) {
                 return 4;
-            } else if (i == settingsSoundRow) {
+            } else if (i == settingsNotificationsRow) {
                 return 5;
-            } else if (i == settingsLedRow) {
-                return 6;
             }
             return 0;
         }
 
         @Override
         public int getViewTypeCount() {
-            return 7;
+            return 6;
         }
 
         @Override

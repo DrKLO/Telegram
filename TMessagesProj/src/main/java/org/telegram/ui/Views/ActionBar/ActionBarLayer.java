@@ -107,7 +107,7 @@ public class ActionBarLayer extends FrameLayout {
     private void positionLogoImage(int height) {
         if (logoImageView != null) {
             LayoutParams layoutParams = (LayoutParams) logoImageView.getLayoutParams();
-            if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            if (!Utilities.isTablet(getContext()) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 layoutParams.width = (int)(logoImageView.getDrawable().getIntrinsicWidth() / 1.3f);
                 layoutParams.height = (int)(logoImageView.getDrawable().getIntrinsicHeight() / 1.3f);
                 layoutParams.setMargins(Utilities.dp(12), (height - layoutParams.height) / 2, 0, 0);
@@ -123,7 +123,7 @@ public class ActionBarLayer extends FrameLayout {
 
     private void positionTitle(int width, int height) {
         int offset = Utilities.dp(2);
-        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        if (!Utilities.isTablet(getContext()) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
             offset = Utilities.dp(1);
         }
         int maxTextWidth = 0;
@@ -131,7 +131,7 @@ public class ActionBarLayer extends FrameLayout {
         LayoutParams layoutParams = null;
 
         if (titleTextView != null && titleTextView.getVisibility() == VISIBLE) {
-            if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            if (!Utilities.isTablet(getContext()) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 titleTextView.setTextSize(16);
             } else {
                 titleTextView.setTextSize(18);
@@ -146,7 +146,7 @@ public class ActionBarLayer extends FrameLayout {
             maxTextWidth = titleTextView.getMeasuredWidth();
         }
         if (subTitleTextView != null && subTitleTextView.getVisibility() == VISIBLE) {
-            if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            if (!Utilities.isTablet(getContext()) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 subTitleTextView.setTextSize(12);
             } else {
                 subTitleTextView.setTextSize(14);
@@ -165,7 +165,7 @@ public class ActionBarLayer extends FrameLayout {
         if (logoImageView == null || logoImageView.getVisibility() == GONE) {
             x = Utilities.dp(16);
         } else {
-            if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            if (!Utilities.isTablet(getContext()) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 x = Utilities.dp(22) + (int)(logoImageView.getDrawable().getIntrinsicWidth() / 1.3f);
             } else {
                 x = Utilities.dp(22) + logoImageView.getDrawable().getIntrinsicWidth();
@@ -243,6 +243,7 @@ public class ActionBarLayer extends FrameLayout {
         if (value != null && subTitleTextView == null) {
             subTitleTextView = new TextView(getContext());
             backButtonFrameLayout.addView(subTitleTextView);
+            subTitleTextView.setGravity(Gravity.LEFT);
             subTitleTextView.setTextColor(0xffd7e8f7);
             subTitleTextView.setSingleLine(true);
             subTitleTextView.setLines(1);
@@ -260,6 +261,7 @@ public class ActionBarLayer extends FrameLayout {
         if (resourceId != 0 && subTitleTextView == null) {
             subTitleTextView = new TextView(getContext());
             backButtonFrameLayout.addView(subTitleTextView);
+            subTitleTextView.setGravity(Gravity.LEFT);
             subTitleTextView.setTextColor(0xffd7e8f7);
             subTitleTextView.setSingleLine(true);
             subTitleTextView.setLines(1);
@@ -276,7 +278,10 @@ public class ActionBarLayer extends FrameLayout {
     public void setTitle(CharSequence value) {
         if (value != null && titleTextView == null) {
             titleTextView = new TextView(getContext());
+            titleTextView.setGravity(Gravity.LEFT);
             titleTextView.setSingleLine(true);
+            titleTextView.setLines(1);
+            titleTextView.setMaxLines(1);
             titleTextView.setEllipsize(TextUtils.TruncateAt.END);
             backButtonFrameLayout.addView(titleTextView);
             titleTextView.setTextColor(0xffffffff);
@@ -291,6 +296,7 @@ public class ActionBarLayer extends FrameLayout {
     public void setTitleIcon(int resourceId, int padding) {
         if (resourceId != 0 && titleTextView == null) {
             titleTextView = new TextView(getContext());
+            titleTextView.setGravity(Gravity.LEFT);
             backButtonFrameLayout.addView(titleTextView);
             titleTextView.setTextColor(0xffffffff);
             titleTextView.setSingleLine(true);

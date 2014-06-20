@@ -64,6 +64,7 @@ public class ActionBarActivity extends Activity {
     private boolean maybeStartTracking = false;
     protected boolean startedTracking = false;
     private int startedTrackingX;
+    private int startedTrackingY;
     protected boolean animationInProgress = false;
     private VelocityTracker velocityTracker = null;
     private boolean beginTrackingSent = false;
@@ -272,6 +273,7 @@ public class ActionBarActivity extends Activity {
                 startedTrackingPointerId = ev.getPointerId(0);
                 maybeStartTracking = true;
                 startedTrackingX = (int) ev.getX();
+                startedTrackingY = (int) ev.getY();
                 if (velocityTracker != null) {
                     velocityTracker.clear();
                 }
@@ -280,8 +282,9 @@ public class ActionBarActivity extends Activity {
                     velocityTracker = VelocityTracker.obtain();
                 }
                 int dx = Math.max(0, (int) (ev.getX() - startedTrackingX));
+                int dy = Math.abs((int)ev.getY() - startedTrackingY);
                 velocityTracker.addMovement(ev);
-                if (maybeStartTracking && !startedTracking && dx >= Utilities.dp(10)) {
+                if (maybeStartTracking && !startedTracking && dx >= Utilities.dp(10) && Math.abs(dx) / 3 > dy) {
                     prepareForMoving(ev);
                 } else if (startedTracking) {
                     if (!beginTrackingSent) {
@@ -435,7 +438,7 @@ public class ActionBarActivity extends Activity {
 
         int height = 0;
         if (actionBar.getVisibility() == View.VISIBLE) {
-            if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            if (!Utilities.isTablet(this) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 height = Utilities.dp(40);
             } else {
                 height = Utilities.dp(48);
@@ -660,7 +663,6 @@ public class ActionBarActivity extends Activity {
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_MENU && !checkTransitionAnimation() && !startedTracking) {
             actionBar.onMenuButtonPressed();
-            return true;
         }
         return super.onKeyUp(keyCode, event);
     }

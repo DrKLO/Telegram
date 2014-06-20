@@ -9,6 +9,7 @@
 package org.telegram.ui.Views;
 
 import android.content.Context;
+import android.database.DataSetObserver;
 import android.graphics.drawable.GradientDrawable;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -247,6 +248,13 @@ public class EmojiView extends LinearLayout {
             localObject.setTag(this.data[paramInt]);
             return localObject;
         }
+
+        @Override
+        public void unregisterDataSetObserver(DataSetObserver observer) {
+            if (observer != null) {
+                super.unregisterDataSetObserver(observer);
+            }
+        }
     }
 
     private class EmojiPagesAdapter extends PagerAdapter implements PagerSlidingTabStrip.IconTabProvider {
@@ -285,6 +293,13 @@ public class EmojiView extends LinearLayout {
 
         public boolean isViewFromObject(View paramView, Object paramObject) {
             return paramView == paramObject;
+        }
+
+        @Override
+        public void unregisterDataSetObserver(DataSetObserver observer) {
+            if (observer != null) {
+                super.unregisterDataSetObserver(observer);
+            }
         }
     }
 

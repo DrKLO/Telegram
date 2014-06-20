@@ -1723,7 +1723,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 if (velocityTracker != null) {
                     velocityTracker.addMovement(ev);
                 }
-                if (canDragDown && !draggingDown && scale == 1 && Math.abs(ev.getY() - dragY) >= Utilities.dp(30)) {
+                float dx = Math.abs(ev.getX() - moveStartX);
+                float dy = Math.abs(ev.getY() - dragY);
+                if (canDragDown && !draggingDown && scale == 1 && dy >= Utilities.dp(30) && dy / 2 > dx) {
                     draggingDown = true;
                     moving = false;
                     dragY = ev.getY();

@@ -211,10 +211,10 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 if (paused) {
                     lastPauseTime = System.currentTimeMillis();
                     nextSleepTimeout = 30000;
-                    FileLog.e("tmessages", "wakeup network in background by received push");
+                    FileLog.e("tmessages", "wakeup network in background");
                 } else if (lastPauseTime != 0) {
                     lastPauseTime = System.currentTimeMillis();
-                    FileLog.e("tmessages", "reset sleep timeout by received push");
+                    FileLog.e("tmessages", "reset sleep timeout");
                 }
             }
         });
@@ -641,9 +641,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     if (exist.downloadConnection != null) {
                         exist.downloadConnection.suspendConnection(true);
                     }
-                    if (dc == 1) {
-                        updateDcSettings(1);
-                    }
+                    updateDcSettings(dc);
                 }
             }
         });
@@ -1062,13 +1060,17 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         for (int i = 0; i < runningRequests.size(); i++) {
             RPCRequest request = runningRequests.get(i);
 
-            if (updatingDcSettings && datacenters.size() > 1 && request.rawRequest instanceof TLRPC.TL_help_getConfig) {
-                if (updatingDcStartTime < currentTime - 60) {
-                    FileLog.e("tmessages", "move TL_help_getConfig to requestQueue");
-                    requestQueue.add(request);
-                    runningRequests.remove(i);
-                    i--;
-                    continue;
+            if (datacenters.size() > 1) {
+                if (updatingDcSettings && request.rawRequest instanceof TLRPC.TL_help_getConfig) {
+                    if (updatingDcStartTime < currentTime - 60) {
+                        FileLog.e("tmessages", "move TL_help_getConfig to requestQueue");
+                        requestQueue.add(request);
+                        runningRequests.remove(i);
+                        i--;
+                        continue;
+                    }
+                } else if (request.rawRequest instanceof TLRPC.TL_auth_sendCode || request.rawRequest instanceof TLRPC.TL_auth_signIn || request.rawRequest instanceof TLRPC.TL_auth_signUp) {
+
                 }
             }
 
