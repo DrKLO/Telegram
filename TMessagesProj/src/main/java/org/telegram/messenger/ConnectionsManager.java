@@ -44,6 +44,11 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     private ArrayList<RPCRequest> runningRequests = new ArrayList<RPCRequest>();
     private ArrayList<Action> actionQueue = new ArrayList<Action>();
 
+    private ArrayList<Integer> unknownDatacenterIds = new ArrayList<Integer>();
+    private ArrayList<Integer> neededDatacenterIds = new ArrayList<Integer>();
+    private ArrayList<Integer> unauthorizedDatacenterIds = new ArrayList<Integer>();
+    final HashMap<Integer, ArrayList<NetworkMessage>> genericMessagesToDatacenters = new HashMap<Integer, ArrayList<NetworkMessage>>();
+
     private TLRPC.TL_auth_exportedAuthorization movingAuthorization;
     public static final int DEFAULT_DATACENTER_ID = Integer.MAX_VALUE;
     public static final int DC_UPDATE_TIME = 60 * 60;
@@ -126,15 +131,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     if (!paused) {
                         FileLog.e("tmessages", "pausing network and timers by sleep time = " + nextSleepTimeout);
                         for (Datacenter datacenter : datacenters.values()) {
-                            if (datacenter.connection != null) {
-                                datacenter.connection.suspendConnection(true);
-                            }
-                            if (datacenter.uploadConnection != null) {
-                                datacenter.uploadConnection.suspendConnection(true);
-                            }
-                            if (datacenter.downloadConnection != null) {
-                                datacenter.downloadConnection.suspendConnection(true);
-                            }
+                            datacenter.suspendConnections();
                         }
                     }
                     try {
@@ -472,15 +469,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                         editor.putLong("pushSessionId", pushSessionId);
 
                         ArrayList<Long> sessions = new ArrayList<Long>();
-                        if (currentDatacenter.connection != null) {
-                            sessions.add(currentDatacenter.connection.getSissionId());
-                        }
-                        if (currentDatacenter.downloadConnection != null) {
-                            sessions.add(currentDatacenter.downloadConnection.getSissionId());
-                        }
-                        if (currentDatacenter.uploadConnection != null) {
-                            sessions.add(currentDatacenter.uploadConnection.getSissionId());
-                        }
+                        currentDatacenter.getSessions(sessions);
 
                         if (!sessions.isEmpty()) {
                             SerializedData data = new SerializedData(sessions.size() * 8 + 4);
@@ -539,15 +528,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             @Override
             public void run() {
                 Datacenter datacenter = datacenterWithId(currentDatacenterId);
-                if (datacenter.connection != null) {
-                    datacenter.connection.recreateSession();
-                }
-                if (datacenter.downloadConnection != null) {
-                    datacenter.downloadConnection.recreateSession();
-                }
-                if (datacenter.uploadConnection != null) {
-                    datacenter.uploadConnection.recreateSession();
-                }
+                datacenter.recreateSessions();
 
                 clearRequestsForRequestClass(RPCRequest.RPCRequestClassGeneric, datacenter);
                 clearRequestsForRequestClass(RPCRequest.RPCRequestClassDownloadMedia, datacenter);
@@ -632,15 +613,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     addresses.add(ip_address);
                     ports.put(ip_address, port);
                     exist.replaceAddressesAndPorts(addresses, ports);
-                    if (exist.connection != null) {
-                        exist.connection.suspendConnection(true);
-                    }
-                    if (exist.uploadConnection != null) {
-                        exist.uploadConnection.suspendConnection(true);
-                    }
-                    if (exist.downloadConnection != null) {
-                        exist.downloadConnection.suspendConnection(true);
-                    }
+                    exist.suspendConnections();
                     updateDcSettings(dc);
                 }
             }
@@ -681,15 +654,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     for (HashMap.Entry<Integer, Datacenter> entry : datacenters.entrySet()) {
                         Datacenter datacenter = entry.getValue();
                         datacenter.overridePort = 8888;
-                        if (datacenter.connection != null) {
-                            datacenter.connection.suspendConnection(true);
-                        }
-                        if (datacenter.uploadConnection != null) {
-                            datacenter.uploadConnection.suspendConnection(true);
-                        }
-                        if (datacenter.downloadConnection != null) {
-                            datacenter.downloadConnection.suspendConnection(true);
-                        }
+                        datacenter.suspendConnections();
                     }
                 } else {
                     for (HashMap.Entry<Integer, Datacenter> entry : datacenters.entrySet()) {
@@ -852,6 +817,10 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     public void cancelRpc(final long token, final boolean notifyServer) {
+        cancelRpc(token, notifyServer, false);
+    }
+
+    public void cancelRpc(final long token, final boolean notifyServer, final boolean ifNotSent) {
         if (token == 0) {
             return;
         }
@@ -871,30 +840,32 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     }
                 }
 
-                for (int i = 0; i < runningRequests.size(); i++) {
-                    RPCRequest request = runningRequests.get(i);
-                    if (request.token == token) {
-                        found = true;
+                if (!ifNotSent) {
+                    for (int i = 0; i < runningRequests.size(); i++) {
+                        RPCRequest request = runningRequests.get(i);
+                        if (request.token == token) {
+                            found = true;
 
-                        FileLog.d("tmessages", "===== Cancelled running rpc request " + request.rawRequest);
+                            FileLog.d("tmessages", "===== Cancelled running rpc request " + request.rawRequest);
 
-                        if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0) {
-                            if (notifyServer) {
-                                TLRPC.TL_rpc_drop_answer dropAnswer = new TLRPC.TL_rpc_drop_answer();
-                                dropAnswer.req_msg_id = request.runningMessageId;
-                                performRpc(dropAnswer, null, null, false, request.flags);
+                            if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0) {
+                                if (notifyServer) {
+                                    TLRPC.TL_rpc_drop_answer dropAnswer = new TLRPC.TL_rpc_drop_answer();
+                                    dropAnswer.req_msg_id = request.runningMessageId;
+                                    performRpc(dropAnswer, null, null, false, request.flags);
+                                }
                             }
-                        }
 
-                        request.cancelled = true;
-                        request.rawRequest.freeResources();
-                        request.rpcRequest.freeResources();
-                        runningRequests.remove(i);
-                        break;
+                            request.cancelled = true;
+                            request.rawRequest.freeResources();
+                            request.rpcRequest.freeResources();
+                            runningRequests.remove(i);
+                            break;
+                        }
                     }
-                }
-                if (!found) {
-                    FileLog.d("tmessages", "***** Warning: cancelling unknown request");
+                    if (!found) {
+                        FileLog.d("tmessages", "***** Warning: cancelling unknown request");
+                    }
                 }
             }
         });
@@ -944,117 +915,18 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     private void processRequestQueue(int requestClass, int _datacenterId) {
-        final HashMap<Integer, Integer> activeTransportTokens = new HashMap<Integer, Integer>();
-        final ArrayList<Integer> transportsToResume = new ArrayList<Integer>();
+        boolean haveNetwork = true;//isNetworkOnline();
 
-        final HashMap<Integer, Integer> activeDownloadTransportTokens = new HashMap<Integer, Integer>();
-        final ArrayList<Integer> downloadTransportsToResume = new ArrayList<Integer>();
+        genericMessagesToDatacenters.clear();
+        unknownDatacenterIds.clear();
+        neededDatacenterIds.clear();
+        unauthorizedDatacenterIds.clear();
 
-        final HashMap<Integer, Integer> activeUploadTransportTokens = new HashMap<Integer, Integer>();
-        final ArrayList<Integer> uploadTransportsToResume = new ArrayList<Integer>();
-
-        for (Datacenter datacenter : datacenters.values()) {
-            if (datacenter.connection != null) {
-                int channelToken = datacenter.connection.channelToken;
-                if (channelToken != 0) {
-                    activeTransportTokens.put(datacenter.datacenterId, channelToken);
-                }
-            }
-            if (datacenter.downloadConnection != null) {
-                int channelToken = datacenter.downloadConnection.channelToken;
-                if (channelToken != 0) {
-                    activeDownloadTransportTokens.put(datacenter.datacenterId, channelToken);
-                }
-            }
-            if (datacenter.uploadConnection != null) {
-                int channelToken = datacenter.uploadConnection.channelToken;
-                if (channelToken != 0) {
-                    activeUploadTransportTokens.put(datacenter.datacenterId, channelToken);
-                }
-            }
+        TcpConnection genericConnection = null;
+        Datacenter defaultDatacenter = datacenterWithId(currentDatacenterId);
+        if (defaultDatacenter != null) {
+            genericConnection = defaultDatacenter.getGenericConnection(this);
         }
-        for (RPCRequest request : runningRequests) {
-            if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0) {
-                Datacenter requestDatacenter = datacenterWithId(request.runningDatacenterId);
-                if (requestDatacenter != null && !activeTransportTokens.containsKey(requestDatacenter.datacenterId) && !transportsToResume.contains(requestDatacenter.datacenterId)) {
-                    transportsToResume.add(requestDatacenter.datacenterId);
-                }
-            } else if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0) {
-                Datacenter requestDatacenter = datacenterWithId(request.runningDatacenterId);
-                if (requestDatacenter != null && !activeDownloadTransportTokens.containsKey(requestDatacenter.datacenterId) && !downloadTransportsToResume.contains(requestDatacenter.datacenterId)) {
-                    downloadTransportsToResume.add(requestDatacenter.datacenterId);
-                }
-            } else if ((request.flags & RPCRequest.RPCRequestClassUploadMedia) != 0) {
-                Datacenter requestDatacenter = datacenterWithId(request.runningDatacenterId);
-                if (requestDatacenter != null && !activeUploadTransportTokens.containsKey(requestDatacenter.datacenterId) && !uploadTransportsToResume.contains(requestDatacenter.datacenterId)) {
-                    uploadTransportsToResume.add(requestDatacenter.datacenterId);
-                }
-            }
-        }
-        for (RPCRequest request : requestQueue) {
-            if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0) {
-                Datacenter requestDatacenter = datacenterWithId(request.runningDatacenterId);
-                if (requestDatacenter != null && !activeTransportTokens.containsKey(requestDatacenter.datacenterId) && !transportsToResume.contains(requestDatacenter.datacenterId)) {
-                    transportsToResume.add(requestDatacenter.datacenterId);
-                }
-            } else if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0) {
-                Datacenter requestDatacenter = datacenterWithId(request.runningDatacenterId);
-                if (requestDatacenter != null && !activeDownloadTransportTokens.containsKey(requestDatacenter.datacenterId) && !downloadTransportsToResume.contains(requestDatacenter.datacenterId)) {
-                    downloadTransportsToResume.add(requestDatacenter.datacenterId);
-                }
-            } else if ((request.flags & RPCRequest.RPCRequestClassUploadMedia) != 0) {
-                Datacenter requestDatacenter = datacenterWithId(request.runningDatacenterId);
-                if (requestDatacenter != null && !activeUploadTransportTokens.containsKey(requestDatacenter.datacenterId) && !uploadTransportsToResume.contains(requestDatacenter.datacenterId)) {
-                    uploadTransportsToResume.add(requestDatacenter.datacenterId);
-                }
-            }
-        }
-
-        boolean haveNetwork = true;//activeTransportTokens.size() != 0 || isNetworkOnline();
-
-        if (!activeTransportTokens.containsKey(currentDatacenterId) && !transportsToResume.contains(currentDatacenterId)) {
-            transportsToResume.add(currentDatacenterId);
-        }
-
-        for (int it : transportsToResume) {
-            Datacenter datacenter = datacenterWithId(it);
-            if (datacenter.authKey != null) {
-                if (datacenter.connection == null) {
-                    datacenter.connection = new TcpConnection(datacenter.datacenterId);
-                    datacenter.connection.delegate = this;
-                    datacenter.connection.transportRequestClass = RPCRequest.RPCRequestClassGeneric;
-                }
-                datacenter.connection.connect();
-            }
-        }
-        for (int it : downloadTransportsToResume) {
-            Datacenter datacenter = datacenterWithId(it);
-            if (datacenter.authKey != null) {
-                if (datacenter.downloadConnection == null) {
-                    datacenter.downloadConnection = new TcpConnection(datacenter.datacenterId);
-                    datacenter.downloadConnection.delegate = this;
-                    datacenter.downloadConnection.transportRequestClass = RPCRequest.RPCRequestClassDownloadMedia;
-                }
-                datacenter.downloadConnection.connect();
-            }
-        }
-        for (int it : uploadTransportsToResume) {
-            Datacenter datacenter = datacenterWithId(it);
-            if (datacenter.authKey != null) {
-                if (datacenter.uploadConnection == null) {
-                    datacenter.uploadConnection = new TcpConnection(datacenter.datacenterId);
-                    datacenter.uploadConnection.delegate = this;
-                    datacenter.uploadConnection.transportRequestClass = RPCRequest.RPCRequestClassUploadMedia;
-                }
-                datacenter.uploadConnection.connect();
-            }
-        }
-
-        final HashMap<Integer, ArrayList<NetworkMessage>> genericMessagesToDatacenters = new HashMap<Integer, ArrayList<NetworkMessage>>();
-
-        final ArrayList<Integer> unknownDatacenterIds = new ArrayList<Integer>();
-        final ArrayList<Integer> neededDatacenterIds = new ArrayList<Integer>();
-        final ArrayList<Integer> unauthorizedDatacenterIds = new ArrayList<Integer>();
 
         int currentTime = (int)(System.currentTimeMillis() / 1000);
         for (int i = 0; i < runningRequests.size(); i++) {
@@ -1107,48 +979,27 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 continue;
             }
 
-            Integer tokenIt = activeTransportTokens.get(requestDatacenter.datacenterId);
-            int datacenterTransportToken = tokenIt != null ? tokenIt : 0;
-
-            Integer uploadTokenIt = activeUploadTransportTokens.get(requestDatacenter.datacenterId);
-            int datacenterUploadTransportToken = uploadTokenIt != null ? uploadTokenIt : 0;
-
-            Integer downloadTokenIt = activeDownloadTransportTokens.get(requestDatacenter.datacenterId);
-            int datacenterDownloadTransportToken = downloadTokenIt != null ? downloadTokenIt : 0;
-
-            double maxTimeout = 8.0;
-
-            if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0) {
-                if (datacenterTransportToken == 0) {
-                    continue;
-                }
-            } else if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0) {
-                if (!haveNetwork) {
-                    FileLog.d("tmessages", "Don't have any network connection, skipping download request");
-                    continue;
-                }
-                if (datacenterDownloadTransportToken == 0) {
-                    continue;
-                }
-                maxTimeout = 40.0;
-            } else if ((request.flags & RPCRequest.RPCRequestClassUploadMedia) != 0) {
-                if (!haveNetwork) {
-                    FileLog.d("tmessages", "Don't have any network connection, skipping upload request");
-                    continue;
-                }
-                if (datacenterUploadTransportToken == 0) {
-                    continue;
-                }
-                maxTimeout = 30.0;
-            }
+            float maxTimeout = 8.0f;
 
             TcpConnection connection = null;
             if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0) {
-                connection = requestDatacenter.connection;
+                connection = requestDatacenter.getGenericConnection(this);
             } else if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0) {
-                connection = requestDatacenter.downloadConnection;
+                int num = (request.flags & RPCRequest.RPCRequestClassDownloadMedia2) != 0 ? 1 : 0;
+                connection = requestDatacenter.getDownloadConnection(num, this);
             } else if ((request.flags & RPCRequest.RPCRequestClassUploadMedia) != 0 ) {
-                connection = requestDatacenter.uploadConnection;
+                connection = requestDatacenter.getUploadConnection(this);
+            }
+
+            if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0) {
+                if (connection.channelToken == 0) {
+                    continue;
+                }
+            } else {
+                if (!haveNetwork || connection.channelToken == 0) {
+                    continue;
+                }
+                maxTimeout = 30.0f;
             }
 
             boolean forceThisRequest = (request.flags & requestClass) != 0 && (_datacenterId == Integer.MIN_VALUE || requestDatacenter.datacenterId == _datacenterId);
@@ -1165,17 +1016,12 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
             if (((Math.abs(currentTime - request.runningStartTime) > maxTimeout) && (currentTime > request.runningMinStartTime || Math.abs(currentTime - request.runningMinStartTime) > 60.0)) || forceThisRequest) {
                 if (!forceThisRequest && request.transportChannelToken > 0) {
-                    if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0 && datacenterTransportToken == request.transportChannelToken) {
+                    if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0 && request.transportChannelToken == connection.channelToken) {
                         FileLog.d("tmessages", "Request token is valid, not retrying " + request.rawRequest);
                         continue;
-                    } else if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0) {
-                        if (datacenterDownloadTransportToken != 0 && request.transportChannelToken == datacenterDownloadTransportToken) {
+                    } else {
+                        if (connection.channelToken != 0 && request.transportChannelToken == connection.channelToken) {
                             FileLog.d("tmessages", "Request download token is valid, not retrying " + request.rawRequest);
-                            continue;
-                        }
-                    } else if ((request.flags & RPCRequest.RPCRequestClassUploadMedia) != 0) {
-                        if (datacenterUploadTransportToken != 0 && request.transportChannelToken == datacenterUploadTransportToken) {
-                            FileLog.d("tmessages", "Request upload token is valid, not retrying " + request.rawRequest);
                             continue;
                         }
                     }
@@ -1199,15 +1045,15 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 request.runningStartTime = currentTime;
 
                 if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0) {
-                    request.transportChannelToken = datacenterTransportToken;
-                    addMessageToDatacenter(genericMessagesToDatacenters, requestDatacenter.datacenterId, networkMessage);
+                    request.transportChannelToken = connection.channelToken;
+                    addMessageToDatacenter(requestDatacenter.datacenterId, networkMessage);
                 } else if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0) {
-                    request.transportChannelToken = datacenterDownloadTransportToken;
+                    request.transportChannelToken = connection.channelToken;
                     ArrayList<NetworkMessage> arr = new ArrayList<NetworkMessage>();
                     arr.add(networkMessage);
                     proceedToSendingMessages(arr, connection, false);
                 } else if ((request.flags & RPCRequest.RPCRequestClassUploadMedia) != 0) {
-                    request.transportChannelToken = datacenterUploadTransportToken;
+                    request.transportChannelToken = connection.channelToken;
                     ArrayList<NetworkMessage> arr = new ArrayList<NetworkMessage>();
                     arr.add(networkMessage);
                     proceedToSendingMessages(arr, connection, false);
@@ -1217,7 +1063,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
         boolean updatingState = MessagesController.getInstance().updatingState;
 
-        if (activeTransportTokens.get(currentDatacenterId) != null) {
+        if (genericConnection != null && genericConnection.channelToken != 0) {
             if (!updatingState) {
                 Datacenter currentDatacenter = datacenterWithId(currentDatacenterId);
 
@@ -1234,7 +1080,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                         NetworkMessage networkMessage = new NetworkMessage();
                         networkMessage.protoMessage = wrapMessage(destroySession, currentDatacenter.connection, false);
                         if (networkMessage.protoMessage != null) {
-                            addMessageToDatacenter(genericMessagesToDatacenters, currentDatacenter.datacenterId, networkMessage);
+                            addMessageToDatacenter(currentDatacenter.datacenterId, networkMessage);
                         }
                     }
                 }
@@ -1303,7 +1149,17 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 continue;
             }
 
-            if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0 && activeTransportTokens.get(requestDatacenter.datacenterId) == null) {
+            TcpConnection connection = null;
+            if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0) {
+                connection = requestDatacenter.getGenericConnection(this);
+            } else if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0) {
+                int num = (request.flags & RPCRequest.RPCRequestClassDownloadMedia2) != 0 ? 1 : 0;
+                connection = requestDatacenter.getDownloadConnection(num, this);
+            } else if ((request.flags & RPCRequest.RPCRequestClassUploadMedia) != 0) {
+                connection = requestDatacenter.getUploadConnection(this);
+            }
+
+            if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0 && connection.channelToken == 0) {
                 continue;
             }
 
@@ -1313,40 +1169,19 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
             if (request.requiresCompletion) {
                 if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0) {
-                    if (genericRunningRequestCount >= 60)
+                    if (genericRunningRequestCount >= 60) {
                         continue;
-
+                    }
                     genericRunningRequestCount++;
-
-                    Integer tokenIt = activeTransportTokens.get(requestDatacenter.datacenterId);
-                    request.transportChannelToken = tokenIt != null ? tokenIt : 0;
                 } else if ((request.flags & RPCRequest.RPCRequestClassUploadMedia) != 0) {
-                    if (!haveNetwork) {
-                        FileLog.d("tmessages", "Don't have any network connection, skipping upload request");
+                    if (!haveNetwork || uploadRunningRequestCount >= 5) {
                         continue;
                     }
-
-                    if (uploadRunningRequestCount >= 5) {
-                        continue;
-                    }
-
-                    Integer uploadTokenIt = activeUploadTransportTokens.get(requestDatacenter.datacenterId);
-                    request.transportChannelToken = uploadTokenIt != null ? uploadTokenIt : 0;
-
                     uploadRunningRequestCount++;
                 } else if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0) {
-                    if (!haveNetwork) {
-                        FileLog.d("tmessages", "Don't have any network connection, skipping download request");
+                    if (!haveNetwork || downloadRunningRequestCount >= 5) {
                         continue;
                     }
-
-                    if (downloadRunningRequestCount >= 5) {
-                        continue;
-                    }
-
-                    Integer downloadTokenIt = activeDownloadTransportTokens.get(requestDatacenter.datacenterId);
-                    request.transportChannelToken = downloadTokenIt != null ? downloadTokenIt : 0;
-
                     downloadRunningRequestCount++;
                 }
             }
@@ -1360,15 +1195,6 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             int requestLength = os.length();
 
             if (requestLength != 0) {
-                TcpConnection connection = null;
-                if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0) {
-                    connection = requestDatacenter.connection;
-                } else if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0) {
-                    connection = requestDatacenter.downloadConnection;
-                } else if ((request.flags & RPCRequest.RPCRequestClassUploadMedia) != 0) {
-                    connection = requestDatacenter.uploadConnection;
-                }
-
                 if (canCompress) {
                     try {
                         byte[] data = Utilities.compress(os.toByteArray());
@@ -1398,22 +1224,17 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 request.runningMessageSeqNo = networkMessage.protoMessage.seqno;
                 request.serializedLength = requestLength;
                 request.runningStartTime = (int)(System.currentTimeMillis() / 1000);
+                request.transportChannelToken = connection.channelToken;
                 if (request.requiresCompletion) {
                     runningRequests.add(request);
                 }
 
                 if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0) {
-                    addMessageToDatacenter(genericMessagesToDatacenters, requestDatacenter.datacenterId, networkMessage);
-                } else if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0) {
-                    ArrayList<NetworkMessage> arr = new ArrayList<NetworkMessage>();
-                    arr.add(networkMessage);
-                    proceedToSendingMessages(arr, requestDatacenter.downloadConnection, false);
-                } else if ((request.flags & RPCRequest.RPCRequestClassUploadMedia) != 0) {
-                    ArrayList<NetworkMessage> arr = new ArrayList<NetworkMessage>();
-                    arr.add(networkMessage);
-                    proceedToSendingMessages(arr, requestDatacenter.uploadConnection, false);
+                    addMessageToDatacenter(requestDatacenter.datacenterId, networkMessage);
                 } else {
-                    FileLog.e("tmessages", "***** Error: request " + request.rawRequest + " has undefined session");
+                    ArrayList<NetworkMessage> arr = new ArrayList<NetworkMessage>();
+                    arr.add(networkMessage);
+                    proceedToSendingMessages(arr, connection, false);
                 }
             } else {
                 FileLog.e("tmessages", "***** Couldn't serialize " + request.rawRequest);
@@ -1567,11 +1388,11 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         }
     }
 
-    void addMessageToDatacenter(HashMap<Integer, ArrayList<NetworkMessage>> pMap, int datacenterId, NetworkMessage message) {
-        ArrayList<NetworkMessage> arr = pMap.get(datacenterId);
+    void addMessageToDatacenter(int datacenterId, NetworkMessage message) {
+        ArrayList<NetworkMessage> arr = genericMessagesToDatacenters.get(datacenterId);
         if (arr == null) {
             arr = new ArrayList<NetworkMessage>();
-            pMap.put(datacenterId, arr);
+            genericMessagesToDatacenters.put(datacenterId, arr);
         }
         arr.add(message);
     }
@@ -2278,16 +2099,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     timeDifference = (int)((time - currentTime) / 1000 - currentPingTime / 2.0);
                 }
 
-                if (datacenter.connection != null) {
-                    datacenter.connection.recreateSession();
-                }
-                if (datacenter.downloadConnection != null) {
-                    datacenter.downloadConnection.recreateSession();
-                }
-                if (datacenter.uploadConnection != null) {
-                    datacenter.uploadConnection.recreateSession();
-                }
-
+                datacenter.recreateSessions();
                 saveSession();
 
                 lastOutgoingMessageId = 0;
@@ -2831,15 +2643,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             return;
         }
 
-        if (datacenter.connection != null) {
-            datacenter.connection.recreateSession();
-        }
-        if (datacenter.downloadConnection != null) {
-            datacenter.downloadConnection.recreateSession();
-        }
-        if (datacenter.uploadConnection != null) {
-            datacenter.uploadConnection.recreateSession();
-        }
+        datacenter.recreateSessions();
 
         clearRequestsForRequestClass(RPCRequest.RPCRequestClassGeneric, datacenter);
         clearRequestsForRequestClass(RPCRequest.RPCRequestClassDownloadMedia, datacenter);
@@ -2904,16 +2708,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
             if (eactor.datacenter.datacenterId == currentDatacenterId || eactor.datacenter.datacenterId == movingToDatacenterId) {
                 timeDifference = (Integer)params.get("timeDifference");
-
-                if (eactor.datacenter.connection != null) {
-                    eactor.datacenter.connection.recreateSession();
-                }
-                if (eactor.datacenter.downloadConnection != null) {
-                    eactor.datacenter.downloadConnection.recreateSession();
-                }
-                if (eactor.datacenter.uploadConnection != null) {
-                    eactor.datacenter.uploadConnection.recreateSession();
-                }
+                eactor.datacenter.recreateSessions();
 
                 clearRequestsForRequestClass(RPCRequest.RPCRequestClassGeneric, eactor.datacenter);
                 clearRequestsForRequestClass(RPCRequest.RPCRequestClassDownloadMedia, eactor.datacenter);

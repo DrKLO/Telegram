@@ -1624,7 +1624,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         currentPathObject = null;
         currentThumb = null;
         centerImage.setImageBitmap((Bitmap)null);
-        leftImage.setImageBitmap((Bitmap) null);
+        leftImage.setImageBitmap((Bitmap)null);
         rightImage.setImageBitmap((Bitmap)null);
         if (android.os.Build.VERSION.SDK_INT >= 11 && object != null) {
             object.imageReceiver.setVisible(true, true);

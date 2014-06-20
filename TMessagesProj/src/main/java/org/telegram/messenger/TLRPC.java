@@ -8136,6 +8136,9 @@ public class TLRPC {
 
         @Override
         public void freeResources() {
+            if (disableFree) {
+                return;
+            }
             if (bytes != null) {
                 BuffersStorage.getInstance().reuseFreeBuffer(bytes);
                 bytes = null;
@@ -8287,6 +8290,9 @@ public class TLRPC {
 
         @Override
         public void freeResources() {
+            if (disableFree) {
+                return;
+            }
             if (result != null) {
                 result.freeResources();
             }
@@ -9171,6 +9177,9 @@ public class TLRPC {
 
         @Override
         public void freeResources() {
+            if (disableFree) {
+                return;
+            }
             if (bytes != null) {
                 BuffersStorage.getInstance().reuseFreeBuffer(bytes);
                 bytes = null;
@@ -9198,6 +9207,9 @@ public class TLRPC {
 
         @Override
         public void freeResources() {
+            if (disableFree) {
+                return;
+            }
             if (bytes != null) {
                 BuffersStorage.getInstance().reuseFreeBuffer(bytes);
                 bytes = null;

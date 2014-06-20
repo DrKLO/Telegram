@@ -17,6 +17,7 @@ public class BuffersStorage {
     private final ArrayList<ByteBufferDesc> freeBuffers4096;
     private final ArrayList<ByteBufferDesc> freeBuffers16384;
     private final ArrayList<ByteBufferDesc> freeBuffers32768;
+    private final ArrayList<ByteBufferDesc> freeBuffersBig;
 
     private static volatile BuffersStorage Instance = null;
     public static BuffersStorage getInstance() {
@@ -38,6 +39,7 @@ public class BuffersStorage {
         freeBuffers4096 = new ArrayList<ByteBufferDesc>();
         freeBuffers16384 = new ArrayList<ByteBufferDesc>();
         freeBuffers32768 = new ArrayList<ByteBufferDesc>();
+        freeBuffersBig = new ArrayList<ByteBufferDesc>();
 
         for (int a = 0; a < 5; a++) {
             freeBuffers128.add(new ByteBufferDesc(128));
@@ -113,6 +115,17 @@ public class BuffersStorage {
                 buffer = new ByteBufferDesc(40000);
                 FileLog.e("tmessages", "create new 40000 buffer");
             }
+        } else if (size <= 280000) {
+            synchronized (freeBuffersBig) {
+                if (freeBuffersBig.size() > 0) {
+                    buffer = freeBuffersBig.get(0);
+                    freeBuffersBig.remove(0);
+                }
+            }
+            if (buffer == null) {
+                buffer = new ByteBufferDesc(280000);
+                FileLog.e("tmessages", "create new big buffer");
+            }
         } else {
             buffer = new ByteBufferDesc(size);
         }
@@ -152,6 +165,12 @@ public class BuffersStorage {
             synchronized (freeBuffers32768) {
                 if (freeBuffers32768.size() < 10) {
                     freeBuffers32768.add(buffer);
+                }
+            }
+        } else if (buffer.buffer.capacity() == 280000) {
+            synchronized (freeBuffersBig) {
+                if (freeBuffersBig.size() < 4) {
+                    freeBuffersBig.add(buffer);
                 }
             }
         }

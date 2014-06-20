@@ -29,6 +29,7 @@ public class RPCRequest {
     public static int RPCRequestClassCanCompress = 32;
     public static int RPCRequestClassPush = 64;
     public static int RPCRequestClassWithoutLogin = 128;
+    public static int RPCRequestClassDownloadMedia2 = 256;
 
     static int RPCRequestClassTransportMask = (RPCRequestClassGeneric | RPCRequestClassDownloadMedia | RPCRequestClassUploadMedia);
 

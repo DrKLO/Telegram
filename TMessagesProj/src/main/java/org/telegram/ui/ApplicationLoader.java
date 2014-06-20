@@ -40,7 +40,6 @@ import org.telegram.messenger.ScreenReceiver;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 
-import java.util.Calendar;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ApplicationLoader extends Application {
@@ -151,10 +150,14 @@ public class ApplicationLoader extends Application {
             applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
 
             if (android.os.Build.VERSION.SDK_INT >= 19) {
-                Calendar cal = Calendar.getInstance();
+//                Calendar cal = Calendar.getInstance();
+//                PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
+//                AlarmManager alarm = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
+//                alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30000, pintent);
+
                 PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
-                AlarmManager alarm = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
-                alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30000, pintent);
+                AlarmManager alarm = (AlarmManager)applicationContext.getSystemService(Context.ALARM_SERVICE);
+                alarm.cancel(pintent);
             }
         } else {
             stopPushService();

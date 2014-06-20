@@ -35,8 +35,8 @@ public class Datacenter {
     private volatile int currentAddressNum = 0;
 
     public TcpConnection connection;
-    public TcpConnection downloadConnection;
-    public TcpConnection uploadConnection;
+    private ArrayList<TcpConnection> downloadConnections = new ArrayList<TcpConnection>();
+    private TcpConnection uploadConnection;
     public TcpConnection pushConnection;
 
     private ArrayList<ServerSalt> authServerSaltSet = new ArrayList<ServerSalt>();
@@ -318,5 +318,82 @@ public class Datacenter {
             }
         }
         return false;
+    }
+
+    public void suspendConnections() {
+        if (connection != null) {
+            connection.suspendConnection(true);
+        }
+        if (uploadConnection != null) {
+            uploadConnection.suspendConnection(true);
+        }
+        for (TcpConnection downloadConnection : downloadConnections) {
+            downloadConnection.suspendConnection(true);
+        }
+    }
+
+    public void getSessions(ArrayList<Long> sessions) {
+        if (connection != null) {
+            sessions.add(connection.getSissionId());
+        }
+        if (uploadConnection != null) {
+            sessions.add(uploadConnection.getSissionId());
+        }
+        for (TcpConnection downloadConnection : downloadConnections) {
+            sessions.add(downloadConnection.getSissionId());
+        }
+    }
+
+    public void recreateSessions() {
+        if (connection != null) {
+            connection.recreateSession();
+        }
+        if (uploadConnection != null) {
+            uploadConnection.recreateSession();
+        }
+        for (TcpConnection downloadConnection : downloadConnections) {
+            downloadConnection.recreateSession();
+        }
+    }
+
+    public TcpConnection getDownloadConnection(int num, TcpConnection.TcpConnectionDelegate delegate) {
+        if (num >= 0 && authKey != null) {
+            TcpConnection downloadConnection = null;
+            if (num < downloadConnections.size()) {
+                downloadConnection = downloadConnections.get(num);
+            } else {
+                downloadConnection = new TcpConnection(datacenterId);
+                downloadConnection.delegate = delegate;
+                downloadConnection.transportRequestClass = RPCRequest.RPCRequestClassDownloadMedia;
+                downloadConnections.add(downloadConnection);
+            }
+            downloadConnection.connect();
+            return downloadConnection;
+        }
+        return null;
+    }
+
+    public TcpConnection getUploadConnection(TcpConnection.TcpConnectionDelegate delegate) {
+        if (authKey != null) {
+            if (uploadConnection == null) {
+                uploadConnection = new TcpConnection(datacenterId);
+                uploadConnection.delegate = delegate;
+                uploadConnection.transportRequestClass = RPCRequest.RPCRequestClassUploadMedia;
+            }
+            uploadConnection.connect();
+        }
+        return uploadConnection;
+    }
+
+    public TcpConnection getGenericConnection(TcpConnection.TcpConnectionDelegate delegate) {
+        if (authKey != null) {
+            if (connection == null) {
+                connection = new TcpConnection(datacenterId);
+                connection.delegate = delegate;
+                connection.transportRequestClass = RPCRequest.RPCRequestClassGeneric;
+            }
+            connection.connect();
+        }
+        return connection;
     }
 }
