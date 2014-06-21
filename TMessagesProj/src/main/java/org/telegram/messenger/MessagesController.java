@@ -3068,7 +3068,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
-
+                ConnectionsManager.getInstance().cleanUp();
             }
         }, null, true, RPCRequest.RPCRequestClassGeneric);
     }

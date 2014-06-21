@@ -38,7 +38,7 @@ public class ColorPickerView extends View {
     private static final String STATE_OLD_COLOR = "color";
     private static final String STATE_SHOW_OLD_COLOR = "showColor";
 
-    private static final int[] COLORS = new int[] { 0xFFFF0000, 0xFFFF00FF, 0xFF0000FF, 0xFF00FFFF, 0xFF00FF00, 0xFFFFFF00, 0xFFFF0000 };
+    private static final int[] COLORS = new int[] { 0xFFFF0000, 0xFFFF00FF, 0xFF0000FF, 0xFF00FFFF, 0xFF00FF00, 0xFFFFFFFF, 0xFFFFFF00, 0xFFFF0000 };
 
     private Paint mColorWheelPaint;
     private Paint mPointerHaloPaint;

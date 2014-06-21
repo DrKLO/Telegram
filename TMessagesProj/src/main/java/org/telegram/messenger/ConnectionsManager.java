@@ -527,12 +527,34 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
-                Datacenter datacenter = datacenterWithId(currentDatacenterId);
-                datacenter.recreateSessions();
+                while (requestQueue.size() != 0) {
+                    RPCRequest request = requestQueue.get(0);
+                    requestQueue.remove(0);
+                    if (request.completionBlock != null) {
+                        TLRPC.TL_error implicitError = new TLRPC.TL_error();
+                        implicitError.code = -1000;
+                        request.completionBlock.run(null, implicitError);
+                    }
+                }
+                while (runningRequests.size() != 0) {
+                    RPCRequest request = runningRequests.get(0);
+                    runningRequests.remove(0);
+                    if (request.completionBlock != null) {
+                        TLRPC.TL_error implicitError = new TLRPC.TL_error();
+                        implicitError.code = -1000;
+                        request.completionBlock.run(null, implicitError);
+                    }
+                }
+                pingIdToDate.clear();
+                quickAckIdToRequestIds.clear();
 
-                clearRequestsForRequestClass(RPCRequest.RPCRequestClassGeneric, datacenter);
-                clearRequestsForRequestClass(RPCRequest.RPCRequestClassDownloadMedia, datacenter);
-                clearRequestsForRequestClass(RPCRequest.RPCRequestClassUploadMedia, datacenter);
+                for (Datacenter datacenter : datacenters.values()) {
+                    datacenter.recreateSessions();
+                    datacenter.authorized = false;
+                }
+
+                sessionsToDestroy.clear();
+                saveSession();
             }
         });
     }

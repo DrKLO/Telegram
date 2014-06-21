@@ -152,7 +152,6 @@ public class LoginActivityRegisterView extends SlideView {
                             UserConfig.clearConfig();
                             MessagesStorage.getInstance().cleanUp();
                             MessagesController.getInstance().cleanUp();
-                            ConnectionsManager.getInstance().cleanUp();
                             UserConfig.setCurrentUser(user);
                             UserConfig.saveConfig(true);
                             ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();

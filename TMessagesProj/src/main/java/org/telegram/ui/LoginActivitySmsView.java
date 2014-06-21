@@ -221,7 +221,6 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                             UserConfig.clearConfig();
                             MessagesStorage.getInstance().cleanUp();
                             MessagesController.getInstance().cleanUp();
-                            ConnectionsManager.getInstance().cleanUp();
                             UserConfig.setCurrentUser(res.user);
                             UserConfig.saveConfig(true);
                             ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();

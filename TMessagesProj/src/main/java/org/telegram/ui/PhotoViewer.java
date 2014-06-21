@@ -42,6 +42,7 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.Scroller;
 import android.widget.TextView;
 
 import org.telegram.messenger.ConnectionsManager;
@@ -160,6 +161,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private boolean zoomAnimation = false;
     private int switchImageAfterAnimation = 0;
     private VelocityTracker velocityTracker = null;
+    private Scroller scroller = null;
 
     private ArrayList<MessageObject> imagesArrTemp = new ArrayList<MessageObject>();
     private HashMap<Integer, MessageObject> imagesByIdsTemp = new HashMap<Integer, MessageObject>();
@@ -431,6 +433,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
     public void setParentActivity(Activity activity) {
         parentActivity = activity;
+
+        scroller = new Scroller(activity);
 
         windowView = new FrameLayoutTouchListener(activity);
         windowView.setBackgroundDrawable(backgroundDrawable);
@@ -1688,6 +1692,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
 
         if (ev.getActionMasked() == MotionEvent.ACTION_DOWN || ev.getActionMasked() == MotionEvent.ACTION_POINTER_DOWN) {
+            if (!scroller.isFinished()) {
+                scroller.abortAnimation();
+            }
             if (!draggingDown && !changingPage) {
                 if (canZoom && ev.getPointerCount() == 2) {
                     pinchStartDistance = (float) Math.hypot(ev.getX(1) - ev.getX(0), ev.getY(1) - ev.getY(0));
@@ -1756,8 +1763,18 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         if (translationX < minX && !rightImage.hasImage() || translationX > maxX && !leftImage.hasImage()) {
                             moveDx /= 3.0f;
                         }
-                        if (translationY < minY || translationY > maxY) {
-                            moveDy /= 3.0f;
+                        if (maxY == 0 && minY == 0) {
+                            if (translationY - moveDy < minY) {
+                                translationY = minY;
+                                moveDy = 0;
+                            } else if (translationY - moveDy > maxY) {
+                                translationY = maxY;
+                                moveDy = 0;
+                            }
+                        } else {
+                            if (translationY < minY || translationY > maxY) {
+                                moveDy /= 3.0f;
+                            }
                         }
 
                         translationX -= moveDx;
@@ -1922,6 +1939,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
 
         if (ai != -1) {
+            if (!scroller.isFinished()) {
+                scroller.abortAnimation();
+            }
+
             float ts = scale + (animateToScale - scale) * ai;
             float tx = translationX + (animateToX - translationX) * ai;
             float ty = translationY + (animateToY - translationY) * ai;
@@ -1943,6 +1964,17 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 updateMinMax(scale);
                 Utilities.unlockOrientation(parentActivity);
                 zoomAnimation = false;
+            }
+            if (!scroller.isFinished()) {
+                if (scroller.computeScrollOffset()) {
+                    if (scroller.getStartX() < maxX && scroller.getStartX() > minX) {
+                        translationX = scroller.getCurrX();
+                    }
+                    if (scroller.getStartY() < maxY && scroller.getStartY() > minY) {
+                        translationY = scroller.getCurrY();
+                    }
+                    containerView.invalidate();
+                }
             }
             if (switchImageAfterAnimation != 0) {
                 if (switchImageAfterAnimation == 1) {
@@ -2119,6 +2151,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
     @Override
     public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+        if (scale != 1) {
+            scroller.abortAnimation();
+            scroller.fling(Math.round(translationX), Math.round(translationY), Math.round(velocityX), Math.round(velocityY), (int) minX, (int) maxX, (int) minY, (int) maxY);
+            containerView.postInvalidate();
+        }
         return false;
     }
 

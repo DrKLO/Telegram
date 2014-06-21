@@ -383,6 +383,11 @@ public class FileLoadOperation {
             if (httpUrl != null) {
                 startDownloadHTTPRequest();
             } else {
+                if (totalBytesCount >= 1024 * 1024) {
+                    downloadChunkSize = 1024 * 256;
+                } else {
+                    downloadChunkSize = 1024 * 32;
+                }
                 startDownloadRequest();
             }
         }
