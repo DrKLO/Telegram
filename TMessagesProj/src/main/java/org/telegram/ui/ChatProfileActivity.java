@@ -11,6 +11,7 @@ package org.telegram.ui;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Html;
@@ -258,6 +259,11 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
     @Override
     public void didSelectContact(TLRPC.User user) {
         MessagesController.getInstance().addUserToChat(chat_id, user, info);
+    }
+
+    @Override
+    public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
+        avatarUpdater.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
