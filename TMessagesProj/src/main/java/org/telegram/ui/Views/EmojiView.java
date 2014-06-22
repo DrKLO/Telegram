@@ -9,6 +9,7 @@
 package org.telegram.ui.Views;
 
 import android.content.Context;
+import android.database.DataSetObserver;
 import android.graphics.drawable.GradientDrawable;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -100,62 +101,58 @@ public class EmojiView extends LinearLayout {
     }
 
     private void init() {
-        setOrientation(1);
-        for (int i = 0; ; i++) {
-            if (i >= Emoji.data.length) {
-                setBackgroundDrawable(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] { -14145496, -16777216 }));
-                pager = new ViewPager(getContext());
-                pager.setAdapter(new EmojiPagesAdapter());
-                PagerSlidingTabStrip tabs = new PagerSlidingTabStrip(getContext());
-                tabs.setViewPager(this.pager);
-                tabs.setShouldExpand(true);
-                tabs.setIndicatorColor(0xff33b5e5);
-                tabs.setIndicatorHeight(Utilities.dpf(2.0f));
-                tabs.setUnderlineHeight(Utilities.dpf(2.0f));
-                tabs.setUnderlineColor(1711276032);
-                tabs.setTabBackground(0);
-                LinearLayout localLinearLayout = new LinearLayout(getContext());
-                localLinearLayout.setOrientation(0);
-                localLinearLayout.addView(tabs, new LinearLayout.LayoutParams(-1, -1, 1.0F));
-                ImageView localImageView = new ImageView(getContext());
-                localImageView.setImageResource(R.drawable.ic_emoji_backspace);
-                localImageView.setScaleType(ImageView.ScaleType.CENTER);
-                localImageView.setBackgroundResource(R.drawable.bg_emoji_bs);
-                localImageView.setOnClickListener(new View.OnClickListener() {
-                    public void onClick(View paramAnonymousView) {
-                        if (EmojiView.this.listener != null) {
-                            EmojiView.this.listener.onBackspace();
-                        }
-                    }
-                });
-                localImageView.setOnLongClickListener(new View.OnLongClickListener() {
-                    public boolean onLongClick(View paramAnonymousView) {
-                        EmojiView.this.getContext().getSharedPreferences("emoji", 0).edit().clear().commit();
-                        return true;
-                    }
-                });
-                localLinearLayout.addView(localImageView, new LinearLayout.LayoutParams(Utilities.dpf(61.0f), -1));
-                this.recentsWrap = new FrameLayout(getContext());
-                this.recentsWrap.addView(this.views.get(0));
-                TextView localTextView = new TextView(getContext());
-                localTextView.setText(LocaleController.getString("NoRecent", R.string.NoRecent));
-                localTextView.setTextSize(18.0f);
-                localTextView.setTextColor(-7829368);
-                localTextView.setGravity(17);
-                this.recentsWrap.addView(localTextView);
-                this.views.get(0).setEmptyView(localTextView);
-                addView(localLinearLayout, new LinearLayout.LayoutParams(-1, Utilities.dpf(48.0f)));
-                addView(this.pager);
-                loadRecents();
-                return;
-            }
-            GridView localGridView = new GridView(getContext());
-            localGridView.setColumnWidth(Utilities.dpf(45.0f));
-            localGridView.setNumColumns(-1);
+        setOrientation(LinearLayout.VERTICAL);
+        for (int i = 0; i < Emoji.data.length; i++) {
+            GridView gridView = new GridView(getContext());
+            gridView.setColumnWidth(Utilities.dpf(45.0f));
+            gridView.setNumColumns(-1);
+            views.add(gridView);
+
             EmojiGridAdapter localEmojiGridAdapter = new EmojiGridAdapter(Emoji.data[i]);
-            localGridView.setAdapter(localEmojiGridAdapter);
-            this.adapters.add(localEmojiGridAdapter);
-            this.views.add(localGridView);
+            gridView.setAdapter(localEmojiGridAdapter);
+            adapters.add(localEmojiGridAdapter);
+        }
+
+        setBackgroundDrawable(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] { -14145496, -16777216 }));
+        pager = new ViewPager(getContext());
+        pager.setAdapter(new EmojiPagesAdapter());
+        PagerSlidingTabStrip tabs = new PagerSlidingTabStrip(getContext());
+        tabs.setViewPager(pager);
+        tabs.setShouldExpand(true);
+        tabs.setIndicatorColor(0xff33b5e5);
+        tabs.setIndicatorHeight(Utilities.dpf(2.0f));
+        tabs.setUnderlineHeight(Utilities.dpf(2.0f));
+        tabs.setUnderlineColor(1711276032);
+        tabs.setTabBackground(0);
+        LinearLayout localLinearLayout = new LinearLayout(getContext());
+        localLinearLayout.setOrientation(LinearLayout.HORIZONTAL);
+        localLinearLayout.addView(tabs, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT, 1.0f));
+        ImageView localImageView = new ImageView(getContext());
+        localImageView.setImageResource(R.drawable.ic_emoji_backspace);
+        localImageView.setScaleType(ImageView.ScaleType.CENTER);
+        localImageView.setBackgroundResource(R.drawable.bg_emoji_bs);
+        localImageView.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View view) {
+                if (EmojiView.this.listener != null) {
+                    EmojiView.this.listener.onBackspace();
+                }
+            }
+        });
+        localLinearLayout.addView(localImageView, new LinearLayout.LayoutParams(Utilities.dpf(61.0f), LayoutParams.MATCH_PARENT));
+        recentsWrap = new FrameLayout(getContext());
+        recentsWrap.addView(views.get(0));
+        TextView localTextView = new TextView(getContext());
+        localTextView.setText(LocaleController.getString("NoRecent", R.string.NoRecent));
+        localTextView.setTextSize(18.0f);
+        localTextView.setTextColor(-7829368);
+        localTextView.setGravity(17);
+        recentsWrap.addView(localTextView);
+        views.get(0).setEmptyView(localTextView);
+        addView(localLinearLayout, new LinearLayout.LayoutParams(-1, Utilities.dpf(48.0f)));
+        addView(pager);
+        loadRecents();
+        if (Emoji.data[0] == null || Emoji.data[0].length == 0) {
+            pager.setCurrentItem(1);
         }
     }
 
@@ -236,11 +233,11 @@ public class EmojiView extends LinearLayout {
                     }
                 };
                 localObject.setOnClickListener(new View.OnClickListener() {
-                    public void onClick(View paramAnonymousView) {
+                    public void onClick(View view) {
                         if (EmojiView.this.listener != null) {
-                            EmojiView.this.listener.onEmojiSelected(EmojiView.this.convert((Long)paramAnonymousView.getTag()));
+                            EmojiView.this.listener.onEmojiSelected(EmojiView.this.convert((Long)view.getTag()));
                         }
-                        EmojiView.this.addToRecent((Long)paramAnonymousView.getTag());
+                        EmojiView.this.addToRecent((Long)view.getTag());
                     }
                 });
                 localObject.setBackgroundResource(R.drawable.list_selector);
@@ -250,6 +247,13 @@ public class EmojiView extends LinearLayout {
             localObject.setImageDrawable(Emoji.getEmojiBigDrawable(this.data[paramInt]));
             localObject.setTag(this.data[paramInt]);
             return localObject;
+        }
+
+        @Override
+        public void unregisterDataSetObserver(DataSetObserver observer) {
+            if (observer != null) {
+                super.unregisterDataSetObserver(observer);
+            }
         }
     }
 
@@ -289,6 +293,13 @@ public class EmojiView extends LinearLayout {
 
         public boolean isViewFromObject(View paramView, Object paramObject) {
             return paramView == paramObject;
+        }
+
+        @Override
+        public void unregisterDataSetObserver(DataSetObserver observer) {
+            if (observer != null) {
+                super.unregisterDataSetObserver(observer);
+            }
         }
     }
 

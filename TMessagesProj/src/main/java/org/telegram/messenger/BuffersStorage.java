@@ -17,6 +17,7 @@ public class BuffersStorage {
     private final ArrayList<ByteBufferDesc> freeBuffers4096;
     private final ArrayList<ByteBufferDesc> freeBuffers16384;
     private final ArrayList<ByteBufferDesc> freeBuffers32768;
+    private final ArrayList<ByteBufferDesc> freeBuffersBig;
 
     private static volatile BuffersStorage Instance = null;
     public static BuffersStorage getInstance() {
@@ -38,6 +39,7 @@ public class BuffersStorage {
         freeBuffers4096 = new ArrayList<ByteBufferDesc>();
         freeBuffers16384 = new ArrayList<ByteBufferDesc>();
         freeBuffers32768 = new ArrayList<ByteBufferDesc>();
+        freeBuffersBig = new ArrayList<ByteBufferDesc>();
 
         for (int a = 0; a < 5; a++) {
             freeBuffers128.add(new ByteBufferDesc(128));
@@ -113,6 +115,17 @@ public class BuffersStorage {
                 buffer = new ByteBufferDesc(40000);
                 FileLog.e("tmessages", "create new 40000 buffer");
             }
+        } else if (size <= 280000) {
+            synchronized (freeBuffersBig) {
+                if (freeBuffersBig.size() > 0) {
+                    buffer = freeBuffersBig.get(0);
+                    freeBuffersBig.remove(0);
+                }
+            }
+            if (buffer == null) {
+                buffer = new ByteBufferDesc(280000);
+                FileLog.e("tmessages", "create new big buffer");
+            }
         } else {
             buffer = new ByteBufferDesc(size);
         }
@@ -126,23 +139,39 @@ public class BuffersStorage {
         }
         if (buffer.buffer.capacity() == 128) {
             synchronized (freeBuffers128) {
-                freeBuffers128.add(buffer);
+                if (freeBuffers128.size() < 10) {
+                    freeBuffers128.add(buffer);
+                }
             }
         } else if (buffer.buffer.capacity() == 1024 + 200) {
             synchronized (freeBuffers1024) {
-                freeBuffers1024.add(buffer);
+                if (freeBuffers1024.size() < 10) {
+                    freeBuffers1024.add(buffer);
+                }
             }
         } else if (buffer.buffer.capacity() == 4096 + 200) {
             synchronized (freeBuffers4096) {
-                freeBuffers4096.add(buffer);
+                if (freeBuffers4096.size() < 10) {
+                    freeBuffers4096.add(buffer);
+                }
             }
         } else if (buffer.buffer.capacity() == 16384 + 200) {
             synchronized (freeBuffers16384) {
-                freeBuffers16384.add(buffer);
+                if (freeBuffers16384.size() < 10) {
+                    freeBuffers16384.add(buffer);
+                }
             }
         } else if (buffer.buffer.capacity() == 40000) {
             synchronized (freeBuffers32768) {
-                freeBuffers32768.add(buffer);
+                if (freeBuffers32768.size() < 10) {
+                    freeBuffers32768.add(buffer);
+                }
+            }
+        } else if (buffer.buffer.capacity() == 280000) {
+            synchronized (freeBuffersBig) {
+                if (freeBuffersBig.size() < 4) {
+                    freeBuffersBig.add(buffer);
+                }
             }
         }
     }

@@ -21,7 +21,7 @@ import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.graphics.drawable.AnimationDrawable;
-import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
@@ -50,7 +50,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.webkit.MimeTypeMap;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -60,6 +59,7 @@ import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.LocaleController;
@@ -78,6 +78,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.ChatAudioCell;
 import org.telegram.ui.Cells.ChatBaseCell;
 import org.telegram.ui.Cells.ChatMediaCell;
@@ -511,7 +512,11 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                             if (str.length() != 0) {
                                 str += "\n";
                             }
-                            str += messageObject.messageOwner.message;
+                            if (messageObject.messageOwner.message != null) {
+                                str += messageObject.messageOwner.message;
+                            } else {
+                                str += messageObject.messageText;
+                            }
                         }
                         if (str.length() != 0) {
                             if (android.os.Build.VERSION.SDK_INT < 11) {
@@ -643,33 +648,41 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
             updateContactStatus();
 
-            ImageView backgroundImage = (ImageView) fragmentView.findViewById(R.id.background_image);
-
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
             int selectedBackground = preferences.getInt("selectedBackground", 1000001);
             int selectedColor = preferences.getInt("selectedColor", 0);
             if (selectedColor != 0) {
-                backgroundImage.setBackgroundColor(selectedColor);
+                contentView.setBackgroundColor(selectedColor);
                 chatListView.setCacheColorHint(selectedColor);
             } else {
                 chatListView.setCacheColorHint(0);
-                if (selectedBackground == 1000001) {
-                    backgroundImage.setImageResource(R.drawable.background_hd);
-                } else {
-                    File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
-                    if (toFile.exists()) {
-                        if (ApplicationLoader.cachedWallpaper != null) {
-                            backgroundImage.setImageBitmap(ApplicationLoader.cachedWallpaper);
-                        } else {
-                            backgroundImage.setImageURI(Uri.fromFile(toFile));
-                            if (backgroundImage.getDrawable() instanceof BitmapDrawable) {
-                                ApplicationLoader.cachedWallpaper = ((BitmapDrawable)backgroundImage.getDrawable()).getBitmap();
-                            }
-                        }
-                        isCustomTheme = true;
+                try {
+                    if (selectedBackground == 1000001) {
+                        ((SizeNotifierRelativeLayout) contentView).setBackgroundImage(R.drawable.background_hd);
                     } else {
-                        backgroundImage.setImageResource(R.drawable.background_hd);
+                        File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
+                        if (toFile.exists()) {
+                            if (ApplicationLoader.cachedWallpaper != null) {
+                                ((SizeNotifierRelativeLayout) contentView).setBackgroundImage(ApplicationLoader.cachedWallpaper);
+                            } else {
+                                Drawable drawable = Drawable.createFromPath(toFile.getAbsolutePath());
+                                if (drawable != null) {
+                                    ((SizeNotifierRelativeLayout) contentView).setBackgroundImage(drawable);
+                                    ApplicationLoader.cachedWallpaper = drawable;
+                                } else {
+                                    contentView.setBackgroundColor(-2693905);
+                                    chatListView.setCacheColorHint(-2693905);
+                                }
+                            }
+                            isCustomTheme = true;
+                        } else {
+                            ((SizeNotifierRelativeLayout) contentView).setBackgroundImage(R.drawable.background_hd);
+                        }
                     }
+                } catch (Exception e) {
+                    contentView.setBackgroundColor(-2693905);
+                    chatListView.setCacheColorHint(-2693905);
+                    FileLog.e("tmessages", e);
                 }
             }
 
@@ -686,7 +699,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 View v = contentView.findViewById(R.id.secret_placeholder);
                 v.setVisibility(View.VISIBLE);
 
-                if (currentEncryptedChat.admin_id == UserConfig.clientUserId) {
+                if (currentEncryptedChat.admin_id == UserConfig.getClientUserId()) {
                     if (currentUser.first_name.length() > 0) {
                         secretViewStatusTextView.setText(LocaleController.formatString("EncryptedPlaceholderTitleOutgoing", R.string.EncryptedPlaceholderTitleOutgoing, currentUser.first_name));
                     } else {
@@ -979,6 +992,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             bottomOverlayChat.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
@@ -1252,6 +1268,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             timerButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("MessageLifetime", R.string.MessageLifetime));
                     builder.setItems(new CharSequence[]{
@@ -1337,7 +1356,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         int currentTime = ConnectionsManager.getInstance().getCurrentTime();
         for (TLRPC.TL_chatParticipant participant : info.participants) {
             TLRPC.User user = MessagesController.getInstance().users.get(participant.user_id);
-            if (user != null && user.status != null && (user.status.expires > currentTime || user.id == UserConfig.clientUserId) && user.status.expires > 10000) {
+            if (user != null && user.status != null && (user.status.expires > currentTime || user.id == UserConfig.getClientUserId()) && user.status.expires > 10000) {
                 onlineCount++;
             }
         }
@@ -1495,7 +1514,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         if (currentChat != null) {
             actionBarLayer.setTitle(currentChat.title);
         } else if (currentUser != null) {
-            if (currentUser.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(currentUser.id) == null && (ContactsController.getInstance().contactsDict.size() != 0 || !ContactsController.getInstance().loadingContacts)) {
+            if (currentUser.id / 1000 != 777 && currentUser.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(currentUser.id) == null && (ContactsController.getInstance().contactsDict.size() != 0 || !ContactsController.getInstance().isLoadingContacts())) {
                 if (currentUser.phone != null && currentUser.phone.length() != 0) {
                     actionBarLayer.setTitle(PhoneFormat.getInstance().format("+" + currentUser.phone));
                 } else {
@@ -1625,25 +1644,10 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 currentPicturePath = null;
             } else if (requestCode == 1) {
                 if (data == null || data.getData() == null) {
+                    showAttachmentError();
                     return;
                 }
-                String tempPath = Utilities.getPath(data.getData());
-
-                boolean isGif = false;
-                if (tempPath != null && tempPath.endsWith(".gif")) {
-                    isGif = true;
-                } else if (tempPath == null) {
-                    isGif = MediaController.isGif(data.getData());
-                    if (isGif) {
-                        tempPath = MediaController.copyDocumentToCache(data.getData());
-                    }
-                }
-
-                if (tempPath != null && isGif) {
-                    processSendingDocument(tempPath);
-                } else {
-                    processSendingPhoto(null, data.getData());
-                }
+                processSendingPhoto(null, data.getData());
             } else if (requestCode == 2) {
                 String videoPath = null;
                 if (data != null) {
@@ -1678,8 +1682,32 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     currentPicturePath = null;
                 }
                 processSendingVideo(videoPath);
+            } else if (requestCode == 21) {
+                if (data == null || data.getData() == null) {
+                    showAttachmentError();
+                    return;
+                }
+                String tempPath = Utilities.getPath(data.getData());
+                String originalPath = tempPath;
+                if (tempPath == null) {
+                    originalPath = data.toString();
+                    tempPath = MediaController.copyDocumentToCache(data.getData(), "file");
+                }
+                if (tempPath == null) {
+                    showAttachmentError();
+                    return;
+                }
+                processSendingDocument(tempPath, originalPath);
             }
         }
+    }
+
+    private void showAttachmentError() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        Toast toast = Toast.makeText(getParentActivity(), LocaleController.getString("UnsupportedAttachment", R.string.UnsupportedAttachment), Toast.LENGTH_SHORT);
+        toast.show();
     }
 
     @Override
@@ -1708,17 +1736,17 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     }
 
     public void processSendingPhoto(String imageFilePath, Uri imageUri) {
-        if ((imageFilePath == null || imageFilePath.length() == 0) && imageUri == null) {
-            return;
+        ArrayList<String> paths = null;
+        ArrayList<Uri> uris = null;
+        if (imageFilePath != null && imageFilePath.length() != 0) {
+            paths = new ArrayList<String>();
+            paths.add(imageFilePath);
         }
-        TLRPC.TL_photo photo = MessagesController.getInstance().generatePhotoSizes(imageFilePath, imageUri);
-        if (photo != null) {
-            MessagesController.getInstance().sendMessage(photo, dialog_id);
-            if (chatListView != null) {
-                chatListView.setSelection(messages.size() + 1);
-            }
-            scrollToTopOnResume = true;
+        if (imageUri != null) {
+            uris = new ArrayList<Uri>();
+            uris.add(imageUri);
         }
+        processSendingPhotos(paths, uris);
     }
 
     public void processSendingPhotos(ArrayList<String> paths, ArrayList<Uri> uris) {
@@ -1736,6 +1764,8 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         new Thread(new Runnable() {
             @Override
             public void run() {
+                ArrayList<String> sendAsDocuments = null;
+                ArrayList<String> sendAsDocumentsOriginal = null;
                 int count = !pathsCopy.isEmpty() ? pathsCopy.size() : urisCopy.size();
                 String path = null;
                 Uri uri = null;
@@ -1745,115 +1775,223 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     } else if (!urisCopy.isEmpty()) {
                         uri = urisCopy.get(a);
                     }
-                    final TLRPC.TL_photo photo = MessagesController.getInstance().generatePhotoSizes(path, uri);
-                    Utilities.RunOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (photo != null) {
-                                MessagesController.getInstance().sendMessage(photo, dialog_id);
-                                if (chatListView != null) {
-                                    chatListView.setSelection(messages.size() + 1);
-                                }
-                                scrollToTopOnResume = true;
-                            }
+
+                    String originalPath = path;
+                    String tempPath = path;
+                    if (tempPath == null && uri != null) {
+                        tempPath = Utilities.getPath(uri);
+                        originalPath = uri.toString();
+                    }
+
+                    boolean isGif = false;
+                    if (tempPath != null && tempPath.endsWith(".gif")) {
+                        isGif = true;
+                    } else if (tempPath == null && uri != null) {
+                        isGif = MediaController.isGif(uri);
+                        if (isGif) {
+                            originalPath = uri.toString();
+                            tempPath = MediaController.copyDocumentToCache(uri, "gif");
                         }
-                    });
+                    }
+
+                    if (isGif) {
+                        if (sendAsDocuments == null) {
+                            sendAsDocuments = new ArrayList<String>();
+                            sendAsDocumentsOriginal = new ArrayList<String>();
+                        }
+                        sendAsDocuments.add(tempPath);
+                        sendAsDocumentsOriginal.add(originalPath);
+                    } else {
+                        TLRPC.TL_photo photo = (TLRPC.TL_photo)MessagesStorage.getInstance().getSentFile(originalPath, currentEncryptedChat == null ? 0 : 3);
+                        if (photo == null && uri != null) {
+                            photo = (TLRPC.TL_photo)MessagesStorage.getInstance().getSentFile(Utilities.getPath(uri), currentEncryptedChat == null ? 0 : 3);
+                        }
+                        if (photo == null) {
+                            photo = MessagesController.getInstance().generatePhotoSizes(path, uri);
+                        }
+                        if (photo != null) {
+                            final String originalPathFinal = originalPath;
+                            final TLRPC.TL_photo photoFinal = photo;
+                            Utilities.RunOnUIThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    MessagesController.getInstance().sendMessage(photoFinal, originalPathFinal, dialog_id);
+                                    if (chatListView != null) {
+                                        chatListView.setSelection(messages.size() + 1);
+                                    }
+                                    if (paused) {
+                                        scrollToTopOnResume = true;
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }
+                if (sendAsDocuments != null && !sendAsDocuments.isEmpty()) {
+                    for (int a = 0; a < sendAsDocuments.size(); a++) {
+                        processSendingDocumentInternal(sendAsDocuments.get(a), sendAsDocumentsOriginal.get(a));
+                    }
                 }
             }
         }).start();
     }
 
-    public void processSendingDocument(String documentFilePath) {
-        if (documentFilePath == null || documentFilePath.length() == 0) {
+    private void processSendingDocumentInternal(String path, String originalPath) {
+        if (path == null || path.length() == 0) {
             return;
         }
-        File f = new File(documentFilePath);
+        final File f = new File(path);
         if (!f.exists() || f.length() == 0) {
             return;
         }
+
         String name = f.getName();
         if (name == null) {
             name = "noname";
         }
         String ext = "";
-        int idx = documentFilePath.lastIndexOf(".");
+        int idx = path.lastIndexOf(".");
         if (idx != -1) {
-            ext = documentFilePath.substring(idx + 1);
+            ext = path.substring(idx + 1);
         }
-        TLRPC.TL_document document = new TLRPC.TL_document();
-        document.id = 0;
-        document.user_id = UserConfig.clientUserId;
-        document.date = ConnectionsManager.getInstance().getCurrentTime();
-        document.file_name = name;
-        document.size = (int)f.length();
-        document.dc_id = 0;
-        document.path = documentFilePath;
-        if (ext.length() != 0) {
-            MimeTypeMap myMime = MimeTypeMap.getSingleton();
-            String mimeType = myMime.getMimeTypeFromExtension(ext.toLowerCase());
-            if (mimeType != null) {
-                document.mime_type = mimeType;
+        if (originalPath != null) {
+            originalPath += "" + f.length();
+        }
+
+        TLRPC.TL_document document = (TLRPC.TL_document)MessagesStorage.getInstance().getSentFile(originalPath, currentEncryptedChat == null ? 1 : 4);
+        if (document == null && !path.equals(originalPath)) {
+            document = (TLRPC.TL_document)MessagesStorage.getInstance().getSentFile(path + f.length(), currentEncryptedChat == null ? 1 : 4);
+        }
+        if (document == null) {
+            document = new TLRPC.TL_document();
+            document.id = 0;
+            document.user_id = UserConfig.getClientUserId();
+            document.date = ConnectionsManager.getInstance().getCurrentTime();
+            document.file_name = name;
+            document.size = (int)f.length();
+            document.dc_id = 0;
+            if (ext.length() != 0) {
+                MimeTypeMap myMime = MimeTypeMap.getSingleton();
+                String mimeType = myMime.getMimeTypeFromExtension(ext.toLowerCase());
+                if (mimeType != null) {
+                    document.mime_type = mimeType;
+                } else {
+                    document.mime_type = "application/octet-stream";
+                }
             } else {
                 document.mime_type = "application/octet-stream";
             }
-        } else {
-            document.mime_type = "application/octet-stream";
-        }
-        if (document.mime_type.equals("image/gif")) {
-            try {
-                Bitmap bitmap = FileLoader.loadBitmap(f.getAbsolutePath(), null, 90, 90);
-                if (bitmap != null) {
-                    document.thumb = FileLoader.scaleAndSaveImage(bitmap, 90, 90, 55, currentEncryptedChat != null);
-                    document.thumb.type = "s";
+            if (document.mime_type.equals("image/gif")) {
+                try {
+                    Bitmap bitmap = FileLoader.loadBitmap(f.getAbsolutePath(), null, 90, 90);
+                    if (bitmap != null) {
+                        document.thumb = FileLoader.scaleAndSaveImage(bitmap, 90, 90, 55, currentEncryptedChat != null);
+                        document.thumb.type = "s";
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
                 }
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
+            }
+            if (document.thumb == null) {
+                document.thumb = new TLRPC.TL_photoSizeEmpty();
+                document.thumb.type = "s";
             }
         }
-        if (document.thumb == null) {
-            document.thumb = new TLRPC.TL_photoSizeEmpty();
-            document.thumb.type = "s";
+        document.path = path;
+
+        final TLRPC.TL_document documentFinal = document;
+        final String originalPathFinal = originalPath;
+        Utilities.RunOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                MessagesController.getInstance().sendMessage(documentFinal, originalPathFinal, dialog_id);
+                if (chatListView != null) {
+                    chatListView.setSelection(messages.size() + 1);
+                }
+                if (paused) {
+                    scrollToTopOnResume = true;
+                }
+            }
+        });
+    }
+
+    public void processSendingDocument(String path, String originalPath) {
+        if (path == null || originalPath == null) {
+            return;
         }
-        MessagesController.getInstance().sendMessage(document, dialog_id);
+        ArrayList<String> paths = new ArrayList<String>();
+        ArrayList<String> originalPaths = new ArrayList<String>();
+        paths.add(path);
+        originalPaths.add(originalPath);
+        processSendingDocuments(paths, originalPaths);
+    }
+
+    public void processSendingDocuments(final ArrayList<String> paths, final ArrayList<String> originalPaths) {
+        if (paths == null && originalPaths == null || paths != null && originalPaths != null && paths.size() != originalPaths.size()) {
+            return;
+        }
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (int a = 0; a < paths.size(); a++) {
+                    processSendingDocumentInternal(paths.get(a), originalPaths.get(a));
+                }
+            }
+        }).start();
     }
 
     public void processSendingVideo(final String videoPath) {
         if (videoPath == null || videoPath.length() == 0) {
             return;
         }
-        Bitmap thumb = ThumbnailUtils.createVideoThumbnail(videoPath, MediaStore.Video.Thumbnails.MINI_KIND);
-        TLRPC.PhotoSize size = FileLoader.scaleAndSaveImage(thumb, 90, 90, 55, currentEncryptedChat != null);
-        if (size == null) {
-            return;
-        }
-        size.type = "s";
-        TLRPC.TL_video video = new TLRPC.TL_video();
-        video.thumb = size;
-        video.caption = "";
-        video.id = 0;
-        video.path = videoPath;
-        File temp = new File(videoPath);
-        if (temp != null && temp.exists()) {
-            video.size = (int)temp.length();
-        }
-        UserConfig.lastLocalId--;
-        UserConfig.saveConfig(false);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                TLRPC.TL_video video = (TLRPC.TL_video)MessagesStorage.getInstance().getSentFile(videoPath, currentEncryptedChat == null ? 2 : 5);
+                if (video == null) {
+                    Bitmap thumb = ThumbnailUtils.createVideoThumbnail(videoPath, MediaStore.Video.Thumbnails.MINI_KIND);
+                    TLRPC.PhotoSize size = FileLoader.scaleAndSaveImage(thumb, 90, 90, 55, currentEncryptedChat != null);
+                    if (size == null) {
+                        return;
+                    }
+                    size.type = "s";
+                    video = new TLRPC.TL_video();
+                    video.thumb = size;
+                    video.caption = "";
+                    video.id = 0;
+                    File temp = new File(videoPath);
+                    if (temp != null && temp.exists()) {
+                        video.size = (int) temp.length();
+                    }
+                    UserConfig.lastLocalId--;
+                    UserConfig.saveConfig(false);
 
-        MediaPlayer mp = MediaPlayer.create(ApplicationLoader.applicationContext, Uri.fromFile(new File(videoPath)));
-        if (mp == null) {
-            return;
-        }
-        video.duration = (int)Math.ceil(mp.getDuration() / 1000.0f);
-        video.w = mp.getVideoWidth();
-        video.h = mp.getVideoHeight();
-        mp.release();
+                    MediaPlayer mp = MediaPlayer.create(ApplicationLoader.applicationContext, Uri.fromFile(new File(videoPath)));
+                    if (mp == null) {
+                        return;
+                    }
+                    video.duration = (int) Math.ceil(mp.getDuration() / 1000.0f);
+                    video.w = mp.getVideoWidth();
+                    video.h = mp.getVideoHeight();
+                    mp.release();
+                }
+                video.path = videoPath;
 
-        MediaStore.Video.Media media = new MediaStore.Video.Media();
-        MessagesController.getInstance().sendMessage(video, dialog_id);
-        if (chatListView != null) {
-            chatListView.setSelection(messages.size() + 1);
-        }
-        scrollToTopOnResume = true;
+                final TLRPC.TL_video videoFinal = video;
+                Utilities.RunOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        MessagesController.getInstance().sendMessage(videoFinal, videoPath, dialog_id);
+                        if (chatListView != null) {
+                            chatListView.setSelection(messages.size() + 1);
+                        }
+                        if (paused) {
+                            scrollToTopOnResume = true;
+                        }
+                    }
+                });
+            }
+        }).start();
     }
 
     private void removeUnreadPlane(boolean reload) {
@@ -2285,9 +2423,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         dayArr.remove(obj);
                         if (dayArr.isEmpty()) {
                             messagesByDays.remove(obj.dateKey);
-                            if (index != -1) {
-                                messages.remove(index);
-                            }
+                            messages.remove(index);
                         }
                         updated = true;
                     }
@@ -2514,10 +2650,11 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             }
             if (currentEncryptedChat != null && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat)
                     || currentUser.id / 1000 == 333
+                    || currentUser.id / 1000 == 777
                     || currentUser instanceof TLRPC.TL_userEmpty || currentUser instanceof TLRPC.TL_userDeleted
                     || (currentUser.phone != null && currentUser.phone.length() != 0 &&
                     ContactsController.getInstance().contactsDict.get(currentUser.id) != null &&
-                    (ContactsController.getInstance().contactsDict.size() != 0 || !ContactsController.getInstance().loadingContacts))) {
+                    (ContactsController.getInstance().contactsDict.size() != 0 || !ContactsController.getInstance().isLoadingContacts()))) {
                 topPanel.setVisibility(View.GONE);
             } else {
                 topPanel.setVisibility(View.VISIBLE);
@@ -2560,6 +2697,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         topPanel.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
+                                if (getParentActivity() == null) {
+                                    return;
+                                }
                                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                                 builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
                                 builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
@@ -2568,7 +2708,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                     public void onClick(DialogInterface dialogInterface, int i) {
                                         MessagesController.getInstance().hidenAddToContacts.put(currentUser.id, currentUser);
                                         topPanel.setVisibility(View.GONE);
-                                        MessagesController.getInstance().sendMessage(UserConfig.currentUser, dialog_id);
+                                        MessagesController.getInstance().sendMessage(UserConfig.getCurrentUser(), dialog_id);
                                         chatListView.post(new Runnable() {
                                             @Override
                                             public void run() {
@@ -2588,6 +2728,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     }
 
     private void createEmojiPopup() {
+        if (getParentActivity() == null) {
+            return;
+        }
         emojiView = new EmojiView(getParentActivity());
         emojiView.setListener(new EmojiView.Listener() {
             public void onBackspace() {
@@ -2682,16 +2825,13 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             scrollToTopUnReadOnResume = false;
             scrollToTopOnResume = false;
         }
-        if (emojiView != null) {
-            emojiView.loadRecents();
-        }
         paused = false;
         if (readWhenResume && !messages.isEmpty()) {
             readWhenResume = false;
             MessagesController.getInstance().markDialogAsRead(dialog_id, messages.get(0).messageOwner.id, readWithMid, 0, readWithDate, true);
         }
 
-        fixLayout();
+        fixLayout(true);
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         String lastMessageText = preferences.getString("dialog_" + dialog_id, null);
         if (lastMessageText != null) {
@@ -2809,7 +2949,8 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         MediaController.getInstance().setLastEncryptedChatParams(chatEnterTime, chatLeaveTime, currentEncryptedChat, visibleMessages);
     }
 
-    private void fixLayout() {
+    private void fixLayout(final boolean resume) {
+        final int lastPos = chatListView.getLastVisiblePosition();
         ViewTreeObserver obs = chatListView.getViewTreeObserver();
         obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
             @Override
@@ -2821,7 +2962,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     return true;
                 }
                 int height = Utilities.dp(48);
-                if (getParentActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                if (!Utilities.isTablet(getParentActivity()) && getParentActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
                     height = Utilities.dp(40);
                     selectedMessagesCountTextView.setTextSize(16);
                 } else {
@@ -2833,6 +2974,14 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     params.height = height;
                     avatarImageView.setLayoutParams(params);
                 }
+                if (!resume && lastPos >= messages.size() - 1) {
+                    chatListView.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            chatListView.setSelectionFromTop(messages.size() - 1, -100000 - chatListView.getPaddingTop());
+                        }
+                    });
+                }
                 return false;
             }
         });
@@ -2840,7 +2989,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
     @Override
     public void onConfigurationChanged(android.content.res.Configuration newConfig) {
-        fixLayout();
+        fixLayout(false);
     }
 
     private View getRowParentView(View v) {
@@ -2866,10 +3015,6 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             return;
         }
 
-        selectedObject = null;
-        forwaringMessage = null;
-        selectedMessagesCanCopyIds.clear();
-        selectedMessagesIds.clear();
         View parentView = getRowParentView(v);
         if (parentView == null) {
             return;
@@ -2882,9 +3027,18 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             message = holder.message;
         }
         final int type = getMessageType(message);
+
+        selectedObject = null;
+        forwaringMessage = null;
+        selectedMessagesCanCopyIds.clear();
+        selectedMessagesIds.clear();
+
         if (single || type < 2) {
             if (type >= 0) {
                 selectedObject = message;
+                if (getParentActivity() == null) {
+                    return;
+                }
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
 
                 CharSequence[] items = null;
@@ -2924,6 +3078,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 builder.setItems(items, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
+                        if (selectedObject == null) {
+                            return;
+                        }
                         if (type == 0) {
                             if (i == 0) {
                                 processSelectedOption(0);
@@ -3020,6 +3177,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                     if (LocaleController.getInstance().applyLanguageFile(locFile)) {
                                         presentFragment(new LanguageSelectActivity());
                                     } else {
+                                        if (getParentActivity() == null) {
+                                            return;
+                                        }
                                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                                         builder.setMessage(LocaleController.getString("IncorrectLocalization", R.string.IncorrectLocalization));
@@ -3059,7 +3219,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         MessagesController.getInstance().sendMessage(selectedObject, dialog_id);
                     } else {
                         TLRPC.TL_photo photo = (TLRPC.TL_photo)selectedObject.messageOwner.media.photo;
-                        MessagesController.getInstance().sendMessage(photo, dialog_id);
+                        MessagesController.getInstance().sendMessage(photo, selectedObject.messageOwner.attachPath, dialog_id);
                     }
                 } else if (selectedObject.type == 3) {
                     if (selectedObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
@@ -3067,7 +3227,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     } else {
                         TLRPC.TL_video video = (TLRPC.TL_video)selectedObject.messageOwner.media.video;
                         video.path = selectedObject.messageOwner.attachPath;
-                        MessagesController.getInstance().sendMessage(video, dialog_id);
+                        MessagesController.getInstance().sendMessage(video, video.path, dialog_id);
                     }
                 } else if (selectedObject.type == 12 || selectedObject.type == 13) {
                     TLRPC.User user = MessagesController.getInstance().users.get(selectedObject.messageOwner.media.user_id);
@@ -3075,7 +3235,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 } else if (selectedObject.type == 8 || selectedObject.type == 9) {
                     TLRPC.TL_document document = (TLRPC.TL_document)selectedObject.messageOwner.media.document;
                     document.path = selectedObject.messageOwner.attachPath;
-                    MessagesController.getInstance().sendMessage(document, dialog_id);
+                    MessagesController.getInstance().sendMessage(document, document.path, dialog_id);
                 } else if (selectedObject.type == 2) {
                     TLRPC.TL_audio audio = (TLRPC.TL_audio)selectedObject.messageOwner.media.audio;
                     audio.path = selectedObject.messageOwner.attachPath;
@@ -3133,43 +3293,20 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     }
 
     @Override
-    public void didSelectFile(DocumentSelectActivity activity, String path, String name, String ext, long size) {
+    public void didSelectFile(DocumentSelectActivity activity, String path) {
         activity.finishFragment();
-        TLRPC.TL_document document = new TLRPC.TL_document();
-        document.id = 0;
-        document.user_id = UserConfig.clientUserId;
-        document.date = ConnectionsManager.getInstance().getCurrentTime();
-        document.file_name = name;
-        document.size = (int)size;
-        document.dc_id = 0;
-        document.path = path;
-        if (ext.length() != 0) {
-            MimeTypeMap myMime = MimeTypeMap.getSingleton();
-            String mimeType = myMime.getMimeTypeFromExtension(ext.toLowerCase());
-            if (mimeType != null) {
-                document.mime_type = mimeType;
-            } else {
-                document.mime_type = "application/octet-stream";
-            }
-        } else {
-            document.mime_type = "application/octet-stream";
+        processSendingDocument(path, path);
+    }
+
+    @Override
+    public void startDocumentSelectActivity() {
+        try {
+            Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+            photoPickerIntent.setType("*/*");
+            getParentActivity().startActivityForResult(photoPickerIntent, 21);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
-        if (document.mime_type.equals("image/gif")) {
-            try {
-                Bitmap bitmap = FileLoader.loadBitmap(path, null, 90, 90);
-                if (bitmap != null) {
-                    document.thumb = FileLoader.scaleAndSaveImage(bitmap, 90, 90, 80, currentEncryptedChat != null);
-                    document.thumb.type = "s";
-                }
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
-            }
-        }
-        if (document.thumb == null) {
-            document.thumb = new TLRPC.TL_photoSizeEmpty();
-            document.thumb.type = "s";
-        }
-        MessagesController.getInstance().sendMessage(document, dialog_id);
     }
 
     @Override
@@ -3251,9 +3388,12 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
 
     public boolean isGoogleMapsInstalled() {
         try {
-            ApplicationInfo info = ApplicationLoader.applicationContext.getPackageManager().getApplicationInfo("com.google.android.apps.maps", 0 );
+            ApplicationInfo info = ApplicationLoader.applicationContext.getPackageManager().getApplicationInfo("com.google.android.apps.maps", 0);
             return true;
         } catch(PackageManager.NameNotFoundException e) {
+            if (getParentActivity() == null) {
+                return false;
+            }
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setMessage("Install Google Maps?");
             builder.setCancelable(true);
@@ -3374,6 +3514,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     }
 
     private void alertUserOpenError(MessageObject message) {
+        if (getParentActivity() == null) {
+            return;
+        }
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
         builder.setPositiveButton(R.string.OK, null);
@@ -3451,7 +3594,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     @Override
     public int getSelectedCount() { return 0; }
 
-    private class ChatAdapter extends BaseAdapter {
+    private class ChatAdapter extends BaseFragmentAdapter {
 
         private Context mContext;
 
@@ -3573,7 +3716,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 ((ChatBaseCell)view).delegate = new ChatBaseCell.ChatBaseCellDelegate() {
                     @Override
                     public void didPressedUserAvatar(ChatBaseCell cell, TLRPC.User user) {
-                        if (user != null && user.id != UserConfig.clientUserId) {
+                        if (user != null && user.id != UserConfig.getClientUserId()) {
                             Bundle args = new Bundle();
                             args.putInt("user_id", user.id);
                             presentFragment(new UserProfileActivity(args));
@@ -3756,10 +3899,14 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                         photoImage.setImage(message.messageOwner.action.newUserPhoto.photo_small, "50_50", Utilities.getUserAvatarForId(currentUser.id));
                     } else {
                         PhotoObject photo = PhotoObject.getClosestImageWithSize(message.photoThumbs, Utilities.dp(64), Utilities.dp(64));
-                        if (photo.image != null) {
-                            photoImage.setImageBitmap(photo.image);
+                        if (photo != null) {
+                            if (photo.image != null) {
+                                photoImage.setImageBitmap(photo.image);
+                            } else {
+                                photoImage.setImage(photo.photoOwner.location, "50_50", Utilities.getGroupAvatarForId(currentChat.id));
+                            }
                         } else {
-                            photoImage.setImage(photo.photoOwner.location, "50_50", Utilities.getGroupAvatarForId(currentChat.id));
+                            photoImage.setImageResource(Utilities.getGroupAvatarForId(currentChat.id));
                         }
                     }
                     photoImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(message), false);
@@ -3784,7 +3931,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     }
                     int placeHolderId = Utilities.getUserAvatarForId(contactUser.id);
                     contactAvatar.setImage(photo, "50_50", placeHolderId);
-                    if (contactUser.id != UserConfig.clientUserId && ContactsController.getInstance().contactsDict.get(contactUser.id) == null) {
+                    if (contactUser.id != UserConfig.getClientUserId() && ContactsController.getInstance().contactsDict.get(contactUser.id) == null) {
                         addContactView.setVisibility(View.VISIBLE);
                     } else {
                         addContactView.setVisibility(View.GONE);
@@ -3870,14 +4017,17 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                             if (actionView != null) {
                                 actionView.setVisibility(View.VISIBLE);
                             }
-                            Float progress = FileLoader.getInstance().fileProgresses.get(message.messageOwner.attachPath);
+                            Float progress = null;
+                            if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
+                                progress = FileLoader.getInstance().fileProgresses.get(message.messageOwner.attachPath);
+                                progressByTag.put((Integer)actionProgress.getTag(), message.messageOwner.attachPath);
+                                progressBarMap.put(message.messageOwner.attachPath, actionProgress);
+                            }
                             if (progress != null) {
                                 actionProgress.setProgress((int)(progress * 100));
                             } else {
                                 actionProgress.setProgress(0);
                             }
-                            progressByTag.put((Integer)actionProgress.getTag(), message.messageOwner.attachPath);
-                            progressBarMap.put(message.messageOwner.attachPath, actionProgress);
                         }
                         if (actionAttachButton != null) {
                             actionAttachButton.setVisibility(View.GONE);
@@ -4090,7 +4240,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                 processRowSelect(view);
                                 return;
                             }
-                            if (message.messageOwner.media.user_id != UserConfig.clientUserId) {
+                            if (message.messageOwner.media.user_id != UserConfig.getClientUserId()) {
                                 TLRPC.User user = null;
                                 if (message.messageOwner.media.user_id != 0) {
                                     user = MessagesController.getInstance().users.get(message.messageOwner.media.user_id);
@@ -4101,6 +4251,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                                     presentFragment(new UserProfileActivity(args));
                                 } else {
                                     if (message.messageOwner.media.phone_number == null || message.messageOwner.media.phone_number.length() == 0) {
+                                        return;
+                                    }
+                                    if (getParentActivity() == null) {
                                         return;
                                     }
                                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());

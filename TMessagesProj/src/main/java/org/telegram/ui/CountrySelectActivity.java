@@ -22,6 +22,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
@@ -85,7 +86,7 @@ public class CountrySelectActivity extends BaseFragment {
                 }
                 arr.add(c);
             }
-            reader.close();//TODO
+            reader.close();
             stream.close();
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -280,7 +281,7 @@ public class CountrySelectActivity extends BaseFragment {
     }
 
     private void processSearch(final String query) {
-        Utilities.globalQueue.postRunnable(new Runnable() {
+        Utilities.searchQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
 
@@ -321,7 +322,7 @@ public class CountrySelectActivity extends BaseFragment {
         });
     }
 
-    private class SearchAdapter extends BaseAdapter {
+    private class SearchAdapter extends BaseFragmentAdapter {
         private Context mContext;
 
         public SearchAdapter(Context context) {

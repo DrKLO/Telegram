@@ -113,7 +113,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
 
     @Override
     public void setAdapter(ListAdapter adapter) {
-        if(mAdapter != null) {
+        if(mAdapter != null && mDataObserver != null) {
             mAdapter.unregisterDataSetObserver(mDataObserver);
         }
         mAdapter = adapter;

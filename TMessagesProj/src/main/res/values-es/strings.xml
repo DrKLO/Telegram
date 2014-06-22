@@ -113,6 +113,7 @@
     <string name="SlideToCancel">DESLIZA PARA CANCELAR</string>
     <string name="SaveToDownloads">Guardar en descargas</string>
     <string name="ApplyLocalizationFile">Aplicar archivo de traducción</string>
+    <string name="UnsupportedAttachment">Unsupported attachment</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Chat secreto solicitado</string>
@@ -272,6 +273,7 @@
     <string name="WiFiOnly">Sólo vía WiFi</string>
     <string name="SortFirstName">Nombre</string>
     <string name="SortLastName">Apellido</string>
+    <string name="LedColor">Color del LED</string>
 
     <!--media view-->
     <string name="NoMedia">No hay fotos ni vídeos compartidos aún</string>

@@ -100,8 +100,8 @@
     <string name="EncryptedPlaceholderTitleIncoming">%s convidou você para uma conversa secreta.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">Você convidou %s para uma conversa secreta.</string>
     <string name="EncryptedDescriptionTitle">Conversas secretas:</string>
-    <string name="EncryptedDescription1">Utilizam criptografia ponta a ponta</string>
-    <string name="EncryptedDescription2">Não deixam rasto em nossos servidores</string>
+    <string name="EncryptedDescription1">Utilizam criptografia ponto a ponto</string>
+    <string name="EncryptedDescription2">Não deixam rastro em nossos servidores</string>
     <string name="EncryptedDescription3">Têm temporizador para a autodestruição das mensagens</string>
     <string name="EncryptedDescription4">Não permitem o reencaminhamento</string>
     <string name="OneNewMessage">%1$d nova mensagem</string>
@@ -113,6 +113,7 @@
     <string name="SlideToCancel">DESLIZE PARA CANCELAR</string>
     <string name="SaveToDownloads">Salvar em downloads</string>
     <string name="ApplyLocalizationFile">Aplicar arquivo de localização</string>
+    <string name="UnsupportedAttachment">Unsupported attachment</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Conversa secreta solicitada</string>
@@ -272,6 +273,7 @@
     <string name="WiFiOnly">Unicamente com WiFi</string>
     <string name="SortFirstName">Primeiro nome</string>
     <string name="SortLastName">Sobrenome</string>
+    <string name="LedColor">LED Color</string>
 
     <!--media view-->
     <string name="NoMedia">Ainda não há mídia compartilhada</string>

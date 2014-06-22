@@ -1024,7 +1024,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             fileDecodingQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
-                    if (playingMessageObject.audioProgress != 0) {
+                    if (playingMessageObject != null && playingMessageObject.audioProgress != 0) {
                         lastPlayPcm = (long)(currentTotalPcmDuration * playingMessageObject.audioProgress);
                         seekOpusFile(playingMessageObject.audioProgress);
                     }
@@ -1143,7 +1143,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 recordingAudio = new TLRPC.TL_audio();
                 recordingAudio.dc_id = Integer.MIN_VALUE;
                 recordingAudio.id = UserConfig.lastLocalId;
-                recordingAudio.user_id = UserConfig.clientUserId;
+                recordingAudio.user_id = UserConfig.getClientUserId();
                 UserConfig.lastLocalId--;
                 UserConfig.saveConfig(false);
 
@@ -1352,7 +1352,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
             final ProgressDialog finalProgress = progressDialog;
 
-            Utilities.globalQueue.postRunnable(new Runnable() {
+            new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -1427,7 +1427,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                         });
                     }
                 }
-            });
+            }).start();
         }
     }
 
@@ -1536,7 +1536,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         return false;
     }
 
-    public static String copyDocumentToCache(Uri uri) {
+    public static String copyDocumentToCache(Uri uri, String ext) {
         ParcelFileDescriptor parcelFD = null;
         FileInputStream input = null;
         FileOutputStream output = null;
@@ -1545,7 +1545,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             UserConfig.lastLocalId--;
             parcelFD = ApplicationLoader.applicationContext.getContentResolver().openFileDescriptor(uri, "r");
             input = new FileInputStream(parcelFD.getFileDescriptor());
-            File f = new File(Utilities.getCacheDir(), String.format(Locale.US, "%d.gif", id));
+            File f = new File(Utilities.getCacheDir(), String.format(Locale.US, "%d.%s", id, ext));
             output = new FileOutputStream(f);
             input.getChannel().transferTo(0, input.getChannel().size(), output.getChannel());
             UserConfig.saveConfig(false);

@@ -17,9 +17,7 @@ import org.telegram.ui.ApplicationLoader;
 import java.io.File;
 
 public class UserConfig {
-    public static TLRPC.User currentUser;
-    public static int clientUserId = 0;
-    public static boolean clientActivated = false;
+    private static TLRPC.User currentUser;
     public static boolean registeredForPush = false;
     public static boolean registeredForInternalPush = false;
     public static String pushString = "";
@@ -62,8 +60,6 @@ public class UserConfig {
                     if (withFile) {
                         SerializedData data = new SerializedData();
                         currentUser.serializeToStream(data);
-                        clientUserId = currentUser.id;
-                        clientActivated = true;
                         String userString = Base64.encodeToString(data.toByteArray(), Base64.DEFAULT);
                         editor.putString("user", userString);
                     }
@@ -80,6 +76,30 @@ public class UserConfig {
         }
     }
 
+    public static boolean isClientActivated() {
+        synchronized (sync) {
+            return currentUser != null;
+        }
+    }
+
+    public static int getClientUserId() {
+        synchronized (sync) {
+            return currentUser != null ? currentUser.id : 0;
+        }
+    }
+
+    public static TLRPC.User getCurrentUser() {
+        synchronized (sync) {
+            return currentUser;
+        }
+    }
+
+    public static void setCurrentUser(TLRPC.User user) {
+        synchronized (sync) {
+            currentUser = user;
+        }
+    }
+
     public static void loadConfig() {
         synchronized (sync) {
             final File configFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "user.dat");
@@ -90,8 +110,6 @@ public class UserConfig {
                     if (ver == 1) {
                         int constructor = data.readInt32();
                         currentUser = (TLRPC.TL_userSelf)TLClassStore.Instance().TLdeserialize(data, constructor);
-                        clientUserId = currentUser.id;
-                        clientActivated = true;
                         MessagesStorage.lastDateValue = data.readInt32();
                         MessagesStorage.lastPtsValue = data.readInt32();
                         MessagesStorage.lastSeqValue = data.readInt32();
@@ -119,8 +137,6 @@ public class UserConfig {
                     } else if (ver == 2) {
                         int constructor = data.readInt32();
                         currentUser = (TLRPC.TL_userSelf)TLClassStore.Instance().TLdeserialize(data, constructor);
-                        clientUserId = currentUser.id;
-                        clientActivated = true;
 
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
                         registeredForPush = preferences.getBoolean("registeredForPush", false);
@@ -164,21 +180,13 @@ public class UserConfig {
                     if (userBytes != null) {
                         SerializedData data = new SerializedData(userBytes);
                         currentUser = (TLRPC.TL_userSelf)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                        clientUserId = currentUser.id;
-                        clientActivated = true;
                     }
-                }
-                if (currentUser == null) {
-                    clientActivated = false;
-                    clientUserId = 0;
                 }
             }
         }
     }
 
     public static void clearConfig() {
-        clientUserId = 0;
-        clientActivated = false;
         currentUser = null;
         registeredForInternalPush = false;
         registeredForPush = false;

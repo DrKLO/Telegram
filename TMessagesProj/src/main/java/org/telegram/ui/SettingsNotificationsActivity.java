@@ -22,7 +22,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -37,8 +36,10 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.Views.ColorPickerView;
 
 public class SettingsNotificationsActivity extends BaseFragment {
     private ListView listView;
@@ -50,11 +51,13 @@ public class SettingsNotificationsActivity extends BaseFragment {
     private int messagePreviewRow;
     private int messageVibrateRow;
     private int messageSoundRow;
+    private int messageLedRow;
     private int groupSectionRow;
     private int groupAlertRow;
     private int groupPreviewRow;
     private int groupVibrateRow;
     private int groupSoundRow;
+    private int groupLedRow;
     private int inappSectionRow;
     private int inappSoundRow;
     private int inappVibrateRow;
@@ -74,11 +77,13 @@ public class SettingsNotificationsActivity extends BaseFragment {
         messageAlertRow = rowCount++;
         messagePreviewRow = rowCount++;
         messageVibrateRow = rowCount++;
+        messageLedRow = rowCount++;
         messageSoundRow = rowCount++;
         groupSectionRow = rowCount++;
         groupAlertRow = rowCount++;
         groupPreviewRow = rowCount++;
         groupVibrateRow = rowCount++;
+        groupLedRow = rowCount++;
         groupSoundRow = rowCount++;
         inappSectionRow = rowCount++;
         inappSoundRow = rowCount++;
@@ -110,12 +115,12 @@ public class SettingsNotificationsActivity extends BaseFragment {
             });
 
             fragmentView = inflater.inflate(R.layout.settings_layout, container, false);
-            ListAdapter listAdapter = new ListAdapter(getParentActivity());
+            final ListAdapter listAdapter = new ListAdapter(getParentActivity());
             listView = (ListView)fragmentView.findViewById(R.id.listView);
             listView.setAdapter(listAdapter);
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
-                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
                     if (i == messageAlertRow || i == groupAlertRow) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
@@ -217,7 +222,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                                             listView.invalidateViews();
                                         }
                                         if (getParentActivity() != null) {
-                                            Toast toast = Toast.makeText(getParentActivity(), R.string.ResetNotificationsText, Toast.LENGTH_SHORT);
+                                            Toast toast = Toast.makeText(getParentActivity(), LocaleController.getString("ResetNotificationsText", R.string.ResetNotificationsText), Toast.LENGTH_SHORT);
                                             toast.show();
                                         }
                                     }
@@ -270,6 +275,9 @@ public class SettingsNotificationsActivity extends BaseFragment {
                             listView.invalidateViews();
                             ApplicationLoader.startPushService();
                         } else {
+                            if (getParentActivity() == null) {
+                                return;
+                            }
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                             builder.setMessage(LocaleController.getString("NotificationsServiceDisableInfo", R.string.NotificationsServiceDisableInfo));
                             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
@@ -286,6 +294,54 @@ public class SettingsNotificationsActivity extends BaseFragment {
                             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                             showAlertDialog(builder);
                         }
+                    } else if (i == messageLedRow || i == groupLedRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        view = li.inflate(R.layout.settings_color_dialog_layout, null, false);
+                        final ColorPickerView colorPickerView = (ColorPickerView)view.findViewById(R.id.color_picker);
+
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        if (i == messageLedRow) {
+                            colorPickerView.setOldCenterColor(preferences.getInt("MessagesLed", 0xff00ff00));
+                        } else if (i == groupLedRow) {
+                            colorPickerView.setOldCenterColor(preferences.getInt("GroupLed", 0xff00ff00));
+                        }
+
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("LedColor", R.string.LedColor));
+                        builder.setView(view);
+                        builder.setPositiveButton(LocaleController.getString("Set", R.string.Set), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int which) {
+                                final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                if (i == messageLedRow) {
+                                    editor.putInt("MessagesLed", colorPickerView.getColor());
+                                } else if (i == groupLedRow) {
+                                    editor.putInt("GroupLed", colorPickerView.getColor());
+                                }
+                                editor.commit();
+                                listView.invalidateViews();
+                            }
+                        });
+                        builder.setNeutralButton(LocaleController.getString("Disabled", R.string.Disabled), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                if (i == messageLedRow) {
+                                    editor.putInt("MessagesLed", 0);
+                                } else if (i == groupLedRow) {
+                                    editor.putInt("GroupLed", 0);
+                                }
+                                editor.commit();
+                                listView.invalidateViews();
+                            }
+                        });
+                        showAlertDialog(builder);
                     }
                 }
             });
@@ -340,7 +396,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
         }
     }
 
-    private class ListAdapter extends BaseAdapter {
+    private class ListAdapter extends BaseFragmentAdapter {
         private Context mContext;
 
         public ListAdapter(Context context) {
@@ -498,8 +554,23 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     textViewDetail.setText(LocaleController.getString("UndoAllCustom", R.string.UndoAllCustom));
                     divider.setVisibility(View.INVISIBLE);
                 }
+            } else if (type == 3) {
+                if (view == null) {
+                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                    view = li.inflate(R.layout.settings_row_color_layout, viewGroup, false);
+                }
+                TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
+                View colorView = view.findViewById(R.id.settings_color);
+                View divider = view.findViewById(R.id.settings_row_divider);
+                textView.setText(LocaleController.getString("LedColor", R.string.LedColor));
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                if (i == messageLedRow) {
+                    colorView.setBackgroundColor(preferences.getInt("MessagesLed", 0xff00ff00));
+                } else if (i == groupLedRow) {
+                    colorView.setBackgroundColor(preferences.getInt("GroupLed", 0xff00ff00));
+                }
+                divider.setVisibility(View.VISIBLE);
             }
-
             return view;
         }
 
@@ -513,6 +584,8 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     i == contactJoinedRow ||
                     i == pebbleAlertRow || i == notificationsServiceRow) {
                 return 1;
+            } else if (i == messageLedRow || i == groupLedRow) {
+                return 3;
             } else {
                 return 2;
             }
@@ -520,7 +593,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
 
         @Override
         public int getViewTypeCount() {
-            return 3;
+            return 4;
         }
 
         @Override

@@ -15,8 +15,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.database.Cursor;
-import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.Typeface;
 import android.net.Uri;
@@ -34,6 +34,7 @@ import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 
 import net.hockeyapp.android.CrashManager;
+import net.hockeyapp.android.CrashManagerListener;
 import net.hockeyapp.android.UpdateManager;
 
 import org.telegram.ui.ApplicationLoader;
@@ -87,6 +88,8 @@ public class Utilities {
 
     public static volatile DispatchQueue stageQueue = new DispatchQueue("stageQueue");
     public static volatile DispatchQueue globalQueue = new DispatchQueue("globalQueue");
+    public static volatile DispatchQueue searchQueue = new DispatchQueue("searchQueue");
+    public static volatile DispatchQueue photoBookQueue = new DispatchQueue("photoBookQueue");
 
     public static int[] arrColors = {0xffee4928, 0xff41a903, 0xffe09602, 0xff0f94ed, 0xff8f3bf7, 0xfffc4380, 0xff00a1c4, 0xffeb7002};
     public static int[] arrUsersAvatars = {
@@ -153,7 +156,7 @@ public class Utilities {
     public native static long doPQNative(long _what);
     public native static byte[] aesIgeEncryption(byte[] _what, byte[] _key, byte[] _iv, boolean encrypt, boolean changeIv, int len);
     public native static void aesIgeEncryption2(ByteBuffer _what, byte[] _key, byte[] _iv, boolean encrypt, boolean changeIv, int len);
-    public native static void loadBitmap(String path, Bitmap bitmap, int scale);
+    public native static void loadBitmap(String path, int[] bitmap, int scale, int format, int width, int height);
 
     public static void lockOrientation(Activity activity) {
         if (prevOrientation != -10) {
@@ -164,19 +167,47 @@ public class Utilities {
             WindowManager manager = (WindowManager)activity.getSystemService(Activity.WINDOW_SERVICE);
             if (manager != null && manager.getDefaultDisplay() != null) {
                 int rotation = manager.getDefaultDisplay().getRotation();
+                int orientation = activity.getResources().getConfiguration().orientation;
+
                 if (rotation == Surface.ROTATION_270) {
-                    if (Build.VERSION.SDK_INT >= 9) {
-                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                    if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                    } else {
+                        if (Build.VERSION.SDK_INT >= 9) {
+                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                        } else {
+                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                        }
+                    }
+                } else if (rotation == Surface.ROTATION_90) {
+                    if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+                        if (Build.VERSION.SDK_INT >= 9) {
+                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
+                        } else {
+                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                        }
                     } else {
                         activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
                     }
-                } else if (rotation == Surface.ROTATION_90) {
-                    activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
                 } else if (rotation == Surface.ROTATION_0) {
-                    activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                    if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                    } else {
+                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                    }
                 } else {
-                    if (Build.VERSION.SDK_INT >= 9) {
-                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
+                    if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                        if (Build.VERSION.SDK_INT >= 9) {
+                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                        } else {
+                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                        }
+                    } else {
+                        if (Build.VERSION.SDK_INT >= 9) {
+                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
+                        } else {
+                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                        }
                     }
                 }
             }
@@ -231,10 +262,17 @@ public class Utilities {
     public static File getCacheDir() {
         if (externalCacheNotAvailableState == 1 || externalCacheNotAvailableState == 0 && Environment.getExternalStorageState().startsWith(Environment.MEDIA_MOUNTED)) {
             externalCacheNotAvailableState = 1;
-            return ApplicationLoader.applicationContext.getExternalCacheDir();
+            File file = ApplicationLoader.applicationContext.getExternalCacheDir();
+            if (file != null) {
+                return file;
+            }
         }
         externalCacheNotAvailableState = 2;
-        return ApplicationLoader.applicationContext.getCacheDir();
+        File file = ApplicationLoader.applicationContext.getCacheDir();
+        if (file != null) {
+            return file;
+        }
+        return new File("");
     }
 
     public static String bytesToHex(byte[] bytes) {
@@ -668,7 +706,7 @@ public class Utilities {
         try {
             String str;
             if (id >= 0) {
-                str = String.format(Locale.US, "%d%d", id, UserConfig.clientUserId);
+                str = String.format(Locale.US, "%d%d", id, UserConfig.getClientUserId());
             } else {
                 str = String.format(Locale.US, "%d", id);
             }
@@ -707,6 +745,9 @@ public class Utilities {
     }
 
     public static String MD5(String md5) {
+        if (md5 == null) {
+            return null;
+        }
         try {
             java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
             byte[] array = md.digest(md5.getBytes());
@@ -949,12 +990,21 @@ public class Utilities {
     }
 
     public static void checkForCrashes(Activity context) {
-        CrashManager.register(context, BuildVars.HOCKEY_APP_HASH);
+        CrashManager.register(context, BuildVars.HOCKEY_APP_HASH, new CrashManagerListener() {
+            @Override
+            public boolean includeDeviceData() {
+                return true;
+            }
+        });
     }
 
     public static void checkForUpdates(Activity context) {
         if (BuildVars.DEBUG_VERSION) {
             UpdateManager.register(context, BuildVars.HOCKEY_APP_HASH);
         }
+    }
+
+    public static boolean isTablet(Context context) {
+        return (context.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_LARGE;
     }
 }

@@ -170,7 +170,7 @@ public class ActionBar extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        if (!Utilities.isTablet(getContext()) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Utilities.dp(40), MeasureSpec.EXACTLY));
         } else {
             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Utilities.dp(48), MeasureSpec.EXACTLY));

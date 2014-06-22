@@ -102,6 +102,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
 
             onlineText = (TextView)fragmentView.findViewById(R.id.settings_online);
             avatarImage = (BackupImageView)fragmentView.findViewById(R.id.settings_avatar_image);
+            avatarImage.processDetach = false;
             phoneText = (TextView)fragmentView.findViewById(R.id.settings_name);
             Typeface typeface = Utilities.getTypeface("fonts/rmedium.ttf");
             phoneText.setTypeface(typeface);

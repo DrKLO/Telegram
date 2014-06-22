@@ -11,7 +11,6 @@ package org.telegram.messenger;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.util.Log;
 
 public class DispatchQueue extends Thread {
     public volatile Handler handler = null;
@@ -65,6 +64,12 @@ public class DispatchQueue extends Thread {
             } else {
                 handler.postDelayed(runnable, delay);
             }
+        }
+    }
+
+    public void cleanupQueue() {
+        if (handler != null) {
+            handler.removeCallbacksAndMessages(null);
         }
     }
 

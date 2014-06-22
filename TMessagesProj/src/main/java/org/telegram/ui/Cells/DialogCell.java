@@ -423,7 +423,7 @@ public class DialogCell extends BaseCell {
                         } else if (encryptedChat instanceof TLRPC.TL_encryptedChatDiscarded) {
                             messageString = LocaleController.getString("EncryptionRejected", R.string.EncryptionRejected);
                         } else if (encryptedChat instanceof TLRPC.TL_encryptedChat) {
-                            if (encryptedChat.admin_id == UserConfig.clientUserId) {
+                            if (encryptedChat.admin_id == UserConfig.getClientUserId()) {
                                 if (user != null && user.first_name != null) {
                                     messageString = LocaleController.formatString("EncryptedChatStartedOutgoing", R.string.EncryptedChatStartedOutgoing, user.first_name);
                                 } else {
@@ -546,8 +546,8 @@ public class DialogCell extends BaseCell {
             if (chat != null) {
                 nameString = chat.title;
             } else if (user != null) {
-                if (user.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(user.id) == null) {
-                    if (ContactsController.getInstance().contactsDict.size() == 0 && (!ContactsController.getInstance().contactsLoaded || ContactsController.getInstance().loadingContacts)) {
+                if (user.id / 1000 != 777 && user.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(user.id) == null) {
+                    if (ContactsController.getInstance().contactsDict.size() == 0 && (!ContactsController.getInstance().contactsLoaded || ContactsController.getInstance().isLoadingContacts())) {
                         nameString = Utilities.formatName(user.first_name, user.last_name);
                     } else {
                         if (user.phone != null && user.phone.length() != 0) {

@@ -39,6 +39,7 @@ public class LoginActivityRegisterView extends SlideView {
     private String phoneHash;
     private String phoneCode;
     private Bundle currentParams;
+    private boolean nextPressed = false;
 
     public LoginActivityRegisterView(Context context) {
         super(context);
@@ -122,32 +123,36 @@ public class LoginActivityRegisterView extends SlideView {
 
     @Override
     public void onNextPressed() {
+        if (nextPressed) {
+            return;
+        }
+        nextPressed = true;
         TLRPC.TL_auth_signUp req = new TLRPC.TL_auth_signUp();
         req.phone_code = phoneCode;
         req.phone_code_hash = phoneHash;
         req.phone_number = requestPhone;
         req.first_name = firstNameField.getText().toString();
         req.last_name = lastNameField.getText().toString();
-        delegate.needShowProgress();
+        if (delegate != null) {
+            delegate.needShowProgress();
+        }
         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
-            public void run(TLObject response, TLRPC.TL_error error) {
-                if (delegate != null) {
-                    delegate.needHideProgress();
-                }
-                if (error == null) {
-                    final TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization)response;
-                    Utilities.RunOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
+            public void run(final TLObject response, final TLRPC.TL_error error) {
+                Utilities.RunOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        nextPressed = false;
+                        if (delegate != null) {
+                            delegate.needHideProgress();
+                        }
+                        if (error == null) {
+                            final TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization)response;
                             TLRPC.TL_userSelf user = (TLRPC.TL_userSelf)res.user;
                             UserConfig.clearConfig();
                             MessagesStorage.getInstance().cleanUp();
                             MessagesController.getInstance().cleanUp();
-                            ConnectionsManager.getInstance().cleanUp();
-                            UserConfig.currentUser = user;
-                            UserConfig.clientActivated = true;
-                            UserConfig.clientUserId = user.id;
+                            UserConfig.setCurrentUser(user);
                             UserConfig.saveConfig(true);
                             ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
                             users.add(user);
@@ -159,27 +164,27 @@ public class LoginActivityRegisterView extends SlideView {
                                 delegate.needFinishActivity();
                             }
                             ConnectionsManager.getInstance().initPushConnection();
-                        }
-                    });
-                } else {
-                    if (delegate != null) {
-                        if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                            delegate.needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
-                        } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                            delegate.needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
-                        } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                            delegate.needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
-                        } else if (error.text.contains("FIRSTNAME_INVALID")) {
-                            delegate.needShowAlert(LocaleController.getString("InvalidFirstName", R.string.InvalidFirstName));
-                        } else if (error.text.contains("LASTNAME_INVALID")) {
-                            delegate.needShowAlert(LocaleController.getString("InvalidLastName", R.string.InvalidLastName));
                         } else {
-                            delegate.needShowAlert(error.text);
+                            if (delegate != null) {
+                                if (error.text.contains("PHONE_NUMBER_INVALID")) {
+                                    delegate.needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
+                                } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
+                                    delegate.needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
+                                } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                                    delegate.needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
+                                } else if (error.text.contains("FIRSTNAME_INVALID")) {
+                                    delegate.needShowAlert(LocaleController.getString("InvalidFirstName", R.string.InvalidFirstName));
+                                } else if (error.text.contains("LASTNAME_INVALID")) {
+                                    delegate.needShowAlert(LocaleController.getString("InvalidLastName", R.string.InvalidLastName));
+                                } else {
+                                    delegate.needShowAlert(error.text);
+                                }
+                            }
                         }
                     }
-                }
+                });
             }
-        }, null, true, RPCRequest.RPCRequestClassGeneric);
+        }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassWithoutLogin);
     }
 
     @Override

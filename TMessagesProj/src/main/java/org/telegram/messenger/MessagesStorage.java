@@ -36,6 +36,11 @@ public class MessagesStorage {
     public static byte[] secretPBytes = null;
     public static int secretG = 0;
 
+    private int lastSavedSeq = 0;
+    private int lastSavedPts = 0;
+    private int lastSavedDate = 0;
+    private int lastSavedQts = 0;
+
     public static final int wallpapersDidLoaded = 171;
 
     private static volatile MessagesStorage Instance = null;
@@ -91,6 +96,8 @@ public class MessagesStorage {
 
                 database.executeFast("CREATE TABLE user_contacts_v6(uid INTEGER PRIMARY KEY, fname TEXT, sname TEXT)").stepThis().dispose();
                 database.executeFast("CREATE TABLE user_phones_v6(uid INTEGER, phone TEXT, sphone TEXT, deleted INTEGER, PRIMARY KEY (uid, phone))").stepThis().dispose();
+
+                database.executeFast("CREATE TABLE sent_files_v2(uid TEXT, type INTEGER, data BLOB, PRIMARY KEY (uid, type))").stepThis().dispose();
 
                 database.executeFast("CREATE INDEX IF NOT EXISTS mid_idx_randoms ON randoms(mid);").stepThis().dispose();
 
@@ -161,6 +168,8 @@ public class MessagesStorage {
                 database.executeFast("CREATE INDEX IF NOT EXISTS sphone_deleted_idx_user_phones ON user_phones_v6(sphone, deleted);").stepThis().dispose();
 
                 database.executeFast("CREATE INDEX IF NOT EXISTS mid_idx_randoms ON randoms(mid);").stepThis().dispose();
+
+                database.executeFast("CREATE TABLE IF NOT EXISTS sent_files_v2(uid TEXT, type INTEGER, data BLOB, PRIMARY KEY (uid, type))").stepThis().dispose();
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -168,6 +177,7 @@ public class MessagesStorage {
     }
 
     public void cleanUp() {
+        storageQueue.cleanupQueue();
         storageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -176,6 +186,12 @@ public class MessagesStorage {
                 lastPtsValue = 0;
                 lastQtsValue = 0;
                 lastSecretVersion = 0;
+
+                lastSavedSeq = 0;
+                lastSavedPts = 0;
+                lastSavedDate = 0;
+                lastSavedQts = 0;
+
                 secretPBytes = null;
                 secretG = 0;
                 if (database != null) {
@@ -186,6 +202,7 @@ public class MessagesStorage {
                     cacheFile.delete();
                     cacheFile = null;
                 }
+                storageQueue.cleanupQueue();
                 openDatabase();
             }
         });
@@ -218,6 +235,9 @@ public class MessagesStorage {
             @Override
             public void run() {
                 try {
+                    if (lastSavedSeq == seq && lastSavedPts == pts && lastSavedDate == date && lastQtsValue == qts) {
+                        return;
+                    }
                     SQLitePreparedStatement state = database.executeFast("UPDATE params SET seq = ?, pts = ?, date = ?, qts = ? WHERE id = 1");
                     state.bindInteger(1, seq);
                     state.bindInteger(2, pts);
@@ -225,6 +245,10 @@ public class MessagesStorage {
                     state.bindInteger(4, qts);
                     state.step();
                     state.dispose();
+                    lastSavedSeq = seq;
+                    lastSavedPts = pts;
+                    lastSavedDate = date;
+                    lastSavedQts = qts;
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
@@ -781,7 +805,7 @@ public class MessagesStorage {
                                 if (userData != null) {
                                     SerializedData data = new SerializedData(userData);
                                     TLRPC.User user = (TLRPC.User)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                                    if (user.id == UserConfig.clientUserId) {
+                                    if (user.id == UserConfig.getClientUserId()) {
                                         continue;
                                     }
                                     if (user.status != null) {
@@ -1018,7 +1042,7 @@ public class MessagesStorage {
                     String uids = "";
                     while (cursor.next()) {
                         int user_id = cursor.intValue(0);
-                        if (user_id == UserConfig.clientUserId) {
+                        if (user_id == UserConfig.getClientUserId()) {
                             continue;
                         }
                         TLRPC.TL_contact contact = new TLRPC.TL_contact();
@@ -1413,6 +1437,73 @@ public class MessagesStorage {
         } else {
             database.commitTransaction();
         }
+    }
+
+    public TLObject getSentFile(final String path, final int type) {
+        if (path == null) {
+            return null;
+        }
+        final Semaphore semaphore = new Semaphore(0);
+        final ArrayList<TLObject> result = new ArrayList<TLObject>();
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    String id = Utilities.MD5(path);
+                    if (id != null) {
+                        SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT data FROM sent_files_v2 WHERE uid = '%s' AND type = %d", id, type));
+                        if (cursor.next()) {
+                            byte[] fileData = cursor.byteArrayValue(0);
+                            if (fileData != null) {
+                                SerializedData data = new SerializedData(fileData);
+                                TLObject file = TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                                if (file != null) {
+                                    result.add(file);
+                                }
+                            }
+                        }
+                        cursor.dispose();
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                } finally {
+                    semaphore.release();
+                }
+            }
+        });
+        try {
+            semaphore.acquire();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return !result.isEmpty() ? result.get(0) : null;
+    }
+
+    public void putSentFile(final String path, final TLObject file, final int type) {
+        if (path == null || file == null) {
+            return;
+        }
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    String id = Utilities.MD5(path);
+                    if (id != null) {
+                        SQLitePreparedStatement state = database.executeFast("REPLACE INTO sent_files_v2 VALUES(?, ?, ?)");
+                        state.requery();
+                        SerializedData data = new SerializedData();
+                        file.serializeToStream(data);
+                        state.bindString(1, id);
+                        state.bindInteger(2, type);
+                        state.bindByteArray(3, data.toByteArray());
+                        state.step();
+                        state.dispose();
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        });
     }
 
     public void updateEncryptedChatTTL(final TLRPC.EncryptedChat chat) {
@@ -1838,6 +1929,7 @@ public class MessagesStorage {
                         state.bindInteger(2, count);
                         state.step();
                     }
+                    cursor.dispose();
                 }
                 state.dispose();
             }
@@ -2484,7 +2576,7 @@ public class MessagesStorage {
                 ArrayList<TLRPC.EncryptedChat> encryptedChats = new ArrayList<TLRPC.EncryptedChat>();
                 try {
                     ArrayList<Integer> usersToLoad = new ArrayList<Integer>();
-                    usersToLoad.add(UserConfig.clientUserId);
+                    usersToLoad.add(UserConfig.getClientUserId());
                     ArrayList<Integer> chatsToLoad = new ArrayList<Integer>();
                     ArrayList<Integer> encryptedToLoad = new ArrayList<Integer>();
                     SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT d.did, d.last_mid, d.unread_count, d.date, m.data, m.read_state, m.mid, m.send_state FROM dialogs as d LEFT JOIN messages as m ON d.last_mid = m.mid ORDER BY d.date DESC LIMIT %d,%d", offset, count));

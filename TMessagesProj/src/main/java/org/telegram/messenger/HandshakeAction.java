@@ -52,9 +52,9 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
     void beginHandshake(boolean dropConnection) {
         if (datacenter.connection == null) {
             datacenter.connection = new TcpConnection(datacenter.datacenterId);
-            datacenter.connection.delegate = this;
             datacenter.connection.transportRequestClass = RPCRequest.RPCRequestClassGeneric;
         }
+        datacenter.connection.delegate = this;
 
         processedMessageIds = new ArrayList<Long>();
         authNonce = null;
@@ -209,7 +209,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 ByteBuffer data = ByteBuffer.wrap(resPq.pq);
                 final long pqf = data.getLong();
                 final long messageIdf = messageId;
-                Utilities.globalQueue.postRunnable(new Runnable() {
+                new Thread(new Runnable() {
                     @Override
                     public void run() {
 
@@ -281,7 +281,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                             }
                         });
                     }
-                });
+                }).start();
             } else {
                 FileLog.e("tmessages", "***** Error: invalid handshake nonce");
                 beginHandshake(false);
@@ -566,8 +566,14 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
     }
 
     @Override
-    public void tcpConnectionClosed(TcpConnection connection) {
+    public void tcpConnectionClosed(final TcpConnection connection) {
         wasDisconnect = true;
+        Utilities.stageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                connection.connect();
+            }
+        }, 1000);
     }
 
     @Override
@@ -591,9 +597,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
 
     @Override
     public void tcpConnectionReceivedData(TcpConnection connection, ByteBufferDesc data, int length) {
-
         long keyId = data.readInt64();
-
         if (keyId == 0) {
             long messageId = data.readInt64();
             if (processedMessageIds.contains(messageId)) {

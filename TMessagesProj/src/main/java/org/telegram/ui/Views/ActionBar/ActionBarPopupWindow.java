@@ -12,8 +12,10 @@ package org.telegram.ui.Views.ActionBar;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
+import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 
 import java.lang.reflect.Field;
@@ -40,6 +42,39 @@ public class ActionBarPopupWindow extends PopupWindow {
 
     private ViewTreeObserver.OnScrollChangedListener mSuperScrollListener;
     private ViewTreeObserver mViewTreeObserver;
+
+    public static interface OnDispatchKeyEventListener {
+        public void onDispatchKeyEvent(KeyEvent keyEvent);
+    }
+
+    public static class ActionBarPopupWindowLayout extends LinearLayout {
+
+        private OnDispatchKeyEventListener mOnDispatchKeyEventListener;
+
+        public ActionBarPopupWindowLayout(Context context) {
+            super(context);
+        }
+
+        public ActionBarPopupWindowLayout(Context context, AttributeSet attrs) {
+            super(context, attrs);
+        }
+
+        public ActionBarPopupWindowLayout(Context context, AttributeSet attrs, int defStyle) {
+            super(context, attrs, defStyle);
+        }
+
+        public void setDispatchKeyEventListener(OnDispatchKeyEventListener listener) {
+            mOnDispatchKeyEventListener = listener;
+        }
+
+        @Override
+        public boolean dispatchKeyEvent(KeyEvent event) {
+            if (mOnDispatchKeyEventListener != null) {
+                mOnDispatchKeyEventListener.onDispatchKeyEvent(event);
+            }
+            return super.dispatchKeyEvent(event);
+        }
+    }
 
     public ActionBarPopupWindow() {
         super();
@@ -98,7 +133,6 @@ public class ActionBarPopupWindow extends PopupWindow {
     }
 
     private void unregisterListener() {
-        // Don't do anything if we haven't managed to patch the super listener
         if (mSuperScrollListener != null && mViewTreeObserver != null) {
             if (mViewTreeObserver.isAlive()) {
                 mViewTreeObserver.removeOnScrollChangedListener(mSuperScrollListener);
@@ -108,13 +142,8 @@ public class ActionBarPopupWindow extends PopupWindow {
     }
 
     private void registerListener(View anchor) {
-        // Don't do anything if we haven't managed to patch the super listener.
-        // And don't bother attaching the listener if the anchor view isn't
-        // attached. This means we'll only have to deal with the real VTO owned
-        // by the ViewRoot.
         if (mSuperScrollListener != null) {
-            ViewTreeObserver vto = (anchor.getWindowToken() != null) ? anchor.getViewTreeObserver()
-                    : null;
+            ViewTreeObserver vto = (anchor.getWindowToken() != null) ? anchor.getViewTreeObserver() : null;
             if (vto != mViewTreeObserver) {
                 if (mViewTreeObserver != null && mViewTreeObserver.isAlive()) {
                     mViewTreeObserver.removeOnScrollChangedListener(mSuperScrollListener);
@@ -152,6 +181,7 @@ public class ActionBarPopupWindow extends PopupWindow {
 
     @Override
     public void dismiss() {
+        setFocusable(false);
         super.dismiss();
         unregisterListener();
     }

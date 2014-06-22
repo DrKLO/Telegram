@@ -14,7 +14,6 @@
         android:layout_height="42dp"
         android:layout_marginLeft="6dp"
         android:id="@+id/chat_group_avatar_image"
-        android:scaleType="fitCenter"
         android:layout_marginBottom="2dp"
         android:layout_gravity="bottom"/>
 
@@ -31,7 +30,6 @@
             android:layout_width="100dp"
             android:layout_margin="6dp"
             android:layout_gravity="top"
-            android:scaleType="centerCrop"
             android:id="@+id/chat_photo_image"/>
 
         <LinearLayout

@@ -12,14 +12,14 @@
     <!--signin view-->
     <string name="YourPhone">Dein Telefon</string>
     <string name="StartText">Bitte bestätige deine Landesvorwahl und deine Telefonnummer.</string>
-    <string name="ChooseCountry">Wähle dein Land</string>
+    <string name="ChooseCountry">Wähle ein Land</string>
     <string name="WrongCountry">Falsche Landesvorwahl</string>
 
     <!--code enter view-->
     <string name="YourCode">Dein Code</string>
-    <string name="SentSmsCode">Wir haben dir eine SMS mit einem Aktivierungscode zugeschickt: </string>
+    <string name="SentSmsCode">Wir haben dir eine SMS mit einem Aktivierungscode zugeschickt</string>
     <string name="CallText">Wir rufen dich an in</string>
-    <string name="Calling">Wir rufen dich an …</string>
+    <string name="Calling">Wir rufen dich an…</string>
     <string name="Code">Code</string>
     <string name="WrongNumber">Falsche Nummer?</string>
 
@@ -40,15 +40,15 @@
     <string name="NewGroup">Neue Gruppe</string>
     <string name="Yesterday">gestern</string>
     <string name="NoResult">Keine Ergebnisse</string>
-    <string name="NoChats">Noch keine Chats …</string>
+    <string name="NoChats">Noch keine Chats…</string>
     <string name="NoChatsHelp">Beginne Telegram zu nutzen, indem du\neine neue Nachricht erstellst (rechte obere Ecke)\noder deine Kontakte aufrufst.</string>
-    <string name="WaitingForNetwork">Warte auf Verbindung …</string>
-    <string name="Connecting">Verbinde …</string>
-    <string name="Updating">Aktualisiere …</string>
+    <string name="WaitingForNetwork">Warte auf Verbindung…</string>
+    <string name="Connecting">Verbinde…</string>
+    <string name="Updating">Aktualisiere…</string>
     <string name="NewSecretChat">Neuer geheimer Chat</string>
-    <string name="AwaitingEncryption">Warte, bis %s online geht …</string>
+    <string name="AwaitingEncryption">Warte, bis %s online geht…</string>
     <string name="EncryptionRejected">Geheimen Chat abgelehnt</string>
-    <string name="EncryptionProcessing">Tausche Schlüssel aus …</string>
+    <string name="EncryptionProcessing">Tausche Schlüssel aus…</string>
     <string name="EncryptedChatStartedOutgoing">%s ist deinem geheimen Chat beigetreten.</string>
     <string name="EncryptedChatStartedIncoming">Du bist dem geheimen Chat beigetreten.</string>
     <string name="ClearHistory">Verlauf löschen</string>
@@ -61,7 +61,7 @@
     <string name="FreeOfTotal">Freier Speicher: %1$s von %2$s</string>
     <string name="UnknownError">Unbekannter Fehler</string>
     <string name="AccessError">Zugriffsfehler</string>
-    <string name="NoFiles">Noch keine Dateien …</string>
+    <string name="NoFiles">Noch keine Dateien…</string>
     <string name="FileUploadLimit">Die Datei darf nicht größer als %1$s sein</string>
     <string name="NotMounted">Speicher nicht eingebunden</string>
     <string name="UsbActive">USB-Transfer aktiv</string>
@@ -72,10 +72,10 @@
 
     <!--chat view-->
     <string name="Invisible">unsichtbar</string>
-    <string name="Typing">schreibt …</string>
+    <string name="Typing">schreibt…</string>
     <string name="Attach">Anhängen</string>
-    <string name="IsTyping">schreibt</string>
-    <string name="AreTyping">tippen …</string>
+    <string name="IsTyping">schreibt...</string>
+    <string name="AreTyping">tippen…</string>
     <string name="AndMoreTyping">und %d weitere Personen</string>
     <string name="GotAQuestion">Du hast eine Frage\nzu Telegram?</string>
     <string name="ChatTakePhoto">Foto aufnehmen</string>
@@ -83,7 +83,7 @@
     <string name="ChatLocation">Standort</string>
     <string name="ChatVideo">Video</string>
     <string name="ChatDocument">Dokument</string>
-    <string name="NoMessages">Noch keine Nachrichten …</string>
+    <string name="NoMessages">Noch keine Nachrichten…</string>
     <string name="ViewPhoto">Foto anzeigen</string>
     <string name="ViewLocation">Standort anzeigen</string>
     <string name="ViewVideo">Video abspielen</string>
@@ -100,7 +100,7 @@
     <string name="EncryptedPlaceholderTitleIncoming">%s hat dich zu einem geheimen Chat eingeladen.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">Du hast %s zu einem geheimen Chat eingeladen.</string>
     <string name="EncryptedDescriptionTitle">Geheime Chats:</string>
-    <string name="EncryptedDescription1">Verwenden Ende-zu-Ende-Verschlüsselung</string>
+    <string name="EncryptedDescription1">Verwenden End-to-End-Verschlüsselung</string>
     <string name="EncryptedDescription2">Hinterlassen keine Spuren auf unseren Servern</string>
     <string name="EncryptedDescription3">Haben einen Selbstzerstörungs-Timer</string>
     <string name="EncryptedDescription4">Erlauben keine Weiterleitung von Nachrichten</string>
@@ -111,8 +111,9 @@
     <string name="DeleteThisGroup">Diese Gruppe löschen</string>
     <string name="DeleteThisChat">Diesen Chat löschen</string>
     <string name="SlideToCancel">WISCHEN UM ABZUBRECHEN</string>
-    <string name="SaveToDownloads">In Ordner Downloads speichern</string>
-    <string name="ApplyLocalizationFile">Sprachdatei benutzen</string>
+    <string name="SaveToDownloads">Im Ordner Downloads speichern</string>
+    <string name="ApplyLocalizationFile">Standort-Datei benutzen</string>
+    <string name="UnsupportedAttachment">Unsupported attachment</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Geheimen Chat angefordert</string>
@@ -152,7 +153,7 @@
     <string name="NotificationGroupKickYou">%1$s hat dich aus der Gruppe %2$s entfernt</string>
     <string name="NotificationGroupLeftMember">%1$s hat die Gruppe %2$s verlassen</string>
     <string name="NotificationContactJoined">%1$s benutzt jetzt Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\n\nwir haben einen Zugriff auf dein Konto von einem neuen Gerät am %2$s erkannt.\n\nGerät: %3$s\nStandort: %4$s\n\nWenn du das nicht gewesen bist, kannst du in den Einstellungen alle Sitzungen beenden.\n\nDanke,\ndas Telegram Team</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\n\nwir haben einen Zugriff auf dein Konto von einem neuen Gerät am %2$s erkannt.\n\nGerät: %3$s\nStandort: %4$s\n\nWenn du das nicht warst, kannst du in den Einstellungen alle Sitzungen beenden.\n\nDanke,\ndas Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s hat das Profilbild geändert</string>
 
     <!--contacts view-->
@@ -163,13 +164,13 @@
     <string name="YesterdayAt">gestern um</string>
     <string name="OtherAt">um</string>
     <string name="Online">online</string>
-    <string name="Offline">Offline</string>
+    <string name="Offline">offline</string>
     <string name="LastSeen">zul. online</string>
     <string name="LastSeenDate">zul. online</string>
     <string name="InviteFriends">Freunde einladen</string>
 
     <!--group create view-->
-    <string name="SendMessageTo">Sende Nachricht an …</string>
+    <string name="SendMessageTo">Sende Nachricht an…</string>
     <string name="EnterGroupNamePlaceholder">Gruppennamen eingeben</string>
     <string name="MEMBER">MITGLIED</string>
     <string name="GroupName">Gruppenname</string>
@@ -236,7 +237,7 @@
     <string name="InAppPreview">In-App-Vorschau</string>
     <string name="Reset">ZURÜCKSETZEN</string>
     <string name="ResetAllNotifications">Alle Benachrichtigungs-Einstellungen zurücksetzen</string>
-    <string name="UndoAllCustom">Setze alle benutzerdefinierten Einstellungen für Benachrichtigungen zurück</string>
+    <string name="UndoAllCustom">Setzt alle benutzerdefinierten Einstellungen für Benachrichtigungen zurück</string>
     <string name="NotificationsAndSounds">Benachrichtigungen</string>
     <string name="BlockedUsers">Blockierte Benutzer</string>
     <string name="SaveIncomingPhotos">Speichere eingehende Bilder</string>
@@ -257,7 +258,7 @@
     <string name="ContactJoined">Kontakt ist Telegram beigetreten</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Sprache</string>
-    <string name="AskAQuestionInfo">Bedenke bitte, dass der Telegram Support von Freiwilligen geleistet wird. Wir versuchen so schnell wie möglich zu antworten. Dies kann jedoch manchmal etwas länger dauern.<![CDATA[<br><br>]]>Bitte schau in den <![CDATA[<a href="http://telegram.org/faq#general">Telegram FAQ</a>]]>: nach. Dort findest du Antworten auf die meisten Fragen und wichtige Tipps zur <![CDATA[<a href="http://telegram.org/faq#troubleshooting">Problemlösung</a>]]>.</string>
+    <string name="AskAQuestionInfo">Bedenke bitte, dass der Telegram Support von Freiwilligen geleistet wird. Wir versuchen so schnell wie möglich zu antworten. Dies kann jedoch manchmal etwas länger dauern.<![CDATA[<br><br>]]>Bitte schau in den <![CDATA[<a href="http://telegram.org/faq#general">Telegram FAQ</a>]]> nach. Dort findest du Antworten auf die meisten Fragen und wichtige Tipps zur <![CDATA[<a href="http://telegram.org/faq#troubleshooting">Problemlösung</a>]]>.</string>
     <string name="AskButton">Frage einen Freiwilligen</string>
     <string name="TelegramFaq">Telegram-FAQ</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
@@ -265,13 +266,14 @@
     <string name="IncorrectLocalization">Falsche Sprachdatei</string>
     <string name="Enabled">Aktiviert</string>
     <string name="Disabled">Deaktiviert</string>
-    <string name="NotificationsService">Benachrichtigungsdienst</string>
+    <string name="NotificationsService">Dienst für Benachrichtigungen</string>
     <string name="NotificationsServiceDisableInfo">Sofern Google Play Dienste ausreichend für deine Benachrichtigungen sind, kannst du unseren Benachrichtigungsdienst abschalten. Wir empfehlen allerdings, unseren Dienst dauerhaft aktiviert zu lassen um über neue Nachrichten in Echtzeit informiert zu werden.</string>
     <string name="SortBy">sortiert nach</string>
     <string name="ImportContacts">Kontakte importieren</string>
     <string name="WiFiOnly">nur über WLAN</string>
     <string name="SortFirstName">Vorname</string>
     <string name="SortLastName">Nachname</string>
+    <string name="LedColor">LED Farbe</string>
 
     <!--media view-->
     <string name="NoMedia">Noch keine geteilten Medien vorhanden</string>
@@ -284,7 +286,7 @@
     <string name="Hybrid">Hybrid</string>
     <string name="MetersAway">m entfernt</string>
     <string name="KMetersAway">km entfernt</string>
-    <string name="SendLocation">Sende Standort</string>
+    <string name="SendLocation">Standort senden</string>
     <string name="ShareLocation">Teile Standort</string>
 
     <!--photo gallery view-->
@@ -333,7 +335,7 @@
     <string name="ActionYouCreateGroup">Du hast die Gruppe erstellt</string>
     <string name="ActionKickUserYou">un1 hat dich aus der Gruppe entfernt</string>
     <string name="ActionAddUserYou">un1 hat dich hinzugefügt</string>
-    <string name="UnsuppotedMedia">Diese Nachricht wird auf deiner Version von Telegram nicht unterstützt. Bitte aktualisiere die App um sie zu sehen: http://telegram.org/update</string>
+    <string name="UnsuppotedMedia">Diese Nachricht wird von deiner Telegram-Version nicht unterstützt. Bitte aktualisiere die App um sie zu sehen: http://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Standort</string>
@@ -351,7 +353,7 @@
     <string name="InvalidCode">Ungültiger Code</string>
     <string name="InvalidFirstName">Ungültiger Vorname</string>
     <string name="InvalidLastName">Ungültiger Nachname</string>
-    <string name="Loading">Lädt …</string>
+    <string name="Loading">Lädt…</string>
     <string name="NoPlayerInstalled">Du hast keinen Videoplayer. Bitte installiere einen um fortzufahren.</string>
     <string name="NoHandleAppInstalled">Du hast keine App, die den Dokumententyp \'%1$s\' öffnen kann.</string>
     <string name="InviteUser">Dieser Benutzer hat noch kein Telegram. Möchtest du ihn einladen?</string>
@@ -373,7 +375,7 @@
     <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> stellt Nachrichten schneller zu als andere Anwendungen</string>
     <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> ist für immer kostenlos. Keine Werbung. Keine wiederkehrenden Kosten.</string>
     <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> schützt deine Nachrichten vor Hacker-Angriffen</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> hat keine Grenzen in Sachen Größe deiner Chats und Medien</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> unterstützt unbegrenzt große Chats und Mediendateien</string>
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lässt sich von verschiedenen Geräten gleichzeitig nutzen</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]>-Nachrichten sind stark verschlüsselt und können sich selbst zerstören</string>
     <string name="StartMessaging">Jetzt beginnen</string>

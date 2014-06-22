@@ -100,6 +100,9 @@ public class PhotoCropActivity extends BaseFragment {
                         } else {
                             draggingState = 0;
                         }
+                        if (draggingState != 0) {
+                            PhotoCropView.this.requestDisallowInterceptTouchEvent(true);
+                        }
                         oldX = x;
                         oldY = y;
                     } else if (motionEvent.getAction() == MotionEvent.ACTION_UP) {

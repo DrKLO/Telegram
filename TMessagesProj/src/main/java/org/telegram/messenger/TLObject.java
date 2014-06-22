@@ -9,6 +9,8 @@
 package org.telegram.messenger;
 
 public class TLObject {
+    public boolean disableFree = false;
+
     public TLObject () {
 
     }

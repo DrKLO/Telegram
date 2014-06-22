@@ -17,7 +17,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -33,6 +32,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.ChatOrUserCell;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
@@ -297,7 +297,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             messagesListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
                 @Override
                 public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    if (onlySelect || searching && searchWas) {
+                    if (onlySelect || searching && searchWas || getParentActivity() == null) {
                         return false;
                     }
                     TLRPC.TL_dialog dialog;
@@ -324,7 +324,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                                 if (which == 0) {
                                     MessagesController.getInstance().deleteDialog(selectedDialog, 0, true);
                                 } else if (which == 1) {
-                                    MessagesController.getInstance().deleteUserFromChat((int) -selectedDialog, MessagesController.getInstance().users.get(UserConfig.clientUserId), null);
+                                    MessagesController.getInstance().deleteUserFromChat((int) -selectedDialog, MessagesController.getInstance().users.get(UserConfig.getClientUserId()), null);
                                     MessagesController.getInstance().deleteDialog(selectedDialog, 0, false);
                                 }
                             }
@@ -455,6 +455,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
     private void didSelectResult(final long dialog_id, boolean useAlert) {
         if (useAlert && selectAlertString != null) {
+            if (getParentActivity() == null) {
+                return;
+            }
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
             int lower_part = (int)dialog_id;
@@ -555,7 +558,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    private class MessagesAdapter extends BaseAdapter {
+    private class MessagesAdapter extends BaseFragmentAdapter {
         private Context mContext;
 
         public MessagesAdapter(Context context) {

@@ -48,10 +48,11 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     private Bundle currentParams;
 
     private Timer timeTimer;
-    private final Integer timerSync = 1;
+    private static final Integer timerSync = 1;
     private volatile int time = 60000;
     private double lastCurrentTime;
     private boolean waitingForSms = false;
+    private boolean nextPressed = false;
 
     public LoginActivitySmsView(Context context) {
         super(context);
@@ -129,18 +130,17 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         Utilities.showKeyboard(codeField);
         codeField.requestFocus();
 
-        try {
-            synchronized(timerSync) {
-                if (timeTimer != null) {
-                    timeTimer.cancel();
-                    timeTimer = null;
-                }
-            }
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
+        destroyTimer();
         timeText.setText(String.format("%s 1:00", LocaleController.getString("CallText", R.string.CallText)));
         lastCurrentTime = System.currentTimeMillis();
+
+        createTimer();
+    }
+
+    private void createTimer() {
+        if (timeTimer != null) {
+            return;
+        }
         timeTimer = new Timer();
         timeTimer.schedule(new TimerTask() {
             @Override
@@ -158,12 +158,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                             timeText.setText(String.format("%s %d:%02d", LocaleController.getString("CallText", R.string.CallText), minutes, seconds));
                         } else {
                             timeText.setText(LocaleController.getString("Calling", R.string.Calling));
-                            synchronized(timerSync) {
-                                if (timeTimer != null) {
-                                    timeTimer.cancel();
-                                    timeTimer = null;
-                                }
-                            }
+                            destroyTimer();
                             TLRPC.TL_auth_sendCall req = new TLRPC.TL_auth_sendCall();
                             req.phone_number = requestPhone;
                             req.phone_code_hash = phoneHash;
@@ -171,7 +166,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                                 @Override
                                 public void run(TLObject response, TLRPC.TL_error error) {
                                 }
-                            }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
+                            }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
                         }
                     }
                 });
@@ -179,8 +174,25 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         }, 0, 1000);
     }
 
+    private void destroyTimer() {
+        try {
+            synchronized(timerSync) {
+                if (timeTimer != null) {
+                    timeTimer.cancel();
+                    timeTimer = null;
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
     @Override
     public void onNextPressed() {
+        if (nextPressed) {
+            return;
+        }
+        nextPressed = true;
         waitingForSms = false;
         Utilities.setWaitingForSms(false);
         NotificationCenter.getInstance().removeObserver(this, 998);
@@ -188,152 +200,68 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         req.phone_number = requestPhone;
         req.phone_code = codeField.getText().toString();
         req.phone_code_hash = phoneHash;
-        try {
-            synchronized(timerSync) {
-                if (timeTimer != null) {
-                    timeTimer.cancel();
-                    timeTimer = null;
-                }
-            }
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
+        destroyTimer();
         if (delegate != null) {
             delegate.needShowProgress();
         }
         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
-            public void run(TLObject response, TLRPC.TL_error error) {
-                if (delegate != null) {
-                    delegate.needHideProgress();
-                }
-                if (error == null) {
-                    final TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization)response;
-                    Utilities.RunOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (delegate == null) {
-                                return;
-                            }
-                            try {
-                                synchronized(timerSync) {
-                                    if (timeTimer != null) {
-                                        timeTimer.cancel();
-                                        timeTimer = null;
-                                    }
-                                }
-                            } catch (Exception e) {
-                                FileLog.e("tmessages", e);
-                            }
+            public void run(final TLObject response, final TLRPC.TL_error error) {
+                Utilities.RunOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (delegate == null) {
+                            return;
+                        }
+                        delegate.needHideProgress();
+                        nextPressed = false;
+                        if (error == null) {
+                            TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization)response;
+                            destroyTimer();
                             UserConfig.clearConfig();
                             MessagesStorage.getInstance().cleanUp();
                             MessagesController.getInstance().cleanUp();
-                            ConnectionsManager.getInstance().cleanUp();
-                            UserConfig.currentUser = res.user;
-                            UserConfig.clientActivated = true;
-                            UserConfig.clientUserId = res.user.id;
+                            UserConfig.setCurrentUser(res.user);
                             UserConfig.saveConfig(true);
                             ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
-                            users.add(UserConfig.currentUser);
+                            users.add(res.user);
                             MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
                             MessagesController.getInstance().users.put(res.user.id, res.user);
                             ContactsController.getInstance().checkAppAccount();
-                            if (delegate != null) {
-                                delegate.needFinishActivity();
-                            }
+                            delegate.needFinishActivity();
                             ConnectionsManager.getInstance().initPushConnection();
-                        }
-                    });
-                } else {
-                    if (error.text.contains("PHONE_NUMBER_UNOCCUPIED") && registered == null) {
-                        Utilities.RunOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
+                        } else {
+                            if (error.text.contains("PHONE_NUMBER_UNOCCUPIED") && registered == null) {
                                 Bundle params = new Bundle();
                                 params.putString("phoneFormated", requestPhone);
                                 params.putString("phoneHash", phoneHash);
                                 params.putString("code", req.phone_code);
                                 delegate.setPage(2, true, params, false);
-                                try {
-                                    synchronized(timerSync) {
-                                        if (timeTimer != null) {
-                                            timeTimer.cancel();
-                                            timeTimer = null;
-                                        }
-                                    }
-                                } catch (Exception e) {
-                                    FileLog.e("tmessages", e);
-                                }
-                            }
-                        });
-                    } else {
-                        if (timeTimer == null) {
-                            timeTimer = new Timer();
-                            timeTimer.schedule(new TimerTask() {
-                                @Override
-                                public void run() {
-                                    double currentTime = System.currentTimeMillis();
-                                    double diff = currentTime - lastCurrentTime;
-                                    time -= diff;
-                                    lastCurrentTime = currentTime;
-                                    Utilities.RunOnUIThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            if (time >= 1000) {
-                                                int minutes = time / 1000 / 60;
-                                                int seconds = time / 1000 - minutes * 60;
-                                                timeText.setText(String.format("%s %d:%02d", LocaleController.getString("CallText", R.string.CallText), minutes, seconds));
-                                            } else {
-                                                timeText.setText(LocaleController.getString("Calling", R.string.Calling));
-                                                synchronized(timerSync) {
-                                                    if (timeTimer != null) {
-                                                        timeTimer.cancel();
-                                                        timeTimer = null;
-                                                    }
-                                                }
-                                                TLRPC.TL_auth_sendCall req = new TLRPC.TL_auth_sendCall();
-                                                req.phone_number = requestPhone;
-                                                req.phone_code_hash = phoneHash;
-                                                ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
-                                                    @Override
-                                                    public void run(TLObject response, TLRPC.TL_error error) {
-                                                    }
-                                                }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
-                                            }
-                                        }
-                                    });
-                                }
-                            }, 0, 1000);
-                        }
-                        if (delegate != null) {
-                            if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                                delegate.needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
-                            } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                                delegate.needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
-                            } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                                delegate.needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
+                                destroyTimer();
                             } else {
-                                delegate.needShowAlert(error.text);
+                                createTimer();
+                                if (error.text.contains("PHONE_NUMBER_INVALID")) {
+                                    delegate.needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
+                                } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
+                                    delegate.needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
+                                } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                                    delegate.needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
+                                } else if (error.text.startsWith("FLOOD_WAIT")) {
+                                    delegate.needShowAlert(LocaleController.getString("FloodWait", R.string.FloodWait));
+                                } else {
+                                    delegate.needShowAlert(error.text);
+                                }
                             }
                         }
                     }
-                }
+                });
             }
-        }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
+        }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
     }
 
     @Override
     public void onBackPressed() {
-        try {
-            synchronized(timerSync) {
-                if (timeTimer != null) {
-                    timeTimer.cancel();
-                    timeTimer = null;
-                }
-            }
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
+        destroyTimer();
         currentParams = null;
         Utilities.setWaitingForSms(false);
         NotificationCenter.getInstance().removeObserver(this, 998);
@@ -345,16 +273,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         super.onDestroyActivity();
         Utilities.setWaitingForSms(false);
         NotificationCenter.getInstance().removeObserver(this, 998);
-        try {
-            synchronized(timerSync) {
-                if (timeTimer != null) {
-                    timeTimer.cancel();
-                    timeTimer = null;
-                }
-            }
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
+        destroyTimer();
         waitingForSms = false;
     }
 

@@ -24,7 +24,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -42,6 +41,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.PhotoObject;
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.HorizontalListView;
@@ -111,7 +111,14 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                     boolean done;
                     TLRPC.WallPaper wallPaper = wallpappersByIds.get(selectedBackground);
                     if (wallPaper != null && wallPaper.id != 1000001 && wallPaper instanceof TLRPC.TL_wallPaper) {
-                        TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, Utilities.dp(320), Utilities.dp(480));
+                        int width = Utilities.displaySize.x;
+                        int height = Utilities.displaySize.y;
+                        if (width > height) {
+                            int temp = width;
+                            width = height;
+                            height = temp;
+                        }
+                        TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, width, height);
                         String fileName = size.location.volume_id + "_" + size.location.local_id + ".jpg";
                         File f = new File(Utilities.getCacheDir(), fileName);
                         File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
@@ -158,6 +165,9 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                     if (i == 0) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
 
                         CharSequence[] items = new CharSequence[] {LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley), LocaleController.getString("Cancel", R.string.Cancel)};
@@ -251,7 +261,14 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
     private void processSelectedBackground() {
         TLRPC.WallPaper wallPaper = wallpappersByIds.get(selectedBackground);
         if (selectedBackground != -1 && selectedBackground != 1000001 && wallPaper != null && wallPaper instanceof TLRPC.TL_wallPaper) {
-            TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, Utilities.dp(320), Utilities.dp(480));
+            int width = Utilities.displaySize.x;
+            int height = Utilities.displaySize.y;
+            if (width > height) {
+                int temp = width;
+                width = height;
+                height = temp;
+            }
+            TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, width, height);
             String fileName = size.location.volume_id + "_" + size.location.local_id + ".jpg";
             File f = new File(Utilities.getCacheDir(), fileName);
             if (!f.exists()) {
@@ -432,7 +449,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
         fixLayout();
     }
 
-    private class ListAdapter extends BaseAdapter {
+    private class ListAdapter extends BaseFragmentAdapter {
         private Context mContext;
 
         public ListAdapter(Context context) {

@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Views;
 
+import android.database.DataSetObserver;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
@@ -221,5 +222,12 @@ public abstract class SectionedBaseAdapter extends BaseFragmentAdapter implement
         }
         mSectionCount = getSectionCount();
         return mSectionCount;
+    }
+
+    @Override
+    public void unregisterDataSetObserver(DataSetObserver observer) {
+        if (observer != null) {
+            super.unregisterDataSetObserver(observer);
+        }
     }
 }

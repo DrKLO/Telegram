@@ -22,9 +22,9 @@ import java.util.zip.ZipFile;
 public class NativeLoader {
 
     private static final long sizes[] = new long[] {
-            922256,     //armeabi
-            991908,     //armeabi-v7a
-            1713204,    //x86
+            795280,     //armeabi
+            844452,     //armeabi-v7a
+            1242164,    //x86
             0,          //mips
     };
 
@@ -48,6 +48,53 @@ public class NativeLoader {
         return null;
     }
 
+    private static boolean loadFromZip(Context context, File destLocalFile, String folder) {
+        ZipFile zipFile = null;
+        InputStream stream = null;
+        try {
+            zipFile = new ZipFile(context.getApplicationInfo().sourceDir);
+            ZipEntry entry = zipFile.getEntry("lib/" + folder + "/libtmessages.so");
+            if (entry == null) {
+                throw new Exception("Unable to find file in apk:" + "lib/" + folder + "/libtmessages.so");
+            }
+            stream = zipFile.getInputStream(entry);
+
+            OutputStream out = new FileOutputStream(destLocalFile);
+            byte[] buf = new byte[4096];
+            int len;
+            while ((len = stream.read(buf)) > 0) {
+                Thread.yield();
+                out.write(buf, 0, len);
+            }
+            out.close();
+
+            try {
+                System.load(destLocalFile.getAbsolutePath());
+                nativeLoaded = true;
+            } catch (Error e) {
+                FileLog.e("tmessages", e);
+            }
+            return true;
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        } finally {
+            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+            if (zipFile != null) {
+                try {
+                    zipFile.close();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        }
+        return false;
+    }
 
     public static synchronized void initNativeLibs(Context context) {
         if (nativeLoaded) {
@@ -87,6 +134,12 @@ public class NativeLoader {
                 libSize2 = sizes[1];
             }
 
+            String javaArch = System.getProperty("os.arch");
+            if (javaArch != null && javaArch.contains("686")) {
+                folder = "x86";
+                libSize = sizes[2];
+            }
+
             File destFile = getNativeLibraryDir(context);
             if (destFile != null) {
                 destFile = new File(destFile, "libtmessages.so");
@@ -96,22 +149,22 @@ public class NativeLoader {
                         System.loadLibrary("tmessages");
                         nativeLoaded = true;
                         return;
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    } catch (Error e) {
+                        FileLog.e("tmessages", e);
                     }
                 }
             }
 
             File destLocalFile = new File(context.getFilesDir().getAbsolutePath() + "/libtmessages.so");
-            if (destLocalFile.exists()) {
+            if (destLocalFile != null && destLocalFile.exists()) {
                 if (destLocalFile.length() == libSize) {
                     try {
                         FileLog.d("tmessages", "Load local lib");
                         System.load(destLocalFile.getAbsolutePath());
                         nativeLoaded = true;
                         return;
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    } catch (Error e) {
+                        FileLog.e("tmessages", e);
                     }
                 } else {
                     destLocalFile.delete();
@@ -120,51 +173,24 @@ public class NativeLoader {
 
             FileLog.e("tmessages", "Library not found, arch = " + folder);
 
-            ZipFile zipFile = null;
-            InputStream stream = null;
-            try {
-                zipFile = new ZipFile(context.getApplicationInfo().sourceDir);
-                ZipEntry entry = zipFile.getEntry("lib/" + folder + "/libtmessages.so");
-                if (entry == null) {
-                    throw new Exception("Unable to find file in apk:" + "lib/" + folder + "/libtmessages.so");
-                }
-                stream = zipFile.getInputStream(entry);
-
-                OutputStream out = new FileOutputStream(destLocalFile);
-                byte[] buf = new byte[4096];
-                int len;
-                while ((len = stream.read(buf)) > 0) {
-                    Thread.yield();
-                    out.write(buf, 0, len);
-                }
-                out.close();
-
-                System.load(destLocalFile.getAbsolutePath());
-                nativeLoaded = true;
-                return;
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
-            } finally {
-                if (stream != null) {
-                    try {
-                        stream.close();
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                }
-                if (zipFile != null) {
-                    try {
-                        zipFile.close();
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
+            if (!loadFromZip(context, destLocalFile, folder)) {
+                folder = "x86";
+                destLocalFile = new File(context.getFilesDir().getAbsolutePath() + "/libtmessages86.so");
+                if (!loadFromZip(context, destLocalFile, folder)) {
+                    destLocalFile = new File(context.getFilesDir().getAbsolutePath() + "/libtmessagesarm.so");
+                    folder = "armeabi";
+                    loadFromZip(context, destLocalFile, folder);
                 }
             }
         } catch (Throwable e) {
             e.printStackTrace();
         }
 
-        System.loadLibrary("tmessages");
-        nativeLoaded = true;
+        try {
+            System.loadLibrary("tmessages");
+            nativeLoaded = true;
+        } catch (Error e) {
+            FileLog.e("tmessages", e);
+        }
     }
 }

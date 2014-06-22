@@ -12,7 +12,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.provider.MediaStore;
-import android.util.Log;
 
 import org.telegram.ui.ApplicationLoader;
 
@@ -26,7 +25,7 @@ import java.nio.channels.FileChannel;
 import java.util.Scanner;
 
 public class FileLoadOperation {
-    private int downloadChunkSize = 1024 * 32;
+    private int downloadChunkSize = 1024 * 256;
 
     public int datacenter_id;
     public TLRPC.InputFileLocation location;
@@ -39,6 +38,13 @@ public class FileLoadOperation {
     private byte[] key;
     private byte[] iv;
     private long requestToken = 0;
+    private long requestToken2 = 0;
+    private int requestProgress = 0;
+    private int requestProgress2 = 0;
+    private int nextDownloadOffset = 0;
+    private TLRPC.TL_upload_file delayedRes = null;
+    private int delayedResOffset = 0;
+    private int delayedResTokenNum = 0;
 
     private File cacheFileTemp;
     private File cacheFileFinal;
@@ -79,12 +85,7 @@ public class FileLoadOperation {
     }
 
     public FileLoadOperation(TLRPC.Video videoLocation) {
-        if (videoLocation instanceof TLRPC.TL_video) {
-            location = new TLRPC.TL_inputVideoFileLocation();
-            datacenter_id = videoLocation.dc_id;
-            location.id = videoLocation.id;
-            location.access_hash = videoLocation.access_hash;
-        } else if (videoLocation instanceof TLRPC.TL_videoEncrypted) {
+        if (videoLocation instanceof TLRPC.TL_videoEncrypted) {
             location = new TLRPC.TL_inputEncryptedFileLocation();
             location.id = videoLocation.id;
             location.access_hash = videoLocation.access_hash;
@@ -92,6 +93,11 @@ public class FileLoadOperation {
             iv = new byte[32];
             System.arraycopy(videoLocation.iv, 0, iv, 0, iv.length);
             key = videoLocation.key;
+        } else if (videoLocation instanceof TLRPC.TL_video) {
+            location = new TLRPC.TL_inputVideoFileLocation();
+            datacenter_id = videoLocation.dc_id;
+            location.id = videoLocation.id;
+            location.access_hash = videoLocation.access_hash;
         }
         ext = ".mp4";
     }
@@ -115,12 +121,7 @@ public class FileLoadOperation {
     }
 
     public FileLoadOperation(TLRPC.Document documentLocation) {
-        if (documentLocation instanceof TLRPC.TL_document) {
-            location = new TLRPC.TL_inputDocumentFileLocation();
-            datacenter_id = documentLocation.dc_id;
-            location.id = documentLocation.id;
-            location.access_hash = documentLocation.access_hash;
-        } else if (documentLocation instanceof TLRPC.TL_documentEncrypted) {
+        if (documentLocation instanceof TLRPC.TL_documentEncrypted) {
             location = new TLRPC.TL_inputEncryptedFileLocation();
             location.id = documentLocation.id;
             location.access_hash = documentLocation.access_hash;
@@ -128,6 +129,11 @@ public class FileLoadOperation {
             iv = new byte[32];
             System.arraycopy(documentLocation.iv, 0, iv, 0, iv.length);
             key = documentLocation.key;
+        } else if (documentLocation instanceof TLRPC.TL_document) {
+            location = new TLRPC.TL_inputDocumentFileLocation();
+            datacenter_id = documentLocation.dc_id;
+            location.id = documentLocation.id;
+            location.access_hash = documentLocation.access_hash;
         }
         ext = documentLocation.file_name;
         int idx = -1;
@@ -336,7 +342,7 @@ public class FileLoadOperation {
             cacheFileTemp = new File(Utilities.getCacheDir(), fileNameTemp);
             if (cacheFileTemp.exists()) {
                 downloadedBytes = (int)cacheFileTemp.length();
-                downloadedBytes = downloadedBytes / 1024 * 1024;
+                nextDownloadOffset = downloadedBytes = downloadedBytes / 1024 * 1024;
             }
             if (fileNameIv != null) {
                 cacheIvTemp = new File(Utilities.getCacheDir(), fileNameIv);
@@ -377,6 +383,11 @@ public class FileLoadOperation {
             if (httpUrl != null) {
                 startDownloadHTTPRequest();
             } else {
+                if (totalBytesCount >= 1024 * 1024) {
+                    downloadChunkSize = 1024 * 256;
+                } else {
+                    downloadChunkSize = 1024 * 32;
+                }
                 startDownloadRequest();
             }
         }
@@ -388,8 +399,9 @@ public class FileLoadOperation {
         }
         state = 2;
         cleanup();
-        if (httpUrl == null && requestToken != 0) {
+        if (httpUrl == null) {
             ConnectionsManager.getInstance().cancelRpc(requestToken, true);
+            ConnectionsManager.getInstance().cancelRpc(requestToken2, true);
         }
         delegate.didFailedLoadingFile(FileLoadOperation.this);
     }
@@ -422,6 +434,12 @@ public class FileLoadOperation {
                 }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
+            }
+
+            if (delayedRes != null) {
+                delayedRes.disableFree = false;
+                delayedRes.freeResources();
+                delayedRes = null;
             }
         }
     }
@@ -594,101 +612,171 @@ public class FileLoadOperation {
         }
     }
 
+    private void processRequestResult(TLRPC.TL_upload_file res, TLRPC.TL_error error, int dowloadOffset, int tokenNum) {
+        if (error == null) {
+            try {
+                if (downloadedBytes != dowloadOffset) {
+                    if (delayedRes != null) {
+                        FileLog.e("tmessages", "something went wrong!");
+                    }
+                    delayedRes = res;
+                    delayedRes.disableFree = true;
+                    delayedResOffset = dowloadOffset;
+                    delayedResTokenNum = tokenNum;
+                    return;
+                } else {
+                    if (tokenNum == 0) {
+                        requestToken = 0;
+                    } else if (tokenNum == 1) {
+                        requestToken2 = 0;
+                    }
+                }
+
+                if (res.bytes.limit() == 0) {
+                    onFinishLoadingFile();
+                    return;
+                }
+                if (key != null) {
+                    Utilities.aesIgeEncryption2(res.bytes.buffer, key, iv, false, true, res.bytes.limit());
+                }
+                if (fileOutputStream != null) {
+                    FileChannel channel = fileOutputStream.getChannel();
+                    channel.write(res.bytes.buffer);
+                }
+                if (fiv != null) {
+                    fiv.seek(0);
+                    fiv.write(iv);
+                }
+                downloadedBytes += res.bytes.limit();
+                if (totalBytesCount > 0 && state == 1) {
+                    delegate.didChangedLoadProgress(FileLoadOperation.this,  Math.min(1.0f, (float)downloadedBytes / (float)totalBytesCount));
+                }
+
+                if(delayedRes != null && res != delayedRes) {
+                    TLRPC.TL_upload_file temp = delayedRes;
+                    processRequestResult(temp, null, delayedResOffset, delayedResTokenNum);
+                    if (delayedRes != null) {
+                        delayedRes.disableFree = false;
+                        delayedRes.freeResources();
+                        delayedRes = null;
+                    }
+                }
+
+                if (downloadedBytes % downloadChunkSize == 0 || totalBytesCount > 0 && totalBytesCount != downloadedBytes) {
+                    startDownloadRequest();
+                } else {
+                    onFinishLoadingFile();
+                }
+            } catch (Exception e) {
+                cleanup();
+                delegate.didFailedLoadingFile(FileLoadOperation.this);
+                FileLog.e("tmessages", e);
+            }
+        } else {
+            if (error.text.contains("FILE_MIGRATE_")) {
+                String errorMsg = error.text.replace("FILE_MIGRATE_", "");
+                Scanner scanner = new Scanner(errorMsg);
+                scanner.useDelimiter("");
+                Integer val;
+                try {
+                    val = scanner.nextInt();
+                } catch (Exception e) {
+                    val = null;
+                }
+                if (val == null) {
+                    cleanup();
+                    delegate.didFailedLoadingFile(FileLoadOperation.this);
+                } else {
+                    datacenter_id = val;
+                    nextDownloadOffset = 0;
+                    startDownloadRequest();
+                }
+            } else if (error.text.contains("OFFSET_INVALID")) {
+                if (downloadedBytes % downloadChunkSize == 0) {
+                    try {
+                        onFinishLoadingFile();
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                        cleanup();
+                        delegate.didFailedLoadingFile(FileLoadOperation.this);
+                    }
+                } else {
+                    cleanup();
+                    delegate.didFailedLoadingFile(FileLoadOperation.this);
+                }
+            } else {
+                if (location != null) {
+                    FileLog.e("tmessages", "" + location + " id = " + location.id + " access_hash = " + location.access_hash + " volume_id = " + location.local_id + " secret = " + location.secret);
+                }
+                cleanup();
+                delegate.didFailedLoadingFile(FileLoadOperation.this);
+            }
+        }
+    }
+
+    private void processRequestProgress() {
+        delegate.didChangedLoadProgress(FileLoadOperation.this, Math.min(1.0f, (float) (downloadedBytes + requestProgress + requestProgress2) / (float) totalBytesCount));
+    }
+
     private void startDownloadRequest() {
         if (state != 1) {
             return;
         }
-        TLRPC.TL_upload_getFile req = new TLRPC.TL_upload_getFile();
-        req.location = location;
-        //if (totalBytesCount == -1) {
-        //    req.offset = 0;
-        //    req.limit = 0;
-        //} else {
-            req.offset = downloadedBytes;
+        if (requestToken == 0) {
+            requestProgress = 0;
+            if (totalBytesCount > 0 && nextDownloadOffset >= totalBytesCount) {
+                return;
+            }
+            final TLRPC.TL_upload_getFile req = new TLRPC.TL_upload_getFile();
+            req.location = location;
+            req.offset = nextDownloadOffset;
             req.limit = downloadChunkSize;
-        //}
-        requestToken = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
-            @Override
-            public void run(TLObject response, TLRPC.TL_error error) {
-                requestToken = 0;
-                if (error == null) {
-                    TLRPC.TL_upload_file res = (TLRPC.TL_upload_file)response;
-                    try {
-                        if (res.bytes.limit() == 0) {
-                            onFinishLoadingFile();
-                            return;
+            nextDownloadOffset += downloadChunkSize;
+            final long time = System.currentTimeMillis();
+            requestToken = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                @Override
+                public void run(TLObject response, TLRPC.TL_error error) {
+                    processRequestResult((TLRPC.TL_upload_file) response, error, req.offset, 0);
+                }
+            }, new RPCRequest.RPCProgressDelegate() {
+                @Override
+                public void progress(int length, int progress) {
+                    if (state == 1) {
+                        requestProgress = progress;
+                        if (totalBytesCount == -1) {
+                            delegate.didChangedLoadProgress(FileLoadOperation.this, Math.min(1.0f, (float) (progress) / (float) length));
+                        } else if (totalBytesCount > 0) {
+                            processRequestProgress();
                         }
-                        if (key != null) {
-                            Utilities.aesIgeEncryption2(res.bytes.buffer, key, iv, false, true, res.bytes.limit());
-                        }
-                        if (fileOutputStream != null) {
-                            FileChannel channel = fileOutputStream.getChannel();
-                            channel.write(res.bytes.buffer);
-                        }
-                        if (fiv != null) {
-                            fiv.seek(0);
-                            fiv.write(iv);
-                        }
-                        downloadedBytes += res.bytes.limit();
-                        if (totalBytesCount > 0) {
-                            delegate.didChangedLoadProgress(FileLoadOperation.this,  Math.min(1.0f, (float)downloadedBytes / (float)totalBytesCount));
-                        }
-                        if (downloadedBytes % downloadChunkSize == 0 || totalBytesCount > 0 && totalBytesCount != downloadedBytes) {
-                            startDownloadRequest();
-                        } else {
-                            onFinishLoadingFile();
-                        }
-                    } catch (Exception e) {
-                        cleanup();
-                        delegate.didFailedLoadingFile(FileLoadOperation.this);
-                        FileLog.e("tmessages", e);
-                    }
-                } else {
-                    if (error.text.contains("FILE_MIGRATE_")) {
-                        String errorMsg = error.text.replace("FILE_MIGRATE_", "");
-                        Scanner scanner = new Scanner(errorMsg);
-                        scanner.useDelimiter("");
-                        Integer val;
-                        try {
-                            val = scanner.nextInt();
-                        } catch (Exception e) {
-                            val = null;
-                        }
-                        if (val == null) {
-                            cleanup();
-                            delegate.didFailedLoadingFile(FileLoadOperation.this);
-                        } else {
-                            datacenter_id = val;
-                            startDownloadRequest();
-                        }
-                    } else if (error.text.contains("OFFSET_INVALID")) {
-                        if (downloadedBytes % downloadChunkSize == 0) {
-                            try {
-                                onFinishLoadingFile();
-                            } catch (Exception e) {
-                                FileLog.e("tmessages", e);
-                                cleanup();
-                                delegate.didFailedLoadingFile(FileLoadOperation.this);
-                            }
-                        } else {
-                            cleanup();
-                            delegate.didFailedLoadingFile(FileLoadOperation.this);
-                        }
-                    } else {
-                        cleanup();
-                        delegate.didFailedLoadingFile(FileLoadOperation.this);
                     }
                 }
+            }, null, true, RPCRequest.RPCRequestClassDownloadMedia, datacenter_id);
+        }
+        if (totalBytesCount > 0 && requestToken2 == 0) {
+            requestProgress2 = 0;
+            if (totalBytesCount > 0 && nextDownloadOffset >= totalBytesCount) {
+                return;
             }
-        }, new RPCRequest.RPCProgressDelegate() {
-            @Override
-            public void progress(int length, int progress) {
-                if (totalBytesCount > 0) {
-                    delegate.didChangedLoadProgress(FileLoadOperation.this,  Math.min(1.0f, (float)(downloadedBytes + progress) / (float)totalBytesCount));
-                } else if (totalBytesCount == -1) {
-                    delegate.didChangedLoadProgress(FileLoadOperation.this,  Math.min(1.0f, (float)(progress) / (float)length));
+            final long time = System.currentTimeMillis();
+            final TLRPC.TL_upload_getFile req = new TLRPC.TL_upload_getFile();
+            req.location = location;
+            req.offset = nextDownloadOffset;
+            req.limit = downloadChunkSize;
+            nextDownloadOffset += downloadChunkSize;
+            requestToken2 = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                @Override
+                public void run(TLObject response, TLRPC.TL_error error) {
+                    processRequestResult((TLRPC.TL_upload_file) response, error, req.offset, 1);
                 }
-            }
-        }, null, true, RPCRequest.RPCRequestClassDownloadMedia, datacenter_id);
+            }, new RPCRequest.RPCProgressDelegate() {
+                @Override
+                public void progress(int length, int progress) {
+                    if (state == 1) {
+                        requestProgress2 = progress;
+                        processRequestProgress();
+                    }
+                }
+            }, null, true, RPCRequest.RPCRequestClassDownloadMedia | RPCRequest.RPCRequestClassDownloadMedia2, datacenter_id);
+        }
     }
 }

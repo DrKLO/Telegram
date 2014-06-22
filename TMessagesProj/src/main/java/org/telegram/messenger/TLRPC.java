@@ -3783,14 +3783,6 @@ public class TLRPC {
         }
     }
 
-    public static class InputEncryptedFile extends TLObject {
-        public long id;
-        public long access_hash;
-        public int parts;
-        public int key_fingerprint;
-        public String md5_checksum;
-    }
-
     public static class TL_inputEncryptedFile extends InputEncryptedFile {
         public static int constructor = 0x5a17b5e5;
 
@@ -8144,6 +8136,9 @@ public class TLRPC {
 
         @Override
         public void freeResources() {
+            if (disableFree) {
+                return;
+            }
             if (bytes != null) {
                 BuffersStorage.getInstance().reuseFreeBuffer(bytes);
                 bytes = null;
@@ -8295,6 +8290,9 @@ public class TLRPC {
 
         @Override
         public void freeResources() {
+            if (disableFree) {
+                return;
+            }
             if (result != null) {
                 result.freeResources();
             }
@@ -8834,7 +8832,7 @@ public class TLRPC {
         }
     }
 
-    public static class TL_documentEncrypted extends Document {
+    public static class TL_documentEncrypted extends TL_document {
         public static int constructor = 0x55555556;
 
 
@@ -8868,7 +8866,7 @@ public class TLRPC {
         }
     }
 
-    public static class TL_videoEncrypted extends Video {
+    public static class TL_videoEncrypted extends TL_video {
         public static int constructor = 0x55555553;
 
 
@@ -9179,6 +9177,9 @@ public class TLRPC {
 
         @Override
         public void freeResources() {
+            if (disableFree) {
+                return;
+            }
             if (bytes != null) {
                 BuffersStorage.getInstance().reuseFreeBuffer(bytes);
                 bytes = null;
@@ -9206,10 +9207,23 @@ public class TLRPC {
 
         @Override
         public void freeResources() {
+            if (disableFree) {
+                return;
+            }
             if (bytes != null) {
                 BuffersStorage.getInstance().reuseFreeBuffer(bytes);
                 bytes = null;
             }
         }
+    }
+
+    public static class InputEncryptedFile extends TLObject {
+        public long id;
+        public long access_hash;
+        public int parts;
+        public int key_fingerprint;
+        public String md5_checksum;
+        public byte[] key;
+        public byte[] iv;
     }
 }
