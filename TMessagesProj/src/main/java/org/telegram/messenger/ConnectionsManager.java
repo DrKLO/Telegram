@@ -533,6 +533,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     if (request.completionBlock != null) {
                         TLRPC.TL_error implicitError = new TLRPC.TL_error();
                         implicitError.code = -1000;
+                        implicitError.text = "";
                         request.completionBlock.run(null, implicitError);
                     }
                 }
@@ -542,6 +543,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     if (request.completionBlock != null) {
                         TLRPC.TL_error implicitError = new TLRPC.TL_error();
                         implicitError.code = -1000;
+                        implicitError.text = "";
                         request.completionBlock.run(null, implicitError);
                     }
                 }
@@ -764,7 +766,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                         invoke.device_model = "Android unknown";
                     }
                     PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-                    invoke.app_version = pInfo.versionName;
+                    invoke.app_version = pInfo.versionName + " (" + pInfo.versionCode + ")";
                     if (invoke.app_version == null) {
                         invoke.app_version = "App version unknown";
                     }
@@ -1719,7 +1721,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             }
             req.system_version = "SDK " + Build.VERSION.SDK_INT;
             PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-            req.app_version = pInfo.versionName;
+            req.app_version = pInfo.versionName + " (" + pInfo.versionCode + ")";
             if (req.app_version == null) {
                 req.app_version = "App version unknown";
             }
@@ -2027,6 +2029,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                     }
                                     implicitError = new TLRPC.TL_error();
                                     implicitError.code = -1000;
+                                    implicitError.text = "";
                                 }
                             }
 

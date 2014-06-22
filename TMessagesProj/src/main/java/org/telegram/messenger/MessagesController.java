@@ -3093,7 +3093,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             }
             req.system_version = "SDK " + Build.VERSION.SDK_INT;
             PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-            req.app_version = pInfo.versionName;
+            req.app_version = pInfo.versionName + " (" + pInfo.versionCode + ")";
             if (req.app_version == null) {
                 req.app_version = "App version unknown";
             }

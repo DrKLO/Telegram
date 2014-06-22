@@ -512,7 +512,11 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                             if (str.length() != 0) {
                                 str += "\n";
                             }
-                            str += messageObject.messageOwner.message;
+                            if (messageObject.messageOwner.message != null) {
+                                str += messageObject.messageOwner.message;
+                            } else {
+                                str += messageObject.messageText;
+                            }
                         }
                         if (str.length() != 0) {
                             if (android.os.Build.VERSION.SDK_INT < 11) {
@@ -1510,7 +1514,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
         if (currentChat != null) {
             actionBarLayer.setTitle(currentChat.title);
         } else if (currentUser != null) {
-            if (currentUser.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(currentUser.id) == null && (ContactsController.getInstance().contactsDict.size() != 0 || !ContactsController.getInstance().isLoadingContacts())) {
+            if (currentUser.id / 1000 != 777 || currentUser.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(currentUser.id) == null && (ContactsController.getInstance().contactsDict.size() != 0 || !ContactsController.getInstance().isLoadingContacts())) {
                 if (currentUser.phone != null && currentUser.phone.length() != 0) {
                     actionBarLayer.setTitle(PhoneFormat.getInstance().format("+" + currentUser.phone));
                 } else {
@@ -2646,6 +2650,7 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
             }
             if (currentEncryptedChat != null && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat)
                     || currentUser.id / 1000 == 333
+                    || currentUser.id / 1000 == 777
                     || currentUser instanceof TLRPC.TL_userEmpty || currentUser instanceof TLRPC.TL_userDeleted
                     || (currentUser.phone != null && currentUser.phone.length() != 0 &&
                     ContactsController.getInstance().contactsDict.get(currentUser.id) != null &&
@@ -2723,6 +2728,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     }
 
     private void createEmojiPopup() {
+        if (getParentActivity() == null) {
+            return;
+        }
         emojiView = new EmojiView(getParentActivity());
         emojiView.setListener(new EmojiView.Listener() {
             public void onBackspace() {
