@@ -19,9 +19,9 @@ import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.view.View;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 
 public class TimerButton extends View {
 
@@ -38,7 +38,7 @@ public class TimerButton extends View {
             emptyTimerDrawable = getResources().getDrawable(R.drawable.header_timer);
             timerDrawable = getResources().getDrawable(R.drawable.header_timer2);
             timePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            timePaint.setTextSize(Utilities.dp(10));
+            timePaint.setTextSize(AndroidUtilities.dp(10));
             timePaint.setColor(0xffd7e8f7);
             timePaint.setTypeface(Typeface.DEFAULT_BOLD);
         }
@@ -110,7 +110,7 @@ public class TimerButton extends View {
         drawable.draw(canvas);
 
         if (time != 0 && timeLayout != null) {
-            canvas.translate((width - timeWidth) / 2, (height - timeHeight) / 2 + Utilities.dp(1));
+            canvas.translate((width - timeWidth) / 2, (height - timeHeight) / 2 + AndroidUtilities.dp(1));
             timeLayout.draw(canvas);
         }
     }

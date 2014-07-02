@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013-2014.
  */
 
-package org.telegram.messenger;
+package org.telegram.android;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -18,6 +18,11 @@ import android.content.res.Configuration;
 import android.text.format.DateFormat;
 import android.util.Xml;
 
+import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.R;
+import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ApplicationLoader;
 import org.xmlpull.v1.XmlPullParser;
 
@@ -216,6 +221,9 @@ public class LocaleController {
                 currentInfo = languagesDict.get(systemDefaultLocale.getLanguage());
             }
             if (currentInfo == null) {
+                currentInfo = languagesDict.get(getLocaleString(systemDefaultLocale));
+            }
+            if (currentInfo == null) {
                 currentInfo = languagesDict.get("en");
             }
             applyLanguage(currentInfo, override);
@@ -229,6 +237,29 @@ public class LocaleController {
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
+    }
+
+    private String getLocaleString(Locale locale) {
+        if (locale == null) {
+            return "";
+        }
+        String languageCode = locale.getLanguage();
+        String countryCode = locale.getCountry();
+        String variantCode = locale.getVariant();
+        if (languageCode.length() == 0 && countryCode.length() == 0) {
+            return "";
+        }
+        StringBuilder result = new StringBuilder(11);
+        result.append(languageCode);
+        if (countryCode.length() > 0 || variantCode.length() > 0) {
+            result.append('_');
+        }
+        result.append(countryCode);
+        if (variantCode.length() > 0) {
+            result.append('_');
+        }
+        result.append(variantCode);
+        return result.toString();
     }
 
     public boolean applyLanguageFile(File file) {

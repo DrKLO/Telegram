@@ -21,6 +21,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 
@@ -65,7 +66,7 @@ public class ActionBarLayer extends FrameLayout {
         layoutParams.height = LayoutParams.FILL_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         backButtonFrameLayout.setLayoutParams(layoutParams);
-        backButtonFrameLayout.setPadding(0, 0, Utilities.dp(4), 0);
+        backButtonFrameLayout.setPadding(0, 0, AndroidUtilities.dp(4), 0);
         backButtonFrameLayout.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -99,7 +100,7 @@ public class ActionBarLayer extends FrameLayout {
             layoutParams.width = LayoutParams.WRAP_CONTENT;
             layoutParams.height = LayoutParams.WRAP_CONTENT;
             layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-            layoutParams.setMargins(Utilities.dp(3), (height - backButtonImageView.getDrawable().getIntrinsicHeight()) / 2, 0, 0);
+            layoutParams.setMargins(AndroidUtilities.dp(3), (height - backButtonImageView.getDrawable().getIntrinsicHeight()) / 2, 0, 0);
             backButtonImageView.setLayoutParams(layoutParams);
         }
     }
@@ -110,11 +111,11 @@ public class ActionBarLayer extends FrameLayout {
             if (!Utilities.isTablet(getContext()) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 layoutParams.width = (int)(logoImageView.getDrawable().getIntrinsicWidth() / 1.3f);
                 layoutParams.height = (int)(logoImageView.getDrawable().getIntrinsicHeight() / 1.3f);
-                layoutParams.setMargins(Utilities.dp(12), (height - layoutParams.height) / 2, 0, 0);
+                layoutParams.setMargins(AndroidUtilities.dp(12), (height - layoutParams.height) / 2, 0, 0);
             } else {
                 layoutParams.width = logoImageView.getDrawable().getIntrinsicWidth();
                 layoutParams.height = logoImageView.getDrawable().getIntrinsicHeight();
-                layoutParams.setMargins(Utilities.dp(12), (height - layoutParams.width) / 2, 0, 0);
+                layoutParams.setMargins(AndroidUtilities.dp(12), (height - layoutParams.width) / 2, 0, 0);
             }
             layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
             logoImageView.setLayoutParams(layoutParams);
@@ -122,9 +123,9 @@ public class ActionBarLayer extends FrameLayout {
     }
 
     private void positionTitle(int width, int height) {
-        int offset = Utilities.dp(2);
+        int offset = AndroidUtilities.dp(2);
         if (!Utilities.isTablet(getContext()) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            offset = Utilities.dp(1);
+            offset = AndroidUtilities.dp(1);
         }
         int maxTextWidth = 0;
 
@@ -163,17 +164,17 @@ public class ActionBarLayer extends FrameLayout {
 
         int x = 0;
         if (logoImageView == null || logoImageView.getVisibility() == GONE) {
-            x = Utilities.dp(16);
+            x = AndroidUtilities.dp(16);
         } else {
             if (!Utilities.isTablet(getContext()) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                x = Utilities.dp(22) + (int)(logoImageView.getDrawable().getIntrinsicWidth() / 1.3f);
+                x = AndroidUtilities.dp(22) + (int)(logoImageView.getDrawable().getIntrinsicWidth() / 1.3f);
             } else {
-                x = Utilities.dp(22) + logoImageView.getDrawable().getIntrinsicWidth();
+                x = AndroidUtilities.dp(22) + logoImageView.getDrawable().getIntrinsicWidth();
             }
         }
 
         if (menu != null) {
-            maxTextWidth = Math.min(maxTextWidth, width - menu.getMeasuredWidth() - Utilities.dp(16));
+            maxTextWidth = Math.min(maxTextWidth, width - menu.getMeasuredWidth() - AndroidUtilities.dp(16));
         }
 
         if (titleTextView != null && titleTextView.getVisibility() == VISIBLE) {
@@ -196,7 +197,7 @@ public class ActionBarLayer extends FrameLayout {
         }
 
         ViewGroup.LayoutParams layoutParams1 = backButtonFrameLayout.getLayoutParams();
-        layoutParams1.width = x + maxTextWidth + (isSearchFieldVisible ? 0 : Utilities.dp(6));
+        layoutParams1.width = x + maxTextWidth + (isSearchFieldVisible ? 0 : AndroidUtilities.dp(6));
         backButtonFrameLayout.setLayoutParams(layoutParams1);
     }
 
@@ -206,7 +207,7 @@ public class ActionBarLayer extends FrameLayout {
         }
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)menu.getLayoutParams();
         layoutParams.width = isSearchFieldVisible ? LayoutParams.MATCH_PARENT : LayoutParams.WRAP_CONTENT;
-        layoutParams.leftMargin = isSearchFieldVisible ? Utilities.dp(26) + logoImageView.getDrawable().getIntrinsicWidth() : 0;
+        layoutParams.leftMargin = isSearchFieldVisible ? AndroidUtilities.dp(26) + logoImageView.getDrawable().getIntrinsicWidth() : 0;
         menu.setLayoutParams(layoutParams);
         menu.measure(width, height);
     }
@@ -402,7 +403,7 @@ public class ActionBarLayer extends FrameLayout {
         if (subTitleTextView != null) {
             subTitleTextView.setVisibility(visible ? GONE : VISIBLE);
         }
-        backButtonFrameLayout.setPadding(0, 0, visible ? 0 : Utilities.dp(4), 0);
+        backButtonFrameLayout.setPadding(0, 0, visible ? 0 : AndroidUtilities.dp(4), 0);
         if (visible) {
             oldUseLogo = logoImageView != null && logoImageView.getVisibility() == VISIBLE;
             setDisplayUseLogoEnabled(true, R.drawable.ic_ab_search);
@@ -495,7 +496,7 @@ public class ActionBarLayer extends FrameLayout {
             layoutParams.height = LayoutParams.MATCH_PARENT;
             actionOverlay.setLayoutParams(layoutParams);
             actionOverlay.measure(widthMeasureSpec, heightMeasureSpec);
-            layoutParams.width = Math.min(actionOverlay.getMeasuredWidth() + Utilities.dp(4), widthMeasureSpec - (menu != null ? menu.getMeasuredWidth() : 0));
+            layoutParams.width = Math.min(actionOverlay.getMeasuredWidth() + AndroidUtilities.dp(4), widthMeasureSpec - (menu != null ? menu.getMeasuredWidth() : 0));
             actionOverlay.setLayoutParams(layoutParams);
         }
     }

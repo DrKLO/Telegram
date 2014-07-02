@@ -18,15 +18,16 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
-import org.telegram.messenger.ContactsController;
+import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.MessagesStorage;
+import org.telegram.android.MessagesController;
+import org.telegram.android.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
@@ -110,7 +111,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
             return;
         }
         codeField.setText("");
-        Utilities.setWaitingForSms(true);
+        AndroidUtilities.setWaitingForSms(true);
         NotificationCenter.getInstance().addObserver(this, 998);
         currentParams = params;
         waitingForSms = true;
@@ -127,7 +128,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         String number = PhoneFormat.getInstance().format(phone);
         confirmTextView.setText(Html.fromHtml(String.format(LocaleController.getString("SentSmsCode", R.string.SentSmsCode) + " <b>%s</b>", number)));
 
-        Utilities.showKeyboard(codeField);
+        AndroidUtilities.showKeyboard(codeField);
         codeField.requestFocus();
 
         destroyTimer();
@@ -166,7 +167,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                                 @Override
                                 public void run(TLObject response, TLRPC.TL_error error) {
                                 }
-                            }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
+                            }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
                         }
                     }
                 });
@@ -194,7 +195,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         }
         nextPressed = true;
         waitingForSms = false;
-        Utilities.setWaitingForSms(false);
+        AndroidUtilities.setWaitingForSms(false);
         NotificationCenter.getInstance().removeObserver(this, 998);
         final TLRPC.TL_auth_signIn req = new TLRPC.TL_auth_signIn();
         req.phone_number = requestPhone;
@@ -256,14 +257,14 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                     }
                 });
             }
-        }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
+        }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
     }
 
     @Override
     public void onBackPressed() {
         destroyTimer();
         currentParams = null;
-        Utilities.setWaitingForSms(false);
+        AndroidUtilities.setWaitingForSms(false);
         NotificationCenter.getInstance().removeObserver(this, 998);
         waitingForSms = false;
     }
@@ -271,7 +272,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     @Override
     public void onDestroyActivity() {
         super.onDestroyActivity();
-        Utilities.setWaitingForSms(false);
+        AndroidUtilities.setWaitingForSms(false);
         NotificationCenter.getInstance().removeObserver(this, 998);
         destroyTimer();
         waitingForSms = false;

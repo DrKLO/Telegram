@@ -1,0 +1,187 @@
+<org.telegram.ui.Views.SizeNotifierRelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_gravity="top"
+    android:background="#99000000"
+    android:id="@+id/chat_layout">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="240dp"
+            android:background="#ffffffff"
+            android:layout_centerInParent="true"
+            android:layout_marginLeft="12dp"
+            android:layout_marginRight="12dp"
+            android:id="@+id/popup_container">
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginBottom="48dp"
+                android:layout_marginTop="48dp"
+                android:fillViewport="true"
+                android:id="@+id/text_scroll">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:padding="10dp"
+                    android:id="@+id/text_container"
+                    android:background="@drawable/list_selector">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="16dp"
+                        android:textColor="#ff000000"
+                        android:id="@+id/message_text"
+                        android:gravity="center"
+                        android:layout_gravity="center"/>
+
+                </LinearLayout>
+
+            </ScrollView>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/chat_compose_panel"
+                android:background="@drawable/compose_panel"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="bottom"
+                android:layout_alignParentBottom="true">
+
+                <ImageView
+                    android:src="@drawable/ic_msg_panel_smiles"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="2dp"
+                    android:paddingTop="1dp"
+                    android:scaleType="centerInside"
+                    android:paddingLeft="4dp"
+                    android:id="@+id/chat_smile_button"
+                    android:layout_alignBottom="@+id/chat_text_edit"/>
+
+                <ImageButton
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="2dp"
+                    android:scaleType="centerInside"
+                    android:id="@+id/chat_send_button"
+                    android:layout_alignParentRight="true"
+                    android:layout_alignBottom="@+id/chat_text_edit"
+                    android:enabled="false"
+                    android:src="@drawable/send_button_states"
+                    android:background="@android:color/transparent"/>
+
+                <EditText
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/chat_text_edit"
+                    android:layout_toRightOf="@id/chat_smile_button"
+                    android:layout_toLeftOf="@id/chat_send_button"
+                    android:layout_marginTop="2dp"
+                    android:maxLines="2"
+                    android:minHeight="48dp"
+                    android:textSize="18dp"
+                    android:textColorHint="#909090"
+                    android:ems="10"
+                    android:imeOptions="flagNoExtractUi"
+                    android:inputType="textCapSentences|textMultiLine"
+                    android:layout_alignParentTop="true"
+                    android:paddingBottom="12dp"
+                    android:maxLength="16384"
+                    android:textCursorDrawable="@null"
+                    android:textColor="#000000"/>
+
+                <org.telegram.ui.Views.FrameLayoutFixed
+                    android:layout_height="48dp"
+                    android:layout_width="fill_parent"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginRight="48dp"
+                    android:background="#ffffff"
+                    android:id="@+id/record_panel"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_height="wrap_content"
+                        android:layout_width="wrap_content"
+                        android:layout_gravity="center"
+                        android:layout_marginLeft="30dp"
+                        android:orientation="horizontal"
+                        android:id="@+id/slideText">
+
+                        <ImageView
+                            android:layout_height="wrap_content"
+                            android:layout_width="wrap_content"
+                            android:src="@drawable/slidearrow"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginTop="1dp"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="#999999"
+                            android:textSize="12dp"
+                            android:layout_marginLeft="6dp"
+                            android:id="@+id/slideToCancelTextView"
+                            android:layout_gravity="center_vertical"/>
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_height="wrap_content"
+                        android:layout_width="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:paddingLeft="13dp"
+                        android:orientation="horizontal"
+                        android:background="#ffffffff">
+
+                        <ImageView
+                            android:layout_height="wrap_content"
+                            android:layout_width="wrap_content"
+                            android:src="@drawable/rec"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginTop="1dp"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/recording_time_text"
+                            android:text="00:00"
+                            android:textColor="#4d4c4b"
+                            android:textSize="16dp"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginLeft="6dp"/>
+
+                    </LinearLayout>
+
+                </org.telegram.ui.Views.FrameLayoutFixed>
+
+                <ImageButton
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="2dp"
+                    android:scaleType="centerInside"
+                    android:id="@+id/chat_audio_send_button"
+                    android:layout_alignParentRight="true"
+                    android:layout_alignBottom="@+id/chat_text_edit"
+                    android:enabled="false"
+                    android:src="@drawable/mic_button_states"
+                    android:paddingRight="4dp"
+                    android:background="@android:color/white"/>
+
+            </RelativeLayout>
+
+        </RelativeLayout>
+
+    </RelativeLayout>
+
+</org.telegram.ui.Views.SizeNotifierRelativeLayout>

@@ -14,9 +14,6 @@ public class RPCRequest {
     public interface RPCRequestDelegate {
         void run(TLObject response, TLRPC.TL_error error);
     }
-    public interface RPCProgressDelegate {
-        void progress(int length, int progress);
-    }
     public interface RPCQuickAckDelegate {
         void quickAck();
     }
@@ -29,7 +26,6 @@ public class RPCRequest {
     public static int RPCRequestClassCanCompress = 32;
     public static int RPCRequestClassPush = 64;
     public static int RPCRequestClassWithoutLogin = 128;
-    public static int RPCRequestClassDownloadMedia2 = 256;
 
     static int RPCRequestClassTransportMask = (RPCRequestClassGeneric | RPCRequestClassDownloadMedia | RPCRequestClassUploadMedia);
 
@@ -45,7 +41,6 @@ public class RPCRequest {
     int serializedLength;
 
     RPCRequestDelegate completionBlock;
-    RPCProgressDelegate progressBlock;
     RPCQuickAckDelegate quickAckBlock;
 
     boolean requiresCompletion;

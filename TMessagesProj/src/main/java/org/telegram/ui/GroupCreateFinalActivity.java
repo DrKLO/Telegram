@@ -22,11 +22,11 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import org.telegram.messenger.ConnectionsManager;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesStorage;
+import org.telegram.android.LocaleController;
+import org.telegram.android.MessagesStorage;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;

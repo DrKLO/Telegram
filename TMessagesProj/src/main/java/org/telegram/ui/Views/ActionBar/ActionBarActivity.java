@@ -32,6 +32,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
@@ -139,7 +140,7 @@ public class ActionBarActivity extends Activity {
         contentView.addView(shadowView);
         shadowView.setBackgroundResource(R.drawable.shadow);
         ViewGroup.LayoutParams layoutParams = shadowView.getLayoutParams();
-        layoutParams.width = Utilities.dp(2);
+        layoutParams.width = AndroidUtilities.dp(2);
         layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
         shadowView.setLayoutParams(layoutParams);
         shadowView.setVisibility(View.INVISIBLE);
@@ -202,7 +203,7 @@ public class ActionBarActivity extends Activity {
         containerViewBack.setX(0);
         actionBar.stopMoving(backAnimation);
         shadowView.setVisibility(View.INVISIBLE);
-        shadowView.setX(-Utilities.dp(2));
+        shadowView.setX(-AndroidUtilities.dp(2));
         if (!backAnimation) {
             BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
             lastFragment.onPause();
@@ -229,7 +230,7 @@ public class ActionBarActivity extends Activity {
             }
         }
         containerViewBack.setVisibility(View.GONE);
-        Utilities.unlockOrientation(this);
+        AndroidUtilities.unlockOrientation(this);
         startedTracking = false;
         animationInProgress = false;
     }
@@ -239,7 +240,7 @@ public class ActionBarActivity extends Activity {
         startedTracking = true;
         startedTrackingX = (int) ev.getX();
         shadowView.setVisibility(View.VISIBLE);
-        shadowView.setX(-Utilities.dp(2));
+        shadowView.setX(-AndroidUtilities.dp(2));
         containerViewBack.setVisibility(View.VISIBLE);
         beginTrackingSent = false;
 
@@ -260,7 +261,7 @@ public class ActionBarActivity extends Activity {
         }
         lastFragment.onResume();
 
-        Utilities.lockOrientation(this);
+        AndroidUtilities.lockOrientation(this);
     }
 
     public boolean onTouchEvent(MotionEvent ev) {
@@ -284,12 +285,12 @@ public class ActionBarActivity extends Activity {
                 int dx = Math.max(0, (int) (ev.getX() - startedTrackingX));
                 int dy = Math.abs((int)ev.getY() - startedTrackingY);
                 velocityTracker.addMovement(ev);
-                if (maybeStartTracking && !startedTracking && dx >= Utilities.dp(10) && Math.abs(dx) / 3 > dy) {
+                if (maybeStartTracking && !startedTracking && dx >= AndroidUtilities.dp(10) && Math.abs(dx) / 3 > dy) {
                     prepareForMoving(ev);
                 } else if (startedTracking) {
                     if (!beginTrackingSent) {
                         if (getCurrentFocus() != null) {
-                            Utilities.hideKeyboard(getCurrentFocus());
+                            AndroidUtilities.hideKeyboard(getCurrentFocus());
                         }
                         BaseFragment currentFragment = fragmentsStack.get(fragmentsStack.size() - 1);
                         currentFragment.onBeginSlide();
@@ -297,7 +298,7 @@ public class ActionBarActivity extends Activity {
                     }
                     actionBar.moveActionBarByX(dx);
                     containerView.setX(dx);
-                    shadowView.setX(dx - Utilities.dp(2));
+                    shadowView.setX(dx - AndroidUtilities.dp(2));
                 }
             } else if (ev != null && ev.getPointerId(0) == startedTrackingPointerId && (ev.getAction() == MotionEvent.ACTION_CANCEL || ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_POINTER_UP)) {
                 if (velocityTracker == null) {
@@ -321,11 +322,11 @@ public class ActionBarActivity extends Activity {
                     if (!backAnimation) {
                         distToMove = containerView.getMeasuredWidth() - x;
                         animators.add(ObjectAnimator.ofFloat(containerView, "x", containerView.getMeasuredWidth()));
-                        animators.add(ObjectAnimator.ofFloat(shadowView, "x", containerView.getMeasuredWidth() - Utilities.dp(2)));
+                        animators.add(ObjectAnimator.ofFloat(shadowView, "x", containerView.getMeasuredWidth() - AndroidUtilities.dp(2)));
                     } else {
                         distToMove = x;
                         animators.add(ObjectAnimator.ofFloat(containerView, "x", 0));
-                        animators.add(ObjectAnimator.ofFloat(shadowView, "x", -Utilities.dp(2)));
+                        animators.add(ObjectAnimator.ofFloat(shadowView, "x", -AndroidUtilities.dp(2)));
                     }
                     actionBar.setupAnimations(animators, backAnimation);
 
@@ -439,9 +440,9 @@ public class ActionBarActivity extends Activity {
         int height = 0;
         if (actionBar.getVisibility() == View.VISIBLE) {
             if (!Utilities.isTablet(this) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                height = Utilities.dp(40);
+                height = AndroidUtilities.dp(40);
             } else {
-                height = Utilities.dp(48);
+                height = AndroidUtilities.dp(48);
             }
         }
 
@@ -500,7 +501,7 @@ public class ActionBarActivity extends Activity {
             return false;
         }
         if (getCurrentFocus() != null) {
-            Utilities.hideKeyboard(getCurrentFocus());
+            AndroidUtilities.hideKeyboard(getCurrentFocus());
         }
         boolean needAnimation = openAnimation != null && !forceWithoutAnimation && getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).getBoolean("view_animations", true);
 
@@ -575,7 +576,7 @@ public class ActionBarActivity extends Activity {
             return;
         }
         if (getCurrentFocus() != null) {
-            Utilities.hideKeyboard(getCurrentFocus());
+            AndroidUtilities.hideKeyboard(getCurrentFocus());
         }
         boolean needAnimation = animated && closeAnimation != null && getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).getBoolean("view_animations", true);
         final BaseFragment currentFragment = fragmentsStack.get(fragmentsStack.size() - 1);
@@ -634,6 +635,7 @@ public class ActionBarActivity extends Activity {
     }
 
     public void removeFragmentFromStack(BaseFragment fragment) {
+        fragment.onPause();
         fragment.onFragmentDestroy();
         fragment.setParentActivity(null);
         fragmentsStack.remove(fragment);

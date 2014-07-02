@@ -54,7 +54,7 @@ public class ExportAuthorizationAction extends Action {
                     }
                 }
             }
-        }, null, true, RPCRequest.RPCRequestClassGeneric);
+        });
     }
 
     void beginImport() {

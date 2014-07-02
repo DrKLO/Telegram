@@ -13,9 +13,9 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.ContactsController;
+import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Cells.ChatOrUserCell;

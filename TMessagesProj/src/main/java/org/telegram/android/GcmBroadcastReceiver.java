@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.messenger;
+package org.telegram.android;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -14,6 +14,9 @@ import android.content.Context;
 import android.content.Intent;
 
 import org.json.JSONObject;
+import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ApplicationLoader;
 
 public class GcmBroadcastReceiver extends BroadcastReceiver {

@@ -23,13 +23,14 @@ import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
-import org.telegram.messenger.ContactsController;
+import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
@@ -148,9 +149,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     listView.setAdapter(listViewAdapter);
                     listViewAdapter.notifyDataSetChanged();
                     if (!LocaleController.isRTL) {
-                        listView.setPadding(Utilities.dp(16), listView.getPaddingTop(), Utilities.dp(30), listView.getPaddingBottom());
+                        listView.setPadding(AndroidUtilities.dp(16), listView.getPaddingTop(), AndroidUtilities.dp(30), listView.getPaddingBottom());
                     } else {
-                        listView.setPadding(Utilities.dp(30), listView.getPaddingTop(), Utilities.dp(16), listView.getPaddingBottom());
+                        listView.setPadding(AndroidUtilities.dp(30), listView.getPaddingTop(), AndroidUtilities.dp(16), listView.getPaddingBottom());
                     }
                     if (android.os.Build.VERSION.SDK_INT >= 11) {
                         listView.setFastScrollAlwaysVisible(true);
@@ -170,7 +171,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     if (text.length() != 0) {
                         searchWas = true;
                         if (listView != null) {
-                            listView.setPadding(Utilities.dp(16), listView.getPaddingTop(), Utilities.dp(16), listView.getPaddingBottom());
+                            listView.setPadding(AndroidUtilities.dp(16), listView.getPaddingTop(), AndroidUtilities.dp(16), listView.getPaddingBottom());
                             listView.setAdapter(searchListViewAdapter);
                             searchListViewAdapter.notifyDataSetChanged();
                             if(android.os.Build.VERSION.SDK_INT >= 11) {
@@ -320,7 +321,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 @Override
                 public void onScrollStateChanged(AbsListView absListView, int i) {
                     if (i == SCROLL_STATE_TOUCH_SCROLL && searching && searchWas) {
-                        Utilities.hideKeyboard(getParentActivity().getCurrentFocus());
+                        AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
                     }
                 }
 
@@ -419,7 +420,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         }
                     }
                 }
-            }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
+            }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
         }
     }
 

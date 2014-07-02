@@ -23,13 +23,13 @@ import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.LocaleController;
+import org.telegram.android.MediaController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
@@ -252,7 +252,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     imageView.getLocationInWindow(coords);
                     PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
                     object.viewX = coords[0];
-                    object.viewY = coords[1] - Utilities.statusBarHeight;
+                    object.viewY = coords[1] - AndroidUtilities.statusBarHeight;
                     object.parentView = listView;
                     object.imageReceiver = imageView.imageReceiver;
                     object.thumb = object.imageReceiver.getBitmap();
@@ -405,7 +405,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             }
         }
         listView.setNumColumns(columnsCount);
-        itemWidth = (getParentActivity().getResources().getDisplayMetrics().widthPixels - ((columnsCount + 1) * Utilities.dp(4))) / columnsCount;
+        itemWidth = (getParentActivity().getResources().getDisplayMetrics().widthPixels - ((columnsCount + 1) * AndroidUtilities.dp(4))) / columnsCount;
         listView.setColumnWidth(itemWidth);
 
         listAdapter.notifyDataSetChanged();

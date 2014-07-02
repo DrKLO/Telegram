@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.messenger;
+package org.telegram.android;
 
 import android.accounts.AbstractAccountAuthenticator;
 import android.accounts.Account;

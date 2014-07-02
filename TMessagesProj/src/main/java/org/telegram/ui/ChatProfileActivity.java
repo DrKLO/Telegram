@@ -23,12 +23,13 @@ import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesStorage;
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.LocaleController;
+import org.telegram.android.MessagesStorage;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -299,7 +300,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         avatarImage.getLocationInWindow(coords);
                         PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
                         object.viewX = coords[0];
-                        object.viewY = coords[1] - Utilities.statusBarHeight;
+                        object.viewY = coords[1] - AndroidUtilities.statusBarHeight;
                         object.parentView = listView;
                         object.imageReceiver = avatarImage.imageReceiver;
                         object.thumb = object.imageReceiver.getBitmap();
@@ -596,7 +597,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 avatarImage = (BackupImageView)view.findViewById(R.id.settings_avatar_image);
                 avatarImage.processDetach = false;
                 TextView textView = (TextView)view.findViewById(R.id.settings_name);
-                Typeface typeface = Utilities.getTypeface("fonts/rmedium.ttf");
+                Typeface typeface = AndroidUtilities.getTypeface("fonts/rmedium.ttf");
                 textView.setTypeface(typeface);
 
                 textView.setText(chat.title);

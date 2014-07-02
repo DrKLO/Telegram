@@ -30,6 +30,17 @@
         android:textAllCaps="true"
         android:layout_gravity="bottom"/>
 
+    <ImageButton
+        android:id="@+id/settings_call_phone"
+        android:background="@drawable/list_selector"
+        android:clickable="true"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginRight="48dp"
+        android:src="@drawable/call"
+        android:layout_gravity="right|center_vertical"
+        android:paddingTop="2dp"/>
+
     <View
         android:background="#e8e8e8"
         android:layout_width="1dp"

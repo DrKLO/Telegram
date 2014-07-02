@@ -18,6 +18,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Views.ImageReceiver;
@@ -291,10 +292,8 @@ public class FileLoader {
                     if (runtimeHack != null) {
                         runtimeHack.trackAlloc(oldBitmap.getRowBytes() * oldBitmap.getHeight());
                     }
-                    if (Build.VERSION.SDK_INT < 11) {
-                        if (!oldBitmap.isRecycled()) {
-                            oldBitmap.recycle();
-                        }
+                    if (!oldBitmap.isRecycled()) {
+                        oldBitmap.recycle();
                     }
                 }
             }
@@ -466,6 +465,7 @@ public class FileLoader {
                 }
                 FileLoadOperation operation = loadOperationPaths.get(fileName);
                 if (operation != null) {
+                    loadOperationPaths.remove(fileName);
                     if (audio != null) {
                         audioLoadOperationQueue.remove(operation);
                     } else if (photo != null) {
@@ -1119,7 +1119,7 @@ public class FileLoader {
         try {
             if (!cache) {
                 String fileName = location.volume_id + "_" + location.local_id + ".jpg";
-                final File cacheFile = new File(Utilities.getCacheDir(), fileName);
+                final File cacheFile = new File(AndroidUtilities.getCacheDir(), fileName);
                 FileOutputStream stream = new FileOutputStream(cacheFile);
                 scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream);
                 size.size = (int)stream.getChannel().size();
@@ -1129,10 +1129,8 @@ public class FileLoader {
                 size.bytes = stream.toByteArray();
                 size.size = size.bytes.length;
             }
-            if (Build.VERSION.SDK_INT < 11) {
-                if (scaledBitmap != bitmap) {
-                    scaledBitmap.recycle();
-                }
+            if (scaledBitmap != bitmap) {
+                scaledBitmap.recycle();
             }
             return size;
         } catch (Exception e) {

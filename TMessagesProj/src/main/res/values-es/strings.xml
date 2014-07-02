@@ -274,6 +274,11 @@
     <string name="SortFirstName">Nombre</string>
     <string name="SortLastName">Apellido</string>
     <string name="LedColor">Color del LED</string>
+    <string name="PopupNotification">Popup Notification</string>
+    <string name="NoPopup">No popup</string>
+    <string name="OnlyWhenScreenOn">Only when screen "on"</string>
+    <string name="OnlyWhenScreenOff">Only when screen "off"</string>
+    <string name="AlwaysShowPopup">Always show popup</string>
 
     <!--media view-->
     <string name="NoMedia">No hay fotos ni vídeos compartidos aún</string>

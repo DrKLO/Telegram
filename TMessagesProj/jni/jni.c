@@ -30,67 +30,21 @@ void JNI_OnUnload(JavaVM *vm, void *reserved) {
     gifOnJNIUnload(vm, reserved);
 }
 
-JNIEXPORT jbyteArray Java_org_telegram_messenger_Utilities_aesIgeEncryption(JNIEnv *env, jclass class, jbyteArray _what, jbyteArray _key, jbyteArray _iv, jboolean encrypt, jboolean changeIv, jint l) {
-    unsigned char *what = (unsigned char *)(*env)->GetByteArrayElements(env, _what, NULL);
-    unsigned char *key = (unsigned char *)(*env)->GetByteArrayElements(env, _key, NULL);
-    unsigned char *__iv = (unsigned char *)(*env)->GetByteArrayElements(env, _iv, NULL);
-    unsigned char *iv = 0;
-    
-    if (!changeIv) {
-        iv = (unsigned char *)malloc((*env)->GetArrayLength(env, _iv));
-        memcpy(iv, __iv, (*env)->GetArrayLength(env, _iv));
-    } else {
-        iv = __iv;
-    }
-    
-    int len = l == 0 ? (*env)->GetArrayLength(env, _what) : l;
-    AES_KEY akey;
-    if (!encrypt) {
-        AES_set_decrypt_key(key, (*env)->GetArrayLength(env, _key) * 8, &akey);
-        AES_ige_encrypt(what, what, len, &akey, iv, AES_DECRYPT);
-    } else {
-        AES_set_encrypt_key(key, (*env)->GetArrayLength(env, _key) * 8, &akey);
-        AES_ige_encrypt(what, what, len, &akey, iv, AES_ENCRYPT);
-    }
-    (*env)->ReleaseByteArrayElements(env, _what, what, 0);
-    (*env)->ReleaseByteArrayElements(env, _key, key, JNI_ABORT);
-    if (!changeIv) {
-        (*env)->ReleaseByteArrayElements(env, _iv, __iv, JNI_ABORT);
-        free(iv);
-    } else {
-        (*env)->ReleaseByteArrayElements(env, _iv, __iv, 0);
-    }
-    return _what;
-}
-
-JNIEXPORT void Java_org_telegram_messenger_Utilities_aesIgeEncryption2(JNIEnv *env, jclass class, jobject _what, jbyteArray _key, jbyteArray _iv, jboolean encrypt, jboolean changeIv, jint l) {
-    jbyte *what = (*env)->GetDirectBufferAddress(env, _what);
-    unsigned char *key = (unsigned char *)(*env)->GetByteArrayElements(env, _key, NULL);
-    unsigned char *__iv = (unsigned char *)(*env)->GetByteArrayElements(env, _iv, NULL);
-    unsigned char *iv = 0;
-    
-    if (!changeIv) {
-        iv = (unsigned char *)malloc((*env)->GetArrayLength(env, _iv));
-        memcpy(iv, __iv, (*env)->GetArrayLength(env, _iv));
-    } else {
-        iv = __iv;
-    }
+JNIEXPORT void Java_org_telegram_messenger_Utilities_aesIgeEncryption(JNIEnv *env, jclass class, jobject buffer, jbyteArray key, jbyteArray iv, jboolean encrypt, int offset, int length) {
+    jbyte *what = (*env)->GetDirectBufferAddress(env, buffer) + offset;
+    unsigned char *keyBuff = (unsigned char *)(*env)->GetByteArrayElements(env, key, NULL);
+    unsigned char *ivBuff = (unsigned char *)(*env)->GetByteArrayElements(env, iv, NULL);
     
     AES_KEY akey;
     if (!encrypt) {
-        AES_set_decrypt_key(key, (*env)->GetArrayLength(env, _key) * 8, &akey);
-        AES_ige_encrypt(what, what, l, &akey, iv, AES_DECRYPT);
+        AES_set_decrypt_key(keyBuff, 32 * 8, &akey);
+        AES_ige_encrypt(what, what, length, &akey, ivBuff, AES_DECRYPT);
     } else {
-        AES_set_encrypt_key(key, (*env)->GetArrayLength(env, _key) * 8, &akey);
-        AES_ige_encrypt(what, what, l, &akey, iv, AES_ENCRYPT);
+        AES_set_encrypt_key(keyBuff, 32 * 8, &akey);
+        AES_ige_encrypt(what, what, length, &akey, ivBuff, AES_ENCRYPT);
     }
-    (*env)->ReleaseByteArrayElements(env, _key, key, JNI_ABORT);
-    if (!changeIv) {
-        (*env)->ReleaseByteArrayElements(env, _iv, __iv, JNI_ABORT);
-        free(iv);
-    } else {
-        (*env)->ReleaseByteArrayElements(env, _iv, __iv, 0);
-    }
+    (*env)->ReleaseByteArrayElements(env, key, keyBuff, JNI_ABORT);
+    (*env)->ReleaseByteArrayElements(env, iv, ivBuff, 0);
 }
 
 uint64_t gcd(uint64_t a, uint64_t b){

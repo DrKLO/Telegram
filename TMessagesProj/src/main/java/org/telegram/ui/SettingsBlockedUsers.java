@@ -20,11 +20,11 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
@@ -148,7 +148,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                                     public void run(TLObject response, TLRPC.TL_error error) {
 
                                     }
-                                }, null, true, RPCRequest.RPCRequestClassGeneric);
+                                });
                             }
                         }
                     });
@@ -220,7 +220,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                     }
                 });
             }
-        }, null, true, RPCRequest.RPCRequestClassGeneric);
+        });
         ConnectionsManager.getInstance().bindRequestToGuid(requestId, classGuid);
     }
 
@@ -273,7 +273,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
             public void run(TLObject response, TLRPC.TL_error error) {
 
             }
-        }, null, true, RPCRequest.RPCRequestClassGeneric);
+        });
     }
 
     private class ListAdapter extends BaseFragmentAdapter {

@@ -20,11 +20,11 @@ import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.IdenticonView;
@@ -48,7 +48,7 @@ public class IdenticonActivity extends BaseFragment {
             actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
             actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             actionBarLayer.setTitle(LocaleController.getString("EncryptionKey", R.string.EncryptionKey));
-            actionBarLayer.setTitleIcon(R.drawable.ic_lock_white, Utilities.dp(4));
+            actionBarLayer.setTitleIcon(R.drawable.ic_lock_white, AndroidUtilities.dp(4));
 
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override

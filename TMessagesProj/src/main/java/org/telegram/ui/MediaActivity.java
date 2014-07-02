@@ -23,11 +23,11 @@ import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.TextView;
 
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.objects.PhotoObject;
@@ -284,7 +284,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     imageView.getLocationInWindow(coords);
                     PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
                     object.viewX = coords[0];
-                    object.viewY = coords[1] - Utilities.statusBarHeight;
+                    object.viewY = coords[1] - AndroidUtilities.statusBarHeight;
                     object.parentView = listView;
                     object.imageReceiver = imageView.imageReceiver;
                     object.thumb = object.imageReceiver.getBitmap();
@@ -327,14 +327,14 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
                     if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
                         listView.setNumColumns(6);
-                        itemWidth = getParentActivity().getResources().getDisplayMetrics().widthPixels / 6 - Utilities.dp(2) * 5;
+                        itemWidth = getParentActivity().getResources().getDisplayMetrics().widthPixels / 6 - AndroidUtilities.dp(2) * 5;
                         listView.setColumnWidth(itemWidth);
                     } else {
                         listView.setNumColumns(4);
-                        itemWidth = getParentActivity().getResources().getDisplayMetrics().widthPixels / 4 - Utilities.dp(2) * 3;
+                        itemWidth = getParentActivity().getResources().getDisplayMetrics().widthPixels / 4 - AndroidUtilities.dp(2) * 3;
                         listView.setColumnWidth(itemWidth);
                     }
-                    listView.setPadding(listView.getPaddingLeft(), Utilities.dp(4), listView.getPaddingRight(), listView.getPaddingBottom());
+                    listView.setPadding(listView.getPaddingLeft(), AndroidUtilities.dp(4), listView.getPaddingRight(), listView.getPaddingBottom());
                     listAdapter.notifyDataSetChanged();
 
                     if (listView != null) {

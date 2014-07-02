@@ -13,7 +13,6 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.view.View;
 
 import org.telegram.messenger.TLRPC;
@@ -61,6 +60,9 @@ public class ImageReceiver {
             last_size = 0;
             currentImage = null;
             FileLoader.getInstance().cancelLoadingForImageView(this);
+            if (parentView != null) {
+                parentView.invalidate();
+            }
             return;
         }
         String key;
@@ -92,16 +94,13 @@ public class ImageReceiver {
         if (img == null) {
             isPlaceholder = true;
             FileLoader.getInstance().loadImage(path, httpUrl, this, filter, true, size);
-            if (parentView != null) {
-                parentView.invalidate();
-            }
         } else {
             selfSetting = true;
             setImageBitmap(img, currentPath);
             selfSetting = false;
-            if (parentView != null) {
-                parentView.invalidate();
-            }
+        }
+        if (parentView != null) {
+            parentView.invalidate();
         }
     }
 
@@ -166,9 +165,7 @@ public class ImageReceiver {
                         }
                         if (canDelete) {
                             currentImage = null;
-                            if (Build.VERSION.SDK_INT < 11) {
-                                bitmap.recycle();
-                            }
+                            bitmap.recycle();
                         }
                     } else {
                         currentImage = null;
