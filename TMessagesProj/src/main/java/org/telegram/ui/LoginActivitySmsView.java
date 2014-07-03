@@ -9,6 +9,9 @@
 package org.telegram.ui;
 
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Html;
 import android.util.AttributeSet;
@@ -36,6 +39,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.SlideView;
 
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -46,6 +50,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     private EditText codeField;
     private TextView confirmTextView;
     private TextView timeText;
+    private TextView problemText;
     private Bundle currentParams;
 
     private Timer timeTimer;
@@ -54,6 +59,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     private double lastCurrentTime;
     private boolean waitingForSms = false;
     private boolean nextPressed = false;
+    private String lastError = "";
 
     public LoginActivitySmsView(Context context) {
         super(context);
@@ -75,14 +81,38 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         codeField = (EditText)findViewById(R.id.login_sms_code_field);
         codeField.setHint(LocaleController.getString("Code", R.string.Code));
         timeText = (TextView)findViewById(R.id.login_time_text);
+        problemText = (TextView)findViewById(R.id.login_problem);
         TextView wrongNumber = (TextView) findViewById(R.id.wrong_number);
         wrongNumber.setText(LocaleController.getString("WrongNumber", R.string.WrongNumber));
+        problemText.setText(LocaleController.getString("DidNotGetTheCode", R.string.DidNotGetTheCode));
+        problemText.setVisibility(time < 1000 ? VISIBLE : GONE);
 
         wrongNumber.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
                 onBackPressed();
                 delegate.setPage(0, true, null, true);
+            }
+        });
+
+        problemText.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
+                    String version = String.format(Locale.US, "%s (%d)", pInfo.versionName, pInfo.versionCode);
+
+                    Intent mailer = new Intent(Intent.ACTION_SEND);
+                    mailer.setType("message/rfc822");
+                    mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@telegram.org"});
+                    mailer.putExtra(Intent.EXTRA_SUBJECT, "Android registration/login issue " + version + " " + requestPhone);
+                    mailer.putExtra(Intent.EXTRA_TEXT, "Phone: " + requestPhone + "\nApp version: " + version + "\nOS version: SDK " + Build.VERSION.SDK_INT + "\nDevice Name: " + Build.MANUFACTURER + Build.MODEL + "\nLocale: " + Locale.getDefault() + "\nError: " + lastError);
+                    getContext().startActivity(Intent.createChooser(mailer, "Send email..."));
+                } catch (Exception e) {
+                    if (delegate != null) {
+                        delegate.needShowAlert(LocaleController.getString("NoMailInstalled", R.string.NoMailInstalled));
+                    }
+                }
             }
         });
 
@@ -134,6 +164,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         destroyTimer();
         timeText.setText(String.format("%s 1:00", LocaleController.getString("CallText", R.string.CallText)));
         lastCurrentTime = System.currentTimeMillis();
+        problemText.setVisibility(time < 1000 ? VISIBLE : GONE);
 
         createTimer();
     }
@@ -158,6 +189,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                             int seconds = time / 1000 - minutes * 60;
                             timeText.setText(String.format("%s %d:%02d", LocaleController.getString("CallText", R.string.CallText), minutes, seconds));
                         } else {
+                            problemText.setVisibility(VISIBLE);
                             timeText.setText(LocaleController.getString("Calling", R.string.Calling));
                             destroyTimer();
                             TLRPC.TL_auth_sendCall req = new TLRPC.TL_auth_sendCall();
@@ -165,7 +197,15 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                             req.phone_code_hash = phoneHash;
                             ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                                 @Override
-                                public void run(TLObject response, TLRPC.TL_error error) {
+                                public void run(TLObject response, final TLRPC.TL_error error) {
+                                    if (error != null && error.text != null) {
+                                        Utilities.RunOnUIThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                lastError = error.text;
+                                            }
+                                        });
+                                    }
                                 }
                             }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
                         }
@@ -232,6 +272,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                             delegate.needFinishActivity();
                             ConnectionsManager.getInstance().initPushConnection();
                         } else {
+                            lastError = error.text;
                             if (error.text.contains("PHONE_NUMBER_UNOCCUPIED") && registered == null) {
                                 Bundle params = new Bundle();
                                 params.putString("phoneFormated", requestPhone);

@@ -1416,6 +1416,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         sendAsDocuments.add(tempPath);
                         sendAsDocumentsOriginal.add(originalPath);
                     } else {
+                        if (tempPath != null) {
+                            File temp = new File(tempPath);
+                            originalPath += temp.length() + "_" + temp.lastModified();
+                        }
                         TLRPC.TL_photo photo = (TLRPC.TL_photo)MessagesStorage.getInstance().getSentFile(originalPath, currentEncryptedChat == null ? 0 : 3);
                         if (photo == null && uri != null) {
                             photo = (TLRPC.TL_photo)MessagesStorage.getInstance().getSentFile(Utilities.getPath(uri), currentEncryptedChat == null ? 0 : 3);
@@ -1561,7 +1565,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         new Thread(new Runnable() {
             @Override
             public void run() {
-                TLRPC.TL_video video = (TLRPC.TL_video)MessagesStorage.getInstance().getSentFile(videoPath, currentEncryptedChat == null ? 2 : 5);
+                String originalPath = videoPath;
+                File temp = new File(originalPath);
+                originalPath += temp.length() + "_" + temp.lastModified();
+                TLRPC.TL_video video = (TLRPC.TL_video)MessagesStorage.getInstance().getSentFile(originalPath, currentEncryptedChat == null ? 2 : 5);
                 if (video == null) {
                     Bitmap thumb = ThumbnailUtils.createVideoThumbnail(videoPath, MediaStore.Video.Thumbnails.MINI_KIND);
                     TLRPC.PhotoSize size = FileLoader.scaleAndSaveImage(thumb, 90, 90, 55, currentEncryptedChat != null);
@@ -1574,7 +1581,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     video.caption = "";
                     video.mime_type = "video/mp4";
                     video.id = 0;
-                    File temp = new File(videoPath);
                     if (temp != null && temp.exists()) {
                         video.size = (int) temp.length();
                     }
@@ -1593,10 +1599,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 video.path = videoPath;
 
                 final TLRPC.TL_video videoFinal = video;
+                final String originalPathFinal = originalPath;
                 Utilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        MessagesController.getInstance().sendMessage(videoFinal, videoPath, dialog_id);
+                        MessagesController.getInstance().sendMessage(videoFinal, originalPathFinal, dialog_id);
                         if (chatListView != null) {
                             chatListView.setSelection(messages.size() + 1);
                         }

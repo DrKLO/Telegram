@@ -1665,38 +1665,43 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     void refillSaltSet(final Datacenter datacenter) {
-        for (RPCRequest request : requestQueue) {
-            if (request.rawRequest instanceof TLRPC.TL_get_future_salts) {
-                Datacenter requestDatacenter = datacenterWithId(request.runningDatacenterId);
-                if (requestDatacenter.datacenterId == datacenter.datacenterId) {
-                    return;
-                }
-            }
-        }
-
-        for (RPCRequest request : runningRequests) {
-            if (request.rawRequest instanceof TLRPC.TL_get_future_salts) {
-                Datacenter requestDatacenter = datacenterWithId(request.runningDatacenterId);
-                if (requestDatacenter.datacenterId == datacenter.datacenterId) {
-                    return;
-                }
-            }
-        }
-
-        TLRPC.TL_get_future_salts getFutureSalts = new TLRPC.TL_get_future_salts();
-        getFutureSalts.num = 32;
-
-        performRpc(getFutureSalts, new RPCRequest.RPCRequestDelegate() {
+        Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
-            public void run(TLObject response, TLRPC.TL_error error) {
-                TLRPC.TL_futuresalts res = (TLRPC.TL_futuresalts)response;
-                if (error == null) {
-                    int currentTime = getCurrentTime();
-                    datacenter.mergeServerSalts(currentTime, res.salts);
-                    saveSession();
+            public void run() {
+                for (RPCRequest request : requestQueue) {
+                    if (request.rawRequest instanceof TLRPC.TL_get_future_salts) {
+                        Datacenter requestDatacenter = datacenterWithId(request.runningDatacenterId);
+                        if (requestDatacenter.datacenterId == datacenter.datacenterId) {
+                            return;
+                        }
+                    }
                 }
+
+                for (RPCRequest request : runningRequests) {
+                    if (request.rawRequest instanceof TLRPC.TL_get_future_salts) {
+                        Datacenter requestDatacenter = datacenterWithId(request.runningDatacenterId);
+                        if (requestDatacenter.datacenterId == datacenter.datacenterId) {
+                            return;
+                        }
+                    }
+                }
+
+                TLRPC.TL_get_future_salts getFutureSalts = new TLRPC.TL_get_future_salts();
+                getFutureSalts.num = 32;
+
+                performRpc(getFutureSalts, new RPCRequest.RPCRequestDelegate() {
+                    @Override
+                    public void run(TLObject response, TLRPC.TL_error error) {
+                        TLRPC.TL_futuresalts res = (TLRPC.TL_futuresalts)response;
+                        if (error == null) {
+                            int currentTime = getCurrentTime();
+                            datacenter.mergeServerSalts(currentTime, res.salts);
+                            saveSession();
+                        }
+                    }
+                }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassWithoutLogin, datacenter.datacenterId);
             }
-        }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassWithoutLogin, datacenter.datacenterId);
+        });
     }
 
     void messagesConfirmed(final long requestMsgId) {
@@ -2195,12 +2200,22 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             TLRPC.MsgDetailedInfo detailedInfo = (TLRPC.MsgDetailedInfo)message;
 
             boolean requestResend = false;
+            boolean confirm = true;
 
             if (detailedInfo instanceof TLRPC.TL_msg_detailed_info) {
                 long requestMid = ((TLRPC.TL_msg_detailed_info)detailedInfo).msg_id;
                 for (RPCRequest request : runningRequests) {
                     if (request.respondsToMessageId(requestMid)) {
-                        requestResend = true;
+                        if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0) {
+                            if (request.runningStartTime + 60 < System.currentTimeMillis() / 1000) {
+                                requestResend = true;
+                            } else {
+                                confirm = false;
+                            }
+                            break;
+                        } else {
+                            requestResend = true;
+                        }
                         break;
                     }
                 }
@@ -2221,7 +2236,9 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 arr.add(networkMessage);
                 sendMessagesToTransport(arr, connection, false);
             } else {
-                connection.addMessageToConfirm(detailedInfo.answer_msg_id);
+                if (confirm) {
+                    connection.addMessageToConfirm(detailedInfo.answer_msg_id);
+                }
             }
         } else if (message instanceof TLRPC.TL_gzip_packed) {
             TLRPC.TL_gzip_packed packet = (TLRPC.TL_gzip_packed)message;
@@ -2494,6 +2511,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 if (message == null) {
                     FileLog.e("tmessages", "***** Error parsing message: " + constructor);
                 } else {
+                    FileLog.e("tmessages", "received object " + message);
                     processMessage(message, messageId, messageSeqNo, messageServerSalt, connection, 0, 0);
                     connection.addProcessedMessageId(messageId);
 

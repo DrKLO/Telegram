@@ -22,6 +22,7 @@
     <string name="Calling">Wir rufen dich an…</string>
     <string name="Code">Code</string>
     <string name="WrongNumber">Falsche Nummer?</string>
+    <string name="DidNotGetTheCode">Didn\'t get the code?</string>
 
     <!--signup view-->
     <string name="YourName">Dein Name</string>
@@ -355,6 +356,7 @@
     <string name="InvalidLastName">Ungültiger Nachname</string>
     <string name="Loading">Lädt…</string>
     <string name="NoPlayerInstalled">Du hast keinen Videoplayer. Bitte installiere einen um fortzufahren.</string>
+    <string name="NoMailInstalled">Please send an email to sms@telegram.org and explain your problem.</string>
     <string name="NoHandleAppInstalled">Du hast keine App, die den Dokumententyp \'%1$s\' öffnen kann.</string>
     <string name="InviteUser">Dieser Benutzer hat noch kein Telegram. Möchtest du ihn einladen?</string>
     <string name="AreYouSure">Bist du sicher?</string>

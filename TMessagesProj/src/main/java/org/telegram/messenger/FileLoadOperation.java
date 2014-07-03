@@ -459,9 +459,9 @@ public class FileLoadOperation {
                 if (requestInfo.response != null) {
                     requestInfo.response.disableFree = false;
                     requestInfo.response.freeResources();
-                    requestInfo.response = null;
                 }
             }
+            delayedRequestInfos.clear();
         }
     }
 
@@ -635,12 +635,14 @@ public class FileLoadOperation {
         if (error == null) {
             try {
                 if (downloadedBytes != requestInfo.offset) {
-                    delayedRequestInfos.add(requestInfo);
-                    requestInfo.response.disableFree = true;
+                    if (state == 1) {
+                        delayedRequestInfos.add(requestInfo);
+                        requestInfo.response.disableFree = true;
+                    }
                     return;
                 }
 
-                if (requestInfo.response.bytes.limit() == 0) {
+                if (requestInfo.response.bytes == null || requestInfo.response.bytes.limit() == 0) {
                     onFinishLoadingFile();
                     return;
                 }

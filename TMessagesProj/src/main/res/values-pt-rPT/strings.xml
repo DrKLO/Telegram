@@ -22,6 +22,7 @@
     <string name="Calling">A ligar...</string>
     <string name="Code">Código</string>
     <string name="WrongNumber">Número incorreto?</string>
+    <string name="DidNotGetTheCode">Didn\'t get the code?</string>
 
     <!--signup view-->
     <string name="YourName">O seu nome</string>
@@ -355,6 +356,7 @@
     <string name="InvalidLastName">Apelido inválido</string>
     <string name="Loading">A carregar...</string>
     <string name="NoPlayerInstalled">Não tem nenhum reprodutor de vídeo. Para continuar, instale algum</string>
+    <string name="NoMailInstalled">Please send an email to sms@telegram.org and explain your problem.</string>
     <string name="NoHandleAppInstalled">Não tem nenhuma aplicação que controle o tipo de MIME \'%1$s\'. Para continuar, instale alguma</string>
     <string name="InviteUser">Este utilizador ainda não tem o Telegram. Quer enviar um convite?</string>
     <string name="AreYouSure">Tem a certeza?</string>
