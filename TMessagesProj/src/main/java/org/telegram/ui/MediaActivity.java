@@ -114,6 +114,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                    PhotoViewer.getInstance().setParentActivity(getParentActivity());
                     PhotoViewer.getInstance().openPhoto(messages, i, MediaActivity.this);
                 }
             });

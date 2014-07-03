@@ -445,6 +445,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     public void setParentActivity(Activity activity) {
+        if (parentActivity == activity) {
+            return;
+        }
         parentActivity = activity;
 
         scroller = new Scroller(activity);

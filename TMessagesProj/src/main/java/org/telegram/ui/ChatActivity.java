@@ -1210,9 +1210,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     actionBarLayer.setSubtitle(LocaleController.getString("YouLeft", R.string.YouLeft));
                 } else {
                     if (onlineCount > 0 && currentChat.participants_count != 0) {
-                        actionBarLayer.setSubtitle(String.format("%d %s, %d %s", currentChat.participants_count, LocaleController.getString("Members", R.string.Members), onlineCount, LocaleController.getString("Online", R.string.Online)));
+                        actionBarLayer.setSubtitle(String.format("%s, %d %s", LocaleController.formatPluralString("Members", currentChat.participants_count), onlineCount, LocaleController.getString("Online", R.string.Online)));
                     } else {
-                        actionBarLayer.setSubtitle(String.format("%d %s", currentChat.participants_count, LocaleController.getString("Members", R.string.Members)));
+                        actionBarLayer.setSubtitle(LocaleController.formatPluralString("Members", currentChat.participants_count));
                     }
                 }
             } else if (currentUser != null) {
@@ -3261,6 +3261,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 return;
                             }
                             if (message.type == 1) {
+                                PhotoViewer.getInstance().setParentActivity(getParentActivity());
                                 PhotoViewer.getInstance().openPhoto(message, ChatActivity.this);
                             } else if (message.type == 3) {
                                 try {
@@ -3460,11 +3461,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     addContactView.setVisibility(View.GONE);
                 }
             } else if (type == 7) {
-                if (unread_to_load == 1) {
-                    messageTextView.setText(LocaleController.formatString("OneNewMessage", R.string.OneNewMessage, unread_to_load));
-                } else {
-                    messageTextView.setText(LocaleController.formatString("FewNewMessages", R.string.FewNewMessages, unread_to_load));
-                }
+                messageTextView.setText(LocaleController.formatPluralString("NewMessages", unread_to_load));
             } else if (type == 8 || type == 9) {
                 TLRPC.Document document = message.messageOwner.media.document;
                 if (document instanceof TLRPC.TL_document || document instanceof TLRPC.TL_documentEncrypted) {
@@ -3893,6 +3890,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
             if (message != null) {
                 if (message.type == 11) {
+                    PhotoViewer.getInstance().setParentActivity(getParentActivity());
                     PhotoViewer.getInstance().openPhoto(message, ChatActivity.this);
                 } else if (message.type == 8 || message.type == 9) {
                     File f = null;

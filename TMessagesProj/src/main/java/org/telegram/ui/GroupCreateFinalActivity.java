@@ -407,11 +407,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 convertView.setBackgroundColor(0xffffffff);
             }
             TextView textView = (TextView)convertView.findViewById(R.id.settings_section_text);
-            if (selectedContacts.size() == 1) {
-                textView.setText(selectedContacts.size() + " " + LocaleController.getString("MEMBER", R.string.MEMBER));
-            } else {
-                textView.setText(selectedContacts.size() + " " + LocaleController.getString("MEMBERS", R.string.MEMBERS));
-            }
+            textView.setText(LocaleController.formatPluralString("Members", selectedContacts.size()).toUpperCase());
             return convertView;
         }
     }

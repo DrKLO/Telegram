@@ -140,8 +140,6 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         }
 
         handleIntent(getIntent(), false, savedInstanceState != null);
-
-        PhotoViewer.getInstance().setParentActivity(this);
     }
 
     private void handleIntent(Intent intent, boolean isNew, boolean restore) {

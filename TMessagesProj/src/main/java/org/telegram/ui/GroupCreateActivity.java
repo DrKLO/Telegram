@@ -127,7 +127,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
             actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             actionBarLayer.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
-            actionBarLayer.setSubtitle(String.format("%d/200 %s", selectedContacts.size(), LocaleController.getString("Members", R.string.Members)));
+            actionBarLayer.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), 200));
 
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
@@ -201,7 +201,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                         selectedContacts.remove(sp.uid);
                                     }
                                 }
-                                actionBarLayer.setSubtitle(String.format("%d/200 %s", selectedContacts.size(), LocaleController.getString("Members", R.string.Members)));
+                                actionBarLayer.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), 200));
                                 listView.invalidateViews();
                             } else {
                                 search = true;
@@ -267,7 +267,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         span.uid = user.id;
                         ignoreChange = false;
                     }
-                    actionBarLayer.setSubtitle(String.format("%d/200 %s", selectedContacts.size(), LocaleController.getString("Members", R.string.Members)));
+                    actionBarLayer.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), 200));
                     if (searching || searchWas) {
                         searching = false;
                         searchWas = false;

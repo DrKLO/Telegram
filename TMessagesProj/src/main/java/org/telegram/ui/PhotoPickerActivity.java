@@ -159,6 +159,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                         if (i < 0 || i >= selectedAlbum.photos.size()) {
                             return;
                         }
+                        PhotoViewer.getInstance().setParentActivity(getParentActivity());
                         PhotoViewer.getInstance().openPhotoForSelect(selectedAlbum.photos, i, PhotoPickerActivity.this);
                     }
                 }

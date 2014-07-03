@@ -748,6 +748,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                     if (i == 0 && full) {
                                         TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.getClientUserId());
                                         if (user != null && user.photo != null && user.photo.photo_big != null) {
+                                            PhotoViewer.getInstance().setParentActivity(getParentActivity());
                                             PhotoViewer.getInstance().openPhoto(user.photo.photo_big, SettingsActivity.this);
                                         }
                                     } else if (i == 0 && !full || i == 1 && full) {

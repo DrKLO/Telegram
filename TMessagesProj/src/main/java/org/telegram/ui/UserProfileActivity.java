@@ -524,6 +524,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         public void onClick(View view) {
                             TLRPC.User user = MessagesController.getInstance().users.get(user_id);
                             if (user.photo != null && user.photo.photo_big != null) {
+                                PhotoViewer.getInstance().setParentActivity(getParentActivity());
                                 PhotoViewer.getInstance().openPhoto(user.photo.photo_big, UserProfileActivity.this);
                             }
                         }

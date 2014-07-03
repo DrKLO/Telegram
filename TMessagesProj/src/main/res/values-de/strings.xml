@@ -76,7 +76,6 @@
     <string name="Attach">Anhängen</string>
     <string name="IsTyping">schreibt...</string>
     <string name="AreTyping">tippen…</string>
-    <string name="AndMoreTyping">und %d weitere Personen</string>
     <string name="GotAQuestion">Du hast eine Frage\nzu Telegram?</string>
     <string name="ChatTakePhoto">Foto aufnehmen</string>
     <string name="ChatGallery">Galerie</string>
@@ -90,7 +89,6 @@
     <string name="ForwardedMessage">Weitergeleitete Nachricht</string>
     <string name="From">Von</string>
     <string name="NoRecent">Keine aktuellen</string>
-    <string name="Members">Mitglieder</string>
     <string name="Message">Nachricht</string>
     <string name="TypeMessage">Nachricht verfassen</string>
     <string name="DOWNLOAD">Download</string>
@@ -104,8 +102,6 @@
     <string name="EncryptedDescription2">Hinterlassen keine Spuren auf unseren Servern</string>
     <string name="EncryptedDescription3">Haben einen Selbstzerstörungs-Timer</string>
     <string name="EncryptedDescription4">Erlauben keine Weiterleitung von Nachrichten</string>
-    <string name="OneNewMessage">%1$d neue Nachricht</string>
-    <string name="FewNewMessages">%1$d neue Nachrichten</string>
     <string name="YouWereKicked">Du wurdest aus der Gruppe entfernt</string>
     <string name="YouLeft">Du hast die Gruppe verlassen</string>
     <string name="DeleteThisGroup">Diese Gruppe löschen</string>
@@ -172,10 +168,9 @@
     <!--group create view-->
     <string name="SendMessageTo">Sende Nachricht an…</string>
     <string name="EnterGroupNamePlaceholder">Gruppennamen eingeben</string>
-    <string name="MEMBER">MITGLIED</string>
     <string name="GroupName">Gruppenname</string>
-    <string name="MEMBERS">MITGLIEDER</string>
     <string name="AllContacts">ALLE KONTAKTE</string>
+    <string name="MembersCount">%1$d/%2$d members</string>
 
     <!--group info view-->
     <string name="EnterGroupNameTitle">GRUPPENNAMEN EINGEBEN</string>
@@ -384,6 +379,42 @@
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lässt sich von verschiedenen Geräten gleichzeitig nutzen</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]>-Nachrichten sind stark verschlüsselt und können sich selbst zerstören</string>
     <string name="StartMessaging">Jetzt beginnen</string>
+
+    <!--plurals-->
+    <string name="Members_zero">no members</string>
+    <string name="Members_one">%1$d member</string>
+    <string name="Members_two">%1$d members</string>
+    <string name="Members_few">%1$d members</string>
+    <string name="Members_many">%1$d members</string>
+    <string name="Members_other">%1$d members</string>
+
+    <string name="AndMoreTyping_zero">and %1$d more people are typing</string>
+    <string name="AndMoreTyping_one">and %1$d more people are typing</string>
+    <string name="AndMoreTyping_two">and %1$d more people are typing</string>
+    <string name="AndMoreTyping_few">and %1$d more people are typing</string>
+    <string name="AndMoreTyping_many">and %1$d more people are typing</string>
+    <string name="AndMoreTyping_other">and %1$d more people are typing</string>
+
+    <string name="NewMessages_zero">no new messages</string>
+    <string name="NewMessages_one">%1$d new message</string>
+    <string name="NewMessages_two">%1$d new messages</string>
+    <string name="NewMessages_few">%1$d new messages</string>
+    <string name="NewMessages_many">%1$d new messages</string>
+    <string name="NewMessages_other">%1$d new messages</string>
+
+    <string name="messages_zero">no messages</string>
+    <string name="messages_one">%1$d message</string>
+    <string name="messages_two">%1$d messages</string>
+    <string name="messages_few">%1$d messages</string>
+    <string name="messages_many">%1$d messages</string>
+    <string name="messages_other">%1$d messages</string>
+
+    <string name="FromContacts_zero">from no contacts</string>
+    <string name="FromContacts_one">from %1$d contact</string>
+    <string name="FromContacts_two">from %1$d contacts</string>
+    <string name="FromContacts_few">from %1$d contacts</string>
+    <string name="FromContacts_many">from %1$d contacts</string>
+    <string name="FromContacts_other">from %1$d contacts</string>
 
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>

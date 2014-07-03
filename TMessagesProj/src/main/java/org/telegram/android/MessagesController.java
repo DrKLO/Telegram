@@ -998,7 +998,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 if (label.length() != 0) {
                     if (count > 1) {
                         if (arr.size() > 2) {
-                            newPrintingStrings.put(key, Html.fromHtml(String.format("%s %s %s", label, String.format(LocaleController.getString("AndMoreTyping", R.string.AndMoreTyping), arr.size() - 2), LocaleController.getString("AreTyping", R.string.AreTyping))));
+                            newPrintingStrings.put(key, Html.fromHtml(String.format("%s %s", label, LocaleController.formatPluralString("AndMoreTyping", arr.size() - 2))));
                         } else {
                             newPrintingStrings.put(key, Html.fromHtml(String.format("%s %s", label, LocaleController.getString("AreTyping", R.string.AreTyping))));
                         }
