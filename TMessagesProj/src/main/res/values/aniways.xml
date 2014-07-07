@@ -120,7 +120,7 @@
 		 
 		 Default value is: '!!MUST REPLACE THIS with your app's public key'
     -->
-    <string name="aniways_app_public_key_for_credits_store">MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5JLYBl94qquxlO0Ugdan4DF2fSQgF4slZEjMPbzVAqzuGCL0z4scyaXKN2x99vrpDrV+wOVgX50s7vsD3Qym7RRInagCazT0pR4eYZur1gDsCt6nrOO1VktOBvTlme+YHzYkMDp7cFXKjjrb46bEP3EVqdoWFAOASsO5oa/frXkZ7EPeXkPG7pwJM6HPF1BZl3+75J2VrM1VrfUpNLQsc/4qjBGzTSq9I2rdyypndKUy6cjIU+9PH7BAgXwUbCBcKRLylhSuHHvmTqeJiY3J4KOsYgOzbmu8rDknltn/q+qq+h4bRKGfboFqjjCA1sUntuwfXjviUAeJnKc8RGCdgwIDAQAB</string>
+    <string name="aniways_app_public_key_for_credits_store">MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlpOOs7RQ9ewITUlZFoXBGtfgmAyBmjODUJQAAvxadJpoFfkK/bxKsnY3wP+YrnxRujBOxfB2/+1CzpIYiUmptF8K+L7elyyyf0gCbrv/FIrOyzVs+BssuRZxnsnZ8XwOhUsrPnLwHNkJtE47ePGmBfYVwoV/ggc+wcRX1TXIEdyEED0paazUdWTkxE0w3qcEzFPo9Xiw1Wj/U0r6GTtrBvJqswwMi4/RlowtDVaKQK77j3FrRdPCuvcmO0uHcBsMrpNPpoTGN7X8PTPU5lFywhmyfx8/9U8npZfhmRgzoNJqoaR53VpWmJbwxJ++7Hqopw5U3lrC9YzL8IZaOZki/wIDAQAB</string>
     
     <!-- The amount of initial store credits to give to the user.
     	 After these credits are spent, the user will need to buy new ones in order to unlock locked icons.
