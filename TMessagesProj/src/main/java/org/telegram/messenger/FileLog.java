@@ -115,7 +115,7 @@ public class FileLog {
             return;
         }
         e.printStackTrace();
-        if (getInstance().streamWriter != null) {
+        if (getInstance().streamWriter != null && getInstance().logQueue != null) {
             getInstance().logQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {

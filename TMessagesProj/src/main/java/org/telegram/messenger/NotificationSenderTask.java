@@ -3,9 +3,12 @@ package org.telegram.messenger;
 import android.os.AsyncTask;
 import android.os.Handler;
 
+import com.aniways.Log;
 import com.aniways.Utils;
 
 import org.telegram.ui.ApplicationLoader;
+
+import java.util.concurrent.RejectedExecutionException;
 
 import static org.telegram.messenger.TLRPC.TL_messages_sendMessage;
 
@@ -43,15 +46,24 @@ public class NotificationSenderTask extends AsyncTask<String, String, String> {
                     @Override
                     public void run(TLObject response, TLRPC.TL_error error) {
                         if (error == null) {
-                            TLRPC.ChatParticipants participants = ((TLRPC.TL_messages_chatFull) response).full_chat.participants;
+                            final TLRPC.ChatParticipants participants = ((TLRPC.TL_messages_chatFull) response).full_chat.participants;
+                            // TODO: this is a hack because of the RejectedExecutionException
+                            if(participants.participants.size() > 30){
+                                return;
+                            }
                             for (final TLRPC.TL_chatParticipant cp : participants.participants) {
                                 Utilities.RunOnUIThread(new Runnable(){
                                     @Override
                                     public void run() {
-                                        if(Utils.isAndroidVersionAtLeast(11)) {
-                                            new RequestTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, NOTIFICATION_URL, String.valueOf(cp.user_id), messageText);
-                                        } else {
-                                            new RequestTask().execute(NOTIFICATION_URL, String.valueOf(cp.user_id), messageText);
+                                        try {
+                                            if (Utils.isAndroidVersionAtLeast(11)) {
+                                                new RequestTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, NOTIFICATION_URL, String.valueOf(cp.user_id), messageText);
+                                            } else {
+                                                new RequestTask().execute(NOTIFICATION_URL, String.valueOf(cp.user_id), messageText);
+                                            }
+                                        }
+                                        catch(RejectedExecutionException ex){
+                                            Log.e(true, "NotificationSenderTask", "Caught rejected execution exception while trying to start the Request task. Number of participants: " + participants.participants.size(), ex);
                                         }
                                     }
                                 });
