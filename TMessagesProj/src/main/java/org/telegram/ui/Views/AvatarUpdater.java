@@ -118,8 +118,8 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
         if (bitmap == null) {
             return;
         }
-        smallPhoto = FileLoader.scaleAndSaveImage(bitmap, 100, 100, 87, false);
-        bigPhoto = FileLoader.scaleAndSaveImage(bitmap, 800, 800, 87, false);
+        smallPhoto = FileLoader.scaleAndSaveImage(bitmap, 100, 100, 80, false);
+        bigPhoto = FileLoader.scaleAndSaveImage(bitmap, 800, 800, 80, false);
         if (bigPhoto != null && smallPhoto != null) {
             if (returnOnly) {
                 if (delegate != null) {

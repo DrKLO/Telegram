@@ -96,6 +96,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         NotificationCenter.getInstance().removeObserver(this, MediaController.recordStopped);
         NotificationCenter.getInstance().removeObserver(this, MediaController.recordProgressChanged);
         NotificationCenter.getInstance().removeObserver(this, MessagesController.closeChats);
+        NotificationCenter.getInstance().removeObserver(this, MediaController.audioDidSent);
         NotificationCenter.getInstance().removeObserver(this, 999);
         if (mWakeLock != null) {
             try {
@@ -197,6 +198,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                     startedDraggingX = -1;
                     MediaController.getInstance().startRecording(dialog_id);
                     updateAudioRecordIntefrace();
+                    audioSendButton.getParent().requestDisallowInterceptTouchEvent(true);
                 } else if (motionEvent.getAction() == MotionEvent.ACTION_UP || motionEvent.getAction() == MotionEvent.ACTION_CANCEL) {
                     startedDraggingX = -1;
                     MediaController.getInstance().stopRecording(true);
@@ -590,8 +592,10 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 sizeNotifierRelativeLayout.post(new Runnable() {
                     @Override
                     public void run() {
-                        sizeNotifierRelativeLayout.setPadding(0, 0, 0, layoutParams.height);
-                        sizeNotifierRelativeLayout.requestLayout();
+                        if (sizeNotifierRelativeLayout != null) {
+                            sizeNotifierRelativeLayout.setPadding(0, 0, 0, layoutParams.height);
+                            sizeNotifierRelativeLayout.requestLayout();
+                        }
                     }
                 });
             }

@@ -541,6 +541,10 @@ public class MessageObject {
         return messageOwner.from_id == UserConfig.getClientUserId();
     }
 
+    public boolean isUnread () {
+        return messageOwner.unread;
+    }
+
     public long getDialogId() {
         if (messageOwner.dialog_id != 0) {
             return messageOwner.dialog_id;

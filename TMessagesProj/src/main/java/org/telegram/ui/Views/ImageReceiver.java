@@ -35,6 +35,7 @@ public class ImageReceiver {
     public Rect drawRegion = new Rect();
     private boolean isVisible = true;
     private boolean selfSetting = false;
+    public boolean isAspectFit = false;
 
     public void setImage(TLRPC.FileLocation path, String filter, Drawable placeholder) {
         setImage(path, null, filter, placeholder, 0);
@@ -188,28 +189,39 @@ public class ImageReceiver {
                 float scaleW = bitmapW / (float)w;
                 float scaleH = bitmapH / (float)h;
 
-                if (Math.abs(scaleW - scaleH) > 0.00001f) {
+                if (isAspectFit) {
+                    float scale = Math.max(scaleW, scaleH);
                     canvas.save();
-                    canvas.clipRect(x, y, x + w, y + h);
-
-                    if (bitmapW / scaleH > w) {
-                        bitmapW /= scaleH;
-                        drawRegion.set(x - (bitmapW - w) / 2, y, x + (bitmapW + w) / 2, y + h);
-                    } else {
-                        bitmapH /= scaleW;
-                        drawRegion.set(x, y - (bitmapH - h) / 2, x + w, y + (bitmapH + h) / 2);
-                    }
+                    bitmapW /= scale;
+                    bitmapH /= scale;
+                    drawRegion.set(x + (w - bitmapW) / 2, y + (h - bitmapH) / 2, x + (w + bitmapW) / 2, y + (h + bitmapH) / 2);
                     bitmapDrawable.setBounds(drawRegion);
-                    if (isVisible) {
-                        bitmapDrawable.draw(canvas);
-                    }
-
+                    bitmapDrawable.draw(canvas);
                     canvas.restore();
                 } else {
-                    drawRegion.set(x, y, x + w, y + h);
-                    bitmapDrawable.setBounds(drawRegion);
-                    if (isVisible) {
-                        bitmapDrawable.draw(canvas);
+                    if (Math.abs(scaleW - scaleH) > 0.00001f) {
+                        canvas.save();
+                        canvas.clipRect(x, y, x + w, y + h);
+
+                        if (bitmapW / scaleH > w) {
+                            bitmapW /= scaleH;
+                            drawRegion.set(x - (bitmapW - w) / 2, y, x + (bitmapW + w) / 2, y + h);
+                        } else {
+                            bitmapH /= scaleW;
+                            drawRegion.set(x, y - (bitmapH - h) / 2, x + w, y + (bitmapH + h) / 2);
+                        }
+                        bitmapDrawable.setBounds(drawRegion);
+                        if (isVisible) {
+                            bitmapDrawable.draw(canvas);
+                        }
+
+                        canvas.restore();
+                    } else {
+                        drawRegion.set(x, y, x + w, y + h);
+                        bitmapDrawable.setBounds(drawRegion);
+                        if (isVisible) {
+                            bitmapDrawable.draw(canvas);
+                        }
                     }
                 }
             } else if (last_placeholder != null) {

@@ -18,7 +18,6 @@ import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
-import android.media.audiofx.AutomaticGainControl;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
@@ -165,7 +164,6 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private final Integer progressTimerSync = 1;
 
     private AudioRecord audioRecorder = null;
-    private Object audioGainObj = null;
     private TLRPC.TL_audio recordingAudio = null;
     private File recordingAudioFile = null;
     private long recordStartTime;
@@ -879,7 +877,9 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         if (currentTotalPcmDuration * progress == currentTotalPcmDuration) {
             return;
         }
-        audioTrackPlayer.pause();
+        if (!isPaused) {
+            audioTrackPlayer.pause();
+        }
         audioTrackPlayer.flush();
         fileDecodingQueue.postRunnable(new Runnable() {
             @Override
@@ -892,14 +892,15 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 Utilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        ignoreFirstProgress = 3;
-                        //audioTrackPlayer.setNotificationMarkerPosition((int)(currentTotalPcmDuration * (1 - playingMessageObject.audioProgress)));
-                        lastPlayPcm = (long)(currentTotalPcmDuration * progress);
-                        if (audioTrackPlayer != null) {
-                            audioTrackPlayer.play();
+                        if (!isPaused) {
+                            ignoreFirstProgress = 3;
+                            lastPlayPcm = (long) (currentTotalPcmDuration * progress);
+                            if (audioTrackPlayer != null) {
+                                audioTrackPlayer.play();
+                            }
+                            lastProgress = (int) (currentTotalPcmDuration / 48.0f * progress);
+                            checkPlayerQueue();
                         }
-                        lastProgress = (int)(currentTotalPcmDuration / 48.0f * progress);
-                        checkPlayerQueue();
                     }
                 });
             }
@@ -1176,31 +1177,6 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     recordDialogId = dialog_id;
                     fileBuffer.rewind();
 
-                    if (android.os.Build.VERSION.SDK_INT >= 16) {
-                        File f = new File("/vendor/lib/libaudioeffect_jni.so");
-                        File f2 = new File("/system/lib/libaudioeffect_jni.so");
-                        if (f.exists() || f2.exists()) {
-                            AutomaticGainControl agc = null;
-                            try {
-                                if (AutomaticGainControl.isAvailable()) {
-                                    agc = AutomaticGainControl.create(audioRecorder.getAudioSessionId());
-                                    agc.setEnabled(true);
-                                    audioGainObj = agc;
-                                }
-                            } catch (Exception e) {
-                                try {
-                                    if (agc != null) {
-                                        agc.release();
-                                        agc = null;
-                                    }
-                                } catch (Exception e2) {
-                                    FileLog.e("tmessages", e2);
-                                }
-                                FileLog.e("tmessages", e);
-                            }
-                        }
-                    }
-
                     audioRecorder.startRecording();
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -1213,18 +1189,6 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                         audioRecorder = null;
                     } catch (Exception e2) {
                         FileLog.e("tmessages", e2);
-                    }
-
-                    if (android.os.Build.VERSION.SDK_INT >= 16 && audioGainObj != null) {
-                        AutomaticGainControl agc = (AutomaticGainControl)audioGainObj;
-                        try {
-                            if (agc != null) {
-                                agc.release();
-                                agc = null;
-                            }
-                        } catch (Exception e2) {
-                            FileLog.e("tmessages", e2);
-                        }
                     }
 
                     Utilities.RunOnUIThread(new Runnable() {
@@ -1278,17 +1242,6 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             if (audioRecorder != null) {
                 audioRecorder.release();
                 audioRecorder = null;
-            }
-            if (android.os.Build.VERSION.SDK_INT >= 16 && audioGainObj != null) {
-                AutomaticGainControl agc = (AutomaticGainControl)audioGainObj;
-                try {
-                    if (agc != null) {
-                        agc.release();
-                        agc = null;
-                    }
-                } catch (Exception e2) {
-                    FileLog.e("tmessages", e2);
-                }
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);

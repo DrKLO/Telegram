@@ -31,6 +31,7 @@ import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
@@ -51,6 +52,7 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MediaController;
 import org.telegram.android.MessagesStorage;
+import org.telegram.android.NotificationsController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
@@ -334,12 +336,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         if (currentChat != null) {
             downloadPhotos = preferences.getInt("photo_download_chat2", 0);
-        } else {
-            downloadPhotos = preferences.getInt("photo_download_user2", 0);
-        }
-        if (currentChat != null) {
             downloadAudios = preferences.getInt("audio_download_chat2", 0);
         } else {
+            downloadPhotos = preferences.getInt("photo_download_user2", 0);
             downloadAudios = preferences.getInt("audio_download_user2", 0);
         }
 
@@ -567,6 +566,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             selectedMessagesCountTextView.setEllipsize(TextUtils.TruncateAt.END);
             selectedMessagesCountTextView.setPadding(AndroidUtilities.dp(6), 0, 0, 0);
             selectedMessagesCountTextView.setGravity(Gravity.CENTER_VERTICAL);
+            selectedMessagesCountTextView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    return true;
+                }
+            });
             actionMode.addView(selectedMessagesCountTextView);
             layoutParams = (LinearLayout.LayoutParams)selectedMessagesCountTextView.getLayoutParams();
             layoutParams.weight = 1;
@@ -2335,7 +2340,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (chatAdapter != null) {
             chatAdapter.notifyDataSetChanged();
         }
-        MessagesController.getInstance().openned_dialog_id = dialog_id;
+        NotificationsController.getInstance().setOpennedDialogId(dialog_id);
         if (scrollToTopOnResume) {
             if (scrollToTopUnReadOnResume && unreadMessageObject != null) {
                 if (chatListView != null) {
@@ -2421,7 +2426,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         actionBarLayer.hideActionMode();
         chatActivityEnterView.hideEmojiPopup();
         paused = true;
-        MessagesController.getInstance().openned_dialog_id = 0;
+        NotificationsController.getInstance().setOpennedDialogId(0);
 
         String text = chatActivityEnterView.getFieldText();
         if (text != null) {
@@ -3468,6 +3473,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     addContactView.setVisibility(View.GONE);
                 }
             } else if (type == 7) {
+                messageTextView.setTextSize(16);
                 messageTextView.setText(LocaleController.formatPluralString("NewMessages", unread_to_load));
             } else if (type == 8 || type == 9) {
                 TLRPC.Document document = message.messageOwner.media.document;

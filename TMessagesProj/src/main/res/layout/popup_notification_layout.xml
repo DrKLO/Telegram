@@ -19,35 +19,6 @@
             android:layout_marginRight="12dp"
             android:id="@+id/popup_container">
 
-            <ScrollView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginBottom="48dp"
-                android:layout_marginTop="48dp"
-                android:fillViewport="true"
-                android:id="@+id/text_scroll">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:padding="10dp"
-                    android:id="@+id/text_container"
-                    android:background="@drawable/list_selector">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textSize="16dp"
-                        android:textColor="#ff000000"
-                        android:id="@+id/message_text"
-                        android:gravity="center"
-                        android:layout_gravity="center"/>
-
-                </LinearLayout>
-
-            </ScrollView>
-
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -93,7 +64,6 @@
                     android:textSize="18dp"
                     android:textColorHint="#909090"
                     android:ems="10"
-                    android:imeOptions="flagNoExtractUi"
                     android:inputType="textCapSentences|textMultiLine"
                     android:layout_alignParentTop="true"
                     android:paddingBottom="12dp"

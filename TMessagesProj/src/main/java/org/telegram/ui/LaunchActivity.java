@@ -512,7 +512,6 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         ApplicationLoader.mainInterfacePaused = false;
         ConnectionsManager.getInstance().setAppPaused(false, false);
         actionBar.setBackOverlayVisible(currentConnectionState != 0);
-        MessagesController.getInstance().dismissNotification();
     }
 
     @Override
@@ -646,5 +645,10 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             return true;
         }
         return super.onPreIme();
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
     }
 }
