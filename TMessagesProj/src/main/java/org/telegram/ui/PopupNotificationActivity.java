@@ -85,6 +85,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     private float moveStartX = -1;
     private boolean startedMoving = false;
     private Runnable onAnimationEndRunnable = null;
+    private Runnable wakeLockRunnable = null;
 
     private class FrameLayoutTouch extends FrameLayout {
         public FrameLayoutTouch(Context context) {
@@ -650,7 +651,21 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             currentMessageNum = 0;
         }
         getNewMessage();
-        wakeLock.acquire(7000);
+        wakeLock.acquire();
+        Utilities.stageQueue.postRunnable(wakeLockRunnable = new Runnable() {
+            @Override
+            public void run() {
+               Utilities.RunOnUIThread(new Runnable() {
+                   @Override
+                   public void run() {
+                       wakeLockRunnable = null;
+                       if (wakeLock.isHeld()) {
+                           wakeLock.release();
+                       }
+                   }
+               });
+            }
+        }, 7000);
     }
 
     private void getNewMessage() {
@@ -956,6 +971,9 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
         if (wakeLock.isHeld()) {
             wakeLock.release();
+        }
+        if (wakeLockRunnable != null) {
+            Utilities.stageQueue.cancelRunnable(wakeLockRunnable);
         }
     }
 }
