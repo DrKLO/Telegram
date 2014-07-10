@@ -24,24 +24,25 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessagesStorage;
+import org.telegram.android.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.PhotoObject;
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.HorizontalListView;
@@ -111,9 +112,16 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                     boolean done;
                     TLRPC.WallPaper wallPaper = wallpappersByIds.get(selectedBackground);
                     if (wallPaper != null && wallPaper.id != 1000001 && wallPaper instanceof TLRPC.TL_wallPaper) {
-                        TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, Utilities.dp(320), Utilities.dp(480));
+                        int width = AndroidUtilities.displaySize.x;
+                        int height = AndroidUtilities.displaySize.y;
+                        if (width > height) {
+                            int temp = width;
+                            width = height;
+                            height = temp;
+                        }
+                        TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, width, height);
                         String fileName = size.location.volume_id + "_" + size.location.local_id + ".jpg";
-                        File f = new File(Utilities.getCacheDir(), fileName);
+                        File f = new File(AndroidUtilities.getCacheDir(), fileName);
                         File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
                         try {
                             done = Utilities.copyFile(f, toFile);
@@ -209,7 +217,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
             if (requestCode == 10) {
                 Utilities.addMediaToGallery(currentPicturePath);
                 try {
-                    Bitmap bitmap = FileLoader.loadBitmap(currentPicturePath, null, Utilities.dp(320), Utilities.dp(480));
+                    Bitmap bitmap = FileLoader.loadBitmap(currentPicturePath, null, AndroidUtilities.dp(320), AndroidUtilities.dp(480));
                     File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
                     FileOutputStream stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
@@ -225,7 +233,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                     return;
                 }
                 try {
-                    Bitmap bitmap = FileLoader.loadBitmap(null, data.getData(), Utilities.dp(320), Utilities.dp(480));
+                    Bitmap bitmap = FileLoader.loadBitmap(null, data.getData(), AndroidUtilities.dp(320), AndroidUtilities.dp(480));
                     File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
                     FileOutputStream stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
@@ -254,9 +262,16 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
     private void processSelectedBackground() {
         TLRPC.WallPaper wallPaper = wallpappersByIds.get(selectedBackground);
         if (selectedBackground != -1 && selectedBackground != 1000001 && wallPaper != null && wallPaper instanceof TLRPC.TL_wallPaper) {
-            TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, Utilities.dp(320), Utilities.dp(480));
+            int width = AndroidUtilities.displaySize.x;
+            int height = AndroidUtilities.displaySize.y;
+            if (width > height) {
+                int temp = width;
+                width = height;
+                height = temp;
+            }
+            TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, width, height);
             String fileName = size.location.volume_id + "_" + size.location.local_id + ".jpg";
-            File f = new File(Utilities.getCacheDir(), fileName);
+            File f = new File(AndroidUtilities.getCacheDir(), fileName);
             if (!f.exists()) {
                 progressBar.setProgress(0);
                 loadingFile = fileName;
@@ -399,7 +414,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                     }
                 });
             }
-        }, null, true, RPCRequest.RPCRequestClassGeneric);
+        });
         ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
     }
 
@@ -435,7 +450,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
         fixLayout();
     }
 
-    private class ListAdapter extends BaseAdapter {
+    private class ListAdapter extends BaseFragmentAdapter {
         private Context mContext;
 
         public ListAdapter(Context context) {
@@ -514,7 +529,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 BackupImageView image = (BackupImageView)view.findViewById(R.id.image);
                 View selection = view.findViewById(R.id.selection);
                 TLRPC.WallPaper wallPaper = wallPapers.get(i - 1);
-                TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, Utilities.dp(100), Utilities.dp(100));
+                TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, AndroidUtilities.dp(100), AndroidUtilities.dp(100));
                 if (size != null && size.location != null) {
                     image.setImage(size.location, "100_100", 0);
                 }

@@ -28,24 +28,25 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.ContactsController;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.SerializedData;
 import org.telegram.messenger.TLClassStore;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.MessagesStorage;
+import org.telegram.android.MessagesController;
+import org.telegram.android.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
@@ -53,6 +54,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.objects.PhotoObject;
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.AvatarUpdater;
 import org.telegram.ui.Views.BackupImageView;
@@ -167,7 +169,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             });
                         }
                     }
-                }, null, true, RPCRequest.RPCRequestClassGeneric);
+                });
             }
         };
         NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
@@ -245,7 +247,26 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("TextSize", R.string.TextSize));
-                        builder.setItems(new CharSequence[]{String.format("%d", 12), String.format("%d", 13), String.format("%d", 14), String.format("%d", 15), String.format("%d", 16), String.format("%d", 17), String.format("%d", 18), String.format("%d", 19), String.format("%d", 20), String.format("%d", 21), String.format("%d", 22), String.format("%d", 23), String.format("%d", 24)}, new DialogInterface.OnClickListener() {
+                        builder.setItems(new CharSequence[] {
+                                String.format("%d", 12),
+                                String.format("%d", 13),
+                                String.format("%d", 14),
+                                String.format("%d", 15),
+                                String.format("%d", 16),
+                                String.format("%d", 17),
+                                String.format("%d", 18),
+                                String.format("%d", 19),
+                                String.format("%d", 20),
+                                String.format("%d", 21),
+                                String.format("%d", 22),
+                                String.format("%d", 23),
+                                String.format("%d", 24),
+                                String.format("%d", 25),
+                                String.format("%d", 26),
+                                String.format("%d", 27),
+                                String.format("%d", 28),
+                                String.format("%d", 29),
+                                String.format("%d", 30)}, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
@@ -282,7 +303,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         final TextView message = new TextView(getParentActivity());
                         message.setText(Html.fromHtml(LocaleController.getString("AskAQuestionInfo", R.string.AskAQuestionInfo)));
                         message.setTextSize(18);
-                        message.setPadding(Utilities.dp(8), Utilities.dp(5), Utilities.dp(8), Utilities.dp(6));
+                        message.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(5), AndroidUtilities.dp(8), AndroidUtilities.dp(6));
                         message.setMovementMethod(new LinkMovementMethodMy());
 
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
@@ -343,7 +364,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                         MessagesController.getInstance().registerForPush(UserConfig.pushString);
                                         ConnectionsManager.getInstance().initPushConnection();
                                     }
-                                }, null, true, RPCRequest.RPCRequestClassGeneric);
+                                });
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -460,7 +481,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         avatarImage.getLocationInWindow(coords);
                         PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
                         object.viewX = coords[0];
-                        object.viewY = coords[1] - Utilities.statusBarHeight;
+                        object.viewY = coords[1] - AndroidUtilities.statusBarHeight;
                         object.parentView = listView;
                         object.imageReceiver = avatarImage.imageReceiver;
                         object.user_id = UserConfig.getClientUserId();
@@ -509,7 +530,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         if (datacentersBytes != null) {
                             SerializedData data = new SerializedData(datacentersBytes);
                             supportUser = (TLRPC.User)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-
+                            if (supportUser != null && supportUser.id == 333000) {
+                                supportUser = null;
+                            }
                         }
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
@@ -564,7 +587,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         });
                     }
                 }
-            }, null, true, RPCRequest.RPCRequestClassGeneric);
+            });
         } else {
             MessagesController.getInstance().users.putIfAbsent(supportUser.id, supportUser);
             Bundle args = new Bundle();
@@ -636,7 +659,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    private class ListAdapter extends BaseAdapter {
+    private class ListAdapter extends BaseFragmentAdapter {
         private Context mContext;
 
         public ListAdapter(Context context) {
@@ -725,6 +748,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                     if (i == 0 && full) {
                                         TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.getClientUserId());
                                         if (user != null && user.photo != null && user.photo.photo_big != null) {
+                                            PhotoViewer.getInstance().setParentActivity(getParentActivity());
                                             PhotoViewer.getInstance().openPhoto(user.photo.photo_big, SettingsActivity.this);
                                         }
                                     } else if (i == 0 && !full || i == 1 && full) {
@@ -775,7 +799,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                                     });
                                                 }
                                             }
-                                        }, null, true, RPCRequest.RPCRequestClassGeneric);
+                                        });
                                     }
                                 }
                             });
@@ -787,7 +811,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 textView.setText(LocaleController.getString("Online", R.string.Online));
 
                 textView = (TextView)view.findViewById(R.id.settings_name);
-                Typeface typeface = Utilities.getTypeface("fonts/rmedium.ttf");
+                Typeface typeface = AndroidUtilities.getTypeface("fonts/rmedium.ttf");
                 textView.setTypeface(typeface);
                 TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.getClientUserId());
                 if (user == null) {
@@ -931,12 +955,16 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialogInterface, int i) {
+                                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                    SharedPreferences.Editor editor = preferences.edit();
+                                    editor.clear().commit();
                                     NotificationCenter.getInstance().postNotificationName(1234);
                                     MessagesController.getInstance().unregistedPush();
                                     MessagesController.getInstance().logOut();
                                     UserConfig.clearConfig();
                                     MessagesStorage.getInstance().cleanUp();
                                     MessagesController.getInstance().cleanUp();
+                                    ContactsController.getInstance().deleteAllAppAccounts();
                                 }
                             });
                             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);

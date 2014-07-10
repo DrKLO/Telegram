@@ -14,8 +14,8 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 
 public class SeekBar {
 
@@ -121,8 +121,8 @@ public class SeekBar {
             outer = outerPaint2;
         }
         int y = (height - thumbHeight) / 2;
-        canvas.drawRect(thumbWidth / 2, height / 2 - Utilities.dp(1), width - thumbWidth / 2, height / 2 + Utilities.dp(1), inner);
-        canvas.drawRect(thumbWidth / 2, height / 2 - Utilities.dp(1), thumbWidth / 2 + thumbX, height / 2 + Utilities.dp(1), outer);
+        canvas.drawRect(thumbWidth / 2, height / 2 - AndroidUtilities.dp(1), width - thumbWidth / 2, height / 2 + AndroidUtilities.dp(1), inner);
+        canvas.drawRect(thumbWidth / 2, height / 2 - AndroidUtilities.dp(1), thumbWidth / 2 + thumbX, height / 2 + AndroidUtilities.dp(1), outer);
         thumb.setBounds(thumbX, y, thumbX + thumbWidth, y + thumbHeight);
         thumb.draw(canvas);
     }

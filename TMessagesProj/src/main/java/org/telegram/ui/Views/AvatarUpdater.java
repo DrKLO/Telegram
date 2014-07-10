@@ -15,6 +15,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -117,8 +118,8 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
         if (bitmap == null) {
             return;
         }
-        smallPhoto = FileLoader.scaleAndSaveImage(bitmap, 100, 100, 87, false);
-        bigPhoto = FileLoader.scaleAndSaveImage(bitmap, 800, 800, 87, false);
+        smallPhoto = FileLoader.scaleAndSaveImage(bitmap, 100, 100, 80, false);
+        bigPhoto = FileLoader.scaleAndSaveImage(bitmap, 800, 800, 80, false);
         if (bigPhoto != null && smallPhoto != null) {
             if (returnOnly) {
                 if (delegate != null) {
@@ -126,7 +127,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
                 }
             } else {
                 UserConfig.saveConfig(false);
-                uploadingAvatar = Utilities.getCacheDir() + "/" + bigPhoto.location.volume_id + "_" + bigPhoto.location.local_id + ".jpg";
+                uploadingAvatar = AndroidUtilities.getCacheDir() + "/" + bigPhoto.location.volume_id + "_" + bigPhoto.location.local_id + ".jpg";
                 NotificationCenter.getInstance().addObserver(AvatarUpdater.this, FileLoader.FileDidUpload);
                 NotificationCenter.getInstance().addObserver(AvatarUpdater.this, FileLoader.FileDidFailUpload);
                 FileLoader.getInstance().uploadFile(uploadingAvatar, false);

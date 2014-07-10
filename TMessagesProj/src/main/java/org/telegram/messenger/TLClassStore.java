@@ -412,6 +412,14 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_decryptedMessageActionFlushHistory.constructor, TLRPC.TL_decryptedMessageActionFlushHistory.class);
         classStore.put(TLRPC.TL_decryptedMessageActionScreenshotMessages.constructor, TLRPC.TL_decryptedMessageActionScreenshotMessages.class);
         classStore.put(TLRPC.TL_messageEcryptedAction.constructor, TLRPC.TL_messageEcryptedAction.class);
+        classStore.put(TLRPC.TL_decryptedMessageActionNotifyLayer.constructor, TLRPC.TL_decryptedMessageActionNotifyLayer.class);
+        classStore.put(TLRPC.TL_decryptedMessageActionReadMessages.constructor, TLRPC.TL_decryptedMessageActionReadMessages.class);
+        classStore.put(TLRPC.TL_updateNotifySettings.constructor, TLRPC.TL_updateNotifySettings.class);
+        classStore.put(TLRPC.TL_updateUserBlocked.constructor, TLRPC.TL_updateUserBlocked.class);
+        classStore.put(TLRPC.TL_notifyAll.constructor, TLRPC.TL_notifyAll.class);
+        classStore.put(TLRPC.TL_notifyChats.constructor, TLRPC.TL_notifyChats.class);
+        classStore.put(TLRPC.TL_notifyUsers.constructor, TLRPC.TL_notifyUsers.class);
+        classStore.put(TLRPC.TL_notifyPeer.constructor, TLRPC.TL_notifyPeer.class);
 
         classStore.put(TLRPC.TL_msg_container.constructor, TLRPC.TL_msg_container.class);
         classStore.put(TLRPC.TL_fileEncryptedLocation.constructor, TLRPC.TL_fileEncryptedLocation.class);
@@ -427,6 +435,10 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_messageActionLoginUnknownLocation.constructor, TLRPC.TL_messageActionLoginUnknownLocation.class);
         classStore.put(TLRPC.TL_encryptedChat_old.constructor, TLRPC.TL_encryptedChat_old.class);
         classStore.put(TLRPC.TL_encryptedChatRequested_old.constructor, TLRPC.TL_encryptedChatRequested_old.class);
+        classStore.put(TLRPC.TL_decryptedMessageMediaVideo_old.constructor, TLRPC.TL_decryptedMessageMediaVideo_old.class);
+        classStore.put(TLRPC.TL_decryptedMessageMediaAudio_old.constructor, TLRPC.TL_decryptedMessageMediaAudio_old.class);
+        classStore.put(TLRPC.TL_audio_old.constructor, TLRPC.TL_audio_old.class);
+        classStore.put(TLRPC.TL_video_old.constructor, TLRPC.TL_video_old.class);
     }
 
     static TLClassStore store = null;

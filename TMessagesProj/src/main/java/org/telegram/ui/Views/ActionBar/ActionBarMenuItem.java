@@ -26,6 +26,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 
@@ -151,8 +152,8 @@ public class ActionBarMenuItem extends ImageView {
             delimeter.setBackgroundColor(0xffdcdcdc);
             popupLayout.addView(delimeter);
             LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)delimeter.getLayoutParams();
-            layoutParams.width = Utilities.dp(196);
-            layoutParams.height = Utilities.density >= 3 ? 2 : 1;
+            layoutParams.width = AndroidUtilities.dp(196);
+            layoutParams.height = AndroidUtilities.density >= 3 ? 2 : 1;
             delimeter.setLayoutParams(layoutParams);
             delimeter.setTag(100 + id);
         }
@@ -160,19 +161,19 @@ public class ActionBarMenuItem extends ImageView {
         textView.setTextColor(0xff000000);
         textView.setBackgroundResource(R.drawable.list_selector);
         textView.setGravity(Gravity.CENTER_VERTICAL);
-        textView.setPadding(Utilities.dp(16), 0, Utilities.dp(16), 0);
+        textView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
         textView.setTextSize(18);
-        textView.setMinWidth(Utilities.dp(196));
+        textView.setMinWidth(AndroidUtilities.dp(196));
         textView.setTag(id);
         textView.setText(text);
         if (icon != 0) {
-            textView.setCompoundDrawablePadding(Utilities.dp(12));
+            textView.setCompoundDrawablePadding(AndroidUtilities.dp(12));
             textView.setCompoundDrawablesWithIntrinsicBounds(getResources().getDrawable(icon), null, null, null);
         }
         popupLayout.addView(textView);
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)textView.getLayoutParams();
         layoutParams.width = LinearLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams.height = Utilities.dp(48);
+        layoutParams.height = AndroidUtilities.dp(48);
         textView.setLayoutParams(layoutParams);
         textView.setOnClickListener(new OnClickListener() {
             @Override
@@ -201,7 +202,7 @@ public class ActionBarMenuItem extends ImageView {
             popupWindow.setClippingEnabled(true);
             popupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
             popupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
-            popupLayout.measure(MeasureSpec.makeMeasureSpec(Utilities.dp(1000), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(Utilities.dp(1000), MeasureSpec.AT_MOST));
+            popupLayout.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), MeasureSpec.AT_MOST));
         }
         popupWindow.setFocusable(true);
         if (popupLayout.getMeasuredWidth() == 0) {
@@ -219,7 +220,7 @@ public class ActionBarMenuItem extends ImageView {
         if (searchField.getVisibility() == VISIBLE) {
             searchField.setVisibility(GONE);
             setVisibility(VISIBLE);
-            Utilities.hideKeyboard(searchField);
+            AndroidUtilities.hideKeyboard(searchField);
             if (listener != null) {
                 listener.onSearchCollapse();
             }
@@ -229,7 +230,7 @@ public class ActionBarMenuItem extends ImageView {
             setVisibility(GONE);
             searchField.setText("");
             searchField.requestFocus();
-            Utilities.showKeyboard(searchField);
+            AndroidUtilities.showKeyboard(searchField);
             if (listener != null) {
                 listener.onSearchExpand();
             }
@@ -254,13 +255,13 @@ public class ActionBarMenuItem extends ImageView {
             searchField.setTextColor(0xffffffff);
             searchField.setSingleLine(true);
             searchField.setBackgroundResource(R.drawable.search_light_states);
-            searchField.setPadding(Utilities.dp(6), 0, Utilities.dp(6), 0);
+            searchField.setPadding(AndroidUtilities.dp(6), 0, AndroidUtilities.dp(6), 0);
             searchField.setInputType(EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
             searchField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                     if (actionId == EditorInfo.IME_ACTION_SEARCH || event != null && event.getAction() == KeyEvent.ACTION_UP && event.getKeyCode() == KeyEvent.KEYCODE_SEARCH) {
-                        Utilities.hideKeyboard(searchField);
+                        AndroidUtilities.hideKeyboard(searchField);
                     }
                     return false;
                 }
@@ -308,8 +309,8 @@ public class ActionBarMenuItem extends ImageView {
             layoutParams.weight = 1;
             layoutParams.width = 0;
             layoutParams.gravity = Gravity.CENTER_VERTICAL;
-            layoutParams.height = Utilities.dp(36);
-            layoutParams.rightMargin = Utilities.dp(4);
+            layoutParams.height = AndroidUtilities.dp(36);
+            layoutParams.rightMargin = AndroidUtilities.dp(4);
             searchField.setLayoutParams(layoutParams);
             searchField.setVisibility(GONE);
         }

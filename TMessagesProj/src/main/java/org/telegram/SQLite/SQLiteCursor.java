@@ -10,6 +10,8 @@ package org.telegram.SQLite;
 
 import org.telegram.messenger.FileLog;
 
+import java.nio.ByteBuffer;
+
 public class SQLiteCursor {
 
 	public static final int FIELD_TYPE_INT = 1;
@@ -55,26 +57,19 @@ public class SQLiteCursor {
 		return columnByteArrayValue(preparedStatement.getStatementHandle(), columnIndex);
 	}
 
+    public int byteArrayLength(int columnIndex) throws SQLiteException {
+        checkRow();
+        return columnByteArrayLength(preparedStatement.getStatementHandle(), columnIndex);
+    }
+
+    public int byteBufferValue(int columnIndex, ByteBuffer buffer) throws SQLiteException {
+        checkRow();
+        return columnByteBufferValue(preparedStatement.getStatementHandle(), columnIndex, buffer);
+    }
+
 	public int getTypeOf(int columnIndex) throws SQLiteException {
 		checkRow();
 		return columnType(preparedStatement.getStatementHandle(), columnIndex);
-	}
-
-	public Object objectValue(int columnIndex) throws SQLiteException {
-		checkRow();
-
-		int type = columnType(preparedStatement.getStatementHandle(), columnIndex);
-		switch (type) {
-		case FIELD_TYPE_INT:
-			return intValue(columnIndex);
-		case FIELD_TYPE_BYTEARRAY:
-			return byteArrayValue(columnIndex);
-		case FIELD_TYPE_FLOAT:
-			return doubleValue(columnIndex);
-		case FIELD_TYPE_STRING:
-			return stringValue(columnIndex);
-		}
-		return null;
 	}
 
 	public boolean next() throws SQLiteException {
@@ -122,4 +117,6 @@ public class SQLiteCursor {
 	native double columnDoubleValue(int statementHandle, int columnIndex);
 	native String columnStringValue(int statementHandle, int columnIndex);
 	native byte[] columnByteArrayValue(int statementHandle, int columnIndex);
+    native int columnByteArrayLength(int statementHandle, int columnIndex);
+    native int columnByteBufferValue(int statementHandle, int columnIndex, ByteBuffer buffer);
 }

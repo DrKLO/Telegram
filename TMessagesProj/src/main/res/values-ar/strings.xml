@@ -22,6 +22,7 @@
     <string name="Calling">جاري الاتصال بك ...</string>
     <string name="Code">رمز التفعيل</string>
     <string name="WrongNumber">الرقم خاطئ؟</string>
+    <string name="DidNotGetTheCode">Didn\'t get the code?</string>
 
     <!--signup view-->
     <string name="YourName">اسمك</string>
@@ -76,7 +77,6 @@
     <string name="Attach">أرفق</string>
     <string name="IsTyping">يكتب… </string>
     <string name="AreTyping">يكتبون… </string>
-    <string name="AndMoreTyping">و %d آخرون كتبون</string>
     <string name="GotAQuestion">هل يوجد لديك سؤال\nحول تيليجرام؟</string>
     <string name="ChatTakePhoto">التقط صورة</string>
     <string name="ChatGallery">صورة</string>
@@ -90,7 +90,6 @@
     <string name="ForwardedMessage">الرسالة المعاد توجيهها</string>
     <string name="From">من</string>
     <string name="NoRecent">لا توجد رسائل أحدث</string>
-    <string name="Members">أعضاء</string>
     <string name="Message">الرسالة</string>
     <string name="TypeMessage">أكتب رسالة</string>
     <string name="DOWNLOAD">تحميل</string>
@@ -104,8 +103,6 @@
     <string name="EncryptedDescription2">لا تترك أثرًا في خوادمنا</string>
     <string name="EncryptedDescription3">تمتلك عداد للتدمير الذاتي</string>
     <string name="EncryptedDescription4">لا تسمح بتحويل الرسائل</string>
-    <string name="OneNewMessage">%1$d رسالة جديدة</string>
-    <string name="FewNewMessages">%1$d رسائل جديدة</string>
     <string name="YouWereKicked">لقد تم إخراجك من هذه المجموعة</string>
     <string name="YouLeft">لقد قمت بمغادرة المجموعة</string>
     <string name="DeleteThisGroup">حذف هذه المجموعة</string>
@@ -172,10 +169,9 @@
     <!--group create view-->
     <string name="SendMessageTo">إرسال الرسالة إلى...</string>
     <string name="EnterGroupNamePlaceholder">أدخل اسم للمجموعة</string>
-    <string name="MEMBER">عضو</string>
     <string name="GroupName">اسم المجموعة</string>
-    <string name="MEMBERS">أعضاء</string>
     <string name="AllContacts">جميع جهات الاتصال</string>
+    <string name="MembersCount">%1$d/%2$d members</string>
 
     <!--group info view-->
     <string name="EnterGroupNameTitle">أدخل سم للمجموعة</string>
@@ -274,6 +270,11 @@
     <string name="SortFirstName">الاسم الأول</string>
     <string name="SortLastName">اسم العائلة</string>
     <string name="LedColor">LED Color</string>
+    <string name="PopupNotification">Popup Notification</string>
+    <string name="NoPopup">No popup</string>
+    <string name="OnlyWhenScreenOn">Only when screen "on"</string>
+    <string name="OnlyWhenScreenOff">Only when screen "off"</string>
+    <string name="AlwaysShowPopup">Always show popup</string>
 
     <!--media view-->
     <string name="NoMedia">لا توجد وسائط بعد</string>
@@ -355,6 +356,7 @@
     <string name="InvalidLastName">اسم العائلة غير صحيح</string>
     <string name="Loading">جاري التحميل ...</string>
     <string name="NoPlayerInstalled">ليس لديك أي مشغل مقاطع مرئية، يرجى تنزيل أية مشغل</string>
+    <string name="NoMailInstalled">Please send an email to sms@telegram.org and explain your problem.</string>
     <string name="NoHandleAppInstalled">لا يوجد لديك تطبيق يمكنه فتح \'%1$s\'، يرجى تنزيل تطبيق مناسب للإستمرار</string>
     <string name="InviteUser">هذا المستخدم ليس لديه تيليجرام بعد ، هل ترغب في دعوته الآن؟</string>
     <string name="AreYouSure">هل أنت متأكد؟</string>
@@ -379,6 +381,42 @@
     <string name="Page6Message"><![CDATA[<b>تيليجرام</b>]]> يمكنك الوصول إلى الرسائل الخاصة بك من أجهزة متعددة.</string>
     <string name="Page7Message"><![CDATA[<b>تيليجرام</b>]]> الرسائل مشفرة بشكل قوي وتستطيع تدمير ذاتها</string>
     <string name="StartMessaging">إبدأ المراسلة</string>
+
+    <!--plurals-->
+    <string name="Members_zero">no members</string>
+    <string name="Members_one">%1$d member</string>
+    <string name="Members_two">%1$d members</string>
+    <string name="Members_few">%1$d members</string>
+    <string name="Members_many">%1$d members</string>
+    <string name="Members_other">%1$d members</string>
+
+    <string name="AndMoreTyping_zero">and %1$d more people are typing</string>
+    <string name="AndMoreTyping_one">and %1$d more people are typing</string>
+    <string name="AndMoreTyping_two">and %1$d more people are typing</string>
+    <string name="AndMoreTyping_few">and %1$d more people are typing</string>
+    <string name="AndMoreTyping_many">and %1$d more people are typing</string>
+    <string name="AndMoreTyping_other">and %1$d more people are typing</string>
+
+    <string name="NewMessages_zero">no new messages</string>
+    <string name="NewMessages_one">%1$d new message</string>
+    <string name="NewMessages_two">%1$d new messages</string>
+    <string name="NewMessages_few">%1$d new messages</string>
+    <string name="NewMessages_many">%1$d new messages</string>
+    <string name="NewMessages_other">%1$d new messages</string>
+
+    <string name="messages_zero">no messages</string>
+    <string name="messages_one">%1$d message</string>
+    <string name="messages_two">%1$d messages</string>
+    <string name="messages_few">%1$d messages</string>
+    <string name="messages_many">%1$d messages</string>
+    <string name="messages_other">%1$d messages</string>
+
+    <string name="FromContacts_zero">from no contacts</string>
+    <string name="FromContacts_one">from %1$d contact</string>
+    <string name="FromContacts_two">from %1$d contacts</string>
+    <string name="FromContacts_few">from %1$d contacts</string>
+    <string name="FromContacts_many">from %1$d contacts</string>
+    <string name="FromContacts_other">from %1$d contacts</string>
 
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>

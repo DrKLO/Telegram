@@ -14,9 +14,6 @@ public class RPCRequest {
     public interface RPCRequestDelegate {
         void run(TLObject response, TLRPC.TL_error error);
     }
-    public interface RPCProgressDelegate {
-        void progress(int length, int progress);
-    }
     public interface RPCQuickAckDelegate {
         void quickAck();
     }
@@ -44,7 +41,6 @@ public class RPCRequest {
     int serializedLength;
 
     RPCRequestDelegate completionBlock;
-    RPCProgressDelegate progressBlock;
     RPCQuickAckDelegate quickAckBlock;
 
     boolean requiresCompletion;

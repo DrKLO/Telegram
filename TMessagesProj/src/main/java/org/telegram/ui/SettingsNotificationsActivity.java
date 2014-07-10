@@ -22,26 +22,27 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.ColorPickerView;
 
-public class SettingsNotificationsActivity extends BaseFragment {
+public class SettingsNotificationsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private ListView listView;
     private boolean reseting = false;
 
@@ -52,12 +53,14 @@ public class SettingsNotificationsActivity extends BaseFragment {
     private int messageVibrateRow;
     private int messageSoundRow;
     private int messageLedRow;
+    private int messagePopupNotificationRow;
     private int groupSectionRow;
     private int groupAlertRow;
     private int groupPreviewRow;
     private int groupVibrateRow;
     private int groupSoundRow;
     private int groupLedRow;
+    private int groupPopupNotificationRow;
     private int inappSectionRow;
     private int inappSoundRow;
     private int inappVibrateRow;
@@ -78,12 +81,14 @@ public class SettingsNotificationsActivity extends BaseFragment {
         messagePreviewRow = rowCount++;
         messageVibrateRow = rowCount++;
         messageLedRow = rowCount++;
+        messagePopupNotificationRow = rowCount++;
         messageSoundRow = rowCount++;
         groupSectionRow = rowCount++;
         groupAlertRow = rowCount++;
         groupPreviewRow = rowCount++;
         groupVibrateRow = rowCount++;
         groupLedRow = rowCount++;
+        groupPopupNotificationRow = rowCount++;
         groupSoundRow = rowCount++;
         inappSectionRow = rowCount++;
         inappSoundRow = rowCount++;
@@ -96,7 +101,15 @@ public class SettingsNotificationsActivity extends BaseFragment {
         resetSectionRow = rowCount++;
         resetNotificationsRow = rowCount++;
 
+        NotificationCenter.getInstance().addObserver(this, MessagesController.notificationsSettingsUpdated);
+
         return super.onFragmentCreate();
+    }
+
+    @Override
+    public void onFragmentDestroy() {
+        super.onFragmentDestroy();
+        NotificationCenter.getInstance().removeObserver(this, MessagesController.notificationsSettingsUpdated);
     }
 
     @Override
@@ -134,10 +147,10 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         }
                         editor.commit();
                         listView.invalidateViews();
+                        updateServerNotificationsSettings(i == groupAlertRow);
                     } else if (i == messagePreviewRow || i == groupPreviewRow) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
-                        boolean enabledAll = true;
                         boolean enabled;
                         if (i == messagePreviewRow) {
                             enabled = preferences.getBoolean("EnablePreviewAll", true);
@@ -148,6 +161,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                         }
                         editor.commit();
                         listView.invalidateViews();
+                        updateServerNotificationsSettings(i == groupPreviewRow);
                     } else if (i == messageVibrateRow || i == groupVibrateRow) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
@@ -228,7 +242,7 @@ public class SettingsNotificationsActivity extends BaseFragment {
                                     }
                                 });
                             }
-                        }, null, true, RPCRequest.RPCRequestClassGeneric);
+                        });
                     } else if (i == inappSoundRow) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
@@ -342,6 +356,32 @@ public class SettingsNotificationsActivity extends BaseFragment {
                             }
                         });
                         showAlertDialog(builder);
+                    } else if (i == messagePopupNotificationRow || i == groupPopupNotificationRow) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("PopupNotification", R.string.PopupNotification));
+                        builder.setItems(new CharSequence[] {
+                                LocaleController.getString("NoPopup", R.string.NoPopup),
+                                LocaleController.getString("OnlyWhenScreenOn", R.string.OnlyWhenScreenOn),
+                                LocaleController.getString("OnlyWhenScreenOff", R.string.OnlyWhenScreenOff),
+                                LocaleController.getString("AlwaysShowPopup", R.string.AlwaysShowPopup)
+                        }, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                if (i == messagePopupNotificationRow) {
+                                    editor.putInt("popupAll", which);
+                                } else if (i == groupPopupNotificationRow) {
+                                    editor.putInt("popupGroup", which);
+                                }
+                                editor.commit();
+                                if (listView != null) {
+                                    listView.invalidateViews();
+                                }
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showAlertDialog(builder);
                     }
                 }
             });
@@ -352,6 +392,29 @@ public class SettingsNotificationsActivity extends BaseFragment {
             }
         }
         return fragmentView;
+    }
+
+    public void updateServerNotificationsSettings(boolean group) {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+        TLRPC.TL_account_updateNotifySettings req = new TLRPC.TL_account_updateNotifySettings();
+        req.settings = new TLRPC.TL_inputPeerNotifySettings();
+        req.settings.sound = "default";
+        req.settings.events_mask = 0;
+        if (!group) {
+            req.peer = new TLRPC.TL_inputNotifyUsers();
+            req.settings.mute_until = preferences.getBoolean("EnableAll", true) ? 0 : Integer.MAX_VALUE;
+            req.settings.show_previews = preferences.getBoolean("EnablePreviewAll", true);
+        } else {
+            req.peer = new TLRPC.TL_inputNotifyChats();
+            req.settings.mute_until = preferences.getBoolean("EnableGroup", true) ? 0 : Integer.MAX_VALUE;
+            req.settings.show_previews = preferences.getBoolean("EnablePreviewGroup", true);
+        }
+        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            @Override
+            public void run(TLObject response, TLRPC.TL_error error) {
+
+            }
+        });
     }
 
     @Override
@@ -396,7 +459,14 @@ public class SettingsNotificationsActivity extends BaseFragment {
         }
     }
 
-    private class ListAdapter extends BaseAdapter {
+    @Override
+    public void didReceivedNotification(int id, Object... args) {
+        if (id == MessagesController.notificationsSettingsUpdated) {
+            listView.invalidateViews();
+        }
+    }
+
+    private class ListAdapter extends BaseFragmentAdapter {
         private Context mContext;
 
         public ListAdapter(Context context) {
@@ -553,6 +623,24 @@ public class SettingsNotificationsActivity extends BaseFragment {
                     textView.setText(LocaleController.getString("ResetAllNotifications", R.string.ResetAllNotifications));
                     textViewDetail.setText(LocaleController.getString("UndoAllCustom", R.string.UndoAllCustom));
                     divider.setVisibility(View.INVISIBLE);
+                } else if (i == messagePopupNotificationRow || i == groupPopupNotificationRow) {
+                    textView.setText(LocaleController.getString("PopupNotification", R.string.PopupNotification));
+                    int option = 0;
+                    if (i == messagePopupNotificationRow) {
+                        option = preferences.getInt("popupAll", 0);
+                    } else if (i == groupPopupNotificationRow) {
+                        option = preferences.getInt("popupGroup", 0);
+                    }
+                    if (option == 0) {
+                        textViewDetail.setText(LocaleController.getString("NoPopup", R.string.NoPopup));
+                    } else if (option == 1) {
+                        textViewDetail.setText(LocaleController.getString("OnlyWhenScreenOn", R.string.OnlyWhenScreenOn));
+                    } else if (option == 2) {
+                        textViewDetail.setText(LocaleController.getString("OnlyWhenScreenOff", R.string.OnlyWhenScreenOff));
+                    } else if (option == 3) {
+                        textViewDetail.setText(LocaleController.getString("AlwaysShowPopup", R.string.AlwaysShowPopup));
+                    }
+                    divider.setVisibility(View.VISIBLE);
                 }
             } else if (type == 3) {
                 if (view == null) {

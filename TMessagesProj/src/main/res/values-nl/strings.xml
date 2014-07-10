@@ -22,6 +22,7 @@
     <string name="Calling">We bellen je…</string>
     <string name="Code">Code</string>
     <string name="WrongNumber">Verkeerd nummer?</string>
+    <string name="DidNotGetTheCode">Didn\'t get the code?</string>
 
     <!--signup view-->
     <string name="YourName">Je naam</string>
@@ -76,7 +77,6 @@
     <string name="Attach">Bijvoegen</string>
     <string name="IsTyping">is aan het typen…</string>
     <string name="AreTyping">zijn aan het typen…</string>
-    <string name="AndMoreTyping">en nog %d personen</string>
     <string name="GotAQuestion">Heb je een vraag\nover Telegram?</string>
     <string name="ChatTakePhoto">Foto maken</string>
     <string name="ChatGallery">Galerij</string>
@@ -90,7 +90,6 @@
     <string name="ForwardedMessage">Doorgestuurd bericht</string>
     <string name="From">Van</string>
     <string name="NoRecent">Niets recents</string>
-    <string name="Members">deelnemers</string>
     <string name="Message">Bericht</string>
     <string name="TypeMessage">Typ een bericht...</string>
     <string name="DOWNLOAD">Downloaden</string>
@@ -104,8 +103,6 @@
     <string name="EncryptedDescription2">laten geen sporen achter op onze server</string>
     <string name="EncryptedDescription3">verlopen automatisch</string>
     <string name="EncryptedDescription4">staan doorsturen niet toe</string>
-    <string name="OneNewMessage">%1$d nieuw bericht</string>
-    <string name="FewNewMessages">%1$d nieuwe berichten</string>
     <string name="YouWereKicked">Je bent verwijderd uit deze groep</string>
     <string name="YouLeft">Je hebt deze groep verlaten</string>
     <string name="DeleteThisGroup">Deze groep verwijderen</string>
@@ -172,10 +169,9 @@
     <!--group create view-->
     <string name="SendMessageTo">Bericht verzenden naar…</string>
     <string name="EnterGroupNamePlaceholder">Groepsnaam...</string>
-    <string name="MEMBER">DEELNEMER</string>
     <string name="GroupName">Groepsnaam</string>
-    <string name="MEMBERS">DEELNEMERS</string>
     <string name="AllContacts">ALLE CONTACTEN</string>
+    <string name="MembersCount">%1$d/%2$d members</string>
 
     <!--group info view-->
     <string name="EnterGroupNameTitle">GROEPSNAAM INSTELLEN</string>
@@ -274,6 +270,11 @@
     <string name="SortFirstName">Voornaam</string>
     <string name="SortLastName">Achternaam</string>
     <string name="LedColor">LED Color</string>
+    <string name="PopupNotification">Popup Notification</string>
+    <string name="NoPopup">No popup</string>
+    <string name="OnlyWhenScreenOn">Only when screen "on"</string>
+    <string name="OnlyWhenScreenOff">Only when screen "off"</string>
+    <string name="AlwaysShowPopup">Always show popup</string>
 
     <!--media view-->
     <string name="NoMedia">Nog geen media gedeeld</string>
@@ -355,6 +356,7 @@
     <string name="InvalidLastName">Ongeldige achternaam</string>
     <string name="Loading">Bezig met laden…</string>
     <string name="NoPlayerInstalled">Je hebt geen mediaspeler. Installeer een mediaspeler om door te gaan.</string>
+    <string name="NoMailInstalled">Please send an email to sms@telegram.org and explain your problem.</string>
     <string name="NoHandleAppInstalled">Je hebt geen applicaties die het MIME-type \'%1$s\' ondersteunen. Installeer een geschikte applicatie om door te gaan.</string>
     <string name="InviteUser">Deze gebruiker heeft nog geen Telegram. Wil je een uitnodiging sturen?</string>
     <string name="AreYouSure">Weet je het zeker?</string>
@@ -379,6 +381,42 @@
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> biedt toegang tot je berichten vanaf meerdere apparaten</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> berichten zijn sterk versleuteld en kunnen zichzelf vernietigen</string>
     <string name="StartMessaging">Begin nu met chatten</string>
+
+    <!--plurals-->
+    <string name="Members_zero">no members</string>
+    <string name="Members_one">%1$d member</string>
+    <string name="Members_two">%1$d members</string>
+    <string name="Members_few">%1$d members</string>
+    <string name="Members_many">%1$d members</string>
+    <string name="Members_other">%1$d members</string>
+
+    <string name="AndMoreTyping_zero">and %1$d more people are typing</string>
+    <string name="AndMoreTyping_one">and %1$d more people are typing</string>
+    <string name="AndMoreTyping_two">and %1$d more people are typing</string>
+    <string name="AndMoreTyping_few">and %1$d more people are typing</string>
+    <string name="AndMoreTyping_many">and %1$d more people are typing</string>
+    <string name="AndMoreTyping_other">and %1$d more people are typing</string>
+
+    <string name="NewMessages_zero">no new messages</string>
+    <string name="NewMessages_one">%1$d new message</string>
+    <string name="NewMessages_two">%1$d new messages</string>
+    <string name="NewMessages_few">%1$d new messages</string>
+    <string name="NewMessages_many">%1$d new messages</string>
+    <string name="NewMessages_other">%1$d new messages</string>
+
+    <string name="messages_zero">no messages</string>
+    <string name="messages_one">%1$d message</string>
+    <string name="messages_two">%1$d messages</string>
+    <string name="messages_few">%1$d messages</string>
+    <string name="messages_many">%1$d messages</string>
+    <string name="messages_other">%1$d messages</string>
+
+    <string name="FromContacts_zero">from no contacts</string>
+    <string name="FromContacts_one">from %1$d contact</string>
+    <string name="FromContacts_two">from %1$d contacts</string>
+    <string name="FromContacts_few">from %1$d contacts</string>
+    <string name="FromContacts_many">from %1$d contacts</string>
+    <string name="FromContacts_other">from %1$d contacts</string>
 
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>

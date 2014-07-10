@@ -22,6 +22,17 @@
         android:layout_gravity="left|center_vertical"
         android:layout_marginLeft="48dp"/>
 
+    <ImageButton
+        android:id="@+id/settings_call_phone"
+        android:background="@drawable/list_selector"
+        android:clickable="true"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginLeft="48dp"
+        android:src="@drawable/call"
+        android:layout_gravity="left|center_vertical"
+        android:paddingTop="2dp"/>
+
     <TextView
         android:textSize="18dp"
         android:textColor="#333333"

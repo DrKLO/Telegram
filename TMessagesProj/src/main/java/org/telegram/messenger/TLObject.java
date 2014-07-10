@@ -9,6 +9,8 @@
 package org.telegram.messenger;
 
 public class TLObject {
+    public boolean disableFree = false;
+
     public TLObject () {
 
     }
@@ -39,5 +41,11 @@ public class TLObject {
 
     public void freeResources() {
 
+    }
+
+    public int getObjectSize() {
+        ByteBufferDesc bufferDesc = new ByteBufferDesc(true);
+        serializeToStream(bufferDesc);
+        return bufferDesc.length();
     }
 }

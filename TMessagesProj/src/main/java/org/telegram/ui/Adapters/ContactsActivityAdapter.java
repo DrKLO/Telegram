@@ -14,10 +14,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.ContactsController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Cells.ChatOrUserCell;
 import org.telegram.ui.Views.SectionedBaseAdapter;
