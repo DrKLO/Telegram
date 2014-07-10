@@ -318,18 +318,19 @@ public class NotificationsController {
                 name = Utilities.formatName(user.first_name, user.last_name);
             }
 
-            NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(ApplicationLoader.applicationContext)
-                    .setContentTitle(name)
-                    .setSmallIcon(R.drawable.notification)
-                    .setAutoCancel(true)
-                    .setContentIntent(contentIntent);
-
             String detailText = null;
             if (pushDialogs.size() == 1) {
                 detailText = LocaleController.formatPluralString("NewMessages", pushMessages.size());
             } else {
                 detailText = String.format("%s %s", LocaleController.formatPluralString("NewMessages", pushMessages.size()), LocaleController.formatPluralString("FromContacts", pushDialogs.size()));
             }
+
+            NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(ApplicationLoader.applicationContext)
+                    .setContentTitle(name)
+                    .setSmallIcon(R.drawable.notification)
+                    .setAutoCancel(true)
+                    .setContentText(detailText)
+                    .setContentIntent(contentIntent);
 
             String lastMessage = null;
             NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
@@ -536,5 +537,9 @@ public class NotificationsController {
                 }
             }
         }
+    }
+
+    public void processLoadedUnreadMessages(HashMap<Long, Integer> dialogs, int totalCount) {
+
     }
 }

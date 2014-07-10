@@ -19,6 +19,7 @@ import android.os.Bundle;
 import android.os.PowerManager;
 import android.util.AttributeSet;
 import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
@@ -50,6 +51,7 @@ import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ChatActivityEnterView;
+import org.telegram.ui.Views.FrameLayoutFixed;
 import org.telegram.ui.Views.PopupAudioView;
 
 import java.io.File;
@@ -86,7 +88,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     private boolean startedMoving = false;
     private Runnable onAnimationEndRunnable = null;
 
-    private class FrameLayoutTouch extends FrameLayout {
+    private class FrameLayoutTouch extends FrameLayoutFixed {
         public FrameLayoutTouch(Context context) {
             super(context);
         }
@@ -116,7 +118,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
     }
 
-    public class FrameLayoutAnimationListener extends FrameLayout {
+    public class FrameLayoutAnimationListener extends FrameLayoutFixed {
         public FrameLayoutAnimationListener(Context context) {
             super(context);
         }
@@ -214,6 +216,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
         PowerManager pm = (PowerManager)ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
         wakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "screen");
+        wakeLock.setReferenceCounted(false);
 
         handleIntent(getIntent());
     }
@@ -304,7 +307,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
         } else if (motionEvent == null || motionEvent.getAction() == MotionEvent.ACTION_UP || motionEvent.getAction() == MotionEvent.ACTION_CANCEL) {
             if (motionEvent != null && startedMoving) {
-                ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) centerView.getLayoutParams();
+                FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) centerView.getLayoutParams();
                 int diff = (int)(motionEvent.getX() - moveStartX);
                 int width = AndroidUtilities.displaySize.x - AndroidUtilities.dp(24);
                 int moveDiff = 0;
@@ -379,24 +382,27 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     }
 
     private void applyViewsLayoutParams(int xOffset) {
-        ViewGroup.MarginLayoutParams layoutParams = null;
+        FrameLayout.LayoutParams layoutParams = null;
         int widht = AndroidUtilities.displaySize.x - AndroidUtilities.dp(24);
         if (leftView != null) {
-            layoutParams = (ViewGroup.MarginLayoutParams) leftView.getLayoutParams();
+            layoutParams = (FrameLayout.LayoutParams) leftView.getLayoutParams();
+            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
             layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
             layoutParams.width = widht;
             layoutParams.leftMargin = -widht + xOffset;
             leftView.setLayoutParams(layoutParams);
         }
         if (centerView != null) {
-            layoutParams = (ViewGroup.MarginLayoutParams) centerView.getLayoutParams();
+            layoutParams = (FrameLayout.LayoutParams) centerView.getLayoutParams();
+            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
             layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
             layoutParams.width = widht;
             layoutParams.leftMargin = xOffset;
             centerView.setLayoutParams(layoutParams);
         }
         if (rightView != null) {
-            layoutParams = (ViewGroup.MarginLayoutParams) rightView.getLayoutParams();
+            layoutParams = (FrameLayout.LayoutParams) rightView.getLayoutParams();
+            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
             layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
             layoutParams.width = widht;
             layoutParams.leftMargin = widht + xOffset;
@@ -522,7 +528,8 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
         if (applyOffset) {
             int widht = AndroidUtilities.displaySize.x - AndroidUtilities.dp(24);
-            ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) view.getLayoutParams();
+            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
             layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
             layoutParams.width = widht;
             if (num == currentMessageNum) {
@@ -580,11 +587,12 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             rightView = getViewForMessage(currentMessageNum + 1, true);
         } else if (move == 3) {
             if (rightView != null) {
-                int offset = ((ViewGroup.MarginLayoutParams) rightView.getLayoutParams()).leftMargin;
+                int offset = ((FrameLayout.LayoutParams) rightView.getLayoutParams()).leftMargin;
                 reuseView(rightView);
                 rightView = getViewForMessage(currentMessageNum + 1, false);
                 int widht = AndroidUtilities.displaySize.x - AndroidUtilities.dp(24);
-                ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) rightView.getLayoutParams();
+                FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) rightView.getLayoutParams();
+                layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
                 layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
                 layoutParams.width = widht;
                 layoutParams.leftMargin = offset;
@@ -593,11 +601,12 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
         } else if (move == 4) {
             if (leftView != null) {
-                int offset = ((ViewGroup.MarginLayoutParams) leftView.getLayoutParams()).leftMargin;
+                int offset = ((FrameLayout.LayoutParams) leftView.getLayoutParams()).leftMargin;
                 reuseView(leftView);
                 leftView = getViewForMessage(0, false);
                 int widht = AndroidUtilities.displaySize.x - AndroidUtilities.dp(24);
-                ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) leftView.getLayoutParams();
+                FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) leftView.getLayoutParams();
+                layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
                 layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
                 layoutParams.width = widht;
                 layoutParams.leftMargin = offset;
@@ -650,7 +659,6 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             currentMessageNum = 0;
         }
         getNewMessage();
-        wakeLock.acquire(7000);
     }
 
     private void getNewMessage() {
@@ -853,6 +861,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
         ConnectionsManager.getInstance().setAppPaused(false, false);
         fixLayout();
+        wakeLock.acquire(7000);
     }
 
     @Override
@@ -864,6 +873,9 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             chatActivityEnterView.setFieldFocused(false);
         }
         ConnectionsManager.getInstance().setAppPaused(true, false);
+        if (wakeLock.isHeld()) {
+            wakeLock.release();
+        }
     }
 
     @Override

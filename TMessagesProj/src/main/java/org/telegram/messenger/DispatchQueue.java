@@ -41,6 +41,24 @@ public class DispatchQueue extends Thread {
         }
     }
 
+    public void cancelRunnable(Runnable runnable) {
+        if (handler == null) {
+            synchronized (handlerSyncObject) {
+                if (handler == null) {
+                    try {
+                        handlerSyncObject.wait();
+                    } catch (Throwable t) {
+                        t.printStackTrace();
+                    }
+                }
+            }
+        }
+
+        if (handler != null) {
+            handler.removeCallbacks(runnable);
+        }
+    }
+
     public void postRunnable(Runnable runnable) {
         postRunnable(runnable, 0);
     }
