@@ -85,7 +85,6 @@ import org.telegram.ui.Views.TimerButton;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.concurrent.Semaphore;
 
@@ -792,7 +791,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         return;
                     }
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
+                    builder.setMessage(LocaleController.getString("AreYouSureDeleteThisChat", R.string.AreYouSureDeleteThisChat));
                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                     builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                         @Override
@@ -2306,7 +2305,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     return;
                                 }
                                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                                builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
+                                builder.setMessage(LocaleController.getString("AreYouSureShareMyContactInfo", R.string.AreYouSureShareMyContactInfo));
                                 builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                                 builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                                     @Override
@@ -2829,9 +2828,58 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
     }
 
+    private void processForwardFromMe(MessageObject messageObject, long did) {
+        if (messageObject == null) {
+            return;
+        }
+        if (messageObject.messageOwner.media != null && !(messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
+            if (messageObject.messageOwner.media.photo instanceof TLRPC.TL_photo) {
+                MessagesController.getInstance().sendMessage((TLRPC.TL_photo)messageObject.messageOwner.media.photo, null, did);
+            } else if (messageObject.messageOwner.media.audio instanceof TLRPC.TL_audio) {
+                MessagesController.getInstance().sendMessage((TLRPC.TL_audio)messageObject.messageOwner.media.audio, did);
+            } else if (messageObject.messageOwner.media.video instanceof TLRPC.TL_video) {
+                MessagesController.getInstance().sendMessage((TLRPC.TL_video)messageObject.messageOwner.media.video, null, did);
+            } else if (messageObject.messageOwner.media.document instanceof TLRPC.TL_document) {
+                MessagesController.getInstance().sendMessage((TLRPC.TL_document)messageObject.messageOwner.media.document, null, did);
+            } else if (messageObject.messageOwner.media.geo instanceof TLRPC.TL_geoPoint) {
+                MessagesController.getInstance().sendMessage(messageObject.messageOwner.media.geo.lat, messageObject.messageOwner.media.geo._long, did);
+            } else {
+                MessagesController.getInstance().sendMessage(messageObject, did);
+            }
+        } else if (messageObject.messageOwner.message != null) {
+            MessagesController.getInstance().sendMessage(messageObject.messageOwner.message, did);
+        } else {
+            MessagesController.getInstance().sendMessage(messageObject, did);
+        }
+    }
+
     @Override
-    public void didSelectDialog(MessagesActivity activity, long did) {
+    public void didSelectDialog(MessagesActivity activity, long did, boolean param) {
         if (dialog_id != 0 && (forwaringMessage != null || !selectedMessagesIds.isEmpty())) {
+            if (forwaringMessage != null) {
+                if (forwaringMessage.messageOwner.id > 0) {
+                    if (!param) {
+                        MessagesController.getInstance().sendMessage(forwaringMessage, did);
+                    } else {
+                        processForwardFromMe(forwaringMessage, did);
+                    }
+                }
+                forwaringMessage = null;
+            } else {
+                ArrayList<Integer> ids = new ArrayList<Integer>(selectedMessagesIds.keySet());
+                Collections.sort(ids);
+                for (Integer id : ids) {
+                    if (id > 0) {
+                        if (!param) {
+                            MessagesController.getInstance().sendMessage(selectedMessagesIds.get(id), did);
+                        } else {
+                            processForwardFromMe(selectedMessagesIds.get(id), did);
+                        }
+                    }
+                }
+                selectedMessagesCanCopyIds.clear();
+                selectedMessagesIds.clear();
+            }
             if (did != dialog_id) {
                 int lower_part = (int)did;
                 if (lower_part != 0) {
@@ -2847,44 +2895,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     presentFragment(new ChatActivity(args));
 
                     removeSelfFromStack();
-                    if (forwaringMessage != null) {
-                        if (forwaringMessage.messageOwner.id > 0) {
-                            MessagesController.getInstance().sendMessage(forwaringMessage, did);
-                        }
-                        forwaringMessage = null;
-                    } else {
-                        ArrayList<Integer> ids = new ArrayList<Integer>(selectedMessagesIds.keySet());
-                        Collections.sort(ids);
-                        for (Integer id : ids) {
-                            if (id > 0) {
-                                MessagesController.getInstance().sendMessage(selectedMessagesIds.get(id), did);
-                            }
-                        }
-                        selectedMessagesCanCopyIds.clear();
-                        selectedMessagesIds.clear();
-                    }
                 } else {
                     activity.finishFragment();
                 }
             } else {
                 activity.finishFragment();
-                if (forwaringMessage != null) {
-                    MessagesController.getInstance().sendMessage(forwaringMessage, did);
-                    forwaringMessage = null;
-                } else {
-                    ArrayList<Integer> ids = new ArrayList<Integer>(selectedMessagesIds.keySet());
-                    Collections.sort(ids, new Comparator<Integer>() {
-                        @Override
-                        public int compare(Integer lhs, Integer rhs) {
-                            return lhs.compareTo(rhs);
-                        }
-                    });
-                    for (Integer id : ids) {
-                        MessagesController.getInstance().sendMessage(selectedMessagesIds.get(id), did);
-                    }
-                    selectedMessagesCanCopyIds.clear();
-                    selectedMessagesIds.clear();
-                }
                 chatListView.setSelection(messages.size() + 1);
                 scrollToTopOnResume = true;
             }

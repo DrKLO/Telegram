@@ -413,7 +413,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
             Bundle args = new Bundle();
             args.putBoolean("onlySelect", true);
-            args.putString("selectAlertString", LocaleController.getString("ForwardMessagesTo", R.string.ForwardMessagesTo));
+            args.putString("selectAlertString", LocaleController.getString("SendMessagesTo", R.string.SendMessagesTo));
             MessagesActivity fragment = new MessagesActivity(args);
             fragment.setDelegate(this);
             presentFragment(fragment, false, true);
@@ -437,7 +437,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     }
 
     @Override
-    public void didSelectDialog(MessagesActivity messageFragment, long dialog_id) {
+    public void didSelectDialog(MessagesActivity messageFragment, long dialog_id, boolean param) {
         if (dialog_id != 0) {
             int lower_part = (int)dialog_id;
 

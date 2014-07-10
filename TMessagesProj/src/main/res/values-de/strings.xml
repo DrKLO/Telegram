@@ -361,9 +361,20 @@
     <string name="InviteUser">Dieser Benutzer hat noch kein Telegram. Möchtest du ihn einladen?</string>
     <string name="AreYouSure">Bist du sicher?</string>
     <string name="AddContactQ">Kontakt hinzufügen?</string>
-    <string name="AddToTheGroup">%1$s zur Gruppe hinzufügen?</string>
+    <string name="AddToTheGroup">Add %1$s to the group?\n\nNumber of last messages to forward:</string>
     <string name="ForwardMessagesTo">Nachrichten an %1$s weiterleiten?</string>
     <string name="DeleteChatQuestion">Diesen Chat löschen?</string>
+    <string name="SendMessagesTo">Send messages to %1$s?</string>
+    <string name="AreYouSureLogout">Are you sure you want to logout?</string>
+    <string name="AreYouSureSessions">Are you sure you want to terminate all other sessions?</string>
+    <string name="AreYouSureDeleteAndExit">Are you sure you want to delete and leave group?</string>
+    <string name="AreYouSureDeleteThisChat">Are you sure you want to delete this chat?</string>
+    <string name="AreYouSureShareMyContactInfo">Are you sure that you want to share your contact info?</string>
+    <string name="AreYouSureBlockContact">Are you sure you want to block this contact?</string>
+    <string name="AreYouSureUnblockContact">Are you sure you want to unblock this contact?</string>
+    <string name="AreYouSureDeleteContact">Are you sure you want to delete this contact?</string>
+    <string name="AreYouSureSecretChat">Are you sure you want to start secret chat?</string>
+    <string name="ForwardFromMyName">forward from my name</string>
 
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>

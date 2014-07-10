@@ -15,9 +15,12 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.InputType;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.EditText;
@@ -71,7 +74,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private ContactsActivityDelegate delegate;
 
     public static interface ContactsActivityDelegate {
-        public abstract void didSelectContact(TLRPC.User user);
+        public abstract void didSelectContact(TLRPC.User user, String param);
     }
 
     public ContactsActivity(Bundle args) {
@@ -215,7 +218,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                             if (ignoreUsers != null && ignoreUsers.containsKey(user.id)) {
                                 return;
                             }
-                            didSelectResult(user, true);
+                            didSelectResult(user, true, null);
                         } else {
                             if (createSecretChat) {
                                 creatingChat = true;
@@ -273,7 +276,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 if (ignoreUsers != null && ignoreUsers.containsKey(user.id)) {
                                     return;
                                 }
-                                didSelectResult(user, true);
+                                didSelectResult(user, true, null);
                             } else {
                                 if (createSecretChat) {
                                     creatingChat = true;
@@ -338,7 +341,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         return fragmentView;
     }
 
-    private void didSelectResult(final TLRPC.User user, boolean useAlert) {
+    private void didSelectResult(final TLRPC.User user, boolean useAlert, String param) {
         if (useAlert && selectAlertString != null) {
             if (getParentActivity() == null) {
                 return;
@@ -346,17 +349,29 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
             builder.setMessage(LocaleController.formatStringSimple(selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
+            final EditText editText = new EditText(getParentActivity());
+            editText.setTextSize(18);
+            editText.setText("50");
+            editText.setGravity(Gravity.CENTER);
+            editText.setInputType(InputType.TYPE_CLASS_NUMBER);
+            editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+            builder.setView(editText);
             builder.setPositiveButton(R.string.OK, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
-                    didSelectResult(user, false);
+                    didSelectResult(user, false, editText.getText().toString());
                 }
             });
             builder.setNegativeButton(R.string.Cancel, null);
             showAlertDialog(builder);
+            ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams)editText.getLayoutParams();
+            if (layoutParams != null) {
+                layoutParams.rightMargin = layoutParams.leftMargin = AndroidUtilities.dp(10);
+                editText.setLayoutParams(layoutParams);
+            }
         } else {
             if (delegate != null) {
-                delegate.didSelectContact(user);
+                delegate.didSelectContact(user, param);
                 delegate = null;
             }
             finishFragment();

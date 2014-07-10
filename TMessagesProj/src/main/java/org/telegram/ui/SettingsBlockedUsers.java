@@ -256,7 +256,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
     }
 
     @Override
-    public void didSelectContact(TLRPC.User user) {
+    public void didSelectContact(TLRPC.User user, String param) {
         if (user == null || blockedContactsDict.containsKey(user.id)) {
             return;
         }

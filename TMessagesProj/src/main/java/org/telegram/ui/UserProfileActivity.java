@@ -140,7 +140,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         finishFragment();
                     } else if (id == block_contact) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
+                        builder.setMessage(LocaleController.getString("AreYouSureBlockContact", R.string.AreYouSureBlockContact));
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                             @Override
@@ -186,7 +186,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                             return;
                         }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
+                        builder.setMessage(LocaleController.getString("AreYouSureDeleteContact", R.string.AreYouSureDeleteContact));
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                             @Override
@@ -445,7 +445,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public void didSelectDialog(MessagesActivity messageFragment, long dialog_id) {
+    public void didSelectDialog(MessagesActivity messageFragment, long dialog_id, boolean param) {
         if (dialog_id != 0) {
             Bundle args = new Bundle();
             args.putBoolean("scrollToTopOnResume", true);

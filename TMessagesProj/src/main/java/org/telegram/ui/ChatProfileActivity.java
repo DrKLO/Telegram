@@ -258,8 +258,8 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public void didSelectContact(TLRPC.User user) {
-        MessagesController.getInstance().addUserToChat(chat_id, user, info);
+    public void didSelectContact(TLRPC.User user, String param) {
+        MessagesController.getInstance().addUserToChat(chat_id, user, info, Utilities.parseInt(param));
     }
 
     @Override
@@ -680,7 +680,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                                 return;
                             }
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                            builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
+                            builder.setMessage(LocaleController.getString("AreYouSureDeleteAndExit", R.string.AreYouSureDeleteAndExit));
                             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                             builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                                 @Override

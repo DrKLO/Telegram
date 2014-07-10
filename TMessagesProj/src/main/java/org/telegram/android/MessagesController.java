@@ -2075,15 +2075,24 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         performSendMessageRequest(reqSend, newMsgObj, null);
                     }
                 } else if (type == 8) {
-                    reqSend.media = new TLRPC.TL_inputMediaUploadedAudio();
-                    reqSend.media.duration = audio.duration;
-                    reqSend.media.mime_type = audio.mime_type;
-                    DelayedMessage delayedMessage = new DelayedMessage();
-                    delayedMessage.sendRequest = reqSend;
-                    delayedMessage.type = 3;
-                    delayedMessage.obj = newMsgObj;
-                    delayedMessage.audioLocation = audio;
-                    performSendDelayedMessage(delayedMessage);
+                    if (audio.access_hash == 0) {
+                        reqSend.media = new TLRPC.TL_inputMediaUploadedAudio();
+                        reqSend.media.duration = audio.duration;
+                        reqSend.media.mime_type = audio.mime_type;
+                        DelayedMessage delayedMessage = new DelayedMessage();
+                        delayedMessage.sendRequest = reqSend;
+                        delayedMessage.type = 3;
+                        delayedMessage.obj = newMsgObj;
+                        delayedMessage.audioLocation = audio;
+                        performSendDelayedMessage(delayedMessage);
+                    } else {
+                        TLRPC.TL_inputMediaAudio media = new TLRPC.TL_inputMediaAudio();
+                        media.id = new TLRPC.TL_inputAudio();
+                        media.id.id = audio.id;
+                        media.id.access_hash = audio.access_hash;
+                        reqSend.media = media;
+                        performSendMessageRequest(reqSend, newMsgObj, null);
+                    }
                 }
             } else {
                 TLRPC.TL_decryptedMessage reqSend = new TLRPC.TL_decryptedMessage();
@@ -2767,14 +2776,14 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         });
     }
 
-    public void addUserToChat(int chat_id, final TLRPC.User user, final TLRPC.ChatParticipants info) {
+    public void addUserToChat(int chat_id, final TLRPC.User user, final TLRPC.ChatParticipants info, int count_fwd) {
         if (user == null) {
             return;
         }
 
         TLRPC.TL_messages_addChatUser req = new TLRPC.TL_messages_addChatUser();
         req.chat_id = chat_id;
-        req.fwd_limit = 50;
+        req.fwd_limit = count_fwd;
         req.user_id = getInputUser(user);
 
         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {

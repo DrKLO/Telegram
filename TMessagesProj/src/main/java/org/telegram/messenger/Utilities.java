@@ -140,10 +140,14 @@ public class Utilities {
 
     public static Integer parseInt(String value) {
         Integer val = 0;
-        Matcher matcher = pattern.matcher(value);
-        if (matcher.find()) {
-            String num = matcher.group(0);
-            val = Integer.parseInt(num);
+        try {
+            Matcher matcher = pattern.matcher(value);
+            if (matcher.find()) {
+                String num = matcher.group(0);
+                val = Integer.parseInt(num);
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
         return val;
     }

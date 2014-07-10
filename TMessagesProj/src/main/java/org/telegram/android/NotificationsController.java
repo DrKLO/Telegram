@@ -501,30 +501,27 @@ public class NotificationsController {
                 continue;
             }
 
-            Integer currentCount = pushDialogs.get(dialog_id);
-            if (currentCount == null) {
-                currentCount = 0;
-            }
-            pushDialogs.put(dialog_id, ++currentCount);
-            pushMessagesDict.put(messageObject.messageOwner.id, messageObject);
-
             Boolean value = settingsCache.get(dialog_id);
+            boolean isChat = (int)dialog_id < 0;
+            popup = preferences.getInt(isChat ? "popupGroup" : "popupAll", 0);
             if (value == null) {
                 int notify_override = preferences.getInt("notify2_" + dialog_id, 0);
-                boolean isChat = (int)dialog_id < 0;
-                if (notify_override == 2 || (!preferences.getBoolean("EnableAll", true) || isChat && !preferences.getBoolean("EnableGroup", true)) && notify_override == 0) {
-                    value = false;
-                } else {
-                    popup = preferences.getInt(isChat ? "popupGroup" : "popupAll", 0);
-                    value = popup != 0;
-                }
+                value = !(notify_override == 2 || (!preferences.getBoolean("EnableAll", true) || isChat && !preferences.getBoolean("EnableGroup", true)) && notify_override == 0);
                 settingsCache.put(dialog_id, value);
             }
             if (value) {
-                popupMessages.add(0, messageObject);
+                if (popup != 0) {
+                    popupMessages.add(0, messageObject);
+                }
+                pushMessagesDict.put(messageObject.messageOwner.id, messageObject);
+                pushMessages.add(0, messageObject);
+
+                Integer currentCount = pushDialogs.get(dialog_id);
+                if (currentCount == null) {
+                    currentCount = 0;
+                }
+                pushDialogs.put(dialog_id, ++currentCount);
             }
-            pushMessagesDict.put(messageObject.messageOwner.id, messageObject);
-            pushMessages.add(0, messageObject);
         }
 
         if (!popupMessages.isEmpty() && oldCount != popupMessages.size()) {
