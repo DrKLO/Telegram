@@ -500,6 +500,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
 
     @Override
     protected void onDestroy() {
+        PhotoViewer.getInstance().destroyPhotoViewer();
         super.onDestroy();
         onFinish();
     }

@@ -1697,6 +1697,22 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
     }
 
+    public void destroyPhotoViewer() {
+        if (parentActivity == null || windowView == null) {
+            return;
+        }
+        try {
+            WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
+            if (windowView.getParent() != null) {
+                wm.removeViewImmediate(windowView);
+            }
+            windowView = null;
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        Instance = null;
+    }
+
     private void onPhotoClosed(PlaceProviderObject object) {
         disableShowCheck = true;
         currentMessageObject = null;
