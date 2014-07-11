@@ -547,9 +547,9 @@ public class NotificationsController {
         }
         if (old_unread_count != total_unread_count) {
             showOrUpdateNotification(notifyCheck);
-            setBadge(ApplicationLoader.applicationContext, total_unread_count);
             notifyCheck = false;
         }
+        setBadge(ApplicationLoader.applicationContext, total_unread_count);
     }
 
     public void processLoadedUnreadMessages(HashMap<Long, Integer> dialogs) {
@@ -569,6 +569,7 @@ public class NotificationsController {
                 dialogsToLoad += "" + dialog_id;
             }
         }
+        setBadge(ApplicationLoader.applicationContext, total_unread_count);
     }
 
     private void setBadge(Context context, int count) {

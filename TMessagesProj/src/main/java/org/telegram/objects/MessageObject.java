@@ -468,12 +468,10 @@ public class MessageObject {
                 FileLog.e("tmessages", e);
             }
 
-            int linesMaxWidth;
+            int linesMaxWidth = (int)Math.ceil(lastLine);
             int lastLineWidthWithLeft;
             int linesMaxWidthWithLeft;
             boolean hasNonRTL = false;
-
-            linesMaxWidth = (int)Math.ceil(lastLine);
 
             if (a == blocksCount - 1) {
                 lastLineWidth = linesMaxWidth;
@@ -492,6 +490,13 @@ public class MessageObject {
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
                         lineWidth = 0;
+                    }
+
+                    if (lineWidth > maxWidth + 100) {
+                        int start = block.textLayout.getLineStart(n);
+                        int end = block.textLayout.getLineEnd(n);
+                        CharSequence text = block.textLayout.getText().subSequence(start, end);
+                        continue;
                     }
 
                     try {

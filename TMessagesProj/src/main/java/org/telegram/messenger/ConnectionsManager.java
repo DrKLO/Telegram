@@ -788,6 +788,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         if (object.layer() > 0) {
             Datacenter datacenter = datacenterWithId(datacenterId);
             if (datacenter == null || datacenter.lastInitVersion != currentAppVersion) {
+                registerForPush();
                 request.initRequest = true;
                 TLRPC.initConnection invoke = new TLRPC.initConnection();
                 invoke.query = object;
