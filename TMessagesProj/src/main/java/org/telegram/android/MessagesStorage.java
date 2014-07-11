@@ -183,6 +183,8 @@ public class MessagesStorage {
                 database.executeFast("CREATE TABLE IF NOT EXISTS sent_files_v2(uid TEXT, type INTEGER, data BLOB, PRIMARY KEY (uid, type))").stepThis().dispose();
 
                 database.executeFast("CREATE INDEX IF NOT EXISTS unread_count_idx_dialogs ON dialogs(unread_count);").stepThis().dispose();
+
+                loadUnreadMessages();
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -276,20 +278,17 @@ public class MessagesStorage {
             public void run() {
                 try {
                     final HashMap<Long, Integer> pushDialogs = new HashMap<Long, Integer>();
-                    int totalCount = 0;
                     SQLiteCursor cursor = database.queryFinalized("SELECT did, unread_count FROM dialogs WHERE unread_count != 0");
                     while (cursor.next()) {
                         long did = cursor.longValue(0);
                         int count = cursor.intValue(1);
                         pushDialogs.put(did, count);
-                        totalCount += count;
                     }
                     cursor.dispose();
-                    final int totalCountFinal = totalCount;
                     Utilities.RunOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            NotificationsController.getInstance().processLoadedUnreadMessages(pushDialogs, totalCountFinal);
+                            NotificationsController.getInstance().processLoadedUnreadMessages(pushDialogs);
                         }
                     });
                 } catch (Exception e) {
@@ -2908,6 +2907,8 @@ public class MessagesStorage {
                     }
 
                     database.commitTransaction();
+
+                    loadUnreadMessages();
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }

@@ -13,6 +13,8 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.media.AudioManager;
 import android.net.Uri;
@@ -36,6 +38,7 @@ import org.telegram.ui.PopupNotificationActivity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class NotificationsController {
 
@@ -45,6 +48,7 @@ public class NotificationsController {
     private HashMap<Long, Integer> pushDialogs = new HashMap<Long, Integer>();
     public ArrayList<MessageObject> popupMessages = new ArrayList<MessageObject>();
     private long openned_dialog_id = 0;
+    private int total_unread_count = 0;
     private boolean notifyCheck = false;
 
     public static final int pushMessagesUpdated = 27;
@@ -69,6 +73,7 @@ public class NotificationsController {
 
     public void cleanup() {
         openned_dialog_id = 0;
+        total_unread_count = 0;
         pushMessages.clear();
         pushMessagesDict.clear();
         pushDialogs.clear();
@@ -218,7 +223,7 @@ public class NotificationsController {
         try {
             ConnectionsManager.getInstance().resumeNetworkMaybe();
 
-            MessageObject lastMessageObject = pushMessages.get(pushMessages.size() - 1);
+            MessageObject lastMessageObject = pushMessages.get(0);
 
             long dialog_id = lastMessageObject.getDialogId();
             int chat_id = lastMessageObject.messageOwner.to_id.chat_id;
@@ -320,9 +325,9 @@ public class NotificationsController {
 
             String detailText = null;
             if (pushDialogs.size() == 1) {
-                detailText = LocaleController.formatPluralString("NewMessages", pushMessages.size());
+                detailText = LocaleController.formatPluralString("NewMessages", total_unread_count);
             } else {
-                detailText = String.format("%s %s", LocaleController.formatPluralString("NewMessages", pushMessages.size()), LocaleController.formatPluralString("FromContacts", pushDialogs.size()));
+                detailText = String.format("%s %s", LocaleController.formatPluralString("NewMessages", total_unread_count), LocaleController.formatPluralString("FromContacts", pushDialogs.size()));
             }
 
             NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(ApplicationLoader.applicationContext)
@@ -424,6 +429,7 @@ public class NotificationsController {
 
     public void processReadMessages(ArrayList<Integer> readMessages, long dialog_id, int max_date, int max_id) {
         int oldCount = popupMessages.size();
+        int oldCount2 = pushMessages.size();
         if (readMessages != null) {
             for (Integer id : readMessages) {
                 MessageObject messageObject = pushMessagesDict.get(id);
@@ -431,15 +437,6 @@ public class NotificationsController {
                     pushMessages.remove(messageObject);
                     popupMessages.remove(messageObject);
                     pushMessagesDict.remove(id);
-                    long dialogId = messageObject.getDialogId();
-                    Integer count = pushDialogs.get(dialogId);
-                    if (count != null) {
-                        if (count == 1) {
-                            pushDialogs.remove(dialogId);
-                        } else {
-                            pushDialogs.put(dialogId, --count);
-                        }
-                    }
                 }
             }
         }
@@ -458,14 +455,6 @@ public class NotificationsController {
                         }
                     }
                     if (remove) {
-                        Integer count = pushDialogs.get(dialog_id);
-                        if (count != null) {
-                            if (count == 1) {
-                                pushDialogs.remove(dialog_id);
-                            } else {
-                                pushDialogs.put(dialog_id, --count);
-                            }
-                        }
                         pushMessages.remove(a);
                         popupMessages.remove(messageObject);
                         pushMessagesDict.remove(messageObject.messageOwner.id);
@@ -477,8 +466,9 @@ public class NotificationsController {
         if (oldCount != popupMessages.size()) {
             NotificationCenter.getInstance().postNotificationName(pushMessagesUpdated);
         }
-        showOrUpdateNotification(notifyCheck);
-        notifyCheck = false;
+//        if (readMessages != null || oldCount2 != pushMessages.size() || readMessages == null && dialog_id == 0) {
+//            showOrUpdateNotification(notifyCheck);
+//        }
     }
 
     public void processNewMessages(ArrayList<MessageObject> messageObjects, boolean isLast) {
@@ -515,12 +505,6 @@ public class NotificationsController {
                 }
                 pushMessagesDict.put(messageObject.messageOwner.id, messageObject);
                 pushMessages.add(0, messageObject);
-
-                Integer currentCount = pushDialogs.get(dialog_id);
-                if (currentCount == null) {
-                    currentCount = 0;
-                }
-                pushDialogs.put(dialog_id, ++currentCount);
             }
         }
 
@@ -536,7 +520,90 @@ public class NotificationsController {
         }
     }
 
-    public void processLoadedUnreadMessages(HashMap<Long, Integer> dialogs, int totalCount) {
+    public void processDialogsUpdateRead(final HashMap<Long, Integer> dialogsToUpdate, boolean replace) {
+        int old_unread_count = total_unread_count;
+        for (HashMap.Entry<Long, Integer> entry : dialogsToUpdate.entrySet()) {
+            Long dialog_id = entry.getKey();
+            Integer currentCount = pushDialogs.get(dialog_id);
+            Integer newCount = entry.getValue();
+            if (replace) {
+                if (currentCount != null) {
+                    total_unread_count -= currentCount;
+                }
+                if (newCount == 0) {
+                    pushDialogs.remove(dialog_id);
+                } else {
+                    total_unread_count += newCount;
+                    pushDialogs.put(dialog_id, newCount);
+                }
+            } else {
+                if (currentCount == null) {
+                    currentCount = 0;
+                }
+                currentCount += newCount;
+                total_unread_count += newCount;
+                pushDialogs.put(dialog_id, currentCount);
+            }
+        }
+        if (old_unread_count != total_unread_count) {
+            showOrUpdateNotification(notifyCheck);
+            setBadge(ApplicationLoader.applicationContext, total_unread_count);
+            notifyCheck = false;
+        }
+    }
 
+    public void processLoadedUnreadMessages(HashMap<Long, Integer> dialogs) {
+        pushDialogs.clear();
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
+        String dialogsToLoad = "";
+        for (HashMap.Entry<Long, Integer> entry : dialogs.entrySet()) {
+            long dialog_id = entry.getKey();
+            int notify_override = preferences.getInt("notify2_" + dialog_id, 0);
+            boolean isChat = (int)dialog_id < 0;
+            if (!(notify_override == 2 || (!preferences.getBoolean("EnableAll", true) || isChat && !preferences.getBoolean("EnableGroup", true)) && notify_override == 0)) {
+                pushDialogs.put(dialog_id, entry.getValue());
+                total_unread_count += entry.getValue();
+                if (dialogsToLoad.length() != 0) {
+                    dialogsToLoad += ",";
+                }
+                dialogsToLoad += "" + dialog_id;
+            }
+        }
+    }
+
+    private void setBadge(Context context, int count) {
+        try {
+            String launcherClassName = getLauncherClassName(context);
+            if (launcherClassName == null) {
+                return;
+            }
+            Intent intent = new Intent("android.intent.action.BADGE_COUNT_UPDATE");
+            intent.putExtra("badge_count", count);
+            intent.putExtra("badge_count_package_name", context.getPackageName());
+            intent.putExtra("badge_count_class_name", launcherClassName);
+            context.sendBroadcast(intent);
+        } catch (Throwable e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
+    public static String getLauncherClassName(Context context) {
+        try {
+            PackageManager pm = context.getPackageManager();
+
+            Intent intent = new Intent(Intent.ACTION_MAIN);
+            intent.addCategory(Intent.CATEGORY_LAUNCHER);
+
+            List<ResolveInfo> resolveInfos = pm.queryIntentActivities(intent, 0);
+            for (ResolveInfo resolveInfo : resolveInfos) {
+                String pkgName = resolveInfo.activityInfo.applicationInfo.packageName;
+                if (pkgName.equalsIgnoreCase(context.getPackageName())) {
+                    return resolveInfo.activityInfo.name;
+                }
+            }
+        } catch (Throwable e) {
+            FileLog.e("tmessages", e);
+        }
+        return null;
     }
 }
