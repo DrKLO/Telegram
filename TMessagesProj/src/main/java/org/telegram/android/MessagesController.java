@@ -1032,7 +1032,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 public void run(TLObject response, TLRPC.TL_error error) {
 
                 }
-            });
+            }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
             ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
         } else {
             int encId = (int)(dialog_id >> 32);
@@ -1048,7 +1048,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     public void run(TLObject response, TLRPC.TL_error error) {
 
                     }
-                });
+                }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
                 ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
             }
         }
@@ -1535,7 +1535,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             req.max_id = max_positive_id;
             req.offset = offset;
             if (offset == 0) {
-                NotificationsController.getInstance().processReadMessages(null, dialog_id, 0, max_id);
+                NotificationsController.getInstance().processReadMessages(null, dialog_id, 0, max_positive_id);
                 MessagesStorage.getInstance().processPendingRead(dialog_id, max_positive_id, max_date, false);
                 MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
                     @Override
