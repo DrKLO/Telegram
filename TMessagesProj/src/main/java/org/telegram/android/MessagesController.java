@@ -1535,10 +1535,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             req.max_id = max_positive_id;
             req.offset = offset;
             if (offset == 0) {
-                HashMap<Long, Integer> dialogsToUpdate = new HashMap<Long, Integer>();
-                dialogsToUpdate.put(dialog_id, 0);
-                NotificationsController.getInstance().processDialogsUpdateRead(dialogsToUpdate, true);
-
                 NotificationsController.getInstance().processReadMessages(null, dialog_id, 0, max_id);
                 MessagesStorage.getInstance().processPendingRead(dialog_id, max_positive_id, max_date, false);
                 MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
@@ -1556,6 +1552,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         });
                     }
                 });
+                HashMap<Long, Integer> dialogsToUpdate = new HashMap<Long, Integer>();
+                dialogsToUpdate.put(dialog_id, 0);
+                NotificationsController.getInstance().processDialogsUpdateRead(dialogsToUpdate, true);
             }
             if (req.max_id != Integer.MAX_VALUE) {
                 ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
@@ -1624,10 +1623,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             }
             MessagesStorage.getInstance().processPendingRead(dialog_id, max_id, max_date, false);
 
-            HashMap<Long, Integer> dialogsToUpdate = new HashMap<Long, Integer>();
-            dialogsToUpdate.put(dialog_id, 0);
-            NotificationsController.getInstance().processDialogsUpdateRead(dialogsToUpdate, true);
-
             MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
@@ -1643,6 +1638,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     });
                 }
             });
+
+            HashMap<Long, Integer> dialogsToUpdate = new HashMap<Long, Integer>();
+            dialogsToUpdate.put(dialog_id, 0);
+            NotificationsController.getInstance().processDialogsUpdateRead(dialogsToUpdate, true);
 
             if (chat.ttl > 0 && was) {
                 int serverTime = Math.max(ConnectionsManager.getInstance().getCurrentTime(), max_date);
