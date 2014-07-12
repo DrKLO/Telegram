@@ -789,7 +789,7 @@ public class MessagesStorage {
                         //database.executeFast("DELETE FROM pending_read WHERE uid = " + dialog_id).stepThis().dispose();
                     } else {
                         database.beginTransaction();
-                        SQLitePreparedStatement state;/*) = database.executeFast("REPLACE INTO pending_read VALUES(?, ?)");
+                        SQLitePreparedStatement state;/* = database.executeFast("REPLACE INTO pending_read VALUES(?, ?)");
                         state.requery();
                         state.bindLong(1, dialog_id);
                         state.bindInteger(2, max_id);
@@ -1801,9 +1801,6 @@ public class MessagesStorage {
     }
 
     private void putMessagesInternal(final ArrayList<TLRPC.Message> messages, final boolean withTransaction) {
-        if (Thread.currentThread().getId() != storageQueue.getId()) {
-            throw new RuntimeException("wrong db thread");
-        }
         try {
             if (withTransaction) {
                 database.beginTransaction();
