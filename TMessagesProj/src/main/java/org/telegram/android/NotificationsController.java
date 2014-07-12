@@ -475,7 +475,7 @@ public class NotificationsController {
         if (messageObjects.isEmpty()) {
             return;
         }
-        notifyCheck = isLast;
+        boolean added = false;
 
         int oldCount = popupMessages.size();
         HashMap<Long, Boolean> settingsCache = new HashMap<Long, Boolean>();
@@ -487,9 +487,10 @@ public class NotificationsController {
                 continue;
             }
             long dialog_id = messageObject.getDialogId();
-            if (dialog_id == openned_dialog_id) {
+            if (dialog_id == openned_dialog_id && ApplicationLoader.isScreenOn) {
                 continue;
             }
+            added = true;
 
             Boolean value = settingsCache.get(dialog_id);
             boolean isChat = (int)dialog_id < 0;
@@ -506,6 +507,10 @@ public class NotificationsController {
                 pushMessagesDict.put(messageObject.messageOwner.id, messageObject);
                 pushMessages.add(0, messageObject);
             }
+        }
+
+        if (added) {
+            notifyCheck = isLast;
         }
 
         if (!popupMessages.isEmpty() && oldCount != popupMessages.size()) {

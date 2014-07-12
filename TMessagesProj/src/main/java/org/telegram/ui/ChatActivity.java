@@ -2860,38 +2860,40 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
     }
 
+    private void forwardSelectedMessages(long did, boolean fromMyName) {
+        if (forwaringMessage != null) {
+            if (forwaringMessage.messageOwner.id > 0) {
+                if (!fromMyName) {
+                    MessagesController.getInstance().sendMessage(forwaringMessage, did);
+                } else {
+                    processForwardFromMe(forwaringMessage, did);
+                }
+            }
+            forwaringMessage = null;
+        } else {
+            ArrayList<Integer> ids = new ArrayList<Integer>(selectedMessagesIds.keySet());
+            Collections.sort(ids);
+            for (Integer id : ids) {
+                if (id > 0) {
+                    if (!fromMyName) {
+                        MessagesController.getInstance().sendMessage(selectedMessagesIds.get(id), did);
+                    } else {
+                        processForwardFromMe(selectedMessagesIds.get(id), did);
+                    }
+                }
+            }
+            selectedMessagesCanCopyIds.clear();
+            selectedMessagesIds.clear();
+        }
+    }
+
     @Override
     public void didSelectDialog(MessagesActivity activity, long did, boolean param) {
         if (dialog_id != 0 && (forwaringMessage != null || !selectedMessagesIds.isEmpty())) {
-            if (forwaringMessage != null) {
-                if (forwaringMessage.messageOwner.id > 0) {
-                    if (!param) {
-                        MessagesController.getInstance().sendMessage(forwaringMessage, did);
-                    } else {
-                        processForwardFromMe(forwaringMessage, did);
-                    }
-                }
-                forwaringMessage = null;
-            } else {
-                ArrayList<Integer> ids = new ArrayList<Integer>(selectedMessagesIds.keySet());
-                Collections.sort(ids);
-                for (Integer id : ids) {
-                    if (id > 0) {
-                        if (!param) {
-                            MessagesController.getInstance().sendMessage(selectedMessagesIds.get(id), did);
-                        } else {
-                            processForwardFromMe(selectedMessagesIds.get(id), did);
-                        }
-                    }
-                }
-                selectedMessagesCanCopyIds.clear();
-                selectedMessagesIds.clear();
-            }
+
             if (did != dialog_id) {
                 int lower_part = (int)did;
                 if (lower_part != 0) {
-                    activity.removeSelfFromStack();
-
                     Bundle args = new Bundle();
                     args.putBoolean("scrollToTopOnResume", scrollToTopOnResume);
                     if (lower_part > 0) {
@@ -2899,14 +2901,15 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     } else if (lower_part < 0) {
                         args.putInt("chat_id", -lower_part);
                     }
-                    presentFragment(new ChatActivity(args));
-
+                    presentFragment(new ChatActivity(args), true);
                     removeSelfFromStack();
+                    forwardSelectedMessages(did, param);
                 } else {
                     activity.finishFragment();
                 }
             } else {
                 activity.finishFragment();
+                forwardSelectedMessages(did, param);
                 chatListView.setSelectionFromTop(messages.size() - 1, -100000 - chatListView.getPaddingTop());
                 scrollToTopOnResume = true;
             }
