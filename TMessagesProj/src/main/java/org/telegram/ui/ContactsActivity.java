@@ -24,6 +24,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
@@ -350,6 +351,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
             builder.setMessage(LocaleController.formatStringSimple(selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
             final EditText editText = new EditText(getParentActivity());
+            if (android.os.Build.VERSION.SDK_INT < 11) {
+                editText.setBackgroundResource(android.R.drawable.editbox_background_normal);
+            }
             editText.setTextSize(18);
             editText.setText("50");
             editText.setGravity(Gravity.CENTER);
@@ -366,9 +370,13 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             showAlertDialog(builder);
             ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams)editText.getLayoutParams();
             if (layoutParams != null) {
+                if (layoutParams instanceof FrameLayout.LayoutParams) {
+                    ((FrameLayout.LayoutParams)layoutParams).gravity = Gravity.CENTER_HORIZONTAL;
+                }
                 layoutParams.rightMargin = layoutParams.leftMargin = AndroidUtilities.dp(10);
                 editText.setLayoutParams(layoutParams);
             }
+            editText.setSelection(editText.getText().length());
         } else {
             if (delegate != null) {
                 delegate.didSelectContact(user, param);

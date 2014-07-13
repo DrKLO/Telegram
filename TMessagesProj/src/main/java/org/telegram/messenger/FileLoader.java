@@ -946,8 +946,14 @@ public class FileLoader {
                             }
                         }
                     };
+
+                    boolean isLocalFile = false;
+                    if (httpUrl != null && !httpUrl.startsWith("http")) {
+                        isLocalFile = true;
+                    }
+
                     img.loadOperation = loadOperation;
-                    if (runningOperation.size() < maxConcurentLoadingOpertaionsCount) {
+                    if (runningOperation.size() < maxConcurentLoadingOpertaionsCount || isLocalFile) {
                         loadOperation.start();
                         runningOperation.add(loadOperation);
                     } else {
