@@ -527,6 +527,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
     public void processLoadedUserPhotos(final TLRPC.photos_Photos res, final int uid, final int offset, final int count, final long max_id, final boolean fromCache, final int classGuid) {
         if (!fromCache) {
+            MessagesStorage.getInstance().putUsersAndChats(res.users, null, true, true);
             MessagesStorage.getInstance().putUserPhotos(uid, res);
         } else if (res == null || res.photos.isEmpty()) {
             loadUserPhotos(uid, offset, count, max_id, false, classGuid);
@@ -535,6 +536,16 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         Utilities.RunOnUIThread(new Runnable() {
             @Override
             public void run() {
+                for (TLRPC.User user : res.users) {
+                    if (fromCache) {
+                        users.putIfAbsent(user.id, user);
+                    } else {
+                        users.put(user.id, user);
+                        if (user.id == UserConfig.getClientUserId()) {
+                            UserConfig.setCurrentUser(user);
+                        }
+                    }
+                }
                 NotificationCenter.getInstance().postNotificationName(userPhotosLoaded, uid, offset, count, fromCache, classGuid, res.photos);
             }
         });

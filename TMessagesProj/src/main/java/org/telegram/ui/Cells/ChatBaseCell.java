@@ -115,6 +115,8 @@ public class ChatBaseCell extends BaseCell {
     private CheckForLongPress pendingCheckForLongPress = null;
     private CheckForTap pendingCheckForTap = null;
 
+    private int last_send_state = 0;
+
     private final class CheckForTap implements Runnable {
         public void run() {
             if (pendingCheckForLongPress == null) {
@@ -212,6 +214,10 @@ public class ChatBaseCell extends BaseCell {
         if (currentMessageObject == null || currentUser == null) {
             return false;
         }
+        if (last_send_state != currentMessageObject.messageOwner.send_state) {
+            return true;
+        }
+
         TLRPC.User newUser = MessagesController.getInstance().users.get(currentMessageObject.messageOwner.from_id);
         TLRPC.FileLocation newPhoto = null;
 
@@ -242,6 +248,7 @@ public class ChatBaseCell extends BaseCell {
 
     public void setMessageObject(MessageObject messageObject) {
         currentMessageObject = messageObject;
+        last_send_state = messageObject.messageOwner.send_state;
         isPressed = false;
         isCheckPressed = true;
         isAvatarVisible = false;

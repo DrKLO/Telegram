@@ -2836,10 +2836,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (messageObject.messageOwner.media.photo instanceof TLRPC.TL_photo) {
                 MessagesController.getInstance().sendMessage((TLRPC.TL_photo)messageObject.messageOwner.media.photo, null, did);
             } else if (messageObject.messageOwner.media.audio instanceof TLRPC.TL_audio) {
+                messageObject.messageOwner.media.audio.path = messageObject.messageOwner.attachPath;
                 MessagesController.getInstance().sendMessage((TLRPC.TL_audio)messageObject.messageOwner.media.audio, did);
             } else if (messageObject.messageOwner.media.video instanceof TLRPC.TL_video) {
+                messageObject.messageOwner.media.video.path = messageObject.messageOwner.attachPath;
                 MessagesController.getInstance().sendMessage((TLRPC.TL_video)messageObject.messageOwner.media.video, null, did);
             } else if (messageObject.messageOwner.media.document instanceof TLRPC.TL_document) {
+                messageObject.messageOwner.media.document.path = messageObject.messageOwner.attachPath;
                 MessagesController.getInstance().sendMessage((TLRPC.TL_document)messageObject.messageOwner.media.document, null, did);
             } else if (messageObject.messageOwner.media.geo instanceof TLRPC.TL_geoPoint) {
                 MessagesController.getInstance().sendMessage(messageObject.messageOwner.media.geo.lat, messageObject.messageOwner.media.geo._long, did);
