@@ -50,7 +50,7 @@
         android:largeHeap="true">
 
         <activity
-            android:name="org.telegram.ui.LaunchActivity"
+            android:name="org.telegram.ui.Activities.LaunchActivity"
             android:windowSoftInputMode="adjustResize"
             android:hardwareAccelerated="true"
             android:launchMode="singleTask"
@@ -97,12 +97,12 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="org.telegram.ui.IntroActivity"
+            android:name="org.telegram.ui.Activities.IntroActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:screenOrientation="portrait">
         </activity>
         <activity
-            android:name="org.telegram.ui.PopupNotificationActivity"
+            android:name="org.telegram.ui.Activities.PopupNotificationActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize"
             android:excludeFromRecents="true"
             android:launchMode="singleTask"
