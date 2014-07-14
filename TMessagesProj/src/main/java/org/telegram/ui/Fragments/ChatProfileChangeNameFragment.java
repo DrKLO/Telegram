@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
@@ -25,15 +25,16 @@ import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 
-public class ChatProfileChangeNameActivity extends BaseFragment {
+public class ChatProfileChangeNameFragment extends BaseFragment {
     private EditText firstNameField;
     private View headerLabelView;
     private int chat_id;
     private View doneButton;
 
-    public ChatProfileChangeNameActivity(Bundle args) {
+    public ChatProfileChangeNameFragment(Bundle args) {
         super(args);
     }
 

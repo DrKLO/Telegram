@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
 import android.app.Activity;
 import android.content.Context;
@@ -44,6 +44,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.BackupImageView;
@@ -56,7 +57,7 @@ import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class GroupCreateActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+public class GroupCreateFragment extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     public static class XImageSpan extends ImageSpan {
         public int uid;
@@ -140,7 +141,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                             result.addAll(selectedContacts.keySet());
                             Bundle args = new Bundle();
                             args.putIntegerArrayList("result", result);
-                            presentFragment(new GroupCreateFinalActivity(args));
+                            presentFragment(new GroupCreateFinalFragment(args));
                         }
                     }
                 }
@@ -312,7 +313,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     }
 
     public XImageSpan createAndPutChipForUser(TLRPC.User user) {
-        LayoutInflater lf = (LayoutInflater)ApplicationLoader.applicationContext.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
+        LayoutInflater lf = (LayoutInflater) ApplicationLoader.applicationContext.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
         View textView = lf.inflate(R.layout.group_create_bubble, null);
         TextView text = (TextView)textView.findViewById(R.id.bubble_text_view);
         String name = Utilities.formatName(user.first_name, user.last_name);

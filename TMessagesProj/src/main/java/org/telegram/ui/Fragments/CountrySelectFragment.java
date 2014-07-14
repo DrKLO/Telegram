@@ -1,23 +1,21 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.x.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
+import android.widget.BaseAdapter;
 import android.widget.EditText;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
@@ -26,32 +24,106 @@ import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
+import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.Views.PinnedHeaderListView;
+import org.telegram.ui.Views.SectionedBaseAdapter;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class LanguageSelectActivity extends BaseFragment {
-    private BaseFragmentAdapter listAdapter;
-    private ListView listView;
+public class CountrySelectFragment extends BaseFragment {
+
+    public static interface CountrySelectActivityDelegate {
+        public abstract void didSelectCountry(String name);
+    }
+
+    private SectionedBaseAdapter listViewAdapter;
+    private PinnedHeaderListView listView;
     private boolean searchWas;
     private boolean searching;
-    private BaseFragmentAdapter searchListViewAdapter;
+    private BaseAdapter searchListViewAdapter;
     private TextView emptyTextView;
+    private HashMap<String, ArrayList<Country>> countries = new HashMap<String, ArrayList<Country>>();
+    private ArrayList<String> sortedCountries = new ArrayList<String>();
+    private CountrySelectActivityDelegate delegate;
 
     private Timer searchTimer;
-    public ArrayList<LocaleController.LocaleInfo> searchResult;
+    public ArrayList<Country> searchResult;
+
+    public static class Country {
+        public String name;
+        public String code;
+        public String shortname;
+    }
+
+    @Override
+    public boolean onFragmentCreate() {
+        try {
+            InputStream stream = ApplicationLoader.applicationContext.getResources().getAssets().open("countries.txt");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] args = line.split(";");
+                Country c = new Country();
+                c.name = args[2];
+                c.code = args[0];
+                c.shortname = args[1];
+                String n = c.name.substring(0, 1).toUpperCase();
+                ArrayList<Country> arr = countries.get(n);
+                if (arr == null) {
+                    arr = new ArrayList<Country>();
+                    countries.put(n, arr);
+                    sortedCountries.add(n);
+                }
+                arr.add(c);
+            }
+            reader.close();
+            stream.close();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+
+        Collections.sort(sortedCountries, new Comparator<String>() {
+            @Override
+            public int compare(String lhs, String rhs) {
+                return lhs.compareTo(rhs);
+            }
+        });
+
+        for (ArrayList<Country> arr : countries.values()) {
+            Collections.sort(arr, new Comparator<Country>() {
+                @Override
+                public int compare(Country country, Country country2) {
+                    return country.name.compareTo(country2.name);
+                }
+            });
+        }
+
+        return super.onFragmentCreate();
+    }
+
+    @Override
+    public void onFragmentDestroy() {
+        super.onFragmentDestroy();
+    }
 
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
             actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
             actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
-            actionBarLayer.setTitle(LocaleController.getString("Language", R.string.Language));
+            actionBarLayer.setTitle(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
 
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
@@ -74,10 +146,20 @@ public class LanguageSelectActivity extends BaseFragment {
                     search(null);
                     searching = false;
                     searchWas = false;
-                    if (listView != null) {
-                        emptyTextView.setVisibility(View.GONE);
-                        listView.setAdapter(listAdapter);
+                    ViewGroup group = (ViewGroup) listView.getParent();
+                    listView.setAdapter(listViewAdapter);
+                    if (!LocaleController.isRTL) {
+                        listView.setPadding(AndroidUtilities.dp(16), listView.getPaddingTop(), AndroidUtilities.dp(30), listView.getPaddingBottom());
+                    } else {
+                        listView.setPadding(AndroidUtilities.dp(30), listView.getPaddingTop(), AndroidUtilities.dp(16), listView.getPaddingBottom());
                     }
+                    if (android.os.Build.VERSION.SDK_INT >= 11) {
+                        listView.setFastScrollAlwaysVisible(true);
+                    }
+                    listView.setFastScrollEnabled(true);
+                    listView.setVerticalScrollBarEnabled(false);
+
+                    emptyTextView.setText(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
                 }
 
                 @Override
@@ -102,74 +184,45 @@ public class LanguageSelectActivity extends BaseFragment {
                 }
             });
 
-            fragmentView = inflater.inflate(R.layout.language_select_layout, container, false);
-            listAdapter = new ListAdapter(getParentActivity());
-            listView = (ListView)fragmentView.findViewById(R.id.listView);
-            listView.setAdapter(listAdapter);
+            searching = false;
+            searchWas = false;
+
+            fragmentView = inflater.inflate(R.layout.country_select_layout, container, false);
+
             emptyTextView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
-            listView.setEmptyView(emptyTextView);
             searchListViewAdapter = new SearchAdapter(getParentActivity());
 
+            listView = (PinnedHeaderListView)fragmentView.findViewById(R.id.listView);
+            listView.setEmptyView(emptyTextView);
+            listView.setVerticalScrollBarEnabled(false);
+
+            listView.setAdapter(listViewAdapter = new ListAdapter(getParentActivity()));
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    LocaleController.LocaleInfo localeInfo = null;
                     if (searching && searchWas) {
-                        if (i >= 0 && i < searchResult.size()) {
-                            localeInfo = searchResult.get(i);
+                        if (i < searchResult.size()) {
+                            Country c = searchResult.get(i);
+                            if (delegate != null) {
+                                delegate.didSelectCountry(c.name);
+                            }
+                            finishFragment();
                         }
                     } else {
-                        if (i >= 0 && i < LocaleController.getInstance().sortedLanguages.size()) {
-                            localeInfo = LocaleController.getInstance().sortedLanguages.get(i);
-                        }
-                    }
-                    if (localeInfo != null) {
-                        LocaleController.getInstance().applyLanguage(localeInfo, true);
-                        getParentActivity().rebuildAllFragmentViews();
-                    }
-                    finishFragment();
-                }
-            });
-
-            listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-                @Override
-                public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    LocaleController.LocaleInfo localeInfo = null;
-                    if (searching && searchWas) {
-                        if (i >= 0 && i < searchResult.size()) {
-                            localeInfo = searchResult.get(i);
-                        }
-                    } else {
-                        if (i >= 0 && i < LocaleController.getInstance().sortedLanguages.size()) {
-                            localeInfo = LocaleController.getInstance().sortedLanguages.get(i);
-                        }
-                    }
-                    if (localeInfo == null || localeInfo.pathToFile == null || getParentActivity() == null) {
-                        return false;
-                    }
-                    final LocaleController.LocaleInfo finalLocaleInfo = localeInfo;
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setMessage(LocaleController.getString("DeleteLocalization", R.string.DeleteLocalization));
-                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                    builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            if (LocaleController.getInstance().deleteLanguage(finalLocaleInfo)) {
-                                if (searchResult != null) {
-                                    searchResult.remove(finalLocaleInfo);
+                        int section = listViewAdapter.getSectionForPosition(i);
+                        int row = listViewAdapter.getPositionInSectionForPosition(i);
+                        if (section < sortedCountries.size()) {
+                            String n = sortedCountries.get(section);
+                            ArrayList<Country> arr = countries.get(n);
+                            if (row < arr.size()) {
+                                Country c = arr.get(row);
+                                if (delegate != null) {
+                                    delegate.didSelectCountry(c.name);
                                 }
-                                if (listAdapter != null) {
-                                    listAdapter.notifyDataSetChanged();
-                                }
-                                if (searchListViewAdapter != null) {
-                                    searchListViewAdapter.notifyDataSetChanged();
-                                }
+                                finishFragment();
                             }
                         }
-                    });
-                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
-                    return true;
+                    }
                 }
             });
 
@@ -185,9 +238,6 @@ public class LanguageSelectActivity extends BaseFragment {
                 public void onScroll(AbsListView absListView, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
                 }
             });
-
-            searching = false;
-            searchWas = false;
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
             if (parent != null) {
@@ -200,8 +250,8 @@ public class LanguageSelectActivity extends BaseFragment {
     @Override
     public void onResume() {
         super.onResume();
-        if (listAdapter != null) {
-            listAdapter.notifyDataSetChanged();
+        if (listViewAdapter != null) {
+            listViewAdapter.notifyDataSetChanged();
         }
     }
 
@@ -239,15 +289,19 @@ public class LanguageSelectActivity extends BaseFragment {
 
                 String q = query.trim().toLowerCase();
                 if (q.length() == 0) {
-                    updateSearchResults(new ArrayList<LocaleController.LocaleInfo>());
+                    updateSearchResults(new ArrayList<Country>());
                     return;
                 }
                 long time = System.currentTimeMillis();
-                ArrayList<LocaleController.LocaleInfo> resultArray = new ArrayList<LocaleController.LocaleInfo>();
+                ArrayList<Country> resultArray = new ArrayList<Country>();
 
-                for (LocaleController.LocaleInfo c : LocaleController.getInstance().sortedLanguages) {
-                    if (c.name.toLowerCase().startsWith(query) || c.nameEnglish.toLowerCase().startsWith(query)) {
-                        resultArray.add(c);
+                String n = query.substring(0, 1);
+                ArrayList<Country> arr = countries.get(n.toUpperCase());
+                if (arr != null) {
+                    for (Country c : arr) {
+                        if (c.name.toLowerCase().startsWith(query)) {
+                            resultArray.add(c);
+                        }
                     }
                 }
 
@@ -256,7 +310,11 @@ public class LanguageSelectActivity extends BaseFragment {
         });
     }
 
-    private void updateSearchResults(final ArrayList<LocaleController.LocaleInfo> arrCounties) {
+    public void setCountrySelectActivityDelegate(CountrySelectActivityDelegate delegate) {
+        this.delegate = delegate;
+    }
+
+    private void updateSearchResults(final ArrayList<Country> arrCounties) {
         Utilities.RunOnUIThread(new Runnable() {
             @Override
             public void run() {
@@ -310,13 +368,15 @@ public class LanguageSelectActivity extends BaseFragment {
         public View getView(int i, View view, ViewGroup viewGroup) {
             if (view == null) {
                 LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                view = li.inflate(R.layout.settings_row_button_layout, viewGroup, false);
+                view = li.inflate(R.layout.country_row_layout, viewGroup, false);
             }
             TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
+            TextView detailTextView = (TextView)view.findViewById(R.id.settings_row_text_detail);
             View divider = view.findViewById(R.id.settings_row_divider);
 
-            LocaleController.LocaleInfo c = searchResult.get(i);
+            Country c = searchResult.get(i);
             textView.setText(c.name);
+            detailTextView.setText("+" + c.code);
             if (i == searchResult.size() - 1) {
                 divider.setVisibility(View.GONE);
             } else {
@@ -342,7 +402,7 @@ public class LanguageSelectActivity extends BaseFragment {
         }
     }
 
-    private class ListAdapter extends BaseFragmentAdapter {
+    private class ListAdapter extends SectionedBaseAdapter {
         private Context mContext;
 
         public ListAdapter(Context context) {
@@ -350,71 +410,81 @@ public class LanguageSelectActivity extends BaseFragment {
         }
 
         @Override
-        public boolean areAllItemsEnabled() {
-            return true;
-        }
-
-        @Override
-        public boolean isEnabled(int i) {
-            return true;
-        }
-
-        @Override
-        public int getCount() {
-            if (LocaleController.getInstance().sortedLanguages == null) {
-                return 0;
-            }
-            return LocaleController.getInstance().sortedLanguages.size();
-        }
-
-        @Override
-        public Object getItem(int i) {
+        public Object getItem(int section, int position) {
             return null;
         }
 
         @Override
-        public long getItemId(int i) {
-            return i;
+        public long getItemId(int section, int position) {
+            return 0;
         }
 
         @Override
-        public boolean hasStableIds() {
-            return false;
+        public int getSectionCount() {
+            return sortedCountries.size();
         }
 
         @Override
-        public View getView(int i, View view, ViewGroup viewGroup) {
-            if (view == null) {
+        public int getCountForSection(int section) {
+            String n = sortedCountries.get(section);
+            ArrayList<Country> arr = countries.get(n);
+            return arr.size();
+        }
+
+        @Override
+        public View getItemView(int section, int position, View convertView, ViewGroup parent) {
+            if (convertView == null) {
                 LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                view = li.inflate(R.layout.settings_row_button_layout, viewGroup, false);
+                convertView = li.inflate(R.layout.country_row_layout, parent, false);
             }
-            TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
-            View divider = view.findViewById(R.id.settings_row_divider);
+            TextView textView = (TextView)convertView.findViewById(R.id.settings_row_text);
+            TextView detailTextView = (TextView)convertView.findViewById(R.id.settings_row_text_detail);
+            View divider = convertView.findViewById(R.id.settings_row_divider);
 
-            LocaleController.LocaleInfo localeInfo = LocaleController.getInstance().sortedLanguages.get(i);
-            textView.setText(localeInfo.name);
-            if (i == LocaleController.getInstance().sortedLanguages.size() - 1) {
+            String n = sortedCountries.get(section);
+            ArrayList<Country> arr = countries.get(n);
+            Country c = arr.get(position);
+            textView.setText(c.name);
+            detailTextView.setText("+" + c.code);
+            if (position == arr.size() - 1) {
                 divider.setVisibility(View.GONE);
             } else {
                 divider.setVisibility(View.VISIBLE);
             }
 
-            return view;
+            return convertView;
         }
 
         @Override
-        public int getItemViewType(int i) {
+        public int getItemViewType(int section, int position) {
             return 0;
         }
 
         @Override
-        public int getViewTypeCount() {
+        public int getItemViewTypeCount() {
             return 1;
         }
 
         @Override
-        public boolean isEmpty() {
-            return LocaleController.getInstance().sortedLanguages == null || LocaleController.getInstance().sortedLanguages.size() == 0;
+        public int getSectionHeaderViewType(int section) {
+            return 0;
+        }
+
+        @Override
+        public int getSectionHeaderViewTypeCount() {
+            return 1;
+        }
+
+        @Override
+        public View getSectionHeaderView(int section, View convertView, ViewGroup parent) {
+            if (convertView == null) {
+                LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                convertView = li.inflate(R.layout.settings_section_layout, parent, false);
+                convertView.setBackgroundColor(0xfffafafa);
+            }
+            TextView textView = (TextView)convertView.findViewById(R.id.settings_section_text);
+            textView.setText(sortedCountries.get(section).toUpperCase());
+            return convertView;
         }
     }
 }

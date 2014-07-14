@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
 import android.animation.Animator;
 import android.app.AlertDialog;
@@ -27,6 +27,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
@@ -35,7 +36,7 @@ import org.telegram.ui.Views.SlideView;
 import java.util.Map;
 import java.util.Set;
 
-public class LoginActivity extends BaseFragment implements SlideView.SlideViewDelegate {
+public class LoginFragment extends BaseFragment implements SlideView.SlideViewDelegate {
     private int currentViewNum = 0;
     private SlideView[] views = new SlideView[3];
     private ProgressDialog progressDialog;
@@ -327,6 +328,6 @@ public class LoginActivity extends BaseFragment implements SlideView.SlideViewDe
     @Override
     public void needFinishActivity() {
         clearCurrentState();
-        presentFragment(new MessagesActivity(null), true);
+        presentFragment(new MessagesFragment(null), true);
     }
 }

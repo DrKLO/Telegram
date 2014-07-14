@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
 import android.location.Location;
 import android.view.LayoutInflater;
@@ -39,7 +39,7 @@ import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 
-public class LocationActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+public class LocationFragment extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private GoogleMap googleMap;
     private TextView distanceTextView;
     private Marker userMarker;

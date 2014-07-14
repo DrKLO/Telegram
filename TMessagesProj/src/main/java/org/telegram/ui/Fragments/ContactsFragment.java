@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -42,7 +42,9 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Adapters.ContactsActivityAdapter;
 import org.telegram.ui.Adapters.ContactsActivitySearchAdapter;
+import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Cells.ChatOrUserCell;
+import org.telegram.ui.Fragments.ChatFragment;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
@@ -54,7 +56,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 
-public class ContactsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+public class ContactsFragment extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private SectionedBaseAdapter listViewAdapter;
     private PinnedHeaderListView listView;
     private ContactsActivitySearchAdapter searchListViewAdapter;
@@ -78,7 +80,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         public abstract void didSelectContact(TLRPC.User user, String param);
     }
 
-    public ContactsActivity(Bundle args) {
+    public ContactsFragment(Bundle args) {
         super(args);
     }
 
@@ -227,7 +229,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                             } else {
                                 Bundle args = new Bundle();
                                 args.putInt("user_id", user.id);
-                                presentFragment(new ChatActivity(args), true);
+                                presentFragment(new ChatFragment(args), true);
                             }
                         }
                     } else {
@@ -285,7 +287,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 } else {
                                     Bundle args = new Bundle();
                                     args.putInt("user_id", user.id);
-                                    presentFragment(new ChatActivity(args), true);
+                                    presentFragment(new ChatFragment(args), true);
                                 }
                             }
                         } else {
@@ -410,7 +412,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 TLRPC.EncryptedChat encryptedChat = (TLRPC.EncryptedChat)args[0];
                 Bundle args2 = new Bundle();
                 args2.putInt("enc_id", encryptedChat.id);
-                presentFragment(new ChatActivity(args2), true);
+                presentFragment(new ChatFragment(args2), true);
             }
         }
     }

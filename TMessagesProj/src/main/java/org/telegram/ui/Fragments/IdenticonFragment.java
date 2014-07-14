@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -25,14 +25,15 @@ import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.IdenticonView;
 
-public class IdenticonActivity extends BaseFragment {
+public class IdenticonFragment extends BaseFragment {
     private int chat_id;
 
-    public IdenticonActivity(Bundle args) {
+    public IdenticonFragment(Bundle args) {
         super(args);
     }
 
@@ -101,7 +102,7 @@ public class IdenticonActivity extends BaseFragment {
                     return true;
                 }
                 LinearLayout layout = (LinearLayout)fragmentView;
-                WindowManager manager = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+                WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
                 int rotation = manager.getDefaultDisplay().getRotation();
 
                 if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {

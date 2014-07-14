@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -43,6 +43,7 @@ import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.PhotoObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
+import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.HorizontalListView;
@@ -52,7 +53,7 @@ import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class SettingsWallpapersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+public class SettingsWallpapersFragment extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private HorizontalListView listView;
     private ListAdapter listAdapter;
     private ImageView backgroundImage;

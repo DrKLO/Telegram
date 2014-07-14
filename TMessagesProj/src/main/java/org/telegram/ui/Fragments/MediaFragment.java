@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
 import android.app.Activity;
 import android.content.Context;
@@ -32,6 +32,8 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.objects.PhotoObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
+import org.telegram.ui.ApplicationLoader;
+import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
@@ -39,7 +41,7 @@ import org.telegram.ui.Views.ActionBar.BaseFragment;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class MediaActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, PhotoViewer.PhotoViewerProvider {
+public class MediaFragment extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, PhotoViewer.PhotoViewerProvider {
     private GridView listView;
     private ListAdapter listAdapter;
     private ArrayList<MessageObject> messages = new ArrayList<MessageObject>();
@@ -54,7 +56,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     private View progressView;
     private TextView emptyView;
 
-    public MediaActivity(Bundle args) {
+    public MediaFragment(Bundle args) {
         super(args);
     }
 
@@ -115,7 +117,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                     PhotoViewer.getInstance().setParentActivity(getParentActivity());
-                    PhotoViewer.getInstance().openPhoto(messages, i, MediaActivity.this);
+                    PhotoViewer.getInstance().openPhoto(messages, i, MediaFragment.this);
                 }
             });
             if (loading && messages.isEmpty()) {
@@ -323,7 +325,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
                 @Override
                 public boolean onPreDraw() {
-                    WindowManager manager = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
+                    WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
                     int rotation = manager.getDefaultDisplay().getRotation();
 
                     if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
