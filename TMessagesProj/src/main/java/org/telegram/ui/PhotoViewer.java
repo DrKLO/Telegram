@@ -59,6 +59,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.objects.PhotoObject;
+import org.telegram.ui.Fragments.MediaFragment;
 import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.ActionBarActivity;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
@@ -505,7 +506,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         closePhoto(false);
                         Bundle args2 = new Bundle();
                         args2.putLong("dialog_id", currentDialogId);
-                        ((ActionBarActivity)parentActivity).presentFragment(new MediaActivity(args2), false, true);
+                        ((ActionBarActivity)parentActivity).presentFragment(new MediaFragment(args2), false, true);
                     }
                 } else if (id == gallery_menu_send) {
                     /*Intent intent = new Intent(this, MessagesActivity.class);

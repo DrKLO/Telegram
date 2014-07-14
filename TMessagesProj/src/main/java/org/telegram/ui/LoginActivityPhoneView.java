@@ -32,6 +32,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Fragments.CountrySelectFragment;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.SlideView;
 
@@ -84,8 +85,8 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
             @Override
             public void onClick(View view) {
                 BaseFragment activity = (BaseFragment)delegate;
-                CountrySelectActivity fragment = new CountrySelectActivity();
-                fragment.setCountrySelectActivityDelegate(new CountrySelectActivity.CountrySelectActivityDelegate() {
+                CountrySelectFragment fragment = new CountrySelectFragment();
+                fragment.setCountrySelectActivityDelegate(new CountrySelectFragment.CountrySelectActivityDelegate() {
                     @Override
                     public void didSelectCountry(String name) {
                         selectCountry(name);

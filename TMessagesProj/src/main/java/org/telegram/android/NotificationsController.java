@@ -33,8 +33,8 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.ApplicationLoader;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.PopupNotificationActivity;
+import org.telegram.ui.Activities.LaunchActivity;
+import org.telegram.ui.Activities.PopupNotificationActivity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
