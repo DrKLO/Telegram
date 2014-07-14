@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
@@ -42,10 +42,10 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 
-public class DocumentSelectActivity extends BaseFragment {
+public class DocumentSelectFragment extends BaseFragment {
 
     public static abstract interface DocumentSelectActivityDelegate {
-        public void didSelectFile(DocumentSelectActivity activity, String path);
+        public void didSelectFile(DocumentSelectFragment activity, String path);
         public void startDocumentSelectActivity();
     }
 
@@ -186,7 +186,7 @@ public class DocumentSelectActivity extends BaseFragment {
                             return;
                         }
                         if (delegate != null) {
-                            delegate.didSelectFile(DocumentSelectActivity.this, file.getAbsolutePath());
+                            delegate.didSelectFile(DocumentSelectFragment.this, file.getAbsolutePath());
                         }
                     }
                 }

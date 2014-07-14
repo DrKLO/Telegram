@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -55,6 +55,8 @@ import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.objects.PhotoObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
+import org.telegram.ui.ApplicationLoader;
+import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.AvatarUpdater;
 import org.telegram.ui.Views.BackupImageView;
@@ -64,7 +66,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Locale;
 
-public class SettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, PhotoViewer.PhotoViewerProvider {
+public class SettingsFragment extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, PhotoViewer.PhotoViewerProvider {
     private ListView listView;
     private ListAdapter listAdapter;
     private AvatarUpdater avatarUpdater = new AvatarUpdater();
@@ -291,11 +293,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             listView.invalidateViews();
                         }
                     } else if (i == notificationRow) {
-                        presentFragment(new SettingsNotificationsActivity());
+                        presentFragment(new SettingsNotificationsFragment());
                     } else if (i == blockedRow) {
-                        presentFragment(new SettingsBlockedUsers());
+                        presentFragment(new SettingsBlockedUsersFragment());
                     } else if (i == backgroundRow) {
-                        presentFragment(new SettingsWallpapersActivity());
+                        presentFragment(new SettingsWallpapersFragment());
                     } else if (i == askQuestionRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -370,7 +372,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         showAlertDialog(builder);
                     } else if (i == languageRow) {
-                        presentFragment(new LanguageSelectActivity());
+                        presentFragment(new LanguageSelectFragment());
                     } else if (i == switchBackendButtonRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -571,7 +573,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 MessagesController.getInstance().users.put(res.user.id, res.user);
                                 Bundle args = new Bundle();
                                 args.putInt("user_id", res.user.id);
-                                presentFragment(new ChatActivity(args));
+                                presentFragment(new ChatFragment(args));
                             }
                         });
                     } else {
@@ -592,7 +594,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             MessagesController.getInstance().users.putIfAbsent(supportUser.id, supportUser);
             Bundle args = new Bundle();
             args.putInt("user_id", supportUser.id);
-            presentFragment(new ChatActivity(args));
+            presentFragment(new ChatFragment(args));
         }
     }
 
@@ -711,7 +713,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     button.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            presentFragment(new SettingsChangeNameActivity());
+                            presentFragment(new SettingsChangeNameFragment());
                         }
                     });
 
@@ -749,7 +751,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                         TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.getClientUserId());
                                         if (user != null && user.photo != null && user.photo.photo_big != null) {
                                             PhotoViewer.getInstance().setParentActivity(getParentActivity());
-                                            PhotoViewer.getInstance().openPhoto(user.photo.photo_big, SettingsActivity.this);
+                                            PhotoViewer.getInstance().openPhoto(user.photo.photo_big, SettingsFragment.this);
                                         }
                                     } else if (i == 0 && !full || i == 1 && full) {
                                         avatarUpdater.openCamera();

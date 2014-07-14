@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Activities;
 
 import android.content.ContentResolver;
 import android.content.Intent;
@@ -31,6 +31,15 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.ApplicationLoader;
+import org.telegram.ui.Fragments.ChatFragment;
+import org.telegram.ui.Fragments.ChatProfileFragment;
+import org.telegram.ui.Fragments.GroupCreateFinalFragment;
+import org.telegram.ui.Fragments.LoginFragment;
+import org.telegram.ui.Fragments.MessagesFragment;
+import org.telegram.ui.PhotoViewer;
+import org.telegram.ui.Fragments.SettingsFragment;
+import org.telegram.ui.Fragments.SettingsWallpapersFragment;
 import org.telegram.ui.Views.ActionBar.ActionBarActivity;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 
@@ -40,7 +49,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Map;
 
-public class LaunchActivity extends ActionBarActivity implements NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate {
+public class LaunchActivity extends ActionBarActivity implements NotificationCenter.NotificationCenterDelegate, MessagesFragment.MessagesActivityDelegate {
     private boolean finished = false;
     private String videoPath = null;
     private String sendingText = null;
@@ -92,9 +101,9 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
 
         if (fragmentsStack.isEmpty()) {
             if (!UserConfig.isClientActivated()) {
-                addFragmentToStack(new LoginActivity());
+                addFragmentToStack(new LoginFragment());
             } else {
-                addFragmentToStack(new MessagesActivity(null));
+                addFragmentToStack(new MessagesFragment(null));
             }
 
             try {
@@ -104,31 +113,31 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                         Bundle args = savedInstanceState.getBundle("args");
                         if (fragmentName.equals("chat")) {
                             if (args != null) {
-                                ChatActivity chat = new ChatActivity(args);
+                                ChatFragment chat = new ChatFragment(args);
                                 if (addFragmentToStack(chat)) {
                                     chat.restoreSelfArgs(savedInstanceState);
                                 }
                             }
                         } else if (fragmentName.equals("settings")) {
-                            SettingsActivity settings = new SettingsActivity();
+                            SettingsFragment settings = new SettingsFragment();
                             addFragmentToStack(settings);
                             settings.restoreSelfArgs(savedInstanceState);
                         } else if (fragmentName.equals("group")) {
                             if (args != null) {
-                                GroupCreateFinalActivity group = new GroupCreateFinalActivity(args);
+                                GroupCreateFinalFragment group = new GroupCreateFinalFragment(args);
                                 if (addFragmentToStack(group)) {
                                     group.restoreSelfArgs(savedInstanceState);
                                 }
                             }
                         } else if (fragmentName.equals("chat_profile")) {
                             if (args != null) {
-                                ChatProfileActivity profile = new ChatProfileActivity(args);
+                                ChatProfileFragment profile = new ChatProfileFragment(args);
                                 if (addFragmentToStack(profile)) {
                                     profile.restoreSelfArgs(savedInstanceState);
                                 }
                             }
                         } else if (fragmentName.equals("wallpapers")) {
-                            SettingsWallpapersActivity settings = new SettingsWallpapersActivity();
+                            SettingsWallpapersFragment settings = new SettingsWallpapersFragment();
                             addFragmentToStack(settings);
                             settings.restoreSelfArgs(savedInstanceState);
                         }
@@ -389,7 +398,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             } else {
                 Bundle args = new Bundle();
                 args.putInt("user_id", push_user_id);
-                ChatActivity fragment = new ChatActivity(args);
+                ChatFragment fragment = new ChatFragment(args);
                 if (presentFragment(fragment, false, true)) {
                     pushOpened = true;
                 }
@@ -397,14 +406,14 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         } else if (push_chat_id != 0) {
             Bundle args = new Bundle();
             args.putInt("chat_id", push_chat_id);
-            ChatActivity fragment = new ChatActivity(args);
+            ChatFragment fragment = new ChatFragment(args);
             if (presentFragment(fragment, false, true)) {
                 pushOpened = true;
             }
         } else if (push_enc_id != 0) {
             Bundle args = new Bundle();
             args.putInt("enc_id", push_enc_id);
-            ChatActivity fragment = new ChatActivity(args);
+            ChatFragment fragment = new ChatFragment(args);
             if (presentFragment(fragment, false, true)) {
                 pushOpened = true;
             }
@@ -414,13 +423,13 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             Bundle args = new Bundle();
             args.putBoolean("onlySelect", true);
             args.putString("selectAlertString", LocaleController.getString("SendMessagesTo", R.string.SendMessagesTo));
-            MessagesActivity fragment = new MessagesActivity(args);
+            MessagesFragment fragment = new MessagesFragment(args);
             fragment.setDelegate(this);
             presentFragment(fragment, false, true);
             pushOpened = true;
         }
         if (open_settings != 0) {
-            presentFragment(new SettingsActivity(), false, true);
+            presentFragment(new SettingsFragment(), false, true);
             pushOpened = true;
         }
         if (!pushOpened && !isNew) {
@@ -437,7 +446,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     }
 
     @Override
-    public void didSelectDialog(MessagesActivity messageFragment, long dialog_id, boolean param) {
+    public void didSelectDialog(MessagesFragment messageFragment, long dialog_id, boolean param) {
         if (dialog_id != 0) {
             int lower_part = (int)dialog_id;
 
@@ -453,7 +462,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             } else {
                 args.putInt("enc_id", (int)(dialog_id >> 32));
             }
-            ChatActivity fragment = new ChatActivity(args);
+            ChatFragment fragment = new ChatFragment(args);
             presentFragment(fragment, true);
             if (videoPath != null) {
                 fragment.processSendingVideo(videoPath);
@@ -558,17 +567,17 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                 NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
                 Bundle args2 = new Bundle();
                 args2.putInt("user_id", push_user_id);
-                presentFragment(new ChatActivity(args2), false, true);
+                presentFragment(new ChatFragment(args2), false, true);
             } else if (push_chat_id != 0) {
                 NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
                 Bundle args2 = new Bundle();
                 args2.putInt("chat_id", push_chat_id);
-                presentFragment(new ChatActivity(args2), false, true);
+                presentFragment(new ChatFragment(args2), false, true);
             } else if (push_enc_id != 0) {
                 NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
                 Bundle args2 = new Bundle();
                 args2.putInt("enc_id", push_enc_id);
-                presentFragment(new ChatActivity(args2), false, true);
+                presentFragment(new ChatFragment(args2), false, true);
             }
         } else if (id == 702) {
             if (args[0] != this) {
@@ -609,17 +618,17 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             if (!fragmentsStack.isEmpty()) {
                 BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
                 Bundle args = lastFragment.getArguments();
-                if (lastFragment instanceof ChatActivity && args != null) {
+                if (lastFragment instanceof ChatFragment && args != null) {
                     outState.putBundle("args", args);
                     outState.putString("fragment", "chat");
-                } else if (lastFragment instanceof SettingsActivity) {
+                } else if (lastFragment instanceof SettingsFragment) {
                     outState.putString("fragment", "settings");
-                } else if (lastFragment instanceof GroupCreateFinalActivity && args != null) {
+                } else if (lastFragment instanceof GroupCreateFinalFragment && args != null) {
                     outState.putBundle("args", args);
                     outState.putString("fragment", "group");
-                } else if (lastFragment instanceof SettingsWallpapersActivity) {
+                } else if (lastFragment instanceof SettingsWallpapersFragment) {
                     outState.putString("fragment", "wallpapers");
-                } else if (lastFragment instanceof ChatProfileActivity && args != null) {
+                } else if (lastFragment instanceof ChatProfileFragment && args != null) {
                     outState.putBundle("args", args);
                     outState.putString("fragment", "chat_profile");
                 }

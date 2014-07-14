@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013-2014.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Activities;
 
 import android.app.Activity;
 import android.app.KeyguardManager;
@@ -46,6 +46,7 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.objects.PhotoObject;
+import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
@@ -214,7 +215,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
         chatActivityEnterView.setContainerView(this, findViewById(R.id.chat_layout));
 
-        PowerManager pm = (PowerManager)ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
+        PowerManager pm = (PowerManager) ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
         wakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "screen");
         wakeLock.setReferenceCounted(false);
 

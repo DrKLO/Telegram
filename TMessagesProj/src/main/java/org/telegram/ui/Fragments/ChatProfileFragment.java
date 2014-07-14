@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -37,6 +37,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.ChatOrUserCell;
+import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.AvatarUpdater;
@@ -49,7 +50,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.concurrent.Semaphore;
 
-public class ChatProfileActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ContactsActivity.ContactsActivityDelegate, PhotoViewer.PhotoViewerProvider {
+public class ChatProfileFragment extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ContactsFragment.ContactsActivityDelegate, PhotoViewer.PhotoViewerProvider {
     private ListView listView;
     private ListAdapter listViewAdapter;
     private int chat_id;
@@ -75,7 +76,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
     private static final int done_button = 1;
 
-    public ChatProfileActivity(Bundle args) {
+    public ChatProfileFragment(Bundle args) {
         super(args);
     }
 
@@ -230,7 +231,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     if (i == sharedMediaRow) {
                         Bundle args = new Bundle();
                         args.putLong("dialog_id", -chat_id);
-                        presentFragment(new MediaActivity(args));
+                        presentFragment(new MediaFragment(args));
                     } else if (i == addMemberRow) {
                         openAddMenu();
                     } else if (i > membersSectionRow && i < membersEndRow) {
@@ -240,11 +241,11 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         }
                         Bundle args = new Bundle();
                         args.putInt("user_id", user_id);
-                        presentFragment(new UserProfileActivity(args));
+                        presentFragment(new UserProfileFragment(args));
                     } else if (i == settingsNotificationsRow) {
                         Bundle args = new Bundle();
                         args.putLong("dialog_id", -chat_id);
-                        presentFragment(new ProfileNotificationsActivity(args));
+                        presentFragment(new ProfileNotificationsFragment(args));
                     }
                 }
             });
@@ -462,7 +463,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         args.putBoolean("usersAsSections", true);
         args.putBoolean("returnAsResult", true);
         args.putString("selectAlertString", LocaleController.getString("AddToTheGroup", R.string.AddToTheGroup));
-        ContactsActivity fragment = new ContactsActivity(args);
+        ContactsFragment fragment = new ContactsFragment(args);
         fragment.setDelegate(this);
         if (info != null) {
             HashMap<Integer, TLRPC.User> users = new HashMap<Integer, TLRPC.User>();
@@ -541,7 +542,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         public void onClick(View view) {
                             Bundle args = new Bundle();
                             args.putInt("chat_id", chat_id);
-                            presentFragment(new ChatProfileChangeNameActivity(args));
+                            presentFragment(new ChatProfileChangeNameFragment(args));
                         }
                     });
 

@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013-2014.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
 import android.app.Activity;
 import android.content.Context;
@@ -32,6 +32,8 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
+import org.telegram.ui.ApplicationLoader;
+import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
@@ -40,7 +42,7 @@ import org.telegram.ui.Views.BackupImageView;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class PhotoPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, PhotoViewer.PhotoViewerProvider {
+public class PhotoPickerFragment extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, PhotoViewer.PhotoViewerProvider {
 
     public static interface PhotoPickerActivityDelegate {
         public abstract void didSelectPhotos(ArrayList<String> photos);
@@ -160,7 +162,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                             return;
                         }
                         PhotoViewer.getInstance().setParentActivity(getParentActivity());
-                        PhotoViewer.getInstance().openPhotoForSelect(selectedAlbum.photos, i, PhotoPickerActivity.this);
+                        PhotoViewer.getInstance().openPhotoForSelect(selectedAlbum.photos, i, PhotoPickerFragment.this);
                     }
                 }
             });
@@ -390,7 +392,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             return;
         }
         int position = listView.getFirstVisiblePosition();
-        WindowManager manager = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
+        WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
         int rotation = manager.getDefaultDisplay().getRotation();
 
         int columnsCount = 2;

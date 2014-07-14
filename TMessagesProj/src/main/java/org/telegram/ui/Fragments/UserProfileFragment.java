@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -39,6 +39,8 @@ import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
+import org.telegram.ui.ApplicationLoader;
+import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
@@ -48,7 +50,7 @@ import org.telegram.ui.Views.IdenticonView;
 
 import java.util.ArrayList;
 
-public class UserProfileActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate, PhotoViewer.PhotoViewerProvider {
+public class UserProfileFragment extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, MessagesFragment.MessagesActivityDelegate, PhotoViewer.PhotoViewerProvider {
     private ListView listView;
     private ListAdapter listAdapter;
     private int user_id;
@@ -74,7 +76,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     private int sharedMediaRow;
     private int rowCount = 0;
 
-    public UserProfileActivity(Bundle args) {
+    public UserProfileFragment(Bundle args) {
         super(args);
     }
 
@@ -168,18 +170,18 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         TLRPC.User user = MessagesController.getInstance().users.get(user_id);
                         Bundle args = new Bundle();
                         args.putInt("user_id", user.id);
-                        presentFragment(new ContactAddActivity(args));
+                        presentFragment(new ContactAddFragment(args));
                     } else if (id == share_contact) {
                         Bundle args = new Bundle();
                         args.putBoolean("onlySelect", true);
                         args.putBoolean("serverOnly", true);
-                        MessagesActivity fragment = new MessagesActivity(args);
-                        fragment.setDelegate(UserProfileActivity.this);
+                        MessagesFragment fragment = new MessagesFragment(args);
+                        fragment.setDelegate(UserProfileFragment.this);
                         presentFragment(fragment);
                     } else if (id == edit_contact) {
                         Bundle args = new Bundle();
                         args.putInt("user_id", user_id);
-                        presentFragment(new ContactAddActivity(args));
+                        presentFragment(new ContactAddFragment(args));
                     } else if (id == delete_contact) {
                         final TLRPC.User user = MessagesController.getInstance().users.get(user_id);
                         if (user == null || getParentActivity() == null) {
@@ -249,11 +251,11 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         } else {
                             args.putLong("dialog_id", user_id);
                         }
-                        presentFragment(new MediaActivity(args));
+                        presentFragment(new MediaFragment(args));
                     } else if (i == settingsKeyRow) {
                         Bundle args = new Bundle();
                         args.putInt("chat_id", (int)(dialog_id >> 32));
-                        presentFragment(new IdenticonActivity(args));
+                        presentFragment(new IdenticonFragment(args));
                     } else if (i == settingsTimerRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -302,7 +304,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     } else if (i == settingsNotificationsRow) {
                         Bundle args = new Bundle();
                         args.putLong("dialog_id", dialog_id == 0 ? user_id : dialog_id);
-                        presentFragment(new ProfileNotificationsActivity(args));
+                        presentFragment(new ProfileNotificationsFragment(args));
                     }
                 }
             });
@@ -344,7 +346,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 TLRPC.EncryptedChat encryptedChat = (TLRPC.EncryptedChat)args[0];
                 Bundle args2 = new Bundle();
                 args2.putInt("enc_id", encryptedChat.id);
-                presentFragment(new ChatActivity(args2), true);
+                presentFragment(new ChatFragment(args2), true);
             }
         } else if (id == MessagesController.encryptedChatUpdated) {
             TLRPC.EncryptedChat chat = (TLRPC.EncryptedChat)args[0];
@@ -445,7 +447,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public void didSelectDialog(MessagesActivity messageFragment, long dialog_id, boolean param) {
+    public void didSelectDialog(MessagesFragment messageFragment, long dialog_id, boolean param) {
         if (dialog_id != 0) {
             Bundle args = new Bundle();
             args.putBoolean("scrollToTopOnResume", true);
@@ -460,7 +462,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             } else {
                 args.putInt("enc_id", (int)(dialog_id >> 32));
             }
-            presentFragment(new ChatActivity(args), true);
+            presentFragment(new ChatFragment(args), true);
             messageFragment.removeSelfFromStack();
             removeSelfFromStack();
             TLRPC.User user = MessagesController.getInstance().users.get(user_id);
@@ -525,7 +527,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                             TLRPC.User user = MessagesController.getInstance().users.get(user_id);
                             if (user.photo != null && user.photo.photo_big != null) {
                                 PhotoViewer.getInstance().setParentActivity(getParentActivity());
-                                PhotoViewer.getInstance().openPhoto(user.photo.photo_big, UserProfileActivity.this);
+                                PhotoViewer.getInstance().openPhoto(user.photo.photo_big, UserProfileFragment.this);
                             }
                         }
                     });
@@ -582,7 +584,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                                     if (i == 0) {
                                         int sdk = android.os.Build.VERSION.SDK_INT;
                                         if(sdk < android.os.Build.VERSION_CODES.HONEYCOMB) {
-                                            android.text.ClipboardManager clipboard = (android.text.ClipboardManager)ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                                            android.text.ClipboardManager clipboard = (android.text.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
                                             clipboard.setText(user.phone);
                                         } else {
                                             android.content.ClipboardManager clipboard = (android.content.ClipboardManager)ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
@@ -606,7 +608,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                             NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
                             Bundle args = new Bundle();
                             args.putInt("user_id", user_id);
-                            presentFragment(new ChatActivity(args), true);
+                            presentFragment(new ChatFragment(args), true);
                         }
                     });
                     button = (ImageButton)view.findViewById(R.id.settings_call_phone);

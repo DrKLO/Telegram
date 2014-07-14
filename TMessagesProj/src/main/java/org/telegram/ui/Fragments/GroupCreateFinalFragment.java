@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -31,6 +31,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Cells.ChatOrUserCell;
+import org.telegram.ui.Fragments.ChatFragment;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.AvatarUpdater;
@@ -42,7 +43,7 @@ import org.telegram.ui.Views.SectionedBaseAdapter;
 import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
 
-public class GroupCreateFinalActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, AvatarUpdater.AvatarUpdaterDelegate {
+public class GroupCreateFinalFragment extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, AvatarUpdater.AvatarUpdaterDelegate {
     private PinnedHeaderListView listView;
     private EditText nameTextView;
     private TLRPC.FileLocation avatar;
@@ -57,7 +58,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
     private final static int done_button = 1;
 
-    public GroupCreateFinalActivity(Bundle args) {
+    public GroupCreateFinalFragment(Bundle args) {
         super(args);
     }
 
@@ -305,7 +306,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                     }
                     Bundle args2 = new Bundle();
                     args2.putInt("chat_id", (Integer)args[0]);
-                    presentFragment(new ChatActivity(args2), true);
+                    presentFragment(new ChatFragment(args2), true);
                 }
             });
         }

@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -66,10 +66,12 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
+import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Cells.ChatAudioCell;
 import org.telegram.ui.Cells.ChatBaseCell;
 import org.telegram.ui.Cells.ChatMediaCell;
 import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
@@ -88,8 +90,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.Semaphore;
 
-public class ChatActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate,
-        DocumentSelectActivity.DocumentSelectActivityDelegate, PhotoViewer.PhotoViewerProvider, PhotoPickerActivity.PhotoPickerActivityDelegate {
+public class ChatFragment extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, MessagesFragment.MessagesActivityDelegate,
+        DocumentSelectFragment.DocumentSelectActivityDelegate, PhotoViewer.PhotoViewerProvider, PhotoPickerFragment.PhotoPickerActivityDelegate {
 
     private ChatActivityEnterView chatActivityEnterView;
     private View timeItem;
@@ -177,7 +179,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private final static int attach_location = 10;
     private final static int chat_menu_avatar = 11;
 
-    public ChatActivity(Bundle args) {
+    public ChatFragment(Bundle args) {
         super(args);
     }
 
@@ -408,8 +410,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             FileLog.e("tmessages", e);
                         }
                     } else if (id == attach_gallery) {
-                        PhotoPickerActivity fragment = new PhotoPickerActivity();
-                        fragment.setDelegate(ChatActivity.this);
+                        PhotoPickerFragment fragment = new PhotoPickerFragment();
+                        fragment.setDelegate(ChatFragment.this);
                         presentFragment(fragment);
                     } else if (id == attach_video) {
                         try {
@@ -437,11 +439,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (!isGoogleMapsInstalled()) {
                             return;
                         }
-                        LocationActivity fragment = new LocationActivity();
+                        LocationFragment fragment = new LocationFragment();
                         presentFragment(fragment);
                     } else if (id == attach_document) {
-                        DocumentSelectActivity fragment = new DocumentSelectActivity();
-                        fragment.setDelegate(ChatActivity.this);
+                        DocumentSelectFragment fragment = new DocumentSelectFragment();
+                        fragment.setDelegate(ChatFragment.this);
                         presentFragment(fragment);
                     } else if (id == chat_menu_avatar) {
                         if (currentUser != null) {
@@ -450,7 +452,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             if (currentEncryptedChat != null) {
                                 args.putLong("dialog_id", dialog_id);
                             }
-                            presentFragment(new UserProfileActivity(args));
+                            presentFragment(new UserProfileFragment(args));
                         } else if (currentChat != null) {
                             if (info != null && info instanceof TLRPC.TL_chatParticipantsForbidden) {
                                 return;
@@ -460,7 +462,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             }
                             Bundle args = new Bundle();
                             args.putInt("chat_id", currentChat.id);
-                            ChatProfileActivity fragment = new ChatProfileActivity(args);
+                            ChatProfileFragment fragment = new ChatProfileFragment(args);
                             fragment.setChatInfo(info);
                             presentFragment(fragment);
                         }
@@ -516,8 +518,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         args.putBoolean("onlySelect", true);
                         args.putBoolean("serverOnly", true);
                         args.putString("selectAlertString", LocaleController.getString("ForwardMessagesTo", R.string.ForwardMessagesTo));
-                        MessagesActivity fragment = new MessagesActivity(args);
-                        fragment.setDelegate(ChatActivity.this);
+                        MessagesFragment fragment = new MessagesFragment(args);
+                        fragment.setDelegate(ChatFragment.this);
                         presentFragment(fragment);
                     }
                 }
@@ -2288,7 +2290,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             public void onClick(View v) {
                                 Bundle args = new Bundle();
                                 args.putInt("user_id", currentUser.id);
-                                presentFragment(new ContactAddActivity(args));
+                                presentFragment(new ContactAddFragment(args));
                             }
                         });
                     }
@@ -2694,7 +2696,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 }
                                 if (locFile != null) {
                                     if (LocaleController.getInstance().applyLanguageFile(locFile)) {
-                                        presentFragment(new LanguageSelectActivity());
+                                        presentFragment(new LanguageSelectFragment());
                                     } else {
                                         if (getParentActivity() == null) {
                                             return;
@@ -2792,7 +2794,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 args.putBoolean("onlySelect", true);
                 args.putBoolean("serverOnly", true);
                 args.putString("selectAlertString", LocaleController.getString("ForwardMessagesTo", R.string.ForwardMessagesTo));
-                MessagesActivity fragment = new MessagesActivity(args);
+                MessagesFragment fragment = new MessagesFragment(args);
                 fragment.setDelegate(this);
                 presentFragment(fragment);
             }
@@ -2812,7 +2814,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     @Override
-    public void didSelectFile(DocumentSelectActivity activity, String path) {
+    public void didSelectFile(DocumentSelectFragment activity, String path) {
         activity.finishFragment();
         processSendingDocument(path, path);
     }
@@ -2888,7 +2890,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     @Override
-    public void didSelectDialog(MessagesActivity activity, long did, boolean param) {
+    public void didSelectDialog(MessagesFragment activity, long did, boolean param) {
         if (dialog_id != 0 && (forwaringMessage != null || !selectedMessagesIds.isEmpty())) {
 
             if (did != dialog_id) {
@@ -2901,7 +2903,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     } else if (lower_part < 0) {
                         args.putInt("chat_id", -lower_part);
                     }
-                    presentFragment(new ChatActivity(args), true);
+                    presentFragment(new ChatFragment(args), true);
                     removeSelfFromStack();
                     forwardSelectedMessages(did, param);
                 } else {
@@ -3264,7 +3266,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (user != null && user.id != UserConfig.getClientUserId()) {
                             Bundle args = new Bundle();
                             args.putInt("user_id", user.id);
-                            presentFragment(new UserProfileActivity(args));
+                            presentFragment(new UserProfileFragment(args));
                         }
                     }
 
@@ -3299,7 +3301,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             }
                             if (message.type == 1) {
                                 PhotoViewer.getInstance().setParentActivity(getParentActivity());
-                                PhotoViewer.getInstance().openPhoto(message, ChatActivity.this);
+                                PhotoViewer.getInstance().openPhoto(message, ChatFragment.this);
                             } else if (message.type == 3) {
                                 try {
                                     File f = null;
@@ -3319,7 +3321,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 if (!isGoogleMapsInstalled()) {
                                     return;
                                 }
-                                LocationActivity fragment = new LocationActivity();
+                                LocationFragment fragment = new LocationFragment();
                                 fragment.setMessageObject(message);
                                 presentFragment(fragment);
                             }
@@ -3759,7 +3761,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         Bundle args = new Bundle();
                         args.putInt("user_id", message.messageOwner.media.user_id);
                         args.putString("phone", message.messageOwner.media.phone_number);
-                        presentFragment(new ContactAddActivity(args));
+                        presentFragment(new ContactAddFragment(args));
                     }
                 });
 
@@ -3791,7 +3793,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 if (user != null) {
                                     Bundle args = new Bundle();
                                     args.putInt("user_id", message.messageOwner.media.user_id);
-                                    presentFragment(new UserProfileActivity(args));
+                                    presentFragment(new UserProfileFragment(args));
                                 } else {
                                     if (message.messageOwner.media.phone_number == null || message.messageOwner.media.phone_number.length() == 0) {
                                         return;
@@ -3870,7 +3872,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (message != null) {
                             Bundle args = new Bundle();
                             args.putInt("user_id", message.messageOwner.from_id);
-                            presentFragment(new UserProfileActivity(args));
+                            presentFragment(new UserProfileFragment(args));
                         }
                     }
                 });
@@ -3929,7 +3931,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (message != null) {
                 if (message.type == 11) {
                     PhotoViewer.getInstance().setParentActivity(getParentActivity());
-                    PhotoViewer.getInstance().openPhoto(message, ChatActivity.this);
+                    PhotoViewer.getInstance().openPhoto(message, ChatFragment.this);
                 } else if (message.type == 8 || message.type == 9) {
                     File f = null;
                     String fileName = message.getFileName();

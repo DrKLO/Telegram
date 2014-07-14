@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -32,11 +32,12 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 
 import java.io.File;
 
-public class PhotoCropActivity extends BaseFragment {
+public class PhotoCropFragment extends BaseFragment {
 
     public interface PhotoCropActivityDelegate {
         public abstract void didFinishCrop(Bitmap bitmap);
@@ -285,7 +286,7 @@ public class PhotoCropActivity extends BaseFragment {
     private boolean sameBitmap = false;
     private boolean doneButtonPressed = false;
 
-    public PhotoCropActivity(Bundle args) {
+    public PhotoCropFragment(Bundle args) {
         super(args);
     }
 
@@ -303,7 +304,7 @@ public class PhotoCropActivity extends BaseFragment {
             }
         }
         Point displaySize = new Point();
-        Display display = ((WindowManager)ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
+        Display display = ((WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
         if(android.os.Build.VERSION.SDK_INT < 13) {
             displaySize.set(display.getWidth(), display.getHeight());
         } else {

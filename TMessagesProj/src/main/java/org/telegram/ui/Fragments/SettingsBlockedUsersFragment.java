@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -38,7 +38,7 @@ import org.telegram.ui.Views.ActionBar.BaseFragment;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class SettingsBlockedUsers extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ContactsActivity.ContactsActivityDelegate {
+public class SettingsBlockedUsersFragment extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ContactsFragment.ContactsActivityDelegate {
     private ListView listView;
     private ListAdapter listViewAdapter;
     private boolean loading;
@@ -81,8 +81,8 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                         args.putBoolean("destroyAfterSelect", true);
                         args.putBoolean("usersAsSections", true);
                         args.putBoolean("returnAsResult", true);
-                        ContactsActivity fragment = new ContactsActivity(args);
-                        fragment.setDelegate(SettingsBlockedUsers.this);
+                        ContactsFragment fragment = new ContactsFragment(args);
+                        fragment.setDelegate(SettingsBlockedUsersFragment.this);
                         presentFragment(fragment);
                     }
                 }
@@ -112,7 +112,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                     if (i < blockedContacts.size()) {
                         Bundle args = new Bundle();
                         args.putInt("user_id", blockedContacts.get(i).user_id);
-                        presentFragment(new UserProfileActivity(args));
+                        presentFragment(new UserProfileFragment(args));
                     }
                 }
             });

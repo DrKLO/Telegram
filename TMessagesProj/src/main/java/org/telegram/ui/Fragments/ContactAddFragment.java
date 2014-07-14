@@ -6,10 +6,12 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
+import android.graphics.Typeface;
+import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,22 +22,46 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.android.ContactsController;
 import org.telegram.android.LocaleController;
-import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.ConnectionsManager;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.RPCRequest;
-import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
+import org.telegram.ui.ApplicationLoader;
+import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 
-public class SettingsChangeNameActivity extends BaseFragment {
+public class ContactAddFragment extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+    private int user_id;
+    private String phone = null;
+    private View doneButton;
     private EditText firstNameField;
     private EditText lastNameField;
-    private View headerLabelView;
-    private View doneButton;
+    private BackupImageView avatarImage;
+    private TextView onlineText;
+    private TextView phoneText;
+
+    public ContactAddFragment(Bundle args) {
+        super(args);
+    }
+
+    @Override
+    public boolean onFragmentCreate() {
+        NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
+        user_id = getArguments().getInt("user_id", 0);
+        phone = getArguments().getString("phone");
+        TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+        return user != null && super.onFragmentCreate();
+    }
+
+    @Override
+    public void onFragmentDestroy() {
+        super.onFragmentDestroy();
+        NotificationCenter.getInstance().removeObserver(this, MessagesController.updateInterfaces);
+    }
 
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
@@ -53,8 +79,12 @@ public class SettingsChangeNameActivity extends BaseFragment {
                 @Override
                 public void onClick(View view) {
                     if (firstNameField.getText().length() != 0) {
-                        saveName();
+                        TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+                        user.first_name = firstNameField.getText().toString();
+                        user.last_name = lastNameField.getText().toString();
+                        ContactsController.getInstance().addContact(user);
                         finishFragment();
+                        NotificationCenter.getInstance().postNotificationName(MessagesController.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
                     }
                 }
             });
@@ -63,12 +93,21 @@ public class SettingsChangeNameActivity extends BaseFragment {
             TextView textView = (TextView)doneButton.findViewById(R.id.done_button_text);
             textView.setText(LocaleController.getString("Done", R.string.Done).toUpperCase());
 
-            fragmentView = inflater.inflate(R.layout.settings_change_name_layout, container, false);
+            fragmentView = inflater.inflate(R.layout.contact_add_layout, container, false);
 
-            TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.getClientUserId());
-            if (user == null) {
-                user = UserConfig.getCurrentUser();
+            TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+            if (user.phone == null) {
+                if (phone != null) {
+                    user.phone = PhoneFormat.stripExceptNumbers(phone);
+                }
             }
+
+            onlineText = (TextView)fragmentView.findViewById(R.id.settings_online);
+            avatarImage = (BackupImageView)fragmentView.findViewById(R.id.settings_avatar_image);
+            avatarImage.processDetach = false;
+            phoneText = (TextView)fragmentView.findViewById(R.id.settings_name);
+            Typeface typeface = AndroidUtilities.getTypeface("fonts/rmedium.ttf");
+            phoneText.setTypeface(typeface);
 
             firstNameField = (EditText)fragmentView.findViewById(R.id.first_name_field);
             firstNameField.setHint(LocaleController.getString("FirstName", R.string.FirstName));
@@ -102,8 +141,7 @@ public class SettingsChangeNameActivity extends BaseFragment {
                 lastNameField.setText(user.last_name);
             }
 
-            TextView headerLabel = (TextView)fragmentView.findViewById(R.id.settings_section_text);
-            headerLabel.setText(LocaleController.getString("YourFirstNameAndLastName", R.string.YourFirstNameAndLastName));
+            updateAvatarLayout();
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
             if (parent != null) {
@@ -111,6 +149,33 @@ public class SettingsChangeNameActivity extends BaseFragment {
             }
         }
         return fragmentView;
+    }
+
+    private void updateAvatarLayout() {
+        if (phoneText == null) {
+            return;
+        }
+        TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+        if (user == null) {
+            return;
+        }
+        phoneText.setText(PhoneFormat.getInstance().format("+" + user.phone));
+        onlineText.setText(LocaleController.formatUserStatus(user));
+
+        TLRPC.FileLocation photo = null;
+        if (user.photo != null) {
+            photo = user.photo.photo_small;
+        }
+        avatarImage.setImage(photo, "50_50", Utilities.getUserAvatarForId(user.id));
+    }
+
+    public void didReceivedNotification(int id, Object... args) {
+        if (id == MessagesController.updateInterfaces) {
+            int mask = (Integer)args[0];
+            if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
+                updateAvatarLayout();
+            }
+        }
     }
 
     @Override
@@ -122,28 +187,6 @@ public class SettingsChangeNameActivity extends BaseFragment {
             firstNameField.requestFocus();
             AndroidUtilities.showKeyboard(firstNameField);
         }
-    }
-
-    private void saveName() {
-        TLRPC.TL_account_updateProfile req = new TLRPC.TL_account_updateProfile();
-        if (UserConfig.getCurrentUser() == null || lastNameField.getText() == null || firstNameField.getText() == null) {
-            return;
-        }
-        UserConfig.getCurrentUser().first_name = req.first_name = firstNameField.getText().toString();
-        UserConfig.getCurrentUser().last_name = req.last_name = lastNameField.getText().toString();
-        TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.getClientUserId());
-        if (user != null) {
-            user.first_name = req.first_name;
-            user.last_name = req.last_name;
-        }
-        UserConfig.saveConfig(true);
-        NotificationCenter.getInstance().postNotificationName(MessagesController.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
-        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
-            @Override
-            public void run(TLObject response, TLRPC.TL_error error) {
-
-            }
-        });
     }
 
     @Override

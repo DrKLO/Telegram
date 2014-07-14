@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui;
+package org.telegram.ui.Fragments;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -46,7 +46,7 @@ import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MessagesActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+public class MessagesFragment extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private ListView messagesListView;
     private MessagesAdapter messagesListViewAdapter;
     private TextView searchEmptyView;
@@ -76,10 +76,10 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     private final static int messages_list_menu_settings = 5;
 
     public static interface MessagesActivityDelegate {
-        public abstract void didSelectDialog(MessagesActivity fragment, long dialog_id, boolean param);
+        public abstract void didSelectDialog(MessagesFragment fragment, long dialog_id, boolean param);
     }
 
-    public MessagesActivity(Bundle args) {
+    public MessagesFragment(Bundle args) {
         super(args);
     }
 
@@ -184,24 +184,24 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 @Override
                 public void onItemClick(int id) {
                     if (id == messages_list_menu_settings) {
-                        presentFragment(new SettingsActivity());
+                        presentFragment(new SettingsFragment());
                     } else if (id == messages_list_menu_contacts) {
-                        presentFragment(new ContactsActivity(null));
+                        presentFragment(new ContactsFragment(null));
                     } else if (id == messages_list_menu_new_messages) {
                         Bundle args = new Bundle();
                         args.putBoolean("onlyUsers", true);
                         args.putBoolean("destroyAfterSelect", true);
                         args.putBoolean("usersAsSections", true);
-                        presentFragment(new ContactsActivity(args));
+                        presentFragment(new ContactsFragment(args));
                     } else if (id == messages_list_menu_new_secret_chat) {
                         Bundle args = new Bundle();
                         args.putBoolean("onlyUsers", true);
                         args.putBoolean("destroyAfterSelect", true);
                         args.putBoolean("usersAsSections", true);
                         args.putBoolean("createSecretChat", true);
-                        presentFragment(new ContactsActivity(args));
+                        presentFragment(new ContactsFragment(args));
                     } else if (id == messages_list_menu_new_chat) {
-                        presentFragment(new GroupCreateActivity());
+                        presentFragment(new GroupCreateFragment());
                     } else if (id == -1) {
                         if (onlySelect) {
                             finishFragment();
@@ -291,7 +291,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                         } else {
                             args.putInt("enc_id", (int)(dialog_id >> 32));
                         }
-                        presentFragment(new ChatActivity(args));
+                        presentFragment(new ChatFragment(args));
                     }
                 }
             });
@@ -511,7 +511,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 builder.setMessage(LocaleController.formatStringSimple(selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
             }
             CheckBox checkBox = null;
-            if (delegate instanceof ChatActivity) {
+            if (delegate instanceof ChatFragment) {
                 checkBox = new CheckBox(getParentActivity());
                 checkBox.setText(LocaleController.getString("ForwardFromMyName", R.string.ForwardFromMyName));
                 checkBox.setChecked(false);
@@ -535,7 +535,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             }
         } else {
             if (delegate != null) {
-                delegate.didSelectDialog(MessagesActivity.this, dialog_id, param);
+                delegate.didSelectDialog(MessagesFragment.this, dialog_id, param);
                 delegate = null;
             } else {
                 finishFragment();

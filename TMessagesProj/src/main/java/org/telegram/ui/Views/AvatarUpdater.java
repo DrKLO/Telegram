@@ -22,13 +22,13 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.PhotoCropActivity;
+import org.telegram.ui.Activities.LaunchActivity;
+import org.telegram.ui.Fragments.PhotoCropFragment;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 
 import java.io.File;
 
-public class AvatarUpdater implements NotificationCenter.NotificationCenterDelegate, PhotoCropActivity.PhotoCropActivityDelegate {
+public class AvatarUpdater implements NotificationCenter.NotificationCenterDelegate, PhotoCropFragment.PhotoCropActivityDelegate {
     public String currentPicturePath;
     private TLRPC.PhotoSize smallPhoto;
     private TLRPC.PhotoSize bigPhoto;
@@ -88,7 +88,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
             } else if (uri != null) {
                 args.putParcelable("photoUri", uri);
             }
-            PhotoCropActivity photoCropActivity = new PhotoCropActivity(args);
+            PhotoCropFragment photoCropActivity = new PhotoCropFragment(args);
             photoCropActivity.setDelegate(this);
             activity.presentFragment(photoCropActivity);
         } catch (Exception e) {
