@@ -2271,6 +2271,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
                 sentMessage.message = newMsg.message;
                 sentMessage.attachPath = newMsg.attachPath;
+                newMsg.media.photo.id = sentMessage.media.photo.id;
+                newMsg.media.photo.access_hash = sentMessage.media.photo.access_hash;
             } else if (sentMessage.media instanceof TLRPC.TL_messageMediaVideo && sentMessage.media.video != null && newMsg.media instanceof TLRPC.TL_messageMediaVideo && newMsg.media.video != null) {
                 MessagesStorage.getInstance().putSentFile(originalPath, sentMessage.media.video, 2);
 
@@ -2289,6 +2291,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
                 sentMessage.message = newMsg.message;
                 sentMessage.attachPath = newMsg.attachPath;
+                newMsg.media.video.dc_id = sentMessage.media.video.dc_id;
+                newMsg.media.video.id = sentMessage.media.video.id;
+                newMsg.media.video.access_hash = sentMessage.media.video.access_hash;
             } else if (sentMessage.media instanceof TLRPC.TL_messageMediaDocument && sentMessage.media.document != null && newMsg.media instanceof TLRPC.TL_messageMediaDocument && newMsg.media.document != null) {
                 MessagesStorage.getInstance().putSentFile(originalPath, sentMessage.media.document, 1);
 
@@ -2311,8 +2316,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     boolean result = cacheFile.renameTo(cacheFile2);
                     if (result) {
                         newMsg.attachPath = null;
-                        newMsg.media.document.dc_id = sentMessage.media.document.dc_id;
-                        newMsg.media.document.id = sentMessage.media.document.id;
                     } else {
                         sentMessage.attachPath = newMsg.attachPath;
                         sentMessage.message = newMsg.message;
@@ -2321,6 +2324,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     sentMessage.attachPath = newMsg.attachPath;
                     sentMessage.message = newMsg.message;
                 }
+                newMsg.media.document.dc_id = sentMessage.media.document.dc_id;
+                newMsg.media.document.id = sentMessage.media.document.id;
+                newMsg.media.document.access_hash = sentMessage.media.document.access_hash;
             } else if (sentMessage.media instanceof TLRPC.TL_messageMediaAudio && sentMessage.media.audio != null && newMsg.media instanceof TLRPC.TL_messageMediaAudio && newMsg.media.audio != null) {
                 sentMessage.message = newMsg.message;
                 sentMessage.attachPath = newMsg.attachPath;
@@ -2331,9 +2337,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     File cacheFile = new File(AndroidUtilities.getCacheDir(), fileName);
                     File cacheFile2 = new File(AndroidUtilities.getCacheDir(), fileName2);
                     cacheFile.renameTo(cacheFile2);
-                    newMsg.media.audio.dc_id = sentMessage.media.audio.dc_id;
-                    newMsg.media.audio.id = sentMessage.media.audio.id;
                 }
+                newMsg.media.audio.dc_id = sentMessage.media.audio.dc_id;
+                newMsg.media.audio.id = sentMessage.media.audio.id;
+                newMsg.media.audio.access_hash = sentMessage.media.audio.access_hash;
             }
         } else if (file != null) {
             if (newMsg.media instanceof TLRPC.TL_messageMediaPhoto && newMsg.media.photo != null) {
