@@ -235,6 +235,10 @@ public class NotificationsController {
             }
 
             TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+            TLRPC.Chat chat = null;
+            if (chat_id != 0) {
+                chat = MessagesController.getInstance().chats.get(chat_id);
+            }
             TLRPC.FileLocation photoPath = null;
 
             boolean notifyDisabled = false;
@@ -306,8 +310,16 @@ public class NotificationsController {
                 } else if (user_id != 0) {
                     intent.putExtra("userId", user_id);
                 }
-                if (pushDialogs.size() == 1 && user.photo != null && user.photo.photo_small != null && user.photo.photo_small.volume_id != 0 && user.photo.photo_small.local_id != 0) {
-                    photoPath = user.photo.photo_small;
+                if (pushDialogs.size() == 1) {
+                    if (chat != null) {
+                        if (chat.photo != null && chat.photo.photo_small != null && chat.photo.photo_small.volume_id != 0 && chat.photo.photo_small.local_id != 0) {
+                            photoPath = chat.photo.photo_small;
+                        }
+                    } else {
+                        if (user.photo != null && user.photo.photo_small != null && user.photo.photo_small.volume_id != 0 && user.photo.photo_small.local_id != 0) {
+                            photoPath = user.photo.photo_small;
+                        }
+                    }
                 }
             } else {
                 intent.putExtra("encId", (int)(dialog_id >> 32));
@@ -320,7 +332,11 @@ public class NotificationsController {
                 name = LocaleController.getString("AppName", R.string.AppName);
                 replace = false;
             } else {
-                name = Utilities.formatName(user.first_name, user.last_name);
+                if (chat != null) {
+                    name = chat.title;
+                } else {
+                    name = Utilities.formatName(user.first_name, user.last_name);
+                }
             }
 
             String detailText = null;
@@ -351,7 +367,11 @@ public class NotificationsController {
                 }
                 if (pushDialogs.size() == 1) {
                     if (replace) {
-                        message = message.replace(name + ": ", "").replace(name + " ", "");
+                        if (chat != null) {
+                            message = message.replace(" @ " + name, "");
+                        } else {
+                            message = message.replace(name + ": ", "").replace(name + " ", "");
+                        }
                     }
                 }
                 inboxStyle.addLine(message);

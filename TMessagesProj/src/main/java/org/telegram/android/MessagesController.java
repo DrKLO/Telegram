@@ -1346,9 +1346,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             loadingDialogs = false;
                             if (resetEnd) {
                                 dialogsEndReached = false;
-                                NotificationCenter.getInstance().postNotificationName(dialogsNeedReload);
                             }
                             loadDialogs(offset, serverOffset, count, false);
+                            NotificationCenter.getInstance().postNotificationName(dialogsNeedReload);
                         }
                     });
                     return;

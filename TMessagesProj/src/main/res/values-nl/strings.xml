@@ -22,7 +22,7 @@
     <string name="Calling">We bellen je…</string>
     <string name="Code">Code</string>
     <string name="WrongNumber">Verkeerd nummer?</string>
-    <string name="DidNotGetTheCode">Didn\'t get the code?</string>
+    <string name="DidNotGetTheCode">Geen code ontvangen?</string>
 
     <!--signup view-->
     <string name="YourName">Je naam</string>
@@ -110,7 +110,7 @@
     <string name="SlideToCancel">SLEEP OM TE ANNULEREN</string>
     <string name="SaveToDownloads">Opslaan in Downloads</string>
     <string name="ApplyLocalizationFile">Vertaling toepassen</string>
-    <string name="UnsupportedAttachment">Unsupported attachment</string>
+    <string name="UnsupportedAttachment">Bijlageformaat niet ondersteund</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Privégesprek aangevraagd</string>
@@ -171,7 +171,7 @@
     <string name="EnterGroupNamePlaceholder">Groepsnaam...</string>
     <string name="GroupName">Groepsnaam</string>
     <string name="AllContacts">ALLE CONTACTEN</string>
-    <string name="MembersCount">%1$d/%2$d members</string>
+    <string name="MembersCount">%1$d/%2$d deelnemers</string>
 
     <!--group info view-->
     <string name="EnterGroupNameTitle">GROEPSNAAM INSTELLEN</string>
@@ -269,12 +269,12 @@
     <string name="WiFiOnly">Alleen via WiFi</string>
     <string name="SortFirstName">Voornaam</string>
     <string name="SortLastName">Achternaam</string>
-    <string name="LedColor">LED Color</string>
-    <string name="PopupNotification">Popup Notification</string>
-    <string name="NoPopup">No popup</string>
-    <string name="OnlyWhenScreenOn">Only when screen "on"</string>
-    <string name="OnlyWhenScreenOff">Only when screen "off"</string>
-    <string name="AlwaysShowPopup">Always show popup</string>
+    <string name="LedColor">LED kleur</string>
+    <string name="PopupNotification">Popup melding</string>
+    <string name="NoPopup">Geen popup</string>
+    <string name="OnlyWhenScreenOn">Alleen wanneer scherm \"aan\" staat</string>
+    <string name="OnlyWhenScreenOff">Alleen wanneer scherm \"uit\" staat</string>
+    <string name="AlwaysShowPopup">Altijd popup tonen</string>
 
     <!--media view-->
     <string name="NoMedia">Nog geen media gedeeld</string>
@@ -356,25 +356,25 @@
     <string name="InvalidLastName">Ongeldige achternaam</string>
     <string name="Loading">Bezig met laden…</string>
     <string name="NoPlayerInstalled">Je hebt geen mediaspeler. Installeer een mediaspeler om door te gaan.</string>
-    <string name="NoMailInstalled">Please send an email to sms@telegram.org and explain your problem.</string>
+    <string name="NoMailInstalled">Stuur aub een emailbericht naar sms@telegram.org en beschrijf uw probleem</string>
     <string name="NoHandleAppInstalled">Je hebt geen applicaties die het MIME-type \'%1$s\' ondersteunen. Installeer een geschikte applicatie om door te gaan.</string>
     <string name="InviteUser">Deze gebruiker heeft nog geen Telegram. Wil je een uitnodiging sturen?</string>
     <string name="AreYouSure">Weet je het zeker?</string>
     <string name="AddContactQ">Contact toevoegen?</string>
-    <string name="AddToTheGroup">Add %1$s to the group?\n\nNumber of last messages to forward:</string>
+    <string name="AddToTheGroup">%1$s toevoegen aan de groep?\n\nAantal recente berichten om door te sturen:</string>
     <string name="ForwardMessagesTo">Berichten doorsturen naar %1$s?</string>
     <string name="DeleteChatQuestion">Dit gesprek verwijderen?</string>
-    <string name="SendMessagesTo">Send messages to %1$s?</string>
-    <string name="AreYouSureLogout">Are you sure you want to logout?</string>
-    <string name="AreYouSureSessions">Are you sure you want to terminate all other sessions?</string>
-    <string name="AreYouSureDeleteAndExit">Are you sure you want to delete and leave group?</string>
-    <string name="AreYouSureDeleteThisChat">Are you sure you want to delete this chat?</string>
-    <string name="AreYouSureShareMyContactInfo">Are you sure that you want to share your contact info?</string>
-    <string name="AreYouSureBlockContact">Are you sure you want to block this contact?</string>
-    <string name="AreYouSureUnblockContact">Are you sure you want to unblock this contact?</string>
-    <string name="AreYouSureDeleteContact">Are you sure you want to delete this contact?</string>
-    <string name="AreYouSureSecretChat">Are you sure you want to start secret chat?</string>
-    <string name="ForwardFromMyName">forward from my name</string>
+    <string name="SendMessagesTo">Berichten naar %1$s verzenden?</string>
+    <string name="AreYouSureLogout">Weet u zeker dat u wil uitloggen?</string>
+    <string name="AreYouSureSessions">Alle andere apparaten afmelden?</string>
+    <string name="AreYouSureDeleteAndExit">Deze groep verlaten en groep verwijderen?</string>
+    <string name="AreYouSureDeleteThisChat">Dit gesprek verwijderen?</string>
+    <string name="AreYouSureShareMyContactInfo">Deze contact-informatie delen?</string>
+    <string name="AreYouSureBlockContact">Deze persoon blokkeren?</string>
+    <string name="AreYouSureUnblockContact">Deze persoon deblokkeren?</string>
+    <string name="AreYouSureDeleteContact">Deze contactpersoon verwijderen?</string>
+    <string name="AreYouSureSecretChat">Een privégesprek starten?</string>
+    <string name="ForwardFromMyName">doorsturen via mijn eigen naam</string>
 
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
@@ -394,40 +394,36 @@
     <string name="StartMessaging">Begin nu met chatten</string>
 
     <!--plurals-->
-    <string name="Members_zero">no members</string>
-    <string name="Members_one">%1$d member</string>
-    <string name="Members_two">%1$d members</string>
-    <string name="Members_few">%1$d members</string>
-    <string name="Members_many">%1$d members</string>
-    <string name="Members_other">%1$d members</string>
-
-    <string name="AndMoreTyping_zero">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_one">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_two">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_few">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_many">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_other">and %1$d more people are typing</string>
-
-    <string name="NewMessages_zero">no new messages</string>
-    <string name="NewMessages_one">%1$d new message</string>
-    <string name="NewMessages_two">%1$d new messages</string>
-    <string name="NewMessages_few">%1$d new messages</string>
-    <string name="NewMessages_many">%1$d new messages</string>
-    <string name="NewMessages_other">%1$d new messages</string>
-
-    <string name="messages_zero">no messages</string>
-    <string name="messages_one">%1$d message</string>
-    <string name="messages_two">%1$d messages</string>
-    <string name="messages_few">%1$d messages</string>
-    <string name="messages_many">%1$d messages</string>
-    <string name="messages_other">%1$d messages</string>
-
-    <string name="FromContacts_zero">from no contacts</string>
-    <string name="FromContacts_one">from %1$d contact</string>
-    <string name="FromContacts_two">from %1$d contacts</string>
-    <string name="FromContacts_few">from %1$d contacts</string>
-    <string name="FromContacts_many">from %1$d contacts</string>
-    <string name="FromContacts_other">from %1$d contacts</string>
+    <string name="Members_zero">geen deelnemers</string>
+    <string name="Members_one">%1$d deelnemer</string>
+    <string name="Members_two">%1$d deelnemers</string>
+    <string name="Members_few">%1$d deelnemers</string>
+    <string name="Members_many">%1$d deelnemers</string>
+    <string name="Members_other">%1$d deelnemers</string>
+    <string name="AndMoreTyping_zero">en nog %1$d personen zijn aan het typen</string>
+    <string name="AndMoreTyping_one">en nog %1$d personen zijn aan het typen</string>
+    <string name="AndMoreTyping_two">en nog %1$d personen zijn aan het typen</string>
+    <string name="AndMoreTyping_few">en nog %1$d personen zijn aan het typen</string>
+    <string name="AndMoreTyping_many">en nog %1$d personen zijn aan het typen</string>
+    <string name="AndMoreTyping_other">en nog %1$d personen zijn aan het typen</string>
+    <string name="NewMessages_zero">geen nieuwe berichten</string>
+    <string name="NewMessages_one">%1$d nieuw bericht</string>
+    <string name="NewMessages_two">%1$d nieuwe berichten</string>
+    <string name="NewMessages_few">%1$d nieuwe berichten</string>
+    <string name="NewMessages_many">%1$d nieuwe berichten</string>
+    <string name="NewMessages_other">%1$d nieuwe berichten</string>
+    <string name="messages_zero">geen berichten</string>
+    <string name="messages_one">%1$d bericht</string>
+    <string name="messages_two">%1$d berichten</string>
+    <string name="messages_few">%1$d berichten</string>
+    <string name="messages_many">%1$d berichten</string>
+    <string name="messages_other">%1$d berichten</string>
+    <string name="FromContacts_zero">van geen enkel contactpersoon</string>
+    <string name="FromContacts_one">van %1$d contactpersoon</string>
+    <string name="FromContacts_two">van %1$d contactpersonen</string>
+    <string name="FromContacts_few">van %1$d contactpersonen</string>
+    <string name="FromContacts_many">van %1$d contactpersonen</string>
+    <string name="FromContacts_other">van %1$d contactpersonen</string>
 
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>

@@ -234,6 +234,7 @@ LOCAL_SRC_FILES     += \
 ./audio.c \
 ./gif.c \
 ./utils.c \
-./image.c
+./image.c \
+./fake.c
 
 include $(BUILD_SHARED_LIBRARY)

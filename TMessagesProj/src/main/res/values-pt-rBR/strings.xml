@@ -22,7 +22,7 @@
     <string name="Calling">Estamos te ligando...</string>
     <string name="Code">Código</string>
     <string name="WrongNumber">Número incorreto?</string>
-    <string name="DidNotGetTheCode">Didn\'t get the code?</string>
+    <string name="DidNotGetTheCode">Não recebeu o código?</string>
 
     <!--signup view-->
     <string name="YourName">Seu nome</string>
@@ -99,8 +99,8 @@
     <string name="EncryptedPlaceholderTitleIncoming">%s convidou você para uma conversa secreta.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">Você convidou %s para uma conversa secreta.</string>
     <string name="EncryptedDescriptionTitle">Conversas secretas:</string>
-    <string name="EncryptedDescription1">Utilizam criptografia ponto a ponto</string>
-    <string name="EncryptedDescription2">Não deixam rastro em nossos servidores</string>
+    <string name="EncryptedDescription1">Utilizam criptografia ponta a ponta</string>
+    <string name="EncryptedDescription2">Não deixam rasto em nossos servidores</string>
     <string name="EncryptedDescription3">Têm temporizador para a autodestruição das mensagens</string>
     <string name="EncryptedDescription4">Não permitem o reencaminhamento</string>
     <string name="YouWereKicked">Você foi removido deste grupo</string>
@@ -110,7 +110,7 @@
     <string name="SlideToCancel">DESLIZE PARA CANCELAR</string>
     <string name="SaveToDownloads">Salvar em downloads</string>
     <string name="ApplyLocalizationFile">Aplicar arquivo de localização</string>
-    <string name="UnsupportedAttachment">Unsupported attachment</string>
+    <string name="UnsupportedAttachment">Anexo não suportado</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Conversa secreta solicitada</string>
@@ -171,7 +171,7 @@
     <string name="EnterGroupNamePlaceholder">Digite o nome do grupo</string>
     <string name="GroupName">Nome do grupo</string>
     <string name="AllContacts">TODOS OS CONTATOS</string>
-    <string name="MembersCount">%1$d/%2$d members</string>
+    <string name="MembersCount">%1$d/%2$d membros</string>
 
     <!--group info view-->
     <string name="EnterGroupNameTitle">DIGITE O NOME DO GRUPO</string>
@@ -266,15 +266,15 @@
     <string name="NotificationsServiceDisableInfo">Se os serviços do Google Play forem suficientes para você receber as notificações, você pode desabilitar o \"Serviço de Notificações\". Porém, nós recomendamos deixá-lo ativo para que o aplicativo continue rodando em segundo plano e recebendo notificações instantâneas.</string>
     <string name="SortBy">Ordenar Por</string>
     <string name="ImportContacts">Importar Contatos</string>
-    <string name="WiFiOnly">Unicamente com WiFi</string>
+    <string name="WiFiOnly">Apenas por WiFi</string>
     <string name="SortFirstName">Primeiro nome</string>
     <string name="SortLastName">Sobrenome</string>
-    <string name="LedColor">LED Color</string>
-    <string name="PopupNotification">Popup Notification</string>
-    <string name="NoPopup">No popup</string>
-    <string name="OnlyWhenScreenOn">Only when screen "on"</string>
-    <string name="OnlyWhenScreenOff">Only when screen "off"</string>
-    <string name="AlwaysShowPopup">Always show popup</string>
+    <string name="LedColor">Cor do LED</string>
+    <string name="PopupNotification">Notificação Popup</string>
+    <string name="NoPopup">Sem popup</string>
+    <string name="OnlyWhenScreenOn">Somente com a tela ligada</string>
+    <string name="OnlyWhenScreenOff">Somente com a tela desligada</string>
+    <string name="AlwaysShowPopup">Sempre mostrar popup</string>
 
     <!--media view-->
     <string name="NoMedia">Ainda não há mídia compartilhada</string>
@@ -295,7 +295,7 @@
     <string name="SaveToGallery">Salvar na galeria</string>
     <string name="Of">%1$d de %2$d</string>
     <string name="Gallery">Galeria</string>
-    <string name="AllPhotos">Todas as fotos</string>
+    <string name="AllPhotos">Todas as Fotos</string>
     <string name="NoPhotos">Ainda não há fotos</string>
 
     <!--button titles-->
@@ -356,25 +356,25 @@
     <string name="InvalidLastName">Sobrenome inválido</string>
     <string name="Loading">Carregando...</string>
     <string name="NoPlayerInstalled">Você não possui um reprodutor de vídeo, instale um para continuar</string>
-    <string name="NoMailInstalled">Please send an email to sms@telegram.org and explain your problem.</string>
+    <string name="NoMailInstalled">Por favor, envie um email para sms@telegram.org e explique seu problema.</string>
     <string name="NoHandleAppInstalled">Você não possui algum aplicativo que pode lidar com o tipo MIME \'%1$s\'. Por favor, instale um para continuar</string>
     <string name="InviteUser">Este usuário ainda não possui Telegram, deseja enviar um convite?</string>
     <string name="AreYouSure">Você tem certeza?</string>
     <string name="AddContactQ">Adicionar contato?</string>
-    <string name="AddToTheGroup">Add %1$s to the group?\n\nNumber of last messages to forward:</string>
+    <string name="AddToTheGroup">Adicionar %1$s para o grupo?\n\nNúmero das últimas mensagens para encaminhar:</string>
     <string name="ForwardMessagesTo">Encaminhar mensagem para %1$s?</string>
     <string name="DeleteChatQuestion">Apagar esta conversa?</string>
-    <string name="SendMessagesTo">Send messages to %1$s?</string>
-    <string name="AreYouSureLogout">Are you sure you want to logout?</string>
-    <string name="AreYouSureSessions">Are you sure you want to terminate all other sessions?</string>
-    <string name="AreYouSureDeleteAndExit">Are you sure you want to delete and leave group?</string>
-    <string name="AreYouSureDeleteThisChat">Are you sure you want to delete this chat?</string>
-    <string name="AreYouSureShareMyContactInfo">Are you sure that you want to share your contact info?</string>
-    <string name="AreYouSureBlockContact">Are you sure you want to block this contact?</string>
-    <string name="AreYouSureUnblockContact">Are you sure you want to unblock this contact?</string>
-    <string name="AreYouSureDeleteContact">Are you sure you want to delete this contact?</string>
-    <string name="AreYouSureSecretChat">Are you sure you want to start secret chat?</string>
-    <string name="ForwardFromMyName">forward from my name</string>
+    <string name="SendMessagesTo">Enviar mensagens para %1$s?</string>
+    <string name="AreYouSureLogout">Você tem certeza que deseja sair dessa sessão?</string>
+    <string name="AreYouSureSessions">Você tem certeza que deseja terminar todas as outras sessões?</string>
+    <string name="AreYouSureDeleteAndExit">Você tem certeza que deseja deletar e sair do grupo?</string>
+    <string name="AreYouSureDeleteThisChat">Você tem certeza que deseja deletar esta conversa?</string>
+    <string name="AreYouSureShareMyContactInfo">Você tem certeza que deseja compartilhar as informações do seu contato?</string>
+    <string name="AreYouSureBlockContact">Você tem certeza que deseja bloquear este contato?</string>
+    <string name="AreYouSureUnblockContact">Você tem certeza que deseja desbloquear este contato?</string>
+    <string name="AreYouSureDeleteContact">Você tem certeza que deseja deletar este contato?</string>
+    <string name="AreYouSureSecretChat">Você tem certeza que deseja iniciar uma conversa secreta?</string>
+    <string name="ForwardFromMyName">encaminhar pelo meu nome</string>
 
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
@@ -385,49 +385,45 @@
     <string name="Page6Title">Baseado na nuvem</string>
     <string name="Page7Title">Privado</string>
     <string name="Page1Message">Bem-vindo à era das mensagens rápidas e seguras</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> envia mensagens mais rapidamente do que<![CDATA[<br/>]]>qualquer outro aplicativo</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> será gratuito para sempre. Sem propaganda.<![CDATA[<br/>]]>Sem taxa de assinatura</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> mantém suas mensagens seguras<![CDATA[<br/>]]>contra ataques de hackers</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> não tem limites para o tamanho de<![CDATA[<br/>]]>suas mídias e conversas</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> permite que você acesse suas mensagens<![CDATA[<br/>]]>a partir de vários dispositivos</string>
-    <string name="Page7Message">As mensagens do <![CDATA[<b>Telegram</b>]]> são fortemente criptografadas<![CDATA[<br/>]]>e podem se autodestruir</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> envia mensagens mais rapidamente do que qualquer outro aplicativo</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> será gratuito para sempre. Sem propaganda. Sem taxa de assinatura</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> mantém suas mensagens seguras contra ataques de hackers</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> não tem limites para o tamanho de suas mídias e conversas</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> permite que você acesse suas mensagens a partir de vários dispositivos</string>
+    <string name="Page7Message">As mensagens do <![CDATA[<b>Telegram</b>]]> são fortemente criptografadas e podem se autodestruir</string>
     <string name="StartMessaging">Comece a conversar</string>
 
     <!--plurals-->
-    <string name="Members_zero">no members</string>
-    <string name="Members_one">%1$d member</string>
-    <string name="Members_two">%1$d members</string>
-    <string name="Members_few">%1$d members</string>
-    <string name="Members_many">%1$d members</string>
-    <string name="Members_other">%1$d members</string>
-
-    <string name="AndMoreTyping_zero">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_one">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_two">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_few">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_many">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_other">and %1$d more people are typing</string>
-
-    <string name="NewMessages_zero">no new messages</string>
-    <string name="NewMessages_one">%1$d new message</string>
-    <string name="NewMessages_two">%1$d new messages</string>
-    <string name="NewMessages_few">%1$d new messages</string>
-    <string name="NewMessages_many">%1$d new messages</string>
-    <string name="NewMessages_other">%1$d new messages</string>
-
-    <string name="messages_zero">no messages</string>
-    <string name="messages_one">%1$d message</string>
-    <string name="messages_two">%1$d messages</string>
-    <string name="messages_few">%1$d messages</string>
-    <string name="messages_many">%1$d messages</string>
-    <string name="messages_other">%1$d messages</string>
-
-    <string name="FromContacts_zero">from no contacts</string>
-    <string name="FromContacts_one">from %1$d contact</string>
-    <string name="FromContacts_two">from %1$d contacts</string>
-    <string name="FromContacts_few">from %1$d contacts</string>
-    <string name="FromContacts_many">from %1$d contacts</string>
-    <string name="FromContacts_other">from %1$d contacts</string>
+    <string name="Members_zero">sem membros</string>
+    <string name="Members_one">%1$d membro</string>
+    <string name="Members_two">%1$d membros</string>
+    <string name="Members_few">%1$d membros</string>
+    <string name="Members_many">%1$d membros</string>
+    <string name="Members_other">%1$d membros</string>
+    <string name="AndMoreTyping_zero">e mais %1$d pessoas estão escrevendo</string>
+    <string name="AndMoreTyping_one">e mais %1$d pessoa está escrevendo</string>
+    <string name="AndMoreTyping_two">e mais %1$d pessoas estão escrevendo</string>
+    <string name="AndMoreTyping_few">e mais %1$d pessoas estão escrevendo</string>
+    <string name="AndMoreTyping_many">e mais %1$d pessoas estão escrevendo</string>
+    <string name="AndMoreTyping_other">e mais %1$d pessoas estão escrevendo</string>
+    <string name="NewMessages_zero">sem novas mensagens</string>
+    <string name="NewMessages_one">%1$d nova mensagem</string>
+    <string name="NewMessages_two">%1$d novas mensagens</string>
+    <string name="NewMessages_few">%1$d novas mensagens</string>
+    <string name="NewMessages_many">%1$d novas mensagens</string>
+    <string name="NewMessages_other">%1$d novas mensagens</string>
+    <string name="messages_zero">sem mensagem</string>
+    <string name="messages_one">%1$d mensagem</string>
+    <string name="messages_two">%1$d mensagens</string>
+    <string name="messages_few">%1$d mensagens</string>
+    <string name="messages_many">%1$d mensagens</string>
+    <string name="messages_other">%1$d mensagens</string>
+    <string name="FromContacts_zero">de nenhum contato</string>
+    <string name="FromContacts_one">de %1$d contato</string>
+    <string name="FromContacts_two">de %1$d contatos</string>
+    <string name="FromContacts_few">de %1$d contatos</string>
+    <string name="FromContacts_many">de %1$d contatos</string>
+    <string name="FromContacts_other">de %1$d contatos</string>
 
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>

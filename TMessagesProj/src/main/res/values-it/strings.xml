@@ -22,7 +22,7 @@
     <string name="Calling">Ti stiamo chiamando…</string>
     <string name="Code">Codice</string>
     <string name="WrongNumber">Numero errato?</string>
-    <string name="DidNotGetTheCode">Didn\'t get the code?</string>
+    <string name="DidNotGetTheCode">Non hai ricevuto il codice?</string>
 
     <!--signup view-->
     <string name="YourName">Il tuo nome</string>
@@ -110,7 +110,7 @@
     <string name="SlideToCancel">TRASCINA PER ANNULLARE</string>
     <string name="SaveToDownloads">Salva in download</string>
     <string name="ApplyLocalizationFile">Applica file di localizzazione</string>
-    <string name="UnsupportedAttachment">Unsupported attachment</string>
+    <string name="UnsupportedAttachment">Allegato non supportato</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Chat segreta richiesta</string>
@@ -171,7 +171,7 @@
     <string name="EnterGroupNamePlaceholder">Immetti il nome del gruppo</string>
     <string name="GroupName">Nome gruppo</string>
     <string name="AllContacts">TUTTI I CONTATTI</string>
-    <string name="MembersCount">%1$d/%2$d members</string>
+    <string name="MembersCount">%1$d/%2$d membri</string>
 
     <!--group info view-->
     <string name="EnterGroupNameTitle">INSERISCI IL NOME DEL GRUPPO</string>
@@ -269,12 +269,12 @@
     <string name="WiFiOnly">Solo tramite WiFi</string>
     <string name="SortFirstName">Nome</string>
     <string name="SortLastName">Cognome</string>
-    <string name="LedColor">LED Color</string>
-    <string name="PopupNotification">Popup Notification</string>
-    <string name="NoPopup">No popup</string>
-    <string name="OnlyWhenScreenOn">Only when screen "on"</string>
-    <string name="OnlyWhenScreenOff">Only when screen "off"</string>
-    <string name="AlwaysShowPopup">Always show popup</string>
+    <string name="LedColor">Colore LED</string>
+    <string name="PopupNotification">Notifica popup</string>
+    <string name="NoPopup">Nessun popup</string>
+    <string name="OnlyWhenScreenOn">Solo con schermo acceso</string>
+    <string name="OnlyWhenScreenOff">Solo con schermo spento</string>
+    <string name="AlwaysShowPopup">Mostra sempre i popup</string>
 
     <!--media view-->
     <string name="NoMedia">Nessun media condiviso</string>
@@ -356,25 +356,25 @@
     <string name="InvalidLastName">Cognome non valido</string>
     <string name="Loading">Caricamento…</string>
     <string name="NoPlayerInstalled">Non hai un lettore video, per favore installane uno per continuare</string>
-    <string name="NoMailInstalled">Please send an email to sms@telegram.org and explain your problem.</string>
+    <string name="NoMailInstalled">Invia un’email a sms@telegram.org spiegandoci il problema.</string>
     <string name="NoHandleAppInstalled">Non hai nessuna applicazione che può gestire il tipo mime \'%1$s\', installane una per continuare</string>
     <string name="InviteUser">Questo utente non ha ancora Telegram, vuoi invitarlo?</string>
     <string name="AreYouSure">Sei sicuro?</string>
     <string name="AddContactQ">Vuoi aggiungere il contatto?</string>
-    <string name="AddToTheGroup">Add %1$s to the group?\n\nNumber of last messages to forward:</string>
+    <string name="AddToTheGroup">Aggiungere %1$s al gruppo?\n\nNumero di messaggi recenti da inoltrare:</string>
     <string name="ForwardMessagesTo">Vuoi inoltrare i messaggi a %1$s?</string>
     <string name="DeleteChatQuestion">Vuoi eliminare questa chat?</string>
-    <string name="SendMessagesTo">Send messages to %1$s?</string>
-    <string name="AreYouSureLogout">Are you sure you want to logout?</string>
-    <string name="AreYouSureSessions">Are you sure you want to terminate all other sessions?</string>
-    <string name="AreYouSureDeleteAndExit">Are you sure you want to delete and leave group?</string>
-    <string name="AreYouSureDeleteThisChat">Are you sure you want to delete this chat?</string>
-    <string name="AreYouSureShareMyContactInfo">Are you sure that you want to share your contact info?</string>
-    <string name="AreYouSureBlockContact">Are you sure you want to block this contact?</string>
-    <string name="AreYouSureUnblockContact">Are you sure you want to unblock this contact?</string>
-    <string name="AreYouSureDeleteContact">Are you sure you want to delete this contact?</string>
-    <string name="AreYouSureSecretChat">Are you sure you want to start secret chat?</string>
-    <string name="ForwardFromMyName">forward from my name</string>
+    <string name="SendMessagesTo">Inviare i messaggi a %1$s?</string>
+    <string name="AreYouSureLogout">Terminare la sessione?</string>
+    <string name="AreYouSureSessions">Chiudere tutte le altre sessioni?</string>
+    <string name="AreYouSureDeleteAndExit">Eliminare il gruppo e uscire da esso?</string>
+    <string name="AreYouSureDeleteThisChat">Eliminare questa chat?</string>
+    <string name="AreYouSureShareMyContactInfo">Condividere le proprie informazioni di contatto?</string>
+    <string name="AreYouSureBlockContact">Bloccare questo contatto?</string>
+    <string name="AreYouSureUnblockContact">Sbloccare questo contatto?</string>
+    <string name="AreYouSureDeleteContact">Eliminare questo contatto?</string>
+    <string name="AreYouSureSecretChat">Iniziare una chat segreta?</string>
+    <string name="ForwardFromMyName">inoltra dal mio nome</string>
 
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
@@ -394,40 +394,36 @@
     <string name="StartMessaging">Inizia a inviare messaggi</string>
 
     <!--plurals-->
-    <string name="Members_zero">no members</string>
-    <string name="Members_one">%1$d member</string>
-    <string name="Members_two">%1$d members</string>
-    <string name="Members_few">%1$d members</string>
-    <string name="Members_many">%1$d members</string>
-    <string name="Members_other">%1$d members</string>
-
-    <string name="AndMoreTyping_zero">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_one">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_two">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_few">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_many">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_other">and %1$d more people are typing</string>
-
-    <string name="NewMessages_zero">no new messages</string>
-    <string name="NewMessages_one">%1$d new message</string>
-    <string name="NewMessages_two">%1$d new messages</string>
-    <string name="NewMessages_few">%1$d new messages</string>
-    <string name="NewMessages_many">%1$d new messages</string>
-    <string name="NewMessages_other">%1$d new messages</string>
-
-    <string name="messages_zero">no messages</string>
-    <string name="messages_one">%1$d message</string>
-    <string name="messages_two">%1$d messages</string>
-    <string name="messages_few">%1$d messages</string>
-    <string name="messages_many">%1$d messages</string>
-    <string name="messages_other">%1$d messages</string>
-
-    <string name="FromContacts_zero">from no contacts</string>
-    <string name="FromContacts_one">from %1$d contact</string>
-    <string name="FromContacts_two">from %1$d contacts</string>
-    <string name="FromContacts_few">from %1$d contacts</string>
-    <string name="FromContacts_many">from %1$d contacts</string>
-    <string name="FromContacts_other">from %1$d contacts</string>
+    <string name="Members_zero">nessun membro</string>
+    <string name="Members_one">%1$d membro</string>
+    <string name="Members_two">%1$d membri</string>
+    <string name="Members_few">%1$d membri</string>
+    <string name="Members_many">%1$d membri</string>
+    <string name="Members_other">%1$d membri</string>
+    <string name="AndMoreTyping_zero">e %1$d altre persone stanno scrivendo</string>
+    <string name="AndMoreTyping_one">e %1$d altra persona stanno scrivendo</string>
+    <string name="AndMoreTyping_two">e %1$d altre persone stanno scrivendo</string>
+    <string name="AndMoreTyping_few">e %1$d altre persone stanno scrivendo</string>
+    <string name="AndMoreTyping_many">e %1$d altre persone stanno scrivendo</string>
+    <string name="AndMoreTyping_other">e %1$d altre persone stanno scrivendo</string>
+    <string name="NewMessages_zero">nessun nuovo messaggio</string>
+    <string name="NewMessages_one">%1$d nuovo messaggio</string>
+    <string name="NewMessages_two">%1$d nuovi messaggi</string>
+    <string name="NewMessages_few">%1$d nuovi messaggi</string>
+    <string name="NewMessages_many">%1$d nuovi messaggi</string>
+    <string name="NewMessages_other">%1$d nuovi messaggi</string>
+    <string name="messages_zero">nessun messaggio</string>
+    <string name="messages_one">%1$d messaggio</string>
+    <string name="messages_two">%1$d messaggi</string>
+    <string name="messages_few">%1$d messaggi</string>
+    <string name="messages_many">%1$d messaggi</string>
+    <string name="messages_other">%1$d messaggi</string>
+    <string name="FromContacts_zero">da nessun contatto</string>
+    <string name="FromContacts_one">da %1$d contatto</string>
+    <string name="FromContacts_two">da %1$d contatti</string>
+    <string name="FromContacts_few">da %1$d contatti</string>
+    <string name="FromContacts_many">da %1$d contatti</string>
+    <string name="FromContacts_other">da %1$d contatti</string>
 
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
