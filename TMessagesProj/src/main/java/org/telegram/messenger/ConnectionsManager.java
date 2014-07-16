@@ -1185,6 +1185,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     requestStartTime = updatingDcStartTime;
                     updatingDcStartTime = currentTime;
                     timeout = 60;
+                } else {
+                    request.runningStartTime = 0;
                 }
                 if (requestStartTime != 0 && requestStartTime < currentTime - timeout) {
                     ArrayList<Datacenter> allDc = new ArrayList<Datacenter>(datacenters.values());
@@ -1196,7 +1198,12 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                         }
                     }
                     Datacenter newDc = allDc.get(Math.abs(Utilities.random.nextInt() % allDc.size()));
-                    datacenterId = request.runningDatacenterId = newDc.datacenterId;
+                    datacenterId = newDc.datacenterId;
+                    if (!(request.rawRequest instanceof TLRPC.TL_help_getConfig)) {
+                        currentDatacenterId = datacenterId;
+                    } else {
+                        request.runningDatacenterId = datacenterId;
+                    }
                 }
             }
 
