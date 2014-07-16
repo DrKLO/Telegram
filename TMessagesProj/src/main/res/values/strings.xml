@@ -376,7 +376,6 @@
     <string name="AreYouSureSecretChat">Are you sure you want to start secret chat?</string>
     <string name="ForwardFromMyName">forward from my name</string>
 
-
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Fast</string>
@@ -401,28 +400,24 @@
     <string name="Members_few">%1$d members</string>
     <string name="Members_many">%1$d members</string>
     <string name="Members_other">%1$d members</string>
-
     <string name="AndMoreTyping_zero">and %1$d more people are typing</string>
     <string name="AndMoreTyping_one">and %1$d more people are typing</string>
     <string name="AndMoreTyping_two">and %1$d more people are typing</string>
     <string name="AndMoreTyping_few">and %1$d more people are typing</string>
     <string name="AndMoreTyping_many">and %1$d more people are typing</string>
     <string name="AndMoreTyping_other">and %1$d more people are typing</string>
-
     <string name="NewMessages_zero">no new messages</string>
     <string name="NewMessages_one">%1$d new message</string>
     <string name="NewMessages_two">%1$d new messages</string>
     <string name="NewMessages_few">%1$d new messages</string>
     <string name="NewMessages_many">%1$d new messages</string>
     <string name="NewMessages_other">%1$d new messages</string>
-
     <string name="messages_zero">no messages</string>
     <string name="messages_one">%1$d message</string>
     <string name="messages_two">%1$d messages</string>
     <string name="messages_few">%1$d messages</string>
     <string name="messages_many">%1$d messages</string>
     <string name="messages_other">%1$d messages</string>
-
     <string name="FromContacts_zero">from no contacts</string>
     <string name="FromContacts_one">from %1$d contact</string>
     <string name="FromContacts_two">from %1$d contacts</string>

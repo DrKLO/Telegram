@@ -22,12 +22,12 @@
     <string name="Calling">جاري الاتصال بك ...</string>
     <string name="Code">رمز التفعيل</string>
     <string name="WrongNumber">الرقم خاطئ؟</string>
-    <string name="DidNotGetTheCode">Didn\'t get the code?</string>
+    <string name="DidNotGetTheCode">هل استقبلت الرمز؟</string>
 
     <!--signup view-->
     <string name="YourName">اسمك</string>
     <string name="RegisterText">اختر الاسم الأول واسم العائلة</string>
-    <!--<string name="RegisterText">قم بإدخال اسمك وصورتك</string>-->
+    <!--<string name="RegisterText">Set up your name and picture</string>-->
     <string name="FirstName">الاسم الأول</string>
     <string name="LastName">اسم العائلة</string>
     <string name="CancelRegistration">إلغاء التسجيل</string>
@@ -110,7 +110,7 @@
     <string name="SlideToCancel">قم بالسحب للإلغاء</string>
     <string name="SaveToDownloads">حفظ في الجهاز</string>
     <string name="ApplyLocalizationFile">تطبيق ملف التعريب</string>
-    <string name="UnsupportedAttachment">Unsupported attachment</string>
+    <string name="UnsupportedAttachment">المرفق غير مدعوم</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">تم طلب محادثة سرية</string>
@@ -171,7 +171,7 @@
     <string name="EnterGroupNamePlaceholder">أدخل اسم للمجموعة</string>
     <string name="GroupName">اسم المجموعة</string>
     <string name="AllContacts">جميع جهات الاتصال</string>
-    <string name="MembersCount">%1$d/%2$d members</string>
+    <string name="MembersCount">%1$d/%2$d عضو</string>
 
     <!--group info view-->
     <string name="EnterGroupNameTitle">أدخل سم للمجموعة</string>
@@ -269,12 +269,12 @@
     <string name="WiFiOnly">بواسطة WiFi فقط</string>
     <string name="SortFirstName">الاسم الأول</string>
     <string name="SortLastName">اسم العائلة</string>
-    <string name="LedColor">LED Color</string>
-    <string name="PopupNotification">Popup Notification</string>
-    <string name="NoPopup">No popup</string>
-    <string name="OnlyWhenScreenOn">Only when screen "on"</string>
-    <string name="OnlyWhenScreenOff">Only when screen "off"</string>
-    <string name="AlwaysShowPopup">Always show popup</string>
+    <string name="LedColor">لون إضاءة الـ LED</string>
+    <string name="PopupNotification">إشعارات منبثقة</string>
+    <string name="NoPopup">بدون إشعارات منبثقة</string>
+    <string name="OnlyWhenScreenOn">فقط عندما تكون الشاشة تعمل</string>
+    <string name="OnlyWhenScreenOff">فقط عندما تكون الشاشة مطفأة</string>
+    <string name="AlwaysShowPopup">دائمًا أظهر الإشعارات المنبثقة</string>
 
     <!--media view-->
     <string name="NoMedia">لا توجد وسائط بعد</string>
@@ -295,8 +295,8 @@
     <string name="SaveToGallery">حفظ في الجهاز</string>
     <string name="Of">%1$d من %2$d</string>
     <string name="Gallery">الألبوم</string>
-    <string name="AllPhotos">All Photos</string>
-    <string name="NoPhotos">No photos yet</string>
+    <string name="AllPhotos">جميع الصور</string>
+    <string name="NoPhotos">لا توجد صور حتى الآن</string>
 
     <!--button titles-->
     <string name="Next">التالي</string>
@@ -356,25 +356,25 @@
     <string name="InvalidLastName">اسم العائلة غير صحيح</string>
     <string name="Loading">جاري التحميل ...</string>
     <string name="NoPlayerInstalled">ليس لديك أي مشغل مقاطع مرئية، يرجى تنزيل أية مشغل</string>
-    <string name="NoMailInstalled">Please send an email to sms@telegram.org and explain your problem.</string>
+    <string name="NoMailInstalled">يرجى التفضل بإرسال بريد الكتروني إلى sms@telegram.org وشرح مشكلتك.</string>
     <string name="NoHandleAppInstalled">لا يوجد لديك تطبيق يمكنه فتح \'%1$s\'، يرجى تنزيل تطبيق مناسب للإستمرار</string>
     <string name="InviteUser">هذا المستخدم ليس لديه تيليجرام بعد ، هل ترغب في دعوته الآن؟</string>
     <string name="AreYouSure">هل أنت متأكد؟</string>
     <string name="AddContactQ">هل تريد إضافة جهة اتصال؟</string>
-    <string name="AddToTheGroup">Add %1$s to the group?\n\nNumber of last messages to forward:</string>
+    <string name="AddToTheGroup">هل ترغب في إضافة %1$s للمجموعة؟\n\n\n\nعدد الرسائل الحديثة المراد إعادة تحويلها:</string>
     <string name="ForwardMessagesTo">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
     <string name="DeleteChatQuestion">هل تريد حذف هذه الدردشة؟</string>
-    <string name="SendMessagesTo">Send messages to %1$s?</string>
-    <string name="AreYouSureLogout">Are you sure you want to logout?</string>
-    <string name="AreYouSureSessions">Are you sure you want to terminate all other sessions?</string>
-    <string name="AreYouSureDeleteAndExit">Are you sure you want to delete and leave group?</string>
-    <string name="AreYouSureDeleteThisChat">Are you sure you want to delete this chat?</string>
-    <string name="AreYouSureShareMyContactInfo">Are you sure that you want to share your contact info?</string>
-    <string name="AreYouSureBlockContact">Are you sure you want to block this contact?</string>
-    <string name="AreYouSureUnblockContact">Are you sure you want to unblock this contact?</string>
-    <string name="AreYouSureDeleteContact">Are you sure you want to delete this contact?</string>
-    <string name="AreYouSureSecretChat">Are you sure you want to start secret chat?</string>
-    <string name="ForwardFromMyName">forward from my name</string>
+    <string name="SendMessagesTo">هل ترغب في إرسال رسالة إلى %1$s؟</string>
+    <string name="AreYouSureLogout">هل أنت متأكد من رغبتك في تسجيل الخروج؟</string>
+    <string name="AreYouSureSessions">هل أنت متأكد من تسجيل الخروج من جميع الأجهزة الأخرى باستثناء هذا الجهاز؟</string>
+    <string name="AreYouSureDeleteAndExit">هل أنت متأكد من رغبتك في مغادرة المجموعة وحذفها؟</string>
+    <string name="AreYouSureDeleteThisChat">هل أنت متأكد من رغبتك في حذف المجموعة؟</string>
+    <string name="AreYouSureShareMyContactInfo">هل أنت متأكد من رغبتك في مشاركة جهة الاتصال الخاصة بك؟</string>
+    <string name="AreYouSureBlockContact">هل أنت متأكد من رغبتك في حظر جهة الاتصال هذه؟</string>
+    <string name="AreYouSureUnblockContact">هل أنت متأكد من رغبتك في إزالة الحظر عن جهة الاتصال هذه؟</string>
+    <string name="AreYouSureDeleteContact">هل أنت متأكد من رغبتك في حذف جهة الاتصال هذه؟</string>
+    <string name="AreYouSureSecretChat">هل أنت متأكد من رغبتك في بدء محادثة سرية؟</string>
+    <string name="ForwardFromMyName">أعد الإرسال باستخدام اسمي</string>
 
     <!--Intro view-->
     <string name="Page1Title">تيليجرام</string>
@@ -394,40 +394,36 @@
     <string name="StartMessaging">إبدأ المراسلة</string>
 
     <!--plurals-->
-    <string name="Members_zero">no members</string>
-    <string name="Members_one">%1$d member</string>
-    <string name="Members_two">%1$d members</string>
-    <string name="Members_few">%1$d members</string>
-    <string name="Members_many">%1$d members</string>
-    <string name="Members_other">%1$d members</string>
-
-    <string name="AndMoreTyping_zero">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_one">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_two">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_few">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_many">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_other">and %1$d more people are typing</string>
-
-    <string name="NewMessages_zero">no new messages</string>
-    <string name="NewMessages_one">%1$d new message</string>
-    <string name="NewMessages_two">%1$d new messages</string>
-    <string name="NewMessages_few">%1$d new messages</string>
-    <string name="NewMessages_many">%1$d new messages</string>
-    <string name="NewMessages_other">%1$d new messages</string>
-
-    <string name="messages_zero">no messages</string>
-    <string name="messages_one">%1$d message</string>
-    <string name="messages_two">%1$d messages</string>
-    <string name="messages_few">%1$d messages</string>
-    <string name="messages_many">%1$d messages</string>
-    <string name="messages_other">%1$d messages</string>
-
-    <string name="FromContacts_zero">from no contacts</string>
-    <string name="FromContacts_one">from %1$d contact</string>
-    <string name="FromContacts_two">from %1$d contacts</string>
-    <string name="FromContacts_few">from %1$d contacts</string>
-    <string name="FromContacts_many">from %1$d contacts</string>
-    <string name="FromContacts_other">from %1$d contacts</string>
+    <string name="Members_zero">لا يوجد أعضاء</string>
+    <string name="Members_one">%1$d عضو</string>
+    <string name="Members_two">%1$d عضوان</string>
+    <string name="Members_few">%1$d أعضاء</string>
+    <string name="Members_many">%1$d عضو</string>
+    <string name="Members_other">%1$d عضو</string>
+    <string name="AndMoreTyping_zero">كذلك %1$d عضو آخر يقوب بالكتابة</string>
+    <string name="AndMoreTyping_one">كذلك %1$d عضو آخر يقوم بالكتابة</string>
+    <string name="AndMoreTyping_two">كذلك %1$d عضوان آخران يقومان بالكتابة</string>
+    <string name="AndMoreTyping_few">كذلك %1$d أعضاء آخرون يقومون بالكتابة</string>
+    <string name="AndMoreTyping_many">كذلك %1$d عضو آخرون يقومون بالكتابة</string>
+    <string name="AndMoreTyping_other">كذلك %1$d عضو آخرون يقومون بالكتابة</string>
+    <string name="NewMessages_zero">لا يوجد رسائل جديدة</string>
+    <string name="NewMessages_one">%1$d رسالة جديدة</string>
+    <string name="NewMessages_two">%1$d رسالتان جديدتان</string>
+    <string name="NewMessages_few">%1$d رسائل جديدة</string>
+    <string name="NewMessages_many">%1$d رسالة جديدة</string>
+    <string name="NewMessages_other">%1$d رسالة جديدة</string>
+    <string name="messages_zero">لا يوجد رسائل</string>
+    <string name="messages_one">%1$d رسالة</string>
+    <string name="messages_two">%1$d رسالتان</string>
+    <string name="messages_few">%1$d رسائل</string>
+    <string name="messages_many">%1$d رسالة</string>
+    <string name="messages_other">%1$d رسالة</string>
+    <string name="FromContacts_zero">ليس من جهة اتصال</string>
+    <string name="FromContacts_one">من %1$d جهة اتصال</string>
+    <string name="FromContacts_two">من %1$d جهتان اتصال</string>
+    <string name="FromContacts_few">من %1$d جهات اتصال</string>
+    <string name="FromContacts_many">من %1$d جهة اتصال</string>
+    <string name="FromContacts_other">من %1$d جهة اتصال</string>
 
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>

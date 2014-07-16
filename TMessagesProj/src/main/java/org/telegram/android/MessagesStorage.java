@@ -876,7 +876,7 @@ public class MessagesStorage {
                                 if (arg.startsWith(q)) {
                                     ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
                                     ByteBufferDesc data2 = buffersStorage.getFreeBuffer(cursor.byteArrayLength(6));
-                                    if (data != null && cursor.byteBufferValue(0, data.buffer) != 0 && cursor.byteBufferValue(0, data2.buffer) != 0) {
+                                    if (data != null && cursor.byteBufferValue(0, data.buffer) != 0 && cursor.byteBufferValue(6, data2.buffer) != 0) {
                                         TLRPC.EncryptedChat chat = (TLRPC.EncryptedChat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
                                         chat.user_id = cursor.intValue(2);
                                         chat.a_or_b = cursor.byteArrayValue(3);

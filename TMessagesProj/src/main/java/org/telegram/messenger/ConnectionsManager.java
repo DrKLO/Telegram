@@ -781,7 +781,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 }
                 updatingDcSettings = false;
             }
-        }, null, true, RPCRequest.RPCRequestClassEnableUnauthorized | RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassWithoutLogin, dcNum == 0 ? currentDatacenterId : dcNum);
+        }, null, true, RPCRequest.RPCRequestClassEnableUnauthorized | RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassWithoutLogin | RPCRequest.RPCRequestClassTryDifferentDc, dcNum == 0 ? currentDatacenterId : dcNum);
     }
 
     private TLObject wrapInLayer(TLObject object, int datacenterId, RPCRequest request) {
@@ -996,26 +996,28 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         for (int i = 0; i < runningRequests.size(); i++) {
             RPCRequest request = runningRequests.get(i);
 
-            if (datacenters.size() > 1) {
-                if (updatingDcSettings && request.rawRequest instanceof TLRPC.TL_help_getConfig) {
-                    if (updatingDcStartTime < currentTime - 60) {
-                        FileLog.e("tmessages", "move TL_help_getConfig to requestQueue");
-                        requestQueue.add(request);
-                        runningRequests.remove(i);
-                        i--;
-                        continue;
-                    }
-                } else if (request.rawRequest instanceof TLRPC.TL_auth_sendCode || request.rawRequest instanceof TLRPC.TL_auth_signIn || request.rawRequest instanceof TLRPC.TL_auth_signUp) {
-
-                }
-            }
-
             int datacenterId = request.runningDatacenterId;
             if (datacenterId == DEFAULT_DATACENTER_ID) {
                 if (movingToDatacenterId != DEFAULT_DATACENTER_ID) {
                     continue;
                 }
                 datacenterId = currentDatacenterId;
+            }
+
+            if (datacenters.size() > 1 && (request.flags & RPCRequest.RPCRequestClassTryDifferentDc) != 0) {
+                int requestStartTime = request.runningStartTime;
+                int timeout = 30;
+                if (updatingDcSettings && request.rawRequest instanceof TLRPC.TL_help_getConfig) {
+                    requestStartTime = updatingDcStartTime;
+                    timeout = 60;
+                }
+                if (requestStartTime != 0 && requestStartTime < currentTime - timeout) {
+                    FileLog.e("tmessages", "move " + request.rawRequest + " to requestQueue");
+                    requestQueue.add(request);
+                    runningRequests.remove(i);
+                    i--;
+                    continue;
+                }
             }
 
             Datacenter requestDatacenter = datacenterWithId(datacenterId);
@@ -1124,27 +1126,23 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             }
         }
 
-        boolean updatingState = MessagesController.getInstance().updatingState;
-
         if (genericConnection != null && genericConnection.channelToken != 0) {
-            if (!updatingState) {
-                Datacenter currentDatacenter = datacenterWithId(currentDatacenterId);
+            Datacenter currentDatacenter = datacenterWithId(currentDatacenterId);
 
-                for (Long it : sessionsToDestroy) {
-                    if (destroyingSessions.contains(it)) {
-                        continue;
-                    }
-                    if (System.currentTimeMillis() / 1000 - lastDestroySessionRequestTime > 2.0) {
-                        lastDestroySessionRequestTime = (int)(System.currentTimeMillis() / 1000);
-                        TLRPC.TL_destroy_session destroySession = new TLRPC.TL_destroy_session();
-                        destroySession.session_id = it;
-                        destroyingSessions.add(it);
+            for (Long it : sessionsToDestroy) {
+                if (destroyingSessions.contains(it)) {
+                    continue;
+                }
+                if (System.currentTimeMillis() / 1000 - lastDestroySessionRequestTime > 2.0) {
+                    lastDestroySessionRequestTime = (int)(System.currentTimeMillis() / 1000);
+                    TLRPC.TL_destroy_session destroySession = new TLRPC.TL_destroy_session();
+                    destroySession.session_id = it;
+                    destroyingSessions.add(it);
 
-                        NetworkMessage networkMessage = new NetworkMessage();
-                        networkMessage.protoMessage = wrapMessage(destroySession, currentDatacenter.connection, false);
-                        if (networkMessage.protoMessage != null) {
-                            addMessageToDatacenter(currentDatacenter.datacenterId, networkMessage);
-                        }
+                    NetworkMessage networkMessage = new NetworkMessage();
+                    networkMessage.protoMessage = wrapMessage(destroySession, currentDatacenter.connection, false);
+                    if (networkMessage.protoMessage != null) {
+                        addMessageToDatacenter(currentDatacenter.datacenterId, networkMessage);
                     }
                 }
             }
@@ -1172,28 +1170,34 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 continue;
             }
 
-            if (updatingDcSettings && datacenters.size() > 1 && request.rawRequest instanceof TLRPC.TL_help_getConfig) {
-                if (updatingDcStartTime < currentTime - 60) {
-                    updatingDcStartTime = currentTime;
-                    ArrayList<Datacenter> allDc = new ArrayList<Datacenter>(datacenters.values());
-                    for (int a = 0; a < allDc.size(); a++) {
-                        Datacenter dc = allDc.get(a);
-                        if (dc.datacenterId == request.runningDatacenterId) {
-                            allDc.remove(a);
-                            break;
-                        }
-                    }
-                    Datacenter newDc = allDc.get(Math.abs(Utilities.random.nextInt() % allDc.size()));
-                    request.runningDatacenterId = newDc.datacenterId;
-                }
-            }
-
             int datacenterId = request.runningDatacenterId;
             if (datacenterId == DEFAULT_DATACENTER_ID) {
                 if (movingToDatacenterId != DEFAULT_DATACENTER_ID && (request.flags & RPCRequest.RPCRequestClassEnableUnauthorized) == 0) {
                     continue;
                 }
                 datacenterId = currentDatacenterId;
+            }
+
+            if (datacenters.size() > 1 && (request.flags & RPCRequest.RPCRequestClassTryDifferentDc) != 0) {
+                int requestStartTime = request.runningStartTime;
+                int timeout = 30;
+                if (updatingDcSettings && request.rawRequest instanceof TLRPC.TL_help_getConfig) {
+                    requestStartTime = updatingDcStartTime;
+                    updatingDcStartTime = currentTime;
+                    timeout = 60;
+                }
+                if (requestStartTime != 0 && requestStartTime < currentTime - timeout) {
+                    ArrayList<Datacenter> allDc = new ArrayList<Datacenter>(datacenters.values());
+                    for (int a = 0; a < allDc.size(); a++) {
+                        Datacenter dc = allDc.get(a);
+                        if (dc.datacenterId == datacenterId) {
+                            allDc.remove(a);
+                            break;
+                        }
+                    }
+                    Datacenter newDc = allDc.get(Math.abs(Utilities.random.nextInt() % allDc.size()));
+                    datacenterId = request.runningDatacenterId = newDc.datacenterId;
+                }
             }
 
             Datacenter requestDatacenter = datacenterWithId(datacenterId);
@@ -1222,10 +1226,6 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             }
 
             if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0 && connection.channelToken == 0) {
-                continue;
-            }
-
-            if (updatingState && (request.rawRequest instanceof TLRPC.TL_account_updateStatus || request.rawRequest instanceof TLRPC.TL_account_registerDevice)) {
                 continue;
             }
 

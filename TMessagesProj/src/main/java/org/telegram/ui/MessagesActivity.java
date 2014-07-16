@@ -389,11 +389,6 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     }
                 }
             });
-
-            if (MessagesController.getInstance().loadingDialogs) {
-                progressView.setVisibility(View.VISIBLE);
-            }
-
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
             if (parent != null) {
