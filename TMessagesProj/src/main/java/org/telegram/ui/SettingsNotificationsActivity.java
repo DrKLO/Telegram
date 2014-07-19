@@ -28,6 +28,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.telegram.android.LocaleController;
+import org.telegram.android.NotificationsController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
@@ -67,7 +68,8 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
     private int inappPreviewRow;
     private int eventsSectionRow;
     private int contactJoinedRow;
-    private int pebbleSectionRow;
+    private int otherSectionRow;
+    private int badgeNumberRow;
     private int pebbleAlertRow;
     private int resetSectionRow;
     private int resetNotificationsRow;
@@ -96,7 +98,8 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
         inappPreviewRow = rowCount++;
         eventsSectionRow = rowCount++;
         contactJoinedRow = rowCount++;
-        pebbleSectionRow = rowCount++;
+        otherSectionRow = rowCount++;
+        badgeNumberRow = rowCount++;
         pebbleAlertRow = rowCount++;
         resetSectionRow = rowCount++;
         resetNotificationsRow = rowCount++;
@@ -279,6 +282,14 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
                         editor.putBoolean("EnablePebbleNotifications", !enabled);
                         editor.commit();
                         listView.invalidateViews();
+                    } else if (i == badgeNumberRow) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        boolean enabled = preferences.getBoolean("badgeNumber", true);
+                        editor.putBoolean("badgeNumber", !enabled);
+                        editor.commit();
+                        listView.invalidateViews();
+                        NotificationsController.getInstance().setBadgeEnabled(!enabled);
                     } else if (i == notificationsServiceRow) {
                         final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         boolean enabled = preferences.getBoolean("pushService", true);
@@ -480,7 +491,7 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
 
         @Override
         public boolean isEnabled(int i) {
-            return !(i == messageSectionRow || i == groupSectionRow || i == inappSectionRow || i == eventsSectionRow || i == pebbleSectionRow || i == resetSectionRow);
+            return !(i == messageSectionRow || i == groupSectionRow || i == inappSectionRow || i == eventsSectionRow || i == otherSectionRow || i == resetSectionRow);
         }
 
         @Override
@@ -520,8 +531,8 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
                     textView.setText(LocaleController.getString("InAppNotifications", R.string.InAppNotifications));
                 } else if (i == eventsSectionRow) {
                     textView.setText(LocaleController.getString("Events", R.string.Events));
-                } else if (i == pebbleSectionRow) {
-                    textView.setText(LocaleController.getString("Pebble", R.string.Pebble));
+                } else if (i == otherSectionRow) {
+                    textView.setText(LocaleController.getString("PhoneOther", R.string.PhoneOther));
                 } else if (i == resetSectionRow) {
                     textView.setText(LocaleController.getString("Reset", R.string.Reset));
                 }
@@ -581,12 +592,16 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
                     divider.setVisibility(View.INVISIBLE);
                 } else if (i == pebbleAlertRow) {
                     enabled = preferences.getBoolean("EnablePebbleNotifications", false);
-                    textView.setText(LocaleController.getString("Alert", R.string.Alert));
+                    textView.setText(LocaleController.getString("Pebble", R.string.Pebble));
                     divider.setVisibility(View.INVISIBLE);
                 } else if (i == notificationsServiceRow) {
                     enabled = preferences.getBoolean("pushService", true);
                     textView.setText(LocaleController.getString("NotificationsService", R.string.NotificationsService));
                     divider.setVisibility(View.INVISIBLE);
+                } else if (i == badgeNumberRow) {
+                    enabled = preferences.getBoolean("badgeNumber", true);
+                    textView.setText(LocaleController.getString("BadgeNumber", R.string.BadgeNumber));
+                    divider.setVisibility(View.VISIBLE);
                 }
                 if (enabled) {
                     checkButton.setImageResource(R.drawable.btn_check_on);
@@ -664,13 +679,13 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
 
         @Override
         public int getItemViewType(int i) {
-            if (i == messageSectionRow || i == groupSectionRow || i == inappSectionRow || i == eventsSectionRow || i == pebbleSectionRow || i == resetSectionRow) {
+            if (i == messageSectionRow || i == groupSectionRow || i == inappSectionRow || i == eventsSectionRow || i == otherSectionRow || i == resetSectionRow) {
                 return 0;
             } else if (i == messageAlertRow || i == messagePreviewRow || i == messageVibrateRow ||
                     i == groupAlertRow || i == groupPreviewRow || i == groupVibrateRow ||
                     i == inappSoundRow || i == inappVibrateRow || i == inappPreviewRow ||
                     i == contactJoinedRow ||
-                    i == pebbleAlertRow || i == notificationsServiceRow) {
+                    i == pebbleAlertRow || i == notificationsServiceRow || i == badgeNumberRow) {
                 return 1;
             } else if (i == messageLedRow || i == groupLedRow) {
                 return 3;

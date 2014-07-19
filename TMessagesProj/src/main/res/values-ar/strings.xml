@@ -275,6 +275,7 @@
     <string name="OnlyWhenScreenOn">فقط عندما تكون الشاشة تعمل</string>
     <string name="OnlyWhenScreenOff">فقط عندما تكون الشاشة مطفأة</string>
     <string name="AlwaysShowPopup">دائمًا أظهر الإشعارات المنبثقة</string>
+    <string name="BadgeNumber">Badge Number</string>
 
     <!--media view-->
     <string name="NoMedia">لا توجد وسائط بعد</string>
@@ -297,6 +298,11 @@
     <string name="Gallery">الألبوم</string>
     <string name="AllPhotos">جميع الصور</string>
     <string name="NoPhotos">لا توجد صور حتى الآن</string>
+
+    <!--edit video view-->
+    <string name="EditVideo">Edit Video</string>
+    <string name="OriginalVideo">Original Video</string>
+    <string name="EditedVideo">Edited Video</string>
 
     <!--button titles-->
     <string name="Next">التالي</string>

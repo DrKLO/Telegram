@@ -674,7 +674,7 @@ public class FileLoadOperation {
                     }
                 }
 
-                if (downloadedBytes % downloadChunkSize == 0 || totalBytesCount > 0 && totalBytesCount > downloadedBytes) {
+                if (totalBytesCount != downloadedBytes && downloadedBytes % downloadChunkSize == 0 || totalBytesCount > 0 && totalBytesCount > downloadedBytes) {
                     startDownloadRequest();
                 } else {
                     onFinishLoadingFile();

@@ -275,6 +275,7 @@
     <string name="OnlyWhenScreenOn">Somente com a tela ligada</string>
     <string name="OnlyWhenScreenOff">Somente com a tela desligada</string>
     <string name="AlwaysShowPopup">Sempre mostrar popup</string>
+    <string name="BadgeNumber">Badge Number</string>
 
     <!--media view-->
     <string name="NoMedia">Ainda não há mídia compartilhada</string>
@@ -297,6 +298,11 @@
     <string name="Gallery">Galeria</string>
     <string name="AllPhotos">Todas as Fotos</string>
     <string name="NoPhotos">Ainda não há fotos</string>
+
+    <!--edit video view-->
+    <string name="EditVideo">Edit Video</string>
+    <string name="OriginalVideo">Original Video</string>
+    <string name="EditedVideo">Edited Video</string>
 
     <!--button titles-->
     <string name="Next">Próximo</string>

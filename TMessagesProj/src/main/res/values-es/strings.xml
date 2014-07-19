@@ -275,6 +275,7 @@
     <string name="OnlyWhenScreenOn">Sólo con pantalla encendida</string>
     <string name="OnlyWhenScreenOff">Sólo con pantalla apagada</string>
     <string name="AlwaysShowPopup">Siempre mostrar notificación emergente</string>
+    <string name="BadgeNumber">Globo de notificación</string>
 
     <!--media view-->
     <string name="NoMedia">No hay fotos ni vídeos compartidos aún</string>
@@ -297,6 +298,11 @@
     <string name="Gallery">Galería</string>
     <string name="AllPhotos">Todas</string>
     <string name="NoPhotos">No hay fotos aún</string>
+
+    <!--edit video view-->
+    <string name="EditVideo">Edit Video</string>
+    <string name="OriginalVideo">Original Video</string>
+    <string name="EditedVideo">Edited Video</string>
 
     <!--button titles-->
     <string name="Next">Siguiente</string>

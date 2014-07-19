@@ -174,15 +174,23 @@ public class AndroidUtilities {
     public static File getCacheDir() {
         if (externalCacheNotAvailableState == 1 || externalCacheNotAvailableState == 0 && Environment.getExternalStorageState().startsWith(Environment.MEDIA_MOUNTED)) {
             externalCacheNotAvailableState = 1;
-            File file = ApplicationLoader.applicationContext.getExternalCacheDir();
-            if (file != null) {
-                return file;
+            try {
+                File file = ApplicationLoader.applicationContext.getExternalCacheDir();
+                if (file != null) {
+                    return file;
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
             }
         }
         externalCacheNotAvailableState = 2;
-        File file = ApplicationLoader.applicationContext.getCacheDir();
-        if (file != null) {
-            return file;
+        try {
+            File file = ApplicationLoader.applicationContext.getCacheDir();
+            if (file != null) {
+                return file;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
         return new File("");
     }

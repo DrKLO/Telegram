@@ -15,6 +15,8 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.view.View;
 
+import org.telegram.messenger.FileLog;
+
 public class ClippingImageView extends View {
     private int clipBottom;
     private int clipLeft;
@@ -64,7 +66,11 @@ public class ClippingImageView extends View {
             canvas.save();
             canvas.clipRect(clipLeft / getScaleY(), clipTop / getScaleY(), getWidth() - clipRight / getScaleY(), getHeight() - clipBottom / getScaleY());
             drawRect.set(0, 0, getWidth(), getHeight());
-            canvas.drawBitmap(this.bmp, null, drawRect, this.paint);
+            try {
+                canvas.drawBitmap(this.bmp, null, drawRect, this.paint);
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
             canvas.restore();
         }
     }

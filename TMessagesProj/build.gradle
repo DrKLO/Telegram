@@ -83,7 +83,7 @@ android {
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 19
-        versionCode 281
-        versionName "1.6.0"
+        versionCode 286
+        versionName "1.6.1"
     }
 }

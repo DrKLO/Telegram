@@ -174,17 +174,13 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
     }
 
     ByteBufferDesc sendMessageData(TLObject message, long messageId) {
-        ByteBufferDesc innerOs = BuffersStorage.getInstance().getFreeBuffer(message.getObjectSize());
-        message.serializeToStream(innerOs);
-        message.freeResources();
-
-        ByteBufferDesc messageOs = BuffersStorage.getInstance().getFreeBuffer(8 + 8 + 4 + innerOs.length());
+        int messageLength = message.getObjectSize();
+        ByteBufferDesc messageOs = BuffersStorage.getInstance().getFreeBuffer(8 + 8 + 4 + messageLength);
         messageOs.writeInt64(0);
         messageOs.writeInt64(messageId);
-        messageOs.writeInt32(innerOs.length());
-        innerOs.position(0);
-        messageOs.writeRaw(innerOs);
-        BuffersStorage.getInstance().reuseFreeBuffer(innerOs);
+        messageOs.writeInt32(messageLength);
+        message.serializeToStream(messageOs);
+        message.freeResources();
 
         datacenter.connection.sendData(messageOs, false, false);
         return messageOs;

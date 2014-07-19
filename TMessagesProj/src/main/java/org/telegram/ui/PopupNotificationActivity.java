@@ -150,6 +150,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
         NotificationCenter.getInstance().addObserver(this, MediaController.audioProgressDidChanged);
         NotificationCenter.getInstance().addObserver(this, MediaController.audioDidReset);
+        NotificationCenter.getInstance().addObserver(this, MessagesController.contactsDidLoaded);
         NotificationCenter.getInstance().addObserver(this, 999);
 
         chatActivityEnterView = new ChatActivityEnterView();
@@ -940,6 +941,8 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     view.invalidate();
                 }
             }
+        } else if (id == MessagesController.contactsDidLoaded) {
+            updateSubtitle();
         }
     }
 
@@ -962,6 +965,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         NotificationCenter.getInstance().removeObserver(this, MessagesController.updateInterfaces);
         NotificationCenter.getInstance().removeObserver(this, MediaController.audioProgressDidChanged);
         NotificationCenter.getInstance().removeObserver(this, MediaController.audioDidReset);
+        NotificationCenter.getInstance().removeObserver(this, MessagesController.contactsDidLoaded);
         NotificationCenter.getInstance().removeObserver(this, 999);
         if (chatActivityEnterView != null) {
             chatActivityEnterView.onDestroy();

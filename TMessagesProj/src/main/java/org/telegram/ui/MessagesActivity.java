@@ -506,12 +506,12 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 builder.setMessage(LocaleController.formatStringSimple(selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
             }
             CheckBox checkBox = null;
-            if (delegate instanceof ChatActivity) {
+            /*if (delegate instanceof ChatActivity) {
                 checkBox = new CheckBox(getParentActivity());
                 checkBox.setText(LocaleController.getString("ForwardFromMyName", R.string.ForwardFromMyName));
                 checkBox.setChecked(false);
                 builder.setView(checkBox);
-            }
+            }*/
             final CheckBox checkBoxFinal = checkBox;
             builder.setPositiveButton(R.string.OK, new DialogInterface.OnClickListener() {
                 @Override

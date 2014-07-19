@@ -133,6 +133,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             }
 
             avatarImageView = (BackupImageView)fragmentView.findViewById(R.id.location_avatar_view);
+            if (avatarImageView != null) {
+                avatarImageView.processDetach = false;
+            }
             nameTextView = (TextView)fragmentView.findViewById(R.id.location_name_label);
             distanceTextView = (TextView)fragmentView.findViewById(R.id.location_distance_label);
             View bottomView = fragmentView.findViewById(R.id.location_bottom_view);

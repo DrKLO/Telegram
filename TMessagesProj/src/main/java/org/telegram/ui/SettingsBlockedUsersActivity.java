@@ -38,7 +38,7 @@ import org.telegram.ui.Views.ActionBar.BaseFragment;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class SettingsBlockedUsers extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ContactsActivity.ContactsActivityDelegate {
+public class SettingsBlockedUsersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ContactsActivity.ContactsActivityDelegate {
     private ListView listView;
     private ListAdapter listViewAdapter;
     private boolean loading;
@@ -82,7 +82,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                         args.putBoolean("usersAsSections", true);
                         args.putBoolean("returnAsResult", true);
                         ContactsActivity fragment = new ContactsActivity(args);
-                        fragment.setDelegate(SettingsBlockedUsers.this);
+                        fragment.setDelegate(SettingsBlockedUsersActivity.this);
                         presentFragment(fragment);
                     }
                 }

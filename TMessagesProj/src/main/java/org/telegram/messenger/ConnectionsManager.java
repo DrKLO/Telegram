@@ -101,15 +101,18 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         public void run() {
             Utilities.stageQueue.handler.removeCallbacks(stageRunnable);
             if (datacenters != null) {
+                Datacenter datacenter = datacenterWithId(currentDatacenterId);
                 if (sendingPushPing && lastPushPingTime < System.currentTimeMillis() - 30000 || Math.abs(lastPushPingTime - System.currentTimeMillis()) > 60000 * 3 + 10000) {
                     lastPushPingTime = 0;
                     sendingPushPing = false;
+                    if (datacenter != null && datacenter.pushConnection != null) {
+                        datacenter.pushConnection.suspendConnection(true);
+                    }
                     FileLog.e("tmessages", "push ping timeout");
                 }
                 if (lastPushPingTime < System.currentTimeMillis() - 60000 * 3) {
                     FileLog.e("tmessages", "time for push ping");
                     lastPushPingTime = System.currentTimeMillis();
-                    Datacenter datacenter = datacenterWithId(currentDatacenterId);
                     if (datacenter != null) {
                         generatePing(datacenter, true);
                     }
@@ -448,7 +451,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
                 datacenter = new Datacenter();
                 datacenter.datacenterId = 4;
-                datacenter.addAddressAndPort("31.210.235.12", 443);
+                datacenter.addAddressAndPort("149.154.167.90", 443);
                 datacenters.put(datacenter.datacenterId, datacenter);
 
                 datacenter = new Datacenter();
@@ -2374,7 +2377,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                         FileLog.e("tmessages", "no network available");
                     }
                 } catch (Exception e) {
-                    FileLog.e("tmessages", "NETWORK STATE GET ERROR");
+                    FileLog.e("tmessages", "NETWORK STATE GET ERROR", e);
                 }
             }
             final int stateCopy = connectionState;

@@ -293,7 +293,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else if (i == notificationRow) {
                         presentFragment(new SettingsNotificationsActivity());
                     } else if (i == blockedRow) {
-                        presentFragment(new SettingsBlockedUsers());
+                        presentFragment(new SettingsBlockedUsersActivity());
                     } else if (i == backgroundRow) {
                         presentFragment(new SettingsWallpapersActivity());
                     } else if (i == askQuestionRow) {
