@@ -2231,16 +2231,11 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                         if (request.completed) {
                             break;
                         }
-                        if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0) {
-                            if (request.lastResendTime == 0 || request.lastResendTime + 60 < (int)(System.currentTimeMillis() / 1000)) {
-                                request.lastResendTime = (int)(System.currentTimeMillis() / 1000);
-                                requestResend = true;
-                            } else {
-                                confirm = false;
-                            }
-                            break;
-                        } else {
+                        if (request.lastResendTime == 0 || request.lastResendTime + 60 < (int)(System.currentTimeMillis() / 1000)) {
+                            request.lastResendTime = (int)(System.currentTimeMillis() / 1000);
                             requestResend = true;
+                        } else {
+                            confirm = false;
                         }
                         break;
                     }

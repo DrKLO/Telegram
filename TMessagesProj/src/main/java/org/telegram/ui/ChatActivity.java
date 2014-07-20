@@ -1984,7 +1984,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             messages.add(0, dateObj);
                         }
                         if (!obj.isOut() && obj.messageOwner.unread) {
-                            obj.messageOwner.unread = false;
+                            if (!paused) {
+                                obj.messageOwner.unread = false;
+                            }
                             markAsRead = true;
                         }
                         dayArray.add(0, obj);
@@ -2379,6 +2381,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         paused = false;
         if (readWhenResume && !messages.isEmpty()) {
+            for (MessageObject messageObject : messages) {
+                if (!messageObject.isUnread() && !messageObject.isFromMe()) {
+                    break;
+                }
+                messageObject.messageOwner.unread = false;
+            }
             readWhenResume = false;
             MessagesController.getInstance().markDialogAsRead(dialog_id, messages.get(0).messageOwner.id, readWithMid, 0, readWithDate, true);
         }
@@ -3310,7 +3318,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                     @Override
                     public boolean canPerformActions() {
-                        return !actionBarLayer.isActionModeShowed();
+                        return actionBarLayer != null && !actionBarLayer.isActionModeShowed();
                     }
                 };
                 if (view instanceof ChatMediaCell) {
