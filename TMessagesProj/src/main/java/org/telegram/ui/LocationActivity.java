@@ -26,10 +26,10 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.objects.MessageObject;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
@@ -133,6 +133,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             }
 
             avatarImageView = (BackupImageView)fragmentView.findViewById(R.id.location_avatar_view);
+            if (avatarImageView != null) {
+                avatarImageView.processDetach = false;
+            }
             nameTextView = (TextView)fragmentView.findViewById(R.id.location_name_label);
             distanceTextView = (TextView)fragmentView.findViewById(R.id.location_distance_label);
             View bottomView = fragmentView.findViewById(R.id.location_bottom_view);

@@ -13,7 +13,6 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.view.View;
 
 import org.telegram.messenger.TLRPC;
@@ -36,6 +35,7 @@ public class ImageReceiver {
     public Rect drawRegion = new Rect();
     private boolean isVisible = true;
     private boolean selfSetting = false;
+    public boolean isAspectFit = false;
 
     public void setImage(TLRPC.FileLocation path, String filter, Drawable placeholder) {
         setImage(path, null, filter, placeholder, 0);
@@ -61,6 +61,9 @@ public class ImageReceiver {
             last_size = 0;
             currentImage = null;
             FileLoader.getInstance().cancelLoadingForImageView(this);
+            if (parentView != null) {
+                parentView.invalidate();
+            }
             return;
         }
         String key;
@@ -92,16 +95,13 @@ public class ImageReceiver {
         if (img == null) {
             isPlaceholder = true;
             FileLoader.getInstance().loadImage(path, httpUrl, this, filter, true, size);
-            if (parentView != null) {
-                parentView.invalidate();
-            }
         } else {
             selfSetting = true;
             setImageBitmap(img, currentPath);
             selfSetting = false;
-            if (parentView != null) {
-                parentView.invalidate();
-            }
+        }
+        if (parentView != null) {
+            parentView.invalidate();
         }
     }
 
@@ -166,9 +166,7 @@ public class ImageReceiver {
                         }
                         if (canDelete) {
                             currentImage = null;
-                            if (Build.VERSION.SDK_INT < 11) {
-                                bitmap.recycle();
-                            }
+                            bitmap.recycle();
                         }
                     } else {
                         currentImage = null;
@@ -191,28 +189,39 @@ public class ImageReceiver {
                 float scaleW = bitmapW / (float)w;
                 float scaleH = bitmapH / (float)h;
 
-                if (Math.abs(scaleW - scaleH) > 0.00001f) {
+                if (isAspectFit) {
+                    float scale = Math.max(scaleW, scaleH);
                     canvas.save();
-                    canvas.clipRect(x, y, x + w, y + h);
-
-                    if (bitmapW / scaleH > w) {
-                        bitmapW /= scaleH;
-                        drawRegion.set(x - (bitmapW - w) / 2, y, x + (bitmapW + w) / 2, y + h);
-                    } else {
-                        bitmapH /= scaleW;
-                        drawRegion.set(x, y - (bitmapH - h) / 2, x + w, y + (bitmapH + h) / 2);
-                    }
+                    bitmapW /= scale;
+                    bitmapH /= scale;
+                    drawRegion.set(x + (w - bitmapW) / 2, y + (h - bitmapH) / 2, x + (w + bitmapW) / 2, y + (h + bitmapH) / 2);
                     bitmapDrawable.setBounds(drawRegion);
-                    if (isVisible) {
-                        bitmapDrawable.draw(canvas);
-                    }
-
+                    bitmapDrawable.draw(canvas);
                     canvas.restore();
                 } else {
-                    drawRegion.set(x, y, x + w, y + h);
-                    bitmapDrawable.setBounds(drawRegion);
-                    if (isVisible) {
-                        bitmapDrawable.draw(canvas);
+                    if (Math.abs(scaleW - scaleH) > 0.00001f) {
+                        canvas.save();
+                        canvas.clipRect(x, y, x + w, y + h);
+
+                        if (bitmapW / scaleH > w) {
+                            bitmapW /= scaleH;
+                            drawRegion.set(x - (bitmapW - w) / 2, y, x + (bitmapW + w) / 2, y + h);
+                        } else {
+                            bitmapH /= scaleW;
+                            drawRegion.set(x, y - (bitmapH - h) / 2, x + w, y + (bitmapH + h) / 2);
+                        }
+                        bitmapDrawable.setBounds(drawRegion);
+                        if (isVisible) {
+                            bitmapDrawable.draw(canvas);
+                        }
+
+                        canvas.restore();
+                    } else {
+                        drawRegion.set(x, y, x + w, y + h);
+                        bitmapDrawable.setBounds(drawRegion);
+                        if (isVisible) {
+                            bitmapDrawable.draw(canvas);
+                        }
                     }
                 }
             } else if (last_placeholder != null) {

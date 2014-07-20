@@ -8,38 +8,31 @@
 
 package org.telegram.ui;
 
-import android.app.NotificationManager;
 import android.content.ContentResolver;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.res.Configuration;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.provider.ContactsContract;
-import android.view.Surface;
 import android.view.View;
-import android.view.WindowManager;
-import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.LocaleController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.objects.MessageObject;
 import org.telegram.ui.Views.ActionBar.ActionBarActivity;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
-import org.telegram.ui.Views.NotificationView;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -49,7 +42,6 @@ import java.util.Map;
 
 public class LaunchActivity extends ActionBarActivity implements NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate {
     private boolean finished = false;
-    private NotificationView notificationView;
     private String videoPath = null;
     private String sendingText = null;
     private ArrayList<Uri> photoPathsArray = null;
@@ -86,11 +78,11 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
 
         int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
         if (resourceId > 0) {
-            Utilities.statusBarHeight = getResources().getDimensionPixelSize(resourceId);
+            AndroidUtilities.statusBarHeight = getResources().getDimensionPixelSize(resourceId);
         }
 
         NotificationCenter.getInstance().postNotificationName(702, this);
-        currentConnectionState = ConnectionsManager.getInstance().connectionState;
+        currentConnectionState = ConnectionsManager.getInstance().getConnectionState();
 
         NotificationCenter.getInstance().addObserver(this, 1234);
         NotificationCenter.getInstance().addObserver(this, 658);
@@ -148,8 +140,6 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         }
 
         handleIntent(getIntent(), false, savedInstanceState != null);
-
-        PhotoViewer.getInstance().setParentActivity(this);
     }
 
     private void handleIntent(Intent intent, boolean isNew, boolean restore) {
@@ -423,7 +413,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
             Bundle args = new Bundle();
             args.putBoolean("onlySelect", true);
-            args.putString("selectAlertString", LocaleController.getString("ForwardMessagesTo", R.string.ForwardMessagesTo));
+            args.putString("selectAlertString", LocaleController.getString("SendMessagesTo", R.string.SendMessagesTo));
             MessagesActivity fragment = new MessagesActivity(args);
             fragment.setDelegate(this);
             presentFragment(fragment, false, true);
@@ -447,7 +437,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     }
 
     @Override
-    public void didSelectDialog(MessagesActivity messageFragment, long dialog_id) {
+    public void didSelectDialog(MessagesActivity messageFragment, long dialog_id, boolean param) {
         if (dialog_id != 0) {
             int lower_part = (int)dialog_id;
 
@@ -504,18 +494,13 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     @Override
     protected void onPause() {
         super.onPause();
-        ConnectionsManager.setAppPaused(true);
-        if (notificationView != null) {
-            notificationView.hide(false);
-        }
-        View focusView = getCurrentFocus();
-        if (focusView instanceof EditText) {
-            focusView.clearFocus();
-        }
+        ApplicationLoader.mainInterfacePaused = true;
+        ConnectionsManager.getInstance().setAppPaused(true, false);
     }
 
     @Override
     protected void onDestroy() {
+        PhotoViewer.getInstance().destroyPhotoViewer();
         super.onDestroy();
         onFinish();
     }
@@ -523,20 +508,11 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     @Override
     protected void onResume() {
         super.onResume();
-        if (notificationView == null && getLayoutInflater() != null) {
-            notificationView = (NotificationView) getLayoutInflater().inflate(R.layout.notification_layout, null);
-        }
         Utilities.checkForCrashes(this);
         Utilities.checkForUpdates(this);
-        ConnectionsManager.setAppPaused(false);
+        ApplicationLoader.mainInterfacePaused = false;
+        ConnectionsManager.getInstance().setAppPaused(false, false);
         actionBar.setBackOverlayVisible(currentConnectionState != 0);
-        try {
-            NotificationManager mNotificationManager = (NotificationManager)this.getSystemService(Context.NOTIFICATION_SERVICE);
-            mNotificationManager.cancel(1);
-            MessagesController.getInstance().currentPushMessage = null;
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
     }
 
     @Override
@@ -550,32 +526,12 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         NotificationCenter.getInstance().removeObserver(this, 701);
         NotificationCenter.getInstance().removeObserver(this, 702);
         NotificationCenter.getInstance().removeObserver(this, 703);
-        if (notificationView != null) {
-            notificationView.hide(false);
-            notificationView.destroy();
-            notificationView = null;
-        }
     }
 
     @Override
     public void onConfigurationChanged(android.content.res.Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        Utilities.checkDisplaySize();
-    }
-
-    @Override
-    public void needLayout() {
-        super.needLayout();
-        if (notificationView != null) {
-            WindowManager manager = (WindowManager) getSystemService(WINDOW_SERVICE);
-            int rotation = manager.getDefaultDisplay().getRotation();
-
-            int height = Utilities.dp(48);
-            if (!Utilities.isTablet(this) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                height = Utilities.dp(40);
-            }
-            notificationView.applyOrientationPaddings(rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90, height);
-        }
+        AndroidUtilities.checkDisplaySize();
     }
 
     @Override
@@ -613,11 +569,6 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                 Bundle args2 = new Bundle();
                 args2.putInt("enc_id", push_enc_id);
                 presentFragment(new ChatActivity(args2), false, true);
-            }
-        } else if (id == 701) {
-            if (notificationView != null) {
-                MessageObject message = (MessageObject)args[0];
-                notificationView.show(message);
             }
         } else if (id == 702) {
             if (args[0] != this) {
@@ -695,5 +646,10 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             return true;
         }
         return super.onPreIme();
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
     }
 }

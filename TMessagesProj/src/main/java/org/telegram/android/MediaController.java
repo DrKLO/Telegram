@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013-2014.
  */
 
-package org.telegram.messenger;
+package org.telegram.android;
 
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -18,7 +18,6 @@ import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
-import android.media.audiofx.AutomaticGainControl;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
@@ -26,6 +25,15 @@ import android.os.Vibrator;
 import android.provider.MediaStore;
 import android.view.View;
 
+import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.DispatchQueue;
+import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.R;
+import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Cells.ChatMediaCell;
@@ -129,6 +137,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     public final static int recordStopped = 50006;
     public final static int screenshotTook = 50007;
     public final static int albumsDidLoaded = 50008;
+    public final static int audioDidSent = 50009;
 
     private HashMap<String, ArrayList<WeakReference<FileDownloadProgressListener>>> loadingFileObservers = new HashMap<String, ArrayList<WeakReference<FileDownloadProgressListener>>>();
     private HashMap<Integer, String> observersByTag = new HashMap<Integer, String>();
@@ -155,7 +164,6 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private final Integer progressTimerSync = 1;
 
     private AudioRecord audioRecorder = null;
-    private Object audioGainObj = null;
     private TLRPC.TL_audio recordingAudio = null;
     private File recordingAudioFile = null;
     private long recordStartTime;
@@ -497,7 +505,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                                 Thread.sleep(1000);
                             }
                             if (bitmapRegionDecoder != null) {
-                                Bitmap bitmap = bitmapRegionDecoder.decodeRegion(new Rect(0, 0, Utilities.dp(44), Utilities.dp(44)), null);
+                                Bitmap bitmap = bitmapRegionDecoder.decodeRegion(new Rect(0, 0, AndroidUtilities.dp(44), AndroidUtilities.dp(44)), null);
                                 int w = bitmap.getWidth();
                                 int h = bitmap.getHeight();
                                 for (int y = 0; y < h; y++) {
@@ -869,7 +877,9 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         if (currentTotalPcmDuration * progress == currentTotalPcmDuration) {
             return;
         }
-        audioTrackPlayer.pause();
+        if (!isPaused) {
+            audioTrackPlayer.pause();
+        }
         audioTrackPlayer.flush();
         fileDecodingQueue.postRunnable(new Runnable() {
             @Override
@@ -882,14 +892,15 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 Utilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        ignoreFirstProgress = 3;
-                        //audioTrackPlayer.setNotificationMarkerPosition((int)(currentTotalPcmDuration * (1 - playingMessageObject.audioProgress)));
-                        lastPlayPcm = (long)(currentTotalPcmDuration * progress);
-                        if (audioTrackPlayer != null) {
-                            audioTrackPlayer.play();
+                        if (!isPaused) {
+                            ignoreFirstProgress = 3;
+                            lastPlayPcm = (long) (currentTotalPcmDuration * progress);
+                            if (audioTrackPlayer != null) {
+                                audioTrackPlayer.play();
+                            }
+                            lastProgress = (int) (currentTotalPcmDuration / 48.0f * progress);
+                            checkPlayerQueue();
                         }
-                        lastProgress = (int)(currentTotalPcmDuration / 48.0f * progress);
-                        checkPlayerQueue();
                     }
                 });
             }
@@ -926,7 +937,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             return true;
         }
         clenupPlayer(true);
-        final File cacheFile = new File(Utilities.getCacheDir(), messageObject.getFileName());
+        final File cacheFile = new File(AndroidUtilities.getCacheDir(), messageObject.getFileName());
 
         if (isOpusFile(cacheFile.getAbsolutePath()) == 1) {
             synchronized (playerObjectSync) {
@@ -1144,10 +1155,11 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 recordingAudio.dc_id = Integer.MIN_VALUE;
                 recordingAudio.id = UserConfig.lastLocalId;
                 recordingAudio.user_id = UserConfig.getClientUserId();
+                recordingAudio.mime_type = "audio/ogg";
                 UserConfig.lastLocalId--;
                 UserConfig.saveConfig(false);
 
-                recordingAudioFile = new File(Utilities.getCacheDir(), MessageObject.getAttachFileName(recordingAudio));
+                recordingAudioFile = new File(AndroidUtilities.getCacheDir(), MessageObject.getAttachFileName(recordingAudio));
 
                 try {
                     if (startRecord(recordingAudioFile.getAbsolutePath()) == 0) {
@@ -1165,31 +1177,6 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     recordDialogId = dialog_id;
                     fileBuffer.rewind();
 
-                    if (android.os.Build.VERSION.SDK_INT >= 16) {
-                        File f = new File("/vendor/lib/libaudioeffect_jni.so");
-                        File f2 = new File("/system/lib/libaudioeffect_jni.so");
-                        if (f.exists() || f2.exists()) {
-                            AutomaticGainControl agc = null;
-                            try {
-                                if (AutomaticGainControl.isAvailable()) {
-                                    agc = AutomaticGainControl.create(audioRecorder.getAudioSessionId());
-                                    agc.setEnabled(true);
-                                    audioGainObj = agc;
-                                }
-                            } catch (Exception e) {
-                                try {
-                                    if (agc != null) {
-                                        agc.release();
-                                        agc = null;
-                                    }
-                                } catch (Exception e2) {
-                                    FileLog.e("tmessages", e2);
-                                }
-                                FileLog.e("tmessages", e);
-                            }
-                        }
-                    }
-
                     audioRecorder.startRecording();
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -1202,18 +1189,6 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                         audioRecorder = null;
                     } catch (Exception e2) {
                         FileLog.e("tmessages", e2);
-                    }
-
-                    if (android.os.Build.VERSION.SDK_INT >= 16 && audioGainObj != null) {
-                        AutomaticGainControl agc = (AutomaticGainControl)audioGainObj;
-                        try {
-                            if (agc != null) {
-                                agc.release();
-                                agc = null;
-                            }
-                        } catch (Exception e2) {
-                            FileLog.e("tmessages", e2);
-                        }
                     }
 
                     Utilities.RunOnUIThread(new Runnable() {
@@ -1257,6 +1232,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                             } else {
                                 recordingAudioFileToSend.delete();
                             }
+                            NotificationCenter.getInstance().postNotificationName(audioDidSent);
                         }
                     });
                 }
@@ -1266,17 +1242,6 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             if (audioRecorder != null) {
                 audioRecorder.release();
                 audioRecorder = null;
-            }
-            if (android.os.Build.VERSION.SDK_INT >= 16 && audioGainObj != null) {
-                AutomaticGainControl agc = (AutomaticGainControl)audioGainObj;
-                try {
-                    if (agc != null) {
-                        agc.release();
-                        agc = null;
-                    }
-                } catch (Exception e2) {
-                    FileLog.e("tmessages", e2);
-                }
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -1292,7 +1257,6 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 if (audioRecorder == null) {
                     return;
                 }
-                //recordTimeCount = System.currentTimeMillis() - recordStartTime;
                 try {
                     sendAfterDone = send;
                     audioRecorder.stop();
@@ -1334,7 +1298,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             }
         }
         if (file == null) {
-            file = new File(Utilities.getCacheDir(), path);
+            file = new File(AndroidUtilities.getCacheDir(), path);
         }
 
         final File sourceFile = file;
@@ -1466,7 +1430,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 }
             }
             if (cacheFile == null) {
-                cacheFile = new File(Utilities.getCacheDir(), messageObject.getFileName());
+                cacheFile = new File(AndroidUtilities.getCacheDir(), messageObject.getFileName());
             }
             try {
                 currentGifDrawable = new GifDrawable(cacheFile);
@@ -1545,7 +1509,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             UserConfig.lastLocalId--;
             parcelFD = ApplicationLoader.applicationContext.getContentResolver().openFileDescriptor(uri, "r");
             input = new FileInputStream(parcelFD.getFileDescriptor());
-            File f = new File(Utilities.getCacheDir(), String.format(Locale.US, "%d.%s", id, ext));
+            File f = new File(AndroidUtilities.getCacheDir(), String.format(Locale.US, "%d.%s", id, ext));
             output = new FileOutputStream(f);
             input.getChannel().transferTo(0, input.getChannel().size(), output.getChannel());
             UserConfig.saveConfig(false);

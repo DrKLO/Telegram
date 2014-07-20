@@ -42,4 +42,10 @@ public class TLObject {
     public void freeResources() {
 
     }
+
+    public int getObjectSize() {
+        ByteBufferDesc bufferDesc = new ByteBufferDesc(true);
+        serializeToStream(bufferDesc);
+        return bufferDesc.length();
+    }
 }

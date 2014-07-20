@@ -25,6 +25,4 @@ public class Action {
     public void cancel() {
 
     }
-
-    public int state;
 }

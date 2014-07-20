@@ -20,11 +20,11 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
@@ -38,7 +38,7 @@ import org.telegram.ui.Views.ActionBar.BaseFragment;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class SettingsBlockedUsers extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ContactsActivity.ContactsActivityDelegate {
+public class SettingsBlockedUsersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ContactsActivity.ContactsActivityDelegate {
     private ListView listView;
     private ListAdapter listViewAdapter;
     private boolean loading;
@@ -82,7 +82,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                         args.putBoolean("usersAsSections", true);
                         args.putBoolean("returnAsResult", true);
                         ContactsActivity fragment = new ContactsActivity(args);
-                        fragment.setDelegate(SettingsBlockedUsers.this);
+                        fragment.setDelegate(SettingsBlockedUsersActivity.this);
                         presentFragment(fragment);
                     }
                 }
@@ -148,7 +148,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                                     public void run(TLObject response, TLRPC.TL_error error) {
 
                                     }
-                                }, null, true, RPCRequest.RPCRequestClassGeneric);
+                                });
                             }
                         }
                     });
@@ -220,7 +220,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
                     }
                 });
             }
-        }, null, true, RPCRequest.RPCRequestClassGeneric);
+        });
         ConnectionsManager.getInstance().bindRequestToGuid(requestId, classGuid);
     }
 
@@ -256,7 +256,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
     }
 
     @Override
-    public void didSelectContact(TLRPC.User user) {
+    public void didSelectContact(TLRPC.User user, String param) {
         if (user == null || blockedContactsDict.containsKey(user.id)) {
             return;
         }
@@ -273,7 +273,7 @@ public class SettingsBlockedUsers extends BaseFragment implements NotificationCe
             public void run(TLObject response, TLRPC.TL_error error) {
 
             }
-        }, null, true, RPCRequest.RPCRequestClassGeneric);
+        });
     }
 
     private class ListAdapter extends BaseFragmentAdapter {

@@ -21,11 +21,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.ContactsController;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
@@ -104,7 +105,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
             avatarImage = (BackupImageView)fragmentView.findViewById(R.id.settings_avatar_image);
             avatarImage.processDetach = false;
             phoneText = (TextView)fragmentView.findViewById(R.id.settings_name);
-            Typeface typeface = Utilities.getTypeface("fonts/rmedium.ttf");
+            Typeface typeface = AndroidUtilities.getTypeface("fonts/rmedium.ttf");
             phoneText.setTypeface(typeface);
 
             firstNameField = (EditText)fragmentView.findViewById(R.id.first_name_field);
@@ -183,13 +184,13 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         boolean animations = preferences.getBoolean("view_animations", true);
         if (!animations) {
             firstNameField.requestFocus();
-            Utilities.showKeyboard(firstNameField);
+            AndroidUtilities.showKeyboard(firstNameField);
         }
     }
 
     @Override
     public void onOpenAnimationEnd() {
         firstNameField.requestFocus();
-        Utilities.showKeyboard(firstNameField);
+        AndroidUtilities.showKeyboard(firstNameField);
     }
 }

@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.messenger;
+package org.telegram.android;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -20,6 +20,16 @@ import android.provider.ContactsContract;
 import android.util.SparseArray;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.R;
+import org.telegram.messenger.RPCRequest;
+import org.telegram.messenger.TLObject;
+import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ApplicationLoader;
 
 import java.util.ArrayList;
@@ -148,6 +158,18 @@ public class ContactsController {
                     FileLog.e("tmessages", e);
                 }
             }
+        }
+    }
+
+    public void deleteAllAppAccounts() {
+        try {
+            AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
+            Account[] accounts = am.getAccountsByType("org.telegram.account");
+            for (Account c : accounts) {
+                am.removeAccount(c, null, null);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -720,7 +742,7 @@ public class ContactsController {
                                         });
                                     }
                                 }
-                            }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassCanCompress);
+                            }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassCanCompress);
                         }
                     } else {
                         Utilities.stageQueue.postRunnable(new Runnable() {
@@ -815,7 +837,7 @@ public class ContactsController {
                         processLoadedContacts(res.contacts, res.users, 0);
                     }
                 }
-            }, null, true, RPCRequest.RPCRequestClassGeneric);
+            }, true, RPCRequest.RPCRequestClassGeneric);
         }
     }
 
@@ -1540,7 +1562,7 @@ public class ContactsController {
                     }
                 });
             }
-        }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassCanCompress);
+        }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassCanCompress);
     }
 
     public void deleteContact(final ArrayList<TLRPC.User> users) {
@@ -1607,6 +1629,6 @@ public class ContactsController {
                     }
                 });
             }
-        }, null, true, RPCRequest.RPCRequestClassGeneric);
+        }, true, RPCRequest.RPCRequestClassGeneric);
     }
 }

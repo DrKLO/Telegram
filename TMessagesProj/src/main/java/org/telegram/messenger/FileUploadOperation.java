@@ -31,7 +31,7 @@ public class FileUploadOperation {
     private byte[] key;
     private byte[] iv;
     private byte[] ivChange;
-    private int fingerprint;
+    private int fingerprint = 0;
     private boolean isBigFile = false;
     FileInputStream stream;
     MessageDigest mdEnc = null;
@@ -57,11 +57,9 @@ public class FileUploadOperation {
                 System.arraycopy(key, 0, arr, 0, 32);
                 System.arraycopy(iv, 0, arr, 32, 32);
                 byte[] digest = md.digest(arr);
-                byte[] fingerprintBytes = new byte[4];
                 for (int a = 0; a < 4; a++) {
-                    fingerprintBytes[a] = (byte)(digest[a] ^ digest[a + 4]);
+                    fingerprint |= ((digest[a] ^ digest[a + 4]) & 0xFF) << (a * 8);
                 }
-                fingerprint = Utilities.bytesToInt(fingerprintBytes);
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
@@ -138,7 +136,7 @@ public class FileUploadOperation {
                 for (int a = 0; a < toAdd; a++) {
                     sendBuffer.writeByte(0);
                 }
-                Utilities.aesIgeEncryption2(sendBuffer.buffer, key, ivChange, true, true, readed + toAdd);
+                Utilities.aesIgeEncryption(sendBuffer.buffer, key, ivChange, true, true, 0, readed + toAdd);
             }
             sendBuffer.rewind();
             if (!isBigFile) {
@@ -210,11 +208,6 @@ public class FileUploadOperation {
                 } else {
                     delegate.didFailedUploadingFile(FileUploadOperation.this);
                 }
-            }
-        }, new RPCRequest.RPCProgressDelegate() {
-            @Override
-            public void progress(int length, int progress) {
-
             }
         }, null, true, RPCRequest.RPCRequestClassUploadMedia, ConnectionsManager.DEFAULT_DATACENTER_ID);
     }

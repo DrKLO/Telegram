@@ -17,11 +17,12 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -61,25 +62,25 @@ public class ChatOrUserCell extends BaseCell {
     private void init() {
         if (namePaint == null) {
             namePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            namePaint.setTextSize(Utilities.dp(18));
+            namePaint.setTextSize(AndroidUtilities.dp(18));
             namePaint.setColor(0xff222222);
         }
 
         if (nameEncryptedPaint == null) {
             nameEncryptedPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            nameEncryptedPaint.setTextSize(Utilities.dp(18));
+            nameEncryptedPaint.setTextSize(AndroidUtilities.dp(18));
             nameEncryptedPaint.setColor(0xff00a60e);
         }
 
         if (onlinePaint == null) {
             onlinePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            onlinePaint.setTextSize(Utilities.dp(15));
+            onlinePaint.setTextSize(AndroidUtilities.dp(15));
             onlinePaint.setColor(0xff316f9f);
         }
 
         if (offlinePaint == null) {
             offlinePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            offlinePaint.setTextSize(Utilities.dp(15));
+            offlinePaint.setTextSize(AndroidUtilities.dp(15));
             offlinePaint.setColor(0xff999999);
         }
 
@@ -122,7 +123,7 @@ public class ChatOrUserCell extends BaseCell {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), Utilities.dp(64));
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(64));
     }
 
     @Override
@@ -243,14 +244,14 @@ public class ChatOrUserCell extends BaseCell {
             canvas.restore();
         }
 
-        avatarImage.draw(canvas, cellLayout.avatarLeft, cellLayout.avatarTop, Utilities.dp(50), Utilities.dp(50));
+        avatarImage.draw(canvas, cellLayout.avatarLeft, cellLayout.avatarTop, AndroidUtilities.dp(50), AndroidUtilities.dp(50));
 
         if (useSeparator) {
             int h = getMeasuredHeight();
             if (!usePadding) {
                 canvas.drawLine(0, h - 1, getMeasuredWidth(), h, linePaint);
             } else {
-                canvas.drawLine(Utilities.dp(11), h - 1, getMeasuredWidth() - Utilities.dp(11), h, linePaint);
+                canvas.drawLine(AndroidUtilities.dp(11), h - 1, getMeasuredWidth() - AndroidUtilities.dp(11), h, linePaint);
             }
         }
     }
@@ -262,14 +263,14 @@ public class ChatOrUserCell extends BaseCell {
         private StaticLayout nameLayout;
         private boolean drawNameLock;
         private int nameLockLeft;
-        private int nameLockTop = Utilities.dp(15);
+        private int nameLockTop = AndroidUtilities.dp(15);
 
         private int onlineLeft;
-        private int onlineTop = Utilities.dp(36);
+        private int onlineTop = AndroidUtilities.dp(36);
         private int onlineWidth;
         private StaticLayout onlineLayout;
 
-        private int avatarTop = Utilities.dp(7);
+        private int avatarTop = AndroidUtilities.dp(7);
         private int avatarLeft;
 
         public void build(int width, int height) {
@@ -279,18 +280,18 @@ public class ChatOrUserCell extends BaseCell {
             if (encryptedChat != null) {
                 drawNameLock = true;
                 if (!LocaleController.isRTL) {
-                    nameLockLeft = Utilities.dp(61 + (usePadding ? 11 : 0));
-                    nameLeft = Utilities.dp(65 + (usePadding ? 11 : 0)) + lockDrawable.getIntrinsicWidth();
+                    nameLockLeft = AndroidUtilities.dp(61 + (usePadding ? 11 : 0));
+                    nameLeft = AndroidUtilities.dp(65 + (usePadding ? 11 : 0)) + lockDrawable.getIntrinsicWidth();
                 } else {
-                    nameLockLeft = width - Utilities.dp(63 + (usePadding ? 11 : 0)) - lockDrawable.getIntrinsicWidth();
-                    nameLeft = usePadding ? Utilities.dp(11) : 0;
+                    nameLockLeft = width - AndroidUtilities.dp(63 + (usePadding ? 11 : 0)) - lockDrawable.getIntrinsicWidth();
+                    nameLeft = usePadding ? AndroidUtilities.dp(11) : 0;
                 }
             } else {
                 drawNameLock = false;
                 if (!LocaleController.isRTL) {
-                    nameLeft = Utilities.dp(61 + (usePadding ? 11 : 0));
+                    nameLeft = AndroidUtilities.dp(61 + (usePadding ? 11 : 0));
                 } else {
-                    nameLeft = usePadding ? Utilities.dp(11) : 0;
+                    nameLeft = usePadding ? AndroidUtilities.dp(11) : 0;
                 }
             }
 
@@ -306,7 +307,7 @@ public class ChatOrUserCell extends BaseCell {
                 nameString = nameString2.replace("\n", " ");
             }
             if (nameString.length() == 0) {
-                if (user.phone != null && user.phone.length() != 0) {
+                if (user != null && user.phone != null && user.phone.length() != 0) {
                     nameString = PhoneFormat.getInstance().format("+" + user.phone);
                 } else {
                     nameString = LocaleController.getString("HiddenName", R.string.HiddenName);
@@ -319,22 +320,22 @@ public class ChatOrUserCell extends BaseCell {
             }
 
             if (!LocaleController.isRTL) {
-                onlineWidth = nameWidth = width - nameLeft - Utilities.dp(3 + (usePadding ? 11 : 0));
+                onlineWidth = nameWidth = width - nameLeft - AndroidUtilities.dp(3 + (usePadding ? 11 : 0));
             } else {
-                onlineWidth = nameWidth = width - nameLeft - Utilities.dp(61 + (usePadding ? 11 : 0));
+                onlineWidth = nameWidth = width - nameLeft - AndroidUtilities.dp(61 + (usePadding ? 11 : 0));
             }
             if (drawNameLock) {
-                nameWidth -= Utilities.dp(6) + lockDrawable.getIntrinsicWidth();
+                nameWidth -= AndroidUtilities.dp(6) + lockDrawable.getIntrinsicWidth();
             }
 
-            CharSequence nameStringFinal = TextUtils.ellipsize(nameString, currentNamePaint, nameWidth - Utilities.dp(12), TextUtils.TruncateAt.END);
+            CharSequence nameStringFinal = TextUtils.ellipsize(nameString, currentNamePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
             nameLayout = new StaticLayout(nameStringFinal, currentNamePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 
             if (chat == null) {
                 if (!LocaleController.isRTL) {
-                    onlineLeft = Utilities.dp(61 + (usePadding ? 11 : 0));
+                    onlineLeft = AndroidUtilities.dp(61 + (usePadding ? 11 : 0));
                 } else {
-                    onlineLeft = usePadding ? Utilities.dp(11) : 0;
+                    onlineLeft = usePadding ? AndroidUtilities.dp(11) : 0;
                 }
 
                 String onlineString = "";
@@ -350,23 +351,23 @@ public class ChatOrUserCell extends BaseCell {
                     }
                 }
 
-                CharSequence onlineStringFinal = TextUtils.ellipsize(onlineString, currentOnlinePaint, nameWidth - Utilities.dp(12), TextUtils.TruncateAt.END);
+                CharSequence onlineStringFinal = TextUtils.ellipsize(onlineString, currentOnlinePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
                 onlineLayout = new StaticLayout(onlineStringFinal, currentOnlinePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-                nameTop = Utilities.dp(12);
+                nameTop = AndroidUtilities.dp(12);
             } else {
                 onlineLayout = null;
-                nameTop = Utilities.dp(22);
+                nameTop = AndroidUtilities.dp(22);
             }
 
             if (!LocaleController.isRTL) {
-                avatarLeft = usePadding ? Utilities.dp(11) : 0;
+                avatarLeft = usePadding ? AndroidUtilities.dp(11) : 0;
             } else {
-                avatarLeft = width - Utilities.dp(50 + (usePadding ? 11 : 0));
+                avatarLeft = width - AndroidUtilities.dp(50 + (usePadding ? 11 : 0));
             }
             avatarImage.imageX = avatarLeft;
             avatarImage.imageY = avatarTop;
-            avatarImage.imageW = Utilities.dp(50);
-            avatarImage.imageH = Utilities.dp(50);
+            avatarImage.imageW = AndroidUtilities.dp(50);
+            avatarImage.imageH = AndroidUtilities.dp(50);
 
             double widthpx = 0;
             float left = 0;

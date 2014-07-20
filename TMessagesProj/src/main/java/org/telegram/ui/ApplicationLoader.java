@@ -29,14 +29,16 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 
-import org.telegram.messenger.NotificationsService;
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.ContactsController;
+import org.telegram.android.NotificationsService;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NativeLoader;
-import org.telegram.messenger.ScreenReceiver;
+import org.telegram.android.LocaleController;
+import org.telegram.android.MessagesController;
+import org.telegram.android.NativeLoader;
+import org.telegram.android.ScreenReceiver;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 
@@ -57,6 +59,7 @@ public class ApplicationLoader extends Application {
     private static volatile boolean applicationInited = false;
 
     public static volatile boolean isScreenOn = false;
+    public static volatile boolean mainInterfacePaused = true;
 
     public static void postInitApplication() {
         if (applicationInited) {
@@ -64,8 +67,6 @@ public class ApplicationLoader extends Application {
         }
 
         applicationInited = true;
-
-        NativeLoader.initNativeLibs(applicationContext);
 
         try {
             LocaleController.getInstance();
@@ -128,12 +129,15 @@ public class ApplicationLoader extends Application {
         ApplicationLoader app = (ApplicationLoader)ApplicationLoader.applicationContext;
         app.initPlayServices();
         FileLog.e("tmessages", "app initied");
+
+        ContactsController.getInstance().checkAppAccount();
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
         applicationContext = getApplicationContext();
+        NativeLoader.initNativeLibs(ApplicationLoader.applicationContext);
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
 
@@ -177,7 +181,7 @@ public class ApplicationLoader extends Application {
         super.onConfigurationChanged(newConfig);
         try {
             LocaleController.getInstance().onDeviceConfigurationChange(newConfig);
-            Utilities.checkDisplaySize();
+            AndroidUtilities.checkDisplaySize();
         } catch (Exception e) {
             e.printStackTrace();
         }

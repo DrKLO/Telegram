@@ -6,12 +6,14 @@
  * Copyright Nikolai Kudashov, 2013-2014.
  */
 
-package org.telegram.messenger;
+package org.telegram.android;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
+import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.FileLog;
 import org.telegram.ui.ApplicationLoader;
 
 public class ScreenReceiver extends BroadcastReceiver {
@@ -19,13 +21,11 @@ public class ScreenReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
             FileLog.e("tmessages", "screen off");
-            if (ConnectionsManager.lastPauseTime == 0) {
-                ConnectionsManager.lastPauseTime = System.currentTimeMillis();
-            }
+            ConnectionsManager.getInstance().setAppPaused(true, true);
             ApplicationLoader.isScreenOn = false;
         } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
             FileLog.e("tmessages", "screen on");
-            ConnectionsManager.resetLastPauseTime();
+            ConnectionsManager.getInstance().setAppPaused(false, true);
             ApplicationLoader.isScreenOn = true;
         }
     }

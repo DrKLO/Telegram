@@ -17,17 +17,19 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.ContactsController;
+import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.MessagesStorage;
+import org.telegram.android.MessagesController;
+import org.telegram.android.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -74,7 +76,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     private final static int messages_list_menu_settings = 5;
 
     public static interface MessagesActivityDelegate {
-        public abstract void didSelectDialog(MessagesActivity fragment, long dialog_id);
+        public abstract void didSelectDialog(MessagesActivity fragment, long dialog_id, boolean param);
     }
 
     public MessagesActivity(Bundle args) {
@@ -276,7 +278,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                         }
                     }
                     if (onlySelect) {
-                        didSelectResult(dialog_id, true);
+                        didSelectResult(dialog_id, true, false);
                     } else {
                         Bundle args = new Bundle();
                         int lower_part = (int)dialog_id;
@@ -324,8 +326,18 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                                 if (which == 0) {
                                     MessagesController.getInstance().deleteDialog(selectedDialog, 0, true);
                                 } else if (which == 1) {
-                                    MessagesController.getInstance().deleteUserFromChat((int) -selectedDialog, MessagesController.getInstance().users.get(UserConfig.getClientUserId()), null);
-                                    MessagesController.getInstance().deleteDialog(selectedDialog, 0, false);
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                                    builder.setMessage(LocaleController.getString("AreYouSureDeleteAndExit", R.string.AreYouSureDeleteAndExit));
+                                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialogInterface, int i) {
+                                            MessagesController.getInstance().deleteUserFromChat((int) -selectedDialog, MessagesController.getInstance().users.get(UserConfig.getClientUserId()), null);
+                                            MessagesController.getInstance().deleteDialog(selectedDialog, 0, false);
+                                        }
+                                    });
+                                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                                    showAlertDialog(builder);
                                 }
                             }
                         });
@@ -333,7 +345,21 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                         builder.setItems(new CharSequence[]{LocaleController.getString("ClearHistory", R.string.ClearHistory), LocaleController.getString("Delete", R.string.Delete)}, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                MessagesController.getInstance().deleteDialog(selectedDialog, 0, which == 0);
+                                if (which == 0) {
+                                    MessagesController.getInstance().deleteDialog(selectedDialog, 0, true);
+                                } else {
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                                    builder.setMessage(LocaleController.getString("AreYouSureDeleteThisChat", R.string.AreYouSureDeleteThisChat));
+                                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialogInterface, int i) {
+                                            MessagesController.getInstance().deleteDialog(selectedDialog, 0, false);
+                                        }
+                                    });
+                                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                                    showAlertDialog(builder);
+                                }
                             }
                         });
                     }
@@ -347,7 +373,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 @Override
                 public void onScrollStateChanged(AbsListView absListView, int i) {
                     if (i == SCROLL_STATE_TOUCH_SCROLL && searching && searchWas) {
-                        Utilities.hideKeyboard(getParentActivity().getCurrentFocus());
+                        AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
                     }
                 }
 
@@ -363,11 +389,6 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     }
                 }
             });
-
-            if (MessagesController.getInstance().loadingDialogs) {
-                progressView.setVisibility(View.VISIBLE);
-            }
-
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
             if (parent != null) {
@@ -453,7 +474,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         this.delegate = delegate;
     }
 
-    private void didSelectResult(final long dialog_id, boolean useAlert) {
+    private void didSelectResult(final long dialog_id, boolean useAlert, final boolean param) {
         if (useAlert && selectAlertString != null) {
             if (getParentActivity() == null) {
                 return;
@@ -484,17 +505,32 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 }
                 builder.setMessage(LocaleController.formatStringSimple(selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
             }
+            CheckBox checkBox = null;
+            /*if (delegate instanceof ChatActivity) {
+                checkBox = new CheckBox(getParentActivity());
+                checkBox.setText(LocaleController.getString("ForwardFromMyName", R.string.ForwardFromMyName));
+                checkBox.setChecked(false);
+                builder.setView(checkBox);
+            }*/
+            final CheckBox checkBoxFinal = checkBox;
             builder.setPositiveButton(R.string.OK, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
-                    didSelectResult(dialog_id, false);
+                    didSelectResult(dialog_id, false, checkBoxFinal != null && checkBoxFinal.isChecked());
                 }
             });
             builder.setNegativeButton(R.string.Cancel, null);
             showAlertDialog(builder);
+            if (checkBox != null) {
+                ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams)checkBox.getLayoutParams();
+                if (layoutParams != null) {
+                    layoutParams.rightMargin = layoutParams.leftMargin = AndroidUtilities.dp(10);
+                    checkBox.setLayoutParams(layoutParams);
+                }
+            }
         } else {
             if (delegate != null) {
-                delegate.didSelectDialog(MessagesActivity.this, dialog_id);
+                delegate.didSelectDialog(MessagesActivity.this, dialog_id, param);
                 delegate = null;
             } else {
                 finishFragment();

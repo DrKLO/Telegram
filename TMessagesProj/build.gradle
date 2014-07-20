@@ -3,10 +3,10 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:0.11.+'
+        classpath 'com.android.tools.build:gradle:0.12.+'
     }
 }
-apply plugin: 'android'
+apply plugin: 'com.android.application'
 
 repositories {
     mavenCentral()
@@ -20,13 +20,15 @@ dependencies {
     compile 'com.android.support:support-v4:19.0.+'
     compile 'com.google.android.gms:play-services:4.1.+'
     compile 'net.hockeyapp.android:HockeySDK:3.0.1'
+    compile 'com.googlecode.mp4parser:isoparser:1.0.+'
 }
 
 android {
     compileSdkVersion 19
     buildToolsVersion '19.1.0'
 
-    aaptOptions.useAaptPngCruncher = true
+    useAaptPngCruncher = true
+    useOldManifestMerger true
 
     signingConfigs {
         debug {
@@ -81,7 +83,7 @@ android {
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 19
-        versionCode 267
-        versionName "1.5.7"
+        versionCode 288
+        versionName "1.6.1"
     }
 }

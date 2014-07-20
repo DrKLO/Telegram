@@ -11,6 +11,7 @@ package org.telegram.ui;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Html;
@@ -22,12 +23,13 @@ import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesStorage;
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.LocaleController;
+import org.telegram.android.MessagesStorage;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -256,8 +258,13 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public void didSelectContact(TLRPC.User user) {
-        MessagesController.getInstance().addUserToChat(chat_id, user, info);
+    public void didSelectContact(TLRPC.User user, String param) {
+        MessagesController.getInstance().addUserToChat(chat_id, user, info, Utilities.parseInt(param));
+    }
+
+    @Override
+    public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
+        avatarUpdater.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
@@ -293,7 +300,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         avatarImage.getLocationInWindow(coords);
                         PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
                         object.viewX = coords[0];
-                        object.viewY = coords[1] - Utilities.statusBarHeight;
+                        object.viewY = coords[1] - AndroidUtilities.statusBarHeight;
                         object.parentView = listView;
                         object.imageReceiver = avatarImage.imageReceiver;
                         object.thumb = object.imageReceiver.getBitmap();
@@ -436,6 +443,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         if (action == 0) {
             TLRPC.Chat chat = MessagesController.getInstance().chats.get(chat_id);
             if (chat.photo != null && chat.photo.photo_big != null) {
+                PhotoViewer.getInstance().setParentActivity(getParentActivity());
                 PhotoViewer.getInstance().openPhoto(chat.photo.photo_big, this);
             }
         } else if (action == 1) {
@@ -590,15 +598,15 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 avatarImage = (BackupImageView)view.findViewById(R.id.settings_avatar_image);
                 avatarImage.processDetach = false;
                 TextView textView = (TextView)view.findViewById(R.id.settings_name);
-                Typeface typeface = Utilities.getTypeface("fonts/rmedium.ttf");
+                Typeface typeface = AndroidUtilities.getTypeface("fonts/rmedium.ttf");
                 textView.setTypeface(typeface);
 
                 textView.setText(chat.title);
 
                 if (chat.participants_count != 0 && onlineCount > 0) {
-                    onlineText.setText(Html.fromHtml(String.format("%d %s, <font color='#357aa8'>%d %s</font>", chat.participants_count, LocaleController.getString("Members", R.string.Members), onlineCount, LocaleController.getString("Online", R.string.Online))));
+                    onlineText.setText(Html.fromHtml(String.format("%s, <font color='#357aa8'>%d %s</font>", LocaleController.formatPluralString("Members", chat.participants_count), onlineCount, LocaleController.getString("Online", R.string.Online))));
                 } else {
-                    onlineText.setText(String.format("%d %s", chat.participants_count, LocaleController.getString("Members", R.string.Members)));
+                    onlineText.setText(LocaleController.formatPluralString("Members", chat.participants_count));
                 }
 
                 TLRPC.FileLocation photo = null;
@@ -622,7 +630,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     textView.setText(LocaleController.getString("SHAREDMEDIA", R.string.SHAREDMEDIA));
                 } else if (i == membersSectionRow) {
                     TLRPC.Chat chat = MessagesController.getInstance().chats.get(chat_id);
-                    textView.setText(String.format("%d %s", chat.participants_count, LocaleController.getString("MEMBERS", R.string.MEMBERS)));
+                    textView.setText(LocaleController.formatPluralString("Members", chat.participants_count).toUpperCase());
                 }
             } else if (type == 2) {
                 if (view == null) {
@@ -672,7 +680,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                                 return;
                             }
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                            builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
+                            builder.setMessage(LocaleController.getString("AreYouSureDeleteAndExit", R.string.AreYouSureDeleteAndExit));
                             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                             builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                                 @Override

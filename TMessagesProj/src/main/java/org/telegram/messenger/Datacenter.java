@@ -35,7 +35,7 @@ public class Datacenter {
     private volatile int currentAddressNum = 0;
 
     public TcpConnection connection;
-    private ArrayList<TcpConnection> downloadConnections = new ArrayList<TcpConnection>();
+    private TcpConnection downloadConnection;
     private TcpConnection uploadConnection;
     public TcpConnection pushConnection;
 
@@ -327,7 +327,7 @@ public class Datacenter {
         if (uploadConnection != null) {
             uploadConnection.suspendConnection(true);
         }
-        for (TcpConnection downloadConnection : downloadConnections) {
+        if (downloadConnection != null) {
             downloadConnection.suspendConnection(true);
         }
     }
@@ -339,7 +339,7 @@ public class Datacenter {
         if (uploadConnection != null) {
             sessions.add(uploadConnection.getSissionId());
         }
-        for (TcpConnection downloadConnection : downloadConnections) {
+        if (downloadConnection != null) {
             sessions.add(downloadConnection.getSissionId());
         }
     }
@@ -351,26 +351,21 @@ public class Datacenter {
         if (uploadConnection != null) {
             uploadConnection.recreateSession();
         }
-        for (TcpConnection downloadConnection : downloadConnections) {
+        if (downloadConnection != null) {
             downloadConnection.recreateSession();
         }
     }
 
-    public TcpConnection getDownloadConnection(int num, TcpConnection.TcpConnectionDelegate delegate) {
-        if (num >= 0 && authKey != null) {
-            TcpConnection downloadConnection = null;
-            if (num < downloadConnections.size()) {
-                downloadConnection = downloadConnections.get(num);
-            } else {
+    public TcpConnection getDownloadConnection(TcpConnection.TcpConnectionDelegate delegate) {
+        if (authKey != null) {
+            if (downloadConnection == null) {
                 downloadConnection = new TcpConnection(datacenterId);
                 downloadConnection.delegate = delegate;
                 downloadConnection.transportRequestClass = RPCRequest.RPCRequestClassDownloadMedia;
-                downloadConnections.add(downloadConnection);
             }
             downloadConnection.connect();
-            return downloadConnection;
         }
-        return null;
+        return downloadConnection;
     }
 
     public TcpConnection getUploadConnection(TcpConnection.TcpConnectionDelegate delegate) {

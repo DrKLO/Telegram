@@ -6,13 +6,14 @@
  * Copyright Nikolai Kudashov, 2013-2014.
  */
 
-package org.telegram.messenger;
+package org.telegram.android;
 
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.IBinder;
 
+import org.telegram.messenger.FileLog;
 import org.telegram.ui.ApplicationLoader;
 
 public class NotificationsService extends Service {

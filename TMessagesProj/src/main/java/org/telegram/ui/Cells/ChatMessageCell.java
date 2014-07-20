@@ -14,8 +14,8 @@ import android.text.Spannable;
 import android.text.style.ClickableSpan;
 import android.view.MotionEvent;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
 
 public class ChatMessageCell extends ChatBaseCell {
@@ -132,10 +132,10 @@ public class ChatMessageCell extends ChatBaseCell {
             pressedLink = null;
             int maxWidth;
             if (isChat && !messageObject.isOut()) {
-                maxWidth = Utilities.displaySize.x - Utilities.dp(122);
+                maxWidth = AndroidUtilities.displaySize.x - AndroidUtilities.dp(122);
                 drawName = true;
             } else {
-                maxWidth = Utilities.displaySize.x - Utilities.dp(80);
+                maxWidth = AndroidUtilities.displaySize.x - AndroidUtilities.dp(80);
                 drawName = false;
             }
 
@@ -144,25 +144,25 @@ public class ChatMessageCell extends ChatBaseCell {
             super.setMessageObject(messageObject);
 
             backgroundWidth = messageObject.textWidth;
-            totalHeight = messageObject.textHeight + Utilities.dpf(19.5f) + namesOffset;
+            totalHeight = messageObject.textHeight + AndroidUtilities.dpf(19.5f) + namesOffset;
 
             int maxChildWidth = Math.max(backgroundWidth, nameWidth);
             maxChildWidth = Math.max(maxChildWidth, forwardedNameWidth);
 
-            int timeMore = timeWidth + Utilities.dp(6);
+            int timeMore = timeWidth + AndroidUtilities.dp(6);
             if (messageObject.isOut()) {
-                timeMore += Utilities.dpf(20.5f);
+                timeMore += AndroidUtilities.dpf(20.5f);
             }
 
             if (maxWidth - messageObject.lastLineWidth < timeMore) {
-                totalHeight += Utilities.dp(14);
-                backgroundWidth = Math.max(maxChildWidth, messageObject.lastLineWidth) + Utilities.dp(29);
+                totalHeight += AndroidUtilities.dp(14);
+                backgroundWidth = Math.max(maxChildWidth, messageObject.lastLineWidth) + AndroidUtilities.dp(29);
             } else {
                 int diff = maxChildWidth - messageObject.lastLineWidth;
                 if (diff >= 0 && diff <= timeMore) {
-                    backgroundWidth = maxChildWidth + timeMore - diff + Utilities.dp(29);
+                    backgroundWidth = maxChildWidth + timeMore - diff + AndroidUtilities.dp(29);
                 } else {
-                    backgroundWidth = Math.max(maxChildWidth, messageObject.lastLineWidth + timeMore) + Utilities.dp(29);
+                    backgroundWidth = Math.max(maxChildWidth, messageObject.lastLineWidth + timeMore) + AndroidUtilities.dp(29);
                 }
             }
         }
@@ -178,11 +178,11 @@ public class ChatMessageCell extends ChatBaseCell {
         super.onLayout(changed, left, top, right, bottom);
 
         if (currentMessageObject.isOut()) {
-            textX = layoutWidth - backgroundWidth + Utilities.dp(10);
-            textY = Utilities.dp(10) + namesOffset;
+            textX = layoutWidth - backgroundWidth + AndroidUtilities.dp(10);
+            textY = AndroidUtilities.dp(10) + namesOffset;
         } else {
-            textX = Utilities.dp(19) + (isChat ? Utilities.dp(52) : 0);
-            textY = Utilities.dp(10) + namesOffset;
+            textX = AndroidUtilities.dp(19) + (isChat ? AndroidUtilities.dp(52) : 0);
+            textY = AndroidUtilities.dp(10) + namesOffset;
         }
     }
 
@@ -194,11 +194,11 @@ public class ChatMessageCell extends ChatBaseCell {
         }
 
         if (currentMessageObject.isOut()) {
-            textX = layoutWidth - backgroundWidth + Utilities.dp(10);
-            textY = Utilities.dp(10) + namesOffset;
+            textX = layoutWidth - backgroundWidth + AndroidUtilities.dp(10);
+            textY = AndroidUtilities.dp(10) + namesOffset;
         } else {
-            textX = Utilities.dp(19) + (isChat ? Utilities.dp(52) : 0);
-            textY = Utilities.dp(10) + namesOffset;
+            textX = AndroidUtilities.dp(19) + (isChat ? AndroidUtilities.dp(52) : 0);
+            textY = AndroidUtilities.dp(10) + namesOffset;
         }
 
         for (int a = firstVisibleBlockNum; a <= lastVisibleBlockNum; a++) {

@@ -29,7 +29,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
-import org.telegram.messenger.Utilities;
+import org.telegram.android.AndroidUtilities;
 
 public class ColorPickerView extends View {
 
@@ -105,15 +105,15 @@ public class ColorPickerView extends View {
     }
 
     private void init(AttributeSet attrs, int defStyle) {
-        mColorWheelThickness = Utilities.dp(8);
-        mColorWheelRadius = Utilities.dp(124);
+        mColorWheelThickness = AndroidUtilities.dp(8);
+        mColorWheelRadius = AndroidUtilities.dp(124);
         mPreferredColorWheelRadius = mColorWheelRadius;
-        mColorCenterRadius = Utilities.dp(54);
+        mColorCenterRadius = AndroidUtilities.dp(54);
         mPreferredColorCenterRadius = mColorCenterRadius;
-        mColorCenterHaloRadius = Utilities.dp(60);
+        mColorCenterHaloRadius = AndroidUtilities.dp(60);
         mPreferredColorCenterHaloRadius = mColorCenterHaloRadius;
-        mColorPointerRadius = Utilities.dp(14);
-        mColorPointerHaloRadius = Utilities.dp(18);
+        mColorPointerRadius = AndroidUtilities.dp(14);
+        mColorPointerHaloRadius = AndroidUtilities.dp(18);
 
         mAngle = (float) (-Math.PI / 2);
 

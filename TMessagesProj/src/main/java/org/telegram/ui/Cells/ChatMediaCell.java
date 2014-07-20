@@ -18,12 +18,12 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
-import android.view.View;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.MediaController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
@@ -34,7 +34,6 @@ import org.telegram.ui.Views.ImageReceiver;
 import org.telegram.ui.Views.ProgressView;
 
 import java.io.File;
-import java.lang.ref.WeakReference;
 import java.util.Locale;
 
 public class ChatMediaCell extends ChatBaseCell implements MediaController.FileDownloadProgressListener {
@@ -96,7 +95,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
 
             infoPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             infoPaint.setColor(0xffffffff);
-            infoPaint.setTextSize(Utilities.dp(12));
+            infoPaint.setTextSize(AndroidUtilities.dp(12));
         }
 
         TAG = MediaController.getInstance().generateObserverTag();
@@ -136,7 +135,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         float y = event.getY();
 
         boolean result = false;
-        int side = Utilities.dp(44);
+        int side = AndroidUtilities.dp(44);
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             if (delegate == null || delegate.canPerformActions()) {
                 if (buttonState != -1 && x >= buttonX && x <= buttonX + side && y >= buttonY && y <= buttonY + side) {
@@ -285,7 +284,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             }
             double lat = object.messageOwner.media.geo.lat;
             double lon = object.messageOwner.media.geo._long;
-            String url = String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=13&size=100x100&maptype=roadmap&scale=%d&markers=color:red|size:big|%f,%f&sensor=false", lat, lon, Math.min(2, (int)Math.ceil(Utilities.density)), lat, lon);
+            String url = String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=13&size=100x100&maptype=roadmap&scale=%d&markers=color:red|size:big|%f,%f&sensor=false", lat, lon, Math.min(2, (int)Math.ceil(AndroidUtilities.density)), lat, lon);
             if (!url.equals(currentUrl)) {
                 return true;
             }
@@ -293,7 +292,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             return true;
         } else if (currentPhotoObject != null && photoNotSet) {
             String fileName = MessageObject.getAttachFileName(currentPhotoObject.photoOwner);
-            File cacheFile = new File(Utilities.getCacheDir(), fileName);
+            File cacheFile = new File(AndroidUtilities.getCacheDir(), fileName);
             if (cacheFile.exists()) {
                 return true;
             }
@@ -330,7 +329,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 String str = String.format("%d:%02d, %s", minutes, seconds, Utilities.formatFileSize(messageObject.messageOwner.media.video.size));
                 if (currentInfoString == null || !currentInfoString.equals(str)) {
                     currentInfoString = str;
-                    infoOffset = videoIconDrawable.getIntrinsicWidth() + Utilities.dp(4);
+                    infoOffset = videoIconDrawable.getIntrinsicWidth() + AndroidUtilities.dp(4);
                     infoWidth = (int) Math.ceil(infoPaint.measureText(currentInfoString));
                     infoLayout = new StaticLayout(currentInfoString, infoPaint, infoWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                 }
@@ -340,17 +339,17 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             }
 
             if (messageObject.type == 4) {
-                photoWidth = Utilities.dp(100);
-                photoHeight = Utilities.dp(100);
-                backgroundWidth = photoWidth + Utilities.dp(12);
+                photoWidth = AndroidUtilities.dp(100);
+                photoHeight = AndroidUtilities.dp(100);
+                backgroundWidth = photoWidth + AndroidUtilities.dp(12);
 
                 double lat = messageObject.messageOwner.media.geo.lat;
                 double lon = messageObject.messageOwner.media.geo._long;
-                currentUrl = String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=13&size=100x100&maptype=roadmap&scale=%d&markers=color:red|size:big|%f,%f&sensor=false", lat, lon, Math.min(2, (int)Math.ceil(Utilities.density)), lat, lon);
+                currentUrl = String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=13&size=100x100&maptype=roadmap&scale=%d&markers=color:red|size:big|%f,%f&sensor=false", lat, lon, Math.min(2, (int)Math.ceil(AndroidUtilities.density)), lat, lon);
                 photoImage.setImage(currentUrl, null, messageObject.isOut() ? placeholderOutDrawable : placeholderInDrawable);
             } else {
-                photoWidth = (int) (Math.min(Utilities.displaySize.x, Utilities.displaySize.y) * 0.7f);
-                photoHeight = photoWidth + Utilities.dp(100);
+                photoWidth = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.7f);
+                photoHeight = photoWidth + AndroidUtilities.dp(100);
 
                 if (photoWidth > 800) {
                     photoWidth = 800;
@@ -367,35 +366,35 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     int h = (int) (currentPhotoObject.photoOwner.h / scale);
                     if (w == 0) {
                         if (messageObject.type == 3) {
-                            w = infoWidth + infoOffset + Utilities.dp(16);
+                            w = infoWidth + infoOffset + AndroidUtilities.dp(16);
                         } else {
-                            w = Utilities.dp(100);
+                            w = AndroidUtilities.dp(100);
                         }
                     }
                     if (h == 0) {
-                        h = Utilities.dp(100);
+                        h = AndroidUtilities.dp(100);
                     }
                     if (h > photoHeight) {
                         float scale2 = h;
                         h = photoHeight;
                         scale2 /= h;
                         w = (int) (w / scale2);
-                    } else if (h < Utilities.dp(120)) {
-                        h = Utilities.dp(120);
+                    } else if (h < AndroidUtilities.dp(120)) {
+                        h = AndroidUtilities.dp(120);
                         float hScale = (float) currentPhotoObject.photoOwner.h / h;
                         if (currentPhotoObject.photoOwner.w / hScale < photoWidth) {
                             w = (int) (currentPhotoObject.photoOwner.w / hScale);
                         }
                     }
-                    int timeWidthTotal = timeWidth + Utilities.dp(14 + (currentMessageObject.isOut() ? 20 : 0));
+                    int timeWidthTotal = timeWidth + AndroidUtilities.dp(14 + (currentMessageObject.isOut() ? 20 : 0));
                     if (w < timeWidthTotal) {
                         w = timeWidthTotal;
                     }
 
                     photoWidth = w;
                     photoHeight = h;
-                    backgroundWidth = w + Utilities.dp(12);
-                    currentPhotoFilter = String.format(Locale.US, "%d_%d", (int) (w / Utilities.density), (int) (h / Utilities.density));
+                    backgroundWidth = w + AndroidUtilities.dp(12);
+                    currentPhotoFilter = String.format(Locale.US, "%d_%d", (int) (w / AndroidUtilities.density), (int) (h / AndroidUtilities.density));
 
                     if (currentPhotoObject.image != null) {
                         photoImage.setImageBitmap(currentPhotoObject.image);
@@ -403,7 +402,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                         boolean photoExist = true;
                         String fileName = MessageObject.getAttachFileName(currentPhotoObject.photoOwner);
                         if (messageObject.type == 1) {
-                            File cacheFile = new File(Utilities.getCacheDir(), fileName);
+                            File cacheFile = new File(AndroidUtilities.getCacheDir(), fileName);
                             if (!cacheFile.exists()) {
                                 photoExist = false;
                             } else {
@@ -447,7 +446,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 return;
             }
             fileName = MessageObject.getAttachFileName(currentPhotoObject.photoOwner);
-            cacheFile = new File(Utilities.getCacheDir(), fileName);
+            cacheFile = new File(AndroidUtilities.getCacheDir(), fileName);
         } else if (currentMessageObject.type == 8 || currentMessageObject.type == 3) {
             if (currentMessageObject.messageOwner.attachPath != null && currentMessageObject.messageOwner.attachPath.length() != 0) {
                 File f = new File(currentMessageObject.messageOwner.attachPath);
@@ -458,7 +457,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             }
             if (fileName == null) {
                 fileName = currentMessageObject.getFileName();
-                cacheFile = new File(Utilities.getCacheDir(), fileName);
+                cacheFile = new File(AndroidUtilities.getCacheDir(), fileName);
             }
         }
         if (fileName == null) {
@@ -525,7 +524,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), photoHeight + Utilities.dp(14));
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), photoHeight + AndroidUtilities.dp(14));
     }
 
     @Override
@@ -533,23 +532,23 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         super.onLayout(changed, left, top, right, bottom);
 
         if (currentMessageObject.isOut()) {
-            photoImage.imageX = layoutWidth - backgroundWidth - Utilities.dp(3);
+            photoImage.imageX = layoutWidth - backgroundWidth - AndroidUtilities.dp(3);
         } else {
             if (isChat) {
-                photoImage.imageX = Utilities.dp(67);
+                photoImage.imageX = AndroidUtilities.dp(67);
             } else {
-                photoImage.imageX = Utilities.dp(15);
+                photoImage.imageX = AndroidUtilities.dp(15);
             }
         }
-        photoImage.imageY = Utilities.dp(7);
+        photoImage.imageY = AndroidUtilities.dp(7);
         photoImage.imageW = photoWidth;
         photoImage.imageH = photoHeight;
 
-        progressView.width = timeX - photoImage.imageX - Utilities.dpf(23.0f);
-        progressView.height = Utilities.dp(3);
-        progressView.progressHeight = Utilities.dp(3);
+        progressView.width = timeX - photoImage.imageX - AndroidUtilities.dpf(23.0f);
+        progressView.height = AndroidUtilities.dp(3);
+        progressView.progressHeight = AndroidUtilities.dp(3);
 
-        int size = Utilities.dp(44);
+        int size = AndroidUtilities.dp(44);
         buttonX = (int)(photoImage.imageX + (photoWidth - size) / 2.0f);
         buttonY = (int)(photoImage.imageY + (photoHeight - size) / 2.0f);
     }
@@ -568,11 +567,11 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         }
 
         if (progressVisible) {
-            setDrawableBounds(mediaBackgroundDrawable, photoImage.imageX + Utilities.dp(4), layoutHeight - Utilities.dpf(27.5f), progressView.width + Utilities.dp(12), Utilities.dpf(16.5f));
+            setDrawableBounds(mediaBackgroundDrawable, photoImage.imageX + AndroidUtilities.dp(4), layoutHeight - AndroidUtilities.dpf(27.5f), progressView.width + AndroidUtilities.dp(12), AndroidUtilities.dpf(16.5f));
             mediaBackgroundDrawable.draw(canvas);
 
             canvas.save();
-            canvas.translate(photoImage.imageX + Utilities.dp(10), layoutHeight - Utilities.dpf(21.0f));
+            canvas.translate(photoImage.imageX + AndroidUtilities.dp(10), layoutHeight - AndroidUtilities.dpf(21.0f));
             progressView.draw(canvas);
             canvas.restore();
         }
@@ -584,16 +583,16 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         }
 
         if (infoLayout != null && (buttonState == 1 || buttonState == 0 || buttonState == 3)) {
-            setDrawableBounds(mediaBackgroundDrawable, photoImage.imageX + Utilities.dp(4), photoImage.imageY + Utilities.dp(4), infoWidth + Utilities.dp(8) + infoOffset, Utilities.dpf(16.5f));
+            setDrawableBounds(mediaBackgroundDrawable, photoImage.imageX + AndroidUtilities.dp(4), photoImage.imageY + AndroidUtilities.dp(4), infoWidth + AndroidUtilities.dp(8) + infoOffset, AndroidUtilities.dpf(16.5f));
             mediaBackgroundDrawable.draw(canvas);
 
             if (currentMessageObject.type == 3) {
-                setDrawableBounds(videoIconDrawable, photoImage.imageX + Utilities.dp(8), photoImage.imageY + Utilities.dpf(7.5f));
+                setDrawableBounds(videoIconDrawable, photoImage.imageX + AndroidUtilities.dp(8), photoImage.imageY + AndroidUtilities.dpf(7.5f));
                 videoIconDrawable.draw(canvas);
             }
 
             canvas.save();
-            canvas.translate(photoImage.imageX + Utilities.dp(8) + infoOffset, photoImage.imageY + Utilities.dpf(5.5f));
+            canvas.translate(photoImage.imageX + AndroidUtilities.dp(8) + infoOffset, photoImage.imageY + AndroidUtilities.dpf(5.5f));
             infoLayout.draw(canvas);
             canvas.restore();
         }

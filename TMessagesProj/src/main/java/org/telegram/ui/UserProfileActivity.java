@@ -23,15 +23,16 @@ import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
-import org.telegram.messenger.ContactsController;
+import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.MessagesStorage;
+import org.telegram.android.MessagesController;
+import org.telegram.android.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
@@ -51,7 +52,6 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     private ListView listView;
     private ListAdapter listAdapter;
     private int user_id;
-    private String selectedPhone;
     private int totalMediaCount = -1;
     private boolean creatingChat = false;
     private long dialog_id;
@@ -129,7 +129,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             if (dialog_id != 0) {
                 actionBarLayer.setTitle(LocaleController.getString("SecretTitle", R.string.SecretTitle));
-                actionBarLayer.setTitleIcon(R.drawable.ic_lock_white, Utilities.dp(4));
+                actionBarLayer.setTitleIcon(R.drawable.ic_lock_white, AndroidUtilities.dp(4));
             } else {
                 actionBarLayer.setTitle(LocaleController.getString("ContactInfo", R.string.ContactInfo));
             }
@@ -140,7 +140,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         finishFragment();
                     } else if (id == block_contact) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
+                        builder.setMessage(LocaleController.getString("AreYouSureBlockContact", R.string.AreYouSureBlockContact));
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                             @Override
@@ -159,7 +159,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                                     public void run(TLObject response, TLRPC.TL_error error) {
 
                                     }
-                                }, null, true, RPCRequest.RPCRequestClassGeneric);
+                                });
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -186,7 +186,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                             return;
                         }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
+                        builder.setMessage(LocaleController.getString("AreYouSureDeleteContact", R.string.AreYouSureDeleteContact));
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                             @Override
@@ -218,7 +218,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         return;
                     }
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
+                    builder.setMessage(LocaleController.getString("AreYouSureSecretChat", R.string.AreYouSureSecretChat));
                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                     builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                         @Override
@@ -384,7 +384,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         avatarImage.getLocationInWindow(coords);
                         PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
                         object.viewX = coords[0];
-                        object.viewY = coords[1] - Utilities.statusBarHeight;
+                        object.viewY = coords[1] - AndroidUtilities.statusBarHeight;
                         object.parentView = listView;
                         object.imageReceiver = avatarImage.imageReceiver;
                         object.user_id = user_id;
@@ -445,7 +445,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public void didSelectDialog(MessagesActivity messageFragment, long dialog_id) {
+    public void didSelectDialog(MessagesActivity messageFragment, long dialog_id, boolean param) {
         if (dialog_id != 0) {
             Bundle args = new Bundle();
             args.putBoolean("scrollToTopOnResume", true);
@@ -524,6 +524,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         public void onClick(View view) {
                             TLRPC.User user = MessagesController.getInstance().users.get(user_id);
                             if (user.photo != null && user.photo.photo_big != null) {
+                                PhotoViewer.getInstance().setParentActivity(getParentActivity());
                                 PhotoViewer.getInstance().openPhoto(user.photo.photo_big, UserProfileActivity.this);
                             }
                         }
@@ -533,7 +534,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     onlineText = (TextView)view.findViewById(R.id.settings_online);
                 }
                 TextView textView = (TextView)view.findViewById(R.id.settings_name);
-                Typeface typeface = Utilities.getTypeface("fonts/rmedium.ttf");
+                Typeface typeface = AndroidUtilities.getTypeface("fonts/rmedium.ttf");
                 textView.setTypeface(typeface);
 
                 textView.setText(Utilities.formatName(user.first_name, user.last_name));
@@ -572,29 +573,20 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                             if (user.phone == null || user.phone.length() == 0 || getParentActivity() == null) {
                                 return;
                             }
-                            selectedPhone = user.phone;
 
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
 
-                            builder.setItems(new CharSequence[] {LocaleController.getString("Copy", R.string.Copy), LocaleController.getString("Call", R.string.Call)}, new DialogInterface.OnClickListener() {
+                            builder.setItems(new CharSequence[] {LocaleController.getString("Copy", R.string.Copy)}, new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialogInterface, int i) {
-                                    if (i == 1) {
-                                        try {
-                                            Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:+" + selectedPhone));
-                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                            getParentActivity().startActivity(intent);
-                                        } catch (Exception e) {
-                                            FileLog.e("tmessages", e);
-                                        }
-                                    } else if (i == 0) {
+                                    if (i == 0) {
                                         int sdk = android.os.Build.VERSION.SDK_INT;
                                         if(sdk < android.os.Build.VERSION_CODES.HONEYCOMB) {
                                             android.text.ClipboardManager clipboard = (android.text.ClipboardManager)ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                                            clipboard.setText(selectedPhone);
+                                            clipboard.setText(user.phone);
                                         } else {
                                             android.content.ClipboardManager clipboard = (android.content.ClipboardManager)ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                                            android.content.ClipData clip = android.content.ClipData.newPlainText("label", selectedPhone);
+                                            android.content.ClipData clip = android.content.ClipData.newPlainText("label", user.phone);
                                             clipboard.setPrimaryClip(clip);
                                         }
                                     }
@@ -603,21 +595,37 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                             showAlertDialog(builder);
                         }
                     });
-                }
-                ImageButton button = (ImageButton)view.findViewById(R.id.settings_edit_name);
-                button.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        TLRPC.User user = MessagesController.getInstance().users.get(user_id);
-                        if (user == null || user instanceof TLRPC.TL_userEmpty) {
-                            return;
+                    ImageButton button = (ImageButton)view.findViewById(R.id.settings_edit_name);
+                    button.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+                            if (user == null || user instanceof TLRPC.TL_userEmpty) {
+                                return;
+                            }
+                            NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
+                            Bundle args = new Bundle();
+                            args.putInt("user_id", user_id);
+                            presentFragment(new ChatActivity(args), true);
                         }
-                        NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
-                        Bundle args = new Bundle();
-                        args.putInt("user_id", user_id);
-                        presentFragment(new ChatActivity(args), true);
-                    }
-                });
+                    });
+                    button = (ImageButton)view.findViewById(R.id.settings_call_phone);
+                    button.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            try {
+                                Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:+" + user.phone));
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                getParentActivity().startActivity(intent);
+                            } catch (Exception e) {
+                                FileLog.e("tmessages", e);
+                            }
+                        }
+                    });
+                }
+                ImageButton button = (ImageButton)view.findViewById(R.id.settings_call_phone);
+                button.setVisibility(user.phone == null || user.phone.length() == 0 ? View.GONE : View.VISIBLE);
+
                 TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
                 TextView detailTextView = (TextView)view.findViewById(R.id.settings_row_text_detail);
                 View divider = view.findViewById(R.id.settings_row_divider);

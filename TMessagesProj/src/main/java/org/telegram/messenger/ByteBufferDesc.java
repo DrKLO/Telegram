@@ -25,6 +25,11 @@ public class ByteBufferDesc extends AbsSerializedData {
         justCalc = calculate;
     }
 
+    public ByteBufferDesc(byte[] bytes) {
+        buffer = ByteBuffer.wrap(bytes);
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+    }
+
     public int position() {
         return buffer.position();
     }
@@ -397,11 +402,13 @@ public class ByteBufferDesc extends AbsSerializedData {
                 sl = 4;
             }
             ByteBufferDesc b = BuffersStorage.getInstance().getFreeBuffer(l);
-            int old = buffer.limit();
-            buffer.limit(buffer.position() + l);
-            b.buffer.put(buffer);
-            buffer.limit(old);
-            b.buffer.position(0);
+            if (b != null) {
+                int old = buffer.limit();
+                buffer.limit(buffer.position() + l);
+                b.buffer.put(buffer);
+                buffer.limit(old);
+                b.buffer.position(0);
+            }
             int i = sl;
             while((l + i) % 4 != 0) {
                 buffer.get();

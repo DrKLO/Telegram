@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.messenger;
+package org.telegram.android;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -14,6 +14,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.telephony.SmsMessage;
+
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.NotificationCenter;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -25,7 +28,7 @@ public class SmsListener extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if(intent.getAction().equals("android.provider.Telephony.SMS_RECEIVED")) {
-            if (!Utilities.isWaitingForSms()) {
+            if (!AndroidUtilities.isWaitingForSms()) {
                 return;
             }
             Bundle bundle = intent.getExtras();
