@@ -275,7 +275,7 @@
     <string name="OnlyWhenScreenOn">Nur wenn Bildschirm „an“</string>
     <string name="OnlyWhenScreenOff">Nur wenn Bildschirm „aus“</string>
     <string name="AlwaysShowPopup">Popups immer anzeigen</string>
-    <string name="BadgeNumber">Badge Number</string>
+    <string name="BadgeNumber">Nummer auf Symbol</string>
 
     <!--media view-->
     <string name="NoMedia">Noch keine geteilten Medien vorhanden</string>

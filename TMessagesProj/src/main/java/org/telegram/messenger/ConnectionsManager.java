@@ -1095,6 +1095,10 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     }
                 }
 
+                if (request.transportChannelToken != 0 && request.transportChannelToken != connection.channelToken) {
+                    request.lastResendTime = 0;
+                }
+
                 request.retryCount++;
                 NetworkMessage networkMessage = new NetworkMessage();
                 networkMessage.protoMessage = new TLRPC.TL_protoMessage();
@@ -1729,7 +1733,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         });
     }
 
-    void rpcCompleted(final long requestMsgId) {
+    private void rpcCompleted(final long requestMsgId) {
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -1920,6 +1924,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     futureSalts.freeResources();
 
                     messagesConfirmed(requestMid);
+                    request.completed = true;
                     rpcCompleted(requestMid);
 
                     break;
@@ -2135,6 +2140,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                     FileLog.e("tmessages", "rpc is init, but init connection already completed");
                                 }
                             }
+                            request.completed = true;
                             rpcCompleted(resultMid);
                         } else {
                             request.runningMessageId = 0;
@@ -2220,11 +2226,14 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             boolean confirm = true;
 
             if (detailedInfo instanceof TLRPC.TL_msg_detailed_info) {
-                long requestMid = ((TLRPC.TL_msg_detailed_info)detailedInfo).msg_id;
                 for (RPCRequest request : runningRequests) {
-                    if (request.respondsToMessageId(requestMid)) {
+                    if (request.respondsToMessageId(detailedInfo.msg_id)) {
+                        if (request.completed) {
+                            break;
+                        }
                         if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0) {
-                            if (request.runningStartTime + 60 < System.currentTimeMillis() / 1000) {
+                            if (request.lastResendTime == 0 || request.lastResendTime + 60 < (int)(System.currentTimeMillis() / 1000)) {
+                                request.lastResendTime = (int)(System.currentTimeMillis() / 1000);
                                 requestResend = true;
                             } else {
                                 confirm = false;
@@ -2252,10 +2261,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 ArrayList<NetworkMessage> arr = new ArrayList<NetworkMessage>();
                 arr.add(networkMessage);
                 sendMessagesToTransport(arr, connection, false);
-            } else {
-                if (confirm) {
-                    connection.addMessageToConfirm(detailedInfo.answer_msg_id);
-                }
+            } else if (confirm) {
+                connection.addMessageToConfirm(detailedInfo.answer_msg_id);
             }
         } else if (message instanceof TLRPC.TL_gzip_packed) {
             TLRPC.TL_gzip_packed packet = (TLRPC.TL_gzip_packed)message;

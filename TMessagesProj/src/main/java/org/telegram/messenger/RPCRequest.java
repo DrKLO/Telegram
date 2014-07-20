@@ -35,7 +35,9 @@ public class RPCRequest {
 
     int serverFailureCount;
     int flags;
-    public int retryCount = 0;
+    protected int retryCount = 0;
+    protected int lastResendTime = 0;
+    protected boolean completed = false;
 
     TLObject rawRequest;
     TLObject rpcRequest;
