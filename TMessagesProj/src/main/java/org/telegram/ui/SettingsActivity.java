@@ -962,7 +962,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                     MessagesController.getInstance().unregistedPush();
                                     MessagesController.getInstance().logOut();
                                     UserConfig.clearConfig();
-                                    MessagesStorage.getInstance().cleanUp();
+                                    MessagesStorage.getInstance().cleanUp(false);
                                     MessagesController.getInstance().cleanUp();
                                     ContactsController.getInstance().deleteAllAppAccounts();
                                 }

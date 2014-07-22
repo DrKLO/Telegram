@@ -191,7 +191,7 @@ public class MessagesStorage {
         }
     }
 
-    public void cleanUp() {
+    public void cleanUp(final boolean isLogin) {
         storageQueue.cleanupQueue();
         storageQueue.postRunnable(new Runnable() {
             @Override
@@ -219,6 +219,14 @@ public class MessagesStorage {
                 }
                 storageQueue.cleanupQueue();
                 openDatabase();
+                if (isLogin) {
+                    Utilities.stageQueue.postRunnable(new Runnable() {
+                        @Override
+                        public void run() {
+                            MessagesController.getInstance().getDifference();
+                        }
+                    });
+                }
             }
         });
     }

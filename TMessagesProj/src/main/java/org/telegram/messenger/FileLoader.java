@@ -1105,8 +1105,13 @@ public class FileLoader {
             return null;
         }
         float scaleFactor = Math.max(photoW / maxWidth, photoH / maxHeight);
+        int w = (int)(photoW / scaleFactor);
+        int h = (int)(photoH / scaleFactor);
+        if (h == 0 || w == 0) {
+            return null;
+        }
 
-        Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, (int)(photoW / scaleFactor), (int)(photoH / scaleFactor), true);
+        Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, h, w, true);
 
         TLRPC.TL_fileLocation location = new TLRPC.TL_fileLocation();
         location.volume_id = Integer.MIN_VALUE;

@@ -150,10 +150,10 @@ public class LoginActivityRegisterView extends SlideView {
                             final TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization)response;
                             TLRPC.TL_userSelf user = (TLRPC.TL_userSelf)res.user;
                             UserConfig.clearConfig();
-                            MessagesStorage.getInstance().cleanUp();
                             MessagesController.getInstance().cleanUp();
                             UserConfig.setCurrentUser(user);
                             UserConfig.saveConfig(true);
+                            MessagesStorage.getInstance().cleanUp(true);
                             ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
                             users.add(user);
                             MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
