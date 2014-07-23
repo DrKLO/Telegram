@@ -1111,7 +1111,7 @@ public class FileLoader {
             return null;
         }
 
-        Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, h, w, true);
+        Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, w, h, true);
 
         TLRPC.TL_fileLocation location = new TLRPC.TL_fileLocation();
         location.volume_id = Integer.MIN_VALUE;

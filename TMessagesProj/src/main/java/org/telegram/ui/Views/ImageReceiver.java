@@ -132,6 +132,9 @@ public class ImageReceiver {
         last_filter = null;
         currentImage = null;
         last_size = 0;
+        if (parentView != null) {
+            parentView.invalidate();
+        }
     }
 
     public void setImageBitmap(Drawable bitmap) {
@@ -145,6 +148,9 @@ public class ImageReceiver {
         last_httpUrl = null;
         last_filter = null;
         last_size = 0;
+        if (parentView != null) {
+            parentView.invalidate();
+        }
     }
 
     public void clearImage() {
