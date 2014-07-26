@@ -8,6 +8,7 @@
 
 package org.telegram.android;
 
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -32,6 +33,7 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
+import org.telegram.objects.VibrationOptions;
 import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PopupNotificationActivity;
@@ -301,6 +303,22 @@ public class NotificationsController {
                 }
             }
 
+            VibrationOptions.VibrationSpeed speed = VibrationOptions.VibrationSpeed.getDefault();
+            int vibrationCount = VibrationOptions.DEFAULT_VIBRATION_COUNT;
+            if(needVibrate) {
+                if (chat_id != 0) {
+                    int speedValueOverride = preferences.getInt("VibrationSpeedGroup_" + chat_id, -1);
+                    int vibrationCountOverride = preferences.getInt("VibrationCountGroup_" + chat_id, -1);
+                    speed = VibrationOptions.VibrationSpeed.fromValue(speedValueOverride != -1 ? speedValueOverride : preferences.getInt("VibrationSpeedGroup", 0));
+                    vibrationCount = vibrationCountOverride != -1 ? vibrationCountOverride : preferences.getInt("VibrationCountGroup", vibrationCount);
+                } else if (user_id != 0) {
+                    int speedValueOverride = preferences.getInt("VibrationSpeed_" + user_id, -1);
+                    int vibrationCountOverride = preferences.getInt("VibrationCount_" + user_id, -1);
+                    speed = VibrationOptions.VibrationSpeed.fromValue(speedValueOverride != -1 ? speedValueOverride : preferences.getInt("VibrationSpeed", 0));
+                    vibrationCount = vibrationCountOverride != -1 ? vibrationCountOverride : preferences.getInt("VibrationCount", vibrationCount);
+                }
+            }
+
             Intent intent = new Intent(ApplicationLoader.applicationContext, LaunchActivity.class);
             intent.setAction("com.tmessages.openchat" + Math.random() + Integer.MAX_VALUE);
             intent.setFlags(32768);
@@ -421,7 +439,35 @@ public class NotificationsController {
                     mBuilder.setLights(ledColor, 1000, 1000);
                 }
                 if (needVibrate) {
-                    mBuilder.setVibrate(new long[]{0, 100, 0, 100});
+                    long pause, duration;
+                    switch (speed) {
+                        case FAST:
+                            pause = 0;
+                            duration = 100;
+                            break;
+                        case MEDIUM:
+                            pause = 200;
+                            duration = 300;
+                            break;
+                        case SLOW:
+                            pause = 200;
+                            duration = 800;
+                            break;
+                        case DEFAULT:
+                        default:
+                            pause = -1;
+                            duration = -1;
+                            mBuilder.setDefaults(Notification.DEFAULT_VIBRATE);
+                    }
+                    if(pause >= 0 && duration >= 0) {
+                        long pattern[] = new long[vibrationCount * 2];
+                        pattern[0] = 0l;
+                        for(int i = 1, l = pattern.length; i < l; i++) {
+                            pattern[i] = ((i % 2 != 0) ? duration : pause);
+                        }
+
+                        mBuilder.setVibrate(pattern);
+                    }
                 } else {
                     mBuilder.setVibrate(new long[]{0, 0});
                 }
