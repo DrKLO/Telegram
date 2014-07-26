@@ -74,6 +74,9 @@ public class ConnectionContext extends PyroClientAdapter {
     }
 
     public void addMessageToConfirm(long messageId) {
+        if (messagesIdsForConfirmation.contains(messageId)) {
+            return;
+        }
         messagesIdsForConfirmation.add(messageId);
     }
 

@@ -17,12 +17,13 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.ContactsController;
+import org.telegram.android.Emoji;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -58,46 +59,46 @@ public class DialogCell extends BaseCell {
     private void init() {
         if (namePaint == null) {
             namePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            namePaint.setTextSize(Utilities.dp(19));
+            namePaint.setTextSize(AndroidUtilities.dp(19));
             namePaint.setColor(0xff222222);
-            namePaint.setTypeface(Utilities.getTypeface("fonts/rmedium.ttf"));
+            namePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         }
 
         if (nameEncryptedPaint == null) {
             nameEncryptedPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            nameEncryptedPaint.setTextSize(Utilities.dp(19));
+            nameEncryptedPaint.setTextSize(AndroidUtilities.dp(19));
             nameEncryptedPaint.setColor(0xff00a60e);
-            nameEncryptedPaint.setTypeface(Utilities.getTypeface("fonts/rmedium.ttf"));
+            nameEncryptedPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         }
 
         if (nameUnknownPaint == null) {
             nameUnknownPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            nameUnknownPaint.setTextSize(Utilities.dp(19));
+            nameUnknownPaint.setTextSize(AndroidUtilities.dp(19));
             nameUnknownPaint.setColor(0xff316f9f);
-            nameUnknownPaint.setTypeface(Utilities.getTypeface("fonts/rmedium.ttf"));
+            nameUnknownPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         }
 
         if (messagePaint == null) {
             messagePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            messagePaint.setTextSize(Utilities.dp(16));
+            messagePaint.setTextSize(AndroidUtilities.dp(16));
             messagePaint.setColor(0xff808080);
         }
 
         if (messagePrintingPaint == null) {
             messagePrintingPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            messagePrintingPaint.setTextSize(Utilities.dp(16));
+            messagePrintingPaint.setTextSize(AndroidUtilities.dp(16));
             messagePrintingPaint.setColor(0xff316f9f);
         }
 
         if (timePaint == null) {
             timePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            timePaint.setTextSize(Utilities.dp(14));
+            timePaint.setTextSize(AndroidUtilities.dp(14));
             timePaint.setColor(0xff9e9e9e);
         }
 
         if (countPaint == null) {
             countPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            countPaint.setTextSize(Utilities.dp(13));
+            countPaint.setTextSize(AndroidUtilities.dp(13));
             countPaint.setColor(0xffffffff);
         }
 
@@ -159,7 +160,7 @@ public class DialogCell extends BaseCell {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), Utilities.dp(70));
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(70));
     }
 
     @Override
@@ -309,20 +310,20 @@ public class DialogCell extends BaseCell {
             setDrawableBounds(errorDrawable, cellLayout.errorLeft, cellLayout.errorTop);
             errorDrawable.draw(canvas);
         } else if (cellLayout.drawCount) {
-            setDrawableBounds(countDrawable, cellLayout.countLeft - Utilities.dp(5), cellLayout.countTop, cellLayout.countWidth + Utilities.dp(10), countDrawable.getIntrinsicHeight());
+            setDrawableBounds(countDrawable, cellLayout.countLeft - AndroidUtilities.dp(5), cellLayout.countTop, cellLayout.countWidth + AndroidUtilities.dp(10), countDrawable.getIntrinsicHeight());
             countDrawable.draw(canvas);
             canvas.save();
-            canvas.translate(cellLayout.countLeft, cellLayout.countTop + Utilities.dp(3));
+            canvas.translate(cellLayout.countLeft, cellLayout.countTop + AndroidUtilities.dp(3));
             cellLayout.countLayout.draw(canvas);
             canvas.restore();
         }
 
-        avatarImage.draw(canvas, cellLayout.avatarLeft, cellLayout.avatarTop, Utilities.dp(54), Utilities.dp(54));
+        avatarImage.draw(canvas, cellLayout.avatarLeft, cellLayout.avatarTop, AndroidUtilities.dp(54), AndroidUtilities.dp(54));
     }
 
     private class DialogCellLayout {
         private int nameLeft;
-        private int nameTop = Utilities.dp(10);
+        private int nameTop = AndroidUtilities.dp(10);
         private int nameWidth;
         private StaticLayout nameLayout;
         private boolean drawNameLock;
@@ -331,7 +332,7 @@ public class DialogCell extends BaseCell {
         private int nameLockTop;
 
         private int timeLeft;
-        private int timeTop = Utilities.dp(13);
+        private int timeTop = AndroidUtilities.dp(13);
         private int timeWidth;
         private StaticLayout timeLayout;
 
@@ -339,25 +340,25 @@ public class DialogCell extends BaseCell {
         private boolean drawCheck2;
         private boolean drawClock;
         private int checkDrawLeft;
-        private int checkDrawTop = Utilities.dp(15);
+        private int checkDrawTop = AndroidUtilities.dp(15);
         private int halfCheckDrawLeft;
 
-        private int messageTop = Utilities.dp(40);
+        private int messageTop = AndroidUtilities.dp(40);
         private int messageLeft;
         private int messageWidth;
         private StaticLayout messageLayout;
 
         private boolean drawError;
-        private int errorTop = Utilities.dp(37);
+        private int errorTop = AndroidUtilities.dp(37);
         private int errorLeft;
 
         private boolean drawCount;
-        private int countTop = Utilities.dp(37);
+        private int countTop = AndroidUtilities.dp(37);
         private int countLeft;
         private int countWidth;
         private StaticLayout countLayout;
 
-        private int avatarTop = Utilities.dp(8);
+        private int avatarTop = AndroidUtilities.dp(8);
         private int avatarLeft;
 
         public void build(int width, int height) {
@@ -374,32 +375,32 @@ public class DialogCell extends BaseCell {
             if (encryptedChat != null) {
                 drawNameLock = true;
                 drawNameGroup = false;
-                nameLockTop = Utilities.dp(13);
+                nameLockTop = AndroidUtilities.dp(13);
                 if (!LocaleController.isRTL) {
-                    nameLockLeft = Utilities.dp(77);
-                    nameLeft = Utilities.dp(81) + lockDrawable.getIntrinsicWidth();
+                    nameLockLeft = AndroidUtilities.dp(77);
+                    nameLeft = AndroidUtilities.dp(81) + lockDrawable.getIntrinsicWidth();
                 } else {
-                    nameLockLeft = width - Utilities.dp(77) - lockDrawable.getIntrinsicWidth();
-                    nameLeft = Utilities.dp(14);
+                    nameLockLeft = width - AndroidUtilities.dp(77) - lockDrawable.getIntrinsicWidth();
+                    nameLeft = AndroidUtilities.dp(14);
                 }
             } else {
                 drawNameLock = false;
                 if (chat != null) {
                     drawNameGroup = true;
-                    nameLockTop = Utilities.dp(14);
+                    nameLockTop = AndroidUtilities.dp(14);
                     if (!LocaleController.isRTL) {
-                        nameLockLeft = Utilities.dp(77);
-                        nameLeft = Utilities.dp(81) + groupDrawable.getIntrinsicWidth();
+                        nameLockLeft = AndroidUtilities.dp(77);
+                        nameLeft = AndroidUtilities.dp(81) + groupDrawable.getIntrinsicWidth();
                     } else {
-                        nameLockLeft = width - Utilities.dp(77) - groupDrawable.getIntrinsicWidth();
-                        nameLeft = Utilities.dp(14);
+                        nameLockLeft = width - AndroidUtilities.dp(77) - groupDrawable.getIntrinsicWidth();
+                        nameLeft = AndroidUtilities.dp(14);
                     }
                 } else {
                     drawNameGroup = false;
                     if (!LocaleController.isRTL) {
-                        nameLeft = Utilities.dp(77);
+                        nameLeft = AndroidUtilities.dp(77);
                     } else {
-                        nameLeft = Utilities.dp(14);
+                        nameLeft = AndroidUtilities.dp(14);
                     }
                 }
             }
@@ -476,10 +477,10 @@ public class DialogCell extends BaseCell {
                             checkMessage = false;
                             if (message.messageOwner.media != null && !(message.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
                                 currentMessagePaint = messagePrintingPaint;
-                                messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#316f9f>%s:</font> <font color=#316f9f>%s</font>", name, message.messageText)), messagePaint.getFontMetricsInt(), Utilities.dp(20));
+                                messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#316f9f>%s:</font> <font color=#316f9f>%s</font>", name, message.messageText)), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
                             } else {
                                 if (message.messageOwner.message != null) {
-                                    messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#316f9f>%s:</font> <font color=#808080>%s</font>", name, message.messageOwner.message.replace("\n", " ").replace("<", "&lt;").replace(">", "&gt;"))), messagePaint.getFontMetricsInt(), Utilities.dp(20));
+                                    messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#316f9f>%s:</font> <font color=#808080>%s</font>", name, message.messageOwner.message.replace("\n", " ").replace("<", "&lt;").replace(">", "&gt;"))), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
                                 }
                             }
                         } else {
@@ -538,15 +539,15 @@ public class DialogCell extends BaseCell {
             timeWidth = (int)Math.ceil(timePaint.measureText(timeString));
             timeLayout = new StaticLayout(timeString, timePaint, timeWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             if (!LocaleController.isRTL) {
-                timeLeft = width - Utilities.dp(11) - timeWidth;
+                timeLeft = width - AndroidUtilities.dp(11) - timeWidth;
             } else {
-                timeLeft = Utilities.dp(11);
+                timeLeft = AndroidUtilities.dp(11);
             }
 
             if (chat != null) {
                 nameString = chat.title;
             } else if (user != null) {
-                if (user.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(user.id) == null) {
+                if (user.id / 1000 != 777 && user.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(user.id) == null) {
                     if (ContactsController.getInstance().contactsDict.size() == 0 && (!ContactsController.getInstance().contactsLoaded || ContactsController.getInstance().isLoadingContacts())) {
                         nameString = Utilities.formatName(user.first_name, user.last_name);
                     } else {
@@ -569,81 +570,81 @@ public class DialogCell extends BaseCell {
             }
 
             if (!LocaleController.isRTL) {
-                nameWidth = width - nameLeft - Utilities.dp(14) - timeWidth;
+                nameWidth = width - nameLeft - AndroidUtilities.dp(14) - timeWidth;
             } else {
-                nameWidth = width - nameLeft - Utilities.dp(77) - timeWidth;
+                nameWidth = width - nameLeft - AndroidUtilities.dp(77) - timeWidth;
                 nameLeft += timeWidth;
             }
             if (drawNameLock) {
-                nameWidth -= Utilities.dp(4) + lockDrawable.getIntrinsicWidth();
+                nameWidth -= AndroidUtilities.dp(4) + lockDrawable.getIntrinsicWidth();
             } else if (drawNameGroup) {
-                nameWidth -= Utilities.dp(4) + groupDrawable.getIntrinsicWidth();
+                nameWidth -= AndroidUtilities.dp(4) + groupDrawable.getIntrinsicWidth();
             }
             if (drawClock) {
-                int w = clockDrawable.getIntrinsicWidth() + Utilities.dp(2);
+                int w = clockDrawable.getIntrinsicWidth() + AndroidUtilities.dp(2);
                 nameWidth -= w;
                 if (!LocaleController.isRTL) {
                     checkDrawLeft = timeLeft - w;
                 } else {
-                    checkDrawLeft = timeLeft + timeWidth + Utilities.dp(2);
+                    checkDrawLeft = timeLeft + timeWidth + AndroidUtilities.dp(2);
                     nameLeft += w;
                 }
             } else if (drawCheck2) {
-                int w = checkDrawable.getIntrinsicWidth() + Utilities.dp(2);
+                int w = checkDrawable.getIntrinsicWidth() + AndroidUtilities.dp(2);
                 nameWidth -= w;
                 if (drawCheck1) {
-                    nameWidth -= halfCheckDrawable.getIntrinsicWidth() - Utilities.dp(5);
+                    nameWidth -= halfCheckDrawable.getIntrinsicWidth() - AndroidUtilities.dp(5);
                     if (!LocaleController.isRTL) {
                         halfCheckDrawLeft = timeLeft - w;
-                        checkDrawLeft = halfCheckDrawLeft - Utilities.dp(5);
+                        checkDrawLeft = halfCheckDrawLeft - AndroidUtilities.dp(5);
                     } else {
-                        checkDrawLeft = timeLeft + timeWidth + Utilities.dp(2);
-                        halfCheckDrawLeft = checkDrawLeft + Utilities.dp(5);
-                        nameLeft += w + halfCheckDrawable.getIntrinsicWidth() - Utilities.dp(5);
+                        checkDrawLeft = timeLeft + timeWidth + AndroidUtilities.dp(2);
+                        halfCheckDrawLeft = checkDrawLeft + AndroidUtilities.dp(5);
+                        nameLeft += w + halfCheckDrawable.getIntrinsicWidth() - AndroidUtilities.dp(5);
                     }
                 } else {
                     if (!LocaleController.isRTL) {
                         checkDrawLeft = timeLeft - w;
                     } else {
-                        checkDrawLeft = timeLeft + timeWidth + Utilities.dp(2);
+                        checkDrawLeft = timeLeft + timeWidth + AndroidUtilities.dp(2);
                         nameLeft += w;
                     }
                 }
             }
 
-            CharSequence nameStringFinal = TextUtils.ellipsize(nameString.replace("\n", " "), currentNamePaint, nameWidth - Utilities.dp(12), TextUtils.TruncateAt.END);
+            CharSequence nameStringFinal = TextUtils.ellipsize(nameString.replace("\n", " "), currentNamePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
             nameLayout = new StaticLayout(nameStringFinal, currentNamePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 
-            messageWidth = width - Utilities.dp(88);
+            messageWidth = width - AndroidUtilities.dp(88);
             if (!LocaleController.isRTL) {
-                messageLeft = Utilities.dp(77);
-                avatarLeft = Utilities.dp(11);
+                messageLeft = AndroidUtilities.dp(77);
+                avatarLeft = AndroidUtilities.dp(11);
             } else {
-                messageLeft = Utilities.dp(11);
-                avatarLeft = width - Utilities.dp(65);
+                messageLeft = AndroidUtilities.dp(11);
+                avatarLeft = width - AndroidUtilities.dp(65);
             }
             avatarImage.imageX = avatarLeft;
             avatarImage.imageY = avatarTop;
-            avatarImage.imageW = Utilities.dp(54);
-            avatarImage.imageH = Utilities.dp(54);
+            avatarImage.imageW = AndroidUtilities.dp(54);
+            avatarImage.imageH = AndroidUtilities.dp(54);
             if (drawError) {
-                int w = errorDrawable.getIntrinsicWidth() + Utilities.dp(8);
+                int w = errorDrawable.getIntrinsicWidth() + AndroidUtilities.dp(8);
                 messageWidth -= w;
                 if (!LocaleController.isRTL) {
-                    errorLeft = width - errorDrawable.getIntrinsicWidth() - Utilities.dp(11);
+                    errorLeft = width - errorDrawable.getIntrinsicWidth() - AndroidUtilities.dp(11);
                 } else {
-                    errorLeft = Utilities.dp(11);
+                    errorLeft = AndroidUtilities.dp(11);
                     messageLeft += w;
                 }
             } else if (countString != null) {
-                countWidth = Math.max(Utilities.dp(12), (int)Math.ceil(countPaint.measureText(countString)));
+                countWidth = Math.max(AndroidUtilities.dp(12), (int)Math.ceil(countPaint.measureText(countString)));
                 countLayout = new StaticLayout(countString, countPaint, countWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
-                int w = countWidth + Utilities.dp(18);
+                int w = countWidth + AndroidUtilities.dp(18);
                 messageWidth -= w;
                 if (!LocaleController.isRTL) {
-                    countLeft = width - countWidth - Utilities.dp(16);
+                    countLeft = width - countWidth - AndroidUtilities.dp(16);
                 } else {
-                    countLeft = Utilities.dp(16);
+                    countLeft = AndroidUtilities.dp(16);
                     messageLeft += w;
                 }
                 drawCount = true;
@@ -659,10 +660,10 @@ public class DialogCell extends BaseCell {
                 if (mess.length() > 150) {
                     mess = mess.substring(0, 150);
                 }
-                messageString = Emoji.replaceEmoji(mess, messagePaint.getFontMetricsInt(), Utilities.dp(20));
+                messageString = Emoji.replaceEmoji(mess, messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
             }
 
-            CharSequence messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - Utilities.dp(12), TextUtils.TruncateAt.END);
+            CharSequence messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
             messageLayout = new StaticLayout(messageStringFinal, currentMessagePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 
             double widthpx = 0;

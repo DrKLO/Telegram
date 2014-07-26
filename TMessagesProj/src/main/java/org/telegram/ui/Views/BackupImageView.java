@@ -18,8 +18,6 @@ import android.view.View;
 
 import org.telegram.messenger.TLRPC;
 
-import java.lang.ref.WeakReference;
-
 public class BackupImageView extends View {
     public ImageReceiver imageReceiver;
     public boolean processDetach = true;

@@ -29,18 +29,19 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 
-import org.telegram.messenger.NotificationsService;
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.ContactsController;
+import org.telegram.android.NotificationsService;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NativeLoader;
-import org.telegram.messenger.ScreenReceiver;
+import org.telegram.android.LocaleController;
+import org.telegram.android.MessagesController;
+import org.telegram.android.NativeLoader;
+import org.telegram.android.ScreenReceiver;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 
-import java.util.Calendar;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ApplicationLoader extends Application {
@@ -58,6 +59,7 @@ public class ApplicationLoader extends Application {
     private static volatile boolean applicationInited = false;
 
     public static volatile boolean isScreenOn = false;
+    public static volatile boolean mainInterfacePaused = true;
 
     public static void postInitApplication() {
         if (applicationInited) {
@@ -65,8 +67,6 @@ public class ApplicationLoader extends Application {
         }
 
         applicationInited = true;
-
-        NativeLoader.initNativeLibs(applicationContext);
 
         try {
             LocaleController.getInstance();
@@ -129,12 +129,15 @@ public class ApplicationLoader extends Application {
         ApplicationLoader app = (ApplicationLoader)ApplicationLoader.applicationContext;
         app.initPlayServices();
         FileLog.e("tmessages", "app initied");
+
+        ContactsController.getInstance().checkAppAccount();
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
         applicationContext = getApplicationContext();
+        NativeLoader.initNativeLibs(ApplicationLoader.applicationContext);
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
 
@@ -151,10 +154,14 @@ public class ApplicationLoader extends Application {
             applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
 
             if (android.os.Build.VERSION.SDK_INT >= 19) {
-                Calendar cal = Calendar.getInstance();
+//                Calendar cal = Calendar.getInstance();
+//                PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
+//                AlarmManager alarm = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
+//                alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30000, pintent);
+
                 PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
-                AlarmManager alarm = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
-                alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30000, pintent);
+                AlarmManager alarm = (AlarmManager)applicationContext.getSystemService(Context.ALARM_SERVICE);
+                alarm.cancel(pintent);
             }
         } else {
             stopPushService();
@@ -174,7 +181,7 @@ public class ApplicationLoader extends Application {
         super.onConfigurationChanged(newConfig);
         try {
             LocaleController.getInstance().onDeviceConfigurationChange(newConfig);
-            Utilities.checkDisplaySize();
+            AndroidUtilities.checkDisplaySize();
         } catch (Exception e) {
             e.printStackTrace();
         }

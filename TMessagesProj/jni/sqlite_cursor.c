@@ -48,13 +48,32 @@ jstring Java_org_telegram_SQLite_SQLiteCursor_columnStringValue(JNIEnv *env, job
 }
 
 jbyteArray Java_org_telegram_SQLite_SQLiteCursor_columnByteArrayValue(JNIEnv *env, jobject object, int statementHandle, int columnIndex) {
-	sqlite3_stmt *handle = (sqlite3_stmt *)statementHandle;
+    sqlite3_stmt *handle = (sqlite3_stmt *)statementHandle;
 	void *buf = sqlite3_column_blob(handle, columnIndex);
 	int length = sqlite3_column_bytes(handle, columnIndex);
 	if (buf != 0 && length > 0) {
 		jbyteArray result = (*env)->NewByteArray(env, length);
         (*env)->SetByteArrayRegion(env, result, 0, length, buf);
         return result;
+	}
+	return 0;
+}
+
+int Java_org_telegram_SQLite_SQLiteCursor_columnByteArrayLength(JNIEnv *env, jobject object, int statementHandle, int columnIndex) {
+	return sqlite3_column_bytes((sqlite3_stmt *)statementHandle, columnIndex);
+}
+
+int Java_org_telegram_SQLite_SQLiteCursor_columnByteBufferValue(JNIEnv *env, jobject object, int statementHandle, int columnIndex, jobject buffer) {
+    if (!buffer) {
+        return 0;
+    }
+	sqlite3_stmt *handle = (sqlite3_stmt *)statementHandle;
+	void *buf = sqlite3_column_blob(handle, columnIndex);
+	int length = sqlite3_column_bytes(handle, columnIndex);
+	if (buf != 0 && length > 0) {
+        jbyte *byteBuff = (*env)->GetDirectBufferAddress(env, buffer);
+        memcpy(byteBuff, buf, length);
+        return length;
 	}
 	return 0;
 }

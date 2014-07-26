@@ -22,8 +22,9 @@ import android.widget.FrameLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
@@ -265,7 +266,7 @@ public class LoginActivity extends BaseFragment implements SlideView.SlideViewDe
             newView.setParams(params);
             actionBarLayer.setTitle(newView.getHeaderName());
             newView.onShow();
-            newView.setX(back ? -Utilities.displaySize.x : Utilities.displaySize.x);
+            newView.setX(back ? -AndroidUtilities.displaySize.x : AndroidUtilities.displaySize.x);
             outView.animate().setInterpolator(new AccelerateDecelerateInterpolator()).setListener(new Animator.AnimatorListener() {
                 @Override
                 public void onAnimationStart(Animator animator) {
@@ -284,7 +285,7 @@ public class LoginActivity extends BaseFragment implements SlideView.SlideViewDe
                 @Override
                 public void onAnimationRepeat(Animator animator) {
                 }
-            }).setDuration(300).translationX(back ? Utilities.displaySize.x : -Utilities.displaySize.x).start();
+            }).setDuration(300).translationX(back ? AndroidUtilities.displaySize.x : -AndroidUtilities.displaySize.x).start();
             newView.animate().setInterpolator(new AccelerateDecelerateInterpolator()).setListener(new Animator.AnimatorListener() {
                 @Override
                 public void onAnimationStart(Animator animator) {

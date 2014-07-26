@@ -22,6 +22,7 @@
     <string name="Calling">We bellen je…</string>
     <string name="Code">Code</string>
     <string name="WrongNumber">Verkeerd nummer?</string>
+    <string name="DidNotGetTheCode">Geen code ontvangen?</string>
 
     <!--signup view-->
     <string name="YourName">Je naam</string>
@@ -76,7 +77,6 @@
     <string name="Attach">Bijvoegen</string>
     <string name="IsTyping">is aan het typen…</string>
     <string name="AreTyping">zijn aan het typen…</string>
-    <string name="AndMoreTyping">en nog %d personen</string>
     <string name="GotAQuestion">Heb je een vraag\nover Telegram?</string>
     <string name="ChatTakePhoto">Foto maken</string>
     <string name="ChatGallery">Galerij</string>
@@ -90,7 +90,6 @@
     <string name="ForwardedMessage">Doorgestuurd bericht</string>
     <string name="From">Van</string>
     <string name="NoRecent">Niets recents</string>
-    <string name="Members">deelnemers</string>
     <string name="Message">Bericht</string>
     <string name="TypeMessage">Typ een bericht...</string>
     <string name="DOWNLOAD">Downloaden</string>
@@ -104,8 +103,6 @@
     <string name="EncryptedDescription2">laten geen sporen achter op onze server</string>
     <string name="EncryptedDescription3">verlopen automatisch</string>
     <string name="EncryptedDescription4">staan doorsturen niet toe</string>
-    <string name="OneNewMessage">%1$d nieuw bericht</string>
-    <string name="FewNewMessages">%1$d nieuwe berichten</string>
     <string name="YouWereKicked">Je bent verwijderd uit deze groep</string>
     <string name="YouLeft">Je hebt deze groep verlaten</string>
     <string name="DeleteThisGroup">Deze groep verwijderen</string>
@@ -113,7 +110,7 @@
     <string name="SlideToCancel">SLEEP OM TE ANNULEREN</string>
     <string name="SaveToDownloads">Opslaan in Downloads</string>
     <string name="ApplyLocalizationFile">Vertaling toepassen</string>
-    <string name="UnsupportedAttachment">Unsupported attachment</string>
+    <string name="UnsupportedAttachment">Bijlageformaat niet ondersteund</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Privégesprek aangevraagd</string>
@@ -172,10 +169,9 @@
     <!--group create view-->
     <string name="SendMessageTo">Bericht verzenden naar…</string>
     <string name="EnterGroupNamePlaceholder">Groepsnaam...</string>
-    <string name="MEMBER">DEELNEMER</string>
     <string name="GroupName">Groepsnaam</string>
-    <string name="MEMBERS">DEELNEMERS</string>
     <string name="AllContacts">ALLE CONTACTEN</string>
+    <string name="MembersCount">%1$d/%2$d deelnemers</string>
 
     <!--group info view-->
     <string name="EnterGroupNameTitle">GROEPSNAAM INSTELLEN</string>
@@ -281,7 +277,13 @@
     <string name="WiFiOnly">Alleen via WiFi</string>
     <string name="SortFirstName">Voornaam</string>
     <string name="SortLastName">Achternaam</string>
-    <string name="LedColor">LED Color</string>
+    <string name="LedColor">LED kleur</string>
+    <string name="PopupNotification">Popup melding</string>
+    <string name="NoPopup">Geen popup</string>
+    <string name="OnlyWhenScreenOn">Alleen wanneer scherm \"aan\" staat</string>
+    <string name="OnlyWhenScreenOff">Alleen wanneer scherm \"uit\" staat</string>
+    <string name="AlwaysShowPopup">Altijd popup tonen</string>
+    <string name="BadgeNumber">Badge Number</string>
 
     <!--media view-->
     <string name="NoMedia">Nog geen media gedeeld</string>
@@ -304,6 +306,11 @@
     <string name="Gallery">Galerij</string>
     <string name="AllPhotos">Alle foto\'s</string>
     <string name="NoPhotos">Nog geen foto\'s</string>
+
+    <!--edit video view-->
+    <string name="EditVideo">Edit Video</string>
+    <string name="OriginalVideo">Original Video</string>
+    <string name="EditedVideo">Edited Video</string>
 
     <!--button titles-->
     <string name="Next">Volgende</string>
@@ -363,13 +370,25 @@
     <string name="InvalidLastName">Ongeldige achternaam</string>
     <string name="Loading">Bezig met laden…</string>
     <string name="NoPlayerInstalled">Je hebt geen mediaspeler. Installeer een mediaspeler om door te gaan.</string>
+    <string name="NoMailInstalled">Stuur aub een emailbericht naar sms@telegram.org en beschrijf uw probleem</string>
     <string name="NoHandleAppInstalled">Je hebt geen applicaties die het MIME-type \'%1$s\' ondersteunen. Installeer een geschikte applicatie om door te gaan.</string>
     <string name="InviteUser">Deze gebruiker heeft nog geen Telegram. Wil je een uitnodiging sturen?</string>
     <string name="AreYouSure">Weet je het zeker?</string>
     <string name="AddContactQ">Contact toevoegen?</string>
-    <string name="AddToTheGroup">%1$s toevoegen aan de groep?</string>
+    <string name="AddToTheGroup">%1$s toevoegen aan de groep?\n\nAantal recente berichten om door te sturen:</string>
     <string name="ForwardMessagesTo">Berichten doorsturen naar %1$s?</string>
     <string name="DeleteChatQuestion">Dit gesprek verwijderen?</string>
+    <string name="SendMessagesTo">Berichten naar %1$s verzenden?</string>
+    <string name="AreYouSureLogout">Weet u zeker dat u wil uitloggen?</string>
+    <string name="AreYouSureSessions">Alle andere apparaten afmelden?</string>
+    <string name="AreYouSureDeleteAndExit">Deze groep verlaten en groep verwijderen?</string>
+    <string name="AreYouSureDeleteThisChat">Dit gesprek verwijderen?</string>
+    <string name="AreYouSureShareMyContactInfo">Deze contact-informatie delen?</string>
+    <string name="AreYouSureBlockContact">Deze persoon blokkeren?</string>
+    <string name="AreYouSureUnblockContact">Deze persoon deblokkeren?</string>
+    <string name="AreYouSureDeleteContact">Deze contactpersoon verwijderen?</string>
+    <string name="AreYouSureSecretChat">Een privégesprek starten?</string>
+    <string name="ForwardFromMyName">doorsturen via mijn eigen naam</string>
 
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
@@ -387,6 +406,38 @@
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> biedt toegang tot je berichten vanaf meerdere apparaten</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> berichten zijn sterk versleuteld en kunnen zichzelf vernietigen</string>
     <string name="StartMessaging">Begin nu met chatten</string>
+
+    <!--plurals-->
+    <string name="Members_zero">geen deelnemers</string>
+    <string name="Members_one">%1$d deelnemer</string>
+    <string name="Members_two">%1$d deelnemers</string>
+    <string name="Members_few">%1$d deelnemers</string>
+    <string name="Members_many">%1$d deelnemers</string>
+    <string name="Members_other">%1$d deelnemers</string>
+    <string name="AndMoreTyping_zero">en nog %1$d personen zijn aan het typen</string>
+    <string name="AndMoreTyping_one">en nog %1$d personen zijn aan het typen</string>
+    <string name="AndMoreTyping_two">en nog %1$d personen zijn aan het typen</string>
+    <string name="AndMoreTyping_few">en nog %1$d personen zijn aan het typen</string>
+    <string name="AndMoreTyping_many">en nog %1$d personen zijn aan het typen</string>
+    <string name="AndMoreTyping_other">en nog %1$d personen zijn aan het typen</string>
+    <string name="NewMessages_zero">geen nieuwe berichten</string>
+    <string name="NewMessages_one">%1$d nieuw bericht</string>
+    <string name="NewMessages_two">%1$d nieuwe berichten</string>
+    <string name="NewMessages_few">%1$d nieuwe berichten</string>
+    <string name="NewMessages_many">%1$d nieuwe berichten</string>
+    <string name="NewMessages_other">%1$d nieuwe berichten</string>
+    <string name="messages_zero">geen berichten</string>
+    <string name="messages_one">%1$d bericht</string>
+    <string name="messages_two">%1$d berichten</string>
+    <string name="messages_few">%1$d berichten</string>
+    <string name="messages_many">%1$d berichten</string>
+    <string name="messages_other">%1$d berichten</string>
+    <string name="FromContacts_zero">van geen enkel contactpersoon</string>
+    <string name="FromContacts_one">van %1$d contactpersoon</string>
+    <string name="FromContacts_two">van %1$d contactpersonen</string>
+    <string name="FromContacts_few">van %1$d contactpersonen</string>
+    <string name="FromContacts_many">van %1$d contactpersonen</string>
+    <string name="FromContacts_other">van %1$d contactpersonen</string>
 
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>

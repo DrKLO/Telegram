@@ -159,6 +159,18 @@
                 android:textColor="#808080"
                 android:lineSpacingExtra="2dp"/>
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/login_problem"
+                android:gravity="center_horizontal"
+                android:layout_gravity="center_horizontal"
+                android:textSize="16dp"
+                android:textColor="#316f9f"
+                android:lineSpacingExtra="2dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="12dp"/>
+
             <LinearLayout
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"

@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.messenger;
+package org.telegram.android;
 
 import java.io.File;
 import java.io.InputStream;
@@ -26,6 +26,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ApplicationLoader;
 
 public class Emoji {
@@ -202,17 +205,17 @@ public class Emoji {
                     0x00000000D83DDD34L, 0x00000000D83DDD35L, 0x00000000D83DDD3BL, 0x00000000D83DDD36L, 0x00000000D83DDD37L, 0x00000000D83DDD38L, 0x00000000D83DDD39L}};
 	
 	static {
-        if (Utilities.density <= 1.0f) {
+        if (AndroidUtilities.density <= 1.0f) {
             emojiFullSize = 30;
-        } else if (Utilities.density <= 1.5f) {
+        } else if (AndroidUtilities.density <= 1.5f) {
             emojiFullSize = 45;
-        } else if (Utilities.density <= 2.0f) {
+        } else if (AndroidUtilities.density <= 2.0f) {
             emojiFullSize = 60;
         } else {
             emojiFullSize = 90;
         }
-		drawImgSize = Utilities.dp(20);
-		bigImgSize = Utilities.dp(30);
+		drawImgSize = AndroidUtilities.dp(20);
+		bigImgSize = AndroidUtilities.dp(30);
 
 		for (int j = 1; j < data.length; j++) {
 			for (int i = 0; i < data[j].length; i++) {
@@ -228,13 +231,13 @@ public class Emoji {
 		try {
             float scale = 1.0f;
             int imageResize = 1;
-            if (Utilities.density <= 1.0f) {
+            if (AndroidUtilities.density <= 1.0f) {
                 scale = 2.0f;
                 imageResize = 2;
-            } else if (Utilities.density <= 1.5f) {
+            } else if (AndroidUtilities.density <= 1.5f) {
                 scale = 3.0f;
                 imageResize = 2;
-            } else if (Utilities.density <= 2.0f) {
+            } else if (AndroidUtilities.density <= 2.0f) {
                 scale = 2.0f;
             } else {
                 scale = 3.0f;
@@ -466,7 +469,7 @@ public class Emoji {
 
     public static class EmojiSpan extends ImageSpan {
         private Paint.FontMetricsInt fontMetrics = null;
-        int size = Utilities.dp(20);
+        int size = AndroidUtilities.dp(20);
 
         public EmojiSpan(Drawable d, int verticalAlignment, int s, Paint.FontMetricsInt original) {
             super(d, verticalAlignment);
@@ -474,7 +477,7 @@ public class Emoji {
             if (original != null) {
                 size = Math.abs(fontMetrics.descent) + Math.abs(fontMetrics.ascent);
                 if (size == 0) {
-                    size = Utilities.dp(20);
+                    size = AndroidUtilities.dp(20);
                 }
             }
         }
@@ -488,8 +491,8 @@ public class Emoji {
             if (fontMetrics == null) {
                 int sz = super.getSize(paint, text, start, end, fm);
 
-                int offset = Utilities.dp(8);
-                int w = Utilities.dp(10);
+                int offset = AndroidUtilities.dp(8);
+                int w = AndroidUtilities.dp(10);
                 fm.top = -w - offset;
                 fm.bottom = w - offset;
                 fm.ascent = -w - offset;

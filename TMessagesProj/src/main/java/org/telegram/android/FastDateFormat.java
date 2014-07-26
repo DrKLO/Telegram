@@ -5,7 +5,7 @@
  *
  * Copyright Nikolai Kudashov, 2013.
  */
-package org.telegram.messenger;
+package org.telegram.android;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

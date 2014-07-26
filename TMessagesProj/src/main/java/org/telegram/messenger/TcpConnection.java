@@ -33,7 +33,6 @@ public class TcpConnection extends ConnectionContext {
         public abstract void tcpConnectionConnected(TcpConnection connection);
         public abstract void tcpConnectionQuiackAckReceived(TcpConnection connection, int ack);
         public abstract void tcpConnectionReceivedData(TcpConnection connection, ByteBufferDesc data, int length);
-        public abstract void tcpConnectionProgressChanged(TcpConnection connection, long messageId, int currentSize, int length);
     }
 
     private static PyroSelector selector;
@@ -46,7 +45,6 @@ public class TcpConnection extends ConnectionContext {
     private int failedConnectionCount;
     public TcpConnectionDelegate delegate;
     private ByteBufferDesc restOfTheData;
-    private long lastMessageId = 0;
     private boolean hasSomeDataSinceLastConnect = false;
     private int willRetryConnectCount = 5;
     private boolean isNextPort = false;
@@ -284,8 +282,8 @@ public class TcpConnection extends ConnectionContext {
         connect();
     }
 
-    public void sendData(final byte[] data, final ByteBufferDesc buff, final boolean reportAck) {
-        if (data == null && buff == null) {
+    public void sendData(final ByteBufferDesc buff, final boolean canReuse, final boolean reportAck) {
+        if (buff == null) {
             return;
         }
         selector.scheduleTask(new Runnable() {
@@ -298,16 +296,13 @@ public class TcpConnection extends ConnectionContext {
                 }
 
                 if (client == null || client.isDisconnected()) {
-                    BuffersStorage.getInstance().reuseFreeBuffer(buff);
+                    if (canReuse) {
+                        BuffersStorage.getInstance().reuseFreeBuffer(buff);
+                    }
                     return;
                 }
 
-                int bufferLen = 0;
-                if (data != null) {
-                    bufferLen = data.length;
-                } else if (buff != null) {
-                    bufferLen = buff.limit();
-                }
+                int bufferLen = buff.limit();
                 int packetLength = bufferLen / 4;
 
                 if (packetLength < 0x7f) {
@@ -336,10 +331,9 @@ public class TcpConnection extends ConnectionContext {
                     }
                     buffer.writeInt32(packetLength);
                 }
-                if (data != null) {
-                    buffer.writeRaw(data);
-                } else {
-                    buffer.writeRaw(buff);
+
+                buffer.writeRaw(buff);
+                if (canReuse) {
                     BuffersStorage.getInstance().reuseFreeBuffer(buff);
                 }
 
@@ -389,19 +383,6 @@ public class TcpConnection extends ConnectionContext {
                 buffer.limit(oldLimit);
                 if (restOfTheData.position() != lastPacketLength) {
                     //FileLog.e("tmessages", this +  " don't get much data to restOfTheData");
-                    if (lastMessageId != -1 && lastMessageId != 0) {
-                        if (delegate != null) {
-                            final TcpConnectionDelegate finalDelegate = delegate;
-                            final int arg2 = restOfTheData.position();
-                            final int arg3 = lastPacketLength;
-                            Utilities.stageQueue.postRunnable(new Runnable() {
-                                @Override
-                                public void run() {
-                                    finalDelegate.tcpConnectionProgressChanged(TcpConnection.this, lastMessageId, arg2, arg3);
-                                }
-                            });
-                        }
-                    }
                     return;
                 } else {
                     //FileLog.e("tmessages", this +  " get much data to restOfTheData - OK!");
@@ -424,7 +405,7 @@ public class TcpConnection extends ConnectionContext {
                 datacenter.storeCurrentAddressAndPortNum();
                 isNextPort = false;
                 if ((transportRequestClass & RPCRequest.RPCRequestClassPush) != 0) {
-                    client.setTimeout(60000 * 3 + 20000);
+                    client.setTimeout(60000 * 15);
                 } else {
                     client.setTimeout(25000);
                 }
@@ -497,32 +478,10 @@ public class TcpConnection extends ConnectionContext {
 
             if (currentPacketLength < buffer.remaining()) {
                 FileLog.d("tmessages", TcpConnection.this + " Received message len " + currentPacketLength + " but packet larger " + buffer.remaining());
-                lastMessageId = 0;
             } else if (currentPacketLength == buffer.remaining()) {
                 FileLog.d("tmessages", TcpConnection.this + " Received message len " + currentPacketLength + " equal to packet size");
-                lastMessageId = 0;
             } else {
                 FileLog.d("tmessages", TcpConnection.this + " Received packet size less(" + buffer.remaining() + ") then message size(" + currentPacketLength + ")");
-                if (buffer.remaining() >= 152 && (transportRequestClass & RPCRequest.RPCRequestClassDownloadMedia) != 0) {
-                    if (lastMessageId == 0) {
-                        byte[] temp = new byte[152];
-                        buffer.get(temp);
-                        lastMessageId = ConnectionsManager.getInstance().needsToDecodeMessageIdFromPartialData(TcpConnection.this, temp);
-                    }
-                    if (lastMessageId != -1 && lastMessageId != 0) {
-                        if (delegate != null) {
-                            final TcpConnectionDelegate finalDelegate = delegate;
-                            final int arg2 = buffer.remaining();
-                            final int arg3 = currentPacketLength;
-                            Utilities.stageQueue.postRunnable(new Runnable() {
-                                @Override
-                                public void run() {
-                                    finalDelegate.tcpConnectionProgressChanged(TcpConnection.this, lastMessageId, arg2, arg3);
-                                }
-                            });
-                        }
-                    }
-                }
 
                 ByteBufferDesc reuseLater = null;
                 int len = currentPacketLength + (fByte != 0x7f ? 1 : 4);

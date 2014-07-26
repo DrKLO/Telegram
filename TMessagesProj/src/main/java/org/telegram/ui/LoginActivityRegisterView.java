@@ -17,13 +17,13 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.MessagesStorage;
+import org.telegram.android.ContactsController;
+import org.telegram.android.MessagesController;
+import org.telegram.android.MessagesStorage;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.UserConfig;
@@ -150,11 +150,10 @@ public class LoginActivityRegisterView extends SlideView {
                             final TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization)response;
                             TLRPC.TL_userSelf user = (TLRPC.TL_userSelf)res.user;
                             UserConfig.clearConfig();
-                            MessagesStorage.getInstance().cleanUp();
                             MessagesController.getInstance().cleanUp();
-                            ConnectionsManager.getInstance().cleanUp();
                             UserConfig.setCurrentUser(user);
                             UserConfig.saveConfig(true);
+                            MessagesStorage.getInstance().cleanUp(true);
                             ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
                             users.add(user);
                             MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
@@ -185,7 +184,7 @@ public class LoginActivityRegisterView extends SlideView {
                     }
                 });
             }
-        }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassWithoutLogin);
+        }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassWithoutLogin);
     }
 
     @Override

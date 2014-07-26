@@ -21,9 +21,10 @@ import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
@@ -250,10 +251,10 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
         }
 
         if (codeField.length() != 0) {
-            Utilities.showKeyboard(phoneField);
+            AndroidUtilities.showKeyboard(phoneField);
             phoneField.requestFocus();
         } else {
-            Utilities.showKeyboard(codeField);
+            AndroidUtilities.showKeyboard(codeField);
             codeField.requestFocus();
         }
         phoneField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -389,7 +390,7 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
                     }
                 });
             }
-        }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
+        }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin | RPCRequest.RPCRequestClassTryDifferentDc | RPCRequest.RPCRequestClassEnableUnauthorized);
     }
 
     @Override

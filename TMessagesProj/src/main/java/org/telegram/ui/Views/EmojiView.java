@@ -9,6 +9,7 @@
 package org.telegram.ui.Views;
 
 import android.content.Context;
+import android.database.DataSetObserver;
 import android.graphics.drawable.GradientDrawable;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -23,10 +24,10 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.Emoji;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 
 import java.util.ArrayList;
 
@@ -103,7 +104,7 @@ public class EmojiView extends LinearLayout {
         setOrientation(LinearLayout.VERTICAL);
         for (int i = 0; i < Emoji.data.length; i++) {
             GridView gridView = new GridView(getContext());
-            gridView.setColumnWidth(Utilities.dpf(45.0f));
+            gridView.setColumnWidth(AndroidUtilities.dpf(45.0f));
             gridView.setNumColumns(-1);
             views.add(gridView);
 
@@ -119,8 +120,8 @@ public class EmojiView extends LinearLayout {
         tabs.setViewPager(pager);
         tabs.setShouldExpand(true);
         tabs.setIndicatorColor(0xff33b5e5);
-        tabs.setIndicatorHeight(Utilities.dpf(2.0f));
-        tabs.setUnderlineHeight(Utilities.dpf(2.0f));
+        tabs.setIndicatorHeight(AndroidUtilities.dpf(2.0f));
+        tabs.setUnderlineHeight(AndroidUtilities.dpf(2.0f));
         tabs.setUnderlineColor(1711276032);
         tabs.setTabBackground(0);
         LinearLayout localLinearLayout = new LinearLayout(getContext());
@@ -137,7 +138,7 @@ public class EmojiView extends LinearLayout {
                 }
             }
         });
-        localLinearLayout.addView(localImageView, new LinearLayout.LayoutParams(Utilities.dpf(61.0f), LayoutParams.MATCH_PARENT));
+        localLinearLayout.addView(localImageView, new LinearLayout.LayoutParams(AndroidUtilities.dpf(61.0f), LayoutParams.MATCH_PARENT));
         recentsWrap = new FrameLayout(getContext());
         recentsWrap.addView(views.get(0));
         TextView localTextView = new TextView(getContext());
@@ -147,7 +148,7 @@ public class EmojiView extends LinearLayout {
         localTextView.setGravity(17);
         recentsWrap.addView(localTextView);
         views.get(0).setEmptyView(localTextView);
-        addView(localLinearLayout, new LinearLayout.LayoutParams(-1, Utilities.dpf(48.0f)));
+        addView(localLinearLayout, new LinearLayout.LayoutParams(-1, AndroidUtilities.dpf(48.0f)));
         addView(pager);
         loadRecents();
         if (Emoji.data[0] == null || Emoji.data[0].length == 0) {
@@ -247,6 +248,13 @@ public class EmojiView extends LinearLayout {
             localObject.setTag(this.data[paramInt]);
             return localObject;
         }
+
+        @Override
+        public void unregisterDataSetObserver(DataSetObserver observer) {
+            if (observer != null) {
+                super.unregisterDataSetObserver(observer);
+            }
+        }
     }
 
     private class EmojiPagesAdapter extends PagerAdapter implements PagerSlidingTabStrip.IconTabProvider {
@@ -285,6 +293,13 @@ public class EmojiView extends LinearLayout {
 
         public boolean isViewFromObject(View paramView, Object paramObject) {
             return paramView == paramObject;
+        }
+
+        @Override
+        public void unregisterDataSetObserver(DataSetObserver observer) {
+            if (observer != null) {
+                super.unregisterDataSetObserver(observer);
+            }
         }
     }
 

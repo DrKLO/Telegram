@@ -19,6 +19,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 
@@ -52,7 +53,7 @@ public class ActionBar extends FrameLayout {
         addView(shadowView);
         shadowView.setVisibility(INVISIBLE);
         ViewGroup.LayoutParams layoutParams = shadowView.getLayoutParams();
-        layoutParams.width = Utilities.dp(2);
+        layoutParams.width = AndroidUtilities.dp(2);
         layoutParams.height = LayoutParams.MATCH_PARENT;
         shadowView.setLayoutParams(layoutParams);
         shadowView.setBackgroundResource(R.drawable.shadow);
@@ -116,7 +117,7 @@ public class ActionBar extends FrameLayout {
         layoutParams.width = LayoutParams.MATCH_PARENT;
         layoutParams.height = LayoutParams.MATCH_PARENT;
         layer.setLayoutParams(layoutParams);
-        shadowView.setX(-Utilities.dp(2));
+        shadowView.setX(-AndroidUtilities.dp(2));
         shadowView.setVisibility(VISIBLE);
         previousLayer.setBackOverlayVisible(isBackOverlayVisible);
     }
@@ -143,7 +144,7 @@ public class ActionBar extends FrameLayout {
             return;
         }
         currentLayer.setX(dx);
-        shadowView.setX(dx - Utilities.dp(2));
+        shadowView.setX(dx - AndroidUtilities.dp(2));
         if (dx != 0) {
             if (previousLayer != null) {
                 previousLayer.setAlpha(Math.min(1, (float) dx / (float) currentLayer.getMeasuredWidth()));
@@ -159,21 +160,21 @@ public class ActionBar extends FrameLayout {
     public void setupAnimations(ArrayList<Animator> animators, boolean back) {
         if (back) {
             animators.add(ObjectAnimator.ofFloat(currentLayer, "x", 0));
-            animators.add(ObjectAnimator.ofFloat(shadowView, "x", -Utilities.dp(2)));
+            animators.add(ObjectAnimator.ofFloat(shadowView, "x", -AndroidUtilities.dp(2)));
             animators.add(ObjectAnimator.ofFloat(previousLayer, "alpha", 0));
         } else {
             animators.add(ObjectAnimator.ofFloat(currentLayer, "x", getMeasuredWidth()));
-            animators.add(ObjectAnimator.ofFloat(shadowView, "x", getMeasuredWidth() - Utilities.dp(2)));
+            animators.add(ObjectAnimator.ofFloat(shadowView, "x", getMeasuredWidth() - AndroidUtilities.dp(2)));
             animators.add(ObjectAnimator.ofFloat(previousLayer, "alpha", 1.0f));
         }
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Utilities.dp(40), MeasureSpec.EXACTLY));
+        if (!Utilities.isTablet(getContext()) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(40), MeasureSpec.EXACTLY));
         } else {
-            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Utilities.dp(48), MeasureSpec.EXACTLY));
+            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
         }
     }
 

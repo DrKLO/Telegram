@@ -20,11 +20,11 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 
 public class ChatProfileChangeNameActivity extends BaseFragment {
@@ -108,14 +108,14 @@ public class ChatProfileChangeNameActivity extends BaseFragment {
         boolean animations = preferences.getBoolean("view_animations", true);
         if (!animations) {
             firstNameField.requestFocus();
-            Utilities.showKeyboard(firstNameField);
+            AndroidUtilities.showKeyboard(firstNameField);
         }
     }
 
     @Override
     public void onOpenAnimationEnd() {
         firstNameField.requestFocus();
-        Utilities.showKeyboard(firstNameField);
+        AndroidUtilities.showKeyboard(firstNameField);
     }
 
     private void saveName() {

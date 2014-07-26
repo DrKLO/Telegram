@@ -27,11 +27,11 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 
 import java.io.File;
@@ -72,7 +72,7 @@ public class PhotoCropActivity extends BaseFragment {
         private void init() {
             rectPaint = new Paint();
             rectPaint.setColor(0xfffafafa);
-            rectPaint.setStrokeWidth(Utilities.dp(2));
+            rectPaint.setStrokeWidth(AndroidUtilities.dp(2));
             rectPaint.setStyle(Paint.Style.STROKE);
             circlePaint = new Paint();
             circlePaint.setColor(0x7fffffff);
@@ -85,7 +85,7 @@ public class PhotoCropActivity extends BaseFragment {
                 public boolean onTouch(View view, MotionEvent motionEvent) {
                     float x = motionEvent.getX();
                     float y = motionEvent.getY();
-                    int cornerSide = Utilities.dp(14);
+                    int cornerSide = AndroidUtilities.dp(14);
                     if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
                         if (rectX - cornerSide < x && rectX + cornerSide > x && rectY - cornerSide < y && rectY + cornerSide > y) {
                             draggingState = 1;
@@ -270,7 +270,7 @@ public class PhotoCropActivity extends BaseFragment {
 
             canvas.drawRect(rectX, rectY, rectX + rectSize, rectY + rectSize, rectPaint);
 
-            int side = Utilities.dp(7);
+            int side = AndroidUtilities.dp(7);
             canvas.drawRect(rectX - side, rectY - side, rectX + side, rectY + side, circlePaint);
             canvas.drawRect(rectX + rectSize - side, rectY - side, rectX + rectSize + side, rectY + side, circlePaint);
             canvas.drawRect(rectX - side, rectY + rectSize - side, rectX + side, rectY + rectSize + side, circlePaint);

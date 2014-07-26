@@ -58,6 +58,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND"/>
@@ -100,14 +101,23 @@
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:screenOrientation="portrait">
         </activity>
+        <activity
+            android:name="org.telegram.ui.PopupNotificationActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize|stateHidden"
+            android:taskAffinity=""
+            android:theme="@style/Theme.TMessages.PopupNotification">
+        </activity>
 
-        <receiver android:name="org.telegram.messenger.SmsListener">
+        <receiver android:name="org.telegram.android.SmsListener">
             <intent-filter>
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
         </receiver>
 
-        <service android:name="org.telegram.messenger.AuthenticatorService"
+        <service android:name="org.telegram.android.AuthenticatorService"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.accounts.AccountAuthenticator"/>
@@ -116,7 +126,7 @@
                 android:resource="@xml/auth"/>
         </service>
 
-        <service android:name="org.telegram.messenger.ContactsSyncAdapterService"
+        <service android:name="org.telegram.android.ContactsSyncAdapterService"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.content.SyncAdapter" />
@@ -127,14 +137,21 @@
                 android:resource="@xml/contacts" />
         </service>
 
-        <service android:name="org.telegram.messenger.NotificationsService" android:enabled="true"/>
+        <service android:name="org.telegram.android.NotificationsService" android:enabled="true"/>
 
-        <receiver android:name="org.telegram.messenger.AppStartReceiver" android:enabled="true">
+        <receiver android:name="org.telegram.android.AppStartReceiver" android:enabled="true">
             <intent-filter>
                 <action android:name="org.telegram.start" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <uses-library android:name="com.sec.android.app.multiwindow" android:required="false" />
+        <meta-data android:name="com.sec.android.support.multiwindow" android:value="true" />
+        <meta-data android:name="com.sec.android.multiwindow.DEFAULT_SIZE_W" android:value="632dp" />
+        <meta-data android:name="com.sec.android.multiwindow.DEFAULT_SIZE_H" android:value="598dp" />
+        <meta-data android:name="com.sec.android.multiwindow.MINIMUM_SIZE_W" android:value="632dp" />
+        <meta-data android:name="com.sec.android.multiwindow.MINIMUM_SIZE_H" android:value="598dp" />
 
     </application>
 
