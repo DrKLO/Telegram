@@ -243,6 +243,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         presentFragment(new UserProfileActivity(args));
                     } else if (i == settingsNotificationsRow) {
                         Bundle args = new Bundle();
+                        args.putLong("user_id", 0);
                         args.putLong("dialog_id", -chat_id);
                         presentFragment(new ProfileNotificationsActivity(args));
                     }

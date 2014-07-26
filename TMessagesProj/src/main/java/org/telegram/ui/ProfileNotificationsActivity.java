@@ -44,6 +44,7 @@ import org.telegram.ui.Views.ColorPickerView;
 public class ProfileNotificationsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     private ListView listView;
+    private long user_id;
     private long dialog_id;
 
     private int settingsNotificationsRow;
@@ -56,6 +57,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
 
     public ProfileNotificationsActivity(Bundle args) {
         super(args);
+        user_id = args.getLong("user_id");
         dialog_id = args.getLong("dialog_id");
     }
 
@@ -146,7 +148,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         if ((int)dialog_id < 0) {
                             key = "VibrationSpeedGroup_" + (-dialog_id);
                         } else {
-                            key = "VibrationSpeed_" + (dialog_id);
+                            key = "VibrationSpeed_" + (user_id);
                         }
 
                         VibrationOptions.VibrationSpeed[] vibrationSpeeds = VibrationOptions.VibrationSpeed.values();
@@ -195,7 +197,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         if ((int)dialog_id < 0) {
                             key = "VibrationCountGroup_" + (-dialog_id);
                         } else {
-                            key = "VibrationCount_" + (dialog_id);
+                            key = "VibrationCount_" + (user_id);
                         }
 
                         String counts[] = new String[11];
@@ -485,7 +487,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     if ((int)dialog_id < 0) {
                         key = "VibrationSpeedGroup_" + (-dialog_id);
                     } else {
-                        key = "VibrationSpeed_" + (dialog_id);
+                        key = "VibrationSpeed_" + (user_id);
                     }
                     int storedValue = preferences.getInt(key, -1);
                     if(storedValue == -1) {
@@ -503,7 +505,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     if ((int)dialog_id < 0) {
                         key = "VibrationCountGroup_" + (-dialog_id);
                     } else {
-                        key = "VibrationCount_" + (dialog_id);
+                        key = "VibrationCount_" + (user_id);
                     }
                     int storedValue = preferences.getInt(key, -1);
                     if(storedValue == -1) {
