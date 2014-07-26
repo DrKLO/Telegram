@@ -57,6 +57,14 @@
     <string name="HiddenName">Nombre oculto</string>
     <string name="SelectChat">Selecciona el chat</string>
 
+    <!--broadcasts-->
+    <string name="BroadcastList">Broadcast List</string>
+    <string name="NewBroadcastList">New Broadcast List</string>
+    <string name="EnterListName">Enter list name</string>
+    <string name="YouCreatedBroadcastList">You created a broadcast list</string>
+    <string name="AddRecipient">Add Recipient</string>
+    <string name="KickFromBroadcast">Remove from broadcast list</string>
+
     <!--documents view-->
     <string name="SelectFile">Seleccionar archivo</string>
     <string name="FreeOfTotal">%1$s de %2$s libres</string>

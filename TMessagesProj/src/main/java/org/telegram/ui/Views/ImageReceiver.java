@@ -75,17 +75,20 @@ public class ImageReceiver {
         if (filter != null) {
             key += "@" + filter;
         }
-        Bitmap img;
+        Bitmap img = null;
         if (currentPath != null) {
             if (currentPath.equals(key)) {
-                return;
+                if (currentImage != null) {
+                    return;
+                } else {
+                    img = FileLoader.getInstance().getImageFromMemory(path, httpUrl, this, filter);
+                }
             } else {
-                img = FileLoader.getInstance().getImageFromMemory(path, httpUrl, this, filter, true);
+                img = FileLoader.getInstance().getImageFromMemory(path, httpUrl, this, filter);
                 recycleBitmap(img);
             }
-        } else {
-            img = FileLoader.getInstance().getImageFromMemory(path, httpUrl, this, filter, true);
         }
+        img = FileLoader.getInstance().getImageFromMemory(path, httpUrl, this, filter);
         currentPath = key;
         last_path = path;
         last_httpUrl = httpUrl;

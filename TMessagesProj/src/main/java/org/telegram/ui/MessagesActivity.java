@@ -74,6 +74,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     private final static int messages_list_menu_new_secret_chat = 3;
     private final static int messages_list_menu_contacts = 4;
     private final static int messages_list_menu_settings = 5;
+    private final static int messages_list_menu_new_broadcast = 6;
 
     public static interface MessagesActivityDelegate {
         public abstract void didSelectDialog(MessagesActivity fragment, long dialog_id, boolean param);
@@ -175,6 +176,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
                 item.addSubItem(messages_list_menu_new_chat, LocaleController.getString("NewGroup", R.string.NewGroup), 0);
                 item.addSubItem(messages_list_menu_new_secret_chat, LocaleController.getString("NewSecretChat", R.string.NewSecretChat), 0);
+                item.addSubItem(messages_list_menu_new_broadcast, LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList), 0);
                 item.addSubItem(messages_list_menu_contacts, LocaleController.getString("Contacts", R.string.Contacts), 0);
                 item.addSubItem(messages_list_menu_settings, LocaleController.getString("Settings", R.string.Settings), 0);
             }
@@ -206,6 +208,10 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                         if (onlySelect) {
                             finishFragment();
                         }
+                    } else if (id == messages_list_menu_new_broadcast) {
+                        Bundle args = new Bundle();
+                        args.putBoolean("broadcast", true);
+                        presentFragment(new GroupCreateActivity(args));
                     }
                 }
             });
@@ -289,7 +295,12 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                                 args.putInt("chat_id", -lower_part);
                             }
                         } else {
-                            args.putInt("enc_id", (int)(dialog_id >> 32));
+                            int high_id = (int)(dialog_id >> 32);
+                            if (high_id > 0) {
+                                args.putInt("enc_id", high_id);
+                            } else {
+                                args.putInt("chat_id", high_id);
+                            }
                         }
                         presentFragment(new ChatActivity(args));
                     }
@@ -497,13 +508,21 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     builder.setMessage(LocaleController.formatStringSimple(selectAlertString, chat.title));
                 }
             } else {
-                int chat_id = (int)(dialog_id >> 32);
-                TLRPC.EncryptedChat chat = MessagesController.getInstance().encryptedChats.get(chat_id);
-                TLRPC.User user = MessagesController.getInstance().users.get(chat.user_id);
-                if (user == null) {
-                    return;
+                int high_id = (int)(dialog_id >> 32);
+                if (high_id > 0) {
+                    TLRPC.EncryptedChat chat = MessagesController.getInstance().encryptedChats.get(high_id);
+                    TLRPC.User user = MessagesController.getInstance().users.get(chat.user_id);
+                    if (user == null) {
+                        return;
+                    }
+                    builder.setMessage(LocaleController.formatStringSimple(selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
+                } else {
+                    TLRPC.Chat chat = MessagesController.getInstance().chats.get(high_id);
+                    if (chat == null) {
+                        return;
+                    }
+                    builder.setMessage(LocaleController.formatStringSimple(selectAlertString, chat.title));
                 }
-                builder.setMessage(LocaleController.formatStringSimple(selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
             }
             CheckBox checkBox = null;
             /*if (delegate instanceof ChatActivity) {

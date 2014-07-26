@@ -248,10 +248,14 @@ public class FileLoadOperation {
 
                             float w_filter = 0;
                             float h_filter = 0;
+                            boolean blur = false;
                             if (filter != null) {
                                 String args[] = filter.split("_");
                                 w_filter = Float.parseFloat(args[0]) * AndroidUtilities.density;
                                 h_filter = Float.parseFloat(args[1]) * AndroidUtilities.density;
+                                if (args.length > 2) {
+                                    blur = true;
+                                }
                                 opts.inJustDecodeBounds = true;
 
                                 if (mediaIdFinal != null) {
@@ -270,7 +274,7 @@ public class FileLoadOperation {
                                 opts.inSampleSize = (int)scaleFactor;
                             }
 
-                            if (filter == null) {
+                            if (filter == null || blur) {
                                 opts.inPreferredConfig = Bitmap.Config.ARGB_8888;
                             } else {
                                 opts.inPreferredConfig = Bitmap.Config.RGB_565;
@@ -300,7 +304,9 @@ public class FileLoadOperation {
                                             image = scaledBitmap;
                                         }
                                     }
-
+                                    if (image != null && blur && bitmapH < 100 && bitmapW < 100) {
+                                        Utilities.blurBitmap(image, (int)bitmapW, (int)bitmapH, image.getRowBytes());
+                                    }
                                 }
                                 if (FileLoader.getInstance().runtimeHack != null) {
                                     FileLoader.getInstance().runtimeHack.trackFree(image.getRowBytes() * image.getHeight());
@@ -494,10 +500,14 @@ public class FileLoadOperation {
 
                     float w_filter = 0;
                     float h_filter;
+                    boolean blur = false;
                     if (filter != null) {
                         String args[] = filter.split("_");
                         w_filter = Float.parseFloat(args[0]) * AndroidUtilities.density;
                         h_filter = Float.parseFloat(args[1]) * AndroidUtilities.density;
+                        if (args.length > 2) {
+                            blur = true;
+                        }
 
                         opts.inJustDecodeBounds = true;
                         BitmapFactory.decodeFile(cacheFileFinal.getAbsolutePath(), opts);
@@ -511,7 +521,7 @@ public class FileLoadOperation {
                         opts.inSampleSize = (int) scaleFactor;
                     }
 
-                    if (filter == null) {
+                    if (filter == null || blur) {
                         opts.inPreferredConfig = Bitmap.Config.ARGB_8888;
                     } else {
                         opts.inPreferredConfig = Bitmap.Config.RGB_565;
@@ -540,7 +550,9 @@ public class FileLoadOperation {
                                     image = scaledBitmap;
                                 }
                             }
-
+                            if (image != null && blur && bitmapH < 100 && bitmapW < 100) {
+                                Utilities.blurBitmap(image, (int)bitmapW, (int)bitmapH, image.getRowBytes());
+                            }
                         }
                         if (image != null && FileLoader.getInstance().runtimeHack != null) {
                             FileLoader.getInstance().runtimeHack.trackFree(image.getRowBytes() * image.getHeight());

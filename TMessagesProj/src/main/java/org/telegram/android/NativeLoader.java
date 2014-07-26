@@ -25,8 +25,8 @@ public class NativeLoader {
 
     private static final long sizes[] = new long[] {
             799376,     //armeabi
-            848548,     //armeabi-v7a
-            1246260,    //x86
+            852644,     //armeabi-v7a
+            1250356,    //x86
             0,          //mips
     };
 

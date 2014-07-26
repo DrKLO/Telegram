@@ -132,6 +132,7 @@ public class Utilities {
 
     public native static long doPQNative(long _what);
     public native static void loadBitmap(String path, int[] bitmap, int scale, int format, int width, int height);
+    public native static void blurBitmap(Object bitmap, int width, int height, int stride);
     private native static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, int offset, int length);
 
     public static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, boolean changeIv, int offset, int length) {
@@ -139,6 +140,9 @@ public class Utilities {
     }
 
     public static Integer parseInt(String value) {
+        if (value == null) {
+            return 0;
+        }
         Integer val = 0;
         try {
             Matcher matcher = pattern.matcher(value);
@@ -548,7 +552,7 @@ public class Utilities {
     }
 
     public static int getGroupAvatarForId(int id) {
-        return arrGroupsAvatars[getColorIndex(-id)];
+        return arrGroupsAvatars[getColorIndex(-Math.abs(id))];
     }
 
     public static String MD5(String md5) {

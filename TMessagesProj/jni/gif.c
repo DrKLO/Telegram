@@ -1,4 +1,4 @@
-//tanks to https://github.com/koral--/android-gif-drawable
+//thanks to https://github.com/koral--/android-gif-drawable
 /*
  MIT License
  Copyright (c)
@@ -73,7 +73,7 @@ typedef struct {
 
 typedef struct {
 	unsigned int duration;
-	short transpIndex;
+	int transpIndex;
 	unsigned char disposalMethod;
 } FrameInfo;
 
@@ -121,19 +121,20 @@ void gifOnJNIUnload(JavaVM *vm, void *reserved) {
 }
 
 static int fileReadFunc(GifFileType *gif, GifByteType *bytes, int size) {
-	FILE *file = (FILE *)gif->UserData;
+    FILE *file = (FILE *)gif->UserData;
 	return fread(bytes, 1, size, file);
 }
 
 static int fileRewindFun(GifInfo *info) {
-	return fseek(info->gifFilePtr->UserData, info->startPos, SEEK_SET);
+    return fseek(info->gifFilePtr->UserData, info->startPos, SEEK_SET);
 }
 
 static unsigned long getRealTime() {
 	struct timespec ts;
 	const clockid_t id = CLOCK_MONOTONIC;
-	if (id != (clockid_t) - 1 && clock_gettime(id, &ts) != -1)
-    return ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+	if (id != (clockid_t) - 1 && clock_gettime(id, &ts) != -1) {
+        return ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+    }
 	return -1;
 }
 
@@ -195,7 +196,7 @@ static void packARGB32(argb *pixel, GifByteType alpha, GifByteType red, GifByteT
 }
 
 static void getColorFromTable(int idx, argb *dst, const ColorMapObject *cmap) {
-	char colIdx = idx >= cmap->ColorCount ? 0 : idx;
+    int colIdx = (idx >= cmap->ColorCount) ? 0 : idx;
 	GifColorType *col = &cmap->Colors[colIdx];
 	packARGB32(dst, 0xFF, col->Red, col->Green, col->Blue);
 }
@@ -218,7 +219,7 @@ static inline bool setupBackupBmp(GifInfo *info, short transpIndex) {
 	if (transpIndex == -1) {
         getColorFromTable(fGIF->SBackGroundColor, &paintingColor, fGIF->SColorMap);
     } else {
-        packARGB32(&paintingColor,0,0,0,0);
+        packARGB32(&paintingColor, 0, 0, 0, 0);
     }
 	eraseColor(info->backupPtr, fGIF->SWidth, fGIF->SHeight, paintingColor);
 	return true;
@@ -231,14 +232,15 @@ static int readExtensions(int ExtFunction, GifByteType *ExtData, GifInfo *info) 
 	if (ExtFunction == GRAPHICS_EXT_FUNC_CODE && ExtData[0] == 4) {
 		FrameInfo *fi = &info->infos[info->gifFilePtr->ImageCount];
 		fi->transpIndex = -1;
-		char *b = (char *)ExtData + 1;
+		char *b = (char*) ExtData + 1;
 		short delay = ((b[2] << 8) | b[1]);
 		fi->duration = delay > 1 ? delay * 10 : 100;
 		fi->disposalMethod = ((b[0] >> 2) & 7);
-		if (ExtData[1] & 1)
-        fi->transpIndex = (short) b[3];
+		if (ExtData[1] & 1) {
+            fi->transpIndex = 0xff & b[3];
+        }
 		if (fi->disposalMethod == 3 && info->backupPtr == NULL) {
-			if (!setupBackupBmp(info,fi->transpIndex)) {
+			if (!setupBackupBmp(info, fi->transpIndex)) {
                 return GIF_ERROR;
             }
 		}
@@ -260,7 +262,7 @@ static int readExtensions(int ExtFunction, GifByteType *ExtData, GifInfo *info) 
 	return GIF_OK;
 }
 
-static int DDGifSlurp(GifFileType *GifFile, GifInfo *info, bool shouldDecode) {
+static int DDGifSlurp(GifFileType *GifFile, GifInfo* info, bool shouldDecode) {
 	GifRecordType RecordType;
 	GifByteType *ExtData;
 	int codeSize;
@@ -268,103 +270,109 @@ static int DDGifSlurp(GifFileType *GifFile, GifInfo *info, bool shouldDecode) {
 	size_t ImageSize;
 	do {
 		if (DGifGetRecordType(GifFile, &RecordType) == GIF_ERROR) {
-            return GIF_ERROR;
+            return (GIF_ERROR);
         }
 		switch (RecordType) {
-            case IMAGE_DESC_RECORD_TYPE: {
-                if (DGifGetImageDesc(GifFile, !shouldDecode) == GIF_ERROR) {
-                    return GIF_ERROR;
-                }
-                int i = shouldDecode ? info->currentIndex : GifFile->ImageCount - 1;
-                SavedImage *sp = &GifFile->SavedImages[i];
-                ImageSize = sp->ImageDesc.Width * sp->ImageDesc.Height;
-                
-                if (sp->ImageDesc.Width < 1 || sp->ImageDesc.Height < 1 || ImageSize > (SIZE_MAX / sizeof(GifPixelType))) {
-                    GifFile->Error = D_GIF_ERR_INVALID_IMG_DIMS;
-                    return GIF_ERROR;
-                }
-                if (sp->ImageDesc.Width > GifFile->SWidth || sp->ImageDesc.Height > GifFile->SHeight) {
-                    GifFile->Error = D_GIF_ERR_IMG_NOT_CONFINED;
-                    return GIF_ERROR;
-                }
-                if (shouldDecode) {
-                    sp->RasterBits = info->rasterBits;
-                    if (sp->ImageDesc.Interlace) {
-                        int i, j;
-                        int InterlacedOffset[] = { 0, 4, 2, 1 };
-                        int InterlacedJumps[] = { 8, 8, 4, 2 };
-                        for (i = 0; i < 4; i++) {
-                            for (j = InterlacedOffset[i]; j < sp->ImageDesc.Height; j += InterlacedJumps[i]) {
-                                if (DGifGetLine(GifFile, sp->RasterBits + j * sp->ImageDesc.Width, sp->ImageDesc.Width) == GIF_ERROR) {
-                                    return GIF_ERROR;
-                                }
+            case IMAGE_DESC_RECORD_TYPE:
+            
+			if (DGifGetImageDesc(GifFile, !shouldDecode) == GIF_ERROR) {
+                return (GIF_ERROR);
+            }
+			int i = shouldDecode ? info->currentIndex : GifFile->ImageCount - 1;
+			SavedImage *sp = &GifFile->SavedImages[i];
+			ImageSize = sp->ImageDesc.Width * sp->ImageDesc.Height;
+            
+			if (sp->ImageDesc.Width < 1 || sp->ImageDesc.Height < 1 || ImageSize > (SIZE_MAX / sizeof(GifPixelType))) {
+				GifFile->Error = D_GIF_ERR_INVALID_IMG_DIMS;
+				return GIF_ERROR;
+			}
+			if (sp->ImageDesc.Width > GifFile->SWidth || sp->ImageDesc.Height > GifFile->SHeight) {
+				GifFile->Error = D_GIF_ERR_IMG_NOT_CONFINED;
+				return GIF_ERROR;
+			}
+			if (shouldDecode) {
+				sp->RasterBits = info->rasterBits;
+				if (sp->ImageDesc.Interlace) {
+					int i, j;
+					int InterlacedOffset[] = { 0, 4, 2, 1 };
+					int InterlacedJumps[] = { 8, 8, 4, 2 };
+					for (i = 0; i < 4; i++) {
+                        for (j = InterlacedOffset[i]; j < sp->ImageDesc.Height; j += InterlacedJumps[i]) {
+                            if (DGifGetLine(GifFile, sp->RasterBits + j * sp->ImageDesc.Width, sp->ImageDesc.Width) == GIF_ERROR) {
+                                return GIF_ERROR;
                             }
                         }
-                    } else {
-                        if (DGifGetLine(GifFile, sp->RasterBits, ImageSize) == GIF_ERROR) {
-                            return GIF_ERROR;
-                        }
                     }
-                    if (info->currentIndex >= GifFile->ImageCount - 1) {
-                        if (info->loopCount > 0)
+				} else {
+					if (DGifGetLine(GifFile, sp->RasterBits, ImageSize) == GIF_ERROR) {
+                        return (GIF_ERROR);
+                    }
+				}
+				if (info->currentIndex >= GifFile->ImageCount - 1) {
+					if (info->loopCount > 0) {
                         info->currentLoop++;
-                        if (fileRewindFun(info) != 0) {
-                            info->gifFilePtr->Error = D_GIF_ERR_READ_FAILED;
-                            return GIF_ERROR;
-                        }
                     }
-                    return GIF_OK;
-                } else {
-                    if (DGifGetCode(GifFile, &codeSize, &ExtData) == GIF_ERROR) {
-                        return GIF_ERROR;
-                    }
-                    while (ExtData) {
-                        if (DGifGetCodeNext(GifFile, &ExtData) == GIF_ERROR) {
-                            return GIF_ERROR;
-                        }
-                    }
+					if (fileRewindFun(info) != 0) {
+						info->gifFilePtr->Error = D_GIF_ERR_READ_FAILED;
+						return GIF_ERROR;
+					}
+				}
+				return GIF_OK;
+			} else {
+				if (DGifGetCode(GifFile, &codeSize, &ExtData) == GIF_ERROR) {
+                    return (GIF_ERROR);
                 }
-                break;
+				while (ExtData != NULL) {
+					if (DGifGetCodeNext(GifFile, &ExtData) == GIF_ERROR) {
+                        return (GIF_ERROR);
+                    }
+				}
+			}
+			break;
+            
+            case EXTENSION_RECORD_TYPE:
+			if (DGifGetExtension(GifFile, &ExtFunction, &ExtData) == GIF_ERROR) {
+                return (GIF_ERROR);
             }
             
-            case EXTENSION_RECORD_TYPE: {
-                if (DGifGetExtension(GifFile, &ExtFunction, &ExtData) == GIF_ERROR) {
+			if (!shouldDecode) {
+				FrameInfo *tmpInfos = realloc(info->infos, (GifFile->ImageCount + 1) * sizeof(FrameInfo));
+                if (tmpInfos == NULL) {
                     return GIF_ERROR;
                 }
+                info->infos = tmpInfos;
+				if (readExtensions(ExtFunction, ExtData, info) == GIF_ERROR) {
+                    return GIF_ERROR;
+                }
+			}
+			while (ExtData != NULL) {
+				if (DGifGetExtensionNext(GifFile, &ExtData, &ExtFunction) == GIF_ERROR) {
+                    return (GIF_ERROR);
+                }
+				if (!shouldDecode) {
+					if (readExtensions(ExtFunction, ExtData, info) == GIF_ERROR) {
+                        return GIF_ERROR;
+                    }
+				}
+			}
+			break;
             
-                if (!shouldDecode) {
-                    info->infos = realloc(info->infos, (GifFile->ImageCount + 1) * sizeof(FrameInfo));
-                    if (readExtensions(ExtFunction, ExtData, info) == GIF_ERROR) {
-                        return GIF_ERROR;
-                    }
-                }
-                while (ExtData) {
-                    if (DGifGetExtensionNext(GifFile, &ExtData, &ExtFunction) == GIF_ERROR) {
-                        return GIF_ERROR;
-                    }
-                    if (!shouldDecode) {
-                        if (readExtensions(ExtFunction, ExtData, info) == GIF_ERROR) {
-                            return GIF_ERROR;
-                        }
-                    }
-                }
-                break;
-            }
             case TERMINATE_RECORD_TYPE:
+			break;
+            
             default:
 			break;
 		}
 	} while (RecordType != TERMINATE_RECORD_TYPE);
-    
 	bool ok = true;
 	if (shouldDecode) {
 		ok = (fileRewindFun(info) == 0);
 	}
 	if (ok) {
-        return GIF_OK;
+        return (GIF_OK);
     } else {
 		info->gifFilePtr->Error = D_GIF_ERR_READ_FAILED;
-		return GIF_ERROR;
+		return (GIF_ERROR);
 	}
 }
 
@@ -381,7 +389,7 @@ static argb *getAddr(argb *bm, int width, int left, int top) {
 }
 
 static void blitNormal(argb *bm, int width, int height, const SavedImage *frame, const ColorMapObject *cmap, int transparent) {
-	const unsigned char *src = (unsigned char *)frame->RasterBits;
+	const unsigned char* src = (unsigned char*) frame->RasterBits;
 	argb *dst = getAddr(bm, width, frame->ImageDesc.Left, frame->ImageDesc.Top);
 	GifWord copyWidth = frame->ImageDesc.Width;
 	if (frame->ImageDesc.Left + copyWidth > width) {
@@ -393,9 +401,6 @@ static void blitNormal(argb *bm, int width, int height, const SavedImage *frame,
 		copyHeight = height - frame->ImageDesc.Top;
 	}
     
-	int srcPad, dstPad;
-	dstPad = width - copyWidth;
-	srcPad = frame->ImageDesc.Width - copyWidth;
 	for (; copyHeight > 0; copyHeight--) {
 		copyLine(dst, src, cmap, transparent, copyWidth);
 		src += frame->ImageDesc.Width;
@@ -404,7 +409,7 @@ static void blitNormal(argb *bm, int width, int height, const SavedImage *frame,
 }
 
 static void fillRect(argb *bm, int bmWidth, int bmHeight, GifWord left, GifWord top, GifWord width, GifWord height, argb col) {
-	uint32_t *dst = (uint32_t *)getAddr(bm, bmWidth, left, top);
+	uint32_t* dst = (uint32_t*) getAddr(bm, bmWidth, left, top);
 	GifWord copyWidth = width;
 	if (left + copyWidth > bmWidth) {
 		copyWidth = bmWidth - left;
@@ -414,7 +419,7 @@ static void fillRect(argb *bm, int bmWidth, int bmHeight, GifWord left, GifWord 
 	if (top + copyHeight > bmHeight) {
 		copyHeight = bmHeight - top;
 	}
-	uint32_t *pColor = (uint32_t *)(&col);
+	uint32_t* pColor = (uint32_t *) (&col);
 	for (; copyHeight > 0; copyHeight--) {
 		memset(dst, *pColor, copyWidth * sizeof(argb));
 		dst += bmWidth;
@@ -424,12 +429,11 @@ static void fillRect(argb *bm, int bmWidth, int bmHeight, GifWord left, GifWord 
 static void drawFrame(argb *bm, int bmWidth, int bmHeight, const SavedImage *frame, const ColorMapObject *cmap, short transpIndex) {
 	if (frame->ImageDesc.ColorMap != NULL) {
 		cmap = frame->ImageDesc.ColorMap;
-		if (cmap == NULL || cmap->ColorCount != (1 << cmap->BitsPerPixel)) {
+		if (cmap->ColorCount != (1 << cmap->BitsPerPixel)) {
             cmap = defaultCmap;
         }
 	}
-    
-	blitNormal(bm, bmWidth, bmHeight, frame, cmap, (int) transpIndex);
+	blitNormal(bm, bmWidth, bmHeight, frame, cmap, transpIndex);
 }
 
 static bool checkIfCover(const SavedImage *target, const SavedImage *covered) {
@@ -445,30 +449,28 @@ static bool checkIfCover(const SavedImage *target, const SavedImage *covered) {
 }
 
 static inline void disposeFrameIfNeeded(argb *bm, GifInfo *info, unsigned int idx) {
-	argb *backup = info->backupPtr;
+	argb* backup = info->backupPtr;
 	argb color;
 	packARGB32(&color, 0, 0, 0, 0);
 	GifFileType *fGif = info->gifFilePtr;
-	SavedImage *cur = &fGif->SavedImages[idx - 1];
-	SavedImage *next = &fGif->SavedImages[idx];
+	SavedImage* cur = &fGif->SavedImages[idx - 1];
+	SavedImage* next = &fGif->SavedImages[idx];
 	bool curTrans = info->infos[idx - 1].transpIndex != -1;
 	int curDisposal = info->infos[idx - 1].disposalMethod;
 	bool nextTrans = info->infos[idx].transpIndex != -1;
 	int nextDisposal = info->infos[idx].disposalMethod;
-    
 	argb *tmp;
 	if ((curDisposal == 2 || curDisposal == 3) && (nextTrans || !checkIfCover(next, cur))) {
 		switch (curDisposal) {
-            case 2: {
-                fillRect(bm, fGif->SWidth, fGif->SHeight, cur->ImageDesc.Left, cur->ImageDesc.Top, cur->ImageDesc.Width, cur->ImageDesc.Height, color);
-            }
+            case 2:
+            
+			fillRect(bm, fGif->SWidth, fGif->SHeight, cur->ImageDesc.Left, cur->ImageDesc.Top, cur->ImageDesc.Width, cur->ImageDesc.Height, color);
 			break;
             
-            case 3: {
-                tmp = bm;
-                bm = backup;
-                backup = tmp;
-            }
+            case 3:
+			tmp = bm;
+			bm = backup;
+			backup = tmp;
 			break;
 		}
 	}
@@ -478,27 +480,25 @@ static inline void disposeFrameIfNeeded(argb *bm, GifInfo *info, unsigned int id
     }
 }
 
-static jboolean reset(GifInfo *info) {
+static void reset(GifInfo *info) {
 	if (fileRewindFun(info) != 0) {
-        return JNI_FALSE;
+        return;
     }
 	info->nextStartTime = 0;
 	info->currentLoop = -1;
 	info->currentIndex = -1;
-	return JNI_TRUE;
 }
 
 static void getBitmap(argb *bm, GifInfo *info) {
-	GifFileType *fGIF = info->gifFilePtr;
+	GifFileType* fGIF = info->gifFilePtr;
     
 	argb paintingColor;
 	int i = info->currentIndex;
 	if (DDGifSlurp(fGIF, info, true) == GIF_ERROR) {
-        return; //TODO add leniency support
+        return;
     }
-	SavedImage *cur = &fGIF->SavedImages[i];
-    
-	short transpIndex = info->infos[i].transpIndex;
+	SavedImage* cur = &fGIF->SavedImages[i];
+	int transpIndex = info->infos[i].transpIndex;
 	if (i == 0) {
 		if (transpIndex == -1) {
             getColorFromTable(fGIF->SBackGroundColor, &paintingColor, fGIF->SColorMap);
@@ -513,11 +513,14 @@ static void getBitmap(argb *bm, GifInfo *info) {
 }
 
 static void setMetaData(int width, int height, int ImageCount, int errorCode, JNIEnv *env, jintArray metaData) {
-	jint *ints = (*env)->GetIntArrayElements(env, metaData, 0);
-	*ints++ = width;
-	*ints++ = height;
-	*ints++ = ImageCount;
-	*ints = errorCode;
+	jint *const ints = (*env)->GetIntArrayElements(env, metaData, 0);
+	if (ints == NULL) {
+        return;
+    }
+	ints[0] = width;
+	ints[1] = height;
+	ints[2] = ImageCount;
+	ints[3] = errorCode;
 	(*env)->ReleaseIntArrayElements(env, metaData, ints, 0);
 }
 
@@ -554,9 +557,6 @@ static jint open(GifFileType *GifFileIn, int Error, int startPos, JNIEnv *env, j
 	info->speedFactor = 1.0;
 	info->rasterBits = calloc(GifFileIn->SHeight * GifFileIn->SWidth, sizeof(GifPixelType));
 	info->infos = malloc(sizeof(FrameInfo));
-	info->infos->duration = 0;
-	info->infos->disposalMethod = 0;
-	info->infos->transpIndex = -1;
 	info->backupPtr = NULL;
     
 	if (info->rasterBits == NULL || info->infos == NULL) {
@@ -564,15 +564,18 @@ static jint open(GifFileType *GifFileIn, int Error, int startPos, JNIEnv *env, j
 		setMetaData(width, height, 0, D_GIF_ERR_NOT_ENOUGH_MEM, env, metaData);
 		return (jint) NULL;
 	}
-    
-	if (DDGifSlurp(GifFileIn, info, false) == GIF_ERROR) {
-        Error = GifFileIn->Error;
-    }
+	info->infos->duration = 0;
+	info->infos->disposalMethod = 0;
+	info->infos->transpIndex = -1;
 	if (GifFileIn->SColorMap == NULL || GifFileIn->SColorMap->ColorCount != (1 << GifFileIn->SColorMap->BitsPerPixel)) {
 		GifFreeMapObject(GifFileIn->SColorMap);
 		GifFileIn->SColorMap = defaultCmap;
 	}
+
+	DDGifSlurp(GifFileIn, info, false);
+
 	int imgCount = GifFileIn->ImageCount;
+
 	if (imgCount < 1) {
         Error = D_GIF_ERR_NO_FRAMES;
     }
@@ -583,7 +586,6 @@ static jint open(GifFileType *GifFileIn, int Error, int startPos, JNIEnv *env, j
         cleanUp(info);
     }
 	setMetaData(width, height, imgCount, Error, env, metaData);
-    
 	return (jint)(Error == 0 ? info : NULL);
 }
 
@@ -600,12 +602,12 @@ JNIEXPORT jlong JNICALL Java_org_telegram_ui_Views_GifDrawable_getAllocationByte
 	return sum;
 }
 
-JNIEXPORT jboolean JNICALL Java_org_telegram_ui_Views_GifDrawable_reset(JNIEnv *env, jclass class, jobject gifInfo) {
+JNIEXPORT void JNICALL Java_org_telegram_ui_Views_GifDrawable_reset(JNIEnv *env, jclass class, jobject gifInfo) {
 	GifInfo *info = (GifInfo *)gifInfo;
 	if (info == NULL) {
-        return JNI_FALSE;
+        return;
     }
-	return reset(info);
+	reset(info);
 }
 
 JNIEXPORT void JNICALL Java_org_telegram_ui_Views_GifDrawable_setSpeedFactor(JNIEnv *env, jclass class, jobject gifInfo, jfloat factor) {
@@ -618,7 +620,7 @@ JNIEXPORT void JNICALL Java_org_telegram_ui_Views_GifDrawable_setSpeedFactor(JNI
 
 JNIEXPORT void JNICALL Java_org_telegram_ui_Views_GifDrawable_seekToTime(JNIEnv *env, jclass class, jobject gifInfo, jint desiredPos, jintArray jPixels) {
 	GifInfo *info = (GifInfo *)gifInfo;
-	if (info == NULL) {
+	if (info == NULL || jPixels == NULL) {
         return;
     }
 	int imgCount = info->gifFilePtr->ImageCount;
@@ -643,25 +645,29 @@ JNIEXPORT void JNICALL Java_org_telegram_ui_Views_GifDrawable_seekToTime(JNIEnv 
 	if (i == imgCount - 1 && lastFrameRemainder > info->infos[i].duration) {
         lastFrameRemainder = info->infos[i].duration;
     }
-	info->lastFrameReaminder = lastFrameRemainder;
 	if (i > info->currentIndex) {
-		jint *pixels = (*env)->GetIntArrayElements(env, jPixels, 0);
+		jint *const pixels = (*env)->GetIntArrayElements(env, jPixels, 0);
+		if (pixels == NULL) {
+            return;
+        }
 		while (info->currentIndex <= i) {
 			info->currentIndex++;
-			getBitmap((argb *)pixels, info);
+			getBitmap((argb*) pixels, info);
 		}
 		(*env)->ReleaseIntArrayElements(env, jPixels, pixels, 0);
 	}
+	info->lastFrameReaminder = lastFrameRemainder;
+    
 	if (info->speedFactor == 1.0) {
         info->nextStartTime = getRealTime() + lastFrameRemainder;
-    } else {
+	} else {
         info->nextStartTime = getRealTime() + lastFrameRemainder * info->speedFactor;
     }
 }
 
 JNIEXPORT void JNICALL Java_org_telegram_ui_Views_GifDrawable_seekToFrame(JNIEnv *env, jclass class, jobject gifInfo, jint desiredIdx, jintArray jPixels) {
 	GifInfo *info = (GifInfo *)gifInfo;
-	if (info == NULL) {
+	if (info == NULL|| jPixels==NULL) {
         return;
     }
 	if (desiredIdx <= info->currentIndex) {
@@ -673,15 +679,19 @@ JNIEXPORT void JNICALL Java_org_telegram_ui_Views_GifDrawable_seekToFrame(JNIEnv
         return;
     }
     
+	jint *const pixels = (*env)->GetIntArrayElements(env, jPixels, 0);
+	if (pixels == NULL) {
+        return;
+    }
+    
+	info->lastFrameReaminder = 0;
 	if (desiredIdx >= imgCount) {
         desiredIdx = imgCount - 1;
     }
     
-	info->lastFrameReaminder = 0;
-	jint *pixels = (*env)->GetIntArrayElements(env, jPixels, 0);
 	while (info->currentIndex < desiredIdx) {
 		info->currentIndex++;
-		getBitmap((argb *)pixels, info);
+		getBitmap((argb *) pixels, info);
 	}
 	(*env)->ReleaseIntArrayElements(env, jPixels, pixels, 0);
 	if (info->speedFactor == 1.0) {
@@ -689,16 +699,13 @@ JNIEXPORT void JNICALL Java_org_telegram_ui_Views_GifDrawable_seekToFrame(JNIEnv
     } else {
         info->nextStartTime = getRealTime() + info->infos[info->currentIndex].duration * info->speedFactor;
     }
-    
 }
 
 JNIEXPORT void JNICALL Java_org_telegram_ui_Views_GifDrawable_renderFrame(JNIEnv *env, jclass class, jintArray jPixels, jobject gifInfo, jintArray metaData) {
-    
 	GifInfo *info = (GifInfo *)gifInfo;
-	if (info == NULL) {
+	if (info == NULL || jPixels == NULL) {
         return;
     }
-    
 	bool needRedraw = false;
 	unsigned long rt = getRealTime();
     
@@ -708,24 +715,40 @@ JNIEXPORT void JNICALL Java_org_telegram_ui_Views_GifDrawable_renderFrame(JNIEnv
         }
 		needRedraw = true;
 	}
-	jint *rawMetaData = (*env)->GetIntArrayElements(env, metaData, 0);
+	jint *const rawMetaData = (*env)->GetIntArrayElements(env, metaData, 0);
+	if (rawMetaData == NULL) {
+        return;
+    }
     
-	if (needRedraw) {
-		jint *pixels = (*env)->GetIntArrayElements(env, jPixels, 0);
+ 	if (needRedraw) {
+		jint *const pixels = (*env)->GetIntArrayElements(env, jPixels, 0);
+		if (pixels == NULL) {
+		    (*env)->ReleaseIntArrayElements(env, metaData, rawMetaData, 0);
+		    return;
+		}
 		getBitmap((argb *)pixels, info);
 		rawMetaData[3] = info->gifFilePtr->Error;
         
 		(*env)->ReleaseIntArrayElements(env, jPixels, pixels, 0);
-        
-		int scaledDuration = info->infos[info->currentIndex].duration;
+		unsigned int scaledDuration = info->infos[info->currentIndex].duration;
 		if (info->speedFactor != 1.0) {
-            scaledDuration /= info->speedFactor;
-        }
+			scaledDuration /= info->speedFactor;
+			if (scaledDuration<=0) {
+                scaledDuration=1;
+            } else if (scaledDuration > INT_MAX) {
+                scaledDuration = INT_MAX;
+            }
+		}
 		info->nextStartTime = rt + scaledDuration;
 		rawMetaData[4] = scaledDuration;
 	} else {
-        rawMetaData[4] = (int) (rt - info->nextStartTime);
-    }
+	    long delay = info->nextStartTime-rt;
+	    if (delay < 0) {
+            rawMetaData[4] = -1;
+        } else {
+            rawMetaData[4] = (int) delay;
+        }
+	}
 	(*env)->ReleaseIntArrayElements(env, metaData, rawMetaData, 0);
 }
 
@@ -794,9 +817,6 @@ JNIEXPORT void JNICALL Java_org_telegram_ui_Views_GifDrawable_saveRemainder(JNIE
         return;
     }
 	info->lastFrameReaminder = getRealTime() - info->nextStartTime;
-    if (info->lastFrameReaminder > 0) {
-        info->lastFrameReaminder = 0;
-    }
 }
 
 JNIEXPORT void JNICALL Java_org_telegram_ui_Views_GifDrawable_restoreRemainder(JNIEnv *env, jclass class, jobject gifInfo) {
@@ -814,7 +834,7 @@ JNIEXPORT jint JNICALL Java_org_telegram_ui_Views_GifDrawable_openFile(JNIEnv *e
 		return (jint) NULL;
 	}
     
-	const char *fname = (*env)->GetStringUTFChars(env, jfname, 0);
+	const char *const fname = (*env)->GetStringUTFChars(env, jfname, 0);
 	FILE *file = fopen(fname, "rb");
 	(*env)->ReleaseStringUTFChars(env, jfname, fname);
 	if (file == NULL) {

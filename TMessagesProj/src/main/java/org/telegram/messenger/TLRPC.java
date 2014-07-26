@@ -8996,6 +8996,17 @@ public class TLRPC {
         }
     }
 
+    public static class TL_messageActionCreatedBroadcastList extends MessageAction {
+        public static int constructor = 0x55555557;
+
+        public void readParams(AbsSerializedData stream) {
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
     public static class TL_documentEncrypted extends TL_document {
         public static int constructor = 0x55555556;
 

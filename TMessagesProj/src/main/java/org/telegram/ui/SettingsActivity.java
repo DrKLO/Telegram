@@ -568,6 +568,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 } catch (Exception e) {
                                     FileLog.e("tmessages", e);
                                 }
+                                ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+                                users.add(res.user);
+                                MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
                                 MessagesController.getInstance().users.put(res.user.id, res.user);
                                 Bundle args = new Bundle();
                                 args.putInt("user_id", res.user.id);
