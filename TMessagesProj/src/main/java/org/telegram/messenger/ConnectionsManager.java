@@ -1752,7 +1752,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     private void registerForPush() {
-        if (registeringForPush) {
+        if (registeringForPush || !UserConfig.isClientActivated()) {
             return;
         }
         UserConfig.registeredForInternalPush = false;
@@ -1805,6 +1805,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                         UserConfig.saveConfig(false);
                         saveSession();
                         FileLog.e("tmessages", "registered for internal push");
+                    } else {
+                        UserConfig.registeredForInternalPush = false;
                     }
                     registeringForPush = false;
                 }
