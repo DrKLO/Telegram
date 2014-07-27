@@ -447,23 +447,23 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     public void didSelectDialog(MessagesActivity messageFragment, long dialog_id, boolean param) {
         if (dialog_id != 0) {
             int lower_part = (int)dialog_id;
+            int high_id = (int)(dialog_id >> 32);
 
             Bundle args = new Bundle();
             args.putBoolean("scrollToTopOnResume", true);
             NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
             if (lower_part != 0) {
-                if (lower_part > 0) {
-                    args.putInt("user_id", lower_part);
-                } else if (lower_part < 0) {
-                    args.putInt("chat_id", -lower_part);
+                if (high_id == 1) {
+                    args.putInt("chat_id", lower_part);
+                } else {
+                    if (lower_part > 0) {
+                        args.putInt("user_id", lower_part);
+                    } else if (lower_part < 0) {
+                        args.putInt("chat_id", -lower_part);
+                    }
                 }
             } else {
-                int high_id = (int)(dialog_id >> 32);
-                if (high_id > 0) {
-                    args.putInt("enc_id", high_id);
-                } else {
-                    args.putInt("chat_id", high_id);
-                }
+                args.putInt("enc_id", high_id);
             }
             ChatActivity fragment = new ChatActivity(args);
             presentFragment(fragment, true);

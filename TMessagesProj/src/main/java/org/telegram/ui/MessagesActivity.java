@@ -288,19 +288,19 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     } else {
                         Bundle args = new Bundle();
                         int lower_part = (int)dialog_id;
+                        int high_id = (int)(dialog_id >> 32);
                         if (lower_part != 0) {
-                            if (lower_part > 0) {
-                                args.putInt("user_id", lower_part);
-                            } else if (lower_part < 0) {
-                                args.putInt("chat_id", -lower_part);
+                            if (high_id == 1) {
+                                args.putInt("chat_id", lower_part);
+                            } else {
+                                if (lower_part > 0) {
+                                    args.putInt("user_id", lower_part);
+                                } else if (lower_part < 0) {
+                                    args.putInt("chat_id", -lower_part);
+                                }
                             }
                         } else {
-                            int high_id = (int)(dialog_id >> 32);
-                            if (high_id > 0) {
-                                args.putInt("enc_id", high_id);
-                            } else {
-                                args.putInt("chat_id", high_id);
-                            }
+                            args.putInt("enc_id", high_id);
                         }
                         presentFragment(new ChatActivity(args));
                     }
@@ -493,36 +493,36 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
             int lower_part = (int)dialog_id;
+            int high_id = (int)(dialog_id >> 32);
             if (lower_part != 0) {
-                if (lower_part > 0) {
-                    TLRPC.User user = MessagesController.getInstance().users.get(lower_part);
-                    if (user == null) {
-                        return;
-                    }
-                    builder.setMessage(LocaleController.formatStringSimple(selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
-                } else if (lower_part < 0) {
-                    TLRPC.Chat chat = MessagesController.getInstance().chats.get(-lower_part);
+                if (high_id == 1) {
+                    TLRPC.Chat chat = MessagesController.getInstance().chats.get(lower_part);
                     if (chat == null) {
                         return;
                     }
                     builder.setMessage(LocaleController.formatStringSimple(selectAlertString, chat.title));
+                } else {
+                    if (lower_part > 0) {
+                        TLRPC.User user = MessagesController.getInstance().users.get(lower_part);
+                        if (user == null) {
+                            return;
+                        }
+                        builder.setMessage(LocaleController.formatStringSimple(selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
+                    } else if (lower_part < 0) {
+                        TLRPC.Chat chat = MessagesController.getInstance().chats.get(-lower_part);
+                        if (chat == null) {
+                            return;
+                        }
+                        builder.setMessage(LocaleController.formatStringSimple(selectAlertString, chat.title));
+                    }
                 }
             } else {
-                int high_id = (int)(dialog_id >> 32);
-                if (high_id > 0) {
-                    TLRPC.EncryptedChat chat = MessagesController.getInstance().encryptedChats.get(high_id);
-                    TLRPC.User user = MessagesController.getInstance().users.get(chat.user_id);
-                    if (user == null) {
-                        return;
-                    }
-                    builder.setMessage(LocaleController.formatStringSimple(selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
-                } else {
-                    TLRPC.Chat chat = MessagesController.getInstance().chats.get(high_id);
-                    if (chat == null) {
-                        return;
-                    }
-                    builder.setMessage(LocaleController.formatStringSimple(selectAlertString, chat.title));
+                TLRPC.EncryptedChat chat = MessagesController.getInstance().encryptedChats.get(high_id);
+                TLRPC.User user = MessagesController.getInstance().users.get(chat.user_id);
+                if (user == null) {
+                    return;
                 }
+                builder.setMessage(LocaleController.formatStringSimple(selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
             }
             CheckBox checkBox = null;
             /*if (delegate instanceof ChatActivity) {

@@ -225,21 +225,21 @@ public class DialogCell extends BaseCell {
         encryptedChat = null;
 
         int lower_id = (int)currentDialog.id;
+        int high_id = (int)(currentDialog.id >> 32);
         if (lower_id != 0) {
-            if (lower_id < 0) {
-                chat = MessagesController.getInstance().chats.get(-lower_id);
+            if (high_id == 1) {
+                chat = MessagesController.getInstance().chats.get(lower_id);
             } else {
-                user = MessagesController.getInstance().users.get(lower_id);
+                if (lower_id < 0) {
+                    chat = MessagesController.getInstance().chats.get(-lower_id);
+                } else {
+                    user = MessagesController.getInstance().users.get(lower_id);
+                }
             }
         } else {
-            int high_id = (int)(currentDialog.id >> 32);
-            if (high_id > 0) {
-                encryptedChat = MessagesController.getInstance().encryptedChats.get(high_id);
-                if (encryptedChat != null) {
-                    user = MessagesController.getInstance().users.get(encryptedChat.user_id);
-                }
-            } else {
-                chat = MessagesController.getInstance().chats.get(high_id);
+            encryptedChat = MessagesController.getInstance().encryptedChats.get(high_id);
+            if (encryptedChat != null) {
+                user = MessagesController.getInstance().users.get(encryptedChat.user_id);
             }
         }
 
