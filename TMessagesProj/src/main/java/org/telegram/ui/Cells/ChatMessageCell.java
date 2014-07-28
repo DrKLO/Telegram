@@ -18,7 +18,11 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import com.aniways.AniwaysIconInfoSpan;
+import com.aniways.AniwaysLoadingImageSpan;
+import com.aniways.AniwaysLoadingImageSpansContainer;
 import com.aniways.IAniwaysTextContainer;
+import com.aniways.Log;
+import com.aniways.volley.toolbox.IResponseListener;
 
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
@@ -26,6 +30,7 @@ import org.telegram.objects.MessageObject;
 
 public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContainer {
 
+    private static final String TAG = "ChatMessageCell";
     private int textX, textY;
     private int totalHeight = 0;
     private ClickableSpan pressedLink;
@@ -35,15 +40,28 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     private int firstVisibleBlockNum = 0;
     private int totalVisibleBlocksCount = 0;
     private long clickDownEventTIme = -1;
+    private AniwaysLoadingImageSpansContainer mLoadingImageSpansContainer;
 
     public ChatMessageCell(Context context, boolean isChat) {
         super(context, isChat);
         drawForwardedName = true;
+        mLoadingImageSpansContainer = new AniwaysLoadingImageSpansContainer(this, new IResponseListener() {
+            @Override
+            public void onError() {
+                Log.e(true, TAG, "Error loading image");
+            }
+
+            @Override
+            public void onSuccess() {
+                currentMessageObject.generateLayout();
+                setMessageObject(currentMessageObject, true);
+            }
+        });
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (currentMessageObject != null && currentMessageObject.textLayoutBlocks != null && !currentMessageObject.textLayoutBlocks.isEmpty() && currentMessageObject.getAniwaysDecodedMessageTextBigIcons() instanceof Spannable && !isPressed) {
+        if (currentMessageObject != null && currentMessageObject.textLayoutBlocks != null && !currentMessageObject.textLayoutBlocks.isEmpty() && currentMessageObject.getAniwaysDecodedMessageTextBigIcons(this) instanceof Spannable && !isPressed) {
             if (event.getAction() == MotionEvent.ACTION_DOWN || (pressedLink != null || pressedIcon != null) && event.getAction() == MotionEvent.ACTION_UP) {
                 int x = (int)event.getX();
                 int y = (int)event.getY();
@@ -59,7 +77,7 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
 
                         final float left = block.textLayout.getLineLeft(line);
                         if (left <= x && left + block.textLayout.getLineWidth(line) >= x) {
-                            Spannable buffer = (Spannable)currentMessageObject.getAniwaysDecodedMessageTextBigIcons();
+                            Spannable buffer = (Spannable)currentMessageObject.getAniwaysDecodedMessageTextBigIcons(this);
                             ClickableSpan[] link = buffer.getSpans(off, off, ClickableSpan.class);
                             AniwaysIconInfoSpan[] iconInfos = buffer.getSpans(off, off, AniwaysIconInfoSpan.class);
 
@@ -157,8 +175,13 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
 
     @Override
     public void setMessageObject(MessageObject messageObject) {
-        if (currentMessageObject != messageObject || isUserDataChanged()) {
-            if (currentMessageObject != messageObject) {
+        setMessageObject(messageObject, false);
+    }
+
+    private void setMessageObject(MessageObject messageObject, boolean force) {
+        Spannable oldText = this.getText();
+        if (currentMessageObject != messageObject || isUserDataChanged() || force) {
+            if (currentMessageObject != messageObject || force) {
                 firstVisibleBlockNum = 0;
                 lastVisibleBlockNum = 0;
             }
@@ -199,6 +222,7 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
                 }
             }
         }
+        this.mLoadingImageSpansContainer.onSetText(this.getText(), oldText);
     }
 
     @Override
@@ -209,6 +233,8 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
+
+        this.mLoadingImageSpansContainer.onLayoutCalled();
 
         if (currentMessageObject.messageOwner.out) {
             textX = layoutWidth - backgroundWidth + Utilities.dp(10);
@@ -252,7 +278,10 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
 
     @Override
     public Spannable getText() {
-        return (Spannable) this.currentMessageObject.getAniwaysDecodedMessageTextBigIcons();
+        if(currentMessageObject == null){
+            return null;
+        }
+        return (Spannable) this.currentMessageObject.getAniwaysDecodedMessageTextBigIcons(this);
     }
 
     /** Return the point (in pixels) of the received char position as it is displayed
@@ -334,4 +363,22 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     public View getView() {
         return this;
     }
+
+    @Override
+    public void addLoadingImageSpan(AniwaysLoadingImageSpan span) {
+        mLoadingImageSpansContainer.addLoadingImageSpan(span);
+    }
+
+    @Override
+    public void removeLoadingImageSpan(AniwaysLoadingImageSpan span) {
+        mLoadingImageSpansContainer.removeLoadingImagespan(span);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        this.mLoadingImageSpansContainer.onDetachFromWindowCalled();
+
+        super.onDetachedFromWindow();
+    }
+
 }

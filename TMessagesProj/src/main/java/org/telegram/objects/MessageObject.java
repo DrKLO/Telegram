@@ -25,6 +25,10 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.MessagesController;
+
+import com.aniways.AniwaysNotInitializedException;
+import com.aniways.IAniwaysTextContainer;
+import com.aniways.Log;
 import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -35,8 +39,7 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 
 public class MessageObject {
-    private Editable aniwaysDecodedMessageTextBigIcons;
-    private Editable aniwaysDecodedMessageTextSmallIcons;
+    private static final String TAG = "MessageObject";
     public TLRPC.Message messageOwner;
     public CharSequence messageText;
     public int type;
@@ -53,6 +56,7 @@ public class MessageObject {
     public int textWidth;
     public int textHeight;
     public int blockHeight = Integer.MAX_VALUE;
+    private Editable mDecodedMessageCache;
 
     public static class TextLayoutBlock {
         public StaticLayout textLayout;
@@ -335,24 +339,17 @@ public class MessageObject {
         generateLayout();
     }
 
-    public CharSequence getAniwaysDecodedMessageTextSmallIcons(){
-
-        if(this.aniwaysDecodedMessageTextSmallIcons == null){
-            aniwaysDecodedMessageTextSmallIcons = Aniways.decodeMessage(this.messageText, new AniwaysIconInfoDisplayer(), true);
+    public CharSequence getAniwaysDecodedMessageTextBigIcons(IAniwaysTextContainer textContainer){
+        if(mDecodedMessageCache == null){
+            try {
+                mDecodedMessageCache = Aniways.decodeMessage(this.messageText, new AniwaysIconInfoDisplayer(), textContainer, false);
+            }
+            catch(AniwaysNotInitializedException ex){
+                Log.e(true, TAG, "Caught aniways not initialized exception", ex);
+                return this.messageText;
+            }
         }
-
-        return this.aniwaysDecodedMessageTextSmallIcons;
-
-    }
-
-    public CharSequence getAniwaysDecodedMessageTextBigIcons(){
-
-        if(this.aniwaysDecodedMessageTextBigIcons == null){
-            aniwaysDecodedMessageTextBigIcons = Aniways.decodeMessage(this.messageText, new AniwaysIconInfoDisplayer(), false);
-        }
-
-        return this.aniwaysDecodedMessageTextBigIcons;
-
+        return mDecodedMessageCache;
     }
 
     public String getFileName() {
@@ -411,10 +408,10 @@ public class MessageObject {
         return "";
     }
 
-    private void generateLayout() {
+    public void generateLayout() {
 
         // This is used only by the views that display the normal sized icons, so it is OK to assume the large icons here..
-        CharSequence messageTextDecoded = getAniwaysDecodedMessageTextBigIcons();
+        CharSequence messageTextDecoded = getAniwaysDecodedMessageTextBigIcons(null);
 
         if (type != 0 && type != 1 && type != 8 && type != 9 || messageOwner.to_id == null || messageTextDecoded == null || messageTextDecoded.length() == 0) {
             return;

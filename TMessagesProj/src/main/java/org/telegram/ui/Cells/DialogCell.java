@@ -10,9 +10,11 @@ package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.text.Html;
 import android.text.Layout;
+import android.text.Spannable;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -26,7 +28,14 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.MessagesController;
+
+import com.aniways.AniwaysLoadingImageSpan;
+import com.aniways.AniwaysLoadingImageSpansContainer;
+import com.aniways.IAniwaysTextContainer;
+import com.aniways.Log;
 import com.aniways.anigram.messenger.R;
+import com.aniways.volley.toolbox.IResponseListener;
+
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
@@ -34,7 +43,8 @@ import org.telegram.ui.Views.ImageReceiver;
 
 import java.lang.ref.WeakReference;
 
-public class DialogCell extends BaseCell {
+public class DialogCell extends BaseCell implements IAniwaysTextContainer {
+    private static final String TAG = "DialogCell";
     private static TextPaint namePaint;
     private static TextPaint nameEncryptedPaint;
     private static TextPaint nameUnknownPaint;
@@ -59,6 +69,7 @@ public class DialogCell extends BaseCell {
     private TLRPC.Chat chat = null;
     private TLRPC.EncryptedChat encryptedChat = null;
     private CharSequence lastPrintString = null;
+    private AniwaysLoadingImageSpansContainer mLoadingImageSpansContainer;
 
     private void init() {
         if (namePaint == null) {
@@ -147,11 +158,25 @@ public class DialogCell extends BaseCell {
     public DialogCell(Context context) {
         super(context);
         init();
+        mLoadingImageSpansContainer = new AniwaysLoadingImageSpansContainer(this, new IResponseListener() {
+            @Override
+            public void onError() {
+                Log.e(true, TAG, "Error loading image");
+            }
+
+            @Override
+            public void onSuccess() {
+                Log.i("AniwaysDialogCell", "Successfully loaded image");
+                setDialog(currentDialog);
+            }
+        });
     }
 
     public void setDialog(TLRPC.TL_dialog dialog) {
+        Spannable oldText = this.getText();
         currentDialog = dialog;
         update(0);
+        //this.mLoadingImageSpansContainer.onSetText(this.getText(), oldText);
     }
 
     @Override
@@ -165,6 +190,9 @@ public class DialogCell extends BaseCell {
             super.onLayout(changed, left, top, right, bottom);
             return;
         }
+
+        this.mLoadingImageSpansContainer.onLayoutCalled();
+
         if (changed) {
             buildLayout();
         }
@@ -317,6 +345,43 @@ public class DialogCell extends BaseCell {
         avatarImage.draw(canvas, cellLayout.avatarLeft, cellLayout.avatarTop, Utilities.dp(54), Utilities.dp(54));
     }
 
+    @Override
+    public Spannable getText() {
+        return this.cellLayout.getText();
+    }
+
+    /** Return the point (in pixels) of the received char position as it is displayed
+     * relative to the upper left corner of the widget, or lower left if fromTop == false.
+     * It accounts for scroll position and paddings
+     * !! Be careful, it can return null!!
+     **/
+    @Override
+    public Point getPointOfPositionInText(int position, boolean fromTop) {
+        return null;
+    }
+
+    @Override
+    public View getView() {
+        return this;
+    }
+
+    @Override
+    public void addLoadingImageSpan(AniwaysLoadingImageSpan span) {
+        mLoadingImageSpansContainer.addLoadingImageSpan(span);
+    }
+
+    @Override
+    public void removeLoadingImageSpan(AniwaysLoadingImageSpan span) {
+        mLoadingImageSpansContainer.removeLoadingImagespan(span);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        this.mLoadingImageSpansContainer.onDetachFromWindowCalled();
+
+        super.onDetachedFromWindow();
+    }
+
     private class DialogCellLayout {
         private int nameLeft;
         private int nameTop = Utilities.dp(10);
@@ -357,7 +422,15 @@ public class DialogCell extends BaseCell {
         private int avatarTop = Utilities.dp(8);
         private int avatarLeft;
 
+        Spannable getText(){
+            if(messageLayout == null){
+                return null;
+            }
+            return (Spannable) messageLayout.getText();
+        }
+
         public void build(int width, int height) {
+
             MessageObject message = MessagesController.getInstance().dialogMessage.get(currentDialog.top_message);
             String nameString = "";
             String timeString = "";
@@ -659,9 +732,12 @@ public class DialogCell extends BaseCell {
                 messageString = mess;
             }
 
-            messageString = Aniways.decodeMessage(messageString, new AniwaysIconInfoDisplayer(), true);
+            // TODO: need to put a textcontainer there, make this a text container
+            messageString = Aniways.decodeMessage(messageString, new AniwaysIconInfoDisplayer(), null, true);
             CharSequence messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - Utilities.dp(12), TextUtils.TruncateAt.END);
+            Spannable oldText = this.getText();
             messageLayout = new StaticLayout(messageStringFinal, currentMessagePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            mLoadingImageSpansContainer.onSetText(this.getText(), oldText);
 
             double widthpx = 0;
             float left = 0;
