@@ -719,6 +719,11 @@ public class MessagesStorage {
                                 }
                             }
                         } else {
+                            for (TLRPC.TL_chatParticipant part : info.participants) {
+                                if (part.user_id == user_id) {
+                                    return;
+                                }
+                            }
                             TLRPC.TL_chatParticipant participant = new TLRPC.TL_chatParticipant();
                             participant.user_id = user_id;
                             participant.inviter_id = invited_id;
@@ -769,12 +774,22 @@ public class MessagesStorage {
                     cursor.dispose();
 
                     if (info != null) {
+                        boolean modified = false;
+                        ArrayList<Integer> usersArr = new ArrayList<Integer>();
                         String usersToLoad = "";
-                        for (TLRPC.TL_chatParticipant c : info.participants) {
-                            if (usersToLoad.length() != 0) {
-                                usersToLoad += ",";
+                        for (int a = 0; a < info.participants.size(); a++) {
+                            TLRPC.TL_chatParticipant c = info.participants.get(a);
+                            if (usersArr.contains(c.user_id)) {
+                                info.participants.remove(a);
+                                modified = true;
+                                a--;
+                            } else {
+                                if (usersToLoad.length() != 0) {
+                                    usersToLoad += ",";
+                                }
+                                usersArr.add(c.user_id);
+                                usersToLoad += c.user_id;
                             }
-                            usersToLoad += c.user_id;
                         }
                         if (usersToLoad.length() != 0) {
                             cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, status FROM users WHERE uid IN(%s)", usersToLoad));
@@ -790,6 +805,9 @@ public class MessagesStorage {
                                 buffersStorage.reuseFreeBuffer(data);
                             }
                             cursor.dispose();
+                        }
+                        if (modified) {
+                            updateChatInfo(chat_id, info, false);
                         }
                     }
                     MessagesController.getInstance().processChatInfo(chat_id, info, loadedUsers, true);
@@ -920,7 +938,7 @@ public class MessagesStorage {
                         cursor.dispose();
                     }
 
-                    cursor = database.queryFinalized("SELECT c.data, c.name FROM chats as c INNER JOIN dialogs as d ON c.uid = -d.did");
+                    cursor = database.queryFinalized("SELECT data, name FROM chats");
                     while (cursor.next()) {
                         String name = cursor.stringValue(1);
                         String[] args = name.split(" ");
@@ -938,6 +956,7 @@ public class MessagesStorage {
                         }
                     }
                     cursor.dispose();
+
                     NotificationCenter.getInstance().postNotificationName(MessagesController.reloadSearchResults, token, resultArray, resultArrayNames, encUsers);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);

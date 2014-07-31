@@ -58,12 +58,12 @@
     <string name="SelectChat">Selecione uma Conversa</string>
 
     <!--broadcasts-->
-    <string name="BroadcastList">Broadcast List</string>
-    <string name="NewBroadcastList">New Broadcast List</string>
-    <string name="EnterListName">Enter list name</string>
-    <string name="YouCreatedBroadcastList">You created a broadcast list</string>
-    <string name="AddRecipient">Add Recipient</string>
-    <string name="KickFromBroadcast">Remove from broadcast list</string>
+    <string name="BroadcastList">Lista de Broadcast</string>
+    <string name="NewBroadcastList">Nova lista de Broadcast</string>
+    <string name="EnterListName">Digite o nome da lista</string>
+    <string name="YouCreatedBroadcastList">Você criou uma lista de broadcast</string>
+    <string name="AddRecipient">Adicionar Recipiente</string>
+    <string name="KickFromBroadcast">Remover da lista de broadcast</string>
 
     <!--documents view-->
     <string name="SelectFile">Selecione um Arquivo</string>
@@ -158,7 +158,7 @@
     <string name="NotificationGroupKickYou">%1$s removeu você do grupo %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s saiu do grupo %2$s</string>
     <string name="NotificationContactJoined">%1$s entrou para o Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nNós detectamos um acesso à sua conta de um novo dispositivo em %2$s\n\nDispositivo: %3$s\nLocalização: %4$s\n\nCaso não tenha sido você, vá para Configurações – Encerrar todas as sessões.\n\nObrigado,\nA equipe do Telegram</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nNós detectamos um login na sua conta de um novo dispositivo %2$s\n\nDispositivo: %3$s\nLocalização: %4$s\n\nSe não foi você, você pode ir para Configurações - Terminar todas as sessões.\n\nAtenciosamente,\nTime do Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s atualizou a foto do perfil</string>
 
     <!--contacts view-->
@@ -271,19 +271,19 @@
     <string name="Enabled">Ativado</string>
     <string name="Disabled">Desativado</string>
     <string name="NotificationsService">Serviço de Notificações</string>
-    <string name="NotificationsServiceDisableInfo">Se os serviços do Google Play forem suficientes para você receber as notificações, você pode desabilitar o \"Serviço de Notificações\". Porém, nós recomendamos deixá-lo ativo para que o aplicativo continue rodando em segundo plano e recebendo notificações instantâneas.</string>
+    <string name="NotificationsServiceDisableInfo">Se o serviço de notificação do  Google Play é o suficiente para você, você pode desativar as Notificações de Serviço. No entanto, recomendamos que você deixá-lo habilitado para manter o aplicativo em execução em segundo plano e receber notificações instantâneas.</string>
     <string name="SortBy">Ordenar Por</string>
     <string name="ImportContacts">Importar Contatos</string>
     <string name="WiFiOnly">Apenas por WiFi</string>
     <string name="SortFirstName">Primeiro nome</string>
     <string name="SortLastName">Sobrenome</string>
     <string name="LedColor">Cor do LED</string>
-    <string name="PopupNotification">Notificação Popup</string>
+    <string name="PopupNotification">Notificações Popup</string>
     <string name="NoPopup">Sem popup</string>
     <string name="OnlyWhenScreenOn">Somente com a tela ligada</string>
     <string name="OnlyWhenScreenOff">Somente com a tela desligada</string>
     <string name="AlwaysShowPopup">Sempre mostrar popup</string>
-    <string name="BadgeNumber">Badge Number</string>
+    <string name="BadgeNumber">Contador de medalhas</string>
 
     <!--media view-->
     <string name="NoMedia">Ainda não há mídia compartilhada</string>
@@ -308,9 +308,9 @@
     <string name="NoPhotos">Ainda não há fotos</string>
 
     <!--edit video view-->
-    <string name="EditVideo">Edit Video</string>
-    <string name="OriginalVideo">Original Video</string>
-    <string name="EditedVideo">Edited Video</string>
+    <string name="EditVideo">Editar Vídeo</string>
+    <string name="OriginalVideo">Vídeo Original</string>
+    <string name="EditedVideo">Vídeo Editado</string>
 
     <!--button titles-->
     <string name="Next">Próximo</string>
@@ -370,8 +370,8 @@
     <string name="InvalidLastName">Sobrenome inválido</string>
     <string name="Loading">Carregando...</string>
     <string name="NoPlayerInstalled">Você não possui um reprodutor de vídeo, instale um para continuar</string>
-    <string name="NoMailInstalled">Por favor, envie um email para sms@telegram.org e explique seu problema.</string>
-    <string name="NoHandleAppInstalled">Você não possui algum aplicativo que pode lidar com o tipo MIME \'%1$s\'. Por favor, instale um para continuar</string>
+    <string name="NoMailInstalled">Por favor, envie um email para sms@telegram.org e conte-nos sobre seu problema.</string>
+    <string name="NoHandleAppInstalled">Você não possui uma aplicação que suporte o tipo de arquivo \'%1$s\', por favor instale uma e continue</string>
     <string name="InviteUser">Este usuário ainda não possui Telegram, deseja enviar um convite?</string>
     <string name="AreYouSure">Você tem certeza?</string>
     <string name="AddContactQ">Adicionar contato?</string>
@@ -379,15 +379,15 @@
     <string name="ForwardMessagesTo">Encaminhar mensagem para %1$s?</string>
     <string name="DeleteChatQuestion">Apagar esta conversa?</string>
     <string name="SendMessagesTo">Enviar mensagens para %1$s?</string>
-    <string name="AreYouSureLogout">Você tem certeza que deseja sair dessa sessão?</string>
+    <string name="AreYouSureLogout">Você tem certeza que deseja sair?</string>
     <string name="AreYouSureSessions">Você tem certeza que deseja terminar todas as outras sessões?</string>
     <string name="AreYouSureDeleteAndExit">Você tem certeza que deseja deletar e sair do grupo?</string>
     <string name="AreYouSureDeleteThisChat">Você tem certeza que deseja deletar esta conversa?</string>
-    <string name="AreYouSureShareMyContactInfo">Você tem certeza que deseja compartilhar as informações do seu contato?</string>
+    <string name="AreYouSureShareMyContactInfo">Você tem certesa que deseja compartilhar suas informações de contato?</string>
     <string name="AreYouSureBlockContact">Você tem certeza que deseja bloquear este contato?</string>
     <string name="AreYouSureUnblockContact">Você tem certeza que deseja desbloquear este contato?</string>
     <string name="AreYouSureDeleteContact">Você tem certeza que deseja deletar este contato?</string>
-    <string name="AreYouSureSecretChat">Você tem certeza que deseja iniciar uma conversa secreta?</string>
+    <string name="AreYouSureSecretChat">Você tem certeza que deseja começar uma conversa secreta?</string>
     <string name="ForwardFromMyName">encaminhar pelo meu nome</string>
 
     <!--Intro view-->
@@ -404,7 +404,7 @@
     <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> mantém suas mensagens seguras contra ataques de hackers</string>
     <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> não tem limites para o tamanho de suas mídias e conversas</string>
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> permite que você acesse suas mensagens a partir de vários dispositivos</string>
-    <string name="Page7Message">As mensagens do <![CDATA[<b>Telegram</b>]]> são fortemente criptografadas e podem se autodestruir</string>
+    <string name="Page7Message">As mensagens do <![CDATA[<b>Telegram</b>]]> são fortemente criptografadas<![CDATA[<br/>]]>e podem se autodestruir</string>
     <string name="StartMessaging">Comece a conversar</string>
 
     <!--plurals-->

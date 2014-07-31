@@ -58,12 +58,12 @@
     <string name="SelectChat">Kies een gesprek</string>
 
     <!--broadcasts-->
-    <string name="BroadcastList">Broadcast List</string>
-    <string name="NewBroadcastList">New Broadcast List</string>
-    <string name="EnterListName">Enter list name</string>
-    <string name="YouCreatedBroadcastList">You created a broadcast list</string>
-    <string name="AddRecipient">Add Recipient</string>
-    <string name="KickFromBroadcast">Remove from broadcast list</string>
+    <string name="BroadcastList">Verzendlijst</string>
+    <string name="NewBroadcastList">Nieuwe verzendlijst</string>
+    <string name="EnterListName">Naam van lijst</string>
+    <string name="YouCreatedBroadcastList">Je hebt een verzendlijst gemaakt</string>
+    <string name="AddRecipient">Ontvanger toevoegen</string>
+    <string name="KickFromBroadcast">Verwijder van verzendlijst</string>
 
     <!--documents view-->
     <string name="SelectFile">Kies een bestand</string>
@@ -118,7 +118,7 @@
     <string name="SlideToCancel">SLEEP OM TE ANNULEREN</string>
     <string name="SaveToDownloads">Opslaan in Downloads</string>
     <string name="ApplyLocalizationFile">Vertaling toepassen</string>
-    <string name="UnsupportedAttachment">Bijlageformaat niet ondersteund</string>
+    <string name="UnsupportedAttachment">Bestandstype niet ondersteund</string>
 
     <!--notification-->
     <string name="EncryptedChatRequested">Privégesprek aangevraagd</string>
@@ -158,7 +158,7 @@
     <string name="NotificationGroupKickYou">%1$s heeft je verwijderd uit de groep %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s heeft de groep %2$s verlaten</string>
     <string name="NotificationContactJoined">%1$s heeft nu Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nEr is op je account ingelogd vanaf een nieuw apparaat op %2$s\n\nApparaat: %3$s\nLocatie: %4$s\n\nAls jij dit niet was, kun je alle sessies beëindigen via Instellingen – Alle andere sessies beëindigen.\n\nHet Telegram-team</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nEr is op je account ingelogd vanaf een nieuw apparaat op %2$s\n\nApparaat: %3$s\nLocatie: %4$s\n\nAls jij dit niet was, kun je alle sessies beëindigen via Instellingen – Beëindig alle andere sessies.\n\nBedankt,\nHet Telegram-team</string>
     <string name="NotificationContactNewPhoto">%1$s heeft zijn/haar profielfoto gewijzigd</string>
 
     <!--contacts view-->
@@ -253,7 +253,7 @@
     <string name="ChatBackground">Achtergrond gesprekken</string>
     <string name="MessagesSettings">BERICHTEN</string>
     <string name="SendByEnter">Verzenden met Enter</string>
-    <string name="TerminateAllSessions">Alle andere sessies beëindigen</string>
+    <string name="TerminateAllSessions">Beëindig alle andere sessies</string>
     <string name="AutomaticPhotoDownload">FOTO\'S AUTOMATISCH DOWNLOADEN</string>
     <string name="AutomaticAudioDownload">GELUIDSBESTANDEN AUTOMATISCH DOWNLOADEN</string>
     <string name="AutomaticPhotoDownloadGroups">Groepen</string>
@@ -271,19 +271,19 @@
     <string name="Enabled">Inschakelen</string>
     <string name="Disabled">Uitschakelen</string>
     <string name="NotificationsService">Meldingenservice</string>
-    <string name="NotificationsServiceDisableInfo">Als google play services genoeg is om notificaties te ontvangen, kan de meldingenservice worden uitgeschakeld. Echter, we adviseren de service ingeschakeld te laten zodat de app in de achtergrond blijft draaien en meldingen direct worden ontvangen.</string>
+    <string name="NotificationsServiceDisableInfo">Als Google Play Services genoeg voor je is om meldingen te ontvangen kun je de Meldingenservice uitschakelen. We raden echter aan dit ingeschakeld te laten om de app in de achtergrond te laten draaien en directe meldingen te ontvangen.</string>
     <string name="SortBy">Sorteren op</string>
     <string name="ImportContacts">Importeer contacten</string>
     <string name="WiFiOnly">Alleen via WiFi</string>
     <string name="SortFirstName">Voornaam</string>
     <string name="SortLastName">Achternaam</string>
     <string name="LedColor">LED kleur</string>
-    <string name="PopupNotification">Popup melding</string>
+    <string name="PopupNotification">Popup meldingen</string>
     <string name="NoPopup">Geen popup</string>
     <string name="OnlyWhenScreenOn">Alleen wanneer scherm \"aan\" staat</string>
     <string name="OnlyWhenScreenOff">Alleen wanneer scherm \"uit\" staat</string>
     <string name="AlwaysShowPopup">Altijd popup tonen</string>
-    <string name="BadgeNumber">Badge Number</string>
+    <string name="BadgeNumber">Badgenummer</string>
 
     <!--media view-->
     <string name="NoMedia">Nog geen media gedeeld</string>
@@ -308,9 +308,9 @@
     <string name="NoPhotos">Nog geen foto\'s</string>
 
     <!--edit video view-->
-    <string name="EditVideo">Edit Video</string>
-    <string name="OriginalVideo">Original Video</string>
-    <string name="EditedVideo">Edited Video</string>
+    <string name="EditVideo">Video bewerken</string>
+    <string name="OriginalVideo">Originele video</string>
+    <string name="EditedVideo">Bewerkte video</string>
 
     <!--button titles-->
     <string name="Next">Volgende</string>
@@ -370,8 +370,8 @@
     <string name="InvalidLastName">Ongeldige achternaam</string>
     <string name="Loading">Bezig met laden…</string>
     <string name="NoPlayerInstalled">Je hebt geen mediaspeler. Installeer een mediaspeler om door te gaan.</string>
-    <string name="NoMailInstalled">Stuur aub een emailbericht naar sms@telegram.org en beschrijf uw probleem</string>
-    <string name="NoHandleAppInstalled">Je hebt geen applicaties die het MIME-type \'%1$s\' ondersteunen. Installeer een geschikte applicatie om door te gaan.</string>
+    <string name="NoMailInstalled">Mail ons op sms@telegram.org en vertel ons over je probleem.</string>
+    <string name="NoHandleAppInstalled">Je hebt geen apps die bestandstype \'%1$s\' kunnen verwerken, gelieve een compitabele app te installeren</string>
     <string name="InviteUser">Deze gebruiker heeft nog geen Telegram. Wil je een uitnodiging sturen?</string>
     <string name="AreYouSure">Weet je het zeker?</string>
     <string name="AddContactQ">Contact toevoegen?</string>
@@ -379,15 +379,15 @@
     <string name="ForwardMessagesTo">Berichten doorsturen naar %1$s?</string>
     <string name="DeleteChatQuestion">Dit gesprek verwijderen?</string>
     <string name="SendMessagesTo">Berichten naar %1$s verzenden?</string>
-    <string name="AreYouSureLogout">Weet u zeker dat u wil uitloggen?</string>
-    <string name="AreYouSureSessions">Alle andere apparaten afmelden?</string>
-    <string name="AreYouSureDeleteAndExit">Deze groep verlaten en groep verwijderen?</string>
-    <string name="AreYouSureDeleteThisChat">Dit gesprek verwijderen?</string>
-    <string name="AreYouSureShareMyContactInfo">Deze contact-informatie delen?</string>
-    <string name="AreYouSureBlockContact">Deze persoon blokkeren?</string>
-    <string name="AreYouSureUnblockContact">Deze persoon deblokkeren?</string>
-    <string name="AreYouSureDeleteContact">Deze contactpersoon verwijderen?</string>
-    <string name="AreYouSureSecretChat">Een privégesprek starten?</string>
+    <string name="AreYouSureLogout">Weet je zeker dat je wilt uitloggen?</string>
+    <string name="AreYouSureSessions">Weet je zeker dat je alle andere sessies wilt beëindigen?</string>
+    <string name="AreYouSureDeleteAndExit">Weet je zeker dat je alles wilt verwijderen en de groep wilt verlaten?</string>
+    <string name="AreYouSureDeleteThisChat">Weet je zeker dat je dit gesprek wilt verwijderen?</string>
+    <string name="AreYouSureShareMyContactInfo">Weet je zeker dat je je contactinformatie wilt delen?</string>
+    <string name="AreYouSureBlockContact">Weet je zeker dat je deze persoon wilt blokkeren?</string>
+    <string name="AreYouSureUnblockContact">Weet je zeker dat je deze persoon wilt deblokkeren?</string>
+    <string name="AreYouSureDeleteContact">Weet je zeker dat je deze contactpersoon wilt verwijderen?</string>
+    <string name="AreYouSureSecretChat">Weet je zeker dat je een privégesprek wilt starten?</string>
     <string name="ForwardFromMyName">doorsturen via mijn eigen naam</string>
 
     <!--Intro view-->
@@ -404,7 +404,7 @@
     <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> beveiligt je berichten tegen hackers</string>
     <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> heeft geen beperkingen op de grootte van je media en gesprekken</string>
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> biedt toegang tot je berichten vanaf meerdere apparaten</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> berichten zijn sterk versleuteld en kunnen zichzelf vernietigen</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> berichten zijn sterk versleuteld<![CDATA[<br/>]]>en kunnen zichzelf vernietigen</string>
     <string name="StartMessaging">Begin nu met chatten</string>
 
     <!--plurals-->

@@ -264,7 +264,11 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                         if (obj instanceof TLRPC.User) {
                             dialog_id = ((TLRPC.User) obj).id;
                         } else if (obj instanceof TLRPC.Chat) {
-                            dialog_id = -((TLRPC.Chat) obj).id;
+                            if (((TLRPC.Chat) obj).id > 0) {
+                                dialog_id = -((TLRPC.Chat) obj).id;
+                            } else {
+                                dialog_id = AndroidUtilities.makeBroadcastId(((TLRPC.Chat) obj).id);
+                            }
                         } else if (obj instanceof TLRPC.EncryptedChat) {
                             dialog_id = ((long)((TLRPC.EncryptedChat) obj).id) << 32;
                         }
@@ -330,7 +334,10 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
 
-                    if ((int)selectedDialog < 0) {
+                    int lower_id = (int)selectedDialog;
+                    int high_id = (int)(selectedDialog >> 32);
+
+                    if (lower_id < 0 && high_id != 1) {
                         builder.setItems(new CharSequence[]{LocaleController.getString("ClearHistory", R.string.ClearHistory), LocaleController.getString("DeleteChat", R.string.DeleteChat)}, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {

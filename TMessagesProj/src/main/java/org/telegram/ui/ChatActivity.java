@@ -463,7 +463,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             if (info != null && info instanceof TLRPC.TL_chatParticipantsForbidden) {
                                 return;
                             }
-                            if (currentChat.participants_count == 0 || currentChat.left || currentChat instanceof TLRPC.TL_chatForbidden) {
+                            int count = currentChat.participants_count;
+                            if (info != null) {
+                                count = info.participants.size();
+                            }
+                            if (count == 0 || currentChat.left || currentChat instanceof TLRPC.TL_chatForbidden) {
                                 return;
                             }
                             Bundle args = new Bundle();
@@ -1248,10 +1252,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 } else if (currentChat.left) {
                     actionBarLayer.setSubtitle(LocaleController.getString("YouLeft", R.string.YouLeft));
                 } else {
-                    if (onlineCount > 0 && currentChat.participants_count != 0) {
-                        actionBarLayer.setSubtitle(String.format("%s, %d %s", LocaleController.formatPluralString("Members", currentChat.participants_count), onlineCount, LocaleController.getString("Online", R.string.Online)));
+                    int count = currentChat.participants_count;
+                    if (info != null) {
+                        count = info.participants.size();
+                    }
+                    if (onlineCount > 0 && count != 0) {
+                        actionBarLayer.setSubtitle(String.format("%s, %d %s", LocaleController.formatPluralString("Members", count), onlineCount, LocaleController.getString("Online", R.string.Online)));
                     } else {
-                        actionBarLayer.setSubtitle(LocaleController.formatPluralString("Members", currentChat.participants_count));
+                        actionBarLayer.setSubtitle(LocaleController.formatPluralString("Members", count));
                     }
                 }
             } else if (currentUser != null) {
@@ -2962,9 +2970,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     } else if (lower_part < 0) {
                         args.putInt("chat_id", -lower_part);
                     }
+                    forwardSelectedMessages(did, param);
                     presentFragment(new ChatActivity(args), true);
                     removeSelfFromStack();
-                    forwardSelectedMessages(did, param);
                 } else {
                     activity.finishFragment();
                 }
