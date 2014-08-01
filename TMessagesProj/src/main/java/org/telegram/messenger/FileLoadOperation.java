@@ -17,10 +17,10 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.ui.ApplicationLoader;
 
 import java.io.RandomAccessFile;
-import java.net.URL;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.net.URL;
 import java.net.URLConnection;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -82,6 +82,12 @@ public class FileLoadOperation {
                 httpConnection.setReadTimeout(5000);
                 httpConnection.connect();
                 httpConnectionStream = httpConnection.getInputStream();
+                /*String ALLOWED_URI_CHARS = "@#&=*+-_.,:!?()/~'%";
+                String str = Uri.encode(url, ALLOWED_URI_CHARS);
+                HttpClient httpclient = new DefaultHttpClient();
+                HttpGet request = new HttpGet(str);
+
+                httpConnectionStream = httpclient.execute(request).getEntity().getContent();*/
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
                 cleanup();

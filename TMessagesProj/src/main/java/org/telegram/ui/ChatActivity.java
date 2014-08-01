@@ -143,14 +143,15 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private boolean endReached = false;
     private boolean loading = false;
     private boolean cacheEndReaced = false;
+    private boolean firstLoading = true;
 
     private int minDate = 0;
     private int progressTag = 0;
-    boolean first = true;
+    private boolean first = true;
     private int unread_to_load = 0;
     private int first_unread_id = 0;
     private int last_unread_id = 0;
-    private boolean unread_end_reached = false;
+    private boolean unread_end_reached = true;
     private boolean loadingForward = false;
     private MessageObject unreadMessageObject = null;
 
@@ -338,7 +339,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         super.onFragmentCreate();
 
         loading = true;
-        MessagesController.getInstance().loadMessages(dialog_id, 0, 30, 0, true, 0, classGuid, true, false);
+        MessagesController.getInstance().loadMessages(dialog_id, 30, 0, true, 0, classGuid, true, false);
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
 
         if (currentChat != null) {
@@ -733,16 +734,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (firstVisibleItem <= 4) {
                             if (!endReached && !loading) {
                                 if (messagesByDays.size() != 0) {
-                                    MessagesController.getInstance().loadMessages(dialog_id, 0, 20, maxMessageId, !cacheEndReaced, minDate, classGuid, false, false);
+                                    MessagesController.getInstance().loadMessages(dialog_id, 20, maxMessageId, !cacheEndReaced, minDate, classGuid, false, false);
                                 } else {
-                                    MessagesController.getInstance().loadMessages(dialog_id, 0, 20, 0, !cacheEndReaced, minDate, classGuid, false, false);
+                                    MessagesController.getInstance().loadMessages(dialog_id, 20, 0, !cacheEndReaced, minDate, classGuid, false, false);
                                 }
                                 loading = true;
                             }
                         }
                         if (firstVisibleItem + visibleItemCount >= totalItemCount - 6) {
                             if (!unread_end_reached && !loadingForward) {
-                                MessagesController.getInstance().loadMessages(dialog_id, 0, 20, minMessageId, true, maxDate, classGuid, false, true);
+                                MessagesController.getInstance().loadMessages(dialog_id, 20, minMessageId, true, maxDate, classGuid, false, true);
                                 loadingForward = true;
                             }
                         }
@@ -865,9 +866,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             maxDate = Integer.MIN_VALUE;
             minDate = 0;
             unread_end_reached = true;
-            MessagesController.getInstance().loadMessages(dialog_id, 0, 30, 0, true, 0, classGuid, true, false);
             loading = true;
             chatAdapter.notifyDataSetChanged();
+            MessagesController.getInstance().loadMessages(dialog_id, 30, 0, true, 0, classGuid, true, false);
         }
     }
 
@@ -1479,6 +1480,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (tempPath != null) {
                             File temp = new File(tempPath);
                             originalPath += temp.length() + "_" + temp.lastModified();
+                        } else {
+                            originalPath = null;
                         }
                         TLRPC.TL_photo photo = (TLRPC.TL_photo)MessagesStorage.getInstance().getSentFile(originalPath, currentEncryptedChat == null ? 0 : 3);
                         if (photo == null && uri != null) {
@@ -1696,24 +1699,42 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (id == MessagesController.messagesDidLoaded) {
             long did = (Long)args[0];
             if (did == dialog_id) {
-                int offset = (Integer)args[1];
-                int count = (Integer)args[2];
-                boolean isCache = (Boolean)args[4];
-                int fnid = (Integer)args[5];
-                int last_unread_date = (Integer)args[8];
-                boolean forwardLoad = (Boolean)args[9];
+                int count = (Integer)args[1];
+                boolean isCache = (Boolean)args[3];
+                int fnid = (Integer)args[4];
+                int last_unread_date = (Integer)args[7];
+                boolean forwardLoad = (Boolean)args[8];
                 boolean wasUnread = false;
                 boolean positionToUnread = false;
                 if (fnid != 0) {
-                    first_unread_id = (Integer)args[5];
-                    last_unread_id = (Integer)args[6];
-                    unread_to_load = (Integer)args[7];
+                    first_unread_id = fnid;
+                    last_unread_id = (Integer)args[5];
+                    unread_to_load = (Integer)args[6];
                     positionToUnread = true;
                 }
-                ArrayList<MessageObject> messArr = (ArrayList<MessageObject>)args[3];
+                ArrayList<MessageObject> messArr = (ArrayList<MessageObject>)args[2];
 
                 int newRowsCount = 0;
                 unread_end_reached = last_unread_id == 0;
+
+                if (firstLoading) {
+                    if (!unread_end_reached) {
+                        messages.clear();
+                        messagesByDays.clear();
+                        messagesDict.clear();
+                        if (currentEncryptedChat == null) {
+                            maxMessageId = Integer.MAX_VALUE;
+                            minMessageId = Integer.MIN_VALUE;
+                        } else {
+                            maxMessageId = Integer.MIN_VALUE;
+                            minMessageId = Integer.MAX_VALUE;
+                        }
+                        maxDate = Integer.MIN_VALUE;
+                        minDate = 0;
+                    }
+                    firstLoading = false;
+                }
+
                 for (int a = 0; a < messArr.size(); a++) {
                     MessageObject obj = messArr.get(a);
                     if (messagesDict.containsKey(obj.messageOwner.id)) {
@@ -2042,15 +2063,17 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             lastVisible++;
                         }
                         if (lastVisible == oldCount) {
-                            if (paused) {
-                                scrollToTopOnResume = true;
-                            } else {
-                                chatListView.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        chatListView.setSelectionFromTop(messages.size() - 1, -100000 - chatListView.getPaddingTop());
-                                    }
-                                });
+                            if (!firstLoading) {
+                                if (paused) {
+                                    scrollToTopOnResume = true;
+                                } else {
+                                    chatListView.post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            chatListView.setSelectionFromTop(messages.size() - 1, -100000 - chatListView.getPaddingTop());
+                                        }
+                                    });
+                                }
                             }
                         } else {
                             showPagedownButton(true, true);
@@ -2122,7 +2145,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                     maxDate = Integer.MIN_VALUE;
                     minDate = 0;
-                    MessagesController.getInstance().loadMessages(dialog_id, 0, 30, 0, !cacheEndReaced, minDate, classGuid, false, false);
+                    MessagesController.getInstance().loadMessages(dialog_id, 30, 0, !cacheEndReaced, minDate, classGuid, false, false);
                     loading = true;
                 }
             }
@@ -2970,8 +2993,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     } else if (lower_part < 0) {
                         args.putInt("chat_id", -lower_part);
                     }
-                    forwardSelectedMessages(did, param);
                     presentFragment(new ChatActivity(args), true);
+                    forwardSelectedMessages(did, param);
                     removeSelfFromStack();
                 } else {
                     activity.finishFragment();

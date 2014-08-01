@@ -708,6 +708,23 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 public void run(TLObject response, TLRPC.TL_error error) {
                     if (error == null) {
                         final TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
+                        MessagesStorage.getInstance().putUsersAndChats(res.users, res.chats, true, true);
+
+                        Utilities.RunOnUIThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                for (TLRPC.User user : res.users) {
+                                    users.put(user.id, user);
+                                    if (user.id == UserConfig.getClientUserId()) {
+                                        UserConfig.setCurrentUser(user);
+                                    }
+                                }
+                                for (TLRPC.Chat chat : res.chats) {
+                                    chats.put(chat.id, chat);
+                                }
+                            }
+                        });
+
                         if (res instanceof TLRPC.TL_messages_messagesSlice) {
                             processLoadedMediaCount(res.count, uid, classGuid, false);
                         } else {
@@ -1110,10 +1127,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
     }
 
-    public void loadMessages(final long dialog_id, final int offset, final int count, final int max_id, boolean fromCache, int midDate, final int classGuid, boolean from_unread, boolean forward) {
+    public void loadMessages(final long dialog_id, final int count, final int max_id, boolean fromCache, int midDate, final int classGuid, boolean from_unread, boolean forward) {
         int lower_part = (int)dialog_id;
         if (fromCache || lower_part == 0) {
-            MessagesStorage.getInstance().getMessages(dialog_id, offset, count, max_id, midDate, classGuid, from_unread, forward);
+            MessagesStorage.getInstance().getMessages(dialog_id, count, max_id, midDate, classGuid, from_unread, forward);
         } else {
             TLRPC.TL_messages_getHistory req = new TLRPC.TL_messages_getHistory();
             if (lower_part < 0) {
@@ -1130,7 +1147,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     req.peer.user_id = user.id;
                 }
             }
-            req.offset = offset;
+            req.offset = 0;
             req.limit = count;
             req.max_id = max_id;
             long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
@@ -1138,7 +1155,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 public void run(TLObject response, TLRPC.TL_error error) {
                     if (error == null) {
                         final TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
-                        processLoadedMessages(res, dialog_id, offset, count, max_id, false, classGuid, 0, 0, 0, 0, false);
+                        processLoadedMessages(res, dialog_id, count, max_id, false, classGuid, 0, 0, 0, 0, false);
                     }
                 }
             });
@@ -1146,7 +1163,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
     }
 
-    public void processLoadedMessages(final TLRPC.messages_Messages messagesRes, final long dialog_id, final int offset, final int count, final int max_id, final boolean isCache, final int classGuid, final int first_unread, final int last_unread, final int unread_count, final int last_date, final boolean isForward) {
+    public void processLoadedMessages(final TLRPC.messages_Messages messagesRes, final long dialog_id, final int count, final int max_id, final boolean isCache, final int classGuid, final int first_unread, final int last_unread, final int unread_count, final int last_date, final boolean isForward) {
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -1158,7 +1175,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     Utilities.RunOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            loadMessages(dialog_id, offset, count, max_id, false, 0, classGuid, false, false);
+                            loadMessages(dialog_id, count, max_id, false, 0, classGuid, false, false);
                         }
                     });
                     return;
@@ -1196,7 +1213,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                 chats.put(c.id, c);
                             }
                         }
-                        NotificationCenter.getInstance().postNotificationName(messagesDidLoaded, dialog_id, offset, count, objects, isCache, first_unread, last_unread, unread_count, last_date, isForward);
+                        NotificationCenter.getInstance().postNotificationName(messagesDidLoaded, dialog_id, count, objects, isCache, first_unread, last_unread, unread_count, last_date, isForward);
                     }
                 });
             }
@@ -4618,17 +4635,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
         boolean isEncryptedChat = ((int)uid) == 0;
 
-        MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
-            @Override
-            public void run() {
-                Utilities.RunOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        NotificationCenter.getInstance().postNotificationName(didReceivedNewMessages, uid, messages);
-                    }
-                });
-            }
-        });
+        NotificationCenter.getInstance().postNotificationName(didReceivedNewMessages, uid, messages);
 
         for (MessageObject message : messages) {
             if (lastMessage == null || (!isEncryptedChat && message.messageOwner.id > lastMessage.messageOwner.id || isEncryptedChat && message.messageOwner.id < lastMessage.messageOwner.id) || message.messageOwner.date > lastMessage.messageOwner.date) {

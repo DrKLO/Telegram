@@ -217,7 +217,6 @@ public class MessagesStorage {
                     cacheFile.delete();
                     cacheFile = null;
                 }
-                storageQueue.cleanupQueue();
                 openDatabase();
                 if (isLogin) {
                     Utilities.stageQueue.postRunnable(new Runnable() {
@@ -1320,14 +1319,14 @@ public class MessagesStorage {
         });
     }
 
-    public void getMessages(final long dialog_id, final int offset, final int count, final int max_id, final int minDate, final int classGuid, final boolean from_unread, final boolean forward) {
+    public void getMessages(final long dialog_id, final int count, final int max_id, final int minDate, final int classGuid, final boolean from_unread, final boolean forward) {
         storageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
                 TLRPC.TL_messages_messages res = new TLRPC.TL_messages_messages();
                 int count_unread = 0;
                 int count_query = count;
-                int offset_query = offset;
+                int offset_query = 0;
                 int min_unread_id = 0;
                 int max_unread_id = 0;
                 int max_unread_date = 0;
@@ -1486,7 +1485,7 @@ public class MessagesStorage {
                     res.users.clear();
                     FileLog.e("tmessages", e);
                 } finally {
-                    MessagesController.getInstance().processLoadedMessages(res, dialog_id, offset, count_query, max_id, true, classGuid, min_unread_id, max_unread_id, count_unread, max_unread_date, forward);
+                    MessagesController.getInstance().processLoadedMessages(res, dialog_id, count_query, max_id, true, classGuid, min_unread_id, max_unread_id, count_unread, max_unread_date, forward);
                 }
             }
         });
