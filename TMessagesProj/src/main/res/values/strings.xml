@@ -38,27 +38,27 @@
     <string name="NewMessages">New messages</string>
     <string name="Settings">Settings</string>
     <string name="Contacts">Contacts</string>
-    <string name="NewGroup">New Group</string>
+    <string name="NewGroup">New group</string>
     <string name="Yesterday">yesterday</string>
     <string name="NoResult">No results</string>
     <string name="NoChats">No chats yet...</string>
-    <string name="NoChatsHelp">Start messaging by pressing the\ncompose button in the top right corner\nor go to the Contacts section.</string>
+    <string name="NoChatsHelp">Start messaging by pressing the\ncompose button in the top right corner\nor go to the contacts section.</string>
     <string name="WaitingForNetwork">Waiting for network...</string>
     <string name="Connecting">Connecting...</string>
     <string name="Updating">Updating...</string>
-    <string name="NewSecretChat">New Secret Chat</string>
+    <string name="NewSecretChat">New secret chat</string>
     <string name="AwaitingEncryption">Waiting for %s to get online...</string>
     <string name="EncryptionRejected">Secret chat cancelled</string>
     <string name="EncryptionProcessing">Exchanging encryption keys...</string>
     <string name="EncryptedChatStartedOutgoing">%s joined your secret chat.</string>
     <string name="EncryptedChatStartedIncoming">You joined the secret chat.</string>
-    <string name="ClearHistory">Clear History</string>
+    <string name="ClearHistory">Clear history</string>
     <string name="DeleteChat">Delete and exit</string>
-    <string name="HiddenName">Hidden Name</string>
-    <string name="SelectChat">Select Chat</string>
+    <string name="HiddenName">Hidden name</string>
+    <string name="SelectChat">Select chat</string>
 
     <!--documents view-->
-    <string name="SelectFile">Select File</string>
+    <string name="SelectFile">Select file</string>
     <string name="FreeOfTotal">Free %1$s of %2$s</string>
     <string name="UnknownError">Unknown error</string>
     <string name="AccessError">Access error</string>
@@ -66,10 +66,10 @@
     <string name="FileUploadLimit">File size shouldn\'t be greater than %1$s</string>
     <string name="NotMounted">Storage not mounted</string>
     <string name="UsbActive">USB transfer active</string>
-    <string name="InternalStorage">Internal Storage</string>
-    <string name="ExternalStorage">External Storage</string>
-    <string name="SystemRoot">System Root</string>
-    <string name="SdCard">SD Card</string>
+    <string name="InternalStorage">Internal storage</string>
+    <string name="ExternalStorage">External storage</string>
+    <string name="SystemRoot">System root</string>
+    <string name="SdCard">SD card</string>
 
     <!--chat view-->
     <string name="Invisible">invisible</string>
@@ -84,9 +84,9 @@
     <string name="ChatVideo">Video</string>
     <string name="ChatDocument">Document</string>
     <string name="NoMessages">No messages here yet...</string>
-    <string name="ViewPhoto">View Photo</string>
-    <string name="ViewLocation">View Location</string>
-    <string name="ViewVideo">Play Video</string>
+    <string name="ViewPhoto">View photo</string>
+    <string name="ViewLocation">View location</string>
+    <string name="ViewVideo">Play video</string>
     <string name="ForwardedMessage">Forwarded message</string>
     <string name="From">From</string>
     <string name="NoRecent">No recent</string>
@@ -150,11 +150,11 @@
     <string name="NotificationGroupKickYou">%1$s removed you from the group %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s has left the group %2$s</string>
     <string name="NotificationContactJoined">%1$s joined Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nWe detected a login into your account from a new device on %2$s\n\nDevice: %3$s\nLocation: %4$s\n\nIf this wasn’t you, you can go to Settings – Terminate all sessions.\n\nThanks,\nThe Telegram Team</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nWe detected a login into your account from a new device on %2$s\n\nDevice: %3$s\nLocation: %4$s\n\nIf this wasn’t you, you can go to Settings – Terminate all other sessions.\n\nThanks,\nThe Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s updated profile photo</string>
 
     <!--contacts view-->
-    <string name="SelectContact">Select Contact</string>
+    <string name="SelectContact">Select contact</string>
     <string name="NoContacts">No contacts yet</string>
     <string name="InviteText">Hey, let\'s switch to Telegram: http://telegram.org/dl2</string>
     <string name="TodayAt">today at</string>
@@ -175,8 +175,8 @@
 
     <!--group info view-->
     <string name="EnterGroupNameTitle">ENTER GROUP NAME</string>
-    <string name="SharedMedia">Shared Media</string>
-    <string name="GroupInfo">Group Info</string>
+    <string name="SharedMedia">Shared media</string>
+    <string name="GroupInfo">Group info</string>
     <string name="SHAREDMEDIA">SHARED MEDIA</string>
     <string name="SETTINGS">SETTINGS</string>
     <string name="AddMember">Add member</string>
@@ -195,14 +195,14 @@
     <string name="PhoneWork">WORK</string>
     <string name="PhoneOther">OTHER</string>
     <string name="PhoneMain">MAIN</string>
-    <string name="ContactInfo">Contact Info</string>
+    <string name="ContactInfo">Contact info</string>
     <string name="PHONE">PHONE</string>
-    <string name="StartEncryptedChat">Start Secret Chat</string>
+    <string name="StartEncryptedChat">Start secret chat</string>
     <string name="CreateEncryptedChatError">An error occurred.</string>
     <string name="CreateEncryptedChatOutdatedError">Cannot create a secret chat with %1$s.\n\n%2$s is using an older version of Telegram and needs to update first.</string>
-    <string name="SecretTitle">Secret Chat</string>
-    <string name="EncryptionKey">Encryption Key</string>
-    <string name="MessageLifetime">Self-Destruct Timer</string>
+    <string name="SecretTitle">Secret chat</string>
+    <string name="EncryptionKey">Encryption key</string>
+    <string name="MessageLifetime">Self-destruct timer</string>
     <string name="ShortMessageLifetimeForever">Off</string>
     <string name="ShortMessageLifetime2s">2s</string>
     <string name="ShortMessageLifetime5s">5s</string>
@@ -214,45 +214,45 @@
 
     <!--settings view-->
     <string name="ResetNotificationsText">Reset all notification settings to default</string>
-    <string name="TextSize">Messages Text Size</string>
-    <string name="AskAQuestion">Ask a Question</string>
-    <string name="EnableAnimations">Enable Animations</string>
+    <string name="TextSize">Messages text size</string>
+    <string name="AskAQuestion">Ask a question</string>
+    <string name="EnableAnimations">Enable animations</string>
     <string name="Unblock">Unblock</string>
     <string name="UnblockText">Tap and hold on user to unblock.</string>
     <string name="NoBlocked">No blocked users yet</string>
     <string name="YourPhoneNumber">YOUR PHONE NUMBER</string>
     <string name="MessageNotifications">MESSAGE NOTIFICATIONS</string>
     <string name="Alert">Alert</string>
-    <string name="MessagePreview">Message Preview</string>
+    <string name="MessagePreview">Message preview</string>
     <string name="GroupNotifications">GROUP NOTIFICATIONS</string>
     <string name="Sound">Sound</string>
     <string name="InAppNotifications">IN-APP NOTIFICATIONS</string>
-    <string name="InAppSounds">In-App Sounds</string>
-    <string name="InAppVibrate">In-App Vibrate</string>
+    <string name="InAppSounds">In-app sounds</string>
+    <string name="InAppVibrate">In-app vibrate</string>
     <string name="Vibrate">Vibrate</string>
-    <string name="InAppPreview">In-App Preview</string>
+    <string name="InAppPreview">In-app preview</string>
     <string name="Reset">RESET</string>
-    <string name="ResetAllNotifications">Reset All Notifications</string>
+    <string name="ResetAllNotifications">Reset all notifications</string>
     <string name="UndoAllCustom">Undo all custom notification settings for all your contacts and groups</string>
-    <string name="NotificationsAndSounds">Notifications and Sounds</string>
-    <string name="BlockedUsers">Blocked Users</string>
-    <string name="SaveIncomingPhotos">Save Incoming Photos</string>
-    <string name="LogOut">Log Out</string>
+    <string name="NotificationsAndSounds">Notifications and sounds</string>
+    <string name="BlockedUsers">Blocked users</string>
+    <string name="SaveIncomingPhotos">Save incoming photos</string>
+    <string name="LogOut">Log out</string>
     <string name="YourFirstNameAndLastName">YOUR FIRST AND LAST NAME</string>
     <string name="NoSound">No sound</string>
     <string name="Default">Default</string>
     <string name="Support">SUPPORT</string>
-    <string name="ChatBackground">Chat Background</string>
+    <string name="ChatBackground">Chat background</string>
     <string name="MessagesSettings">MESSAGES</string>
-    <string name="SendByEnter">Send by Enter</string>
-    <string name="TerminateAllSessions">Terminate All Other Sessions</string>
+    <string name="SendByEnter">Send by enter</string>
+    <string name="TerminateAllSessions">Terminate all other sessions</string>
     <string name="AutomaticPhotoDownload">AUTOMATIC PHOTO DOWNLOAD</string>
     <string name="AutomaticAudioDownload">AUTOMATIC AUDIO DOWNLOAD</string>
     <string name="AutomaticPhotoDownloadGroups">Groups</string>
-    <string name="AutomaticPhotoDownloadPrivateChats">Private Chats</string>
+    <string name="AutomaticPhotoDownloadPrivateChats">Private chats</string>
     <string name="Events">EVENTS</string>
     <string name="ContactJoined">Contact joined Telegram</string>
-    <string name="Pebble">PEBBLE</string>
+    <string name="Pebble">Pebble</string>
     <string name="Language">Language</string>
     <string name="AskAQuestionInfo">Please note that Telegram Support is done by volunteers. We try to respond as quickly as possible, but it may take a while.<![CDATA[<br><br>]]>Please take a look at the <![CDATA[<a href="http://telegram.org/faq#general">Telegram FAQ</a>]]>: it has answers to most questions and important tips for <![CDATA[<a href="http://telegram.org/faq#troubleshooting">troubleshooting</a>]]>.</string>
     <string name="AskButton">Ask a volunteer</string>
@@ -262,24 +262,24 @@
     <string name="IncorrectLocalization">Incorrect localization file</string>
     <string name="Enabled">Enabled</string>
     <string name="Disabled">Disabled</string>
-    <string name="NotificationsService">Notifications Service</string>
-    <string name="NotificationsServiceDisableInfo">If google play services are enough for you to receive notifications, you can disable Notifications Service. However we recommend you to leave it enabled to keep app running in background and receive instant notifications.</string>
-    <string name="SortBy">Sort By</string>
-    <string name="ImportContacts">Import Contacts</string>
-    <string name="WiFiOnly">Via WiFi only</string>
+    <string name="NotificationsService">Notifications service</string>
+    <string name="NotificationsServiceDisableInfo">If Google Play services are enough for you to receive notifications, you can disable notifications service. However we recommend you to leave it enabled to keep app running in background and receive instant notifications.</string>
+    <string name="SortBy">Sort by</string>
+    <string name="ImportContacts">Import contacts</string>
+    <string name="WiFiOnly">Via Wi-Fi only</string>
     <string name="SortFirstName">First name</string>
     <string name="SortLastName">Last name</string>
-    <string name="LedColor">LED Color</string>
-    <string name="PopupNotification">Popup Notification</string>
-    <string name="NoPopup">No popup</string>
+    <string name="LedColor">LED color</string>
+    <string name="PopupNotification">Pop-up notification</string>
+    <string name="NoPopup">No pop-up</string>
     <string name="OnlyWhenScreenOn">Only when screen "on"</string>
     <string name="OnlyWhenScreenOff">Only when screen "off"</string>
-    <string name="AlwaysShowPopup">Always show popup</string>
-    <string name="BadgeNumber">Badge Number</string>
+    <string name="AlwaysShowPopup">Always show pop-up</string>
+    <string name="BadgeNumber">Badge number</string>
 
     <!--media view-->
     <string name="NoMedia">No shared media yet</string>
-    <string name="CancelDownload">Cancel Download</string>
+    <string name="CancelDownload">Cancel download</string>
 
     <!--map view-->
     <string name="MyLocation">My location</string>
@@ -288,21 +288,21 @@
     <string name="Hybrid">Hybrid</string>
     <string name="MetersAway">m away</string>
     <string name="KMetersAway">km away</string>
-    <string name="SendLocation">Send Location</string>
-    <string name="ShareLocation">Share Location</string>
+    <string name="SendLocation">Send location</string>
+    <string name="ShareLocation">Share location</string>
 
     <!--photo gallery view-->
     <string name="ShowAllMedia">Show all media</string>
     <string name="SaveToGallery">Save to gallery</string>
     <string name="Of">%1$d of %2$d</string>
     <string name="Gallery">Gallery</string>
-    <string name="AllPhotos">All Photos</string>
+    <string name="AllPhotos">All photos</string>
     <string name="NoPhotos">No photos yet</string>
 
     <!--edit video view-->
-    <string name="EditVideo">Edit Video</string>
-    <string name="OriginalVideo">Original Video</string>
-    <string name="EditedVideo">Edited Video</string>
+    <string name="EditVideo">Edit video</string>
+    <string name="OriginalVideo">Original video</string>
+    <string name="EditedVideo">Edited video</string>
 
     <!--button titles-->
     <string name="Next">Next</string>
@@ -388,7 +388,7 @@
     <string name="Page3Title">Free</string>
     <string name="Page4Title">Secure</string>
     <string name="Page5Title">Powerful</string>
-    <string name="Page6Title">Cloud-Based</string>
+    <string name="Page6Title">Cloud-based</string>
     <string name="Page7Title">Private</string>
     <string name="Page1Message">Welcome to the era of fast and secure messaging</string>
     <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> delivers messages faster than<![CDATA[<br/>]]>any other application</string>
@@ -397,7 +397,7 @@
     <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> has no limits on the size of<![CDATA[<br/>]]>your media and chats</string>
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lets you access your messages<![CDATA[<br/>]]>from multiple devices</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> messages are heavily encrypted<![CDATA[<br/>]]>and can self-destruct</string>
-    <string name="StartMessaging">Start Messaging</string>
+    <string name="StartMessaging">Start messaging</string>
 
     <!--plurals-->
     <string name="Members_zero">no members</string>
