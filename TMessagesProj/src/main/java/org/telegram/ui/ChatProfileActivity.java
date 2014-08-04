@@ -112,7 +112,9 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         NotificationCenter.getInstance().addObserver(this, MessagesController.closeChats);
 
         updateOnlineCount();
-        MessagesController.getInstance().getMediaCount(-chat_id, classGuid, true);
+        if (chat_id > 0) {
+            MessagesController.getInstance().getMediaCount(-chat_id, classGuid, true);
+        }
         avatarUpdater.delegate = new AvatarUpdater.AvatarUpdaterDelegate() {
             @Override
             public void didUploadedPhoto(TLRPC.InputFile file, TLRPC.PhotoSize small, TLRPC.PhotoSize big) {
@@ -131,10 +133,12 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
     private void updateRowsIds() {
         rowCount = 0;
         avatarRow = rowCount++;
-        settingsSectionRow = rowCount++;
-        settingsNotificationsRow = rowCount++;
-        sharedMediaSectionRow = rowCount++;
-        sharedMediaRow = rowCount++;
+        if (chat_id > 0) {
+            settingsSectionRow = rowCount++;
+            settingsNotificationsRow = rowCount++;
+            sharedMediaSectionRow = rowCount++;
+            sharedMediaRow = rowCount++;
+        }
         if (info != null && !(info instanceof TLRPC.TL_chatParticipantsForbidden)) {
             membersSectionRow = rowCount++;
             rowCount += info.participants.size();
@@ -149,7 +153,9 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
             addMemberRow = -1;
             membersSectionRow = -1;
         }
-        leaveGroupRow = rowCount++;
+        if (chat_id > 0) {
+            leaveGroupRow = rowCount++;
+        }
     }
 
     @Override
@@ -166,7 +172,11 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         if (fragmentView == null) {
             actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
             actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
-            actionBarLayer.setTitle(LocaleController.getString("GroupInfo", R.string.GroupInfo));
+            if (chat_id > 0) {
+                actionBarLayer.setTitle(LocaleController.getString("GroupInfo", R.string.GroupInfo));
+            } else {
+                actionBarLayer.setTitle(LocaleController.getString("BroadcastList", R.string.BroadcastList));
+            }
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
@@ -181,7 +191,11 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
             View item = menu.addItemResource(done_button, R.layout.group_profile_add_member_layout);
             TextView textView = (TextView)item.findViewById(R.id.done_button);
             if (textView != null) {
-                textView.setText(LocaleController.getString("AddMember", R.string.AddMember));
+                if (chat_id > 0) {
+                    textView.setText(LocaleController.getString("AddMember", R.string.AddMember));
+                } else {
+                    textView.setText(LocaleController.getString("AddRecipient", R.string.AddRecipient));
+                }
             }
 
             fragmentView = inflater.inflate(R.layout.chat_profile_layout, container, false);
@@ -206,7 +220,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         selectedUser = user;
 
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        CharSequence[] items = new CharSequence[] {LocaleController.getString("KickFromGroup", R.string.KickFromGroup)};
+                        CharSequence[] items = new CharSequence[] {chat_id > 0 ? LocaleController.getString("KickFromGroup", R.string.KickFromGroup) : LocaleController.getString("KickFromBroadcast", R.string.KickFromBroadcast)};
 
                         builder.setItems(items, new DialogInterface.OnClickListener() {
                             @Override
@@ -260,7 +274,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
     @Override
     public void didSelectContact(TLRPC.User user, String param) {
-        MessagesController.getInstance().addUserToChat(chat_id, user, info, Utilities.parseInt(param));
+        MessagesController.getInstance().addUserToChat(chat_id, user, info, param != null ? Utilities.parseInt(param) : 0);
     }
 
     @Override
@@ -462,7 +476,9 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         args.putBoolean("destroyAfterSelect", true);
         args.putBoolean("usersAsSections", true);
         args.putBoolean("returnAsResult", true);
-        args.putString("selectAlertString", LocaleController.getString("AddToTheGroup", R.string.AddToTheGroup));
+        if (chat_id > 0) {
+            args.putString("selectAlertString", LocaleController.getString("AddToTheGroup", R.string.AddToTheGroup));
+        }
         ContactsActivity fragment = new ContactsActivity(args);
         fragment.setDelegate(this);
         if (info != null) {
@@ -547,52 +563,56 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     });
 
                     final ImageButton button2 = (ImageButton)view.findViewById(R.id.settings_change_avatar_button);
-                    button2.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            if (getParentActivity() == null) {
-                                return;
-                            }
-                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                            CharSequence[] items;
-                            int type;
-                            TLRPC.Chat chat = MessagesController.getInstance().chats.get(chat_id);
-                            if (chat.photo == null || chat.photo.photo_big == null || chat.photo instanceof TLRPC.TL_chatPhotoEmpty) {
-                                items = new CharSequence[] {LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley)};
-                                type = 0;
-                            } else {
-                                items = new CharSequence[] {LocaleController.getString("OpenPhoto", R.string.OpenPhoto), LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley), LocaleController.getString("DeletePhoto", R.string.DeletePhoto)};
-                                type = 1;
-                            }
-
-                            final int arg0 = type;
-                            builder.setItems(items, new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    int action = 0;
-                                    if (arg0 == 1) {
-                                        if (i == 0) {
-                                            action = 0;
-                                        } else if (i == 1) {
-                                            action = 1;
-                                        } else if (i == 2) {
-                                            action = 2;
-                                        } else if (i == 3) {
-                                            action = 3;
-                                        }
-                                    } else if (arg0 == 0) {
-                                        if (i == 0) {
-                                            action = 1;
-                                        } else if (i == 1) {
-                                            action = 2;
-                                        }
-                                    }
-                                    processPhotoMenu(action);
+                    if (chat_id > 0) {
+                        button2.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                if (getParentActivity() == null) {
+                                    return;
                                 }
-                            });
-                            showAlertDialog(builder);
-                        }
-                    });
+                                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                                CharSequence[] items;
+                                int type;
+                                TLRPC.Chat chat = MessagesController.getInstance().chats.get(chat_id);
+                                if (chat.photo == null || chat.photo.photo_big == null || chat.photo instanceof TLRPC.TL_chatPhotoEmpty) {
+                                    items = new CharSequence[]{LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley)};
+                                    type = 0;
+                                } else {
+                                    items = new CharSequence[]{LocaleController.getString("OpenPhoto", R.string.OpenPhoto), LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley), LocaleController.getString("DeletePhoto", R.string.DeletePhoto)};
+                                    type = 1;
+                                }
+
+                                final int arg0 = type;
+                                builder.setItems(items, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        int action = 0;
+                                        if (arg0 == 1) {
+                                            if (i == 0) {
+                                                action = 0;
+                                            } else if (i == 1) {
+                                                action = 1;
+                                            } else if (i == 2) {
+                                                action = 2;
+                                            } else if (i == 3) {
+                                                action = 3;
+                                            }
+                                        } else if (arg0 == 0) {
+                                            if (i == 0) {
+                                                action = 1;
+                                            } else if (i == 1) {
+                                                action = 2;
+                                            }
+                                        }
+                                        processPhotoMenu(action);
+                                    }
+                                });
+                                showAlertDialog(builder);
+                            }
+                        });
+                    } else {
+                        button2.setVisibility(View.GONE);
+                    }
                 } else {
                     onlineText = (TextView)view.findViewById(R.id.settings_online);
                 }
@@ -604,10 +624,15 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
                 textView.setText(chat.title);
 
-                if (chat.participants_count != 0 && onlineCount > 0) {
-                    onlineText.setText(Html.fromHtml(String.format("%s, <font color='#357aa8'>%d %s</font>", LocaleController.formatPluralString("Members", chat.participants_count), onlineCount, LocaleController.getString("Online", R.string.Online))));
+                int count = chat.participants_count;
+                if (info != null) {
+                    count = info.participants.size();
+                }
+
+                if (count != 0 && onlineCount > 0) {
+                    onlineText.setText(Html.fromHtml(String.format("%s, <font color='#357aa8'>%d %s</font>", LocaleController.formatPluralString("Members", count), onlineCount, LocaleController.getString("Online", R.string.Online))));
                 } else {
-                    onlineText.setText(LocaleController.formatPluralString("Members", chat.participants_count));
+                    onlineText.setText(LocaleController.formatPluralString("Members", count));
                 }
 
                 TLRPC.FileLocation photo = null;
@@ -631,7 +656,11 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     textView.setText(LocaleController.getString("SHAREDMEDIA", R.string.SHAREDMEDIA));
                 } else if (i == membersSectionRow) {
                     TLRPC.Chat chat = MessagesController.getInstance().chats.get(chat_id);
-                    textView.setText(LocaleController.formatPluralString("Members", chat.participants_count).toUpperCase());
+                    int count = chat.participants_count;
+                    if (info != null) {
+                        count = info.participants.size();
+                    }
+                    textView.setText(LocaleController.formatPluralString("Members", count).toUpperCase());
                 }
             } else if (type == 2) {
                 if (view == null) {
@@ -666,7 +695,13 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.chat_profile_add_row, viewGroup, false);
                     TextView textView = (TextView)view.findViewById(R.id.messages_list_row_name);
-                    textView.setText(LocaleController.getString("AddMember", R.string.AddMember));
+                    if (chat_id > 0) {
+                        textView.setText(LocaleController.getString("AddMember", R.string.AddMember));
+                    } else {
+                        textView.setText(LocaleController.getString("AddRecipient", R.string.AddRecipient));
+                        View divider = view.findViewById(R.id.settings_row_divider);
+                        divider.setVisibility(View.INVISIBLE);
+                    }
                 }
             } else if (type == 5) {
                 if (view == null) {

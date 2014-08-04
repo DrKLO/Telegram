@@ -185,6 +185,8 @@ public class NotificationsController {
                                 }
                                 msg = LocaleController.formatString("NotificationGroupKickMember", R.string.NotificationGroupKickMember, Utilities.formatName(user.first_name, user.last_name), chat.title, Utilities.formatName(u2.first_name, u2.last_name));
                             }
+                        } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionChatCreate) {
+                            msg = messageObject.messageText.toString();
                         }
                     } else {
                         if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty) {
@@ -418,7 +420,7 @@ public class NotificationsController {
             }
 
             if (photoPath != null) {
-                Bitmap img = FileLoader.getInstance().getImageFromMemory(photoPath, null, null, "50_50", false);
+                Bitmap img = FileLoader.getInstance().getImageFromMemory(photoPath, null, null, "50_50");
                 if (img != null) {
                     mBuilder.setLargeIcon(img);
                 }
@@ -554,9 +556,6 @@ public class NotificationsController {
         if (oldCount != popupMessages.size()) {
             NotificationCenter.getInstance().postNotificationName(pushMessagesUpdated);
         }
-//        if (readMessages != null || oldCount2 != pushMessages.size() || readMessages == null && dialog_id == 0) {
-//            showOrUpdateNotification(notifyCheck);
-//        }
     }
 
     public void processNewMessages(ArrayList<MessageObject> messageObjects, boolean isLast) {
@@ -582,7 +581,7 @@ public class NotificationsController {
 
             Boolean value = settingsCache.get(dialog_id);
             boolean isChat = (int)dialog_id < 0;
-            popup = preferences.getInt(isChat ? "popupGroup" : "popupAll", 0);
+            popup = (int)dialog_id == 0 ? 0 : preferences.getInt(isChat ? "popupGroup" : "popupAll", 0);
             if (value == null) {
                 int notify_override = preferences.getInt("notify2_" + dialog_id, 0);
                 value = !(notify_override == 2 || (!preferences.getBoolean("EnableAll", true) || isChat && !preferences.getBoolean("EnableGroup", true)) && notify_override == 0);
@@ -631,6 +630,15 @@ public class NotificationsController {
                 }
                 if (newCount == 0) {
                     pushDialogs.remove(dialog_id);
+                    for (int a = 0; a < pushMessages.size(); a++) {
+                        MessageObject messageObject = pushMessages.get(a);
+                        if (messageObject.getDialogId() == dialog_id) {
+                            pushMessages.remove(a);
+                            a--;
+                            pushMessagesDict.remove(messageObject.messageOwner.id);
+                            popupMessages.remove(messageObject);
+                        }
+                    }
                 } else if (canAddValue) {
                     total_unread_count += newCount;
                     pushDialogs.put(dialog_id, newCount);
@@ -657,7 +665,6 @@ public class NotificationsController {
         pushDialogs.clear();
         total_unread_count = 0;
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
-        String dialogsToLoad = "";
         for (HashMap.Entry<Long, Integer> entry : dialogs.entrySet()) {
             long dialog_id = entry.getKey();
             int notify_override = preferences.getInt("notify2_" + dialog_id, 0);
@@ -665,10 +672,6 @@ public class NotificationsController {
             if (!(notify_override == 2 || (!preferences.getBoolean("EnableAll", true) || isChat && !preferences.getBoolean("EnableGroup", true)) && notify_override == 0)) {
                 pushDialogs.put(dialog_id, entry.getValue());
                 total_unread_count += entry.getValue();
-                if (dialogsToLoad.length() != 0) {
-                    dialogsToLoad += ",";
-                }
-                dialogsToLoad += "" + dialog_id;
             }
         }
         if (total_unread_count == 0) {

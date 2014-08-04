@@ -850,7 +850,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     public long performRpc(final TLObject rpc, final RPCRequest.RPCRequestDelegate completionBlock, final RPCRequest.RPCQuickAckDelegate quickAckBlock, final boolean requiresCompletion, final int requestClass, final int datacenterId, final boolean runQueue) {
-        if (!UserConfig.isClientActivated() && (requestClass & RPCRequest.RPCRequestClassWithoutLogin) == 0) {
+        if (rpc == null || !UserConfig.isClientActivated() && (requestClass & RPCRequest.RPCRequestClassWithoutLogin) == 0) {
             FileLog.e("tmessages", "can't do request without login " + rpc);
             return 0;
         }
@@ -1752,7 +1752,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     private void registerForPush() {
-        if (registeringForPush) {
+        if (registeringForPush || !UserConfig.isClientActivated()) {
             return;
         }
         UserConfig.registeredForInternalPush = false;
@@ -1805,6 +1805,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                         UserConfig.saveConfig(false);
                         saveSession();
                         FileLog.e("tmessages", "registered for internal push");
+                    } else {
+                        UserConfig.registeredForInternalPush = false;
                     }
                     registeringForPush = false;
                 }

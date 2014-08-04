@@ -31,7 +31,7 @@ import org.telegram.objects.PhotoObject;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.Views.GifDrawable;
 import org.telegram.ui.Views.ImageReceiver;
-import org.telegram.ui.Views.ProgressView;
+import org.telegram.ui.Views.RoundProgressView;
 
 import java.io.File;
 import java.util.Locale;
@@ -45,7 +45,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     private static Drawable placeholderInDrawable;
     private static Drawable placeholderOutDrawable;
     private static Drawable videoIconDrawable;
-    private static Drawable[][] buttonStatesDrawables = new Drawable[4][2];
+    private static Drawable[] buttonStatesDrawables = new Drawable[4];
     private static TextPaint infoPaint;
     private static MessageObject lastDownloadedGifMessage = null;
 
@@ -57,10 +57,11 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     private String currentUrl;
     private String currentPhotoFilter;
     private ImageReceiver photoImage;
-    private ProgressView progressView;
+    private RoundProgressView progressView;
     public int downloadPhotos = 0;
     private boolean progressVisible = false;
     private boolean photoNotSet = false;
+    private boolean cancelLoading = false;
 
     private int TAG;
 
@@ -83,14 +84,10 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         if (placeholderInDrawable == null) {
             placeholderInDrawable = getResources().getDrawable(R.drawable.photo_placeholder_in);
             placeholderOutDrawable = getResources().getDrawable(R.drawable.photo_placeholder_out);
-            buttonStatesDrawables[0][0] = getResources().getDrawable(R.drawable.photoload);
-            buttonStatesDrawables[0][1] = getResources().getDrawable(R.drawable.photoload_pressed);
-            buttonStatesDrawables[1][0] = getResources().getDrawable(R.drawable.photocancel);
-            buttonStatesDrawables[1][1] = getResources().getDrawable(R.drawable.photocancel_pressed);
-            buttonStatesDrawables[2][0] = getResources().getDrawable(R.drawable.photogif);
-            buttonStatesDrawables[2][1] = getResources().getDrawable(R.drawable.photogif_pressed);
-            buttonStatesDrawables[3][0] = getResources().getDrawable(R.drawable.playvideo);
-            buttonStatesDrawables[3][1] = getResources().getDrawable(R.drawable.playvideo_pressed);
+            buttonStatesDrawables[0] = getResources().getDrawable(R.drawable.photoload);
+            buttonStatesDrawables[1] = getResources().getDrawable(R.drawable.photocancel);
+            buttonStatesDrawables[2] = getResources().getDrawable(R.drawable.photogif);
+            buttonStatesDrawables[3] = getResources().getDrawable(R.drawable.playvideo);
             videoIconDrawable = getResources().getDrawable(R.drawable.ic_video);
 
             infoPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -102,8 +99,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
 
         photoImage = new ImageReceiver();
         photoImage.parentView = this;
-        progressView = new ProgressView();
-        progressView.setProgressColors(0x802a2a2a, 0xffffffff);
+        progressView = new RoundProgressView();
     }
 
     public void clearGifImage() {
@@ -225,6 +221,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
 
     private void didPressedButton() {
         if (buttonState == 0) {
+            cancelLoading = false;
             if (currentMessageObject.type == 1) {
                 if (currentMessageObject.imagePreview != null) {
                     photoImage.setImage(currentPhotoObject.photoOwner.location, currentPhotoFilter, new BitmapDrawable(currentMessageObject.imagePreview), currentPhotoObject.photoOwner.size);
@@ -246,6 +243,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     delegate.didPressedCancelSendButton(this);
                 }
             } else {
+                cancelLoading = true;
                 if (currentMessageObject.type == 1) {
                     FileLoader.getInstance().cancelLoadingForImageView(photoImage);
                 } else if (currentMessageObject.type == 8) {
@@ -304,6 +302,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     public void setMessageObject(MessageObject messageObject) {
         if (currentMessageObject != messageObject || isPhotoDataChanged(messageObject) || isUserDataChanged()) {
             super.setMessageObject(messageObject);
+            cancelLoading = false;
 
             progressVisible = false;
             buttonState = -1;
@@ -395,6 +394,9 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     photoHeight = h;
                     backgroundWidth = w + AndroidUtilities.dp(12);
                     currentPhotoFilter = String.format(Locale.US, "%d_%d", (int) (w / AndroidUtilities.density), (int) (h / AndroidUtilities.density));
+                    if (messageObject.photoThumbs.size() > 1) {
+                        currentPhotoFilter += "_b";
+                    }
 
                     if (currentPhotoObject.image != null) {
                         photoImage.setImageBitmap(currentPhotoObject.image);
@@ -485,20 +487,16 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             if (!cacheFile.exists()) {
                 MediaController.getInstance().addLoadingFileObserver(fileName, this);
                 if (!FileLoader.getInstance().isLoadingFile(fileName)) {
-                    if (currentMessageObject.type != 1 || downloadPhotos == 1 || downloadPhotos == 2 && !ConnectionsManager.isConnectedToWiFi()) {
+                    if (cancelLoading || currentMessageObject.type != 1 || downloadPhotos == 1 || downloadPhotos == 2 && !ConnectionsManager.isConnectedToWiFi()) {
                         buttonState = 0;
                         progressVisible = false;
                     } else {
-                        buttonState = -1;
+                        buttonState = 1;
                         progressVisible = true;
                     }
                     progressView.setProgress(0);
                 } else {
-                    if (currentMessageObject.type != 1 || downloadPhotos == 1 || downloadPhotos == 2 && !ConnectionsManager.isConnectedToWiFi()) {
-                        buttonState = 1;
-                    } else {
-                        buttonState = -1;
-                    }
+                    buttonState = 1;
                     progressVisible = true;
                     Float progress = FileLoader.getInstance().fileProgresses.get(fileName);
                     if (progress != null) {
@@ -544,13 +542,10 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         photoImage.imageW = photoWidth;
         photoImage.imageH = photoHeight;
 
-        progressView.width = timeX - photoImage.imageX - AndroidUtilities.dpf(23.0f);
-        progressView.height = AndroidUtilities.dp(3);
-        progressView.progressHeight = AndroidUtilities.dp(3);
-
         int size = AndroidUtilities.dp(44);
         buttonX = (int)(photoImage.imageX + (photoWidth - size) / 2.0f);
         buttonY = (int)(photoImage.imageY + (photoHeight - size) / 2.0f);
+        progressView.rect.set(buttonX + AndroidUtilities.dp(2), buttonY + AndroidUtilities.dp(2), buttonX + AndroidUtilities.dp(42), buttonY + AndroidUtilities.dp(42));
     }
 
     @Override
@@ -566,20 +561,14 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             drawTime = photoImage.getVisible();
         }
 
-        if (progressVisible) {
-            setDrawableBounds(mediaBackgroundDrawable, photoImage.imageX + AndroidUtilities.dp(4), layoutHeight - AndroidUtilities.dpf(27.5f), progressView.width + AndroidUtilities.dp(12), AndroidUtilities.dpf(16.5f));
-            mediaBackgroundDrawable.draw(canvas);
-
-            canvas.save();
-            canvas.translate(photoImage.imageX + AndroidUtilities.dp(10), layoutHeight - AndroidUtilities.dpf(21.0f));
-            progressView.draw(canvas);
-            canvas.restore();
-        }
-
         if (buttonState >= 0 && buttonState < 4) {
-            Drawable currentButtonDrawable = buttonStatesDrawables[buttonState][buttonPressed];
+            Drawable currentButtonDrawable = buttonStatesDrawables[buttonState];
             setDrawableBounds(currentButtonDrawable, buttonX, buttonY);
             currentButtonDrawable.draw(canvas);
+        }
+
+        if (progressVisible) {
+            progressView.draw(canvas);
         }
 
         if (infoLayout != null && (buttonState == 1 || buttonState == 0 || buttonState == 3)) {

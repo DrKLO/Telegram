@@ -90,6 +90,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private TextView emptyTextView;
     private EditText userSelectEditText;
     private boolean ignoreChange = false;
+    private boolean isBroadcast = false;
 
     private HashMap<Integer, XImageSpan> selectedContacts =  new HashMap<Integer, XImageSpan>();
     private ArrayList<XImageSpan> allSpans = new ArrayList<XImageSpan>();
@@ -104,6 +105,15 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private int beforeChangeIndex;
 
     private final static int done_button = 1;
+
+    public GroupCreateActivity() {
+        super();
+    }
+
+    public GroupCreateActivity(Bundle args) {
+        super(args);
+        isBroadcast = args.getBoolean("broadcast", false);
+    }
 
     @Override
     public boolean onFragmentCreate() {
@@ -126,7 +136,11 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         if (fragmentView == null) {
             actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
             actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
-            actionBarLayer.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
+            if (isBroadcast) {
+                actionBarLayer.setTitle(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList));
+            } else {
+                actionBarLayer.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
+            }
             actionBarLayer.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), 200));
 
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
@@ -140,6 +154,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                             result.addAll(selectedContacts.keySet());
                             Bundle args = new Bundle();
                             args.putIntegerArrayList("result", result);
+                            args.putBoolean("broadcast", isBroadcast);
                             presentFragment(new GroupCreateFinalActivity(args));
                         }
                     }

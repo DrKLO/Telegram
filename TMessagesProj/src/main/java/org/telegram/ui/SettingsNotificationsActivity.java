@@ -488,7 +488,8 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
     }
 
     public void updateServerNotificationsSettings(boolean group) {
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+        //disable global settings sync
+        /*SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
         TLRPC.TL_account_updateNotifySettings req = new TLRPC.TL_account_updateNotifySettings();
         req.settings = new TLRPC.TL_inputPeerNotifySettings();
         req.settings.sound = "default";
@@ -507,7 +508,7 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
             public void run(TLObject response, TLRPC.TL_error error) {
 
             }
-        });
+        });*/
     }
 
     @Override

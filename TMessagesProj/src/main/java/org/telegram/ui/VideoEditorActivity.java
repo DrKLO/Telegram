@@ -467,18 +467,15 @@ public class VideoEditorActivity extends BaseFragment implements SurfaceHolder.C
         List<Track> tracks = movie.getTracks();
         movie.setTracks(new LinkedList<Track>());
 
-        double startTime = videoTimelineView.getLeftProgress() * videoPlayer.getDuration() / 1000.0;
-        double endTime = videoTimelineView.getRightProgress() * videoPlayer.getDuration() / 1000.0;
+        double startTime = 0;
+        double endTime = 0;
 
-        boolean timeCorrected = false;
         for (Track track : tracks) {
             if (track.getSyncSamples() != null && track.getSyncSamples().length > 0) {
-                if (timeCorrected) {
-                    throw new RuntimeException("The startTime has already been corrected by another track with SyncSample. Not Supported.");
-                }
-                startTime = correctTimeToSyncSample(track, startTime, false);
-                endTime = correctTimeToSyncSample(track, endTime, true);
-                timeCorrected = true;
+                double duration = (double)track.getDuration() / (double)track.getTrackMetaData().getTimescale();
+                startTime = correctTimeToSyncSample(track, videoTimelineView.getLeftProgress() * duration, false);
+                endTime = videoTimelineView.getRightProgress() * duration;
+                break;
             }
         }
 
@@ -486,7 +483,7 @@ public class VideoEditorActivity extends BaseFragment implements SurfaceHolder.C
             long currentSample = 0;
             double currentTime = 0;
             double lastTime = 0;
-            long startSample = -1;
+            long startSample = 0;
             long endSample = -1;
 
             for (int i = 0; i < track.getSampleDurations().length; i++) {
@@ -503,9 +500,7 @@ public class VideoEditorActivity extends BaseFragment implements SurfaceHolder.C
             }
             movie.addTrack(new CroppedTrack(track, startSample, endSample));
         }
-        long start1 = System.currentTimeMillis();
         Container out = new DefaultMp4Builder().build(movie);
-        long start2 = System.currentTimeMillis();
 
         String fileName = Integer.MIN_VALUE + "_" + UserConfig.lastLocalId + ".mp4";
         UserConfig.lastLocalId--;
@@ -523,6 +518,11 @@ public class VideoEditorActivity extends BaseFragment implements SurfaceHolder.C
             finishFragment();
         }
     }
+
+//    private void startEncodeVideo() {
+//        MediaExtractor mediaExtractor = new MediaExtractor();
+//        mediaExtractor.s
+//    }
 
     private static double correctTimeToSyncSample(Track track, double cutHere, boolean next) {
         double[] timeOfSyncSamples = new double[track.getSyncSamples().length];

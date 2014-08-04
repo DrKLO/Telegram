@@ -45,6 +45,7 @@
             android:layout_marginTop="0dp"
             android:gravity="left|center_vertical"
             android:imeOptions="flagNoExtractUi"
+            android:inputType="textCapSentences"
             android:layout_gravity="center_vertical"
             android:textCursorDrawable="@null"
             android:textColor="#000000"/>

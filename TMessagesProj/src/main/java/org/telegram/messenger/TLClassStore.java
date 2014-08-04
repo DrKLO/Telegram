@@ -439,6 +439,7 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_decryptedMessageMediaAudio_old.constructor, TLRPC.TL_decryptedMessageMediaAudio_old.class);
         classStore.put(TLRPC.TL_audio_old.constructor, TLRPC.TL_audio_old.class);
         classStore.put(TLRPC.TL_video_old.constructor, TLRPC.TL_video_old.class);
+        classStore.put(TLRPC.TL_messageActionCreatedBroadcastList.constructor, TLRPC.TL_messageActionCreatedBroadcastList.class);
     }
 
     static TLClassStore store = null;
