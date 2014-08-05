@@ -39,7 +39,6 @@ public class MessageObject {
     public int contentType;
     public ArrayList<PhotoObject> photoThumbs;
     public Bitmap imagePreview;
-    public PhotoObject previewPhoto;
     public String dateKey;
     public boolean deleted = false;
     public float audioProgress;
@@ -138,10 +137,6 @@ public class MessageObject {
                         messageText = LocaleController.getString("ActionAddUser", R.string.ActionAddUser).replace("un2", "").replace("un1", "");
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionChatEditPhoto) {
-                    photoThumbs = new ArrayList<PhotoObject>();
-                    for (TLRPC.PhotoSize size : message.action.photo.sizes) {
-                        photoThumbs.add(new PhotoObject(size, preview));
-                    }
                     if (isFromMe()) {
                         messageText = LocaleController.getString("ActionYouChangedPhoto", R.string.ActionYouChangedPhoto);
                     } else {
@@ -242,22 +237,8 @@ public class MessageObject {
             }
         } else if (message.media != null && !(message.media instanceof TLRPC.TL_messageMediaEmpty)) {
             if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
-                photoThumbs = new ArrayList<PhotoObject>();
-                for (TLRPC.PhotoSize size : message.media.photo.sizes) {
-                    PhotoObject obj = new PhotoObject(size, preview);
-                    photoThumbs.add(obj);
-                    if (imagePreview == null && obj.image != null) {
-                        imagePreview = obj.image;
-                    }
-                }
                 messageText = LocaleController.getString("AttachPhoto", R.string.AttachPhoto);
             } else if (message.media instanceof TLRPC.TL_messageMediaVideo) {
-                photoThumbs = new ArrayList<PhotoObject>();
-                PhotoObject obj = new PhotoObject(message.media.video.thumb, preview);
-                photoThumbs.add(obj);
-                if (imagePreview == null && obj.image != null) {
-                    imagePreview = obj.image;
-                }
                 messageText = LocaleController.getString("AttachVideo", R.string.AttachVideo);
             } else if (message.media instanceof TLRPC.TL_messageMediaGeo) {
                 messageText = LocaleController.getString("AttachLocation", R.string.AttachLocation);
@@ -266,11 +247,6 @@ public class MessageObject {
             } else if (message.media instanceof TLRPC.TL_messageMediaUnsupported) {
                 messageText = LocaleController.getString("UnsuppotedMedia", R.string.UnsuppotedMedia);
             } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
-                if (!(message.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty)) {
-                    photoThumbs = new ArrayList<PhotoObject>();
-                    PhotoObject obj = new PhotoObject(message.media.document.thumb, preview);
-                    photoThumbs.add(obj);
-                }
                 messageText = LocaleController.getString("AttachDocument", R.string.AttachDocument);
             } else if (message.media instanceof TLRPC.TL_messageMediaAudio) {
                 messageText = LocaleController.getString("AttachAudio", R.string.AttachAudio);
@@ -335,6 +311,80 @@ public class MessageObject {
         dateKey = String.format("%d_%02d_%02d", dateYear, dateMonth, dateDay);
 
         generateLayout();
+        generateThumbs(false, preview);
+    }
+
+    public void generateThumbs(boolean update, int preview) {
+        if (messageOwner instanceof TLRPC.TL_messageService) {
+            if (messageOwner.action instanceof TLRPC.TL_messageActionChatEditPhoto) {
+                if (!update) {
+                    photoThumbs = new ArrayList<PhotoObject>();
+                    for (TLRPC.PhotoSize size : messageOwner.action.photo.sizes) {
+                        photoThumbs.add(new PhotoObject(size, preview));
+                    }
+                } else if (photoThumbs != null && !photoThumbs.isEmpty()) {
+                    for (PhotoObject photoObject : photoThumbs) {
+                        for (TLRPC.PhotoSize size : messageOwner.action.photo.sizes) {
+                            if (size instanceof TLRPC.TL_photoSizeEmpty) {
+                                continue;
+                            }
+                            if (size.type.equals(photoObject.photoOwner.type)) {
+                                photoObject.photoOwner.location = size.location;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (messageOwner.media != null && !(messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
+            if (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
+                if (!update) {
+                    photoThumbs = new ArrayList<PhotoObject>();
+                    for (TLRPC.PhotoSize size : messageOwner.media.photo.sizes) {
+                        PhotoObject obj = new PhotoObject(size, preview);
+                        photoThumbs.add(obj);
+                        if (imagePreview == null && obj.image != null) {
+                            imagePreview = obj.image;
+                        }
+                    }
+                } else if (photoThumbs != null && !photoThumbs.isEmpty()) {
+                    for (PhotoObject photoObject : photoThumbs) {
+                        for (TLRPC.PhotoSize size : messageOwner.media.photo.sizes) {
+                            if (size instanceof TLRPC.TL_photoSizeEmpty) {
+                                continue;
+                            }
+                            if (size.type.equals(photoObject.photoOwner.type)) {
+                                photoObject.photoOwner.location = size.location;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } else if (messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
+                if (!update) {
+                    photoThumbs = new ArrayList<PhotoObject>();
+                    PhotoObject obj = new PhotoObject(messageOwner.media.video.thumb, preview);
+                    photoThumbs.add(obj);
+                    if (imagePreview == null && obj.image != null) {
+                        imagePreview = obj.image;
+                    }
+                } else if (photoThumbs != null && !photoThumbs.isEmpty() && messageOwner.media.video.thumb != null) {
+                    PhotoObject photoObject = photoThumbs.get(0);
+                    photoObject.photoOwner.location = messageOwner.media.video.thumb.location;
+                }
+            } if (messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
+                if (!(messageOwner.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty)) {
+                    if (!update) {
+                        photoThumbs = new ArrayList<PhotoObject>();
+                        PhotoObject obj = new PhotoObject(messageOwner.media.document.thumb, preview);
+                        photoThumbs.add(obj);
+                    } else if (photoThumbs != null && !photoThumbs.isEmpty() && messageOwner.media.document.thumb != null) {
+                        PhotoObject photoObject = photoThumbs.get(0);
+                        photoObject.photoOwner.location = messageOwner.media.video.thumb.location;
+                    }
+                }
+            }
+        }
     }
 
     public String getFileName() {

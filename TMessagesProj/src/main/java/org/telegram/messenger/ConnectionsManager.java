@@ -781,6 +781,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
                         processRequestQueue(RPCRequest.RPCRequestClassTransportMask, 0);
                     }
+                    MessagesController.getInstance().updateConfig(config);
                 }
                 updatingDcSettings = false;
             }

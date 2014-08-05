@@ -92,6 +92,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
     public boolean enableJoined = true;
     public int fontSize = AndroidUtilities.dp(16);
+    public int maxGroupCount = 200;
+    public int maxBroadcastCount = 100;
 
     private TLRPC.ChatParticipants currentChatInfo = null;
     private int chatParticipantsId = 0;
@@ -191,7 +193,24 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
         enableJoined = preferences.getBoolean("EnableContactJoined", true);
         preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        maxGroupCount = preferences.getInt("maxGroupCount", 200);
+        maxBroadcastCount = preferences.getInt("maxBroadcastCount", 100);
         fontSize = preferences.getInt("fons_size", 16);
+    }
+
+    public void updateConfig(final TLRPC.TL_config config) {
+        Utilities.RunOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                maxBroadcastCount = config.broadcast_size_max;
+                maxGroupCount = config.chat_size_max;
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                SharedPreferences.Editor editor = preferences.edit();
+                editor.putInt("maxGroupCount", maxGroupCount);
+                editor.putInt("maxBroadcastCount", maxBroadcastCount);
+                editor.commit();
+            }
+        });
     }
 
     public void addSupportUser() {
@@ -4485,38 +4504,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     }
                     NotificationCenter.getInstance().postNotificationName(dialogsNeedReload);
                 }
-                if (!markAsReadMessages.isEmpty()) {
-                    for (Integer id : markAsReadMessages) {
-                        MessageObject obj = dialogMessage.get(id);
-                        if (obj != null) {
-                            obj.messageOwner.unread = false;
-                            updateMask |= UPDATE_MASK_READ_DIALOG_MESSAGE;
-                        }
-                    }
-                }
-                if (!markAsReadEncrypted.isEmpty()) {
-                    for (HashMap.Entry<Integer, Integer> entry : markAsReadEncrypted.entrySet()) {
-                        NotificationCenter.getInstance().postNotificationName(messagesReadedEncrypted, entry.getKey(), entry.getValue());
-                        long dialog_id = (long)(entry.getKey()) << 32;
-                        TLRPC.TL_dialog dialog = dialogs_dict.get(dialog_id);
-                        if (dialog != null) {
-                            MessageObject message = dialogMessage.get(dialog.top_message);
-                            if (message != null && message.messageOwner.date <= entry.getValue()) {
-                                message.messageOwner.unread = false;
-                                updateMask |= UPDATE_MASK_READ_DIALOG_MESSAGE;
-                            }
-                        }
-                    }
-                }
-                if (!deletedMessages.isEmpty()) {
-                    NotificationCenter.getInstance().postNotificationName(messagesDeleted, deletedMessages);
-                    for (Integer id : deletedMessages) {
-                        MessageObject obj = dialogMessage.get(id);
-                        if (obj != null) {
-                            obj.deleted = true;
-                        }
-                    }
-                }
                 if (printChangedArg) {
                     updateMask |= UPDATE_MASK_USER_PRINT;
                 }
@@ -4542,9 +4529,44 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 Utilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
+                        int updateMask = 0;
                         if (!markAsReadMessages.isEmpty()) {
                             NotificationCenter.getInstance().postNotificationName(messagesReaded, markAsReadMessages);
                             NotificationsController.getInstance().processReadMessages(markAsReadMessages, 0, 0, 0);
+
+                            for (Integer id : markAsReadMessages) {
+                                MessageObject obj = dialogMessage.get(id);
+                                if (obj != null) {
+                                    obj.messageOwner.unread = false;
+                                    updateMask |= UPDATE_MASK_READ_DIALOG_MESSAGE;
+                                }
+                            }
+                        }
+                        if (!markAsReadEncrypted.isEmpty()) {
+                            for (HashMap.Entry<Integer, Integer> entry : markAsReadEncrypted.entrySet()) {
+                                NotificationCenter.getInstance().postNotificationName(messagesReadedEncrypted, entry.getKey(), entry.getValue());
+                                long dialog_id = (long)(entry.getKey()) << 32;
+                                TLRPC.TL_dialog dialog = dialogs_dict.get(dialog_id);
+                                if (dialog != null) {
+                                    MessageObject message = dialogMessage.get(dialog.top_message);
+                                    if (message != null && message.messageOwner.date <= entry.getValue()) {
+                                        message.messageOwner.unread = false;
+                                        updateMask |= UPDATE_MASK_READ_DIALOG_MESSAGE;
+                                    }
+                                }
+                            }
+                        }
+                        if (!deletedMessages.isEmpty()) {
+                            NotificationCenter.getInstance().postNotificationName(messagesDeleted, deletedMessages);
+                            for (Integer id : deletedMessages) {
+                                MessageObject obj = dialogMessage.get(id);
+                                if (obj != null) {
+                                    obj.deleted = true;
+                                }
+                            }
+                        }
+                        if (updateMask != 0) {
+                            NotificationCenter.getInstance().postNotificationName(updateInterfaces, updateMask);
                         }
                     }
                 });
@@ -4734,7 +4756,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             TLObject object = TLClassStore.Instance().TLdeserialize(is, is.readInt32());
             BuffersStorage.getInstance().reuseFreeBuffer(is);
             if (object != null) {
-
                 int from_id = chat.admin_id;
                 if (from_id == UserConfig.getClientUserId()) {
                     from_id = chat.participant_id;
@@ -4943,6 +4964,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             pendingEncMessagesToDelete.addAll(serviceMessage.action.random_ids);
                         }
                         return null;
+                    } else {
+                        return null;
                     }
                 } else {
                     FileLog.e("tmessages", "unkown message " + object);
@@ -4951,9 +4974,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 FileLog.e("tmessages", "unkown TLObject");
             }
         } else {
+            BuffersStorage.getInstance().reuseFreeBuffer(is);
             FileLog.e("tmessages", "fingerprint mismatch");
         }
-        BuffersStorage.getInstance().reuseFreeBuffer(is);
         return null;
     }
 

@@ -8,7 +8,6 @@
 
 package org.telegram.ui;
 
-import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.Application;
 import android.app.PendingIntent;
@@ -93,34 +92,6 @@ public class ApplicationLoader extends Application {
 
         UserConfig.loadConfig();
         if (UserConfig.getCurrentUser() != null) {
-            boolean changed = false;
-            SharedPreferences preferences = applicationContext.getSharedPreferences("Notifications", MODE_PRIVATE);
-            int v = preferences.getInt("v", 0);
-            if (v != 1) {
-                SharedPreferences preferences2 = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                SharedPreferences.Editor editor = preferences2.edit();
-                if (preferences.contains("view_animations")) {
-                    editor.putBoolean("view_animations", preferences.getBoolean("view_animations", false));
-                }
-                if (preferences.contains("selectedBackground")) {
-                    editor.putInt("selectedBackground", preferences.getInt("selectedBackground", 1000001));
-                }
-                if (preferences.contains("selectedColor")) {
-                    editor.putInt("selectedColor", preferences.getInt("selectedColor", 0));
-                }
-                if (preferences.contains("fons_size")) {
-                    editor.putInt("fons_size", preferences.getInt("fons_size", 16));
-                }
-                editor.commit();
-                editor = preferences.edit();
-                editor.putInt("v", 1);
-                editor.remove("view_animations");
-                editor.remove("selectedBackground");
-                editor.remove("selectedColor");
-                editor.remove("fons_size");
-                editor.commit();
-            }
-
             MessagesController.getInstance().users.put(UserConfig.getClientUserId(), UserConfig.getCurrentUser());
             ConnectionsManager.getInstance().applyCountryPortNumber(UserConfig.getCurrentUser().phone);
             ConnectionsManager.getInstance().initPushConnection();

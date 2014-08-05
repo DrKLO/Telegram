@@ -2161,6 +2161,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 MessageObject newMsgObj = (MessageObject)args[2];
                 if (newMsgObj != null) {
                     obj.messageOwner.media = newMsgObj.messageOwner.media;
+                    obj.generateThumbs(true, 1);
                 }
                 messagesDict.remove(msgId);
                 messagesDict.put(newMsgId, obj);

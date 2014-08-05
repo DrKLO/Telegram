@@ -143,7 +143,8 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
             membersSectionRow = rowCount++;
             rowCount += info.participants.size();
             membersEndRow = rowCount;
-            if (info.participants.size() < 200) {
+            int maxCount = chat_id > 0 ? MessagesController.getInstance().maxGroupCount : MessagesController.getInstance().maxBroadcastCount;
+            if (info.participants.size() < maxCount) {
                 addMemberRow = rowCount++;
             } else {
                 addMemberRow = -1;
