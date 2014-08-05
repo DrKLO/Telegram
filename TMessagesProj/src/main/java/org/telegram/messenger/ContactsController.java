@@ -176,7 +176,12 @@ public class ContactsController {
             }
             if (UserConfig.currentUser != null) {
                 currentAccount = new Account(UserConfig.currentUser.phone, "com.aniways.anigram.messenger.account");
-                am.addAccountExplicitly(currentAccount, "", null);
+                try {
+                    am.addAccountExplicitly(currentAccount, "", null);
+                }
+                catch(SecurityException ex){
+
+                }
             }
         }
     }

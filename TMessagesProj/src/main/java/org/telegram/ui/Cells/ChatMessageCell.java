@@ -48,7 +48,7 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
         mLoadingImageSpansContainer = new AniwaysLoadingImageSpansContainer(this, new IResponseListener() {
             @Override
             public void onError() {
-                Log.e(true, TAG, "Error loading image");
+
             }
 
             @Override
@@ -362,16 +362,6 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     @Override
     public View getView() {
         return this;
-    }
-
-    @Override
-    public void addLoadingImageSpan(AniwaysLoadingImageSpan span) {
-        mLoadingImageSpansContainer.addLoadingImageSpan(span);
-    }
-
-    @Override
-    public void removeLoadingImageSpan(AniwaysLoadingImageSpan span) {
-        mLoadingImageSpansContainer.removeLoadingImagespan(span);
     }
 
     @Override
