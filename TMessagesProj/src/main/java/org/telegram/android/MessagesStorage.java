@@ -2009,7 +2009,7 @@ public class MessagesStorage {
                 } else {
                     state.bindInteger(2, dialog_date != 0 ? dialog_date : value.date);
                 }
-                state.bindInteger(3, unread_count);
+                state.bindInteger(3, old_unread_count + unread_count);
                 state.bindInteger(4, messageId);
                 state.step();
             }

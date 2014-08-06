@@ -380,7 +380,7 @@ public class MessageObject {
                         photoThumbs.add(obj);
                     } else if (photoThumbs != null && !photoThumbs.isEmpty() && messageOwner.media.document.thumb != null) {
                         PhotoObject photoObject = photoThumbs.get(0);
-                        photoObject.photoOwner.location = messageOwner.media.video.thumb.location;
+                        photoObject.photoOwner.location = messageOwner.media.document.thumb.location;
                     }
                 }
             }
