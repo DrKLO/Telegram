@@ -291,7 +291,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
     @Override
     public void restoreSelfArgs(Bundle args) {
-        MessagesController.getInstance().loadChatInfo(chat_id);
+        MessagesController.getInstance().loadChatInfo(chat_id, null);
         if (avatarUpdater != null) {
             avatarUpdater.currentPicturePath = args.getString("path");
         }

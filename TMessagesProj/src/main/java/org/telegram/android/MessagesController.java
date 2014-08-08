@@ -892,10 +892,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
     }
 
-    public void loadChatInfo(final int chat_id) {
+    public void loadChatInfo(final int chat_id, Semaphore semaphore) {
         currentChatInfo = null;
         chatParticipantsId = chat_id;
-        MessagesStorage.getInstance().loadChatInfo(chat_id);
+        MessagesStorage.getInstance().loadChatInfo(chat_id, semaphore);
     }
 
     public void processChatInfo(final int chat_id, final TLRPC.ChatParticipants info, final ArrayList<TLRPC.User> usersArr, final boolean fromCache) {
@@ -1605,7 +1605,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
     }
 
-    public void markDialogAsRead(final long dialog_id, final int max_id, final int max_positive_id, final int offset, final int max_date, final boolean was) {
+    public void markDialogAsRead(final long dialog_id, final int max_id, final int max_positive_id, final int offset, final int max_date, final boolean was, final boolean popup) {
         int lower_part = (int)dialog_id;
         int high_id = (int)(dialog_id >> 32);
 
@@ -1643,10 +1643,12 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                     dialog.unread_count = 0;
                                     NotificationCenter.getInstance().postNotificationName(dialogsNeedReload);
                                 }
-                                NotificationsController.getInstance().processReadMessages(null, dialog_id, 0, max_positive_id);
-                                HashMap<Long, Integer> dialogsToUpdate = new HashMap<Long, Integer>();
-                                dialogsToUpdate.put(dialog_id, 0);
-                                NotificationsController.getInstance().processDialogsUpdateRead(dialogsToUpdate, true);
+                                if (!popup) {
+                                    NotificationsController.getInstance().processReadMessages(null, dialog_id, 0, max_positive_id);
+                                    HashMap<Long, Integer> dialogsToUpdate = new HashMap<Long, Integer>();
+                                    dialogsToUpdate.put(dialog_id, 0);
+                                    NotificationsController.getInstance().processDialogsUpdateRead(dialogsToUpdate, true);
+                                }
                             }
                         });
                     }
@@ -1660,7 +1662,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             MessagesStorage.getInstance().processPendingRead(dialog_id, max_positive_id, max_date, true);
                             TLRPC.TL_messages_affectedHistory res = (TLRPC.TL_messages_affectedHistory) response;
                             if (res.offset > 0) {
-                                markDialogAsRead(dialog_id, 0, max_positive_id, res.offset, max_date, was);
+                                markDialogAsRead(dialog_id, 0, max_positive_id, res.offset, max_date, was, popup);
                             }
 
                             if (MessagesStorage.lastSeqValue + 1 == res.seq) {

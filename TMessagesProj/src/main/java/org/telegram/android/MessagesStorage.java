@@ -755,7 +755,7 @@ public class MessagesStorage {
         });
     }
 
-    public void loadChatInfo(final int chat_id) {
+    public void loadChatInfo(final int chat_id, final Semaphore semaphore) {
         storageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -809,9 +809,16 @@ public class MessagesStorage {
                             updateChatInfo(chat_id, info, false);
                         }
                     }
+                    if (semaphore != null) {
+                        semaphore.release();
+                    }
                     MessagesController.getInstance().processChatInfo(chat_id, info, loadedUsers, true);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
+                } finally {
+                    if (semaphore != null) {
+                        semaphore.release();
+                    }
                 }
             }
         });
@@ -946,6 +953,9 @@ public class MessagesStorage {
                                 ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
                                 if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
                                     TLRPC.Chat chat = (TLRPC.Chat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                                    if (!needEncrypted && chat.id < 0) {
+                                        continue;
+                                    }
                                     resultArrayNames.add(Utilities.generateSearchName(chat.title, null, q));
                                     resultArray.add(chat);
                                 }

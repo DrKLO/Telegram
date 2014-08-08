@@ -18,7 +18,7 @@ tasks.withType(JavaCompile) {
 
 dependencies {
     compile 'com.android.support:support-v4:19.0.+'
-    compile 'com.google.android.gms:play-services:4.1.+'
+    compile 'com.google.android.gms:play-services:3.2.+'
     compile 'net.hockeyapp.android:HockeySDK:3.0.1'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
 }
@@ -83,7 +83,7 @@ android {
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 19
-        versionCode 303
+        versionCode 307
         versionName "1.7.0"
     }
 }
