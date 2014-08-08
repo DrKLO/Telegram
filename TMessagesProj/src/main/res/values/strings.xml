@@ -57,6 +57,14 @@
     <string name="HiddenName">Hidden Name</string>
     <string name="SelectChat">Select Chat</string>
 
+    <!--broadcasts-->
+    <string name="BroadcastList">Broadcast List</string>
+    <string name="NewBroadcastList">New Broadcast List</string>
+    <string name="EnterListName">Enter list name</string>
+    <string name="YouCreatedBroadcastList">You created a broadcast list</string>
+    <string name="AddRecipient">Add Recipient</string>
+    <string name="KickFromBroadcast">Remove from broadcast list</string>
+
     <!--documents view-->
     <string name="SelectFile">Select File</string>
     <string name="FreeOfTotal">Free %1$s of %2$s</string>
@@ -150,7 +158,7 @@
     <string name="NotificationGroupKickYou">%1$s removed you from the group %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s has left the group %2$s</string>
     <string name="NotificationContactJoined">%1$s joined Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nWe detected a login into your account from a new device on %2$s\n\nDevice: %3$s\nLocation: %4$s\n\nIf this wasn’t you, you can go to Settings – Terminate all sessions.\n\nThanks,\nThe Telegram Team</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nWe detected a login into your account from a new device on %2$s\n\nDevice: %3$s\nLocation: %4$s\n\nIf this wasn\'t you, you can go to Settings - Terminate all sessions.\n\nSincerely,\nThe Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s updated profile photo</string>
 
     <!--contacts view-->
@@ -263,19 +271,19 @@
     <string name="Enabled">Enabled</string>
     <string name="Disabled">Disabled</string>
     <string name="NotificationsService">Notifications Service</string>
-    <string name="NotificationsServiceDisableInfo">If google play services are enough for you to receive notifications, you can disable Notifications Service. However we recommend you to leave it enabled to keep app running in background and receive instant notifications.</string>
+    <string name="NotificationsServiceDisableInfo">If Google Play Services are enough for you to receive notifications, you can disable Notifications Service. However we recommend you to leave it enabled to keep app running in background and receive instant notifications.</string>
     <string name="SortBy">Sort By</string>
     <string name="ImportContacts">Import Contacts</string>
     <string name="WiFiOnly">Via WiFi only</string>
     <string name="SortFirstName">First name</string>
     <string name="SortLastName">Last name</string>
     <string name="LedColor">LED Color</string>
-    <string name="PopupNotification">Popup Notification</string>
+    <string name="PopupNotification">Popup Notifications</string>
     <string name="NoPopup">No popup</string>
     <string name="OnlyWhenScreenOn">Only when screen "on"</string>
     <string name="OnlyWhenScreenOff">Only when screen "off"</string>
     <string name="AlwaysShowPopup">Always show popup</string>
-    <string name="BadgeNumber">Badge Number</string>
+    <string name="BadgeNumber">Badge Counter</string>
 
     <!--media view-->
     <string name="NoMedia">No shared media yet</string>
@@ -362,8 +370,8 @@
     <string name="InvalidLastName">Invalid last name</string>
     <string name="Loading">Loading...</string>
     <string name="NoPlayerInstalled">You don\'t have a video player, please install one to continue</string>
-    <string name="NoMailInstalled">Please send an email to sms@telegram.org and explain your problem.</string>
-    <string name="NoHandleAppInstalled">You don\'t have any application that can handle with mime type \'%1$s\', please install one to continue</string>
+    <string name="NoMailInstalled">Please send an email to sms@telegram.org and tell us about your problem.</string>
+    <string name="NoHandleAppInstalled">You don\'t have applications that can handle the file type \'%1$s\', please install one to continue</string>
     <string name="InviteUser">This user does not have Telegram yet, send an invitation?</string>
     <string name="AreYouSure">Are you sure?</string>
     <string name="AddContactQ">Add contact?</string>
@@ -371,15 +379,15 @@
     <string name="ForwardMessagesTo">Forward messages to %1$s?</string>
     <string name="DeleteChatQuestion">Delete this chat?</string>
     <string name="SendMessagesTo">Send messages to %1$s?</string>
-    <string name="AreYouSureLogout">Are you sure you want to logout?</string>
+    <string name="AreYouSureLogout">Are you sure you want to log out?</string>
     <string name="AreYouSureSessions">Are you sure you want to terminate all other sessions?</string>
-    <string name="AreYouSureDeleteAndExit">Are you sure you want to delete and leave group?</string>
+    <string name="AreYouSureDeleteAndExit">Are you sure you want to delete and leave the group?</string>
     <string name="AreYouSureDeleteThisChat">Are you sure you want to delete this chat?</string>
-    <string name="AreYouSureShareMyContactInfo">Are you sure that you want to share your contact info?</string>
+    <string name="AreYouSureShareMyContactInfo">Are you sure you want to share your contact info?</string>
     <string name="AreYouSureBlockContact">Are you sure you want to block this contact?</string>
     <string name="AreYouSureUnblockContact">Are you sure you want to unblock this contact?</string>
     <string name="AreYouSureDeleteContact">Are you sure you want to delete this contact?</string>
-    <string name="AreYouSureSecretChat">Are you sure you want to start secret chat?</string>
+    <string name="AreYouSureSecretChat">Are you sure you want to start a secret chat?</string>
     <string name="ForwardFromMyName">forward from my name</string>
 
     <!--Intro view-->

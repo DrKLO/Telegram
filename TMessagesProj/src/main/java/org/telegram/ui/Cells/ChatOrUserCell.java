@@ -35,6 +35,8 @@ public class ChatOrUserCell extends BaseCell {
     private static TextPaint offlinePaint;
 
     private static Drawable lockDrawable;
+    private static Drawable broadcastDrawable;
+    private static Drawable groupDrawable;
     private static Paint linePaint;
 
     private CharSequence currentName;
@@ -91,6 +93,14 @@ public class ChatOrUserCell extends BaseCell {
         if (linePaint == null) {
             linePaint = new Paint();
             linePaint.setColor(0xffdcdcdc);
+        }
+
+        if (broadcastDrawable == null) {
+            broadcastDrawable = getResources().getDrawable(R.drawable.broadcast);
+        }
+
+        if (groupDrawable == null) {
+            groupDrawable = getResources().getDrawable(R.drawable.grouplist);
         }
 
         if (avatarImage == null) {
@@ -230,6 +240,12 @@ public class ChatOrUserCell extends BaseCell {
         if (cellLayout.drawNameLock) {
             setDrawableBounds(lockDrawable, cellLayout.nameLockLeft, cellLayout.nameLockTop);
             lockDrawable.draw(canvas);
+        } else if (cellLayout.drawNameGroup) {
+            setDrawableBounds(groupDrawable, cellLayout.nameLockLeft, cellLayout.nameLockTop);
+            groupDrawable.draw(canvas);
+        } else if (cellLayout.drawNameBroadcast) {
+            setDrawableBounds(broadcastDrawable, cellLayout.nameLockLeft, cellLayout.nameLockTop);
+            broadcastDrawable.draw(canvas);
         }
 
         canvas.save();
@@ -262,8 +278,10 @@ public class ChatOrUserCell extends BaseCell {
         private int nameWidth;
         private StaticLayout nameLayout;
         private boolean drawNameLock;
+        private boolean drawNameBroadcast;
+        private boolean drawNameGroup;
         private int nameLockLeft;
-        private int nameLockTop = AndroidUtilities.dp(15);
+        private int nameLockTop;
 
         private int onlineLeft;
         private int onlineTop = AndroidUtilities.dp(36);
@@ -277,6 +295,10 @@ public class ChatOrUserCell extends BaseCell {
             CharSequence nameString = "";
             TextPaint currentNamePaint;
 
+            drawNameBroadcast = false;
+            drawNameLock = false;
+            drawNameGroup = false;
+
             if (encryptedChat != null) {
                 drawNameLock = true;
                 if (!LocaleController.isRTL) {
@@ -286,12 +308,28 @@ public class ChatOrUserCell extends BaseCell {
                     nameLockLeft = width - AndroidUtilities.dp(63 + (usePadding ? 11 : 0)) - lockDrawable.getIntrinsicWidth();
                     nameLeft = usePadding ? AndroidUtilities.dp(11) : 0;
                 }
+                nameLockTop = AndroidUtilities.dp(15);
             } else {
-                drawNameLock = false;
-                if (!LocaleController.isRTL) {
-                    nameLeft = AndroidUtilities.dp(61 + (usePadding ? 11 : 0));
+                if (chat != null) {
+                    nameLockTop = AndroidUtilities.dp(26);
+                    if (chat.id < 0) {
+                        drawNameBroadcast = true;
+                    } else {
+                        drawNameGroup = true;
+                    }
+                    if (!LocaleController.isRTL) {
+                        nameLockLeft = AndroidUtilities.dp(61 + (usePadding ? 11 : 0));
+                        nameLeft = AndroidUtilities.dp(65 + (usePadding ? 11 : 0)) + (drawNameGroup ? groupDrawable.getIntrinsicWidth() : broadcastDrawable.getIntrinsicWidth());
+                    } else {
+                        nameLockLeft = width - AndroidUtilities.dp(63 + (usePadding ? 11 : 0)) - (drawNameGroup ? groupDrawable.getIntrinsicWidth() : broadcastDrawable.getIntrinsicWidth());
+                        nameLeft = usePadding ? AndroidUtilities.dp(11) : 0;
+                    }
                 } else {
-                    nameLeft = usePadding ? AndroidUtilities.dp(11) : 0;
+                    if (!LocaleController.isRTL) {
+                        nameLeft = AndroidUtilities.dp(61 + (usePadding ? 11 : 0));
+                    } else {
+                        nameLeft = usePadding ? AndroidUtilities.dp(11) : 0;
+                    }
                 }
             }
 
@@ -326,6 +364,8 @@ public class ChatOrUserCell extends BaseCell {
             }
             if (drawNameLock) {
                 nameWidth -= AndroidUtilities.dp(6) + lockDrawable.getIntrinsicWidth();
+            } else if (drawNameBroadcast) {
+                nameWidth -= AndroidUtilities.dp(6) + broadcastDrawable.getIntrinsicWidth();
             }
 
             CharSequence nameStringFinal = TextUtils.ellipsize(nameString, currentNamePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);

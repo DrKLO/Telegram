@@ -161,7 +161,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     return;
                 }
                 NotificationsController.getInstance().popupMessages.remove(currentMessageNum);
-                MessagesController.getInstance().markDialogAsRead(currentMessageObject.getDialogId(), currentMessageObject.messageOwner.id, Math.max(0, currentMessageObject.messageOwner.id), 0, currentMessageObject.messageOwner.date, true);
+                MessagesController.getInstance().markDialogAsRead(currentMessageObject.getDialogId(), currentMessageObject.messageOwner.id, Math.max(0, currentMessageObject.messageOwner.id), 0, currentMessageObject.messageOwner.date, true, true);
                 currentMessageObject = null;
                 getNewMessage();
             }
@@ -874,9 +874,6 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             chatActivityEnterView.setFieldFocused(false);
         }
         ConnectionsManager.getInstance().setAppPaused(true, false);
-        if (wakeLock.isHeld()) {
-            wakeLock.release();
-        }
     }
 
     @Override

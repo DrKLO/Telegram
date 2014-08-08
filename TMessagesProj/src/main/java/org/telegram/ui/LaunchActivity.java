@@ -85,7 +85,6 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         currentConnectionState = ConnectionsManager.getInstance().getConnectionState();
 
         NotificationCenter.getInstance().addObserver(this, 1234);
-        NotificationCenter.getInstance().addObserver(this, 658);
         NotificationCenter.getInstance().addObserver(this, 701);
         NotificationCenter.getInstance().addObserver(this, 702);
         NotificationCenter.getInstance().addObserver(this, 703);
@@ -149,6 +148,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         Integer push_chat_id = 0;
         Integer push_enc_id = 0;
         Integer open_settings = 0;
+        boolean showDialogsList = false;
 
         photoPathsArray = null;
         videoPath = null;
@@ -379,6 +379,8 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                         NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
                         push_enc_id = encId;
                     }
+                } else {
+                    showDialogsList = true;
                 }
             }
         }
@@ -407,6 +409,11 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             ChatActivity fragment = new ChatActivity(args);
             if (presentFragment(fragment, false, true)) {
                 pushOpened = true;
+            }
+        } else if (showDialogsList) {
+            for (int a = 1; a < fragmentsStack.size(); a++) {
+                removeFragmentFromStack(fragmentsStack.get(a));
+                a--;
             }
         }
         if (videoPath != null || photoPathsArray != null || sendingText != null || documentsPathsArray != null || contactsToSend != null) {
@@ -440,18 +447,23 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     public void didSelectDialog(MessagesActivity messageFragment, long dialog_id, boolean param) {
         if (dialog_id != 0) {
             int lower_part = (int)dialog_id;
+            int high_id = (int)(dialog_id >> 32);
 
             Bundle args = new Bundle();
             args.putBoolean("scrollToTopOnResume", true);
             NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
             if (lower_part != 0) {
-                if (lower_part > 0) {
-                    args.putInt("user_id", lower_part);
-                } else if (lower_part < 0) {
-                    args.putInt("chat_id", -lower_part);
+                if (high_id == 1) {
+                    args.putInt("chat_id", lower_part);
+                } else {
+                    if (lower_part > 0) {
+                        args.putInt("user_id", lower_part);
+                    } else if (lower_part < 0) {
+                        args.putInt("chat_id", -lower_part);
+                    }
                 }
             } else {
-                args.putInt("enc_id", (int)(dialog_id >> 32));
+                args.putInt("enc_id", high_id);
             }
             ChatActivity fragment = new ChatActivity(args);
             presentFragment(fragment, true);
@@ -522,7 +534,6 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
         }
         finished = true;
         NotificationCenter.getInstance().removeObserver(this, 1234);
-        NotificationCenter.getInstance().removeObserver(this, 658);
         NotificationCenter.getInstance().removeObserver(this, 701);
         NotificationCenter.getInstance().removeObserver(this, 702);
         NotificationCenter.getInstance().removeObserver(this, 703);
@@ -546,30 +557,6 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             startActivity(intent2);
             onFinish();
             finish();
-        } else if (id == 658) {
-            if (PhotoViewer.getInstance().isVisible()) {
-                PhotoViewer.getInstance().closePhoto(false);
-            }
-            Integer push_chat_id = (Integer)args[0];
-            Integer push_user_id = (Integer)args[1];
-            Integer push_enc_id = (Integer)args[2];
-
-            if (push_user_id != 0) {
-                NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
-                Bundle args2 = new Bundle();
-                args2.putInt("user_id", push_user_id);
-                presentFragment(new ChatActivity(args2), false, true);
-            } else if (push_chat_id != 0) {
-                NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
-                Bundle args2 = new Bundle();
-                args2.putInt("chat_id", push_chat_id);
-                presentFragment(new ChatActivity(args2), false, true);
-            } else if (push_enc_id != 0) {
-                NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
-                Bundle args2 = new Bundle();
-                args2.putInt("enc_id", push_enc_id);
-                presentFragment(new ChatActivity(args2), false, true);
-            }
         } else if (id == 702) {
             if (args[0] != this) {
                 onFinish();

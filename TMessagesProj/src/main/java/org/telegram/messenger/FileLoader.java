@@ -64,7 +64,7 @@ public class FileLoader {
     private long lastProgressUpdateTime = 0;
     private HashMap<String, Integer> BitmapUseCounts = new HashMap<String, Integer>();
 
-    int lastImageNum;
+    private int lastImageNum = 0;
 
     public static final int FileDidUpload = 10000;
     public static final int FileDidFailUpload = 10001;
@@ -717,15 +717,15 @@ public class FileLoader {
         });
     }
 
-    public Bitmap getImageFromMemory(TLRPC.FileLocation url, ImageReceiver imageView, String filter, boolean cancel) {
-        return getImageFromMemory(url, null, imageView, filter, cancel);
+    public Bitmap getImageFromMemory(TLRPC.FileLocation url, ImageReceiver imageView, String filter) {
+        return getImageFromMemory(url, null, imageView, filter);
     }
 
-    public Bitmap getImageFromMemory(String url, ImageReceiver imageView, String filter, boolean cancel) {
-        return getImageFromMemory(null, url, imageView, filter, cancel);
+    public Bitmap getImageFromMemory(String url, ImageReceiver imageView, String filter) {
+        return getImageFromMemory(null, url, imageView, filter);
     }
 
-    public Bitmap getImageFromMemory(TLRPC.FileLocation url, String httpUrl, ImageReceiver imageView, String filter, boolean cancel) {
+    public Bitmap getImageFromMemory(TLRPC.FileLocation url, String httpUrl, ImageReceiver imageView, String filter) {
         if (url == null && httpUrl == null) {
             return null;
         }
@@ -739,11 +739,7 @@ public class FileLoader {
             key += "@" + filter;
         }
 
-        Bitmap img = imageFromKey(key);
-        if (imageView != null && img != null && cancel) {
-            cancelLoadingForImageView(imageView);
-        }
-        return img;
+        return imageFromKey(key);
     }
 
     private void performReplace(String oldKey, String newKey) {
@@ -1105,8 +1101,13 @@ public class FileLoader {
             return null;
         }
         float scaleFactor = Math.max(photoW / maxWidth, photoH / maxHeight);
+        int w = (int)(photoW / scaleFactor);
+        int h = (int)(photoH / scaleFactor);
+        if (h == 0 || w == 0) {
+            return null;
+        }
 
-        Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, (int)(photoW / scaleFactor), (int)(photoH / scaleFactor), true);
+        Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, w, h, true);
 
         TLRPC.TL_fileLocation location = new TLRPC.TL_fileLocation();
         location.volume_id = Integer.MIN_VALUE;

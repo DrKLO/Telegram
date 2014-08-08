@@ -90,6 +90,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private TextView emptyTextView;
     private EditText userSelectEditText;
     private boolean ignoreChange = false;
+    private boolean isBroadcast = false;
+    private int maxCount = 200;
 
     private HashMap<Integer, XImageSpan> selectedContacts =  new HashMap<Integer, XImageSpan>();
     private ArrayList<XImageSpan> allSpans = new ArrayList<XImageSpan>();
@@ -104,6 +106,16 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private int beforeChangeIndex;
 
     private final static int done_button = 1;
+
+    public GroupCreateActivity() {
+        super();
+    }
+
+    public GroupCreateActivity(Bundle args) {
+        super(args);
+        isBroadcast = args.getBoolean("broadcast", false);
+        maxCount = !isBroadcast ? MessagesController.getInstance().maxGroupCount : MessagesController.getInstance().maxBroadcastCount;
+    }
 
     @Override
     public boolean onFragmentCreate() {
@@ -126,8 +138,12 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         if (fragmentView == null) {
             actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
             actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
-            actionBarLayer.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
-            actionBarLayer.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), 200));
+            if (isBroadcast) {
+                actionBarLayer.setTitle(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList));
+            } else {
+                actionBarLayer.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
+            }
+            actionBarLayer.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
 
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
@@ -140,6 +156,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                             result.addAll(selectedContacts.keySet());
                             Bundle args = new Bundle();
                             args.putIntegerArrayList("result", result);
+                            args.putBoolean("broadcast", isBroadcast);
                             presentFragment(new GroupCreateFinalActivity(args));
                         }
                     }
@@ -201,7 +218,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                         selectedContacts.remove(sp.uid);
                                     }
                                 }
-                                actionBarLayer.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), 200));
+                                actionBarLayer.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
                                 listView.invalidateViews();
                             } else {
                                 search = true;
@@ -259,7 +276,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         userSelectEditText.setSelection(text.length());
                         ignoreChange = false;
                     } else {
-                        if (selectedContacts.size() == 200) {
+                        if (selectedContacts.size() == maxCount) {
                             return;
                         }
                         ignoreChange = true;
@@ -267,7 +284,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         span.uid = user.id;
                         ignoreChange = false;
                     }
-                    actionBarLayer.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), 200));
+                    actionBarLayer.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
                     if (searching || searchWas) {
                         searching = false;
                         searchWas = false;

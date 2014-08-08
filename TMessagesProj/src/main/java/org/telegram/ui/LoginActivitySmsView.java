@@ -54,9 +54,12 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     private Bundle currentParams;
 
     private Timer timeTimer;
+    private Timer codeTimer;
     private static final Integer timerSync = 1;
     private volatile int time = 60000;
+    private volatile int codeTime = 15000;
     private double lastCurrentTime;
+    private double lastCodeTime;
     private boolean waitingForSms = false;
     private boolean nextPressed = false;
     private String lastError = "";
@@ -162,11 +165,52 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         codeField.requestFocus();
 
         destroyTimer();
+        destroyCodeTimer();
         timeText.setText(String.format("%s 1:00", LocaleController.getString("CallText", R.string.CallText)));
         lastCurrentTime = System.currentTimeMillis();
         problemText.setVisibility(time < 1000 ? VISIBLE : GONE);
 
         createTimer();
+    }
+
+    private void createCodeTimer() {
+        if (codeTimer != null) {
+            return;
+        }
+        codeTime = 15000;
+        codeTimer = new Timer();
+        lastCodeTime = System.currentTimeMillis();
+        codeTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                double currentTime = System.currentTimeMillis();
+                double diff = currentTime - lastCodeTime;
+                codeTime -= diff;
+                lastCodeTime = currentTime;
+                Utilities.RunOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (codeTime <= 1000) {
+                            problemText.setVisibility(VISIBLE);
+                            destroyCodeTimer();
+                        }
+                    }
+                });
+            }
+        }, 0, 1000);
+    }
+
+    private void destroyCodeTimer() {
+        try {
+            synchronized(timerSync) {
+                if (codeTimer != null) {
+                    codeTimer.cancel();
+                    codeTimer = null;
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     private void createTimer() {
@@ -189,9 +233,9 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                             int seconds = time / 1000 - minutes * 60;
                             timeText.setText(String.format("%s %d:%02d", LocaleController.getString("CallText", R.string.CallText), minutes, seconds));
                         } else {
-                            problemText.setVisibility(VISIBLE);
                             timeText.setText(LocaleController.getString("Calling", R.string.Calling));
                             destroyTimer();
+                            createCodeTimer();
                             TLRPC.TL_auth_sendCall req = new TLRPC.TL_auth_sendCall();
                             req.phone_number = requestPhone;
                             req.phone_code_hash = phoneHash;
@@ -259,11 +303,12 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                         if (error == null) {
                             TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization)response;
                             destroyTimer();
+                            destroyCodeTimer();
                             UserConfig.clearConfig();
-                            MessagesStorage.getInstance().cleanUp();
                             MessagesController.getInstance().cleanUp();
                             UserConfig.setCurrentUser(res.user);
                             UserConfig.saveConfig(true);
+                            MessagesStorage.getInstance().cleanUp(true);
                             ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
                             users.add(res.user);
                             MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
@@ -280,6 +325,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                                 params.putString("code", req.phone_code);
                                 delegate.setPage(2, true, params, false);
                                 destroyTimer();
+                                destroyCodeTimer();
                             } else {
                                 createTimer();
                                 if (error.text.contains("PHONE_NUMBER_INVALID")) {
@@ -304,6 +350,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     @Override
     public void onBackPressed() {
         destroyTimer();
+        destroyCodeTimer();
         currentParams = null;
         AndroidUtilities.setWaitingForSms(false);
         NotificationCenter.getInstance().removeObserver(this, 998);
@@ -316,6 +363,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         AndroidUtilities.setWaitingForSms(false);
         NotificationCenter.getInstance().removeObserver(this, 998);
         destroyTimer();
+        destroyCodeTimer();
         waitingForSms = false;
     }
 

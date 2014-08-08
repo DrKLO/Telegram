@@ -24,6 +24,7 @@ public class UserConfig {
     public static String pushString = "";
     public static int lastSendMessageId = -210000;
     public static int lastLocalId = -210000;
+    public static int lastBroadcastId = -1;
     public static String contactsHash = "";
     public static String importHash = "";
     private final static Integer sync = 1;
@@ -56,6 +57,7 @@ public class UserConfig {
                 editor.putString("importHash", importHash);
                 editor.putBoolean("saveIncomingPhotos", saveIncomingPhotos);
                 editor.putInt("contactsVersion", contactsVersion);
+                editor.putInt("lastBroadcastId", lastBroadcastId);
                 editor.putBoolean("registeredForInternalPush", registeredForInternalPush);
                 if (currentUser != null) {
                     if (withFile) {
@@ -174,6 +176,7 @@ public class UserConfig {
                 importHash = preferences.getString("importHash", "");
                 saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
                 contactsVersion = preferences.getInt("contactsVersion", 0);
+                lastBroadcastId = preferences.getInt("lastBroadcastId", -1);
                 registeredForInternalPush = preferences.getBoolean("registeredForInternalPush", false);
                 String user = preferences.getString("user", null);
                 if (user != null) {
@@ -196,6 +199,7 @@ public class UserConfig {
         lastLocalId = -210000;
         lastSendMessageId = -210000;
         contactsVersion = 1;
+        lastBroadcastId = -1;
         saveIncomingPhotos = false;
         saveConfig(true);
     }

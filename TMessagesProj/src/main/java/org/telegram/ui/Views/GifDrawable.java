@@ -46,7 +46,7 @@ public class GifDrawable extends Drawable implements Animatable, MediaController
     private static native void renderFrame(int[] pixels, int gifFileInPtr, int[] metaData);
     private static native int openFile(int[] metaData, String filePath);
     private static native void free(int gifFileInPtr);
-    private static native boolean reset(int gifFileInPtr);
+    private static native void reset(int gifFileInPtr);
     private static native void setSpeedFactor(int gifFileInPtr, float factor);
     private static native String getComment(int gifFileInPtr);
     private static native int getLoopCount(int gifFileInPtr);

@@ -57,6 +57,14 @@
     <string name="HiddenName">الاسم مخفي</string>
     <string name="SelectChat">اختر محادثة</string>
 
+    <!--broadcasts-->
+    <string name="BroadcastList">Broadcast List</string>
+    <string name="NewBroadcastList">New Broadcast List</string>
+    <string name="EnterListName">Enter list name</string>
+    <string name="YouCreatedBroadcastList">You created a broadcast list</string>
+    <string name="AddRecipient">Add Recipient</string>
+    <string name="KickFromBroadcast">Remove from broadcast list</string>
+
     <!--documents view-->
     <string name="SelectFile">اختر ملف</string>
     <string name="FreeOfTotal">متاح %1$s من %2$s</string>
@@ -300,7 +308,7 @@
     <string name="NoPhotos">لا توجد صور حتى الآن</string>
 
     <!--edit video view-->
-    <string name="EditVideo">Edit Video</string>
+    <string name="EditVideo">تحرير الفيديو</string>
     <string name="OriginalVideo">Original Video</string>
     <string name="EditedVideo">Edited Video</string>
 

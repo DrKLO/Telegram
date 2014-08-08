@@ -76,7 +76,11 @@ public class ChatProfileChangeNameActivity extends BaseFragment {
             TLRPC.Chat currentChat = MessagesController.getInstance().chats.get(chat_id);
 
             firstNameField = (EditText)fragmentView.findViewById(R.id.first_name_field);
-            firstNameField.setHint(LocaleController.getString("GroupName", R.string.GroupName));
+            if (chat_id > 0) {
+                firstNameField.setHint(LocaleController.getString("GroupName", R.string.GroupName));
+            } else {
+                firstNameField.setHint(LocaleController.getString("EnterListName", R.string.EnterListName));
+            }
             firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
@@ -91,7 +95,11 @@ public class ChatProfileChangeNameActivity extends BaseFragment {
             firstNameField.setSelection(firstNameField.length());
 
             TextView headerLabel = (TextView)fragmentView.findViewById(R.id.settings_section_text);
-            headerLabel.setText(LocaleController.getString("EnterGroupNameTitle", R.string.EnterGroupNameTitle));
+            if (chat_id > 0) {
+                headerLabel.setText(LocaleController.getString("EnterGroupNameTitle", R.string.EnterGroupNameTitle));
+            } else {
+                headerLabel.setText(LocaleController.getString("EnterListName", R.string.EnterListName).toUpperCase());
+            }
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
             if (parent != null) {

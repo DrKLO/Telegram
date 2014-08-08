@@ -75,17 +75,20 @@ public class ImageReceiver {
         if (filter != null) {
             key += "@" + filter;
         }
-        Bitmap img;
+        Bitmap img = null;
         if (currentPath != null) {
             if (currentPath.equals(key)) {
-                return;
+                if (currentImage != null) {
+                    return;
+                } else {
+                    img = FileLoader.getInstance().getImageFromMemory(path, httpUrl, this, filter);
+                }
             } else {
-                img = FileLoader.getInstance().getImageFromMemory(path, httpUrl, this, filter, true);
+                img = FileLoader.getInstance().getImageFromMemory(path, httpUrl, this, filter);
                 recycleBitmap(img);
             }
-        } else {
-            img = FileLoader.getInstance().getImageFromMemory(path, httpUrl, this, filter, true);
         }
+        img = FileLoader.getInstance().getImageFromMemory(path, httpUrl, this, filter);
         currentPath = key;
         last_path = path;
         last_httpUrl = httpUrl;
@@ -132,6 +135,9 @@ public class ImageReceiver {
         last_filter = null;
         currentImage = null;
         last_size = 0;
+        if (parentView != null) {
+            parentView.invalidate();
+        }
     }
 
     public void setImageBitmap(Drawable bitmap) {
@@ -145,6 +151,9 @@ public class ImageReceiver {
         last_httpUrl = null;
         last_filter = null;
         last_size = 0;
+        if (parentView != null) {
+            parentView.invalidate();
+        }
     }
 
     public void clearImage() {

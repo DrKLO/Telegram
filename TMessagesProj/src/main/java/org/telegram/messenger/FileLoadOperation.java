@@ -10,16 +10,17 @@ package org.telegram.messenger;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
 import android.provider.MediaStore;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.ui.ApplicationLoader;
 
 import java.io.RandomAccessFile;
-import java.net.URL;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.net.URL;
 import java.net.URLConnection;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -57,9 +58,8 @@ public class FileLoadOperation {
 
     private String ext;
     private String httpUrl;
-    private URLConnection httpConnection;
+    private DownloadImageTask httpTask = null;
     public boolean needBitmapCreate = true;
-    private InputStream httpConnectionStream;
     private RandomAccessFile fileOutputStream;
     private RandomAccessFile fiv;
 
@@ -67,6 +67,109 @@ public class FileLoadOperation {
         public abstract void didFinishLoadingFile(FileLoadOperation operation);
         public abstract void didFailedLoadingFile(FileLoadOperation operation);
         public abstract void didChangedLoadProgress(FileLoadOperation operation, float progress);
+    }
+
+    private class DownloadImageTask extends AsyncTask<String, Void, Boolean> {
+        protected Boolean doInBackground(String... urls) {
+            String url = urls[0];
+
+            InputStream httpConnectionStream = null;
+
+            try {
+                URL downloadUrl = new URL(url);
+                URLConnection httpConnection = downloadUrl.openConnection();
+                httpConnection.setConnectTimeout(5000);
+                httpConnection.setReadTimeout(5000);
+                httpConnection.connect();
+                httpConnectionStream = httpConnection.getInputStream();
+                /*String ALLOWED_URI_CHARS = "@#&=*+-_.,:!?()/~'%";
+                String str = Uri.encode(url, ALLOWED_URI_CHARS);
+                HttpClient httpclient = new DefaultHttpClient();
+                HttpGet request = new HttpGet(str);
+
+                httpConnectionStream = httpclient.execute(request).getEntity().getContent();*/
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+                cleanup();
+                Utilities.stageQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        delegate.didFailedLoadingFile(FileLoadOperation.this);
+                    }
+                });
+                return false;
+            }
+
+            byte[] data = new byte[1024 * 2];
+            while (true) {
+                if (isCancelled()) {
+                    break;
+                }
+                try {
+                    int readed = httpConnectionStream.read(data);
+                    if (readed > 0) {
+                        fileOutputStream.write(data, 0, readed);
+                    } else if (readed == -1) {
+                        FileLoader.fileLoaderQueue.postRunnable(new Runnable() {
+                            @Override
+                            public void run() {
+                                cleanup();
+                                Utilities.stageQueue.postRunnable(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        try {
+                                            onFinishLoadingFile();
+                                        } catch (Exception e) {
+                                            delegate.didFailedLoadingFile(FileLoadOperation.this);
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                        break;
+                    } else {
+                        FileLoader.fileLoaderQueue.postRunnable(new Runnable() {
+                            @Override
+                            public void run() {
+                                cleanup();
+                                Utilities.stageQueue.postRunnable(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        delegate.didFailedLoadingFile(FileLoadOperation.this);
+                                    }
+                                });
+                            }
+                        });
+                        break;
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                    FileLoader.fileLoaderQueue.postRunnable(new Runnable() {
+                        @Override
+                        public void run() {
+                            cleanup();
+                            Utilities.stageQueue.postRunnable(new Runnable() {
+                                @Override
+                                public void run() {
+                                    delegate.didFailedLoadingFile(FileLoadOperation.this);
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+
+            try {
+                if (httpConnectionStream != null) {
+                    httpConnectionStream.close();
+                }
+                httpConnectionStream = null;
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+
+            return true;
+        }
     }
 
     public FileLoadOperation(TLRPC.FileLocation fileLocation) {
@@ -248,10 +351,14 @@ public class FileLoadOperation {
 
                             float w_filter = 0;
                             float h_filter = 0;
+                            boolean blur = false;
                             if (filter != null) {
                                 String args[] = filter.split("_");
                                 w_filter = Float.parseFloat(args[0]) * AndroidUtilities.density;
                                 h_filter = Float.parseFloat(args[1]) * AndroidUtilities.density;
+                                if (args.length > 2) {
+                                    blur = true;
+                                }
                                 opts.inJustDecodeBounds = true;
 
                                 if (mediaIdFinal != null) {
@@ -270,7 +377,7 @@ public class FileLoadOperation {
                                 opts.inSampleSize = (int)scaleFactor;
                             }
 
-                            if (filter == null) {
+                            if (filter == null || blur) {
                                 opts.inPreferredConfig = Bitmap.Config.ARGB_8888;
                             } else {
                                 opts.inPreferredConfig = Bitmap.Config.RGB_565;
@@ -300,7 +407,9 @@ public class FileLoadOperation {
                                             image = scaledBitmap;
                                         }
                                     }
-
+                                    if (image != null && blur && bitmapH < 100 && bitmapW < 100) {
+                                        Utilities.blurBitmap(image, (int)bitmapW, (int)bitmapH, image.getRowBytes());
+                                    }
                                 }
                                 if (FileLoader.getInstance().runtimeHack != null) {
                                     FileLoader.getInstance().runtimeHack.trackFree(image.getRowBytes() * image.getHeight());
@@ -400,7 +509,6 @@ public class FileLoadOperation {
                         }
                     }
                 });
-
             }
         }
     }
@@ -428,14 +536,8 @@ public class FileLoadOperation {
 
     private void cleanup() {
         if (httpUrl != null) {
-            try {
-                if (httpConnectionStream != null) {
-                    httpConnectionStream.close();
-                }
-                httpConnection = null;
-                httpConnectionStream = null;
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
+            if (httpTask != null) {
+                httpTask.cancel(true);
             }
         } else {
             try {
@@ -494,10 +596,14 @@ public class FileLoadOperation {
 
                     float w_filter = 0;
                     float h_filter;
+                    boolean blur = false;
                     if (filter != null) {
                         String args[] = filter.split("_");
                         w_filter = Float.parseFloat(args[0]) * AndroidUtilities.density;
                         h_filter = Float.parseFloat(args[1]) * AndroidUtilities.density;
+                        if (args.length > 2) {
+                            blur = true;
+                        }
 
                         opts.inJustDecodeBounds = true;
                         BitmapFactory.decodeFile(cacheFileFinal.getAbsolutePath(), opts);
@@ -511,7 +617,7 @@ public class FileLoadOperation {
                         opts.inSampleSize = (int) scaleFactor;
                     }
 
-                    if (filter == null) {
+                    if (filter == null || blur) {
                         opts.inPreferredConfig = Bitmap.Config.ARGB_8888;
                     } else {
                         opts.inPreferredConfig = Bitmap.Config.RGB_565;
@@ -540,7 +646,9 @@ public class FileLoadOperation {
                                     image = scaledBitmap;
                                 }
                             }
-
+                            if (image != null && blur && bitmapH < 100 && bitmapW < 100) {
+                                Utilities.blurBitmap(image, (int)bitmapW, (int)bitmapH, image.getRowBytes());
+                            }
                         }
                         if (image != null && FileLoader.getInstance().runtimeHack != null) {
                             FileLoader.getInstance().runtimeHack.trackFree(image.getRowBytes() * image.getHeight());
@@ -565,68 +673,11 @@ public class FileLoadOperation {
         if (state != 1) {
             return;
         }
-        if (httpConnection == null) {
-            try {
-                URL downloadUrl = new URL(httpUrl);
-                httpConnection = downloadUrl.openConnection();
-                httpConnection.setConnectTimeout(5000);
-                httpConnection.setReadTimeout(5000);
-                httpConnection.connect();
-                httpConnectionStream = httpConnection.getInputStream();
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
-                cleanup();
-                Utilities.stageQueue.postRunnable(new Runnable() {
-                    @Override
-                    public void run() {
-                        delegate.didFailedLoadingFile(FileLoadOperation.this);
-                    }
-                });
-                return;
-            }
-        }
-
-        try {
-            byte[] data = new byte[1024 * 2];
-            int readed = httpConnectionStream.read(data);
-            if (readed > 0) {
-                fileOutputStream.write(data, 0, readed);
-                FileLoader.fileLoaderQueue.postRunnable(new Runnable() {
-                    @Override
-                    public void run() {
-                        startDownloadHTTPRequest();
-                    }
-                });
-            } else if (readed == -1) {
-                cleanup();
-                Utilities.stageQueue.postRunnable(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            onFinishLoadingFile();
-                        } catch (Exception e) {
-                            delegate.didFailedLoadingFile(FileLoadOperation.this);
-                        }
-                    }
-                });
-            } else {
-                cleanup();
-                Utilities.stageQueue.postRunnable(new Runnable() {
-                    @Override
-                    public void run() {
-                        delegate.didFailedLoadingFile(FileLoadOperation.this);
-                    }
-                });
-            }
-        } catch (Exception e) {
-            cleanup();
-            FileLog.e("tmessages", e);
-            Utilities.stageQueue.postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    delegate.didFailedLoadingFile(FileLoadOperation.this);
-                }
-            });
+        httpTask = new DownloadImageTask();
+        if (android.os.Build.VERSION.SDK_INT >= 11) {
+            httpTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
+        } else {
+            httpTask.execute(null, null, null);
         }
     }
 

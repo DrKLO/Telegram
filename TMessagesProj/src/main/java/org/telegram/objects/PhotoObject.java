@@ -13,6 +13,7 @@ import android.graphics.BitmapFactory;
 
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.Utilities;
 
 import java.util.ArrayList;
 
@@ -20,18 +21,23 @@ public class PhotoObject {
     public TLRPC.PhotoSize photoOwner;
     public Bitmap image;
 
-    public PhotoObject(TLRPC.PhotoSize photo) {
+    public PhotoObject(TLRPC.PhotoSize photo, int preview) {
         photoOwner = photo;
 
-        if (photo instanceof TLRPC.TL_photoCachedSize) {
+        if (preview != 0 && photo instanceof TLRPC.TL_photoCachedSize) {
             BitmapFactory.Options opts = new BitmapFactory.Options();
-            opts.inPreferredConfig = Bitmap.Config.RGB_565;
+            opts.inPreferredConfig = Bitmap.Config.ARGB_8888;
             opts.inDither = false;
             opts.outWidth = photo.w;
             opts.outHeight = photo.h;
             image = BitmapFactory.decodeByteArray(photoOwner.bytes, 0, photoOwner.bytes.length, opts);
-            if (image != null && FileLoader.getInstance().runtimeHack != null) {
-                FileLoader.getInstance().runtimeHack.trackFree(image.getRowBytes() * image.getHeight());
+            if (image != null) {
+                if (preview == 2) {
+                    Utilities.blurBitmap(image, image.getWidth(), image.getHeight(), image.getRowBytes());
+                }
+                if (FileLoader.getInstance().runtimeHack != null) {
+                    FileLoader.getInstance().runtimeHack.trackFree(image.getRowBytes() * image.getHeight());
+                }
             }
         }
     }

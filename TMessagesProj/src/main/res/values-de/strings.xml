@@ -57,6 +57,14 @@
     <string name="HiddenName">Versteckter Name</string>
     <string name="SelectChat">Chat auswählen</string>
 
+    <!--broadcasts-->
+    <string name="BroadcastList">Broadcast Liste</string>
+    <string name="NewBroadcastList">Neue Broadcast Liste</string>
+    <string name="EnterListName">Name der Liste eingeben</string>
+    <string name="YouCreatedBroadcastList">Du hast eine Broadcast Liste erstellt</string>
+    <string name="AddRecipient">Empfänger hinzufügen</string>
+    <string name="KickFromBroadcast">Aus Broadcast Liste entfernen</string>
+
     <!--documents view-->
     <string name="SelectFile">Datei auswählen</string>
     <string name="FreeOfTotal">Freier Speicher: %1$s von %2$s</string>
@@ -150,7 +158,7 @@
     <string name="NotificationGroupKickYou">%1$s hat dich aus der Gruppe %2$s entfernt</string>
     <string name="NotificationGroupLeftMember">%1$s hat die Gruppe %2$s verlassen</string>
     <string name="NotificationContactJoined">%1$s benutzt jetzt Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\n\nwir haben einen Zugriff auf dein Konto von einem neuen Gerät am %2$s erkannt.\n\nGerät: %3$s\nStandort: %4$s\n\nWenn du das nicht warst, kannst du in den Einstellungen alle Sitzungen beenden.\n\nDanke,\ndas Telegram Team</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nWir haben eine Anmeldung von einem neuen Gerät mit der IP-Adresse %2$s festgestellt.\n\nGerät: %3$s\nStandort: %4$s\n\nWenn du es nicht selbst gewesen bist, melde alle anderen Sitzungen in den Telegram Einstellungen unverzüglich ab. \n\n\nMit freundlichen Grüßen,\nDas Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s hat das Profilbild geändert</string>
 
     <!--contacts view-->
@@ -193,7 +201,7 @@
     <string name="PhoneHome">FESTNETZ</string>
     <string name="PhoneMobile">MOBIL</string>
     <string name="PhoneWork">ARBEIT</string>
-    <string name="PhoneOther">ANDERE</string>
+    <string name="PhoneOther">SONSTIGES</string>
     <string name="PhoneMain">HAUPTNUMMER</string>
     <string name="ContactInfo">Kontaktdaten</string>
     <string name="PHONE">TELEFON</string>
@@ -270,12 +278,12 @@
     <string name="SortFirstName">Vorname</string>
     <string name="SortLastName">Nachname</string>
     <string name="LedColor">LED-Farbe</string>
-    <string name="PopupNotification">Popup-Benachrichtigung</string>
+    <string name="PopupNotification">Popup Benachrichtigungen</string>
     <string name="NoPopup">Kein Popup</string>
     <string name="OnlyWhenScreenOn">Nur wenn Bildschirm „an“</string>
     <string name="OnlyWhenScreenOff">Nur wenn Bildschirm „aus“</string>
     <string name="AlwaysShowPopup">Popups immer anzeigen</string>
-    <string name="BadgeNumber">Nummer auf Symbol</string>
+    <string name="BadgeNumber">BADGE (Anzahl)</string>
 
     <!--media view-->
     <string name="NoMedia">Noch keine geteilten Medien vorhanden</string>
@@ -300,9 +308,9 @@
     <string name="NoPhotos">Noch keine Fotos</string>
 
     <!--edit video view-->
-    <string name="EditVideo">Edit Video</string>
-    <string name="OriginalVideo">Original Video</string>
-    <string name="EditedVideo">Edited Video</string>
+    <string name="EditVideo">Video bearbeiten</string>
+    <string name="OriginalVideo">Originalvideo</string>
+    <string name="EditedVideo">Bearbeitetes Video</string>
 
     <!--button titles-->
     <string name="Next">Weiter</string>
@@ -363,7 +371,7 @@
     <string name="Loading">Lädt…</string>
     <string name="NoPlayerInstalled">Du hast keinen Videoplayer. Bitte installiere einen um fortzufahren.</string>
     <string name="NoMailInstalled">Bitte sende uns eine Email an sms@telegram.org mit einer Beschreibung des Problems.</string>
-    <string name="NoHandleAppInstalled">Du hast keine App, die den Dokumententyp \'%1$s\' öffnen kann.</string>
+    <string name="NoHandleAppInstalled">Du hast keine Applikationen, die den Dateityp \'%1$s\' öffnen könnten. Bitte installiere eine entsprechende Anwendung um fortzufahren.</string>
     <string name="InviteUser">Dieser Benutzer hat noch kein Telegram. Möchtest du ihn einladen?</string>
     <string name="AreYouSure">Bist du sicher?</string>
     <string name="AddContactQ">Kontakt hinzufügen?</string>
@@ -375,7 +383,7 @@
     <string name="AreYouSureSessions">Sicher, dass du alle anderen Geräte abmelden möchtest?</string>
     <string name="AreYouSureDeleteAndExit">Diese Gruppe wirklich löschen und verlassen?</string>
     <string name="AreYouSureDeleteThisChat">Möchtest du wirklich diesen Chat löschen?</string>
-    <string name="AreYouSureShareMyContactInfo">Möchtest du wirklich die eigenen Kontaktdaten teilen?</string>
+    <string name="AreYouSureShareMyContactInfo">Wirklich die eigenen Kontaktinformationen teilen?</string>
     <string name="AreYouSureBlockContact">Diesen Kontakt wirklich blockieren?</string>
     <string name="AreYouSureUnblockContact">Blockierung für diesen Kontakt wirklich aufheben?</string>
     <string name="AreYouSureDeleteContact">Diesen Kontakt wirklich löschen?</string>
