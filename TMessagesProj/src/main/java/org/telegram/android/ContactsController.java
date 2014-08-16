@@ -47,10 +47,7 @@ public class ContactsController {
     private final Integer observerLock = 1;
     public boolean contactsLoaded = false;
     private boolean contactsBookLoaded = false;
-    private int lastContactsPhonesCount = -1;
-    private int lastContactsPhonesMaxId = -1;
-    private int lastContactsNamesCount = -1;
-    private int lastContactsNamesMaxId = -1;
+    private String lastContactsVersions = "";
     private ArrayList<Integer> delayedContactsUpdate = new ArrayList<Integer>();
 
     public static class Contact {
@@ -119,10 +116,7 @@ public class ContactsController {
         contactsSyncInProgress = false;
         contactsLoaded = false;
         contactsBookLoaded = false;
-        lastContactsPhonesCount = -1;
-        lastContactsPhonesMaxId = -1;
-        lastContactsNamesCount = -1;
-        lastContactsNamesMaxId = -1;
+        lastContactsVersions = "";
     }
 
     public void checkAppAccount() {
@@ -191,70 +185,17 @@ public class ContactsController {
             ContentResolver cr = ApplicationLoader.applicationContext.getContentResolver();
             Cursor pCur = null;
             try {
-                pCur = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, new String[]{ContactsContract.CommonDataKinds.Phone._ID}, null, null, ContactsContract.CommonDataKinds.Phone._ID + " desc LIMIT 1");
-                if (pCur != null) {
-                    if (pCur.getCount() > 0 && pCur.moveToFirst()) {
-                        int value = pCur.getInt(0);
-                        if (lastContactsPhonesMaxId != -1 && value != lastContactsPhonesMaxId) {
-                            reload = true;
-                        }
-                        lastContactsPhonesMaxId = value;
-                    }
+                pCur = cr.query(ContactsContract.RawContacts.CONTENT_URI, new String[]{ContactsContract.RawContacts.VERSION}, null, null, null);
+                StringBuilder currentVersion = new StringBuilder();
+                while (pCur.moveToNext()) {
+                    int col = pCur.getColumnIndex(ContactsContract.RawContacts.VERSION);
+                    currentVersion.append(pCur.getString(col));
                 }
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
-            } finally {
-                if (pCur != null) {
-                    pCur.close();
+                String newContactsVersion = currentVersion.toString();
+                if (lastContactsVersions.length() != 0 && !lastContactsVersions.equals(newContactsVersion)) {
+                    reload = true;
                 }
-            }
-            try {
-                pCur = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, new String[]{ContactsContract.CommonDataKinds.Phone._COUNT}, null, null, null);
-                if (pCur != null) {
-                    if (pCur.getCount() > 0 && pCur.moveToFirst()) {
-                        int value = pCur.getInt(0);
-                        if (lastContactsPhonesCount != -1 && value != lastContactsPhonesCount) {
-                            reload = true;
-                        }
-                        lastContactsPhonesCount = value;
-                    }
-                }
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
-            } finally {
-                if (pCur != null) {
-                    pCur.close();
-                }
-            }
-            try {
-                pCur = cr.query(ContactsContract.Data.CONTENT_URI, new String[]{ContactsContract.Data._COUNT}, ContactsContract.Data.MIMETYPE + " = '" + ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE + "'", null, null);
-                if (pCur != null) {
-                    if (pCur.getCount() > 0 && pCur.moveToFirst()) {
-                        int value = pCur.getInt(0);
-                        if (lastContactsNamesCount != -1 && value != lastContactsNamesCount) {
-                            reload = true;
-                        }
-                        lastContactsNamesCount = value;
-                    }
-                }
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
-            } finally {
-                if (pCur != null) {
-                    pCur.close();
-                }
-            }
-            try {
-                pCur = cr.query(ContactsContract.Data.CONTENT_URI, new String[]{ContactsContract.Data._ID}, ContactsContract.Data.MIMETYPE + " = '" + ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE + "'", null, ContactsContract.Data._ID + " desc LIMIT 1");
-                if (pCur != null) {
-                    if (pCur.getCount() > 0 && pCur.moveToFirst()) {
-                        int value = pCur.getInt(0);
-                        if (lastContactsNamesMaxId != -1 && value != lastContactsNamesMaxId) {
-                            reload = true;
-                        }
-                        lastContactsNamesMaxId = value;
-                    }
-                }
+                lastContactsVersions = newContactsVersion;
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             } finally {
@@ -368,7 +309,7 @@ public class ContactsController {
                     String sname2 = pCur.getString(3);
                     String mname = pCur.getString(4);
                     Contact contact = contactsMap.get(id);
-                    if (contact != null) {
+                    if (contact != null && contact.first_name.length() == 0 && contact.last_name.length() == 0) {
                         contact.first_name = fname;
                         contact.last_name = sname;
                         if (contact.first_name == null) {
@@ -535,7 +476,8 @@ public class ContactsController {
                             }
                         }
 
-                        if (existing == null || existing != null && (!existing.first_name.equals(value.first_name) || !existing.last_name.equals(value.last_name))) {
+                        boolean nameChanged = existing != null && (!existing.first_name.equals(value.first_name) || !existing.last_name.equals(value.last_name));
+                        if (existing == null || nameChanged) {
                             for (int a = 0; a < value.phones.size(); a++) {
                                 String sphone = value.shortPhones.get(a);
                                 contactsBookShort.put(sphone, value);
@@ -550,7 +492,7 @@ public class ContactsController {
                                     }
                                 }
                                 if (request) {
-                                    if (contactsByPhone.containsKey(sphone)) {
+                                    if (!nameChanged && contactsByPhone.containsKey(sphone)) {
                                         continue;
                                     }
 

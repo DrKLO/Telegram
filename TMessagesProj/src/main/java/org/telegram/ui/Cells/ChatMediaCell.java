@@ -394,7 +394,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     photoHeight = h;
                     backgroundWidth = w + AndroidUtilities.dp(12);
                     currentPhotoFilter = String.format(Locale.US, "%d_%d", (int) (w / AndroidUtilities.density), (int) (h / AndroidUtilities.density));
-                    if (messageObject.photoThumbs.size() > 1) {
+                    if (messageObject.photoThumbs.size() > 1 || messageObject.type == 3 || messageObject.type == 8) {
                         currentPhotoFilter += "_b";
                     }
 

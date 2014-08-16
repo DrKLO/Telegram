@@ -316,7 +316,7 @@
     <string name="NoPhotos">لا توجد صور حتى الآن</string>
 
     <!--edit video view-->
-    <string name="EditVideo">Edit Video</string>
+    <string name="EditVideo">تحرير الفيديو</string>
     <string name="OriginalVideo">Original Video</string>
     <string name="EditedVideo">Edited Video</string>
 

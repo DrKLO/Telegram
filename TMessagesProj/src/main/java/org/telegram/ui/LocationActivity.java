@@ -8,7 +8,9 @@
 
 package org.telegram.ui;
 
+import android.content.Context;
 import android.location.Location;
+import android.location.LocationManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,6 +40,8 @@ import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
+
+import java.util.List;
 
 public class LocationActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private GoogleMap googleMap;
@@ -164,8 +168,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                         positionMarker(location);
                     }
                 });
-                myLocation = googleMap.getMyLocation();
-
+                myLocation = getLastLocation();
 
                 if (sendButton != null) {
                     userLocation = new Location("network");
@@ -247,6 +250,19 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             }
         }
         return fragmentView;
+    }
+
+    private Location getLastLocation() {
+        LocationManager lm = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
+        List<String> providers = lm.getProviders(true);
+        Location l = null;
+        for (int i = providers.size() - 1; i >= 0; i--) {
+            l = lm.getLastKnownLocation(providers.get(i));
+            if (l != null) {
+                break;
+            }
+        }
+        return l;
     }
 
     private void updateUserData() {

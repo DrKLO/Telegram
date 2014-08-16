@@ -214,12 +214,23 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     return false;
                 }
             }
-            MessagesController.getInstance().loadChatInfo(currentChat.id);
             if (chatId > 0) {
                 dialog_id = -chatId;
             } else {
                 isBraodcast = true;
                 dialog_id = AndroidUtilities.makeBroadcastId(chatId);
+            }
+            Semaphore semaphore = null;
+            if (isBraodcast) {
+                semaphore = new Semaphore(0);
+            }
+            MessagesController.getInstance().loadChatInfo(currentChat.id, semaphore);
+            if (isBraodcast) {
+                try {
+                    semaphore.acquire();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
             }
         } else if (userId != 0) {
             currentUser = MessagesController.getInstance().users.get(userId);
@@ -878,7 +889,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         if (show) {
             if (pagedownButton.getVisibility() == View.GONE) {
-                if (android.os.Build.VERSION.SDK_INT >= 12 && animated) {
+                if (android.os.Build.VERSION.SDK_INT > 13 && animated) {
                     pagedownButton.setVisibility(View.VISIBLE);
                     pagedownButton.setAlpha(0);
                     pagedownButton.animate().alpha(1).setDuration(200).start();
@@ -888,7 +899,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
         } else {
             if (pagedownButton.getVisibility() == View.VISIBLE) {
-                if (android.os.Build.VERSION.SDK_INT >= 12 && animated) {
+                if (android.os.Build.VERSION.SDK_INT > 13 && animated) {
                     pagedownButton.animate().alpha(0).setDuration(200).setListener(new Animator.AnimatorListener() {
                         @Override
                         public void onAnimationStart(Animator animation) {
@@ -1902,9 +1913,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                 if (first && messages.size() > 0) {
                     if (last_unread_id != 0) {
-                        MessagesController.getInstance().markDialogAsRead(dialog_id, messages.get(0).messageOwner.id, last_unread_id, 0, last_unread_date, wasUnread);
+                        MessagesController.getInstance().markDialogAsRead(dialog_id, messages.get(0).messageOwner.id, last_unread_id, 0, last_unread_date, wasUnread, false);
                     } else {
-                        MessagesController.getInstance().markDialogAsRead(dialog_id, messages.get(0).messageOwner.id, minMessageId, 0, maxDate, wasUnread);
+                        MessagesController.getInstance().markDialogAsRead(dialog_id, messages.get(0).messageOwner.id, minMessageId, 0, maxDate, wasUnread, false);
                     }
                     first = false;
                 }
@@ -1985,7 +1996,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             readWithMid = currentMinMsgId;
                         } else {
                             if (messages.size() > 0) {
-                                MessagesController.getInstance().markDialogAsRead(dialog_id, messages.get(0).messageOwner.id, currentMinMsgId, 0, currentMaxDate, true);
+                                MessagesController.getInstance().markDialogAsRead(dialog_id, messages.get(0).messageOwner.id, currentMinMsgId, 0, currentMaxDate, true, false);
                             }
                         }
                     }
@@ -2088,7 +2099,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             readWithDate = maxDate;
                             readWithMid = minMessageId;
                         } else {
-                            MessagesController.getInstance().markDialogAsRead(dialog_id, messages.get(0).messageOwner.id, minMessageId, 0, maxDate, true);
+                            MessagesController.getInstance().markDialogAsRead(dialog_id, messages.get(0).messageOwner.id, minMessageId, 0, maxDate, true, false);
                         }
                     }
                 }
@@ -2161,6 +2172,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 MessageObject newMsgObj = (MessageObject)args[2];
                 if (newMsgObj != null) {
                     obj.messageOwner.media = newMsgObj.messageOwner.media;
+                    obj.generateThumbs(true, 1);
                 }
                 messagesDict.remove(msgId);
                 messagesDict.put(newMsgId, obj);
@@ -2443,7 +2455,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 messageObject.messageOwner.unread = false;
             }
             readWhenResume = false;
-            MessagesController.getInstance().markDialogAsRead(dialog_id, messages.get(0).messageOwner.id, readWithMid, 0, readWithDate, true);
+            MessagesController.getInstance().markDialogAsRead(dialog_id, messages.get(0).messageOwner.id, readWithMid, 0, readWithDate, true, false);
         }
 
         fixLayout(true);

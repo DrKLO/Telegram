@@ -63,12 +63,12 @@ public class FileLog {
             e.printStackTrace();
         }
         try {
+            logQueue = new DispatchQueue("logQueue");
             currentFile.createNewFile();
             FileOutputStream stream = new FileOutputStream(currentFile);
             streamWriter = new OutputStreamWriter(stream);
             streamWriter.write("-----start log " + dateFormat.format(System.currentTimeMillis()) + "-----\n");
             streamWriter.flush();
-            logQueue = new DispatchQueue("logQueue");
         } catch (Exception e) {
             e.printStackTrace();
         }
