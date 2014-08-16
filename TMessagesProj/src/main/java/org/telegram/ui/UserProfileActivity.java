@@ -301,6 +301,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         showAlertDialog(builder);
                     } else if (i == settingsNotificationsRow) {
                         Bundle args = new Bundle();
+                        args.putLong("user_id", user_id);
                         args.putLong("dialog_id", dialog_id == 0 ? user_id : dialog_id);
                         presentFragment(new ProfileNotificationsActivity(args));
                     }

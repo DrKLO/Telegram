@@ -35,6 +35,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
+import org.telegram.objects.VibrationOptions;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
@@ -43,16 +44,20 @@ import org.telegram.ui.Views.ColorPickerView;
 public class ProfileNotificationsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     private ListView listView;
+    private long user_id;
     private long dialog_id;
 
     private int settingsNotificationsRow;
     private int settingsVibrateRow;
+    private int settingsVibrationSpeedRow;
+    private int settingsVibrationCountRow;
     private int settingsSoundRow;
     private int settingsLedRow;
     private int rowCount = 0;
 
     public ProfileNotificationsActivity(Bundle args) {
         super(args);
+        user_id = args.getLong("user_id");
         dialog_id = args.getLong("dialog_id");
     }
 
@@ -60,6 +65,8 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
     public boolean onFragmentCreate() {
         settingsNotificationsRow = rowCount++;
         settingsVibrateRow = rowCount++;
+        settingsVibrationSpeedRow = rowCount++;
+        settingsVibrationCountRow = rowCount++;
         settingsLedRow = rowCount++;
         settingsSoundRow = rowCount++;
         NotificationCenter.getInstance().addObserver(this, MessagesController.notificationsSettingsUpdated);
@@ -100,22 +107,28 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         if (getParentActivity() == null) {
                             return;
                         }
+                        String title;
+                        final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        final String key;
+                        if (i == settingsVibrateRow) {
+                            title = LocaleController.getString("Vibrate", R.string.Vibrate);
+                            key = "vibrate_" + dialog_id;
+                        } else /*if (i == settingsNotificationsRow)*/ {
+                            title = LocaleController.getString("Notifications", R.string.Notifications);
+                            key = "notify2_" + dialog_id;
+                        }
+                        int storedValue = preferences.getInt(key, 0);
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                        builder.setItems(new CharSequence[] {
+                        builder.setTitle(title);
+                        builder.setSingleChoiceItems(new CharSequence[] {
                                 LocaleController.getString("Default", R.string.Default),
                                 LocaleController.getString("Enabled", R.string.Enabled),
                                 LocaleController.getString("Disabled", R.string.Disabled)
-                        }, new DialogInterface.OnClickListener() {
+                        }, storedValue, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                                 SharedPreferences.Editor editor = preferences.edit();
-                                if (i == settingsVibrateRow) {
-                                    editor.putInt("vibrate_" + dialog_id, which);
-                                } else if (i == settingsNotificationsRow) {
-                                    editor.putInt("notify2_" + dialog_id, which);
-                                }
+                                editor.putInt(key, which);
                                 editor.commit();
                                 if (listView != null) {
                                     listView.invalidateViews();
@@ -123,9 +136,97 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                                 if (i == settingsNotificationsRow) {
                                     updateServerNotificationsSettings();
                                 }
+
+                                dialog.dismiss();
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showAlertDialog(builder);
+                    } else if (i == settingsVibrationSpeedRow) {
+                        final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        final String key;
+                        if ((int)dialog_id < 0) {
+                            key = "VibrationSpeedGroup_" + (-dialog_id);
+                        } else {
+                            key = "VibrationSpeed_" + (user_id);
+                        }
+
+                        VibrationOptions.VibrationSpeed[] vibrationSpeeds = VibrationOptions.VibrationSpeed.values();
+                        String speeds[] = new String[vibrationSpeeds.length + 1];
+                        speeds[0] = LocaleController.getString("Default", R.string.Default);
+                        for(int j = 0, vl = vibrationSpeeds.length; j < vl; j++) {
+                            VibrationOptions.VibrationSpeed speedVal = vibrationSpeeds[j];
+                            speeds[j + 1] = LocaleController.getString(speedVal.getLocaleKey(), speedVal.getResourceId());
+                        }
+                        int currentSpeedIndex = 0;
+
+                        int storedValue = preferences.getInt(key, -1);
+                        if(storedValue != -1) {
+                            VibrationOptions.VibrationSpeed currentSpeed = VibrationOptions.VibrationSpeed.fromValue(storedValue);
+                            currentSpeedIndex = currentSpeed.getValue() + 1; // index 0 is used to store the "Default" string
+                        }
+
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity())
+                                .setTitle(LocaleController.getString("VibrateSpeedTitle", R.string.VibrateSpeedTitle))
+                                .setSingleChoiceItems(speeds, currentSpeedIndex, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        SharedPreferences.Editor editor = preferences.edit();
+                                        if(which != 0) {
+                                            which--;
+                                            VibrationOptions.VibrationSpeed selectedSpeed = VibrationOptions.VibrationSpeed.fromValue(which);
+
+                                            editor.putInt(key, selectedSpeed.getValue());
+                                        }
+                                        else
+                                            editor.remove(key);
+
+                                        editor.commit();
+                                        if (listView != null) {
+                                            listView.invalidateViews();
+                                        }
+
+                                        dialog.dismiss();
+                                    }
+                                })
+                                .setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showAlertDialog(builder);
+                    } else if (i == settingsVibrationCountRow) {
+                        final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        final String key;
+                        if ((int)dialog_id < 0) {
+                            key = "VibrationCountGroup_" + (-dialog_id);
+                        } else {
+                            key = "VibrationCount_" + (user_id);
+                        }
+
+                        String counts[] = new String[11];
+                        counts[0] = LocaleController.getString("Default", R.string.Default);
+                        for(int j = 1, vl = counts.length; j < vl; j++)
+                            counts[j] = String.valueOf(j);
+
+                        int count = preferences.getInt(key, 0);
+
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity())
+                                .setTitle(LocaleController.getString("VibrateCountTitle", R.string.VibrateCountTitle))
+                                .setSingleChoiceItems(counts, count, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        SharedPreferences.Editor editor = preferences.edit();
+                                        if(which != 0) {
+                                            editor.putInt(key, which);
+                                        }
+                                        else
+                                            editor.remove(key);
+
+                                        editor.commit();
+                                        if (listView != null) {
+                                            listView.invalidateViews();
+                                        }
+
+                                        dialog.dismiss();
+                                    }
+                                }).setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         showAlertDialog(builder);
                     } else if (i == settingsSoundRow) {
                         try {
@@ -378,6 +479,41 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     } else if (value == 2) {
                         detailTextView.setText(LocaleController.getString("Disabled", R.string.Disabled));
                     }
+                } else if(i == settingsVibrationSpeedRow) {
+                    textView.setText(LocaleController.getString("VibrateSpeed", R.string.VibrateSpeed));
+                    divider.setVisibility(View.VISIBLE);
+                    SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    String key;
+                    if ((int)dialog_id < 0) {
+                        key = "VibrationSpeedGroup_" + (-dialog_id);
+                    } else {
+                        key = "VibrationSpeed_" + (user_id);
+                    }
+                    int storedValue = preferences.getInt(key, -1);
+                    if(storedValue == -1) {
+                        detailTextView.setText(LocaleController.getString("Default", R.string.Default));
+                    }
+                    else {
+                        VibrationOptions.VibrationSpeed speed = VibrationOptions.VibrationSpeed.fromValue(storedValue);
+                        detailTextView.setText(LocaleController.getString(speed.getLocaleKey(), speed.getResourceId()));
+                    }
+                } else if(i == settingsVibrationCountRow) {
+                    textView.setText(LocaleController.getString("VibrateCount", R.string.VibrateCount));
+                    divider.setVisibility(View.VISIBLE);
+                    SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    String key;
+                    if ((int)dialog_id < 0) {
+                        key = "VibrationCountGroup_" + (-dialog_id);
+                    } else {
+                        key = "VibrationCount_" + (user_id);
+                    }
+                    int storedValue = preferences.getInt(key, -1);
+                    if(storedValue == -1) {
+                        detailTextView.setText(LocaleController.getString("Default", R.string.Default));
+                    }
+                    else {
+                        detailTextView.setText(String.valueOf(storedValue));
+                    }
                 }
             } if (type == 1) {
                 if (view == null) {
@@ -426,7 +562,8 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
 
         @Override
         public int getItemViewType(int i) {
-            if (i == settingsNotificationsRow || i == settingsVibrateRow) {
+            if (i == settingsNotificationsRow || i == settingsVibrateRow ||
+                i == settingsVibrationSpeedRow || i == settingsVibrationCountRow) {
                 return 0;
             } else if (i == settingsSoundRow) {
                 return 1;
