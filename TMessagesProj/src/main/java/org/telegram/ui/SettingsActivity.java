@@ -8,6 +8,7 @@
 
 package org.telegram.ui;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -18,6 +19,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.graphics.Typeface;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.Spannable;
@@ -99,7 +101,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int contactsSectionRow;
     private int contactsReimportRow;
     private int contactsSortRow;
+    private int disableScreenShot;
     private int rowCount;
+    private Boolean prev_enabled;
 
     private static class LinkMovementMethodMy extends LinkMovementMethod {
         @Override
@@ -185,6 +189,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         notificationRow = rowCount++;
         blockedRow = rowCount++;
         backgroundRow = rowCount++;
+        disableScreenShot = rowCount++;
         terminateSessionsRow = rowCount++;
         photoDownloadSection = rowCount++;
         photoDownloadChatRow = rowCount++;
@@ -369,6 +374,17 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         showAlertDialog(builder);
+                    } else if (i == disableScreenShot) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+                            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                            boolean disable_screen = preferences.getBoolean("disable_screenshot", false);
+                            SharedPreferences.Editor editor = preferences.edit();
+                            editor.putBoolean("disable_screenshot", !disable_screen);
+                            editor.commit();
+                            if (listView != null) {
+                                listView.invalidateViews();
+                            }
+                        }
                     } else if (i == languageRow) {
                         presentFragment(new LanguageSelectActivity());
                     } else if (i == switchBackendButtonRow) {
@@ -677,7 +693,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         @Override
         public boolean isEnabled(int i) {
             return i == textSizeRow || i == enableAnimationsRow || i == blockedRow || i == notificationRow || i == backgroundRow ||
-                    i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == terminateSessionsRow || i == photoDownloadPrivateRow ||
+                    i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == disableScreenShot || i == terminateSessionsRow || i == photoDownloadPrivateRow ||
                     i == photoDownloadChatRow || i == clearLogsRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow || i == languageRow ||
                     i == switchBackendButtonRow || i == telegramFaqRow || i == contactsSortRow || i == contactsReimportRow;
         }
@@ -900,6 +916,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 } else if (i == contactsReimportRow) {
                     textView.setText(LocaleController.getString("ImportContacts", R.string.ImportContacts));
                     divider.setVisibility(View.INVISIBLE);
+                } else if (i == disableScreenShot) {
+                    textView.setText(LocaleController.getString("Disable Screenshot", R.string.disable_screenshot));
+                    divider.setVisibility(View.VISIBLE);
                 }
             } else if (type == 3) {
                 if (view == null) {
@@ -927,6 +946,27 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         checkButton.setImageResource(R.drawable.btn_check_on);
                     } else {
                         checkButton.setImageResource(R.drawable.btn_check_off);
+                    }
+                } else if (i == disableScreenShot) {
+                    textView.setText(LocaleController.getString("Disable Screenshot", R.string.disable_screenshot));
+                    divider.setVisibility(View.VISIBLE);
+
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+                        textView.setEnabled(false);
+                        checkButton.setImageResource(R.drawable.btn_check_off);
+                        checkButton.setEnabled(false);
+                    } else {
+                        boolean enabled = preferences.getBoolean("disable_screenshot", false);
+                        if (enabled) {
+                            checkButton.setImageResource(R.drawable.btn_check_on);
+                        } else {
+                            checkButton.setImageResource(R.drawable.btn_check_off);
+                        }
+
+                        if (prev_enabled != null && prev_enabled != enabled)
+                            disableScreenshot().show();
+
+                        prev_enabled = enabled;
                     }
                 }
 //                if (i == 7) {
@@ -1078,7 +1118,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 1;
             } else if (i == textSizeRow || i == languageRow || i == contactsSortRow  || i == photoDownloadChatRow || i == photoDownloadPrivateRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow) {
                 return 5;
-            } else if (i == enableAnimationsRow || i == sendByEnterRow) {
+            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == disableScreenShot) {
                 return 3;
             } else if (i == numberRow || i == notificationRow || i == blockedRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == terminateSessionsRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == contactsReimportRow) {
                 return 2;
@@ -1099,6 +1139,29 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         @Override
         public boolean isEmpty() {
             return false;
+        }
+
+        private AlertDialog.Builder disableScreenshot() {
+            AlertDialog.Builder dialog = new AlertDialog.Builder(getParentActivity());
+            dialog.setTitle(mContext.getString(R.string.restart_required_title))
+                    .setMessage(mContext.getString(R.string.restart_required_msg))
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .setPositiveButton(mContext.getString(R.string.restart_now), new DialogInterface.OnClickListener() {
+                        @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+                                getParentActivity().recreate();
+                        }
+                    })
+                    .setNegativeButton(mContext.getString(R.string.restart_later), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+                        }
+                    });
+
+            return dialog;
         }
     }
 }

@@ -441,4 +441,9 @@
 
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
+    <string name="disable_screenshot">Disable Screenshot</string>
+    <string name="restart_now">Restart now</string>
+    <string name="restart_required_msg">A restart is required in order for the changes to take place.</string>
+    <string name="restart_required_title">Restart required</string>
+    <string name="restart_later">Restart later</string>
 </resources>
