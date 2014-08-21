@@ -28,12 +28,13 @@ android {
     compileSdkVersion 19
     buildToolsVersion '19.1.0'
 
-    useAaptPngCruncher = true
-    useOldManifestMerger true
+    //Won't compile in the latest android studio
+    //useAaptPngCruncher = true
+    //useOldManifestMerger true
 
     signingConfigs {
         debug {
-            storeFile file("config/debug.keystore")
+            //storeFile file("config/debug.keystore")
         }
 
         release {
