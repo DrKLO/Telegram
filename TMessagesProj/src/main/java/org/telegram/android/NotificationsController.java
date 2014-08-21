@@ -8,6 +8,7 @@
 
 package org.telegram.android;
 
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -20,6 +21,10 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.app.RemoteInput;
+
+import com.google.android.gms.wearable.Wearable;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -39,12 +44,13 @@ import org.telegram.ui.PopupNotificationActivity;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 
 public class NotificationsController {
 
     private ArrayList<MessageObject> pushMessages = new ArrayList<MessageObject>();
     private HashMap<Integer, MessageObject> pushMessagesDict = new HashMap<Integer, MessageObject>();
-    private NotificationManager notificationManager = null;
+    private NotificationManagerCompat notificationManager = null;
     private HashMap<Long, Integer> pushDialogs = new HashMap<Long, Integer>();
     public ArrayList<MessageObject> popupMessages = new ArrayList<MessageObject>();
     private long openned_dialog_id = 0;
@@ -68,7 +74,7 @@ public class NotificationsController {
     }
 
     public NotificationsController() {
-        notificationManager = (NotificationManager)ApplicationLoader.applicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager = NotificationManagerCompat.from(ApplicationLoader.applicationContext);
     }
 
     public void cleanup() {
@@ -255,7 +261,7 @@ public class NotificationsController {
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
             int notify_override = preferences.getInt("notify2_" + dialog_id, 0);
             if (!notifyAboutLast || notify_override == 2 || (!preferences.getBoolean("EnableAll", true) || chat_id != 0 && !preferences.getBoolean("EnableGroup", true)) && notify_override == 0) {
-                notifyDisabled = true;
+              //  notifyDisabled = true;
             }
 
             String defaultPath = Settings.System.DEFAULT_NOTIFICATION_URI.getPath();
@@ -359,7 +365,7 @@ public class NotificationsController {
                     .setContentIntent(contentIntent);
 
             String lastMessage = null;
-            if (pushMessages.size() == 1) {
+            if (pushMessages.size() == 1||notifyAboutLast) {
                 String message = lastMessage = getStringForMessage(pushMessages.get(0));
                 if (message == null) {
                     return;
@@ -371,6 +377,7 @@ public class NotificationsController {
                         message = message.replace(name + ": ", "").replace(name + " ", "");
                     }
                 }
+
                 mBuilder.setContentText(message);
                 mBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message));
             } else {
@@ -399,6 +406,7 @@ public class NotificationsController {
                 }
                 inboxStyle.setSummaryText(detailText);
                 mBuilder.setStyle(inboxStyle);
+
             }
 
             if (photoPath != null) {
@@ -430,8 +438,47 @@ public class NotificationsController {
             } else {
                 mBuilder.setVibrate(new long[]{0, 0});
             }
+            final String EXTRA_VOICE_REPLY = "extra_voice_reply";
 
-            notificationManager.notify(1, mBuilder.build());
+            String replyLabel = "Reply";
+
+            RemoteInput remoteInput = new RemoteInput.Builder(EXTRA_VOICE_REPLY)
+                    .setLabel(replyLabel)
+                    .build();
+            Intent reply = new Intent(ApplicationLoader.applicationContext,WearReplyReceiver.class);
+            if(user_id!=0)reply.putExtra("chatID",user_id);
+            else reply.putExtra("chatID",chat_id);
+
+
+            NotificationCompat.Action action =
+                    new NotificationCompat.Action.Builder(R.drawable.ic_action_reply,"Reply", PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 0, reply,PendingIntent.FLAG_UPDATE_CURRENT))
+                            .addRemoteInput(remoteInput)
+                            .build();
+            NotificationCompat.WearableExtender wearableExtender =
+                    new NotificationCompat.WearableExtender()
+                            //.setHintHideIcon(true)
+
+                    .addAction(action);
+
+
+            mBuilder.extend(wearableExtender);
+            Random rand = new Random();
+
+
+
+            if(notifyAboutLast){
+                mBuilder.setGroup("messages");
+                mBuilder.setGroupSummary(false);
+                notificationManager.notify(rand.nextInt(2000),mBuilder.build());
+            }
+            else{
+                mBuilder.setGroupSummary(true);
+                mBuilder.setGroup("messages");
+
+
+                notificationManager.notify(2,mBuilder.build());
+            }
+            if(notifyAboutLast==true) showOrUpdateNotification(false);
             if (preferences.getBoolean("EnablePebbleNotifications", false)) {
                 sendAlertToPebble(lastMessage);
             }
@@ -442,7 +489,7 @@ public class NotificationsController {
 
     private void dismissNotification() {
         try {
-            notificationManager.cancel(1);
+            notificationManager.cancelAll();
             pushMessages.clear();
             pushMessagesDict.clear();
             NotificationCenter.getInstance().postNotificationName(pushMessagesUpdated);
