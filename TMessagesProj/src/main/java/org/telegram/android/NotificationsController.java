@@ -20,6 +20,8 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.app.RemoteInput;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -44,7 +46,7 @@ public class NotificationsController {
 
     private ArrayList<MessageObject> pushMessages = new ArrayList<MessageObject>();
     private HashMap<Integer, MessageObject> pushMessagesDict = new HashMap<Integer, MessageObject>();
-    private NotificationManager notificationManager = null;
+    private NotificationManagerCompat notificationManager = null;
     private HashMap<Long, Integer> pushDialogs = new HashMap<Long, Integer>();
     public ArrayList<MessageObject> popupMessages = new ArrayList<MessageObject>();
     private long openned_dialog_id = 0;
@@ -68,7 +70,7 @@ public class NotificationsController {
     }
 
     public NotificationsController() {
-        notificationManager = (NotificationManager)ApplicationLoader.applicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager = NotificationManagerCompat.from(ApplicationLoader.applicationContext);
     }
 
     public void cleanup() {
@@ -430,7 +432,28 @@ public class NotificationsController {
             } else {
                 mBuilder.setVibrate(new long[]{0, 0});
             }
+            final String EXTRA_VOICE_REPLY = "extra_voice_reply";
 
+            String replyLabel = "Reply";
+
+            RemoteInput remoteInput = new RemoteInput.Builder(EXTRA_VOICE_REPLY)
+                    .setLabel(replyLabel)
+                    .build();
+            Intent reply = new Intent(ApplicationLoader.applicationContext,WearReplyReceiver.class);
+            reply.putExtra("chatID",user_id);
+
+
+            NotificationCompat.Action action =
+                    new NotificationCompat.Action.Builder(R.drawable.ic_action_reply,"Reply", PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 0, reply,PendingIntent.FLAG_UPDATE_CURRENT))
+                            .addRemoteInput(remoteInput)
+                            .build();
+            NotificationCompat.WearableExtender wearableExtender =
+                    new NotificationCompat.WearableExtender()
+                            //.setHintHideIcon(true)
+                    .addAction(action);
+
+
+            mBuilder.extend(wearableExtender);
             notificationManager.notify(1, mBuilder.build());
             if (preferences.getBoolean("EnablePebbleNotifications", false)) {
                 sendAlertToPebble(lastMessage);
