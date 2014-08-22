@@ -354,8 +354,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         loading = true;
         MessagesController.getInstance().loadMessages(dialog_id, 30, 0, true, 0, classGuid, true, false);
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-
         if (currentUser != null) {
             userBlocked = MessagesController.getInstance().blockedUsers.contains(currentUser.id);
         }
@@ -2572,6 +2570,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
 
         chatActivityEnterView.setFieldFocused(false);
+        MessagesController.getInstance().cancelTyping(dialog_id);
 
         /*if (currentEncryptedChat != null) { disabled
             chatLeaveTime = System.currentTimeMillis();
@@ -3393,7 +3392,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 ((ChatBaseCell)view).setMessageObject(message);
                 ((ChatBaseCell)view).setCheckPressed(!disableSelection, disableSelection && selected);
                 if (view instanceof ChatAudioCell && MediaController.getInstance().canDownloadMedia(MediaController.AUTODOWNLOAD_MASK_AUDIO)) {
-                    ((ChatAudioCell)view).downloadAudioIfNeed(); //TODO
+                    ((ChatAudioCell)view).downloadAudioIfNeed();
                 }
             } else {
                 ChatListRowHolderEx holder = (ChatListRowHolderEx)view.getTag();

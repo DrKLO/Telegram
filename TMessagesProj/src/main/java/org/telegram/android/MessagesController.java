@@ -55,6 +55,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     public HashMap<Integer, MessageObject> dialogMessage = new HashMap<Integer, MessageObject>();
     public ConcurrentHashMap<Long, ArrayList<PrintingUser>> printingUsers = new ConcurrentHashMap<Long, ArrayList<PrintingUser>>(100, 1.0f, 2);
     public HashMap<Long, CharSequence> printingStrings = new HashMap<Long, CharSequence>();
+    public HashMap<Long, Boolean> sendingTypings = new HashMap<Long, Boolean>();
     private int lastPrintingStringCount = 0;
 
     public boolean loadingBlockedUsers = false;
@@ -308,6 +309,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         pendingEncMessagesToDelete.clear();
         delayedEncryptedChatUpdates.clear();
         blockedUsers.clear();
+        sendingTypings.clear();
 
         updatesStartWaitTime = 0;
         currentDeletingTaskTime = 0;
@@ -1192,8 +1194,15 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         });
     }
 
-    public void sendTyping(long dialog_id, int classGuid) {
+    public void cancelTyping(long dialog_id) {
+        sendingTypings.remove(dialog_id);
+    }
+
+    public void sendTyping(final long dialog_id, int classGuid) {
         if (dialog_id == 0) {
+            return;
+        }
+        if (sendingTypings.get(dialog_id) != null) {
             return;
         }
         int lower_part = (int)dialog_id;
@@ -1223,10 +1232,16 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
             }
             req.typing = true;
+            sendingTypings.put(dialog_id, true);
             long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                 @Override
                 public void run(TLObject response, TLRPC.TL_error error) {
-
+                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            sendingTypings.remove(dialog_id);
+                        }
+                    });
                 }
             }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
             ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
@@ -1238,10 +1253,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 req.peer.chat_id = chat.id;
                 req.peer.access_hash = chat.access_hash;
                 req.typing = true;
+                sendingTypings.put(dialog_id, true);
                 long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                     @Override
                     public void run(TLObject response, TLRPC.TL_error error) {
-
+                        sendingTypings.remove(dialog_id);
                     }
                 }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
                 ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);

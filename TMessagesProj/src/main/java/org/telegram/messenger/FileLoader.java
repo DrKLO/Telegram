@@ -276,7 +276,7 @@ public class FileLoader {
     }
 
     public void loadFile(TLRPC.FileLocation location, int size) {
-        loadFile(null, null, null, location, size, false);
+        loadFile(null, null, null, location, size, true);
     }
 
     private void loadFile(final TLRPC.Video video, final TLRPC.Document document, final TLRPC.Audio audio, final TLRPC.FileLocation location, final int locationSize, final boolean force) {
@@ -410,21 +410,33 @@ public class FileLoader {
                         currentAudioLoadOperationsCount++;
                         operation.start();
                     } else {
-                        audioLoadOperationQueue.add(operation);
+                        if (force) {
+                            audioLoadOperationQueue.add(0, operation);
+                        } else {
+                            audioLoadOperationQueue.add(operation);
+                        }
                     }
                 } else if (location != null) {
                     if (currentPhotoLoadOperationsCount < 2) {
                         currentPhotoLoadOperationsCount++;
                         operation.start();
                     } else {
-                        photoLoadOperationQueue.add(operation);
+                        if (force) {
+                            photoLoadOperationQueue.add(0, operation);
+                        } else {
+                            photoLoadOperationQueue.add(operation);
+                        }
                     }
                 } else {
                     if (currentLoadOperationsCount < 2) {
                         currentLoadOperationsCount++;
                         operation.start();
                     } else {
-                        loadOperationQueue.add(operation);
+                        if (force) {
+                            loadOperationQueue.add(0, operation);
+                        } else {
+                            loadOperationQueue.add(operation);
+                        }
                     }
                 }
             }

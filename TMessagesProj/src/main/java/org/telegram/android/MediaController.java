@@ -382,7 +382,9 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
         ApplicationLoader.applicationContext.registerReceiver(networkStateReceiver, filter);
 
-        checkAutodownloadSettings();
+        if (UserConfig.isClientActivated()) {
+            checkAutodownloadSettings();
+        }
     }
 
     private void startProgressTimer() {

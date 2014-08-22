@@ -8,6 +8,11 @@
 
 package org.telegram.messenger;
 
+import android.app.Activity;
+import android.content.SharedPreferences;
+
+import org.telegram.ui.ApplicationLoader;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.math.BigInteger;
@@ -28,11 +33,13 @@ public class FileUploadOperation {
     private long totalFileSize = 0;
     private int totalPartsCount = 0;
     private long currentUploaded = 0;
+    private int saveInfoTimes = 0;
     private byte[] key;
     private byte[] iv;
     private byte[] ivChange;
     private int fingerprint = 0;
     private boolean isBigFile = false;
+    private String fileKey;
     FileInputStream stream;
     MessageDigest mdEnc = null;
 
@@ -89,6 +96,12 @@ public class FileUploadOperation {
             ConnectionsManager.getInstance().cancelRpc(requestToken, true);
         }
         delegate.didFailedUploadingFile(this);
+        cleanup();
+    }
+
+    private void cleanup() {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("uploadinfo", Activity.MODE_PRIVATE);
+        preferences.edit().remove(fileKey + "_time").remove(fileKey + "_size").remove(fileKey + "_uploaded").commit();
     }
 
     private void startUploadRequest() {
@@ -104,7 +117,6 @@ public class FileUploadOperation {
                 stream = new FileInputStream(cacheFile);
                 totalFileSize = cacheFile.length();
                 if (totalFileSize > 10 * 1024 * 1024) {
-                    FileLog.e("tmessages", "file is big!");
                     isBigFile = true;
                 }
 
@@ -120,6 +132,51 @@ public class FileUploadOperation {
                 uploadChunkSize *= 1024;
                 totalPartsCount = (int) Math.ceil((float) totalFileSize / (float) uploadChunkSize);
                 readBuffer = new byte[uploadChunkSize];
+
+                fileKey = Utilities.MD5(uploadingFilePath);
+                /*SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("uploadinfo", Activity.MODE_PRIVATE); TODO
+                long fileSize = preferences.getLong(fileKey + "_size", 0);
+                int currentTime = (int)(System.currentTimeMillis() / 1000);
+                boolean rewrite = false;
+                if (fileSize == totalFileSize) {
+                    int date = preferences.getInt(fileKey + "_time", 0);
+                    long uploadedSize = preferences.getLong(fileKey + "_uploaded", 0);
+                    if (date != 0) {
+                        if (isBigFile && date < currentTime - 60 * 60 * 24) {
+                            date = 0;
+                        } else if (!isBigFile && date < currentTime - 60 * 60 * 1.5f) {
+                            date = 0;
+                        }
+                        if (date != 0) {
+                            if (isBigFile) {
+                                uploadedSize = uploadedSize / (1024 * 1024) * (1024 * 1024);
+                            }
+                            if (uploadedSize > 0) {
+                                currentUploaded = uploadedSize;
+                                stream.skip(uploadedSize);
+                                currentPartNum = (int) (uploadedSize / uploadChunkSize);
+                            } else {
+                                rewrite = true;
+                            }
+                        }
+                    } else {
+                        rewrite = true;
+                    }
+                } else {
+                    rewrite = true;
+                }
+                if (rewrite) {
+                    preferences.edit().putInt(fileKey + "_time", currentTime).putLong(fileKey + "_size", totalFileSize).commit();
+                }*/
+            } else {
+                /*if (saveInfoTimes >= 4) {
+                    saveInfoTimes = 0;
+                }
+                if (saveInfoTimes == 0) {
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("uploadinfo", Activity.MODE_PRIVATE);
+                    preferences.edit().putLong(fileKey + "_uploaded", currentUploaded).commit();
+                }
+                saveInfoTimes++;*/
             }
 
             int readed = stream.read(readBuffer);
@@ -160,6 +217,7 @@ public class FileUploadOperation {
         } catch (Exception e) {
             FileLog.e("tmessages", e);
             delegate.didFailedUploadingFile(this);
+            cleanup();
             return;
         }
         requestToken = ConnectionsManager.getInstance().performRpc(finalRequest, new RPCRequest.RPCRequestDelegate() {
@@ -184,6 +242,7 @@ public class FileUploadOperation {
                                 result.id = currentFileId;
                                 result.name = uploadingFilePath.substring(uploadingFilePath.lastIndexOf("/") + 1);
                                 delegate.didFinishUploadingFile(FileUploadOperation.this, result, null);
+                                cleanup();
                             } else {
                                 TLRPC.InputEncryptedFile result;
                                 if (isBigFile) {
@@ -198,15 +257,18 @@ public class FileUploadOperation {
                                 result.iv = iv;
                                 result.key = key;
                                 delegate.didFinishUploadingFile(FileUploadOperation.this, null, result);
+                                cleanup();
                             }
                         } else {
                             startUploadRequest();
                         }
                     } else {
                         delegate.didFailedUploadingFile(FileUploadOperation.this);
+                        cleanup();
                     }
                 } else {
                     delegate.didFailedUploadingFile(FileUploadOperation.this);
+                    cleanup();
                 }
             }
         }, null, true, RPCRequest.RPCRequestClassUploadMedia, ConnectionsManager.DEFAULT_DATACENTER_ID);
