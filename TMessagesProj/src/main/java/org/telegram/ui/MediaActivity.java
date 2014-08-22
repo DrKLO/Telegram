@@ -26,11 +26,11 @@ import android.widget.TextView;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
-import org.telegram.objects.MessageObject;
+import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
-import org.telegram.messenger.NotificationCenter;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.objects.PhotoObject;
+import org.telegram.android.PhotoObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.BackupImageView;
@@ -61,10 +61,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        NotificationCenter.getInstance().addObserver(this, MessagesController.mediaDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, MessagesController.messagesDeleted);
-        NotificationCenter.getInstance().addObserver(this, MessagesController.didReceivedNewMessages);
-        NotificationCenter.getInstance().addObserver(this, MessagesController.messageReceivedByServer);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.mediaDidLoaded);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagesDeleted);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.didReceivedNewMessages);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messageReceivedByServer);
         dialog_id = getArguments().getLong("dialog_id", 0);
         if (((int)dialog_id) == 0) {
             max_id = Integer.MIN_VALUE;
@@ -77,10 +77,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.mediaDidLoaded);
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.didReceivedNewMessages);
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.messagesDeleted);
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.messageReceivedByServer);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.mediaDidLoaded);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didReceivedNewMessages);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagesDeleted);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messageReceivedByServer);
     }
 
     @Override
@@ -152,7 +152,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     @SuppressWarnings("unchecked")
     @Override
     public void didReceivedNotification(int id, Object... args) {
-        if (id == MessagesController.mediaDidLoaded) {
+        if (id == NotificationCenter.mediaDidLoaded) {
             long uid = (Long)args[0];
             int guid = (Integer)args[4];
             if (uid == dialog_id && guid == classGuid) {
@@ -192,7 +192,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     listAdapter.notifyDataSetChanged();
                 }
             }
-        } else if (id == MessagesController.messagesDeleted) {
+        } else if (id == NotificationCenter.messagesDeleted) {
             @SuppressWarnings("unchecked")
             ArrayList<Integer> markAsDeletedMessages = (ArrayList<Integer>)args[0];
             boolean updated = false;
@@ -208,7 +208,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             if (updated && listAdapter != null) {
                 listAdapter.notifyDataSetChanged();
             }
-        } else if (id == MessagesController.didReceivedNewMessages) {
+        } else if (id == NotificationCenter.didReceivedNewMessages) {
             long uid = (Long)args[0];
             if (uid == dialog_id) {
                 boolean markAsRead = false;
@@ -237,7 +237,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     listAdapter.notifyDataSetChanged();
                 }
             }
-        } else if (id == MessagesController.messageReceivedByServer) {
+        } else if (id == NotificationCenter.messageReceivedByServer) {
             Integer msgId = (Integer)args[0];
             MessageObject obj = messagesDict.get(msgId);
             if (obj != null) {
@@ -266,7 +266,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
     @Override
     public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
-        if (messageObject == null) {
+        if (messageObject == null || listView == null) {
             return null;
         }
         int count = listView.getChildCount();

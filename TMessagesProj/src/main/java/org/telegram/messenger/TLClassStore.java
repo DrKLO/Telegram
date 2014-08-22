@@ -420,6 +420,7 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_notifyChats.constructor, TLRPC.TL_notifyChats.class);
         classStore.put(TLRPC.TL_notifyUsers.constructor, TLRPC.TL_notifyUsers.class);
         classStore.put(TLRPC.TL_notifyPeer.constructor, TLRPC.TL_notifyPeer.class);
+        classStore.put(TLRPC.TL_photos_deletePhotos.constructor, TLRPC.TL_photos_deletePhotos.class);
 
         classStore.put(TLRPC.TL_msg_container.constructor, TLRPC.TL_msg_container.class);
         classStore.put(TLRPC.TL_fileEncryptedLocation.constructor, TLRPC.TL_fileEncryptedLocation.class);

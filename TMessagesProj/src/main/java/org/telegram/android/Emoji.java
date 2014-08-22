@@ -27,7 +27,6 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ApplicationLoader;
 
@@ -271,11 +270,11 @@ public class Emoji {
             Utilities.loadBitmap(imageFile.getAbsolutePath(), bitmap, imageResize, 0, width, height);
 
             final EmojiBitmap emojiBitmap = new EmojiBitmap(bitmap, width, height);
-            Utilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.RunOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     emojiBmp[page] = emojiBitmap;
-                    NotificationCenter.getInstance().postNotificationName(999);
+                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.emojiDidLoaded);
                 }
             });
 		} catch(Throwable x) {

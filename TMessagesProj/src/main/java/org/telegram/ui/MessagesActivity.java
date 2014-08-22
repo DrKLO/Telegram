@@ -30,7 +30,7 @@ import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
-import org.telegram.messenger.NotificationCenter;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -87,13 +87,13 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        NotificationCenter.getInstance().addObserver(this, MessagesController.dialogsNeedReload);
-        NotificationCenter.getInstance().addObserver(this, 999);
-        NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
-        NotificationCenter.getInstance().addObserver(this, MessagesController.reloadSearchResults);
-        NotificationCenter.getInstance().addObserver(this, MessagesController.encryptedChatUpdated);
-        NotificationCenter.getInstance().addObserver(this, MessagesController.contactsDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, 1234);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.dialogsNeedReload);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.reloadSearchResults);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.encryptedChatUpdated);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.contactsDidLoaded);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.appDidLogout);
         if (getArguments() != null) {
             onlySelect = arguments.getBoolean("onlySelect", false);
             serverOnly = arguments.getBoolean("serverOnly", false);
@@ -101,7 +101,6 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         }
         if (!dialogsLoaded) {
             MessagesController.getInstance().loadDialogs(0, 0, 100, true);
-            ContactsController.getInstance().checkAppAccount();
             dialogsLoaded = true;
         }
         return true;
@@ -110,13 +109,13 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.dialogsNeedReload);
-        NotificationCenter.getInstance().removeObserver(this, 999);
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.updateInterfaces);
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.reloadSearchResults);
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.encryptedChatUpdated);
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.contactsDidLoaded);
-        NotificationCenter.getInstance().removeObserver(this, 1234);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.dialogsNeedReload);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.emojiDidLoaded);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.reloadSearchResults);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.encryptedChatUpdated);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.contactsDidLoaded);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.appDidLogout);
         delegate = null;
     }
 
@@ -350,7 +349,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                                     builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                                         @Override
                                         public void onClick(DialogInterface dialogInterface, int i) {
-                                            MessagesController.getInstance().deleteUserFromChat((int) -selectedDialog, MessagesController.getInstance().users.get(UserConfig.getClientUserId()), null);
+                                            MessagesController.getInstance().deleteUserFromChat((int) -selectedDialog, MessagesController.getInstance().getUser(UserConfig.getClientUserId()), null);
                                             MessagesController.getInstance().deleteDialog(selectedDialog, 0, false);
                                         }
                                     });
@@ -428,7 +427,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     @Override
     @SuppressWarnings("unchecked")
     public void didReceivedNotification(int id, Object... args) {
-        if (id == MessagesController.dialogsNeedReload) {
+        if (id == NotificationCenter.dialogsNeedReload) {
             if (messagesListViewAdapter != null) {
                 messagesListViewAdapter.notifyDataSetChanged();
             }
@@ -453,22 +452,22 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     progressView.setVisibility(View.GONE);
                 }
             }
-        } else if (id == 999) {
+        } else if (id == NotificationCenter.emojiDidLoaded) {
             if (messagesListView != null) {
                 updateVisibleRows(0);
             }
-        } else if (id == MessagesController.updateInterfaces) {
+        } else if (id == NotificationCenter.updateInterfaces) {
             updateVisibleRows((Integer)args[0]);
-        } else if (id == MessagesController.reloadSearchResults) {
+        } else if (id == NotificationCenter.reloadSearchResults) {
             int token = (Integer)args[0];
             if (token == activityToken) {
                 updateSearchResults((ArrayList<TLObject>)args[1], (ArrayList<CharSequence>)args[2], (ArrayList<TLRPC.User>)args[3]);
             }
-        } else if (id == 1234) {
+        } else if (id == NotificationCenter.appDidLogout) {
             dialogsLoaded = false;
-        } else if (id == MessagesController.encryptedChatUpdated) {
+        } else if (id == NotificationCenter.encryptedChatUpdated) {
             updateVisibleRows(0);
-        } else if (id == MessagesController.contactsDidLoaded) {
+        } else if (id == NotificationCenter.contactsDidLoaded) {
             updateVisibleRows(0);
         }
     }
@@ -503,20 +502,20 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             int high_id = (int)(dialog_id >> 32);
             if (lower_part != 0) {
                 if (high_id == 1) {
-                    TLRPC.Chat chat = MessagesController.getInstance().chats.get(lower_part);
+                    TLRPC.Chat chat = MessagesController.getInstance().getChat(lower_part);
                     if (chat == null) {
                         return;
                     }
                     builder.setMessage(LocaleController.formatStringSimple(selectAlertString, chat.title));
                 } else {
                     if (lower_part > 0) {
-                        TLRPC.User user = MessagesController.getInstance().users.get(lower_part);
+                        TLRPC.User user = MessagesController.getInstance().getUser(lower_part);
                         if (user == null) {
                             return;
                         }
                         builder.setMessage(LocaleController.formatStringSimple(selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
                     } else if (lower_part < 0) {
-                        TLRPC.Chat chat = MessagesController.getInstance().chats.get(-lower_part);
+                        TLRPC.Chat chat = MessagesController.getInstance().getChat(-lower_part);
                         if (chat == null) {
                             return;
                         }
@@ -524,8 +523,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     }
                 }
             } else {
-                TLRPC.EncryptedChat chat = MessagesController.getInstance().encryptedChats.get(high_id);
-                TLRPC.User user = MessagesController.getInstance().users.get(chat.user_id);
+                TLRPC.EncryptedChat chat = MessagesController.getInstance().getEncryptedChat(high_id);
+                TLRPC.User user = MessagesController.getInstance().getUser(chat.user_id);
                 if (user == null) {
                     return;
                 }
@@ -565,23 +564,23 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     }
 
     public void updateSearchResults(final ArrayList<TLObject> result, final ArrayList<CharSequence> names, final ArrayList<TLRPC.User> encUsers) {
-        Utilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.RunOnUIThread(new Runnable() {
             @Override
             public void run() {
                 for (TLObject obj : result) {
                     if (obj instanceof TLRPC.User) {
                         TLRPC.User user = (TLRPC.User) obj;
-                        MessagesController.getInstance().users.putIfAbsent(user.id, user);
+                        MessagesController.getInstance().putUser(user, true);
                     } else if (obj instanceof TLRPC.Chat) {
                         TLRPC.Chat chat = (TLRPC.Chat) obj;
-                        MessagesController.getInstance().chats.putIfAbsent(chat.id, chat);
+                        MessagesController.getInstance().putChat(chat, true);
                     } else if (obj instanceof TLRPC.EncryptedChat) {
                         TLRPC.EncryptedChat chat = (TLRPC.EncryptedChat) obj;
-                        MessagesController.getInstance().encryptedChats.putIfAbsent(chat.id, chat);
+                        MessagesController.getInstance().putEncryptedChat(chat, true);
                     }
                 }
                 for (TLRPC.User user : encUsers) {
-                    MessagesController.getInstance().users.putIfAbsent(user.id, user);
+                    MessagesController.getInstance().putUser(user, true);
                 }
                 searchResult = result;
                 searchResultNames = names;
@@ -687,12 +686,12 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
                 TLObject obj = searchResult.get(i);
                 if (obj instanceof TLRPC.User) {
-                    user = MessagesController.getInstance().users.get(((TLRPC.User)obj).id);
+                    user = MessagesController.getInstance().getUser(((TLRPC.User)obj).id);
                 } else if (obj instanceof TLRPC.Chat) {
-                    chat = MessagesController.getInstance().chats.get(((TLRPC.Chat) obj).id);
+                    chat = MessagesController.getInstance().getChat(((TLRPC.Chat) obj).id);
                 } else if (obj instanceof TLRPC.EncryptedChat) {
-                    encryptedChat = MessagesController.getInstance().encryptedChats.get(((TLRPC.EncryptedChat) obj).id);
-                    user = MessagesController.getInstance().users.get(encryptedChat.user_id);
+                    encryptedChat = MessagesController.getInstance().getEncryptedChat(((TLRPC.EncryptedChat) obj).id);
+                    user = MessagesController.getInstance().getUser(encryptedChat.user_id);
                 }
 
                 ((ChatOrUserCell)view).setData(user, chat, encryptedChat, searchResultNames.get(i), null);

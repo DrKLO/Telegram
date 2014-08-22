@@ -40,7 +40,7 @@ import org.telegram.messenger.ConnectionsManager;
 import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.MessagesController;
-import org.telegram.messenger.NotificationCenter;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -119,18 +119,18 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance().addObserver(this, MessagesController.contactsDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
-        NotificationCenter.getInstance().addObserver(this, MessagesController.chatDidCreated);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.contactsDidLoaded);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.chatDidCreated);
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.contactsDidLoaded);
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.updateInterfaces);
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.chatDidCreated);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.contactsDidLoaded);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.chatDidCreated);
     }
 
     @Override
@@ -262,7 +262,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         user = searchResult.get(row);
                     } else {
                         ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
-                        user = MessagesController.getInstance().users.get(arr.get(row).user_id);
+                        user = MessagesController.getInstance().getUser(arr.get(row).user_id);
                         listView.invalidateViews();
                     }
                     if (selectedContacts.containsKey(user.id)) {
@@ -395,7 +395,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     }
 
     private void processSearch(final String query) {
-        Utilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.RunOnUIThread(new Runnable() {
             @Override
             public void run() {
                 final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<TLRPC.TL_contact>();
@@ -413,7 +413,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         String q = query.toLowerCase();
 
                         for (TLRPC.TL_contact contact : contactsCopy) {
-                            TLRPC.User user = MessagesController.getInstance().users.get(contact.user_id);
+                            TLRPC.User user = MessagesController.getInstance().getUser(contact.user_id);
                             if (user.first_name.toLowerCase().startsWith(q) || user.last_name.toLowerCase().startsWith(q)) {
                                 if (user.id == UserConfig.getClientUserId()) {
                                     continue;
@@ -431,7 +431,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     }
 
     private void updateSearchResults(final ArrayList<TLRPC.User> users, final ArrayList<CharSequence> names) {
-        Utilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.RunOnUIThread(new Runnable() {
             @Override
             public void run() {
                 searchResult = users;
@@ -443,19 +443,19 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
     @Override
     public void didReceivedNotification(int id, Object... args) {
-        if (id == MessagesController.contactsDidLoaded) {
+        if (id == NotificationCenter.contactsDidLoaded) {
             if (listViewAdapter != null) {
                 listViewAdapter.notifyDataSetChanged();
             }
-        } else if (id == MessagesController.updateInterfaces) {
+        } else if (id == NotificationCenter.updateInterfaces) {
             int mask = (Integer)args[0];
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0 || (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
                 if (listView != null) {
                     listView.invalidateViews();
                 }
             }
-        } else if (id == MessagesController.chatDidCreated) {
-            Utilities.RunOnUIThread(new Runnable() {
+        } else if (id == NotificationCenter.chatDidCreated) {
+            AndroidUtilities.RunOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     removeSelfFromStack();
@@ -504,11 +504,11 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             int size;
 
             if (searchWas && searching) {
-                user = MessagesController.getInstance().users.get(searchResult.get(position).id);
+                user = MessagesController.getInstance().getUser(searchResult.get(position).id);
                 size = searchResult.size();
             } else {
                 ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
-                user = MessagesController.getInstance().users.get(arr.get(position).user_id);
+                user = MessagesController.getInstance().getUser(arr.get(position).user_id);
                 size = arr.size();
             }
 

@@ -138,6 +138,7 @@
         </service>
 
         <service android:name="org.telegram.android.NotificationsService" android:enabled="true"/>
+        <service android:name="org.telegram.android.NotificationRepeat" android:exported="false"/>
 
         <receiver android:name="org.telegram.android.AppStartReceiver" android:enabled="true">
             <intent-filter>

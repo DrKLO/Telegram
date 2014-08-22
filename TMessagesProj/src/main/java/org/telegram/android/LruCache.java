@@ -6,9 +6,9 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.messenger;
+package org.telegram.android;
 
-import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -22,7 +22,7 @@ import java.util.Map;
  * overview.
  */
 public class LruCache {
-    private final LinkedHashMap<String, Bitmap> map;
+    private final LinkedHashMap<String, BitmapDrawable> map;
     private final LinkedHashMap<String, ArrayList<String>> mapFilters;
 
     /** Size of this cache in units. Not necessarily the number of elements. */
@@ -44,7 +44,7 @@ public class LruCache {
             throw new IllegalArgumentException("maxSize <= 0");
         }
         this.maxSize = maxSize;
-        this.map = new LinkedHashMap<String, Bitmap>(0, 0.75f, true);
+        this.map = new LinkedHashMap<String, BitmapDrawable>(0, 0.75f, true);
         this.mapFilters = new LinkedHashMap<String, ArrayList<String>>();
     }
 
@@ -54,12 +54,12 @@ public class LruCache {
      * head of the queue. This returns null if a value is not cached and cannot
      * be created.
      */
-    public final Bitmap get(String key) {
+    public final BitmapDrawable get(String key) {
         if (key == null) {
             throw new NullPointerException("key == null");
         }
 
-        Bitmap mapValue;
+        BitmapDrawable mapValue;
         synchronized (this) {
             mapValue = map.get(key);
             if (mapValue != null) {
@@ -85,12 +85,12 @@ public class LruCache {
      *
      * @return the previous value mapped by {@code key}.
      */
-    public Bitmap put(String key, Bitmap value) {
+    public BitmapDrawable put(String key, BitmapDrawable value) {
         if (key == null || value == null) {
             throw new NullPointerException("key == null || value == null");
         }
 
-        Bitmap previous;
+        BitmapDrawable previous;
         synchronized (this) {
             putCount++;
             size += safeSizeOf(key, value);
@@ -125,7 +125,7 @@ public class LruCache {
     private void trimToSize(int maxSize) {
         while (true) {
             String key;
-            Bitmap value;
+            BitmapDrawable value;
             synchronized (this) {
                 if (size < 0 || (map.isEmpty() && size != 0)) {
                     throw new IllegalStateException(getClass().getName()
@@ -136,7 +136,7 @@ public class LruCache {
                     break;
                 }
 
-                Map.Entry<String, Bitmap> toEvict = map.entrySet().iterator().next();
+                Map.Entry<String, BitmapDrawable> toEvict = map.entrySet().iterator().next();
                 key = toEvict.getKey();
                 value = toEvict.getValue();
                 map.remove(key);
@@ -164,12 +164,12 @@ public class LruCache {
      *
      * @return the previous value mapped by {@code key}.
      */
-    public final Bitmap remove(String key) {
+    public final BitmapDrawable remove(String key) {
         if (key == null) {
             throw new NullPointerException("key == null");
         }
 
-        Bitmap previous;
+        BitmapDrawable previous;
         synchronized (this) {
             previous = map.remove(key);
             if (previous != null) {
@@ -214,9 +214,9 @@ public class LruCache {
      *     this removal was caused by a {@link #put}. Otherwise it was caused by
      *     an eviction or a {@link #remove}.
      */
-    protected void entryRemoved(boolean evicted, String key, Bitmap oldValue, Bitmap newValue) {}
+    protected void entryRemoved(boolean evicted, String key, BitmapDrawable oldValue, BitmapDrawable newValue) {}
 
-    private int safeSizeOf(String key, Bitmap value) {
+    private int safeSizeOf(String key, BitmapDrawable value) {
         int result = sizeOf(key, value);
         if (result < 0) {
             throw new IllegalStateException("Negative size: " + key + "=" + value);
@@ -231,7 +231,7 @@ public class LruCache {
      *
      * <p>An entry's size must not change while it is in the cache.
      */
-    protected int sizeOf(String key, Bitmap value) {
+    protected int sizeOf(String key, BitmapDrawable value) {
         return 1;
     }
 

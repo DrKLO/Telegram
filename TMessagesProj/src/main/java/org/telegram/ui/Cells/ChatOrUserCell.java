@@ -26,7 +26,7 @@ import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.Views.ImageReceiver;
+import org.telegram.android.ImageReceiver;
 
 public class ChatOrUserCell extends BaseCell {
     private static TextPaint namePaint;
@@ -104,8 +104,7 @@ public class ChatOrUserCell extends BaseCell {
         }
 
         if (avatarImage == null) {
-            avatarImage = new ImageReceiver();
-            avatarImage.parentView = this;
+            avatarImage = new ImageReceiver(this);
         }
 
         if (cellLayout == null) {
@@ -404,10 +403,7 @@ public class ChatOrUserCell extends BaseCell {
             } else {
                 avatarLeft = width - AndroidUtilities.dp(50 + (usePadding ? 11 : 0));
             }
-            avatarImage.imageX = avatarLeft;
-            avatarImage.imageY = avatarTop;
-            avatarImage.imageW = AndroidUtilities.dp(50);
-            avatarImage.imageH = AndroidUtilities.dp(50);
+            avatarImage.setImageCoords(avatarLeft, avatarTop, AndroidUtilities.dp(50), AndroidUtilities.dp(50));
 
             double widthpx = 0;
             float left = 0;

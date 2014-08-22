@@ -29,7 +29,7 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
         FileLog.d("tmessages", "GCM received intent: " + intent);
 
         if (intent.getAction().equals("com.google.android.c2dm.intent.RECEIVE")) {
-            Utilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.RunOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     ApplicationLoader.postInitApplication();

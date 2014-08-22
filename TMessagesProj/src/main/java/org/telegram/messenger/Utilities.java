@@ -62,7 +62,6 @@ import javax.crypto.Cipher;
 public class Utilities {
     public static Pattern pattern = Pattern.compile("[0-9]+");
     public static SecureRandom random = new SecureRandom();
-    private final static Integer lock = 1;
 
     public static ArrayList<String> goodPrimes = new ArrayList<String>();
 
@@ -501,12 +500,6 @@ public class Utilities {
         return true;
     }
 
-    public static void RunOnUIThread(Runnable runnable) {
-        synchronized (lock) {
-            ApplicationLoader.applicationHandler.post(runnable);
-        }
-    }
-
     public static int getColorIndex(int id) {
         int[] arr;
         if (id >= 0) {
@@ -759,7 +752,7 @@ public class Utilities {
         String result = firstName;
         if (result == null || result.length() == 0) {
             result = lastName;
-        } else if (result.length() != 0 && lastName.length() != 0) {
+        } else if (result.length() != 0 && lastName != null && lastName.length() != 0) {
             result += " " + lastName;
         }
         return result.trim();

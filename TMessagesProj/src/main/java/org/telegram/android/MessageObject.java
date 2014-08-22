@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.objects;
+package org.telegram.android;
 
 import android.graphics.Bitmap;
 import android.graphics.Paint;
@@ -16,13 +16,9 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.util.Linkify;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.LocaleController;
-import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
-import org.telegram.android.Emoji;
-import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -33,6 +29,11 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 
 public class MessageObject {
+
+    public static final int MESSAGE_SEND_STATE_SENDING = 1;
+    public static final int MESSAGE_SEND_STATE_SENT = 0;
+    public static final int MESSAGE_SEND_STATE_SEND_ERROR = 2;
+
     public TLRPC.Message messageOwner;
     public CharSequence messageText;
     public int type;
@@ -78,9 +79,12 @@ public class MessageObject {
 
         if (message instanceof TLRPC.TL_messageService) {
             if (message.action != null) {
-                TLRPC.User fromUser = users.get(message.from_id);
+                TLRPC.User fromUser = null;
+                if (users != null) {
+                    fromUser = users.get(message.from_id);
+                }
                 if (fromUser == null) {
-                    fromUser = MessagesController.getInstance().users.get(message.from_id);
+                    fromUser = MessagesController.getInstance().getUser(message.from_id);
                 }
                 if (message.action instanceof TLRPC.TL_messageActionChatCreate) {
                     if (isFromMe()) {
@@ -104,9 +108,12 @@ public class MessageObject {
                             }
                         }
                     } else {
-                        TLRPC.User who = users.get(message.action.user_id);
+                        TLRPC.User who = null;
+                        if (users != null) {
+                            who = users.get(message.action.user_id);
+                        }
                         if (who == null) {
-                            MessagesController.getInstance().users.get(message.action.user_id);
+                            who = MessagesController.getInstance().getUser(message.action.user_id);
                         }
                         if (who != null && fromUser != null) {
                             if (isFromMe()) {
@@ -121,9 +128,12 @@ public class MessageObject {
                         }
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionChatAddUser) {
-                    TLRPC.User whoUser = users.get(message.action.user_id);
+                    TLRPC.User whoUser = null;
+                    if (users != null) {
+                        whoUser = users.get(message.action.user_id);
+                    }
                     if (whoUser == null) {
-                        MessagesController.getInstance().users.get(message.action.user_id);
+                        whoUser = MessagesController.getInstance().getUser(message.action.user_id);
                     }
                     if (whoUser != null && fromUser != null) {
                         if (isFromMe()) {
@@ -389,50 +399,19 @@ public class MessageObject {
 
     public String getFileName() {
         if (messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
-            return getAttachFileName(messageOwner.media.video);
+            return FileLoader.getAttachFileName(messageOwner.media.video);
         } else if (messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
-            return getAttachFileName(messageOwner.media.document);
+            return FileLoader.getAttachFileName(messageOwner.media.document);
         } else if (messageOwner.media instanceof TLRPC.TL_messageMediaAudio) {
-            return getAttachFileName(messageOwner.media.audio);
+            return FileLoader.getAttachFileName(messageOwner.media.audio);
         } else if (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
             ArrayList<TLRPC.PhotoSize> sizes = messageOwner.media.photo.sizes;
             if (sizes.size() > 0) {
                 TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(sizes, 800, 800);
                 if (sizeFull != null) {
-                    return getAttachFileName(sizeFull);
+                    return FileLoader.getAttachFileName(sizeFull);
                 }
             }
-        }
-        return "";
-    }
-
-    public static String getAttachFileName(TLObject attach) {
-        if (attach instanceof TLRPC.Video) {
-            TLRPC.Video video = (TLRPC.Video)attach;
-            return video.dc_id + "_" + video.id + ".mp4";
-        } else if (attach instanceof TLRPC.Document) {
-            TLRPC.Document document = (TLRPC.Document)attach;
-            String ext = document.file_name;
-            int idx = -1;
-            if (ext == null || (idx = ext.lastIndexOf(".")) == -1) {
-                ext = "";
-            } else {
-                ext = ext.substring(idx);
-            }
-            if (ext.length() > 1) {
-                return document.dc_id + "_" + document.id + ext;
-            } else {
-                return document.dc_id + "_" + document.id;
-            }
-        } else if (attach instanceof TLRPC.PhotoSize) {
-            TLRPC.PhotoSize photo = (TLRPC.PhotoSize)attach;
-            if (photo.location == null) {
-                return "";
-            }
-            return photo.location.volume_id + "_" + photo.location.local_id + ".jpg";
-        } else if (attach instanceof TLRPC.Audio) {
-            TLRPC.Audio audio = (TLRPC.Audio)attach;
-            return audio.dc_id + "_" + audio.id + ".m4a";
         }
         return "";
     }

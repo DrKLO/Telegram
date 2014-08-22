@@ -6,7 +6,7 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.ui.Views;
+package org.telegram.android;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -16,7 +16,6 @@ import android.graphics.drawable.Drawable;
 import android.view.View;
 
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
 
@@ -29,13 +28,21 @@ public class ImageReceiver {
     private String currentPath = null;
     private boolean isPlaceholder = false;
     private Drawable currentImage = null;
-    public Integer TAG = null;
-    public View parentView = null;
-    public int imageX = 0, imageY = 0, imageW = 0, imageH = 0;
-    public Rect drawRegion = new Rect();
+    private Integer tag = null;
+    private View parentView = null;
+    private int imageX = 0, imageY = 0, imageW = 0, imageH = 0;
+    private Rect drawRegion = new Rect();
     private boolean isVisible = true;
     private boolean selfSetting = false;
-    public boolean isAspectFit = false;
+    private boolean isAspectFit = false;
+
+    public ImageReceiver() {
+
+    }
+
+    public ImageReceiver(View view) {
+        parentView = view;
+    }
 
     public void setImage(TLRPC.FileLocation path, String filter, Drawable placeholder) {
         setImage(path, null, filter, placeholder, 0);
@@ -49,8 +56,8 @@ public class ImageReceiver {
         setImage(null, path, filter, placeholder, 0);
     }
 
-    public void setImage(TLRPC.FileLocation path, String httpUrl, String filter, Drawable placeholder, int size) {
-        if ((path == null && httpUrl == null) || (path != null && !(path instanceof TLRPC.TL_fileLocation) && !(path instanceof TLRPC.TL_fileEncryptedLocation))) {
+    public void setImage(TLRPC.FileLocation fileLocation, String httpUrl, String filter, Drawable placeholder, int size) {
+        if ((fileLocation == null && httpUrl == null) || (fileLocation != null && !(fileLocation instanceof TLRPC.TL_fileLocation) && !(fileLocation instanceof TLRPC.TL_fileEncryptedLocation))) {
             recycleBitmap(null);
             currentPath = null;
             isPlaceholder = true;
@@ -60,44 +67,44 @@ public class ImageReceiver {
             last_placeholder = placeholder;
             last_size = 0;
             currentImage = null;
-            FileLoader.getInstance().cancelLoadingForImageView(this);
+            ImageLoader.getInstance().cancelLoadingForImageView(this);
             if (parentView != null) {
                 parentView.invalidate();
             }
             return;
         }
         String key;
-        if (path != null) {
-            key = path.volume_id + "_" + path.local_id;
+        if (fileLocation != null) {
+            key = fileLocation.volume_id + "_" + fileLocation.local_id;
         } else {
             key = Utilities.MD5(httpUrl);
         }
         if (filter != null) {
             key += "@" + filter;
         }
-        Bitmap img = null;
+        BitmapDrawable img = null;
         if (currentPath != null) {
             if (currentPath.equals(key)) {
                 if (currentImage != null) {
                     return;
                 } else {
-                    img = FileLoader.getInstance().getImageFromMemory(path, httpUrl, this, filter);
+                    img = ImageLoader.getInstance().getImageFromMemory(fileLocation, httpUrl, filter);
                 }
             } else {
-                img = FileLoader.getInstance().getImageFromMemory(path, httpUrl, this, filter);
+                img = ImageLoader.getInstance().getImageFromMemory(fileLocation, httpUrl, filter);
                 recycleBitmap(img);
             }
         }
-        img = FileLoader.getInstance().getImageFromMemory(path, httpUrl, this, filter);
+        img = ImageLoader.getInstance().getImageFromMemory(fileLocation, httpUrl, filter);
         currentPath = key;
-        last_path = path;
+        last_path = fileLocation;
         last_httpUrl = httpUrl;
         last_filter = filter;
         last_placeholder = placeholder;
         last_size = size;
         if (img == null) {
             isPlaceholder = true;
-            FileLoader.getInstance().loadImage(path, httpUrl, this, filter, true, size);
+            ImageLoader.getInstance().loadImage(fileLocation, httpUrl, this, size);
         } else {
             selfSetting = true;
             setImageBitmap(img, currentPath);
@@ -108,20 +115,20 @@ public class ImageReceiver {
         }
     }
 
-    public void setImageBitmap(Bitmap bitmap, String imgKey) {
+    public void setImageBitmap(BitmapDrawable bitmap, String imgKey) {
         if (currentPath == null || !imgKey.equals(currentPath)) {
             return;
         }
         isPlaceholder = false;
-        FileLoader.getInstance().incrementUseCount(currentPath);
-        currentImage = new BitmapDrawable(null, bitmap);
+        ImageLoader.getInstance().incrementUseCount(currentPath);
+        currentImage = bitmap;
         if (!selfSetting && parentView != null) {
             parentView.invalidate();
         }
     }
 
     public void setImageBitmap(Bitmap bitmap) {
-        FileLoader.getInstance().cancelLoadingForImageView(this);
+        ImageLoader.getInstance().cancelLoadingForImageView(this);
         recycleBitmap(null);
         if (bitmap != null) {
             last_placeholder = new BitmapDrawable(null, bitmap);
@@ -141,7 +148,7 @@ public class ImageReceiver {
     }
 
     public void setImageBitmap(Drawable bitmap) {
-        FileLoader.getInstance().cancelLoadingForImageView(this);
+        ImageLoader.getInstance().cancelLoadingForImageView(this);
         recycleBitmap(null);
         last_placeholder = bitmap;
         isPlaceholder = true;
@@ -160,18 +167,18 @@ public class ImageReceiver {
         recycleBitmap(null);
     }
 
-    private void recycleBitmap(Bitmap newBitmap) {
+    private void recycleBitmap(BitmapDrawable newBitmap) {
         if (currentImage == null || isPlaceholder) {
             return;
         }
         if (currentImage instanceof BitmapDrawable) {
-            Bitmap bitmap = ((BitmapDrawable)currentImage).getBitmap();
-            if (bitmap != null && bitmap != newBitmap) {
+            if (currentImage != newBitmap) {
                 if (currentPath != null) {
-                    boolean canDelete = FileLoader.getInstance().decrementUseCount(currentPath);
-                    if (!FileLoader.getInstance().isInCache(currentPath)) {
-                        if (FileLoader.getInstance().runtimeHack != null) {
-                            FileLoader.getInstance().runtimeHack.trackAlloc(bitmap.getRowBytes() * bitmap.getHeight());
+                    Bitmap bitmap = ((BitmapDrawable) currentImage).getBitmap();
+                    boolean canDelete = ImageLoader.getInstance().decrementUseCount(currentPath);
+                    if (!ImageLoader.getInstance().isInCache(currentPath)) {
+                        if (ImageLoader.getInstance().runtimeHack != null) {
+                            ImageLoader.getInstance().runtimeHack.trackAlloc(bitmap.getRowBytes() * bitmap.getHeight());
                         }
                         if (canDelete) {
                             currentImage = null;
@@ -242,7 +249,7 @@ public class ImageReceiver {
             }
         } catch (Exception e) {
             if (currentPath != null) {
-                FileLoader.getInstance().removeImage(currentPath);
+                ImageLoader.getInstance().removeImage(currentPath);
                 currentPath = null;
             }
             setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size);
@@ -275,5 +282,60 @@ public class ImageReceiver {
 
     public boolean hasImage() {
         return currentImage != null || last_placeholder != null || currentPath != null || last_httpUrl != null;
+    }
+
+    public void setAspectFit(boolean value) {
+        isAspectFit = value;
+    }
+
+    public void setParentView(View view) {
+        parentView = view;
+    }
+
+    protected Integer getTag() {
+        return tag;
+    }
+
+    protected void setTag(Integer tag) {
+        this.tag = tag;
+    }
+
+    public void setImageCoords(int x, int y, int width, int height) {
+        imageX = x;
+        imageY = y;
+        imageW = width;
+        imageH = height;
+    }
+
+    public int getImageX() {
+        return imageX;
+    }
+
+    public int getImageY() {
+        return imageY;
+    }
+
+    public int getImageWidth() {
+        return imageW;
+    }
+
+    public int getImageHeight() {
+        return imageH;
+    }
+
+    public boolean isInsideImage(float x, float y) {
+        return x >= imageX && x <= imageX + imageW && y >= imageY && y <= imageY + imageH;
+    }
+
+    public Rect getDrawRegion() {
+        return drawRegion;
+    }
+
+    public String getFilter() {
+        return last_filter;
+    }
+
+    public String getKey() {
+        return currentPath;
     }
 }

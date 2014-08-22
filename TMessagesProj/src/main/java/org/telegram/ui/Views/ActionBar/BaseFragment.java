@@ -215,7 +215,12 @@ public class BaseFragment {
             @Override
             public void onDismiss(DialogInterface dialog) {
                 visibleDialog = null;
+                onDialogDismiss();
             }
         });
+    }
+
+    protected void onDialogDismiss() {
+
     }
 }

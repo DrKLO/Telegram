@@ -160,6 +160,7 @@
     <string name="NotificationContactJoined">%1$s joined Telegram!</string>
     <string name="NotificationUnrecognizedDevice">%1$s,\nWe detected a login into your account from a new device on %2$s\n\nDevice: %3$s\nLocation: %4$s\n\nIf this wasn\'t you, you can go to Settings - Terminate all sessions.\n\nSincerely,\nThe Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s updated profile photo</string>
+    <string name="Reply">Reply</string>
 
     <!--contacts view-->
     <string name="SelectContact">Select Contact</string>
@@ -254,10 +255,6 @@
     <string name="MessagesSettings">MESSAGES</string>
     <string name="SendByEnter">Send by Enter</string>
     <string name="TerminateAllSessions">Terminate All Other Sessions</string>
-    <string name="AutomaticPhotoDownload">AUTOMATIC PHOTO DOWNLOAD</string>
-    <string name="AutomaticAudioDownload">AUTOMATIC AUDIO DOWNLOAD</string>
-    <string name="AutomaticPhotoDownloadGroups">Groups</string>
-    <string name="AutomaticPhotoDownloadPrivateChats">Private Chats</string>
     <string name="Events">EVENTS</string>
     <string name="ContactJoined">Contact joined Telegram</string>
     <string name="Pebble">PEBBLE</string>
@@ -284,6 +281,15 @@
     <string name="OnlyWhenScreenOff">Only when screen "off"</string>
     <string name="AlwaysShowPopup">Always show popup</string>
     <string name="BadgeNumber">Badge Counter</string>
+    <string name="Short">Short</string>
+    <string name="Long">Long</string>
+    <string name="SystemDefault">System default</string>
+    <string name="SettingsDefault">Settings default</string>
+    <string name="AutomaticMediaDownload">AUTOMATIC MEDIA DOWNLOAD</string>
+    <string name="WhenUsingMobileData">When using mobile data</string>
+    <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
+    <string name="WhenRoaming">When roaming</string>
+    <string name="NoMediaAutoDownload">No media</string>
 
     <!--media view-->
     <string name="NoMedia">No shared media yet</string>

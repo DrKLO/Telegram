@@ -160,6 +160,7 @@
     <string name="NotificationContactJoined">%1$s ha iniziato a usare Telegram!</string>
     <string name="NotificationUnrecognizedDevice">%1$s,\nAbbiamo rilevato un accesso al tuo account da un nuovo dispositivo %2$s\n\nDispositivo: %3$s\nPosizione: %4$s\n\nSe non sei stato tu, puoi andare su Impostazioni - Termina tutte le sessioni.\n\nGrazie,\nIl Team di Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s ha aggiornato la foto del profilo</string>
+    <string name="Reply">Reply</string>
 
     <!--contacts view-->
     <string name="SelectContact">Seleziona contatto</string>
@@ -254,10 +255,6 @@
     <string name="MessagesSettings">MESSAGGI</string>
     <string name="SendByEnter">Spedisci con Invio</string>
     <string name="TerminateAllSessions">Chiudi tutte le altre sessioni</string>
-    <string name="AutomaticPhotoDownload">SCARICAMENTO AUTOMATICO FOTO</string>
-    <string name="AutomaticAudioDownload">SCARICAMENTO AUTOMATICO AUDIO</string>
-    <string name="AutomaticPhotoDownloadGroups">Gruppi</string>
-    <string name="AutomaticPhotoDownloadPrivateChats">Chat private</string>
     <string name="Events">EVENTI</string>
     <string name="ContactJoined">Un contatto si è collegato a Telegram</string>
     <string name="Pebble">PEBBLE</string>
@@ -284,6 +281,15 @@
     <string name="OnlyWhenScreenOff">Solo con schermo spento</string>
     <string name="AlwaysShowPopup">Mostra sempre i popup</string>
     <string name="BadgeNumber">Contatore Badge</string>
+    <string name="Short">Short</string>
+    <string name="Long">Long</string>
+    <string name="SystemDefault">System default</string>
+    <string name="SettingsDefault">Settings default</string>
+    <string name="AutomaticMediaDownload">AUTOMATIC MEDIA DOWNLOAD</string>
+    <string name="WhenUsingMobileData">When using mobile data</string>
+    <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
+    <string name="WhenRoaming">When roaming</string>
+    <string name="NoMediaAutoDownload">No media</string>
 
     <!--media view-->
     <string name="NoMedia">Nessun media condiviso</string>

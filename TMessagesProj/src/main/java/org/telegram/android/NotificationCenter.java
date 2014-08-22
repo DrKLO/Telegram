@@ -6,12 +6,61 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.messenger;
+package org.telegram.android;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class NotificationCenter {
+
+    public static final int didReceivedNewMessages = 1;
+    public static final int updateInterfaces = 3;
+    public static final int dialogsNeedReload = 4;
+    public static final int closeChats = 5;
+    public static final int messagesDeleted = 6;
+    public static final int messagesReaded = 7;
+    public static final int messagesDidLoaded = 8;
+    public static final int messageReceivedByAck = 9;
+    public static final int messageReceivedByServer = 10;
+    public static final int messageSendError = 11;
+    public static final int reloadSearchResults = 12;
+    public static final int contactsDidLoaded = 13;
+    public static final int chatDidCreated = 15;
+    public static final int chatDidFailCreate = 16;
+    public static final int chatInfoDidLoaded = 17;
+    public static final int mediaDidLoaded = 18;
+    public static final int mediaCountDidLoaded = 20;
+    public static final int encryptedChatUpdated = 21;
+    public static final int messagesReadedEncrypted = 22;
+    public static final int encryptedChatCreated = 23;
+    public static final int userPhotosLoaded = 24;
+    public static final int removeAllMessagesFromDialog = 25;
+    public static final int notificationsSettingsUpdated = 26;
+    public static final int pushMessagesUpdated = 27;
+    public static final int blockedUsersDidLoaded = 28;
+
+    public static final int wallpapersDidLoaded = 171;
+    public static final int closeOtherAppActivities = 702;
+    public static final int didUpdatedConnectionState = 703;
+    public static final int emojiDidLoaded = 999;
+    public static final int appDidLogout = 1234;
+
+    public static final int FileDidUpload = 10000;
+    public static final int FileDidFailUpload = 10001;
+    public static final int FileUploadProgressChanged = 10002;
+    public static final int FileLoadProgressChanged = 10003;
+    public static final int FileDidLoaded = 10004;
+    public static final int FileDidFailedLoad = 10005;
+
+    public final static int audioProgressDidChanged = 50001;
+    public final static int audioDidReset = 50002;
+    public final static int recordProgressChanged = 50003;
+    public final static int recordStarted = 50004;
+    public final static int recordStartError = 50005;
+    public final static int recordStopped = 50006;
+    public final static int screenshotTook = 50007;
+    public final static int albumsDidLoaded = 50008;
+    public final static int audioDidSent = 50009;
 
     final private HashMap<Integer, ArrayList<Object>> observers = new HashMap<Integer, ArrayList<Object>>();
 

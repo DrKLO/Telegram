@@ -28,7 +28,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.messenger.FileLoader;
+import org.telegram.android.ImageLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
@@ -310,7 +310,7 @@ public class PhotoCropActivity extends BaseFragment {
             display.getSize(displaySize);
         }
         int size = Math.max(displaySize.x, displaySize.y);
-        imageToCrop = FileLoader.loadBitmap(photoPath, photoUri, size, size);
+        imageToCrop = ImageLoader.loadBitmap(photoPath, photoUri, size, size);
         if (imageToCrop == null) {
             return false;
         }

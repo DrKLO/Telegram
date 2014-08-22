@@ -37,6 +37,7 @@ import android.widget.Toast;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.android.MediaController;
 import org.telegram.messenger.BuildVars;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.SerializedData;
@@ -47,13 +48,13 @@ import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
-import org.telegram.messenger.NotificationCenter;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.objects.MessageObject;
-import org.telegram.objects.PhotoObject;
+import org.telegram.android.MessageObject;
+import org.telegram.android.PhotoObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.AvatarUpdater;
@@ -87,12 +88,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int messagesSectionRow;
     private int sendByEnterRow;
     private int terminateSessionsRow;
-    private int photoDownloadSection;
-    private int photoDownloadChatRow;
-    private int photoDownloadPrivateRow;
-    private int audioDownloadSection;
-    private int audioDownloadChatRow;
-    private int audioDownloadPrivateRow;
+    private int mediaDownloadSection;
+    private int mobileDownloadRow;
+    private int wifiDownloadRow;
+    private int roamingDownloadRow;
     private int telegramFaqRow;
     private int languageRow;
     private int versionRow;
@@ -129,13 +128,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     @Override
                     public void run(TLObject response, TLRPC.TL_error error) {
                         if (error == null) {
-                            TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.getClientUserId());
+                            TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
                             if (user == null) {
                                 user = UserConfig.getCurrentUser();
                                 if (user == null) {
                                     return;
                                 }
-                                MessagesController.getInstance().users.put(user.id, user);
+                                MessagesController.getInstance().putUser(user, false);
                             } else {
                                 UserConfig.setCurrentUser(user);
                             }
@@ -160,10 +159,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
                             users.add(user);
                             MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);
-                            Utilities.RunOnUIThread(new Runnable() {
+                            AndroidUtilities.RunOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    NotificationCenter.getInstance().postNotificationName(MessagesController.updateInterfaces, MessagesController.UPDATE_MASK_ALL);
+                                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_ALL);
                                     UserConfig.saveConfig(true);
                                 }
                             });
@@ -172,7 +171,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 });
             }
         };
-        NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
 
 
         rowCount = 0;
@@ -186,12 +185,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         blockedRow = rowCount++;
         backgroundRow = rowCount++;
         terminateSessionsRow = rowCount++;
-        photoDownloadSection = rowCount++;
-        photoDownloadChatRow = rowCount++;
-        photoDownloadPrivateRow = rowCount++;
-        audioDownloadSection = rowCount++;
-        audioDownloadChatRow = rowCount++;
-        audioDownloadPrivateRow = rowCount++;
+        mediaDownloadSection = rowCount++;
+        mobileDownloadRow = rowCount++;
+        wifiDownloadRow = rowCount++;
+        roamingDownloadRow = rowCount++;
         messagesSectionRow = rowCount++;
         textSizeRow = rowCount++;
         sendByEnterRow = rowCount++;
@@ -215,7 +212,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.updateInterfaces);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
         avatarUpdater.clear();
     }
 
@@ -343,7 +340,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                                     @Override
                                     public void run(final TLObject response, final TLRPC.TL_error error) {
-                                        Utilities.RunOnUIThread(new Runnable() {
+                                        AndroidUtilities.RunOnUIThread(new Runnable() {
                                             @Override
                                             public void run() {
                                                 if (getParentActivity() == null) {
@@ -419,37 +416,74 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         showAlertDialog(builder);
-                    } else if (i == photoDownloadChatRow || i == photoDownloadPrivateRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow) {
+                    } else if (i == wifiDownloadRow || i == mobileDownloadRow || i == roamingDownloadRow) {
                         if (getParentActivity() == null) {
                             return;
                         }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                        builder.setItems(new CharSequence[] {
-                                LocaleController.getString("Enabled", R.string.Enabled),
-                                LocaleController.getString("Disabled", R.string.Disabled),
-                                LocaleController.getString("WiFiOnly", R.string.WiFiOnly)
-                        }, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                                SharedPreferences.Editor editor = preferences.edit();
-                                if (i == photoDownloadChatRow) {
-                                    editor.putInt("photo_download_chat2", which);
-                                } else if (i == photoDownloadPrivateRow) {
-                                    editor.putInt("photo_download_user2", which);
-                                } else if (i == audioDownloadChatRow) {
-                                    editor.putInt("audio_download_chat2", which);
-                                } else if (i == audioDownloadPrivateRow) {
-                                    editor.putInt("audio_download_user2", which);
-                                }
-                                editor.commit();
-                                if (listView != null) {
-                                    listView.invalidateViews();
-                                }
-                            }
-                        });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+
+                        int mask = 0;
+                        if (i == mobileDownloadRow) {
+                            builder.setTitle(LocaleController.getString("WhenUsingMobileData", R.string.WhenUsingMobileData));
+                            mask = MediaController.getInstance().mobileDataDownloadMask;
+                        } else if (i == wifiDownloadRow) {
+                            builder.setTitle(LocaleController.getString("WhenConnectedOnWiFi", R.string.WhenConnectedOnWiFi));
+                            mask = MediaController.getInstance().wifiDownloadMask;
+                        } else if (i == roamingDownloadRow) {
+                            builder.setTitle(LocaleController.getString("WhenRoaming", R.string.WhenRoaming));
+                            mask = MediaController.getInstance().roamingDownloadMask;
+                        }
+                        builder.setMultiChoiceItems(
+                                new CharSequence[]{LocaleController.getString("AttachPhoto", R.string.AttachPhoto), LocaleController.getString("AttachAudio", R.string.AttachAudio), LocaleController.getString("AttachAudio", R.string.AttachVideo), LocaleController.getString("AttachAudio", R.string.AttachDocument)},
+                                new boolean[]{(mask & MediaController.AUTODOWNLOAD_MASK_PHOTO) != 0, (mask & MediaController.AUTODOWNLOAD_MASK_AUDIO) != 0, (mask & MediaController.AUTODOWNLOAD_MASK_VIDEO) != 0, (mask & MediaController.AUTODOWNLOAD_MASK_DOCUMENT) != 0},
+                                new DialogInterface.OnMultiChoiceClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+                                        int mask = 0;
+                                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                                        SharedPreferences.Editor editor = preferences.edit();
+                                        if (i == mobileDownloadRow) {
+                                            mask = MediaController.getInstance().mobileDataDownloadMask;
+                                        } else if (i == wifiDownloadRow) {
+                                            mask = MediaController.getInstance().wifiDownloadMask;
+                                        } else if (i == roamingDownloadRow) {
+                                            mask = MediaController.getInstance().roamingDownloadMask;
+                                        }
+
+                                        int maskDiff = 0;
+                                        if (which == 0) {
+                                            maskDiff = MediaController.AUTODOWNLOAD_MASK_PHOTO;
+                                        } else if (which == 1) {
+                                            maskDiff = MediaController.AUTODOWNLOAD_MASK_AUDIO;
+                                        } else if (which == 2) {
+                                            maskDiff = MediaController.AUTODOWNLOAD_MASK_VIDEO;
+                                        } else if (which == 3) {
+                                            maskDiff = MediaController.AUTODOWNLOAD_MASK_DOCUMENT;
+                                        }
+
+                                        if (isChecked) {
+                                            mask |= maskDiff;
+                                        } else {
+                                            mask &= ~maskDiff;
+                                        }
+
+                                        if (i == mobileDownloadRow) {
+                                            editor.putInt("mobileDataDownloadMask", mask);
+                                            mask = MediaController.getInstance().mobileDataDownloadMask = mask;
+                                        } else if (i == wifiDownloadRow) {
+                                            editor.putInt("wifiDownloadMask", mask);
+                                            MediaController.getInstance().wifiDownloadMask = mask;
+                                        } else if (i == roamingDownloadRow) {
+                                            editor.putInt("roamingDownloadMask", mask);
+                                            MediaController.getInstance().roamingDownloadMask = mask;
+                                        }
+                                        editor.commit();
+                                        if (listView != null) {
+                                            listView.invalidateViews();
+                                        }
+                                    }
+                                });
+                        builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), null);
                         showAlertDialog(builder);
                     }
                 }
@@ -464,11 +498,16 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
+    protected void onDialogDismiss() {
+        MediaController.getInstance().checkAutodownloadSettings();
+    }
+
+    @Override
     public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
         if (fileLocation == null) {
             return null;
         }
-        TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.getClientUserId());
+        TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
         if (user != null && user.photo != null && user.photo.photo_big != null) {
             TLRPC.FileLocation photoBig = user.photo.photo_big;
             if (photoBig.local_id == fileLocation.local_id && photoBig.volume_id == fileLocation.volume_id && photoBig.dc_id == fileLocation.dc_id) {
@@ -521,7 +560,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         int uid = preferences.getInt("support_id", 0);
         TLRPC.User supportUser = null;
         if (uid != 0) {
-            supportUser = MessagesController.getInstance().users.get(uid);
+            supportUser = MessagesController.getInstance().getUser(uid);
             if (supportUser == null) {
                 String userString = preferences.getString("support_user", null);
                 if (userString != null) {
@@ -554,7 +593,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     if (error == null) {
 
                         final TLRPC.TL_help_support res = (TLRPC.TL_help_support)response;
-                        Utilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.RunOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 SharedPreferences.Editor editor = preferences.edit();
@@ -571,14 +610,14 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
                                 users.add(res.user);
                                 MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
-                                MessagesController.getInstance().users.put(res.user.id, res.user);
+                                MessagesController.getInstance().putUser(res.user, false);
                                 Bundle args = new Bundle();
                                 args.putInt("user_id", res.user.id);
                                 presentFragment(new ChatActivity(args));
                             }
                         });
                     } else {
-                        Utilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.RunOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 try {
@@ -592,7 +631,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 }
             });
         } else {
-            MessagesController.getInstance().users.putIfAbsent(supportUser.id, supportUser);
+            MessagesController.getInstance().putUser(supportUser, true);
             Bundle args = new Bundle();
             args.putInt("user_id", supportUser.id);
             presentFragment(new ChatActivity(args));
@@ -620,7 +659,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public void didReceivedNotification(int id, Object... args) {
-        if (id == MessagesController.updateInterfaces) {
+        if (id == NotificationCenter.updateInterfaces) {
             int mask = (Integer)args[0];
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
                 if (listView != null) {
@@ -677,8 +716,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         @Override
         public boolean isEnabled(int i) {
             return i == textSizeRow || i == enableAnimationsRow || i == blockedRow || i == notificationRow || i == backgroundRow ||
-                    i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == terminateSessionsRow || i == photoDownloadPrivateRow ||
-                    i == photoDownloadChatRow || i == clearLogsRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow || i == languageRow ||
+                    i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == terminateSessionsRow || i == wifiDownloadRow ||
+                    i == mobileDownloadRow || i == clearLogsRow || i == roamingDownloadRow || i == languageRow ||
                     i == switchBackendButtonRow || i == telegramFaqRow || i == contactsSortRow || i == contactsReimportRow;
         }
 
@@ -729,7 +768,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
                             CharSequence[] items;
 
-                            TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.getClientUserId());
+                            TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
                             if (user == null) {
                                 user = UserConfig.getCurrentUser();
                             }
@@ -749,7 +788,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 @Override
                                 public void onClick(DialogInterface dialogInterface, int i) {
                                     if (i == 0 && full) {
-                                        TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.getClientUserId());
+                                        TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
                                         if (user != null && user.photo != null && user.photo.photo_big != null) {
                                             PhotoViewer.getInstance().setParentActivity(getParentActivity());
                                             PhotoViewer.getInstance().openPhoto(user.photo.photo_big, SettingsActivity.this);
@@ -759,50 +798,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                     } else if (i == 1 && !full || i == 2 && full) {
                                         avatarUpdater.openGallery();
                                     } else if (i == 3) {
-                                        TLRPC.TL_photos_updateProfilePhoto req = new TLRPC.TL_photos_updateProfilePhoto();
-                                        req.id = new TLRPC.TL_inputPhotoEmpty();
-                                        req.crop = new TLRPC.TL_inputPhotoCropAuto();
-                                        UserConfig.getCurrentUser().photo = new TLRPC.TL_userProfilePhotoEmpty();
-                                        TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.getClientUserId());
-                                        if (user == null) {
-                                            user = UserConfig.getCurrentUser();
-                                        }
-                                        if (user == null) {
-                                            return;
-                                        }
-                                        if (user != null) {
-                                            user.photo = UserConfig.getCurrentUser().photo;
-                                        }
-                                        NotificationCenter.getInstance().postNotificationName(MessagesController.updateInterfaces, MessagesController.UPDATE_MASK_ALL);
-                                        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
-                                            @Override
-                                            public void run(TLObject response, TLRPC.TL_error error) {
-                                                if (error == null) {
-                                                    TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.getClientUserId());
-                                                    if (user == null) {
-                                                        user = UserConfig.getCurrentUser();
-                                                        MessagesController.getInstance().users.put(user.id, user);
-                                                    } else {
-                                                        UserConfig.setCurrentUser(user);
-                                                    }
-                                                    if (user == null) {
-                                                        return;
-                                                    }
-                                                    MessagesStorage.getInstance().clearUserPhotos(user.id);
-                                                    ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
-                                                    users.add(user);
-                                                    MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);
-                                                    user.photo = (TLRPC.UserProfilePhoto)response;
-                                                    Utilities.RunOnUIThread(new Runnable() {
-                                                        @Override
-                                                        public void run() {
-                                                            NotificationCenter.getInstance().postNotificationName(MessagesController.updateInterfaces, MessagesController.UPDATE_MASK_ALL);
-                                                            UserConfig.saveConfig(true);
-                                                        }
-                                                    });
-                                                }
-                                            }
-                                        });
+                                        MessagesController.getInstance().deleteUserPhoto(null);
                                     }
                                 }
                             });
@@ -816,7 +812,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 textView = (TextView)view.findViewById(R.id.settings_name);
                 Typeface typeface = AndroidUtilities.getTypeface("fonts/rmedium.ttf");
                 textView.setTypeface(typeface);
-                TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.getClientUserId());
+                TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
                 if (user == null) {
                     user = UserConfig.getCurrentUser();
                 }
@@ -848,10 +844,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     textView.setText(LocaleController.getString("Support", R.string.Support));
                 } else if (i == messagesSectionRow) {
                     textView.setText(LocaleController.getString("MessagesSettings", R.string.MessagesSettings));
-                } else if (i == photoDownloadSection) {
-                    textView.setText(LocaleController.getString("AutomaticPhotoDownload", R.string.AutomaticPhotoDownload));
-                } else if (i == audioDownloadSection) {
-                    textView.setText(LocaleController.getString("AutomaticAudioDownload", R.string.AutomaticAudioDownload));
+                } else if (i == mediaDownloadSection) {
+                    textView.setText(LocaleController.getString("AutomaticMediaDownload", R.string.AutomaticMediaDownload));
                 } else if (i == contactsSectionRow) {
                     textView.setText(LocaleController.getString("Contacts", R.string.Contacts).toUpperCase());
                 }
@@ -961,7 +955,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                                     SharedPreferences.Editor editor = preferences.edit();
                                     editor.clear().commit();
-                                    NotificationCenter.getInstance().postNotificationName(1234);
+                                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.appDidLogout);
                                     MessagesController.getInstance().unregistedPush();
                                     MessagesController.getInstance().logOut();
                                     UserConfig.clearConfig();
@@ -1005,54 +999,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else if (sort == 2) {
                         detailTextView.setText(LocaleController.getString("LastName", R.string.SortLastName));
                     }
-                } else if (i == photoDownloadChatRow) {
-                    textView.setText(LocaleController.getString("AutomaticPhotoDownloadGroups", R.string.AutomaticPhotoDownloadGroups));
-                    divider.setVisibility(View.VISIBLE);
-                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                    int value = preferences.getInt("photo_download_chat2", 0);
-                    if (value == 0) {
-                        detailTextView.setText(LocaleController.getString("Enabled", R.string.Enabled));
-                    } else if (value == 1) {
-                        detailTextView.setText(LocaleController.getString("Disabled", R.string.Disabled));
-                    } else if (value == 2) {
-                        detailTextView.setText(LocaleController.getString("WiFiOnly", R.string.WiFiOnly));
-                    }
-                } else if (i == photoDownloadPrivateRow) {
-                    textView.setText(LocaleController.getString("AutomaticPhotoDownloadPrivateChats", R.string.AutomaticPhotoDownloadPrivateChats));
-                    divider.setVisibility(View.INVISIBLE);
-                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                    int value = preferences.getInt("photo_download_user2", 0);
-                    if (value == 0) {
-                        detailTextView.setText(LocaleController.getString("Enabled", R.string.Enabled));
-                    } else if (value == 1) {
-                        detailTextView.setText(LocaleController.getString("Disabled", R.string.Disabled));
-                    } else if (value == 2) {
-                        detailTextView.setText(LocaleController.getString("WiFiOnly", R.string.WiFiOnly));
-                    }
-                } else if (i == audioDownloadChatRow) {
-                    textView.setText(LocaleController.getString("AutomaticPhotoDownloadGroups", R.string.AutomaticPhotoDownloadGroups));
-                    divider.setVisibility(View.VISIBLE);
-                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                    int value = preferences.getInt("audio_download_chat2", 0);
-                    if (value == 0) {
-                        detailTextView.setText(LocaleController.getString("Enabled", R.string.Enabled));
-                    } else if (value == 1) {
-                        detailTextView.setText(LocaleController.getString("Disabled", R.string.Disabled));
-                    } else if (value == 2) {
-                        detailTextView.setText(LocaleController.getString("WiFiOnly", R.string.WiFiOnly));
-                    }
-                } else if (i == audioDownloadPrivateRow) {
-                    textView.setText(LocaleController.getString("AutomaticPhotoDownloadPrivateChats", R.string.AutomaticPhotoDownloadPrivateChats));
-                    divider.setVisibility(View.INVISIBLE);
-                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                    int value = preferences.getInt("audio_download_user2", 0);
-                    if (value == 0) {
-                        detailTextView.setText(LocaleController.getString("Enabled", R.string.Enabled));
-                    } else if (value == 1) {
-                        detailTextView.setText(LocaleController.getString("Disabled", R.string.Disabled));
-                    } else if (value == 2) {
-                        detailTextView.setText(LocaleController.getString("WiFiOnly", R.string.WiFiOnly));
-                    }
                 }
             } else if (type == 6) {
                 if (view == null) {
@@ -1066,6 +1012,56 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         FileLog.e("tmessages", e);
                     }
                 }
+            } else if (type == 7) {
+                if (view == null) {
+                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                    view = li.inflate(R.layout.settings_row_detail_layout, viewGroup, false);
+                }
+                TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
+                TextView textViewDetail = (TextView)view.findViewById(R.id.settings_row_text_detail);
+                View divider = view.findViewById(R.id.settings_row_divider);
+
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                int mask = 0;
+                if (i == mobileDownloadRow) {
+                    textView.setText(LocaleController.getString("WhenUsingMobileData", R.string.WhenUsingMobileData));
+                    divider.setVisibility(View.VISIBLE);
+                    mask = MediaController.getInstance().mobileDataDownloadMask;
+                } else if (i == wifiDownloadRow) {
+                    textView.setText(LocaleController.getString("WhenConnectedOnWiFi", R.string.WhenConnectedOnWiFi));
+                    divider.setVisibility(View.VISIBLE);
+                    mask = MediaController.getInstance().wifiDownloadMask;
+                } else if (i == roamingDownloadRow) {
+                    textView.setText(LocaleController.getString("WhenRoaming", R.string.WhenRoaming));
+                    divider.setVisibility(View.GONE);
+                    mask = MediaController.getInstance().roamingDownloadMask;
+                }
+                String text = "";
+                if ((mask & MediaController.AUTODOWNLOAD_MASK_PHOTO) != 0) {
+                    text += LocaleController.getString("AttachPhoto", R.string.AttachPhoto);
+                }
+                if ((mask & MediaController.AUTODOWNLOAD_MASK_AUDIO) != 0) {
+                    if (text.length() != 0) {
+                        text += ", ";
+                    }
+                    text += LocaleController.getString("AttachAudio", R.string.AttachAudio);
+                }
+                if ((mask & MediaController.AUTODOWNLOAD_MASK_VIDEO) != 0) {
+                    if (text.length() != 0) {
+                        text += ", ";
+                    }
+                    text += LocaleController.getString("AttachVideo", R.string.AttachVideo);
+                }
+                if ((mask & MediaController.AUTODOWNLOAD_MASK_DOCUMENT) != 0) {
+                    if (text.length() != 0) {
+                        text += ", ";
+                    }
+                    text += LocaleController.getString("AttachDocument", R.string.AttachDocument);
+                }
+                if (text.length() == 0) {
+                    text = LocaleController.getString("NoMediaAutoDownload", R.string.NoMediaAutoDownload);
+                }
+                textViewDetail.setText(text);
             }
             return view;
         }
@@ -1074,9 +1070,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         public int getItemViewType(int i) {
             if (i == profileRow) {
                 return 0;
-            } else if (i == numberSectionRow || i == settingsSectionRow || i == supportSectionRow || i == messagesSectionRow || i == photoDownloadSection || i == audioDownloadSection || i == contactsSectionRow) {
+            } else if (i == numberSectionRow || i == settingsSectionRow || i == supportSectionRow || i == messagesSectionRow || i == mediaDownloadSection || i == contactsSectionRow) {
                 return 1;
-            } else if (i == textSizeRow || i == languageRow || i == contactsSortRow  || i == photoDownloadChatRow || i == photoDownloadPrivateRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow) {
+            } else if (i == textSizeRow || i == languageRow || i == contactsSortRow) {
                 return 5;
             } else if (i == enableAnimationsRow || i == sendByEnterRow) {
                 return 3;
@@ -1086,6 +1082,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 4;
             } else if (i == versionRow) {
                 return 6;
+            } else if (i == wifiDownloadRow || i == mobileDownloadRow || i == roamingDownloadRow) {
+                return 7;
             } else {
                 return 2;
             }
@@ -1093,7 +1091,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public int getViewTypeCount() {
-            return 7;
+            return 8;
         }
 
         @Override

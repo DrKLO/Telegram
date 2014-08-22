@@ -6,13 +6,12 @@
  * Copyright Nikolai Kudashov, 2013.
  */
 
-package org.telegram.objects;
+package org.telegram.android;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.Utilities;
 
 import java.util.ArrayList;
@@ -35,8 +34,8 @@ public class PhotoObject {
                 if (preview == 2) {
                     Utilities.blurBitmap(image, image.getWidth(), image.getHeight(), image.getRowBytes());
                 }
-                if (FileLoader.getInstance().runtimeHack != null) {
-                    FileLoader.getInstance().runtimeHack.trackFree(image.getRowBytes() * image.getHeight());
+                if (ImageLoader.getInstance().runtimeHack != null) {
+                    ImageLoader.getInstance().runtimeHack.trackFree(image.getRowBytes() * image.getHeight());
                 }
             }
         }

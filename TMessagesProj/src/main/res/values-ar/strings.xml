@@ -58,12 +58,12 @@
     <string name="SelectChat">اختر محادثة</string>
 
     <!--broadcasts-->
-    <string name="BroadcastList">Broadcast List</string>
-    <string name="NewBroadcastList">New Broadcast List</string>
-    <string name="EnterListName">Enter list name</string>
-    <string name="YouCreatedBroadcastList">You created a broadcast list</string>
-    <string name="AddRecipient">Add Recipient</string>
-    <string name="KickFromBroadcast">Remove from broadcast list</string>
+    <string name="BroadcastList">قائمة الرسالة الجماعية</string>
+    <string name="NewBroadcastList">قائمة رسالة جماعية جديدة</string>
+    <string name="EnterListName">أدخل اسم القائمة</string>
+    <string name="YouCreatedBroadcastList">أنت قمت بإنشاء قائمة رسالة جماعية</string>
+    <string name="AddRecipient">إضافة مستلم</string>
+    <string name="KickFromBroadcast">إزالة من قائمة الرسالة الجماعية</string>
 
     <!--documents view-->
     <string name="SelectFile">اختر ملف</string>
@@ -160,6 +160,7 @@
     <string name="NotificationContactJoined">%1$s قام بالتسجيل في تيليجرام!</string>
     <string name="NotificationUnrecognizedDevice">%1$s,\nتم تسجيل الدخول لحسابك من جهاز جديد يوم %2$s\n\nالجهاز: %3$s\nالموقع: %4$s\n\nإذا لم يكن أنت من سجل الدخول، يمكنك الذهاب للإعدادات ثم تسجيل الخروج من كافة الأجهزة الأخرى.\n\nشكرًا,\nفريق عمل تيليجرام</string>
     <string name="NotificationContactNewPhoto">%1$s قام بتغيير صورته الشخصية</string>
+    <string name="Reply">Reply</string>
 
     <!--contacts view-->
     <string name="SelectContact">اختر جهة اتصال</string>
@@ -254,10 +255,6 @@
     <string name="MessagesSettings">الرسائل</string>
     <string name="SendByEnter">أرسل بزر الإدخال</string>
     <string name="TerminateAllSessions">سجل الخروج من كافة الأجهزة الأخرى</string>
-    <string name="AutomaticPhotoDownload">تنزيل الصور تلقائيًا</string>
-    <string name="AutomaticAudioDownload">تنزيل رسائل الصوت تلقائياً</string>
-    <string name="AutomaticPhotoDownloadGroups">المجموعات</string>
-    <string name="AutomaticPhotoDownloadPrivateChats">المحادثات</string>
     <string name="Events">الأحداث</string>
     <string name="ContactJoined">اشترك صديق في تيليجرام</string>
     <string name="Pebble">PEBBLE</string>
@@ -284,6 +281,15 @@
     <string name="OnlyWhenScreenOff">فقط عندما تكون الشاشة مطفأة</string>
     <string name="AlwaysShowPopup">دائمًا أظهر الإشعارات المنبثقة</string>
     <string name="BadgeNumber">Badge Number</string>
+    <string name="Short">Short</string>
+    <string name="Long">Long</string>
+    <string name="SystemDefault">System default</string>
+    <string name="SettingsDefault">Settings default</string>
+    <string name="AutomaticMediaDownload">AUTOMATIC MEDIA DOWNLOAD</string>
+    <string name="WhenUsingMobileData">When using mobile data</string>
+    <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
+    <string name="WhenRoaming">When roaming</string>
+    <string name="NoMediaAutoDownload">No media</string>
 
     <!--media view-->
     <string name="NoMedia">لا توجد وسائط بعد</string>
@@ -309,8 +315,8 @@
 
     <!--edit video view-->
     <string name="EditVideo">تحرير الفيديو</string>
-    <string name="OriginalVideo">Original Video</string>
-    <string name="EditedVideo">Edited Video</string>
+    <string name="OriginalVideo">الفيديو الأصلي</string>
+    <string name="EditedVideo">تم تحرير الفيديو</string>
 
     <!--button titles-->
     <string name="Next">التالي</string>

@@ -160,6 +160,7 @@
     <string name="NotificationContactJoined">%1$s entrou para o Telegram!</string>
     <string name="NotificationUnrecognizedDevice">%1$s,\nNós detectamos um login na sua conta de um novo dispositivo %2$s\n\nDispositivo: %3$s\nLocalização: %4$s\n\nSe não foi você, você pode ir para Configurações - Terminar todas as sessões.\n\nAtenciosamente,\nTime do Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s atualizou a foto do perfil</string>
+    <string name="Reply">Reply</string>
 
     <!--contacts view-->
     <string name="SelectContact">Selecionar Contato</string>
@@ -254,10 +255,6 @@
     <string name="MessagesSettings">MENSAGENS</string>
     <string name="SendByEnter">Enviar usando \'Enter\'</string>
     <string name="TerminateAllSessions">Terminar todas as outras sessões</string>
-    <string name="AutomaticPhotoDownload">BAIXAR FOTOS AUTOMÁTICAMENTE</string>
-    <string name="AutomaticAudioDownload">BAIXAR ÁUDIO AUTOMATICAMENTE</string>
-    <string name="AutomaticPhotoDownloadGroups">Grupos</string>
-    <string name="AutomaticPhotoDownloadPrivateChats">Conversas Privadas</string>
     <string name="Events">EVENTOS</string>
     <string name="ContactJoined">Contato entrou para o Telegram</string>
     <string name="Pebble">PEBBLE</string>
@@ -284,6 +281,15 @@
     <string name="OnlyWhenScreenOff">Somente com a tela desligada</string>
     <string name="AlwaysShowPopup">Sempre mostrar popup</string>
     <string name="BadgeNumber">Contador de medalhas</string>
+    <string name="Short">Short</string>
+    <string name="Long">Long</string>
+    <string name="SystemDefault">System default</string>
+    <string name="SettingsDefault">Settings default</string>
+    <string name="AutomaticMediaDownload">AUTOMATIC MEDIA DOWNLOAD</string>
+    <string name="WhenUsingMobileData">When using mobile data</string>
+    <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
+    <string name="WhenRoaming">When roaming</string>
+    <string name="NoMediaAutoDownload">No media</string>
 
     <!--media view-->
     <string name="NoMedia">Ainda não há mídia compartilhada</string>

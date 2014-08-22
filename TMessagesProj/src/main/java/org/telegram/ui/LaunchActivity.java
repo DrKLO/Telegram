@@ -22,11 +22,12 @@ import android.widget.Toast;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.android.SendMessagesHelper;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
-import org.telegram.messenger.NotificationCenter;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
@@ -81,13 +82,12 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             AndroidUtilities.statusBarHeight = getResources().getDimensionPixelSize(resourceId);
         }
 
-        NotificationCenter.getInstance().postNotificationName(702, this);
+        NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeOtherAppActivities, this);
         currentConnectionState = ConnectionsManager.getInstance().getConnectionState();
 
-        NotificationCenter.getInstance().addObserver(this, 1234);
-        NotificationCenter.getInstance().addObserver(this, 701);
-        NotificationCenter.getInstance().addObserver(this, 702);
-        NotificationCenter.getInstance().addObserver(this, 703);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.appDidLogout);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeOtherAppActivities);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.didUpdatedConnectionState);
 
         if (fragmentsStack.isEmpty()) {
             if (!UserConfig.isClientActivated()) {
@@ -344,7 +344,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                         if (cursor != null) {
                             if (cursor.moveToFirst()) {
                                 int userId = cursor.getInt(cursor.getColumnIndex("DATA4"));
-                                NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
+                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
                                 push_user_id = userId;
                             }
                             cursor.close();
@@ -362,21 +362,21 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                 int userId = intent.getIntExtra("userId", 0);
                 int encId = intent.getIntExtra("encId", 0);
                 if (chatId != 0) {
-                    TLRPC.Chat chat = MessagesController.getInstance().chats.get(chatId);
+                    TLRPC.Chat chat = MessagesController.getInstance().getChat(chatId);
                     if (chat != null) {
-                        NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
                         push_chat_id = chatId;
                     }
                 } else if (userId != 0) {
-                    TLRPC.User user = MessagesController.getInstance().users.get(userId);
+                    TLRPC.User user = MessagesController.getInstance().getUser(userId);
                     if (user != null) {
-                        NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
                         push_user_id = userId;
                     }
                 } else if (encId != 0) {
-                    TLRPC.EncryptedChat chat = MessagesController.getInstance().encryptedChats.get(encId);
+                    TLRPC.EncryptedChat chat = MessagesController.getInstance().getEncryptedChat(encId);
                     if (chat != null) {
-                        NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
                         push_enc_id = encId;
                     }
                 } else {
@@ -417,7 +417,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             }
         }
         if (videoPath != null || photoPathsArray != null || sendingText != null || documentsPathsArray != null || contactsToSend != null) {
-            NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
+            NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
             Bundle args = new Bundle();
             args.putBoolean("onlySelect", true);
             args.putString("selectAlertString", LocaleController.getString("SendMessagesTo", R.string.SendMessagesTo));
@@ -451,7 +451,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
 
             Bundle args = new Bundle();
             args.putBoolean("scrollToTopOnResume", true);
-            NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
+            NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
             if (lower_part != 0) {
                 if (high_id == 1) {
                     args.putInt("chat_id", lower_part);
@@ -481,7 +481,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             }
             if (contactsToSend != null && !contactsToSend.isEmpty()) {
                 for (TLRPC.User user : contactsToSend) {
-                    MessagesController.getInstance().sendMessage(user, dialog_id);
+                    SendMessagesHelper.getInstance().sendMessage(user, dialog_id);
                 }
             }
 
@@ -533,10 +533,9 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             return;
         }
         finished = true;
-        NotificationCenter.getInstance().removeObserver(this, 1234);
-        NotificationCenter.getInstance().removeObserver(this, 701);
-        NotificationCenter.getInstance().removeObserver(this, 702);
-        NotificationCenter.getInstance().removeObserver(this, 703);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.appDidLogout);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeOtherAppActivities);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didUpdatedConnectionState);
     }
 
     @Override
@@ -548,7 +547,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     @Override
     @SuppressWarnings("unchecked")
     public void didReceivedNotification(int id, Object... args) {
-        if (id == 1234) {
+        if (id == NotificationCenter.appDidLogout) {
             for (BaseFragment fragment : fragmentsStack) {
                 fragment.onFragmentDestroy();
             }
@@ -557,11 +556,11 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             startActivity(intent2);
             onFinish();
             finish();
-        } else if (id == 702) {
+        } else if (id == NotificationCenter.closeOtherAppActivities) {
             if (args[0] != this) {
                 onFinish();
             }
-        } else if (id == 703) {
+        } else if (id == NotificationCenter.didUpdatedConnectionState) {
             int state = (Integer)args[0];
             if (currentConnectionState != state) {
                 FileLog.e("tmessages", "switch to state " + state);

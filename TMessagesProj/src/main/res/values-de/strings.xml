@@ -160,6 +160,7 @@
     <string name="NotificationContactJoined">%1$s benutzt jetzt Telegram!</string>
     <string name="NotificationUnrecognizedDevice">%1$s,\nWir haben eine Anmeldung von einem neuen Gerät mit der IP-Adresse %2$s festgestellt.\n\nGerät: %3$s\nStandort: %4$s\n\nWenn du es nicht selbst gewesen bist, melde alle anderen Sitzungen in den Telegram Einstellungen unverzüglich ab. \n\n\nMit freundlichen Grüßen,\nDas Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s hat das Profilbild geändert</string>
+    <string name="Reply">Reply</string>
 
     <!--contacts view-->
     <string name="SelectContact">Kontakt auswählen</string>
@@ -254,10 +255,6 @@
     <string name="MessagesSettings">NACHRICHTEN</string>
     <string name="SendByEnter">Mit ENTER senden</string>
     <string name="TerminateAllSessions">Alle anderen Sitzungen beenden</string>
-    <string name="AutomaticPhotoDownload">AUTOMATISCHER BILDER-DOWNLOAD</string>
-    <string name="AutomaticAudioDownload">AUTOMATISCHER AUDIO-DOWNLOAD</string>
-    <string name="AutomaticPhotoDownloadGroups">Gruppen</string>
-    <string name="AutomaticPhotoDownloadPrivateChats">Private Chats</string>
     <string name="Events">EREIGNISSE</string>
     <string name="ContactJoined">Kontakt ist Telegram beigetreten</string>
     <string name="Pebble">PEBBLE</string>
@@ -284,6 +281,15 @@
     <string name="OnlyWhenScreenOff">Nur wenn Bildschirm „aus“</string>
     <string name="AlwaysShowPopup">Popups immer anzeigen</string>
     <string name="BadgeNumber">BADGE (Anzahl)</string>
+    <string name="Short">Short</string>
+    <string name="Long">Long</string>
+    <string name="SystemDefault">System default</string>
+    <string name="SettingsDefault">Settings default</string>
+    <string name="AutomaticMediaDownload">AUTOMATIC MEDIA DOWNLOAD</string>
+    <string name="WhenUsingMobileData">When using mobile data</string>
+    <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
+    <string name="WhenRoaming">When roaming</string>
+    <string name="NoMediaAutoDownload">No media</string>
 
     <!--media view-->
     <string name="NoMedia">Noch keine geteilten Medien vorhanden</string>

@@ -27,10 +27,11 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.android.MessagesController;
+import org.telegram.android.MessagesStorage;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
-import org.telegram.messenger.NotificationCenter;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.TLObject;
@@ -62,14 +63,14 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
         settingsVibrateRow = rowCount++;
         settingsLedRow = rowCount++;
         settingsSoundRow = rowCount++;
-        NotificationCenter.getInstance().addObserver(this, MessagesController.notificationsSettingsUpdated);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.notificationsSettingsUpdated);
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.notificationsSettingsUpdated);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.notificationsSettingsUpdated);
     }
 
     @Override
@@ -96,7 +97,40 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
-                    if (i == settingsVibrateRow || i == settingsNotificationsRow) {
+                    if (i == settingsVibrateRow) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("Vibrate", R.string.Vibrate));
+                        builder.setItems(new CharSequence[] {
+                                LocaleController.getString("Disabled", R.string.Disabled),
+                                LocaleController.getString("SettingsDefault", R.string.SettingsDefault),
+                                LocaleController.getString("SystemDefault", R.string.SystemDefault),
+                                LocaleController.getString("Short", R.string.Short),
+                                LocaleController.getString("Long", R.string.Long)
+                        }, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                if (which == 0) {
+                                    editor.putInt("vibrate_" + dialog_id, 2);
+                                } else if (which == 1) {
+                                    editor.putInt("vibrate_" + dialog_id, 0);
+                                } else if (which == 2) {
+                                    editor.putInt("vibrate_" + dialog_id, 4);
+                                } else if (which == 3) {
+                                    editor.putInt("vibrate_" + dialog_id, 1);
+                                } else if (which == 4) {
+                                    editor.putInt("vibrate_" + dialog_id, 3);
+                                }
+                                editor.commit();
+                                if (listView != null) {
+                                    listView.invalidateViews();
+                                }
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showAlertDialog(builder);
+                    } else if (i == settingsNotificationsRow) {
                         if (getParentActivity() == null) {
                             return;
                         }
@@ -111,11 +145,8 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                             public void onClick(DialogInterface dialog, int which) {
                                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                                 SharedPreferences.Editor editor = preferences.edit();
-                                if (i == settingsVibrateRow) {
-                                    editor.putInt("vibrate_" + dialog_id, which);
-                                } else if (i == settingsNotificationsRow) {
-                                    editor.putInt("notify2_" + dialog_id, which);
-                                }
+                                editor.putInt("notify2_" + dialog_id, which);
+                                MessagesStorage.getInstance().setDialogFlags(dialog_id, which == 2 ? 1 : 0);
                                 editor.commit();
                                 if (listView != null) {
                                     listView.invalidateViews();
@@ -240,7 +271,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
             ((TLRPC.TL_inputNotifyPeer)req.peer).peer = new TLRPC.TL_inputPeerChat();
             ((TLRPC.TL_inputNotifyPeer)req.peer).peer.chat_id = -(int)dialog_id;
         } else {
-            TLRPC.User user = MessagesController.getInstance().users.get((int)dialog_id);
+            TLRPC.User user = MessagesController.getInstance().getUser((int)dialog_id);
             if (user == null) {
                 return;
             }
@@ -300,7 +331,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
 
     @Override
     public void didReceivedNotification(int id, Object... args) {
-        if (id == MessagesController.notificationsSettingsUpdated) {
+        if (id == NotificationCenter.notificationsSettingsUpdated) {
             listView.invalidateViews();
         }
     }
@@ -360,11 +391,15 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     int value = preferences.getInt("vibrate_" + dialog_id, 0);
                     if (value == 0) {
-                        detailTextView.setText(LocaleController.getString("Default", R.string.Default));
+                        detailTextView.setText(LocaleController.getString("SettingsDefault", R.string.SettingsDefault));
                     } else if (value == 1) {
-                        detailTextView.setText(LocaleController.getString("Enabled", R.string.Enabled));
+                        detailTextView.setText(LocaleController.getString("Short", R.string.Short));
                     } else if (value == 2) {
                         detailTextView.setText(LocaleController.getString("Disabled", R.string.Disabled));
+                    } else if (value == 3) {
+                        detailTextView.setText(LocaleController.getString("Long", R.string.Long));
+                    } else if (value == 4) {
+                        detailTextView.setText(LocaleController.getString("SystemDefault", R.string.SystemDefault));
                     }
                 } else if (i == settingsNotificationsRow) {
                     textView.setText(LocaleController.getString("Notifications", R.string.Notifications));

@@ -75,7 +75,7 @@ public class VideoEditorActivity extends BaseFragment implements SurfaceHolder.C
         @Override
         public void run() {
             while (videoPlayer.isPlaying()) {
-                Utilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if (videoPlayer.isPlaying()) {
@@ -123,7 +123,7 @@ public class VideoEditorActivity extends BaseFragment implements SurfaceHolder.C
         videoPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mp) {
-                Utilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         onPlayComplete();

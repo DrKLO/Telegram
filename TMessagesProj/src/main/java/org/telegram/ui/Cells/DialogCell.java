@@ -27,8 +27,8 @@ import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.objects.MessageObject;
-import org.telegram.ui.Views.ImageReceiver;
+import org.telegram.android.MessageObject;
+import org.telegram.android.ImageReceiver;
 
 public class DialogCell extends BaseCell {
     private static TextPaint namePaint;
@@ -136,8 +136,7 @@ public class DialogCell extends BaseCell {
         }
 
         if (avatarImage == null) {
-            avatarImage = new ImageReceiver();
-            avatarImage.parentView = this;
+            avatarImage = new ImageReceiver(this);
         }
 
         if (cellLayout == null) {
@@ -228,18 +227,18 @@ public class DialogCell extends BaseCell {
         int high_id = (int)(currentDialog.id >> 32);
         if (lower_id != 0) {
             if (high_id == 1) {
-                chat = MessagesController.getInstance().chats.get(lower_id);
+                chat = MessagesController.getInstance().getChat(lower_id);
             } else {
                 if (lower_id < 0) {
-                    chat = MessagesController.getInstance().chats.get(-lower_id);
+                    chat = MessagesController.getInstance().getChat(-lower_id);
                 } else {
-                    user = MessagesController.getInstance().users.get(lower_id);
+                    user = MessagesController.getInstance().getUser(lower_id);
                 }
             }
         } else {
-            encryptedChat = MessagesController.getInstance().encryptedChats.get(high_id);
+            encryptedChat = MessagesController.getInstance().getEncryptedChat(high_id);
             if (encryptedChat != null) {
-                user = MessagesController.getInstance().users.get(encryptedChat.user_id);
+                user = MessagesController.getInstance().getUser(encryptedChat.user_id);
             }
         }
 
@@ -464,7 +463,7 @@ public class DialogCell extends BaseCell {
                 drawCount = false;
                 drawError = false;
             } else {
-                TLRPC.User fromUser = MessagesController.getInstance().users.get(message.messageOwner.from_id);
+                TLRPC.User fromUser = MessagesController.getInstance().getUser(message.messageOwner.from_id);
 
                 if (currentDialog.last_message_date != 0) {
                     timeString = LocaleController.stringForMessageListDate(currentDialog.last_message_date);
@@ -518,25 +517,19 @@ public class DialogCell extends BaseCell {
                     drawCount = false;
                 }
 
-                if (message.messageOwner.id < 0 && message.messageOwner.send_state != MessagesController.MESSAGE_SEND_STATE_SENT) {
-                    if (MessagesController.getInstance().sendingMessages.get(message.messageOwner.id) == null) {
-                        message.messageOwner.send_state = MessagesController.MESSAGE_SEND_STATE_SEND_ERROR;
-                    }
-                }
-
                 if (message.isFromMe() && message.isOut()) {
-                    if (message.messageOwner.send_state == MessagesController.MESSAGE_SEND_STATE_SENDING) {
+                    if (message.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SENDING) {
                         drawCheck1 = false;
                         drawCheck2 = false;
                         drawClock = true;
                         drawError = false;
-                    } else if (message.messageOwner.send_state == MessagesController.MESSAGE_SEND_STATE_SEND_ERROR) {
+                    } else if (message.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SEND_ERROR) {
                         drawCheck1 = false;
                         drawCheck2 = false;
                         drawClock = false;
                         drawError = true;
                         drawCount = false;
-                    } else if (message.messageOwner.send_state == MessagesController.MESSAGE_SEND_STATE_SENT) {
+                    } else if (message.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SENT) {
                         if (!message.messageOwner.unread) {
                             drawCheck1 = true;
                             drawCheck2 = true;
@@ -644,10 +637,7 @@ public class DialogCell extends BaseCell {
                 messageLeft = AndroidUtilities.dp(11);
                 avatarLeft = width - AndroidUtilities.dp(65);
             }
-            avatarImage.imageX = avatarLeft;
-            avatarImage.imageY = avatarTop;
-            avatarImage.imageW = AndroidUtilities.dp(54);
-            avatarImage.imageH = AndroidUtilities.dp(54);
+            avatarImage.setImageCoords(avatarLeft, avatarTop, AndroidUtilities.dp(54), AndroidUtilities.dp(54));
             if (drawError) {
                 int w = errorDrawable.getIntrinsicWidth() + AndroidUtilities.dp(8);
                 messageWidth -= w;

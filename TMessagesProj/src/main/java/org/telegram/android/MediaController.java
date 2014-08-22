@@ -8,8 +8,13 @@
 
 package org.telegram.android;
 
+import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.media.AudioFormat;
@@ -18,6 +23,7 @@ import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
+import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
@@ -29,12 +35,10 @@ import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.objects.MessageObject;
 import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Cells.ChatMediaCell;
 import org.telegram.ui.Views.GifDrawable;
@@ -129,15 +133,19 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         }
     }
 
-    public final static int audioProgressDidChanged = 50001;
-    public final static int audioDidReset = 50002;
-    public final static int recordProgressChanged = 50003;
-    public final static int recordStarted = 50004;
-    public final static int recordStartError = 50005;
-    public final static int recordStopped = 50006;
-    public final static int screenshotTook = 50007;
-    public final static int albumsDidLoaded = 50008;
-    public final static int audioDidSent = 50009;
+    public static final int AUTODOWNLOAD_MASK_PHOTO = 1;
+    public static final int AUTODOWNLOAD_MASK_AUDIO = 2;
+    public static final int AUTODOWNLOAD_MASK_VIDEO = 4;
+    public static final int AUTODOWNLOAD_MASK_DOCUMENT = 8;
+    public int mobileDataDownloadMask = 0;
+    public int wifiDownloadMask = 0;
+    public int roamingDownloadMask = 0;
+    private int lastCheckMask = 0;
+    private ArrayList<DownloadObject> photoDownloadQueue = new ArrayList<DownloadObject>();
+    private ArrayList<DownloadObject> audioDownloadQueue = new ArrayList<DownloadObject>();
+    private ArrayList<DownloadObject> documentDownloadQueue = new ArrayList<DownloadObject>();
+    private ArrayList<DownloadObject> videoDownloadQueue = new ArrayList<DownloadObject>();
+    private HashMap<String, DownloadObject> downloadQueueKeys = new HashMap<String, DownloadObject>();
 
     private HashMap<String, ArrayList<WeakReference<FileDownloadProgressListener>>> loadingFileObservers = new HashMap<String, ArrayList<WeakReference<FileDownloadProgressListener>>>();
     private HashMap<Integer, String> observersByTag = new HashMap<Integer, String>();
@@ -233,10 +241,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                         });
                     }
                     recordQueue.postRunnable(recordRunnable);
-                    Utilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.RunOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            NotificationCenter.getInstance().postNotificationName(recordProgressChanged, System.currentTimeMillis() - recordStartTime);
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.recordProgressChanged, System.currentTimeMillis() - recordStartTime);
                         }
                     });
                 } else {
@@ -327,7 +335,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         return localInstance;
     }
 
-    public MediaController () {
+    public MediaController() {
         try {
             recordBufferSize = AudioRecord.getMinBufferSize(16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
             if (recordBufferSize <= 0) {
@@ -355,11 +363,26 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         playerQueue = new DispatchQueue("playerQueue");
         fileDecodingQueue = new DispatchQueue("fileDecodingQueue");
 
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        mobileDataDownloadMask = preferences.getInt("mobileDataDownloadMask", AUTODOWNLOAD_MASK_PHOTO | AUTODOWNLOAD_MASK_AUDIO);
+        wifiDownloadMask = preferences.getInt("wifiDownloadMask", AUTODOWNLOAD_MASK_PHOTO | AUTODOWNLOAD_MASK_AUDIO);
+        roamingDownloadMask = preferences.getInt("roamingDownloadMask", 0);
 
-        NotificationCenter.getInstance().addObserver(this, FileLoader.FileDidFailedLoad);
-        NotificationCenter.getInstance().addObserver(this, FileLoader.FileDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, FileLoader.FileLoadProgressChanged);
-        NotificationCenter.getInstance().addObserver(this, FileLoader.FileUploadProgressChanged);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileDidFailedLoad);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileDidLoaded);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileLoadProgressChanged);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileUploadProgressChanged);
+
+        BroadcastReceiver networkStateReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                checkAutodownloadSettings();
+            }
+        };
+        IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+        ApplicationLoader.applicationContext.registerReceiver(networkStateReceiver, filter);
+
+        checkAutodownloadSettings();
     }
 
     private void startProgressTimer() {
@@ -377,7 +400,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 @Override
                 public void run() {
                     synchronized (sync) {
-                        Utilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.RunOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 if (playingMessageObject != null && (audioPlayer != null || audioTrackPlayer != null) && !isPaused) {
@@ -404,7 +427,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                                         lastProgress = progress;
                                         playingMessageObject.audioProgress = value;
                                         playingMessageObject.audioProgressSec = lastProgress / 1000;
-                                        NotificationCenter.getInstance().postNotificationName(audioProgressDidChanged, playingMessageObject.messageOwner.id, value);
+                                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioProgressDidChanged, playingMessageObject.messageOwner.id, value);
                                     } catch (Exception e) {
                                         FileLog.e("tmessages", e);
                                     }
@@ -438,6 +461,186 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         }
         currentMediaCell = null;
         currentGifMessageObject = null;
+        photoDownloadQueue.clear();
+        audioDownloadQueue.clear();
+        documentDownloadQueue.clear();
+        videoDownloadQueue.clear();
+        downloadQueueKeys.clear();
+    }
+
+    protected int getAutodownloadMask() {
+        int mask = 0;
+        if ((mobileDataDownloadMask & AUTODOWNLOAD_MASK_PHOTO) != 0 || (wifiDownloadMask & AUTODOWNLOAD_MASK_PHOTO) != 0 || (roamingDownloadMask & AUTODOWNLOAD_MASK_PHOTO) != 0) {
+            mask |= AUTODOWNLOAD_MASK_PHOTO;
+        }
+        if ((mobileDataDownloadMask & AUTODOWNLOAD_MASK_AUDIO) != 0 || (wifiDownloadMask & AUTODOWNLOAD_MASK_AUDIO) != 0 || (roamingDownloadMask & AUTODOWNLOAD_MASK_AUDIO) != 0) {
+            mask |= AUTODOWNLOAD_MASK_AUDIO;
+        }
+        if ((mobileDataDownloadMask & AUTODOWNLOAD_MASK_VIDEO) != 0 || (wifiDownloadMask & AUTODOWNLOAD_MASK_VIDEO) != 0 || (roamingDownloadMask & AUTODOWNLOAD_MASK_VIDEO) != 0) {
+            mask |= AUTODOWNLOAD_MASK_VIDEO;
+        }
+        if ((mobileDataDownloadMask & AUTODOWNLOAD_MASK_DOCUMENT) != 0 || (wifiDownloadMask & AUTODOWNLOAD_MASK_DOCUMENT) != 0 || (roamingDownloadMask & AUTODOWNLOAD_MASK_DOCUMENT) != 0) {
+            mask |= AUTODOWNLOAD_MASK_DOCUMENT;
+        }
+        return mask;
+    }
+
+    public void checkAutodownloadSettings() {
+        int currentMask = getCurrentDownloadMask();
+        if (currentMask == lastCheckMask) {
+            return;
+        }
+        FileLog.e("tmessages", "check download mask = " + currentMask);
+        lastCheckMask = currentMask;
+        if ((currentMask & AUTODOWNLOAD_MASK_PHOTO) != 0) {
+            if (photoDownloadQueue.isEmpty()) {
+                newDownloadObjectsAvailable(AUTODOWNLOAD_MASK_PHOTO);
+            }
+        } else {
+            for (DownloadObject downloadObject : photoDownloadQueue) {
+                FileLoader.getInstance().cancelLoadFile((TLRPC.PhotoSize)downloadObject.object);
+            }
+            photoDownloadQueue.clear();
+        }
+        if ((currentMask & AUTODOWNLOAD_MASK_AUDIO) != 0) {
+            if (audioDownloadQueue.isEmpty()) {
+                newDownloadObjectsAvailable(AUTODOWNLOAD_MASK_AUDIO);
+            }
+        } else {
+            for (DownloadObject downloadObject : audioDownloadQueue) {
+                FileLoader.getInstance().cancelLoadFile((TLRPC.Audio)downloadObject.object);
+            }
+            audioDownloadQueue.clear();
+        }
+        if ((currentMask & AUTODOWNLOAD_MASK_DOCUMENT) != 0) {
+            if (documentDownloadQueue.isEmpty()) {
+                newDownloadObjectsAvailable(AUTODOWNLOAD_MASK_DOCUMENT);
+            }
+        } else {
+            for (DownloadObject downloadObject : documentDownloadQueue) {
+                FileLoader.getInstance().cancelLoadFile((TLRPC.Document)downloadObject.object);
+            }
+            documentDownloadQueue.clear();
+        }
+        if ((currentMask & AUTODOWNLOAD_MASK_VIDEO) != 0) {
+            if (videoDownloadQueue.isEmpty()) {
+                newDownloadObjectsAvailable(AUTODOWNLOAD_MASK_VIDEO);
+            }
+        } else {
+            for (DownloadObject downloadObject : videoDownloadQueue) {
+                FileLoader.getInstance().cancelLoadFile((TLRPC.Video)downloadObject.object);
+            }
+            videoDownloadQueue.clear();
+        }
+
+        int mask = getAutodownloadMask();
+        if (mask == 0) {
+            MessagesStorage.getInstance().clearDownloadQueue(0);
+        } else {
+            if ((mask & AUTODOWNLOAD_MASK_PHOTO) == 0) {
+                MessagesStorage.getInstance().clearDownloadQueue(AUTODOWNLOAD_MASK_PHOTO);
+            }
+            if ((mask & AUTODOWNLOAD_MASK_AUDIO) == 0) {
+                MessagesStorage.getInstance().clearDownloadQueue(AUTODOWNLOAD_MASK_AUDIO);
+            }
+            if ((mask & AUTODOWNLOAD_MASK_VIDEO) == 0) {
+                MessagesStorage.getInstance().clearDownloadQueue(AUTODOWNLOAD_MASK_VIDEO);
+            }
+            if ((mask & AUTODOWNLOAD_MASK_DOCUMENT) == 0) {
+                MessagesStorage.getInstance().clearDownloadQueue(AUTODOWNLOAD_MASK_DOCUMENT);
+            }
+        }
+    }
+
+    public boolean canDownloadMedia(int type) {
+        return (getCurrentDownloadMask() & type) != 0;
+    }
+
+    private int getCurrentDownloadMask() {
+        if (ConnectionsManager.isConnectedToWiFi()) {
+            return wifiDownloadMask;
+        } else if(ConnectionsManager.isRoaming()) {
+            return roamingDownloadMask;
+        } else {
+            return mobileDataDownloadMask;
+        }
+    }
+
+    protected void processDownloadObjects(int type, ArrayList<DownloadObject> objects) {
+        if (objects.isEmpty()) {
+            return;
+        }
+        ArrayList<DownloadObject> queue = null;
+        if (type == AUTODOWNLOAD_MASK_PHOTO) {
+            queue = photoDownloadQueue;
+        } else if (type == AUTODOWNLOAD_MASK_AUDIO) {
+            queue = audioDownloadQueue;
+        } else if (type == AUTODOWNLOAD_MASK_VIDEO) {
+            queue = videoDownloadQueue;
+        } else if (type == AUTODOWNLOAD_MASK_DOCUMENT) {
+            queue = documentDownloadQueue;
+        }
+        queue.addAll(objects);
+        for (DownloadObject downloadObject : queue) {
+            String path = FileLoader.getAttachFileName(downloadObject.object);
+            downloadQueueKeys.put(path, downloadObject);
+            if (downloadObject.object instanceof TLRPC.Audio) {
+                FileLoader.getInstance().loadFile((TLRPC.Audio)downloadObject.object, false);
+            } else if (downloadObject.object instanceof TLRPC.PhotoSize) {
+                FileLoader.getInstance().loadFile((TLRPC.PhotoSize)downloadObject.object);
+            } else if (downloadObject.object instanceof TLRPC.Video) {
+                FileLoader.getInstance().loadFile((TLRPC.Video)downloadObject.object);
+            } else if (downloadObject.object instanceof TLRPC.Document) {
+                FileLoader.getInstance().loadFile((TLRPC.Document)downloadObject.object);
+            }
+        }
+    }
+
+    protected void newDownloadObjectsAvailable(int downloadMask) {
+        int mask = getCurrentDownloadMask();
+        if ((mask & AUTODOWNLOAD_MASK_PHOTO) != 0 && (downloadMask & AUTODOWNLOAD_MASK_PHOTO) != 0 && photoDownloadQueue.isEmpty()) {
+            MessagesStorage.getInstance().getDownloadQueue(AUTODOWNLOAD_MASK_PHOTO);
+        }
+        if ((mask & AUTODOWNLOAD_MASK_AUDIO) != 0 && (downloadMask & AUTODOWNLOAD_MASK_AUDIO) != 0 && audioDownloadQueue.isEmpty()) {
+            MessagesStorage.getInstance().getDownloadQueue(AUTODOWNLOAD_MASK_AUDIO);
+        }
+        if ((mask & AUTODOWNLOAD_MASK_VIDEO) != 0 && (downloadMask & AUTODOWNLOAD_MASK_VIDEO) != 0 && videoDownloadQueue.isEmpty()) {
+            MessagesStorage.getInstance().getDownloadQueue(AUTODOWNLOAD_MASK_VIDEO);
+        }
+        if ((mask & AUTODOWNLOAD_MASK_DOCUMENT) != 0 && (downloadMask & AUTODOWNLOAD_MASK_DOCUMENT) != 0 && documentDownloadQueue.isEmpty()) {
+            MessagesStorage.getInstance().getDownloadQueue(AUTODOWNLOAD_MASK_DOCUMENT);
+        }
+    }
+
+    private void checkDownloadFinished(String fileName, boolean canceled) {
+        DownloadObject downloadObject = downloadQueueKeys.get(fileName);
+        if (downloadObject != null) {
+            downloadQueueKeys.remove(fileName);
+            if (!canceled) {
+                MessagesStorage.getInstance().removeFromDownloadQueue(downloadObject.id, downloadObject.type);
+            }
+            if (downloadObject.type == AUTODOWNLOAD_MASK_PHOTO) {
+                photoDownloadQueue.remove(downloadObject);
+                if (photoDownloadQueue.isEmpty()) {
+                    newDownloadObjectsAvailable(AUTODOWNLOAD_MASK_PHOTO);
+                }
+            } else if (downloadObject.type == AUTODOWNLOAD_MASK_AUDIO) {
+                audioDownloadQueue.remove(downloadObject);
+                if (audioDownloadQueue.isEmpty()) {
+                    newDownloadObjectsAvailable(AUTODOWNLOAD_MASK_AUDIO);
+                }
+            } else if (downloadObject.type == AUTODOWNLOAD_MASK_VIDEO) {
+                videoDownloadQueue.remove(downloadObject);
+                if (videoDownloadQueue.isEmpty()) {
+                    newDownloadObjectsAvailable(AUTODOWNLOAD_MASK_VIDEO);
+                }
+            } else if (downloadObject.type == AUTODOWNLOAD_MASK_DOCUMENT) {
+                documentDownloadQueue.remove(downloadObject);
+                if (documentDownloadQueue.isEmpty()) {
+                    newDownloadObjectsAvailable(AUTODOWNLOAD_MASK_DOCUMENT);
+                }
+            }
+        }
     }
 
     public void startMediaObserver() {
@@ -556,10 +759,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 cursor.close();
             }
             if (!screenshotDates.isEmpty()) {
-                Utilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        NotificationCenter.getInstance().postNotificationName(screenshotTook);
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.screenshotTook);
                         checkScreenshots(screenshotDates);
                     }
                 });
@@ -588,7 +791,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             }
         }
         if (send) {
-            MessagesController.getInstance().sendScreenshotMessage(lastSecretChat, lastSecretChatVisibleMessages);
+            SendMessagesHelper.getInstance().sendScreenshotMessage(lastSecretChat, lastSecretChatVisibleMessages);
         }
     }
 
@@ -657,7 +860,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
     @Override
     public void didReceivedNotification(int id, Object... args) {
-        if (id == FileLoader.FileDidFailedLoad) {
+        if (id == NotificationCenter.FileDidFailedLoad) {
             listenerInProgress = true;
             String fileName = (String)args[0];
             ArrayList<WeakReference<FileDownloadProgressListener>> arrayList = loadingFileObservers.get(fileName);
@@ -672,7 +875,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             }
             listenerInProgress = false;
             processLaterArrays();
-        } else if (id == FileLoader.FileDidLoaded) {
+            checkDownloadFinished(fileName, (Boolean)args[1]);
+        } else if (id == NotificationCenter.FileDidLoaded) {
             listenerInProgress = true;
             String fileName = (String)args[0];
             ArrayList<WeakReference<FileDownloadProgressListener>> arrayList = loadingFileObservers.get(fileName);
@@ -687,7 +891,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             }
             listenerInProgress = false;
             processLaterArrays();
-        } else if (id == FileLoader.FileLoadProgressChanged) {
+            checkDownloadFinished(fileName, false);
+        } else if (id == NotificationCenter.FileLoadProgressChanged) {
             listenerInProgress = true;
             String fileName = (String)args[0];
             ArrayList<WeakReference<FileDownloadProgressListener>> arrayList = loadingFileObservers.get(fileName);
@@ -701,7 +906,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             }
             listenerInProgress = false;
             processLaterArrays();
-        } else if (id == FileLoader.FileUploadProgressChanged) {
+        } else if (id == NotificationCenter.FileUploadProgressChanged) {
             String location = (String)args[0];
             listenerInProgress = true;
             String fileName = (String)args[0];
@@ -800,7 +1005,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     if (count > 0) {
                         final long pcm = buffer.pcmOffset;
                         final int marker = buffer.finished == 1 ? buffer.size : -1;
-                        Utilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.RunOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 lastPlayPcm = pcm;
@@ -868,7 +1073,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             playingMessageObject.audioProgressSec = 0;
             playingMessageObject = null;
             if (notify) {
-                NotificationCenter.getInstance().postNotificationName(audioDidReset, lastFile.messageOwner.id);
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioDidReset, lastFile.messageOwner.id);
             }
         }
     }
@@ -889,7 +1094,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     freePlayerBuffers.addAll(usedPlayerBuffers);
                     usedPlayerBuffers.clear();
                 }
-                Utilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if (!isPaused) {
@@ -1142,10 +1347,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             @Override
             public void run() {
                 if (audioRecorder != null) {
-                    Utilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.RunOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            NotificationCenter.getInstance().postNotificationName(recordStartError);
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.recordStartError);
                         }
                     });
                     return;
@@ -1159,14 +1364,14 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 UserConfig.lastLocalId--;
                 UserConfig.saveConfig(false);
 
-                recordingAudioFile = new File(AndroidUtilities.getCacheDir(), MessageObject.getAttachFileName(recordingAudio));
+                recordingAudioFile = new File(AndroidUtilities.getCacheDir(), FileLoader.getAttachFileName(recordingAudio));
 
                 try {
                     if (startRecord(recordingAudioFile.getAbsolutePath()) == 0) {
-                        Utilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.RunOnUIThread(new Runnable() {
                             @Override
                             public void run() {
-                                NotificationCenter.getInstance().postNotificationName(recordStartError);
+                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.recordStartError);
                             }
                         });
                         return;
@@ -1191,20 +1396,20 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                         FileLog.e("tmessages", e2);
                     }
 
-                    Utilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.RunOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            NotificationCenter.getInstance().postNotificationName(recordStartError);
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.recordStartError);
                         }
                     });
                     return;
                 }
 
                 recordQueue.postRunnable(recordRunnable);
-                Utilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        NotificationCenter.getInstance().postNotificationName(recordStarted);
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.recordStarted);
                     }
                 });
             }
@@ -1219,7 +1424,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 @Override
                 public void run() {
                     stopRecord();
-                    Utilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.RunOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             audioToSend.date = ConnectionsManager.getInstance().getCurrentTime();
@@ -1228,11 +1433,11 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                             long duration = recordTimeCount;
                             audioToSend.duration = (int) (duration / 1000);
                             if (duration > 700) {
-                                MessagesController.getInstance().sendMessage(audioToSend, recordDialogId);
+                                SendMessagesHelper.getInstance().sendMessage(audioToSend, recordDialogId);
                             } else {
                                 recordingAudioFileToSend.delete();
                             }
-                            NotificationCenter.getInstance().postNotificationName(audioDidSent);
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioDidSent);
                         }
                     });
                 }
@@ -1275,10 +1480,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
-                Utilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        NotificationCenter.getInstance().postNotificationName(recordStopped);
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.recordStopped);
                     }
                 });
             }
@@ -1347,7 +1552,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                                     if (lastProgress <= System.currentTimeMillis() - 500) {
                                         lastProgress = System.currentTimeMillis();
                                         final int progress = (int) ((float) a / (float) size * 100);
-                                        Utilities.RunOnUIThread(new Runnable() {
+                                        AndroidUtilities.RunOnUIThread(new Runnable() {
                                             @Override
                                             public void run() {
                                                 try {
@@ -1379,7 +1584,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                         FileLog.e("tmessages", e);
                     }
                     if (finalProgress != null) {
-                        Utilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.RunOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 try {
@@ -1612,10 +1817,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     }
                 }
                 final Integer cameraAlbumIdFinal = cameraAlbumId;
-                Utilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        NotificationCenter.getInstance().postNotificationName(albumsDidLoaded, guid, albumsSorted, cameraAlbumIdFinal);
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.albumsDidLoaded, guid, albumsSorted, cameraAlbumIdFinal);
                     }
                 });
             }

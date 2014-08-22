@@ -160,6 +160,7 @@
     <string name="NotificationContactJoined">%1$s heeft nu Telegram!</string>
     <string name="NotificationUnrecognizedDevice">%1$s,\nEr is op je account ingelogd vanaf een nieuw apparaat op %2$s\n\nApparaat: %3$s\nLocatie: %4$s\n\nAls jij dit niet was, kun je alle sessies beëindigen via Instellingen – Beëindig alle andere sessies.\n\nBedankt,\nHet Telegram-team</string>
     <string name="NotificationContactNewPhoto">%1$s heeft zijn/haar profielfoto gewijzigd</string>
+    <string name="Reply">Reply</string>
 
     <!--contacts view-->
     <string name="SelectContact">Kies een contact</string>
@@ -254,10 +255,6 @@
     <string name="MessagesSettings">BERICHTEN</string>
     <string name="SendByEnter">Verzenden met Enter</string>
     <string name="TerminateAllSessions">Beëindig alle andere sessies</string>
-    <string name="AutomaticPhotoDownload">FOTO\'S AUTOMATISCH DOWNLOADEN</string>
-    <string name="AutomaticAudioDownload">GELUIDSBESTANDEN AUTOMATISCH DOWNLOADEN</string>
-    <string name="AutomaticPhotoDownloadGroups">Groepen</string>
-    <string name="AutomaticPhotoDownloadPrivateChats">Privégesprekken</string>
     <string name="Events">GEBEURTENISSEN</string>
     <string name="ContactJoined">Contact lid geworden van Telegram</string>
     <string name="Pebble">PEBBLE</string>
@@ -284,6 +281,15 @@
     <string name="OnlyWhenScreenOff">Alleen wanneer scherm \"uit\" staat</string>
     <string name="AlwaysShowPopup">Altijd popup tonen</string>
     <string name="BadgeNumber">Badgenummer</string>
+    <string name="Short">Short</string>
+    <string name="Long">Long</string>
+    <string name="SystemDefault">System default</string>
+    <string name="SettingsDefault">Settings default</string>
+    <string name="AutomaticMediaDownload">AUTOMATIC MEDIA DOWNLOAD</string>
+    <string name="WhenUsingMobileData">When using mobile data</string>
+    <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
+    <string name="WhenRoaming">When roaming</string>
+    <string name="NoMediaAutoDownload">No media</string>
 
     <!--media view-->
     <string name="NoMedia">Nog geen media gedeeld</string>
