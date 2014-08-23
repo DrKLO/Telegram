@@ -17,22 +17,24 @@ tasks.withType(JavaCompile) {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:19.0.+'
-    compile 'com.google.android.gms:play-services:3.2.+'
+    compile 'com.google.android.gms:play-services:5.0.+'
     compile 'net.hockeyapp.android:HockeySDK:3.0.1'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
+    compile "com.android.support:support-v4:20.0.+"
+
 }
 
 android {
     compileSdkVersion 19
     buildToolsVersion '19.1.0'
 
-    useAaptPngCruncher = true
-    useOldManifestMerger true
+    //Won't compile in the latest android studio
+    //useAaptPngCruncher = true
+    //useOldManifestMerger true
 
     signingConfigs {
         debug {
-            storeFile file("config/debug.keystore")
+            //storeFile file("config/debug.keystore")
         }
 
         release {
