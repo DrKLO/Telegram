@@ -10,6 +10,7 @@ package org.telegram.ui.Views;
 
 import android.content.Context;
 import android.database.DataSetObserver;
+import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -113,7 +114,8 @@ public class EmojiView extends LinearLayout {
             adapters.add(localEmojiGridAdapter);
         }
 
-        setBackgroundDrawable(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] { -14145496, -16777216 }));
+        //setBackgroundDrawable(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] { -14145496, -16777216 }));
+        setBackgroundColor(Color.BLACK);
         pager = new ViewPager(getContext());
         pager.setAdapter(new EmojiPagesAdapter());
         PagerSlidingTabStrip tabs = new PagerSlidingTabStrip(getContext());
@@ -130,7 +132,7 @@ public class EmojiView extends LinearLayout {
         ImageView localImageView = new ImageView(getContext());
         localImageView.setImageResource(R.drawable.ic_emoji_backspace);
         localImageView.setScaleType(ImageView.ScaleType.CENTER);
-        localImageView.setBackgroundResource(R.drawable.bg_emoji_bs);
+        localImageView.setBackgroundColor(Color.DKGRAY);
         localImageView.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
                 if (EmojiView.this.listener != null) {
@@ -146,6 +148,7 @@ public class EmojiView extends LinearLayout {
         localTextView.setTextSize(18.0f);
         localTextView.setTextColor(-7829368);
         localTextView.setGravity(17);
+        localTextView.setBackgroundColor(Color.DKGRAY);
         recentsWrap.addView(localTextView);
         views.get(0).setEmptyView(localTextView);
         addView(localLinearLayout, new LinearLayout.LayoutParams(-1, AndroidUtilities.dpf(48.0f)));
@@ -240,7 +243,7 @@ public class EmojiView extends LinearLayout {
                         EmojiView.this.addToRecent((Long)view.getTag());
                     }
                 });
-                localObject.setBackgroundResource(R.drawable.list_selector);
+                localObject.setBackgroundColor(Color.DKGRAY);
                 localObject.setScaleType(ImageView.ScaleType.CENTER);
             }
 
