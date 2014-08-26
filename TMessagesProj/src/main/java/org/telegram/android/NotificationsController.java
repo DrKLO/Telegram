@@ -419,7 +419,7 @@ public class NotificationsController {
             }
 
             if (photoPath != null) {
-                BitmapDrawable img = ImageLoader.getInstance().getImageFromMemory(photoPath, null, "50_50");
+                BitmapDrawable img = ImageLoader.getInstance().getImageFromMemory(photoPath, null, "50_50", null);
                 if (img != null) {
                     mBuilder.setLargeIcon(img.getBitmap());
                 }
@@ -596,50 +596,40 @@ public class NotificationsController {
         }
     }
 
-    public void processDialogsUpdateRead(final HashMap<Long, Integer> dialogsToUpdate, boolean replace) {
+    public void processDialogsUpdateRead(final HashMap<Long, Integer> dialogsToUpdate) {
         int old_unread_count = total_unread_count;
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
         for (HashMap.Entry<Long, Integer> entry : dialogsToUpdate.entrySet()) {
             long dialog_id = entry.getKey();
 
             int notify_override = preferences.getInt("notify2_" + dialog_id, 0);
-            boolean isChat = (int)dialog_id < 0;
-            Integer currentCount = pushDialogs.get(dialog_id);
-            boolean canAddValue = !(notify_override == 2 || (!preferences.getBoolean("EnableAll", true) || isChat && !preferences.getBoolean("EnableGroup", true)) && notify_override == 0);
+            boolean canAddValue = !(notify_override == 2 || (!preferences.getBoolean("EnableAll", true) || ((int)dialog_id < 0) && !preferences.getBoolean("EnableGroup", true)) && notify_override == 0);
 
+            Integer currentCount = pushDialogs.get(dialog_id);
             Integer newCount = entry.getValue();
-            if (replace || newCount < 0) {
-                if (newCount < 0) {
-                    newCount *= -1;
+            if (newCount < 0) {
+                if (currentCount == null) {
+                    continue;
                 }
-                if (currentCount != null) {
-                    total_unread_count -= currentCount;
-                }
-                if (newCount == 0) {
-                    pushDialogs.remove(dialog_id);
-                    for (int a = 0; a < pushMessages.size(); a++) {
-                        MessageObject messageObject = pushMessages.get(a);
-                        if (messageObject.getDialogId() == dialog_id) {
-                            pushMessages.remove(a);
-                            a--;
-                            pushMessagesDict.remove(messageObject.messageOwner.id);
-                            popupMessages.remove(messageObject);
-                        }
+                newCount = currentCount + newCount;
+            }
+            if (currentCount != null) {
+                total_unread_count -= currentCount;
+            }
+            if (newCount == 0) {
+                pushDialogs.remove(dialog_id);
+                for (int a = 0; a < pushMessages.size(); a++) {
+                    MessageObject messageObject = pushMessages.get(a);
+                    if (messageObject.getDialogId() == dialog_id) {
+                        pushMessages.remove(a);
+                        a--;
+                        pushMessagesDict.remove(messageObject.messageOwner.id);
+                        popupMessages.remove(messageObject);
                     }
-                } else if (canAddValue) {
-                    total_unread_count += newCount;
-                    pushDialogs.put(dialog_id, newCount);
                 }
             } else if (canAddValue) {
-                if (newCount > 2000000) {
-                    newCount = 2000000 - newCount;
-                }
-                if (currentCount == null) {
-                    currentCount = 0;
-                }
-                currentCount += newCount;
                 total_unread_count += newCount;
-                pushDialogs.put(dialog_id, currentCount);
+                pushDialogs.put(dialog_id, newCount);
             }
         }
         if (old_unread_count != total_unread_count) {

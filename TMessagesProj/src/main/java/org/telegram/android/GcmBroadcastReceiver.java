@@ -53,13 +53,6 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
                         FileLog.e("tmessages", e);
                     }
 
-                    /*SharedPreferences preferences = context.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
-                    boolean globalEnabled = preferences.getBoolean("EnableAll", true);
-                    if (!globalEnabled) {
-                        FileLog.d("tmessages", "GCM disabled");
-                        return;
-                    }*/
-
                     ConnectionsManager.getInstance().resumeNetworkMaybe();
                 }
             });

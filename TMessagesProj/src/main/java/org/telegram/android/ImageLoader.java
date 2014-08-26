@@ -628,7 +628,7 @@ public class ImageLoader {
         }
     }
 
-    public BitmapDrawable getImageFromMemory(TLRPC.FileLocation url, String httpUrl, String filter) {
+    public BitmapDrawable getImageFromMemory(TLRPC.FileLocation url, String httpUrl, String filter, ImageReceiver imageReceiver) {
         if (url == null && httpUrl == null) {
             return null;
         }
@@ -640,6 +640,15 @@ public class ImageLoader {
         }
         if (filter != null) {
             key += "@" + filter;
+        }
+        if (imageReceiver != null) {
+            Integer TAG = imageReceiver.getTag();
+            if (TAG != null) {
+                CacheImage alreadyLoadingImage = imageLoadingByTag.get(TAG);
+                if (alreadyLoadingImage != null) {
+                    alreadyLoadingImage.removeImageView(imageReceiver);
+                }
+            }
         }
         return memCache.get(key);
     }
@@ -668,8 +677,8 @@ public class ImageLoader {
         String url;
         String key;
         if (httpUrl != null) {
-            url = httpUrl;
             key = Utilities.MD5(httpUrl);
+            url = key + ".jpg";
         } else {
             key = fileLocation.volume_id + "_" + fileLocation.local_id;
             url = key + ".jpg";

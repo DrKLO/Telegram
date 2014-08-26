@@ -147,6 +147,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         for (int a = 0; a < arr.size(); a++) {
                             DelayedMessage obj = arr.get(a);
                             if (enc && obj.sendEncryptedRequest != null || !enc && obj.sendRequest != null) {
+                                MessagesStorage.getInstance().markMessageAsSendError(obj.obj.messageOwner.id);
                                 obj.obj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
                                 arr.remove(a);
                                 a--;
@@ -392,6 +393,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             newMsg.from_id = UserConfig.getClientUserId();
             newMsg.out = true;
             newMsg.date = ConnectionsManager.getInstance().getCurrentTime();
+            UserConfig.saveConfig(false);
         }
         if (newMsg.random_id == 0) {
             newMsg.random_id = getNextRandomId();
@@ -453,11 +455,11 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             newMsg.ttl = encryptedChat.ttl;
         }
 
-        UserConfig.saveConfig(false);
-        final MessageObject newMsgObj = new MessageObject(newMsg, null, 2);
+
+        MessageObject newMsgObj = new MessageObject(newMsg, null, 2);
         newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SENDING;
 
-        final ArrayList<MessageObject> objArr = new ArrayList<MessageObject>();
+        ArrayList<MessageObject> objArr = new ArrayList<MessageObject>();
         objArr.add(newMsgObj);
         ArrayList<TLRPC.Message> arr = new ArrayList<TLRPC.Message>();
         arr.add(newMsg);
@@ -553,7 +555,6 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         delayedMessage.obj = newMsgObj;
                         delayedMessage.documentLocation = document;
                         delayedMessage.location = document.thumb.location;
-                        performSendDelayedMessage(delayedMessage);
                     } else {
                         TLRPC.TL_inputMediaDocument media = new TLRPC.TL_inputMediaDocument();
                         media.id = new TLRPC.TL_inputDocument();
@@ -889,6 +890,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         }
                     });
                 } else {
+                    MessagesStorage.getInstance().markMessageAsSendError(newMsgObj.messageOwner.id);
                     AndroidUtilities.RunOnUIThread(new Runnable() {
                         @Override
                         public void run() {
@@ -994,6 +996,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                             }
                         });
                     } else {
+                        MessagesStorage.getInstance().markMessageAsSendError(newMsgObj.messageOwner.id);
                         AndroidUtilities.RunOnUIThread(new Runnable() {
                             @Override
                             public void run() {

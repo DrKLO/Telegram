@@ -88,14 +88,14 @@ public class ImageReceiver {
                 if (currentImage != null) {
                     return;
                 } else {
-                    img = ImageLoader.getInstance().getImageFromMemory(fileLocation, httpUrl, filter);
+                    img = ImageLoader.getInstance().getImageFromMemory(fileLocation, httpUrl, filter, this);
                 }
             } else {
-                img = ImageLoader.getInstance().getImageFromMemory(fileLocation, httpUrl, filter);
+                img = ImageLoader.getInstance().getImageFromMemory(fileLocation, httpUrl, filter, this);
                 recycleBitmap(img);
             }
         }
-        img = ImageLoader.getInstance().getImageFromMemory(fileLocation, httpUrl, filter);
+        img = ImageLoader.getInstance().getImageFromMemory(fileLocation, httpUrl, filter, this);
         currentPath = key;
         last_path = fileLocation;
         last_httpUrl = httpUrl;

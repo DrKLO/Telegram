@@ -988,7 +988,6 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             }
         } catch(Exception e) {
             FileLog.e("tmessages", e);
-            return true;
         }
         return false;
     }
