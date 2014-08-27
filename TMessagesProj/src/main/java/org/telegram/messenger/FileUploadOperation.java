@@ -218,8 +218,6 @@ public class FileUploadOperation {
                         editor.putString(fileKey + "_key", Utilities.bytesToHex(key));
                     }
                     editor.commit();
-
-                    editor.putString(fileKey + "_key", Utilities.bytesToHex(key));
                 }
 
                 if (isEncrypted) {
