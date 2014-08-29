@@ -279,24 +279,20 @@ public class MessageObject {
                 type = 3;
             } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaContact) {
                 if (isFromMe()) {
-                    contentType = 4;
+                    contentType = 3;
                     type = 12;
                 } else {
-                    contentType = 5;
+                    contentType = 4;
                     type = 13;
                 }
             } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaUnsupported) {
                 contentType = type = 0;
             } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaDocument) {
+                contentType = 1;
                 if (message.media.document.thumb != null && !(message.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty) && message.media.document.mime_type != null && message.media.document.mime_type.equals("image/gif")) {
-                    contentType = 1;
                     type = 8;
                 } else {
-                    if (isFromMe()) {
-                        contentType = type = 8;
-                    } else {
-                        contentType = type = 9;
-                    }
+                    type = 9;
                 }
             } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaAudio) {
                 contentType = type = 2;
@@ -305,9 +301,11 @@ public class MessageObject {
             if (message.action instanceof TLRPC.TL_messageActionLoginUnknownLocation) {
                 contentType = type = 0;
             } else if (message.action instanceof TLRPC.TL_messageActionChatEditPhoto || message.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
-                contentType = type = 11;
+                contentType = 8;
+                type = 11;
             } else {
-                contentType = type = 10;
+                contentType = 7;
+                type = 10;
             }
         } else if (message instanceof TLRPC.TL_messageForwarded) {
             contentType = type = 0;
@@ -417,7 +415,7 @@ public class MessageObject {
     }
 
     private void generateLayout() {
-        if (type != 0 && type != 1 && type != 8 && type != 9 || messageOwner.to_id == null || messageText == null || messageText.length() == 0) {
+        if (type != 0 || messageOwner.to_id == null || messageText == null || messageText.length() == 0) {
             return;
         }
 

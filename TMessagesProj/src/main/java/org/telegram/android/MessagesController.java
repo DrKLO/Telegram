@@ -170,6 +170,15 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         user.status = null;
         user.photo = new TLRPC.TL_userProfilePhotoEmpty();
         putUser(user, true);
+
+        user = new TLRPC.TL_userForeign();
+        user.phone = "42777";
+        user.id = 777000;
+        user.first_name = "Telegram";
+        user.last_name = "Notifications";
+        user.status = null;
+        user.photo = new TLRPC.TL_userProfilePhotoEmpty();
+        putUser(user, true);
     }
 
     public static TLRPC.InputUser getInputUser(TLRPC.User user) {
@@ -2991,11 +3000,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 UserConfig.saveConfig(false);
                 newMessage.unread = true;
                 newMessage.date = update.date;
-                newMessage.from_id = 333000;
+                newMessage.from_id = 777000;
                 newMessage.to_id = new TLRPC.TL_peerUser();
                 newMessage.to_id.user_id = UserConfig.getClientUserId();
                 newMessage.out = false;
-                newMessage.dialog_id = 333000;
+                newMessage.dialog_id = 777000;
 
                 messagesArr.add(newMessage);
                 MessageObject obj = new MessageObject(newMessage, usersDict);

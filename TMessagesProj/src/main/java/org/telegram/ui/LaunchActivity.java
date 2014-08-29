@@ -26,7 +26,6 @@ import org.telegram.android.SendMessagesHelper;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
@@ -362,23 +361,14 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                 int userId = intent.getIntExtra("userId", 0);
                 int encId = intent.getIntExtra("encId", 0);
                 if (chatId != 0) {
-                    TLRPC.Chat chat = MessagesController.getInstance().getChat(chatId);
-                    if (chat != null) {
-                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
-                        push_chat_id = chatId;
-                    }
+                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                    push_chat_id = chatId;
                 } else if (userId != 0) {
-                    TLRPC.User user = MessagesController.getInstance().getUser(userId);
-                    if (user != null) {
-                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
-                        push_user_id = userId;
-                    }
+                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                    push_user_id = userId;
                 } else if (encId != 0) {
-                    TLRPC.EncryptedChat chat = MessagesController.getInstance().getEncryptedChat(encId);
-                    if (chat != null) {
-                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
-                        push_enc_id = encId;
-                    }
+                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                    push_enc_id = encId;
                 } else {
                     showDialogsList = true;
                 }
@@ -425,6 +415,9 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             fragment.setDelegate(this);
             presentFragment(fragment, false, true);
             pushOpened = true;
+            if (PhotoViewer.getInstance().isVisible()) {
+                PhotoViewer.getInstance().closePhoto(true);
+            }
         }
         if (open_settings != 0) {
             presentFragment(new SettingsActivity(), false, true);

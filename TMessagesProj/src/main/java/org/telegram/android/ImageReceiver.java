@@ -33,7 +33,6 @@ public class ImageReceiver {
     private int imageX = 0, imageY = 0, imageW = 0, imageH = 0;
     private Rect drawRegion = new Rect();
     private boolean isVisible = true;
-    private boolean selfSetting = false;
     private boolean isAspectFit = false;
 
     public ImageReceiver() {
@@ -106,12 +105,7 @@ public class ImageReceiver {
             isPlaceholder = true;
             ImageLoader.getInstance().loadImage(fileLocation, httpUrl, this, size);
         } else {
-            selfSetting = true;
             setImageBitmap(img, currentPath);
-            selfSetting = false;
-        }
-        if (parentView != null) {
-            parentView.invalidate();
         }
     }
 
@@ -122,7 +116,7 @@ public class ImageReceiver {
         isPlaceholder = false;
         ImageLoader.getInstance().incrementUseCount(currentPath);
         currentImage = bitmap;
-        if (!selfSetting && parentView != null) {
+        if (parentView != null) {
             parentView.invalidate();
         }
     }
@@ -193,7 +187,7 @@ public class ImageReceiver {
         }
     }
 
-    public void draw(Canvas canvas, int x, int y, int w, int h) {
+    public boolean draw(Canvas canvas, int x, int y, int w, int h) {
         try {
             Drawable bitmapDrawable = currentImage;
             if (bitmapDrawable == null && last_placeholder != null && last_placeholder instanceof BitmapDrawable) {
@@ -240,12 +234,14 @@ public class ImageReceiver {
                         }
                     }
                 }
+                return true;
             } else if (last_placeholder != null) {
                 drawRegion.set(x, y, x + w, y + h);
                 last_placeholder.setBounds(drawRegion);
                 if (isVisible) {
                     last_placeholder.draw(canvas);
                 }
+                return true;
             }
         } catch (Exception e) {
             if (currentPath != null) {
@@ -255,6 +251,7 @@ public class ImageReceiver {
             setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size);
             FileLog.e("tmessages", e);
         }
+        return false;
     }
 
     public Bitmap getBitmap() {

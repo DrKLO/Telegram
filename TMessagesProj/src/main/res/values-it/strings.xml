@@ -11,14 +11,14 @@
 
     <!--signin view-->
     <string name="YourPhone">Il tuo telefono</string>
-    <string name="StartText">Conferma il prefisso della tua nazione \ne inserisci il tuo numero di telefono.</string>
+    <string name="StartText">Conferma il prefisso della tua nazione\ne inserisci il tuo numero di telefono.</string>
     <string name="ChooseCountry">Scegli una nazione</string>
     <string name="WrongCountry">Prefisso errato</string>
 
     <!--code enter view-->
     <string name="YourCode">Il tuo codice</string>
     <string name="SentSmsCode">Abbiamo inviato un SMS al tuo telefono con il codice di attivazione</string>
-    <string name="CallText">Ti chiameremo tra</string>
+    <string name="CallText">Ti telefoneremo tra</string>
     <string name="Calling">Ti stiamo chiamando…</string>
     <string name="Code">Codice</string>
     <string name="WrongNumber">Numero errato?</string>
@@ -58,11 +58,11 @@
     <string name="SelectChat">Seleziona chat</string>
 
     <!--broadcasts-->
-    <string name="BroadcastList">Lista Broadcast</string>
-    <string name="NewBroadcastList">Nuova Lista Broadcast</string>
+    <string name="BroadcastList">Lista broadcast</string>
+    <string name="NewBroadcastList">Nuova lista broadcast</string>
     <string name="EnterListName">Immetti il nome della lista</string>
     <string name="YouCreatedBroadcastList">Hai creato una lista broadcast</string>
-    <string name="AddRecipient">Aggiungi Destinatario</string>
+    <string name="AddRecipient">Aggiungi destinatario</string>
     <string name="KickFromBroadcast">Rimuovi dalla lista broadcast</string>
 
     <!--documents view-->
@@ -76,12 +76,12 @@
     <string name="UsbActive">Trasferimento USB attivo</string>
     <string name="InternalStorage">Archiviazione interna</string>
     <string name="ExternalStorage">Archiviazione esterna</string>
-    <string name="SystemRoot">Radice di sistema</string>
+    <string name="SystemRoot">Root di sistema</string>
     <string name="SdCard">Scheda SD</string>
 
     <!--chat view-->
     <string name="Invisible">invisibile</string>
-    <string name="Typing">scrivendo…</string>
+    <string name="Typing">sta scrivendo…</string>
     <string name="Attach">Allega</string>
     <string name="IsTyping">sta scrivendo…</string>
     <string name="AreTyping">stanno scrivendo…</string>
@@ -104,10 +104,10 @@
     <string name="Selected">Selezionati: %d</string>
     <string name="ShareMyContactInfo">CONDIVIDI LE MIE INFORMAZIONI DI CONTATTO</string>
     <string name="AddToContacts">AGGIUNGI AI CONTATTI</string>
-    <string name="EncryptedPlaceholderTitleIncoming">%s ti ha mandato un invito a una chat privata.</string>
+    <string name="EncryptedPlaceholderTitleIncoming">%s ti ha mandato un invito a una chat segreta.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">Hai invitato %s a entrare in una chat segreta.</string>
     <string name="EncryptedDescriptionTitle">Chat segrete:</string>
-    <string name="EncryptedDescription1">Utilizzano la cifratura punto-punto</string>
+    <string name="EncryptedDescription1">Utilizzano la crittografia end-to-end</string>
     <string name="EncryptedDescription2">Non lasciano traccia sui nostri server</string>
     <string name="EncryptedDescription3">Hanno un contatore di autodistruzione</string>
     <string name="EncryptedDescription4">Non permettono l’inoltro</string>
@@ -115,7 +115,7 @@
     <string name="YouLeft">Hai lasciato il gruppo</string>
     <string name="DeleteThisGroup">Elimina questo gruppo</string>
     <string name="DeleteThisChat">Elimina questa chat</string>
-    <string name="SlideToCancel">TRASCINA PER ANNULLARE</string>
+    <string name="SlideToCancel">CANCELLA</string>
     <string name="SaveToDownloads">Salva in download</string>
     <string name="ApplyLocalizationFile">Applica file di localizzazione</string>
     <string name="UnsupportedAttachment">Allegato non supportato</string>
@@ -123,10 +123,10 @@
     <!--notification-->
     <string name="EncryptedChatRequested">Chat segreta richiesta</string>
     <string name="EncryptedChatAccepted">Chat segreta iniziata</string>
-    <string name="MessageLifetimeChanged">%1$s imposta il contatore di autodistruzione a %2$s</string>
-    <string name="MessageLifetimeChangedOutgoing">Hai impostato il contatore di autodistruzione a %1$s</string>
-    <string name="MessageLifetimeRemoved">%1$s ha disabilitato il contatore di autodistruzione</string>
-    <string name="MessageLifetimeYouRemoved">Hai disabilitato il contatore di autodistruzione</string>
+    <string name="MessageLifetimeChanged">%1$s ha impostato il timer di autodistruzione a %2$s</string>
+    <string name="MessageLifetimeChangedOutgoing">Hai impostato il timer di autodistruzione a %1$s</string>
+    <string name="MessageLifetimeRemoved">%1$s ha disabilitato il timer di autodistruzione</string>
+    <string name="MessageLifetimeYouRemoved">Hai disabilitato il timer di autodistruzione</string>
     <string name="MessageLifetime2s">2 secondi</string>
     <string name="MessageLifetime5s">5 secondi</string>
     <string name="MessageLifetime1m">1 minuto</string>
@@ -141,7 +141,7 @@
     <string name="NotificationMessageContact">%1$s ha condiviso un contatto con te</string>
     <string name="NotificationMessageMap">%1$s ti ha inviato una posizione</string>
     <string name="NotificationMessageDocument">%1$s ti ha inviato un documento</string>
-    <string name="NotificationMessageAudio">%1$s ti ha inviato dell\'audio</string>
+    <string name="NotificationMessageAudio">%1$s ti ha inviato un audio</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s ha inviato un messaggio al gruppo %2$s</string>
     <string name="NotificationMessageGroupPhoto">%1$s ha inviato una foto al gruppo %2$s</string>
@@ -149,7 +149,7 @@
     <string name="NotificationMessageGroupContact">%1$s ha condiviso un contatto con il gruppo %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s ha inviato una posizione al gruppo %2$s</string>
     <string name="NotificationMessageGroupDocument">%1$s ha inviato un documento al gruppo %2$s</string>
-    <string name="NotificationMessageGroupAudio">%1$s ha inviato dell\'audio al gruppo %2$s</string>
+    <string name="NotificationMessageGroupAudio">%1$s ha inviato un audio al gruppo %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s ti ha invitato nel gruppo %2$s</string>
     <string name="NotificationEditedGroupName">%1$s ha modificato il nome del gruppo %2$s</string>
     <string name="NotificationEditedGroupPhoto">%1$s ha modificato la foto del gruppo %2$s</string>
@@ -158,9 +158,9 @@
     <string name="NotificationGroupKickYou">%1$s ti ha rimosso dal gruppo %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s ha lasciato il gruppo %2$s</string>
     <string name="NotificationContactJoined">%1$s ha iniziato a usare Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nAbbiamo rilevato un accesso al tuo account da un nuovo dispositivo %2$s\n\nDispositivo: %3$s\nPosizione: %4$s\n\nSe non sei stato tu, puoi andare su Impostazioni - Termina tutte le sessioni.\n\nGrazie,\nIl Team di Telegram</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nAbbiamo rilevato un accesso al tuo account da un nuovo dispositivo %2$s\n\nDispositivo: %3$s\nPosizione: %4$s\n\nSe non sei stato tu, puoi andare su Impostazioni - Termina tutte le sessioni.\n\nGrazie,\nil team di Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s ha aggiornato la foto del profilo</string>
-    <string name="Reply">Reply</string>
+    <string name="Reply">Rispondi</string>
 
     <!--contacts view-->
     <string name="SelectContact">Seleziona contatto</string>
@@ -211,7 +211,7 @@
     <string name="CreateEncryptedChatOutdatedError">Impossibile creare una chat segreta con %1$s.\n\n%2$s sta usando una vecchia versione di Telegram e deve prima aggiornarla.</string>
     <string name="SecretTitle">Chat segreta</string>
     <string name="EncryptionKey">Chiave di cifratura</string>
-    <string name="MessageLifetime">Contatore di autodistruzione</string>
+    <string name="MessageLifetime">Timer di autodistruzione</string>
     <string name="ShortMessageLifetimeForever">Spento</string>
     <string name="ShortMessageLifetime2s">2s</string>
     <string name="ShortMessageLifetime5s">5s</string>
@@ -259,37 +259,37 @@
     <string name="ContactJoined">Un contatto si è collegato a Telegram</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Lingua</string>
-    <string name="AskAQuestionInfo">Nota che il supporto di Telegram è fornito da volontari. Proviamo a rispondere non appena possibile, ma potrebbe richiedere del tempo.<![CDATA[<br><br>]]>Dai un\'occhiata alle <![CDATA[<a href="http://telegram.org/faq#general">Domande frequenti</a>]]>: troverai risposte alla maggior parte delle domande e suggerimenti importanti per <![CDATA[<a href="http://telegram.org/faq#troubleshooting">l\'individuazione del problema</a>]]>.</string>
+    <string name="AskAQuestionInfo">Nota che il supporto di Telegram è fornito da volontari. Proviamo a rispondere non appena possibile, ma potrebbe richiedere del tempo.<![CDATA[<br><br>]]>Dai un\'occhiata alle <![CDATA[<a href=\"https://telegram.org/faq/it#domande-generali\">Domande frequenti</a>]]>: troverai risposte alla maggior parte delle domande e suggerimenti importanti per <![CDATA[<a href=\"https://telegram.org/faq/it#risoluzione-dei-problemi\">l\'individuazione del problema</a>]]>.</string>
     <string name="AskButton">Chiedi a un volontario</string>
     <string name="TelegramFaq">Domande frequenti</string>
-    <string name="TelegramFaqUrl">https://telegram.org/faq</string>
+    <string name="TelegramFaqUrl">https://telegram.org/faq/it</string>
     <string name="DeleteLocalization">Eliminare la localizzazione?</string>
     <string name="IncorrectLocalization">File della localizzazione non valido</string>
     <string name="Enabled">Abilitato</string>
     <string name="Disabled">Disabilitato</string>
     <string name="NotificationsService">Servizio notifiche</string>
-    <string name="NotificationsServiceDisableInfo">Se i servizi di Google Play sono sufficienti per ricevere le notifiche, è possibile disabilitare il Servizio Notifiche. Ti raccomandiamo comunque di lasciarlo abilitato per lasciare l\'app attiva in background e ricevere le notifiche istantanee.</string>
+    <string name="NotificationsServiceDisableInfo">Se i servizi di Google Play sono sufficienti per ricevere le notifiche, è possibile disabilitare il Servizio notifiche. Ti raccomandiamo comunque di lasciarlo abilitato per lasciare l\'app attiva in background e ricevere le notifiche istantanee.</string>
     <string name="SortBy">Ordina per</string>
     <string name="ImportContacts">Importa contatti</string>
     <string name="WiFiOnly">Solo tramite WiFi</string>
     <string name="SortFirstName">Nome</string>
     <string name="SortLastName">Cognome</string>
     <string name="LedColor">Colore LED</string>
-    <string name="PopupNotification">Notifiche Popup</string>
+    <string name="PopupNotification">Notifiche popup</string>
     <string name="NoPopup">Nessun popup</string>
     <string name="OnlyWhenScreenOn">Solo con schermo acceso</string>
     <string name="OnlyWhenScreenOff">Solo con schermo spento</string>
     <string name="AlwaysShowPopup">Mostra sempre i popup</string>
     <string name="BadgeNumber">Contatore Badge</string>
-    <string name="Short">Short</string>
-    <string name="Long">Long</string>
-    <string name="SystemDefault">System default</string>
-    <string name="SettingsDefault">Settings default</string>
-    <string name="AutomaticMediaDownload">AUTOMATIC MEDIA DOWNLOAD</string>
-    <string name="WhenUsingMobileData">When using mobile data</string>
-    <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
-    <string name="WhenRoaming">When roaming</string>
-    <string name="NoMediaAutoDownload">No media</string>
+    <string name="Short">Breve</string>
+    <string name="Long">Lungo</string>
+    <string name="SystemDefault">Predefinito di sistema</string>
+    <string name="SettingsDefault">Impostazioni predefinite</string>
+    <string name="AutomaticMediaDownload">SCARICAMENTO AUTOMATICO MEDIA</string>
+    <string name="WhenUsingMobileData">Quando si utilizza la rete dati</string>
+    <string name="WhenConnectedOnWiFi">Quando si utilizza il Wi-Fi</string>
+    <string name="WhenRoaming">In roaming</string>
+    <string name="NoMediaAutoDownload">Nessun media</string>
 
     <!--media view-->
     <string name="NoMedia">Nessun media condiviso</string>
@@ -314,9 +314,9 @@
     <string name="NoPhotos">Ancora nessuna foto</string>
 
     <!--edit video view-->
-    <string name="EditVideo">Modifica Video</string>
-    <string name="OriginalVideo">Video Originale</string>
-    <string name="EditedVideo">Video Modificato</string>
+    <string name="EditVideo">Modifica video</string>
+    <string name="OriginalVideo">Video originale</string>
+    <string name="EditedVideo">Video modificato</string>
 
     <!--button titles-->
     <string name="Next">Avanti</string>
@@ -376,8 +376,8 @@
     <string name="InvalidLastName">Cognome non valido</string>
     <string name="Loading">Caricamento…</string>
     <string name="NoPlayerInstalled">Non hai un lettore video, per favore installane uno per continuare</string>
-    <string name="NoMailInstalled">Invia un’email a sms@telegram.org e parlaci del tuo problema.</string>
-    <string name="NoHandleAppInstalled">Nessuna applicazione può gestire il tipo di file \'%1$s\', per favore installane una per proseguire</string>
+    <string name="NoMailInstalled">Invia un’email a sms@telegram.org spiegandoci il problema.</string>
+    <string name="NoHandleAppInstalled">Non hai nessuna applicazione che può gestire il tipo di file \'%1$s\': installane una per proseguire</string>
     <string name="InviteUser">Questo utente non ha ancora Telegram, vuoi invitarlo?</string>
     <string name="AreYouSure">Sei sicuro?</string>
     <string name="AddContactQ">Vuoi aggiungere il contatto?</string>

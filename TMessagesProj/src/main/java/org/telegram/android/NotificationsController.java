@@ -373,6 +373,7 @@ public class NotificationsController {
                     .setContentTitle(name)
                     .setSmallIcon(R.drawable.notification)
                     .setAutoCancel(true)
+                    .setNumber(total_unread_count)
                     .setContentIntent(contentIntent);
 
             String lastMessage = null;
@@ -577,6 +578,7 @@ public class NotificationsController {
                 }
                 pushMessagesDict.put(messageObject.messageOwner.id, messageObject);
                 pushMessages.add(0, messageObject);
+                FileLog.e("tmessages", "processNewMessages add dialog = " + dialog_id);
             }
         }
 
@@ -607,6 +609,7 @@ public class NotificationsController {
 
             Integer currentCount = pushDialogs.get(dialog_id);
             Integer newCount = entry.getValue();
+            FileLog.e("tmessages", "processDialogsUpdateRead dialog = " + dialog_id + " newCount = " + newCount + " oldCount = " + currentCount);
             if (newCount < 0) {
                 if (currentCount == null) {
                     continue;
@@ -646,6 +649,17 @@ public class NotificationsController {
         MessagesController.getInstance().putChats(chats, true);
         MessagesController.getInstance().putEncryptedChats(encryptedChats, true);
 
+        pushDialogs.clear();
+        pushMessages.clear();
+        pushMessagesDict.clear();
+        total_unread_count = 0;
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
+        for (HashMap.Entry<Long, Integer> entry : dialogs.entrySet()) {
+            pushDialogs.put(entry.getKey(), entry.getValue());
+            total_unread_count += entry.getValue();
+            FileLog.e("tmessages", "processLoadedUnreadMessages dialog = " + entry.getKey() + " count = " + entry.getValue());
+        }
+        FileLog.e("tmessages", "processLoadedUnreadMessages total = " + total_unread_count + " messages = " + messages.size());
         if (messages != null) {
             for (TLRPC.Message message : messages) {
                 if (pushMessagesDict.containsKey(message.id)) {
@@ -660,21 +674,12 @@ public class NotificationsController {
                 pushMessages.add(0, messageObject);
             }
         }
-
-        pushDialogs.clear();
-        total_unread_count = 0;
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
-        for (HashMap.Entry<Long, Integer> entry : dialogs.entrySet()) {
-            pushDialogs.put(entry.getKey(), entry.getValue());
-            total_unread_count += entry.getValue();
-        }
         if (total_unread_count == 0) {
-            pushMessages.clear();
-            pushMessagesDict.clear();
             popupMessages.clear();
             showOrUpdateNotification(false);
             NotificationCenter.getInstance().postNotificationName(NotificationCenter.pushMessagesUpdated);
         }
+
         if (preferences.getBoolean("badgeNumber", true)) {
             setBadge(ApplicationLoader.applicationContext, total_unread_count);
         }

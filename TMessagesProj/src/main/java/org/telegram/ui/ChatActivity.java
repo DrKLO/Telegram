@@ -43,7 +43,6 @@ import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -62,7 +61,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.android.MessageObject;
 import org.telegram.android.PhotoObject;
 import org.telegram.messenger.ConnectionsManager;
-import org.telegram.messenger.FileLoader;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
@@ -149,7 +147,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private boolean firstLoading = true;
 
     private int minDate = 0;
-    private int progressTag = 0;
     private boolean first = true;
     private int unread_to_load = 0;
     private int first_unread_id = 0;
@@ -162,10 +159,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private TLRPC.ChatParticipants info = null;
     private int onlineCount = -1;
-
-    private HashMap<String, ProgressBar> progressBarMap = new HashMap<String, ProgressBar>();
-    private HashMap<String, ArrayList<ProgressBar>> loadingFile = new HashMap<String, ArrayList<ProgressBar>>();
-    private HashMap<Integer, String> progressByTag = new HashMap<Integer, String>();
 
     private CharSequence lastPrintString;
 
@@ -341,10 +334,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.encryptedChatUpdated);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagesReadedEncrypted);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.removeAllMessagesFromDialog);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileUploadProgressChanged);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileDidFailedLoad);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileLoadProgressChanged);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioProgressDidChanged);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioDidReset);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.screenshotTook);
@@ -381,10 +370,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.encryptedChatUpdated);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagesReadedEncrypted);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.removeAllMessagesFromDialog);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.FileUploadProgressChanged);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.FileDidFailedLoad);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.FileDidLoaded);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.FileLoadProgressChanged);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.contactsDidLoaded);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioProgressDidChanged);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioDidReset);
@@ -715,7 +700,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
             emptyView.setPadding(AndroidUtilities.dp(7), AndroidUtilities.dp(1), AndroidUtilities.dp(7), AndroidUtilities.dp(1));
 
-            if (currentUser != null && currentUser.id / 1000 == 333) {
+            if (currentUser != null && (currentUser.id / 1000 == 333 || currentUser.id % 1000 == 0)) {
                 emptyView.setText(LocaleController.getString("GotAQuestion", R.string.GotAQuestion));
             }
 
@@ -1048,22 +1033,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
     }
 
-    private void addToLoadingFile(String path, ProgressBar bar) {
-        ArrayList<ProgressBar> arr = loadingFile.get(path);
-        if (arr == null) {
-            arr = new ArrayList<ProgressBar>();
-            loadingFile.put(path, arr);
-        }
-        arr.add(bar);
-    }
-
-    private void removeFromloadingFile(String path, ProgressBar bar) {
-        ArrayList<ProgressBar> arr = loadingFile.get(path);
-        if (arr != null) {
-            arr.remove(bar);
-        }
-    }
-
     private void updateOnlineCount() {
         if (info == null) {
             return;
@@ -1094,7 +1063,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     return -1;
                 }
             } else {
-                if (messageObject.type == 7) {
+                if (messageObject.type == 6) {
                     return -1;
                 } else if (messageObject.type == 10 || messageObject.type == 11) {
                     if (messageObject.messageOwner.id == 0) {
@@ -1136,7 +1105,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
             }
         } else {
-            if (messageObject.type == 7) {
+            if (messageObject.type == 6) {
                 return -1;
             } else if (messageObject.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SEND_ERROR) {
                 if (!(messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
@@ -1775,7 +1744,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         dateMsg.message = LocaleController.formatDateChat(obj.messageOwner.date);
                         dateMsg.id = 0;
                         MessageObject dateObj = new MessageObject(dateMsg, null);
-                        dateObj.contentType = dateObj.type = 10;
+                        dateObj.type = 10;
+                        dateObj.contentType = 7;
                         if (forwardLoad) {
                             messages.add(0, dateObj);
                         } else {
@@ -1798,7 +1768,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             dateMsg.message = "";
                             dateMsg.id = 0;
                             MessageObject dateObj = new MessageObject(dateMsg, null);
-                            dateObj.contentType = dateObj.type = 7;
+                            dateObj.contentType = dateObj.type = 6;
                             boolean dateAdded = true;
                             if (a != messArr.size() - 1) {
                                 MessageObject next = messArr.get(a + 1);
@@ -2012,9 +1982,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (minDate == 0 || obj.messageOwner.date < minDate) {
                             minDate = obj.messageOwner.date;
                         }
-                        if (obj.messageOwner.attachPath != null && obj.messageOwner.attachPath.length() != 0) {
-                            progressBarMap.put(obj.messageOwner.attachPath, null);
-                        }
 
                         if (obj.isOut()) {
                             removeUnreadPlane(false);
@@ -2042,7 +2009,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             dateMsg.message = LocaleController.formatDateChat(obj.messageOwner.date);
                             dateMsg.id = 0;
                             MessageObject dateObj = new MessageObject(dateMsg, null);
-                            dateObj.contentType = dateObj.type = 10;
+                            dateObj.type = 10;
+                            dateObj.contentType = 7;
                             messages.add(0, dateObj);
                         }
                         if (!obj.isOut() && obj.messageOwner.unread) {
@@ -2177,17 +2145,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 obj.messageOwner.id = newMsgId;
                 obj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
                 updateVisibleRows();
-                if (obj.messageOwner.attachPath != null && obj.messageOwner.attachPath.length() != 0) {
-                    progressBarMap.remove(obj.messageOwner.attachPath);
-                }
             }
         } else if (id == NotificationCenter.messageReceivedByAck) {
             Integer msgId = (Integer)args[0];
             MessageObject obj = messagesDict.get(msgId);
             if (obj != null) {
-                if (obj.messageOwner.attachPath != null && obj.messageOwner.attachPath.length() != 0) {
-                    progressBarMap.remove(obj.messageOwner.attachPath);
-                }
                 obj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
                 updateVisibleRows();
             }
@@ -2197,9 +2159,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (obj != null) {
                 obj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
                 updateVisibleRows();
-                if (obj.messageOwner.attachPath != null && obj.messageOwner.attachPath.length() != 0) {
-                    progressBarMap.remove(obj.messageOwner.attachPath);
-                }
             }
         } else if (id == NotificationCenter.chatInfoDidLoaded) {
             int chatId = (Integer)args[0];
@@ -2208,40 +2167,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 updateOnlineCount();
                 if (isBraodcast) {
                     SendMessagesHelper.getInstance().setCurrentChatInfo(info);
-                }
-            }
-        } else if (id == NotificationCenter.FileUploadProgressChanged) {
-            String location = (String)args[0];
-            boolean enc = (Boolean)args[2];
-            if (enc && currentEncryptedChat == null) {
-                return;
-            } else if (!enc && currentEncryptedChat != null) {
-                return;
-            }
-            ProgressBar bar;
-            if ((bar = progressBarMap.get(location)) != null) {
-                Float progress = (Float)args[1];
-                bar.setProgress((int) (progress * 100));
-            }
-        } else if (id == NotificationCenter.FileDidFailedLoad) {
-            String location = (String)args[0];
-            if (loadingFile.containsKey(location)) {
-                loadingFile.remove(location);
-                updateVisibleRows();
-            }
-        } else if (id == NotificationCenter.FileDidLoaded) {
-            String location = (String)args[0];
-            if (loadingFile.containsKey(location)) {
-                loadingFile.remove(location);
-                updateVisibleRows();
-            }
-        } else if (id == NotificationCenter.FileLoadProgressChanged) {
-            String location = (String)args[0];
-            ArrayList<ProgressBar> arr = loadingFile.get(location);
-            if (arr != null) {
-                Float progress = (Float)args[1];
-                for (ProgressBar bar : arr) {
-                    bar.setProgress((int)(progress * 100));
                 }
             }
         } else if (id == NotificationCenter.contactsDidLoaded) {
@@ -2368,12 +2293,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 currentUser = user;
             }
             if (currentEncryptedChat != null && !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat)
-                    || currentUser.id / 1000 == 333
-                    || currentUser.id / 1000 == 777
+                    || currentUser.id / 1000 == 333 || currentUser.id / 1000 == 777
                     || currentUser instanceof TLRPC.TL_userEmpty || currentUser instanceof TLRPC.TL_userDeleted
-                    || (currentUser.phone != null && currentUser.phone.length() != 0 &&
-                    ContactsController.getInstance().contactsDict.get(currentUser.id) != null &&
-                    (ContactsController.getInstance().contactsDict.size() != 0 || !ContactsController.getInstance().isLoadingContacts()))) {
+                    || ContactsController.getInstance().isLoadingContacts()
+                    || (currentUser.phone != null && currentUser.phone.length() != 0 && ContactsController.getInstance().contactsDict.get(currentUser.id) != null && (ContactsController.getInstance().contactsDict.size() != 0 || !ContactsController.getInstance().isLoadingContacts()))) {
                 topPanel.setVisibility(View.GONE);
             } else {
                 topPanel.setVisibility(View.VISIBLE);
@@ -2868,7 +2791,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 MediaController.saveFile(fileName, selectedObject.messageOwner.attachPath, getParentActivity(), 1, null);
             } else if (selectedObject.type == 1) {
                 MediaController.saveFile(fileName, selectedObject.messageOwner.attachPath, getParentActivity(), 0, null);
-            } else if (selectedObject.type == 8 || selectedObject.type == 9) {
+            } else if (selectedObject.type == 8) {
                 MediaController.saveFile(fileName, selectedObject.messageOwner.attachPath, getParentActivity(), 2, selectedObject.messageOwner.media.document.file_name);
             }
         } else if (option == 5) {
@@ -3080,12 +3003,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             } else if (messageType == 13) {
                 holder.chatBubbleView.setBackgroundResource(R.drawable.chat_incoming_text_states);
                 holder.chatBubbleView.setPadding(AndroidUtilities.dp(15), AndroidUtilities.dp(6), AndroidUtilities.dp(9), 0);
-            } else if (messageType == 8) {
-                holder.chatBubbleView.setBackgroundResource(R.drawable.chat_outgoing_text_states);
-                holder.chatBubbleView.setPadding(AndroidUtilities.dp(9), AndroidUtilities.dp(9), AndroidUtilities.dp(18), 0);
-            } else if (messageType == 9) {
-                holder.chatBubbleView.setBackgroundResource(R.drawable.chat_incoming_text_states);
-                holder.chatBubbleView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(9), AndroidUtilities.dp(9), 0);
             }
         } else {
             if (messageType == 12) {
@@ -3102,20 +3019,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     holder.chatBubbleView.setBackgroundResource(R.drawable.msg_in);
                 }
                 holder.chatBubbleView.setPadding(AndroidUtilities.dp(15), AndroidUtilities.dp(6), AndroidUtilities.dp(9), 0);
-            } else if (messageType == 8) {
-                if (selected) {
-                    holder.chatBubbleView.setBackgroundResource(R.drawable.msg_out_selected);
-                } else {
-                    holder.chatBubbleView.setBackgroundResource(R.drawable.msg_out);
-                }
-                holder.chatBubbleView.setPadding(AndroidUtilities.dp(9), AndroidUtilities.dp(9), AndroidUtilities.dp(18), 0);
-            } else if (messageType == 9) {
-                if (selected) {
-                    holder.chatBubbleView.setBackgroundResource(R.drawable.msg_in_selected);
-                } else {
-                    holder.chatBubbleView.setBackgroundResource(R.drawable.msg_in);
-                }
-                holder.chatBubbleView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(9), AndroidUtilities.dp(9), 0);
             }
         }
     }
@@ -3277,28 +3180,20 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     view = new ChatMessageCell(mContext);
                 } if (type == 1) {
                     view = new ChatMediaCell(mContext);
-                } else if (type == 10) {
+                } else if (type == 7) {
                     view = li.inflate(R.layout.chat_action_message_layout, viewGroup, false);
-                } else if (type == 11) {
+                } else if (type == 8) {
                     view = li.inflate(R.layout.chat_action_change_photo_layout, viewGroup, false);
-                } else if (type == 4) {
+                } else if (type == 3) {
                     view = li.inflate(R.layout.chat_outgoing_contact_layout, viewGroup, false);
-                } else if (type == 5) {
+                } else if (type == 4) {
                     if (currentChat != null) {
                         view = li.inflate(R.layout.chat_group_incoming_contact_layout, viewGroup, false);
                     } else {
                         view = li.inflate(R.layout.chat_incoming_contact_layout, viewGroup, false);
                     }
-                } else if (type == 7) {
+                } else if (type == 6) {
                     view = li.inflate(R.layout.chat_unread_layout, viewGroup, false);
-                } else if (type == 8) {
-                    view = li.inflate(R.layout.chat_outgoing_document_layout, viewGroup, false);
-                } else if (type == 9) {
-                    if (currentChat != null) {
-                        view = li.inflate(R.layout.chat_group_incoming_document_layout, viewGroup, false);
-                    } else {
-                        view = li.inflate(R.layout.chat_incoming_document_layout, viewGroup, false);
-                    }
                 } else if (type == 2) {
                     view = new ChatAudioCell(mContext);
                 }
@@ -3383,6 +3278,48 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 LocationActivity fragment = new LocationActivity();
                                 fragment.setMessageObject(message);
                                 presentFragment(fragment);
+                            } else if (message.type == 9) {
+                                File f = null;
+                                String fileName = message.getFileName();
+                                if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
+                                    f = new File(message.messageOwner.attachPath);
+                                }
+                                if (f == null || f != null && !f.exists()) {
+                                    f = new File(AndroidUtilities.getCacheDir(), fileName);
+                                }
+                                if (f != null && f.exists()) {
+                                    String realMimeType = null;
+                                    try {
+                                        Intent intent = new Intent(Intent.ACTION_VIEW);
+                                        if (message.type == 8 || message.type == 9) {
+                                            MimeTypeMap myMime = MimeTypeMap.getSingleton();
+                                            int idx = fileName.lastIndexOf(".");
+                                            if (idx != -1) {
+                                                String ext = fileName.substring(idx + 1);
+                                                realMimeType = myMime.getMimeTypeFromExtension(ext.toLowerCase());
+                                                if (realMimeType != null) {
+                                                    intent.setDataAndType(Uri.fromFile(f), realMimeType);
+                                                } else {
+                                                    intent.setDataAndType(Uri.fromFile(f), "text/plain");
+                                                }
+                                            } else {
+                                                intent.setDataAndType(Uri.fromFile(f), "text/plain");
+                                            }
+                                        }
+                                        if (realMimeType != null) {
+                                            try {
+                                                getParentActivity().startActivity(intent);
+                                            } catch (Exception e) {
+                                                intent.setDataAndType(Uri.fromFile(f), "text/plain");
+                                                getParentActivity().startActivity(intent);
+                                            }
+                                        } else {
+                                            getParentActivity().startActivity(intent);
+                                        }
+                                    } catch (Exception e) {
+                                        alertUserOpenError(message);
+                                    }
+                                }
                             }
                         }
                     };
@@ -3414,11 +3351,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (!endReached && messages.size() != 0) {
                 offset = 0;
                 if (i == 0) {
-                    return 6;
+                    return 5;
                 }
             }
             if (!unread_end_reached && i == (messages.size() + 1 - offset)) {
-                return 6;
+                return 5;
             }
             MessageObject message = messages.get(messages.size() - i - offset);
             return message.contentType;
@@ -3426,7 +3363,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         @Override
         public int getViewTypeCount() {
-            return 12;
+            return 9;
         }
 
         @Override
@@ -3453,8 +3390,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         public BackupImageView photoImage;
         public ImageView halfCheckImage;
         public ImageView checkImage;
-        public TextView actionAttachButton;
-        public TextView videoTimeText;
         public MessageObject message;
         public TextView phoneTextView;
         public BackupImageView contactAvatar;
@@ -3462,14 +3397,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         public ImageView addContactButton;
         public View addContactView;
         public View chatBubbleView;
-
-        public ProgressBar actionProgress;
-        public View actionView;
-        public ImageView actionCancelButton;
-
-        private PhotoObject photoObjectToSet = null;
-        private File photoFile = null;
-        private String photoFilter = null;
 
         public void update() {
             TLRPC.User fromUser = MessagesController.getInstance().getUser(message.messageOwner.from_id);
@@ -3556,51 +3483,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     contactAvatar.setImageResource(Utilities.getUserAvatarForId(message.messageOwner.media.user_id));
                     addContactView.setVisibility(View.GONE);
                 }
-            } else if (type == 7) {
+            } else if (type == 6) {
                 messageTextView.setTextSize(16);
                 messageTextView.setText(LocaleController.formatPluralString("NewMessages", unread_to_load));
-            } else if (type == 8 || type == 9) {
-                TLRPC.Document document = message.messageOwner.media.document;
-                if (document instanceof TLRPC.TL_document || document instanceof TLRPC.TL_documentEncrypted) {
-                    nameTextView.setText(message.messageOwner.media.document.file_name);
-
-                    String fileName = message.getFileName();
-                    int idx = fileName.lastIndexOf(".");
-                    String ext = null;
-                    if (idx != -1) {
-                        ext = fileName.substring(idx + 1);
-                    }
-                    if (ext == null || ext.length() == 0) {
-                        ext = message.messageOwner.media.document.mime_type;
-                    }
-                    ext = ext.toUpperCase();
-                    if (document.size < 1024) {
-                        phoneTextView.setText(String.format("%d B %s", document.size, ext));
-                    } else if (document.size < 1024 * 1024) {
-                        phoneTextView.setText(String.format("%.1f KB %s", document.size / 1024.0f, ext));
-                    } else {
-                        phoneTextView.setText(String.format("%.1f MB %s", document.size / 1024.0f / 1024.0f, ext));
-                    }
-                    if (document.thumb instanceof TLRPC.TL_photoSize) {
-                        contactAvatar.setImage(document.thumb.location, "50_50", type == 8 ? R.drawable.doc_green : R.drawable.doc_blue);
-                    } else if (document.thumb instanceof TLRPC.TL_photoCachedSize) {
-                        contactAvatar.setImage(document.thumb.location, "50_50", type == 8 ? R.drawable.doc_green : R.drawable.doc_blue);
-                    } else {
-                        if (type == 8) {
-                            contactAvatar.setImageResource(R.drawable.doc_green);
-                        } else {
-                            contactAvatar.setImageResource(R.drawable.doc_blue);
-                        }
-                    }
-                } else {
-                    nameTextView.setText("Error");
-                    phoneTextView.setText("Error");
-                    if (type == 8) {
-                        contactAvatar.setImageResource(R.drawable.doc_green);
-                    } else {
-                        contactAvatar.setImageResource(R.drawable.doc_blue);
-                    }
-                }
             }
 
             if (message.isFromMe()) {
@@ -3609,36 +3494,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         checkImage.setVisibility(View.INVISIBLE);
                         halfCheckImage.setImageResource(R.drawable.msg_clock);
                         halfCheckImage.setVisibility(View.VISIBLE);
-                        if (actionView != null) {
-                            if (actionView != null) {
-                                actionView.setVisibility(View.VISIBLE);
-                            }
-                            Float progress = null;
-                            if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
-                                progress = FileLoader.getInstance().getFileProgress(message.messageOwner.attachPath);
-                                progressByTag.put((Integer)actionProgress.getTag(), message.messageOwner.attachPath);
-                                progressBarMap.put(message.messageOwner.attachPath, actionProgress);
-                            }
-                            if (progress != null) {
-                                actionProgress.setProgress((int)(progress * 100));
-                            } else {
-                                actionProgress.setProgress(0);
-                            }
-                        }
-                        if (actionAttachButton != null) {
-                            actionAttachButton.setVisibility(View.GONE);
-                        }
                     } else if (message.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SEND_ERROR) {
                         halfCheckImage.setVisibility(View.VISIBLE);
                         halfCheckImage.setImageResource(R.drawable.msg_warning);
                         if (checkImage != null) {
                             checkImage.setVisibility(View.INVISIBLE);
-                        }
-                        if (actionView != null) {
-                            actionView.setVisibility(View.GONE);
-                        }
-                        if (actionAttachButton != null) {
-                            actionAttachButton.setVisibility(View.GONE);
                         }
                     } else if (message.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SENT) {
                         if (!message.messageOwner.unread) {
@@ -3650,106 +3510,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             checkImage.setVisibility(View.INVISIBLE);
                             halfCheckImage.setImageResource(R.drawable.msg_check);
                         }
-                        if (actionView != null) {
-                            actionView.setVisibility(View.GONE);
-                        }
-                        if (actionAttachButton != null) {
-                            actionAttachButton.setVisibility(View.VISIBLE);
-                        }
                     }
-                }
-            }
-            if (message.type == 8 || message.type == 9) {
-                Integer tag = (Integer)actionProgress.getTag();
-                String file = progressByTag.get(tag);
-                if (file != null) {
-                    removeFromloadingFile(file, actionProgress);
-                }
-                if (message.messageOwner.send_state != MessageObject.MESSAGE_SEND_STATE_SENDING && message.messageOwner.send_state != MessageObject.MESSAGE_SEND_STATE_SEND_ERROR) {
-                    if (file != null) {
-                        progressBarMap.remove(file);
-                    }
-                    String fileName = message.getFileName();
-                    boolean load = false;
-                    if (message.type != 2 && message.type != 3 && message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
-                        File f = new File(message.messageOwner.attachPath);
-                        if (f.exists()) {
-                            if (actionAttachButton != null) {
-                                actionAttachButton.setVisibility(View.VISIBLE);
-                                if (message.type == 8 || message.type == 9) {
-                                    actionAttachButton.setText(LocaleController.getString("Open", R.string.Open));
-                                }
-                            }
-                            if (actionView != null) {
-                                actionView.setVisibility(View.GONE);
-                            }
-                        } else {
-                            load = true;
-                        }
-                    }
-                    if (load && message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0 || !load && (message.messageOwner.attachPath == null || message.messageOwner.attachPath.length() == 0)) {
-                        File cacheFile = null;
-                        if ((cacheFile = new File(AndroidUtilities.getCacheDir(), fileName)).exists()) {
-                            if (actionAttachButton != null) {
-                                actionAttachButton.setVisibility(View.VISIBLE);
-                                if (message.type == 8 || message.type == 9) {
-                                    actionAttachButton.setText(LocaleController.getString("Open", R.string.Open));
-                                }
-                            }
-                            if (actionView != null) {
-                                actionView.setVisibility(View.GONE);
-                            }
-                            load = false;
-                        } else {
-                            load = true;
-                        }
-                    }
-                    if (load) {
-                        Float progress = FileLoader.getInstance().getFileProgress(fileName);
-                        if (loadingFile.containsKey(fileName) || progress != null) {
-                            if (progress != null) {
-                                actionProgress.setProgress((int)(progress * 100));
-                            } else {
-                                actionProgress.setProgress(0);
-                            }
-                            progressByTag.put((Integer)actionProgress.getTag(), fileName);
-                            addToLoadingFile(fileName, actionProgress);
-                            if (actionView != null) {
-                                actionView.setVisibility(View.VISIBLE);
-                            }
-                            if (actionAttachButton != null) {
-                                actionAttachButton.setVisibility(View.GONE);
-                            }
-                        } else {
-                            if (actionView != null) {
-                                actionView.setVisibility(View.GONE);
-                            }
-                            if (actionAttachButton != null) {
-                                actionAttachButton.setVisibility(View.VISIBLE);
-                                if (message.type == 8 || message.type == 9) {
-                                    actionAttachButton.setText(LocaleController.getString("DOWNLOAD", R.string.DOWNLOAD));
-                                }
-                            }
-                        }
-                    }
-                }
-                if (message.type == 8 || message.type == 9) {
-                    int width;
-                    if (currentChat != null && type != 8) {
-                        if (actionView.getVisibility() == View.VISIBLE) {
-                            width = AndroidUtilities.displaySize.x - AndroidUtilities.dp(290);
-                        } else {
-                            width = AndroidUtilities.displaySize.x - AndroidUtilities.dp(270);
-                        }
-                    } else {
-                        if (actionView.getVisibility() == View.VISIBLE) {
-                            width = AndroidUtilities.displaySize.x - AndroidUtilities.dp(240);
-                        } else {
-                            width = AndroidUtilities.displaySize.x - AndroidUtilities.dp(220);
-                        }
-                    }
-                    nameTextView.setMaxWidth(width);
-                    phoneTextView.setMaxWidth(width);
                 }
             }
         }
@@ -3762,12 +3523,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             photoImage = (BackupImageView)view.findViewById(R.id.chat_photo_image);
             halfCheckImage = (ImageView)view.findViewById(R.id.chat_row_halfcheck);
             checkImage = (ImageView)view.findViewById(R.id.chat_row_check);
-            actionAttachButton = (TextView)view.findViewById(R.id.chat_view_action_button);
             messageTextView = (TextView)view.findViewById(R.id.chat_message_text);
-            videoTimeText = (TextView)view.findViewById(R.id.chat_video_time);
-            actionView = view.findViewById(R.id.chat_view_action_layout);
-            actionProgress = (ProgressBar)view.findViewById(R.id.chat_view_action_progress);
-            actionCancelButton = (ImageView)view.findViewById(R.id.chat_view_action_cancel_button);
             phoneTextView = (TextView)view.findViewById(R.id.phone_text_view);
             contactAvatar = (BackupImageView)view.findViewById(R.id.contact_avatar);
             contactView = view.findViewById(R.id.shared_layout);
@@ -3776,21 +3532,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             chatBubbleView = view.findViewById(R.id.chat_bubble_layout);
             if (messageTextView != null) {
                 messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, MessagesController.getInstance().fontSize);
-            }
-
-            if (actionProgress != null) {
-                actionProgress.setTag(progressTag);
-                progressTag++;
-            }
-
-            if (type != 2 && type != 3) {
-                if (actionView != null) {
-                    if (isCustomTheme) {
-                        actionView.setBackgroundResource(R.drawable.system_black);
-                    } else {
-                        actionView.setBackgroundResource(R.drawable.system_blue);
-                    }
-                }
             }
 
             if (messageLayoutAction != null) {
@@ -3829,9 +3570,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 contactView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        if (message.type == 8 || message.type == 9) {
-                            processOnClick(view);
-                        } else if (message.type == 12 || message.type == 13) {
+                        if (message.type == 12 || message.type == 13) {
                             if (actionBarLayer.isActionModeShowed()) {
                                 processRowSelect(view);
                                 return;
@@ -3903,15 +3642,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 });
             }
 
-            if (actionAttachButton != null) {
-                actionAttachButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        processOnClick(view);
-                    }
-                });
-            }
-
             if (avatarImageView != null) {
                 avatarImageView.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -3924,33 +3654,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             Bundle args = new Bundle();
                             args.putInt("user_id", message.messageOwner.from_id);
                             presentFragment(new UserProfileActivity(args));
-                        }
-                    }
-                });
-            }
-
-            if (actionCancelButton != null) {
-                actionCancelButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        if (message != null) {
-                            Integer tag = (Integer)actionProgress.getTag();
-                            if (message.messageOwner.send_state != 0) {
-                                SendMessagesHelper.getInstance().cancelSendingMessage(message);
-                                String file = progressByTag.get(tag);
-                                if (file != null) {
-                                    progressBarMap.remove(file);
-                                }
-                            } else if (message.type == 8 || message.type == 9) {
-                                String file = progressByTag.get(tag);
-                                if (file != null) {
-                                    loadingFile.remove(file);
-                                    if (message.type == 8 || message.type == 9) {
-                                        FileLoader.getInstance().cancelLoadFile(message.messageOwner.media.document);
-                                    }
-                                    updateVisibleRows();
-                                }
-                            }
                         }
                     }
                 });
@@ -3983,63 +3686,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (message.type == 11) {
                     PhotoViewer.getInstance().setParentActivity(getParentActivity());
                     PhotoViewer.getInstance().openPhoto(message, ChatActivity.this);
-                } else if (message.type == 8 || message.type == 9) {
-                    File f = null;
-                    String fileName = message.getFileName();
-                    if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
-                        f = new File(message.messageOwner.attachPath);
-                    }
-                    if (f == null || f != null && !f.exists()) {
-                        f = new File(AndroidUtilities.getCacheDir(), fileName);
-                    }
-                    if (f != null && f.exists()) {
-                        String realMimeType = null;
-                        try {
-                            Intent intent = new Intent(Intent.ACTION_VIEW);
-                            if (message.type == 8 || message.type == 9) {
-                                MimeTypeMap myMime = MimeTypeMap.getSingleton();
-                                int idx = fileName.lastIndexOf(".");
-                                if (idx != -1) {
-                                    String ext = fileName.substring(idx + 1);
-                                    realMimeType = myMime.getMimeTypeFromExtension(ext.toLowerCase());
-                                    if (realMimeType != null) {
-                                        intent.setDataAndType(Uri.fromFile(f), realMimeType);
-                                    } else {
-                                        intent.setDataAndType(Uri.fromFile(f), "text/plain");
-                                    }
-                                } else {
-                                    intent.setDataAndType(Uri.fromFile(f), "text/plain");
-                                }
-                            }
-                            if (realMimeType != null) {
-                                try {
-                                    getParentActivity().startActivity(intent);
-                                } catch (Exception e) {
-                                    intent.setDataAndType(Uri.fromFile(f), "text/plain");
-                                    getParentActivity().startActivity(intent);
-                                }
-                            } else {
-                                getParentActivity().startActivity(intent);
-                            }
-                        } catch (Exception e) {
-                            alertUserOpenError(message);
-                        }
-                    } else {
-                        if (message.messageOwner.send_state != MessageObject.MESSAGE_SEND_STATE_SEND_ERROR && message.messageOwner.send_state != MessageObject.MESSAGE_SEND_STATE_SENDING || !message.isOut()) {
-                            if (!loadingFile.containsKey(fileName)) {
-                                progressByTag.put((Integer)actionProgress.getTag(), fileName);
-                                addToLoadingFile(fileName, actionProgress);
-                                if (message.type == 8 || message.type == 9) {
-                                    FileLoader.getInstance().loadFile(message.messageOwner.media.document);
-                                }
-                                updateVisibleRows();
-                            }
-                        } else {
-                            if (message.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SEND_ERROR) {
-                                createMenu(view, false);
-                            }
-                        }
-                    }
                 }
             }
         }

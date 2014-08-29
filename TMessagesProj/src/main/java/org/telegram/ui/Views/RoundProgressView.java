@@ -24,8 +24,12 @@ public class RoundProgressView {
         paint = new Paint();
         paint.setColor(0xffffffff);
         paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(AndroidUtilities.dp(1));
+        paint.setStrokeWidth(AndroidUtilities.dp(2));
         paint.setAntiAlias(true);
+    }
+
+    public void setColor(int color) {
+        paint.setColor(color);
     }
 
     public void setProgress(float progress) {

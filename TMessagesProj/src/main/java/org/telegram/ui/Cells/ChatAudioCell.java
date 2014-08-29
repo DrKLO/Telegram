@@ -60,7 +60,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     private String currentNameString;
 
     public ChatAudioCell(Context context) {
-        super(context, false);
+        super(context);
         TAG = MediaController.getInstance().generateObserverTag();
 
         avatarImage = new ImageReceiver(this);

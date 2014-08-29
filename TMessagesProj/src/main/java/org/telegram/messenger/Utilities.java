@@ -547,7 +547,7 @@ public class Utilities {
     }
 
     public static int getUserAvatarForId(int id) {
-        if (id / 1000 == 333) {
+        if (id / 1000 == 333 || id / 1000 == 777) {
             return R.drawable.telegram_avatar;
         }
         return arrUsersAvatars[getColorIndex(id)];

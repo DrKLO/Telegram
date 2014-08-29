@@ -278,10 +278,7 @@ public class ImageLoader {
                     }
                 }
             } catch (Exception e) {
-                if (canDeleteFile && cacheFileFinal != null && cacheFileFinal.length() == 0) {
-                    cacheFileFinal.delete();
-                }
-                FileLog.e("tmessages", e);
+                //don't promt
             }
             return image != null ? new BitmapDrawable(image) : null;
         }
@@ -641,7 +638,8 @@ public class ImageLoader {
         if (filter != null) {
             key += "@" + filter;
         }
-        if (imageReceiver != null) {
+        BitmapDrawable bitmapDrawable = memCache.get(key);
+        if (bitmapDrawable != null && imageReceiver != null) {
             Integer TAG = imageReceiver.getTag();
             if (TAG != null) {
                 CacheImage alreadyLoadingImage = imageLoadingByTag.get(TAG);
@@ -650,7 +648,7 @@ public class ImageLoader {
                 }
             }
         }
-        return memCache.get(key);
+        return bitmapDrawable;
     }
 
     public void replaceImageInCache(final String oldKey, final String newKey) {
@@ -744,7 +742,8 @@ public class ImageLoader {
                 }
                 img.addImageView(imageView);
                 imageLoadingByKeys.put(key, img);
-                cacheOutTasks.add(new CacheOutTask(img));
+                img.cacheTask = new CacheOutTask(img);
+                cacheOutTasks.add(img.cacheTask);
                 runCacheTasks(false);
             } else {
                 img.url = url;

@@ -160,7 +160,7 @@
     <string name="NotificationContactJoined">%1$s heeft nu Telegram!</string>
     <string name="NotificationUnrecognizedDevice">%1$s,\nEr is op je account ingelogd vanaf een nieuw apparaat op %2$s\n\nApparaat: %3$s\nLocatie: %4$s\n\nAls jij dit niet was, kun je alle sessies beëindigen via Instellingen – Beëindig alle andere sessies.\n\nBedankt,\nHet Telegram-team</string>
     <string name="NotificationContactNewPhoto">%1$s heeft zijn/haar profielfoto gewijzigd</string>
-    <string name="Reply">Reply</string>
+    <string name="Reply">Antwoord</string>
 
     <!--contacts view-->
     <string name="SelectContact">Kies een contact</string>
@@ -259,7 +259,7 @@
     <string name="ContactJoined">Contact lid geworden van Telegram</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Taal</string>
-    <string name="AskAQuestionInfo">Houd er rekening mee dat de ondersteuning van Telegram door vrijwilligers wordt gedaan. We doen ons best om zo snel mogelijk te antwoorden, maar het kan even even duren.<![CDATA[<br><br>]]>Bekijk ook de <![CDATA[<a href="http://telegram.org/faq#general">veelgestelde vragen</a>]]>: hier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href="http://telegram.org/faq#troubleshooting">het oplossen van problemen</a>]]>.</string>
+    <string name="AskAQuestionInfo">Houd er rekening mee dat de ondersteuning van Telegram door vrijwilligers wordt gedaan. We doen ons best om zo snel mogelijk te antwoorden, maar het kan even even duren.<![CDATA[<br><br>]]>Bekijk ook de <![CDATA[<a href=\"http://telegram.org/faq#general\">veelgestelde vragen</a>]]>: hier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href=\"http://telegram.org/faq#troubleshooting\">het oplossen van problemen</a>]]>.</string>
     <string name="AskButton">Vraag een vrijwilliger</string>
     <string name="TelegramFaq">Veelgestelde vragen</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
@@ -281,15 +281,15 @@
     <string name="OnlyWhenScreenOff">Alleen wanneer scherm \"uit\" staat</string>
     <string name="AlwaysShowPopup">Altijd popup tonen</string>
     <string name="BadgeNumber">Badgenummer</string>
-    <string name="Short">Short</string>
-    <string name="Long">Long</string>
-    <string name="SystemDefault">System default</string>
-    <string name="SettingsDefault">Settings default</string>
-    <string name="AutomaticMediaDownload">AUTOMATIC MEDIA DOWNLOAD</string>
-    <string name="WhenUsingMobileData">When using mobile data</string>
-    <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
-    <string name="WhenRoaming">When roaming</string>
-    <string name="NoMediaAutoDownload">No media</string>
+    <string name="Short">Kort</string>
+    <string name="Long">Lang</string>
+    <string name="SystemDefault">Standaardinstelling</string>
+    <string name="SettingsDefault">Standaardinstelling</string>
+    <string name="AutomaticMediaDownload">AUTOMATISCH MEDIA OPHALEN</string>
+    <string name="WhenUsingMobileData">Bij mobiel datagebruik</string>
+    <string name="WhenConnectedOnWiFi">Bij Wi-Fi verbinding</string>
+    <string name="WhenRoaming">Bij roamen</string>
+    <string name="NoMediaAutoDownload">Geen media</string>
 
     <!--media view-->
     <string name="NoMedia">Nog geen media gedeeld</string>

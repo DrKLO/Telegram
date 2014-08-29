@@ -177,18 +177,22 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                         builder.setItems(items, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
-                                if (i == 0) {
-                                    Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                                    File image = Utilities.generatePicturePath();
-                                    if (image != null) {
-                                        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
-                                        currentPicturePath = image.getAbsolutePath();
+                                try {
+                                    if (i == 0) {
+                                        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                                        File image = Utilities.generatePicturePath();
+                                        if (image != null) {
+                                            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
+                                            currentPicturePath = image.getAbsolutePath();
+                                        }
+                                        getParentActivity().startActivityForResult(takePictureIntent, 10);
+                                    } else if (i == 1) {
+                                        Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+                                        photoPickerIntent.setType("image/*");
+                                        getParentActivity().startActivityForResult(photoPickerIntent, 11);
                                     }
-                                    getParentActivity().startActivityForResult(takePictureIntent, 10);
-                                } else if (i == 1) {
-                                    Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
-                                    photoPickerIntent.setType("image/*");
-                                    getParentActivity().startActivityForResult(photoPickerIntent, 11);
+                                } catch (Exception e) {
+                                    FileLog.e("tmessages", e);
                                 }
                             }
                         });
@@ -521,7 +525,6 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                         selection.setVisibility(View.INVISIBLE);
                     }
                 }
-
             } else if (type == 1) {
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);

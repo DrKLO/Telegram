@@ -405,6 +405,7 @@ public class ChatOrUserCell extends BaseCell {
             }
             avatarImage.setImageCoords(avatarLeft, avatarTop, AndroidUtilities.dp(50), AndroidUtilities.dp(50));
 
+
             double widthpx = 0;
             float left = 0;
             if (LocaleController.isRTL) {

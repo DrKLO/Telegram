@@ -29,7 +29,7 @@ public class ChatMessageCell extends ChatBaseCell {
     private int totalVisibleBlocksCount = 0;
 
     public ChatMessageCell(Context context) {
-        super(context, false);
+        super(context);
         drawForwardedName = true;
     }
 

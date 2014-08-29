@@ -146,10 +146,9 @@ public class ChatBaseCell extends BaseCell {
         }
     }
 
-    public ChatBaseCell(Context context, boolean isMedia) {
+    public ChatBaseCell(Context context) {
         super(context);
         init();
-        media = isMedia;
         avatarImage = new ImageReceiver(this);
     }
 

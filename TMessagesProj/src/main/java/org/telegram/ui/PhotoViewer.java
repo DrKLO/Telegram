@@ -489,7 +489,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         windowLayoutParams.format = PixelFormat.TRANSLUCENT;
         windowLayoutParams.width = WindowManager.LayoutParams.MATCH_PARENT;
         windowLayoutParams.gravity = Gravity.TOP;
-        windowLayoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION;
+        windowLayoutParams.type = WindowManager.LayoutParams.LAST_APPLICATION_WINDOW;
         windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 
         actionBar = new ActionBar(activity);
@@ -1212,6 +1212,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         int prevIndex = currentIndex;
         currentIndex = index;
         currentFileName = getFileName(index, null);
+        boolean sameImage = false;
 
         if (!imagesArr.isEmpty()) {
             deleteButton.setVisibility(View.VISIBLE);
@@ -1240,7 +1241,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             } else {
                 deleteButton.setVisibility(View.GONE);
             }
+            TLRPC.FileLocation old = currentFileLocation;
             currentFileLocation = imagesArrLocations.get(index);
+            if (old != null && currentFileLocation != null && old.local_id == currentFileLocation.local_id && old.volume_id == currentFileLocation.volume_id) {
+                sameImage = true;
+            }
             actionBarLayer.setTitle(LocaleController.formatString("Of", R.string.Of, currentIndex + 1, imagesArrLocations.size()));
         } else if (!imagesArrLocals.isEmpty()) {
             currentPathObject = imagesArrLocals.get(index).path;
@@ -1270,33 +1275,35 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
         }
 
-        draggingDown = false;
-        translationX = 0;
-        translationY = 0;
-        scale = 1;
-        animateToX = 0;
-        animateToY = 0;
-        animateToScale = 1;
-        animationDuration = 0;
-        animationStartTime = 0;
+        if (!sameImage) {
+            draggingDown = false;
+            translationX = 0;
+            translationY = 0;
+            scale = 1;
+            animateToX = 0;
+            animateToY = 0;
+            animateToScale = 1;
+            animationDuration = 0;
+            animationStartTime = 0;
 
-        pinchStartDistance = 0;
-        pinchStartScale = 1;
-        pinchCenterX = 0;
-        pinchCenterY = 0;
-        pinchStartX = 0;
-        pinchStartY = 0;
-        moveStartX = 0;
-        moveStartY = 0;
-        zooming = false;
-        moving = false;
-        doubleTap = false;
-        invalidCoords = false;
-        canDragDown = true;
-        changingPage = false;
-        switchImageAfterAnimation = 0;
-        canZoom = currentFileName == null || !currentFileName.endsWith("mp4");
-        updateMinMax(scale);
+            pinchStartDistance = 0;
+            pinchStartScale = 1;
+            pinchCenterX = 0;
+            pinchCenterY = 0;
+            pinchStartX = 0;
+            pinchStartY = 0;
+            moveStartX = 0;
+            moveStartY = 0;
+            zooming = false;
+            moving = false;
+            doubleTap = false;
+            invalidCoords = false;
+            canDragDown = true;
+            changingPage = false;
+            switchImageAfterAnimation = 0;
+            canZoom = currentFileName == null || !currentFileName.endsWith("mp4");
+            updateMinMax(scale);
+        }
 
         if (prevIndex == -1) {
             setIndexToImage(centerImage, currentIndex);
@@ -1915,7 +1922,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     draggingDown = true;
                     moving = false;
                     dragY = ev.getY();
-                    if (isActionBarVisible) {
+                    if (isActionBarVisible && canShowBottom) {
                         toggleActionBar(false, true);
                     }
                     return true;
@@ -2334,7 +2341,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
     @Override
     public boolean onSingleTapConfirmed(MotionEvent e) {
-        toggleActionBar(!isActionBarVisible, true);
+        if (canShowBottom) {
+            toggleActionBar(!isActionBarVisible, true);
+        } else {
+            checkImageView.callOnClick();
+        }
         return true;
     }
 

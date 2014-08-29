@@ -744,19 +744,11 @@ public class ActionBarActivity extends Activity {
             }
             containerView.invalidate();
             if (intent != null) {
-                try {
-                    ActionBarActivity.super.startActivityForResult(intent, requestCode);
-                } catch (Exception e) {
-                    FileLog.e("tmessages", e);
-                }
+                super.startActivityForResult(intent, requestCode);
             }
         } else {
             if (intent != null) {
-                try {
-                    super.startActivityForResult(intent, requestCode);
-                } catch (Exception e) {
-                    FileLog.e("tmessages", e);
-                }
+                super.startActivityForResult(intent, requestCode);
             }
         }
     }

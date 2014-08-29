@@ -31,6 +31,7 @@ import org.telegram.ui.ApplicationLoader;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -170,7 +171,7 @@ public class MessagesStorage {
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
-        loadUnreadMessages(false);
+        loadUnreadMessages();
     }
 
     public void updateDbToVersion3() {
@@ -352,7 +353,7 @@ public class MessagesStorage {
         });
     }
 
-    public void loadUnreadMessages(final boolean onlyCount) {
+    public void loadUnreadMessages() {
         storageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -364,20 +365,18 @@ public class MessagesStorage {
                         long did = cursor.longValue(0);
                         int count = cursor.intValue(1);
                         pushDialogs.put(did, count);
-                        if (!onlyCount) {
-                            if (ids.length() != 0) {
-                                ids += ",";
-                            }
-                            ids += did;
+                        if (ids.length() != 0) {
+                            ids += ",";
                         }
+                        ids += did;
                     }
                     cursor.dispose();
 
-                    final ArrayList<TLRPC.Message> messages = onlyCount ? null : new ArrayList<TLRPC.Message>();
-                    final ArrayList<TLRPC.User> users = onlyCount ? null : new ArrayList<TLRPC.User>();
-                    final ArrayList<TLRPC.Chat> chats = onlyCount ? null : new ArrayList<TLRPC.Chat>();
-                    final ArrayList<TLRPC.EncryptedChat> encryptedChats = onlyCount ? null : new ArrayList<TLRPC.EncryptedChat>();
-                    if (messages != null && ids.length() > 0) {
+                    final ArrayList<TLRPC.Message> messages = new ArrayList<TLRPC.Message>();
+                    final ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+                    final ArrayList<TLRPC.Chat> chats = new ArrayList<TLRPC.Chat>();
+                    final ArrayList<TLRPC.EncryptedChat> encryptedChats = new ArrayList<TLRPC.EncryptedChat>();
+                    if (ids.length() > 0) {
                         ArrayList<Integer> userIds = new ArrayList<Integer>();
                         ArrayList<Integer> chatIds = new ArrayList<Integer>();
                         ArrayList<Integer> encryptedChatIds = new ArrayList<Integer>();
@@ -510,7 +509,7 @@ public class MessagesStorage {
                             cursor.dispose();
                         }
                     }
-
+                    Collections.reverse(messages);
                     AndroidUtilities.RunOnUIThread(new Runnable() {
                         @Override
                         public void run() {
@@ -3595,7 +3594,7 @@ public class MessagesStorage {
 
                     database.commitTransaction();
 
-                    loadUnreadMessages(true);
+                    loadUnreadMessages();
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
