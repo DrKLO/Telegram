@@ -576,9 +576,8 @@ public class NotificationsController {
                 if (popup != 0) {
                     popupMessages.add(0, messageObject);
                 }
-                pushMessagesDict.put(messageObject.messageOwner.id, messageObject);
                 pushMessages.add(0, messageObject);
-                FileLog.e("tmessages", "processNewMessages add dialog = " + dialog_id);
+                pushMessagesDict.put(messageObject.messageOwner.id, messageObject);
             }
         }
 
@@ -609,15 +608,16 @@ public class NotificationsController {
 
             Integer currentCount = pushDialogs.get(dialog_id);
             Integer newCount = entry.getValue();
-            FileLog.e("tmessages", "processDialogsUpdateRead dialog = " + dialog_id + " newCount = " + newCount + " oldCount = " + currentCount);
             if (newCount < 0) {
                 if (currentCount == null) {
                     continue;
                 }
                 newCount = currentCount + newCount;
             }
-            if (currentCount != null) {
-                total_unread_count -= currentCount;
+            if (canAddValue || newCount == 0) {
+                if (currentCount != null) {
+                    total_unread_count -= currentCount;
+                }
             }
             if (newCount == 0) {
                 pushDialogs.remove(dialog_id);
@@ -654,12 +654,23 @@ public class NotificationsController {
         pushMessagesDict.clear();
         total_unread_count = 0;
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
+        HashMap<Long, Boolean> settingsCache = new HashMap<Long, Boolean>();
+
         for (HashMap.Entry<Long, Integer> entry : dialogs.entrySet()) {
-            pushDialogs.put(entry.getKey(), entry.getValue());
-            total_unread_count += entry.getValue();
-            FileLog.e("tmessages", "processLoadedUnreadMessages dialog = " + entry.getKey() + " count = " + entry.getValue());
+            long dialog_id = entry.getKey();
+            Boolean value = settingsCache.get(dialog_id);
+            if (value == null) {
+                int notify_override = preferences.getInt("notify2_" + dialog_id, 0);
+                value = !(notify_override == 2 || (!preferences.getBoolean("EnableAll", true) || ((int) dialog_id < 0) && !preferences.getBoolean("EnableGroup", true)) && notify_override == 0);
+                settingsCache.put(dialog_id, value);
+            }
+            if (!value) {
+                continue;
+            }
+            int count = entry.getValue();
+            pushDialogs.put(dialog_id, count);
+            total_unread_count += count;
         }
-        FileLog.e("tmessages", "processLoadedUnreadMessages total = " + total_unread_count + " messages = " + messages.size());
         if (messages != null) {
             for (TLRPC.Message message : messages) {
                 if (pushMessagesDict.containsKey(message.id)) {
@@ -667,7 +678,13 @@ public class NotificationsController {
                 }
                 MessageObject messageObject = new MessageObject(message, null, 0);
                 long dialog_id = messageObject.getDialogId();
-                if (dialog_id == openned_dialog_id && ApplicationLoader.isScreenOn) {
+                Boolean value = settingsCache.get(dialog_id);
+                if (value == null) {
+                    int notify_override = preferences.getInt("notify2_" + dialog_id, 0);
+                    value = !(notify_override == 2 || (!preferences.getBoolean("EnableAll", true) || ((int) dialog_id < 0) && !preferences.getBoolean("EnableGroup", true)) && notify_override == 0);
+                    settingsCache.put(dialog_id, value);
+                }
+                if (!value || dialog_id == openned_dialog_id && ApplicationLoader.isScreenOn) {
                     continue;
                 }
                 pushMessagesDict.put(messageObject.messageOwner.id, messageObject);

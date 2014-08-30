@@ -58,12 +58,12 @@
     <string name="SelectChat">Selecione uma Conversa</string>
 
     <!--broadcasts-->
-    <string name="BroadcastList">Lista de Broadcast</string>
-    <string name="NewBroadcastList">Nova lista de Broadcast</string>
+    <string name="BroadcastList">Lista de Transmissão</string>
+    <string name="NewBroadcastList">Nova Lista de Transmissão</string>
     <string name="EnterListName">Digite o nome da lista</string>
-    <string name="YouCreatedBroadcastList">Você criou uma lista de broadcast</string>
+    <string name="YouCreatedBroadcastList">Você criou uma lista de transmissão</string>
     <string name="AddRecipient">Adicionar Recipiente</string>
-    <string name="KickFromBroadcast">Remover da lista de broadcast</string>
+    <string name="KickFromBroadcast">Remover da lista de trasmissão</string>
 
     <!--documents view-->
     <string name="SelectFile">Selecione um Arquivo</string>
@@ -160,7 +160,7 @@
     <string name="NotificationContactJoined">%1$s entrou para o Telegram!</string>
     <string name="NotificationUnrecognizedDevice">%1$s,\nNós detectamos um login na sua conta de um novo dispositivo %2$s\n\nDispositivo: %3$s\nLocalização: %4$s\n\nSe não foi você, você pode ir para Configurações - Terminar todas as sessões.\n\nAtenciosamente,\nTime do Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s atualizou a foto do perfil</string>
-    <string name="Reply">Reply</string>
+    <string name="Reply">Responder</string>
 
     <!--contacts view-->
     <string name="SelectContact">Selecionar Contato</string>
@@ -281,15 +281,15 @@
     <string name="OnlyWhenScreenOff">Somente com a tela desligada</string>
     <string name="AlwaysShowPopup">Sempre mostrar popup</string>
     <string name="BadgeNumber">Contador de medalhas</string>
-    <string name="Short">Short</string>
-    <string name="Long">Long</string>
-    <string name="SystemDefault">System default</string>
-    <string name="SettingsDefault">Settings default</string>
-    <string name="AutomaticMediaDownload">AUTOMATIC MEDIA DOWNLOAD</string>
-    <string name="WhenUsingMobileData">When using mobile data</string>
-    <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
-    <string name="WhenRoaming">When roaming</string>
-    <string name="NoMediaAutoDownload">No media</string>
+    <string name="Short">Curta</string>
+    <string name="Long">Longa</string>
+    <string name="SystemDefault">Padrão do sistema</string>
+    <string name="SettingsDefault">Configurações padrão</string>
+    <string name="AutomaticMediaDownload">DOWNLOAD AUTOMÁTICO DE MÍDIA</string>
+    <string name="WhenUsingMobileData">Ao usar dados móveis</string>
+    <string name="WhenConnectedOnWiFi">Quando conectado em Wi-Fi</string>
+    <string name="WhenRoaming">Em roaming</string>
+    <string name="NoMediaAutoDownload">Sem mídia</string>
 
     <!--media view-->
     <string name="NoMedia">Ainda não há mídia compartilhada</string>

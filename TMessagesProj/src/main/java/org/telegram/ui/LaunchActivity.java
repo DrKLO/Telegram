@@ -405,6 +405,8 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
                 removeFragmentFromStack(fragmentsStack.get(a));
                 a--;
             }
+            pushOpened = false;
+            isNew = false;
         }
         if (videoPath != null || photoPathsArray != null || sendingText != null || documentsPathsArray != null || contactsToSend != null) {
             NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);

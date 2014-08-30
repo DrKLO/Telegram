@@ -2344,7 +2344,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (canShowBottom) {
             toggleActionBar(!isActionBarVisible, true);
         } else {
-            checkImageView.callOnClick();
+            checkImageView.performClick();
         }
         return true;
     }

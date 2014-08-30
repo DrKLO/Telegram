@@ -42,7 +42,7 @@
     <string name="Yesterday">أمس</string>
     <string name="NoResult">لا توجد نتائج</string>
     <string name="NoChats">...لا توجد محادثات بعد</string>
-    <string name="NoChatsHelp">إبدأ المراسلة بالضغط على \nأيقونة النقاط في أعلى يمين الشاشة\nأو اذهب لقسم جهات الاتصال.</string>
+    <string name="NoChatsHelp">إبدأ المراسلة بالضغط على\nأيقونة النقاط في أعلى يمين الشاشة\nأو اذهب لقسم جهات الاتصال.</string>
     <string name="WaitingForNetwork">في إنتظار الشبكة...</string>
     <string name="Connecting">جاري الاتصال...</string>
     <string name="Updating">جاري التحديث...</string>
@@ -160,7 +160,7 @@
     <string name="NotificationContactJoined">%1$s قام بالتسجيل في تيليجرام!</string>
     <string name="NotificationUnrecognizedDevice">%1$s,\nتم تسجيل الدخول لحسابك من جهاز جديد يوم %2$s\n\nالجهاز: %3$s\nالموقع: %4$s\n\nإذا لم يكن أنت من سجل الدخول، يمكنك الذهاب للإعدادات ثم تسجيل الخروج من كافة الأجهزة الأخرى.\n\nشكرًا,\nفريق عمل تيليجرام</string>
     <string name="NotificationContactNewPhoto">%1$s قام بتغيير صورته الشخصية</string>
-    <string name="Reply">Reply</string>
+    <string name="Reply">الرد</string>
 
     <!--contacts view-->
     <string name="SelectContact">اختر جهة اتصال</string>
@@ -275,21 +275,21 @@
     <string name="SortFirstName">الاسم الأول</string>
     <string name="SortLastName">اسم العائلة</string>
     <string name="LedColor">لون إضاءة الـ LED</string>
-    <string name="PopupNotification">إشعارات منبثقة</string>
+    <string name="PopupNotification">الإشعارات المنبثقة</string>
     <string name="NoPopup">بدون إشعارات منبثقة</string>
     <string name="OnlyWhenScreenOn">فقط عندما تكون الشاشة تعمل</string>
     <string name="OnlyWhenScreenOff">فقط عندما تكون الشاشة مطفأة</string>
     <string name="AlwaysShowPopup">دائمًا أظهر الإشعارات المنبثقة</string>
-    <string name="BadgeNumber">Badge Number</string>
-    <string name="Short">Short</string>
-    <string name="Long">Long</string>
-    <string name="SystemDefault">System default</string>
-    <string name="SettingsDefault">Settings default</string>
-    <string name="AutomaticMediaDownload">AUTOMATIC MEDIA DOWNLOAD</string>
-    <string name="WhenUsingMobileData">When using mobile data</string>
-    <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
-    <string name="WhenRoaming">When roaming</string>
-    <string name="NoMediaAutoDownload">No media</string>
+    <string name="BadgeNumber">عداد الشارات</string>
+    <string name="Short">قصير</string>
+    <string name="Long">طويل</string>
+    <string name="SystemDefault">النظام الإفتراضي</string>
+    <string name="SettingsDefault">الإعدادات الإفتراضية</string>
+    <string name="AutomaticMediaDownload">تنزيل الوسائط تلقائيا</string>
+    <string name="WhenUsingMobileData">عند استخدام البيانات الخلوية</string>
+    <string name="WhenConnectedOnWiFi">عند الاتصال بالشبكة اللاسلكية</string>
+    <string name="WhenRoaming">عند تواجدك خارج البلاد</string>
+    <string name="NoMediaAutoDownload">لا يوجد وسائط</string>
 
     <!--media view-->
     <string name="NoMedia">لا توجد وسائط بعد</string>
@@ -376,24 +376,24 @@
     <string name="InvalidLastName">اسم العائلة غير صحيح</string>
     <string name="Loading">جاري التحميل ...</string>
     <string name="NoPlayerInstalled">ليس لديك أي مشغل مقاطع مرئية، يرجى تنزيل أية مشغل</string>
-    <string name="NoMailInstalled">يرجى التفضل بإرسال بريد الكتروني إلى sms@telegram.org وشرح مشكلتك.</string>
+    <string name="NoMailInstalled">يرجى إرسال رسالة بواسطة البريد الإلكتروني إلى sms@telegram.org لتخبرنا عن مشكلتك.</string>
     <string name="NoHandleAppInstalled">لا يوجد لديك تطبيق يمكنه فتح \'%1$s\'، يرجى تنزيل تطبيق مناسب للإستمرار</string>
     <string name="InviteUser">هذا المستخدم ليس لديه تيليجرام بعد ، هل ترغب في دعوته الآن؟</string>
     <string name="AreYouSure">هل أنت متأكد؟</string>
     <string name="AddContactQ">هل تريد إضافة جهة اتصال؟</string>
-    <string name="AddToTheGroup">هل ترغب في إضافة %1$s للمجموعة؟\n\n\n\nعدد الرسائل الحديثة المراد إعادة تحويلها:</string>
+    <string name="AddToTheGroup">هل ترغب في إضافة %1$s للمجموعة؟\n\nعدد الرسائل الحديثة المراد إعادة تحويلها:</string>
     <string name="ForwardMessagesTo">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
     <string name="DeleteChatQuestion">هل تريد حذف هذه الدردشة؟</string>
     <string name="SendMessagesTo">هل ترغب في إرسال رسالة إلى %1$s؟</string>
-    <string name="AreYouSureLogout">هل أنت متأكد من رغبتك في تسجيل الخروج؟</string>
+    <string name="AreYouSureLogout">هل أنت متأكد من أنك تريد تسجيل الخروج؟</string>
     <string name="AreYouSureSessions">هل أنت متأكد من تسجيل الخروج من جميع الأجهزة الأخرى باستثناء هذا الجهاز؟</string>
-    <string name="AreYouSureDeleteAndExit">هل أنت متأكد من رغبتك في مغادرة المجموعة وحذفها؟</string>
+    <string name="AreYouSureDeleteAndExit">هل أنت متأكد من أنك تريد حذف المجموعة والخروج منها؟</string>
     <string name="AreYouSureDeleteThisChat">هل أنت متأكد من رغبتك في حذف المجموعة؟</string>
-    <string name="AreYouSureShareMyContactInfo">هل أنت متأكد من رغبتك في مشاركة جهة الاتصال الخاصة بك؟</string>
+    <string name="AreYouSureShareMyContactInfo">هل أنت متأكد من أنك تريد مشاركة معلومات جهة الاتصال الخاصة بك؟</string>
     <string name="AreYouSureBlockContact">هل أنت متأكد من رغبتك في حظر جهة الاتصال هذه؟</string>
     <string name="AreYouSureUnblockContact">هل أنت متأكد من رغبتك في إزالة الحظر عن جهة الاتصال هذه؟</string>
     <string name="AreYouSureDeleteContact">هل أنت متأكد من رغبتك في حذف جهة الاتصال هذه؟</string>
-    <string name="AreYouSureSecretChat">هل أنت متأكد من رغبتك في بدء محادثة سرية؟</string>
+    <string name="AreYouSureSecretChat">هل أنت متأكد من أنك تريد بدء محادثة سرية؟</string>
     <string name="ForwardFromMyName">أعد الإرسال باستخدام اسمي</string>
 
     <!--Intro view-->

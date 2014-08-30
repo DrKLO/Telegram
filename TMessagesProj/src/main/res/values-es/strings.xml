@@ -158,9 +158,9 @@
     <string name="NotificationGroupKickYou">%1$s te ha expulsado del grupo %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s abandonó el grupo %2$s</string>
     <string name="NotificationContactJoined">¡%1$s se unió a Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nHemos detectado un inicio de sesión en tu cuenta desde un nuevo dispositivo, el %2$s\n\nDispositivo: %3$s\nUbicación: %4$s\n\nSi no eras tú, puedes ir a Ajustes - Cerrar todas las otras sesiones. \n\nAtentamente,\nEl Equipo de Telegram</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nHemos detectado un inicio de sesión en tu cuenta desde un nuevo dispositivo, el %2$s\n\nDispositivo: %3$s\nUbicación: %4$s\n\nSi no eras tú, puedes ir a Ajustes - Cerrar todas las otras sesiones.\n\nAtentamente,\nEl Equipo de Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s actualizó su foto de perfil</string>
-    <string name="Reply">Reply</string>
+    <string name="Reply">Responder</string>
 
     <!--contacts view-->
     <string name="SelectContact">Seleccionar contacto</string>
@@ -281,15 +281,15 @@
     <string name="OnlyWhenScreenOff">Sólo con pantalla apagada</string>
     <string name="AlwaysShowPopup">Siempre mostrar notificación emergente</string>
     <string name="BadgeNumber">Globo en el ícono</string>
-    <string name="Short">Short</string>
-    <string name="Long">Long</string>
-    <string name="SystemDefault">System default</string>
-    <string name="SettingsDefault">Settings default</string>
-    <string name="AutomaticMediaDownload">AUTOMATIC MEDIA DOWNLOAD</string>
-    <string name="WhenUsingMobileData">When using mobile data</string>
-    <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
-    <string name="WhenRoaming">When roaming</string>
-    <string name="NoMediaAutoDownload">No media</string>
+    <string name="Short">Corto</string>
+    <string name="Long">Largo</string>
+    <string name="SystemDefault">Por defecto del sistema</string>
+    <string name="SettingsDefault">Ajustes por defecto</string>
+    <string name="AutomaticMediaDownload">DESCARGA AUTOMÁTICA DE MULTIMEDIA</string>
+    <string name="WhenUsingMobileData">Con uso de datos móviles</string>
+    <string name="WhenConnectedOnWiFi">Con conexión a Wi-Fi</string>
+    <string name="WhenRoaming">Con itinerancia de datos</string>
+    <string name="NoMediaAutoDownload">Ningún contenido multimedia</string>
 
     <!--media view-->
     <string name="NoMedia">No hay fotos ni vídeos compartidos aún</string>

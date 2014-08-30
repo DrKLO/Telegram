@@ -80,7 +80,7 @@
     <string name="SdCard">SD-Karte</string>
 
     <!--chat view-->
-    <string name="Invisible">unsichtbar</string>
+    <string name="Invisible">offline</string>
     <string name="Typing">schreibt…</string>
     <string name="Attach">Anhängen</string>
     <string name="IsTyping">schreibt...</string>
@@ -158,9 +158,9 @@
     <string name="NotificationGroupKickYou">%1$s hat dich aus der Gruppe %2$s entfernt</string>
     <string name="NotificationGroupLeftMember">%1$s hat die Gruppe %2$s verlassen</string>
     <string name="NotificationContactJoined">%1$s benutzt jetzt Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nWir haben eine Anmeldung von einem neuen Gerät mit der IP-Adresse %2$s festgestellt.\n\nGerät: %3$s\nStandort: %4$s\n\nWenn du es nicht selbst gewesen bist, melde alle anderen Sitzungen in den Telegram Einstellungen unverzüglich ab. \n\n\nMit freundlichen Grüßen,\nDas Telegram Team</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nWir haben eine Anmeldung von einem neuen Gerät am %2$s festgestellt.\n\nGerät: %3$s\nStandort: %4$s\n\nWenn du das nicht selbst gewesen bist, melde alle anderen Sitzungen in den Telegram Einstellungen unverzüglich ab.\n\nMit freundlichen Grüßen,\nDas Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s hat das Profilbild geändert</string>
-    <string name="Reply">Reply</string>
+    <string name="Reply">Beantworten</string>
 
     <!--contacts view-->
     <string name="SelectContact">Kontakt auswählen</string>
@@ -281,15 +281,15 @@
     <string name="OnlyWhenScreenOff">Nur wenn Bildschirm „aus“</string>
     <string name="AlwaysShowPopup">Popups immer anzeigen</string>
     <string name="BadgeNumber">BADGE (Anzahl)</string>
-    <string name="Short">Short</string>
-    <string name="Long">Long</string>
-    <string name="SystemDefault">System default</string>
-    <string name="SettingsDefault">Settings default</string>
-    <string name="AutomaticMediaDownload">AUTOMATIC MEDIA DOWNLOAD</string>
-    <string name="WhenUsingMobileData">When using mobile data</string>
-    <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
-    <string name="WhenRoaming">When roaming</string>
-    <string name="NoMediaAutoDownload">No media</string>
+    <string name="Short">Kurz</string>
+    <string name="Long">Lang</string>
+    <string name="SystemDefault">Systemstandard</string>
+    <string name="SettingsDefault">Standardeinstellungen</string>
+    <string name="AutomaticMediaDownload">AUTOMATISCHER DOWNLOAD VON MEDIEN</string>
+    <string name="WhenUsingMobileData">über Mobilfunk</string>
+    <string name="WhenConnectedOnWiFi">über W-LAN</string>
+    <string name="WhenRoaming">bei Roaming</string>
+    <string name="NoMediaAutoDownload">kein automatischer Download</string>
 
     <!--media view-->
     <string name="NoMedia">Noch keine geteilten Medien vorhanden</string>

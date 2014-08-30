@@ -110,6 +110,16 @@ METHODDEF(void) my_error_exit(j_common_ptr cinfo) {
 }
 
 JNIEXPORT void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jclass class, jobject bitmap, int width, int height, int stride) {
+    AndroidBitmapInfo info;
+    
+    if (AndroidBitmap_getInfo(env, bitmap, &info) < 0) {
+        return;
+    }
+    
+    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+        return;
+    }
+    
     void *pixels = 0;
     if (AndroidBitmap_lockPixels(env, bitmap, &pixels) < 0) {
         return;

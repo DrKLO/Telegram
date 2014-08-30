@@ -91,7 +91,7 @@ public class MessagesStorage {
                 database.executeFast("CREATE TABLE messages(mid INTEGER PRIMARY KEY, uid INTEGER, read_state INTEGER, send_state INTEGER, date INTEGER, data BLOB, out INTEGER, ttl INTEGER)").stepThis().dispose();
                 database.executeFast("CREATE TABLE chats(uid INTEGER PRIMARY KEY, name TEXT, data BLOB)").stepThis().dispose();
                 database.executeFast("CREATE TABLE enc_chats(uid INTEGER PRIMARY KEY, user INTEGER, name TEXT, data BLOB, g BLOB, authkey BLOB, ttl INTEGER)").stepThis().dispose();
-                database.executeFast("CREATE TABLE dialogs(did INTEGER PRIMARY KEY, date INTEGER, unread_count INTEGER, last_mid INTEGER, flags INTEGER)").stepThis().dispose();
+                database.executeFast("CREATE TABLE dialogs(did INTEGER PRIMARY KEY, date INTEGER, unread_count INTEGER, last_mid INTEGER)").stepThis().dispose();
                 database.executeFast("CREATE TABLE chat_settings(uid INTEGER PRIMARY KEY, participants BLOB)").stepThis().dispose();
                 database.executeFast("CREATE TABLE contacts(uid INTEGER PRIMARY KEY, mutual INTEGER)").stepThis().dispose();
                 database.executeFast("CREATE TABLE pending_read(uid INTEGER PRIMARY KEY, max_id INTEGER)").stepThis().dispose();
@@ -105,6 +105,7 @@ public class MessagesStorage {
                 database.executeFast("CREATE TABLE user_photos(uid INTEGER, id INTEGER, data BLOB, PRIMARY KEY (uid, id))").stepThis().dispose();
                 database.executeFast("CREATE TABLE blocked_users(uid INTEGER PRIMARY KEY)").stepThis().dispose();
                 database.executeFast("CREATE TABLE download_queue(uid INTEGER, type INTEGER, date INTEGER, data BLOB, PRIMARY KEY (uid, type));").stepThis().dispose();
+                database.executeFast("CREATE TABLE dialog_settings(did INTEGER PRIMARY KEY, flags INTEGER);").stepThis().dispose();
                 //database.executeFast("CREATE TABLE attach_data(uid INTEGER, id INTEGER, data BLOB, PRIMARY KEY (uid, id))").stepThis().dispose();
 
                 database.executeFast("CREATE TABLE user_contacts_v6(uid INTEGER PRIMARY KEY, fname TEXT, sname TEXT)").stepThis().dispose();
@@ -121,7 +122,7 @@ public class MessagesStorage {
                 database.executeFast("CREATE INDEX IF NOT EXISTS date_idx_dialogs ON dialogs(date);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS date_idx_enc_tasks ON enc_tasks(date);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS last_mid_idx_dialogs ON dialogs(last_mid);").stepThis().dispose();
-                database.executeFast("CREATE INDEX IF NOT EXISTS unread_count_flags_idx_dialogs ON dialogs(unread_count, flags);").stepThis().dispose();
+                database.executeFast("CREATE INDEX IF NOT EXISTS unread_count_idx_dialogs ON dialogs(unread_count);").stepThis().dispose();
 
                 database.executeFast("CREATE INDEX IF NOT EXISTS uid_mid_idx_media ON media(uid, mid);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS mid_idx_media ON media(mid);").stepThis().dispose();
@@ -132,7 +133,7 @@ public class MessagesStorage {
                 database.executeFast("CREATE INDEX IF NOT EXISTS mid_out_idx_messages ON messages(mid, out);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS task_idx_messages ON messages(uid, out, read_state, ttl, date, send_state);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS send_state_idx_messages ON messages(mid, send_state, date) WHERE mid < 0 AND send_state = 1;").stepThis().dispose();
-                database.executeFast("PRAGMA user_version = 3").stepThis().dispose();
+                database.executeFast("PRAGMA user_version = 4").stepThis().dispose();
             } else {
                 try {
                     SQLiteCursor cursor = database.queryFinalized("SELECT seq, pts, date, qts, lsv, sg, pbytes FROM params WHERE id = 1");
@@ -164,8 +165,8 @@ public class MessagesStorage {
                 }
 
                 int version = database.executeInt("PRAGMA user_version");
-                if (version < 3) {
-                    updateDbToVersion3();
+                if (version < 4) {
+                    updateDbToVersion4();
                 }
             }
         } catch (Exception e) {
@@ -174,7 +175,7 @@ public class MessagesStorage {
         loadUnreadMessages();
     }
 
-    public void updateDbToVersion3() {
+    public void updateDbToVersion4() {
         storageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -187,7 +188,6 @@ public class MessagesStorage {
                     database.executeFast("DROP INDEX IF EXISTS read_state_out_idx_messages;").stepThis().dispose();
                     database.executeFast("DROP INDEX IF EXISTS ttl_idx_messages;").stepThis().dispose();
                     database.executeFast("DROP INDEX IF EXISTS date_idx_messages;").stepThis().dispose();
-                    database.executeFast("DROP INDEX IF EXISTS unread_count_idx_dialogs;").stepThis().dispose();
 
                     database.executeFast("CREATE INDEX IF NOT EXISTS mid_out_idx_messages ON messages(mid, out);").stepThis().dispose();
                     database.executeFast("CREATE INDEX IF NOT EXISTS task_idx_messages ON messages(uid, out, read_state, ttl, date, send_state);").stepThis().dispose();
@@ -206,23 +206,19 @@ public class MessagesStorage {
                     database.executeFast("CREATE TABLE IF NOT EXISTS download_queue(uid INTEGER, type INTEGER, date INTEGER, data BLOB, PRIMARY KEY (uid, type));").stepThis().dispose();
                     database.executeFast("CREATE INDEX IF NOT EXISTS type_date_idx_download_queue ON download_queue(type, date);").stepThis().dispose();
 
+                    database.executeFast("CREATE TABLE IF NOT EXISTS dialog_settings(did INTEGER PRIMARY KEY, flags INTEGER);").stepThis().dispose();
+
                     database.executeFast("CREATE INDEX IF NOT EXISTS send_state_idx_messages ON messages(mid, send_state, date) WHERE mid < 0 AND send_state = 1;").stepThis().dispose();
+
+                    database.executeFast("CREATE INDEX IF NOT EXISTS unread_count_idx_dialogs ON dialogs(unread_count);").stepThis().dispose();
 
                     database.executeFast("UPDATE messages SET send_state = 2 WHERE mid < 0 AND send_state = 1").stepThis().dispose();
 
-                    try {
-                        database.executeFast("ALTER TABLE dialogs ADD COLUMN flags INTEGER NOT NULL default 0;").stepThis().dispose();
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-
-                    database.executeFast("CREATE INDEX IF NOT EXISTS unread_count_flags_idx_dialogs ON dialogs(unread_count, flags);").stepThis().dispose();
-
-                    database.executeFast("PRAGMA user_version = 3").stepThis().dispose();
+                    database.executeFast("PRAGMA user_version = 4").stepThis().dispose();
                     storageQueue.postRunnable(new Runnable() {
                         @Override
                         public void run() {
-                            String ids = "";
+                            ArrayList<Integer> ids = new ArrayList<Integer>();
                             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
                             Map<String, ?> values = preferences.getAll();
                             for (Map.Entry<String, ?> entry : values.entrySet()) {
@@ -231,15 +227,25 @@ public class MessagesStorage {
                                     Integer value = (Integer)entry.getValue();
                                     if (value == 2) {
                                         key = key.replace("notify2_", "");
-                                        if (ids.length() != 0) {
-                                            ids += ",";
+                                        try {
+                                            ids.add(Integer.parseInt(key));
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
                                         }
-                                        ids += key;
                                     }
                                 }
                             }
                             try {
-                                database.executeFast("UPDATE dialogs SET flags = 1 WHERE did IN (" + ids + ");").stepThis().dispose();
+                                database.beginTransaction();
+                                SQLitePreparedStatement state = database.executeFast("REPLACE INTO dialog_settings VALUES(?, ?)");
+                                for (Integer id : ids) {
+                                    state.requery();
+                                    state.bindLong(1, id);
+                                    state.bindInteger(2, 1);
+                                    state.step();
+                                }
+                                state.dispose();
+                                database.commitTransaction();
                             } catch (Exception e) {
                                 FileLog.e("tmessages", e);
                             }
@@ -345,7 +351,7 @@ public class MessagesStorage {
             @Override
             public void run() {
                 try {
-                    database.executeFast("UPDATE dialogs SET flags = " + flags + " WHERE did = " + did).stepThis().dispose();
+                    database.executeFast(String.format(Locale.US, "REPLACE INTO dialog_settings VALUES(%d, %d)", did, flags)).stepThis().dispose();
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
@@ -359,16 +365,18 @@ public class MessagesStorage {
             public void run() {
                 try {
                     final HashMap<Long, Integer> pushDialogs = new HashMap<Long, Integer>();
-                    SQLiteCursor cursor = database.queryFinalized("SELECT did, unread_count FROM dialogs WHERE unread_count != 0 AND flags != 1");
+                    SQLiteCursor cursor = database.queryFinalized("SELECT d.did, d.unread_count, s.flags FROM dialogs as d LEFT JOIN dialog_settings as s ON d.did = s.did WHERE d.unread_count != 0");
                     String ids = "";
                     while (cursor.next()) {
-                        long did = cursor.longValue(0);
-                        int count = cursor.intValue(1);
-                        pushDialogs.put(did, count);
-                        if (ids.length() != 0) {
-                            ids += ",";
+                        if (cursor.isNull(2) || cursor.intValue(2) != 1) {
+                            long did = cursor.longValue(0);
+                            int count = cursor.intValue(1);
+                            pushDialogs.put(did, count);
+                            if (ids.length() != 0) {
+                                ids += ",";
+                            }
+                            ids += did;
                         }
-                        ids += did;
                     }
                     cursor.dispose();
 
@@ -2237,12 +2245,11 @@ public class MessagesStorage {
                     buffersStorage.reuseFreeBuffer(data3);
 
                     if (dialog != null) {
-                        state = database.executeFast("REPLACE INTO dialogs VALUES(?, ?, ?, ?, ?)");
+                        state = database.executeFast("REPLACE INTO dialogs(did, date, unread_count, last_mid) VALUES(?, ?, ?, ?)");
                         state.bindLong(1, dialog.id);
                         state.bindInteger(2, dialog.last_message_date);
                         state.bindInteger(3, dialog.unread_count);
                         state.bindInteger(4, dialog.top_message);
-                        state.bindInteger(5, dialog.flags);
                         state.step();
                         state.dispose();
                     }
@@ -2572,18 +2579,16 @@ public class MessagesStorage {
             state3.dispose();
             state4.dispose();
 
-            state = database.executeFast("REPLACE INTO dialogs VALUES(?, ?, ?, ?, ?)");
+            state = database.executeFast("REPLACE INTO dialogs(did, date, unread_count, last_mid) VALUES(?, ?, ?, ?)");
             for (HashMap.Entry<Long, TLRPC.Message> pair : messagesMap.entrySet()) {
                 Long key = pair.getKey();
 
                 int dialog_date = 0;
                 int old_unread_count = 0;
-                int old_flags = 0;
-                SQLiteCursor cursor = database.queryFinalized("SELECT date, unread_count, flags FROM dialogs WHERE did = " + key);
+                SQLiteCursor cursor = database.queryFinalized("SELECT date, unread_count FROM dialogs WHERE did = " + key);
                 if (cursor.next()) {
                     dialog_date = cursor.intValue(0);
                     old_unread_count = cursor.intValue(1);
-                    old_flags = cursor.intValue(2);
                 }
                 cursor.dispose();
 
@@ -2607,7 +2612,6 @@ public class MessagesStorage {
                 }
                 state.bindInteger(3, old_unread_count + unread_count);
                 state.bindInteger(4, messageId);
-                state.bindInteger(5, old_flags);
                 state.step();
             }
             state.dispose();
@@ -3043,14 +3047,13 @@ public class MessagesStorage {
             ArrayList<Integer> usersToLoad = new ArrayList<Integer>();
             ArrayList<Integer> chatsToLoad = new ArrayList<Integer>();
             ArrayList<Integer> encryptedToLoad = new ArrayList<Integer>();
-            cursor = database.queryFinalized(String.format(Locale.US, "SELECT d.did, d.last_mid, d.unread_count, d.date, m.data, m.read_state, m.mid, m.send_state, d.flags FROM dialogs as d LEFT JOIN messages as m ON d.last_mid = m.mid WHERE d.did IN(%s)", ids));
+            cursor = database.queryFinalized(String.format(Locale.US, "SELECT d.did, d.last_mid, d.unread_count, d.date, m.data, m.read_state, m.mid, m.send_state FROM dialogs as d LEFT JOIN messages as m ON d.last_mid = m.mid WHERE d.did IN(%s)", ids));
             while (cursor.next()) {
                 TLRPC.TL_dialog dialog = new TLRPC.TL_dialog();
                 dialog.id = cursor.longValue(0);
                 dialog.top_message = cursor.intValue(1);
                 dialog.unread_count = cursor.intValue(2);
                 dialog.last_message_date = cursor.intValue(3);
-                dialog.flags = cursor.intValue(8);
                 dialogs.dialogs.add(dialog);
 
                 ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(4));
@@ -3315,14 +3318,13 @@ public class MessagesStorage {
                     usersToLoad.add(UserConfig.getClientUserId());
                     ArrayList<Integer> chatsToLoad = new ArrayList<Integer>();
                     ArrayList<Integer> encryptedToLoad = new ArrayList<Integer>();
-                    SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT d.did, d.last_mid, d.unread_count, d.date, m.data, m.read_state, m.mid, m.send_state, d.flags FROM dialogs as d LEFT JOIN messages as m ON d.last_mid = m.mid ORDER BY d.date DESC LIMIT %d,%d", offset, count));
+                    SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT d.did, d.last_mid, d.unread_count, d.date, m.data, m.read_state, m.mid, m.send_state FROM dialogs as d LEFT JOIN messages as m ON d.last_mid = m.mid ORDER BY d.date DESC LIMIT %d,%d", offset, count));
                     while (cursor.next()) {
                         TLRPC.TL_dialog dialog = new TLRPC.TL_dialog();
                         dialog.id = cursor.longValue(0);
                         dialog.top_message = cursor.intValue(1);
                         dialog.unread_count = cursor.intValue(2);
                         dialog.last_message_date = cursor.intValue(3);
-                        dialog.flags = cursor.intValue(8);
                         dialogs.dialogs.add(dialog);
 
                         ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(4));
@@ -3498,12 +3500,14 @@ public class MessagesStorage {
 
                     if (!dialogs.dialogs.isEmpty()) {
                         SQLitePreparedStatement state = database.executeFast("REPLACE INTO messages VALUES(?, ?, ?, ?, ?, ?, ?, ?)");
-                        SQLitePreparedStatement state2 = database.executeFast("REPLACE INTO dialogs VALUES(?, ?, ?, ?, ?)");
+                        SQLitePreparedStatement state2 = database.executeFast("REPLACE INTO dialogs(did, date, unread_count, last_mid) VALUES(?, ?, ?, ?)");
                         SQLitePreparedStatement state3 = database.executeFast("REPLACE INTO media VALUES(?, ?, ?, ?)");
+                        SQLitePreparedStatement state4 = database.executeFast("REPLACE INTO dialog_settings VALUES(?, ?)");
 
                         for (TLRPC.TL_dialog dialog : dialogs.dialogs) {
                             state.requery();
                             state2.requery();
+                            state4.requery();
                             int uid = dialog.peer.user_id;
                             if (uid == 0) {
                                 uid = -dialog.peer.chat_id;
@@ -3526,11 +3530,11 @@ public class MessagesStorage {
                             state2.bindInteger(2, message.date);
                             state2.bindInteger(3, dialog.unread_count);
                             state2.bindInteger(4, dialog.top_message);
-                            if (dialog.notify_settings.mute_until != 0) {
-                                dialog.flags = 1;
-                            }
-                            state2.bindInteger(5, dialog.flags);
                             state2.step();
+
+                            state4.bindLong(1, uid);
+                            state4.bindInteger(2, dialog.notify_settings.mute_until != 0 ? 1 : 0);
+                            state4.step();
 
                             if (message.media instanceof TLRPC.TL_messageMediaVideo || message.media instanceof TLRPC.TL_messageMediaPhoto) {
                                 state3.requery();
@@ -3545,6 +3549,7 @@ public class MessagesStorage {
                         state.dispose();
                         state2.dispose();
                         state3.dispose();
+                        state4.dispose();
                     }
 
                     if (!dialogs.users.isEmpty()) {

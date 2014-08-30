@@ -8886,7 +8886,6 @@ public class TLRPC {
         public int last_message_date;
         public long id;
         public int last_read;
-        public int flags;
 
         public void readParams(AbsSerializedData stream) {
             peer = (Peer)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
