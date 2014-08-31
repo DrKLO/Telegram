@@ -2791,7 +2791,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 MediaController.saveFile(fileName, selectedObject.messageOwner.attachPath, getParentActivity(), 1, null);
             } else if (selectedObject.type == 1) {
                 MediaController.saveFile(fileName, selectedObject.messageOwner.attachPath, getParentActivity(), 0, null);
-            } else if (selectedObject.type == 8) {
+            } else if (selectedObject.type == 8 || selectedObject.type == 9) {
                 MediaController.saveFile(fileName, selectedObject.messageOwner.attachPath, getParentActivity(), 2, selectedObject.messageOwner.media.document.file_name);
             }
         } else if (option == 5) {

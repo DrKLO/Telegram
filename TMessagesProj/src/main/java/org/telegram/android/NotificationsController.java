@@ -447,7 +447,7 @@ public class NotificationsController {
                 } else if (needVibrate == 0 || needVibrate == 5) {
                     mBuilder.setDefaults(NotificationCompat.DEFAULT_VIBRATE);
                 } else if (needVibrate == 3) {
-                    mBuilder.setVibrate(new long[]{0, 300, 100, 300});
+                    mBuilder.setVibrate(new long[]{0, 500});
                 }
             } else {
                 mBuilder.setVibrate(new long[]{0, 0});
