@@ -81,8 +81,6 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Aniways.init(this);
-
         ApplicationLoader.postInitApplication();
 
         this.setTheme(R.style.Theme_TMessages);

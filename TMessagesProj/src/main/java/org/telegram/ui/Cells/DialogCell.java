@@ -366,6 +366,11 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
     }
 
     @Override
+    public AniwaysLoadingImageSpansContainer getLoadingImageSpansContainer() {
+        return this.mLoadingImageSpansContainer;
+    }
+
+    @Override
     protected void onDetachedFromWindow() {
         this.mLoadingImageSpansContainer.onDetachFromWindowCalled();
 

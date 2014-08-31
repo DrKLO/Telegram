@@ -431,8 +431,6 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Aniways.init(this.getActivity());
-
         setHasOptionsMenu(true);
         Display display = parentActivity.getWindowManager().getDefaultDisplay();
         if(android.os.Build.VERSION.SDK_INT < 13) {

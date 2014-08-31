@@ -58,8 +58,6 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
 
                     AwakeService.startService();
 
-                    Aniways.init(context);
-
                     try {
                         String key = intent.getStringExtra("loc_key");
                         if ("DC_UPDATE".equals(key)) {

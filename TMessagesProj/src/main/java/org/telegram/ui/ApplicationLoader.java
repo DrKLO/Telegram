@@ -24,6 +24,7 @@ import android.os.AsyncTask;
 import android.os.Handler;
 import android.view.ViewConfiguration;
 
+import com.aniways.Aniways;
 import com.aniways.Utils;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
@@ -119,6 +120,9 @@ public class ApplicationLoader extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+
+        Aniways.init(this);
+
         lastPauseTime = System.currentTimeMillis();
         applicationContext = getApplicationContext();
         NativeLoader.initNativeLibs(this);

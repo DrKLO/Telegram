@@ -43,8 +43,6 @@ public class IntroActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Aniways.init(this);
-
         setContentView(R.layout.intro_layout);
 
         if (LocaleController.isRTL) {

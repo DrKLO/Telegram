@@ -33,8 +33,6 @@ public class AwakeService extends Service {
     public void onCreate() {
         super.onCreate();
 
-        Aniways.init(this);
-
         FileLog.e("tmessages", "service started");
         check();
         isStarted = true;
