@@ -131,7 +131,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
                 uploadingAvatar = AndroidUtilities.getCacheDir() + "/" + bigPhoto.location.volume_id + "_" + bigPhoto.location.local_id + ".jpg";
                 NotificationCenter.getInstance().addObserver(AvatarUpdater.this, NotificationCenter.FileDidUpload);
                 NotificationCenter.getInstance().addObserver(AvatarUpdater.this, NotificationCenter.FileDidFailUpload);
-                FileLoader.getInstance().uploadFile(uploadingAvatar, false);
+                FileLoader.getInstance().uploadFile(uploadingAvatar, false, true);
             }
         }
     }

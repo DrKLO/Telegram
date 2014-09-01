@@ -766,9 +766,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             String location = AndroidUtilities.getCacheDir() + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
             putToDelayedMessages(location, message);
             if (message.sendRequest != null) {
-                FileLoader.getInstance().uploadFile(location, false);
+                FileLoader.getInstance().uploadFile(location, false, true);
             } else {
-                FileLoader.getInstance().uploadFile(location, true);
+                FileLoader.getInstance().uploadFile(location, true, true);
             }
         } else if (message.type == 1) {
             if (message.sendRequest != null) {
@@ -781,14 +781,14 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 if (media.thumb == null) {
                     String location = AndroidUtilities.getCacheDir() + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
                     putToDelayedMessages(location, message);
-                    FileLoader.getInstance().uploadFile(location, false);
+                    FileLoader.getInstance().uploadFile(location, false, true);
                 } else {
                     String location = message.videoLocation.path;
                     if (location == null) {
                         location = AndroidUtilities.getCacheDir() + "/" + message.videoLocation.id + ".mp4";
                     }
                     putToDelayedMessages(location, message);
-                    FileLoader.getInstance().uploadFile(location, false);
+                    FileLoader.getInstance().uploadFile(location, false, false);
                 }
             } else {
                 String location = message.videoLocation.path;
@@ -796,7 +796,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     location = AndroidUtilities.getCacheDir() + "/" + message.videoLocation.id + ".mp4";
                 }
                 putToDelayedMessages(location, message);
-                FileLoader.getInstance().uploadFile(location, true);
+                FileLoader.getInstance().uploadFile(location, true, false);
             }
         } else if (message.type == 2) {
             TLRPC.InputMedia media = null;
@@ -808,23 +808,23 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             if (message.sendRequest != null && media.thumb == null && message.location != null) {
                 String location = AndroidUtilities.getCacheDir() + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
                 putToDelayedMessages(location, message);
-                FileLoader.getInstance().uploadFile(location, false);
+                FileLoader.getInstance().uploadFile(location, false, true);
             } else {
                 String location = message.documentLocation.path;
                 putToDelayedMessages(location, message);
                 if (message.sendRequest != null) {
-                    FileLoader.getInstance().uploadFile(location, false);
+                    FileLoader.getInstance().uploadFile(location, false, false);
                 } else {
-                    FileLoader.getInstance().uploadFile(location, true);
+                    FileLoader.getInstance().uploadFile(location, true, false);
                 }
             }
         } else if (message.type == 3) {
             String location = message.audioLocation.path;
             putToDelayedMessages(location, message);
             if (message.sendRequest != null) {
-                FileLoader.getInstance().uploadFile(location, false);
+                FileLoader.getInstance().uploadFile(location, false, true);
             } else {
-                FileLoader.getInstance().uploadFile(location, true);
+                FileLoader.getInstance().uploadFile(location, true, true);
             }
         }
     }

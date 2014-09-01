@@ -29,6 +29,7 @@ public class FileLoader {
     private volatile DispatchQueue fileLoaderQueue = new DispatchQueue("fileUploadQueue");
 
     private LinkedList<FileUploadOperation> uploadOperationQueue = new LinkedList<FileUploadOperation>();
+    private LinkedList<FileUploadOperation> uploadSmallOperationQueue = new LinkedList<FileUploadOperation>();
     private LinkedList<FileLoadOperation> loadOperationQueue = new LinkedList<FileLoadOperation>();
     private LinkedList<FileLoadOperation> audioLoadOperationQueue = new LinkedList<FileLoadOperation>();
     private LinkedList<FileLoadOperation> photoLoadOperationQueue = new LinkedList<FileLoadOperation>();
@@ -43,6 +44,7 @@ public class FileLoader {
     private int currentAudioLoadOperationsCount = 0;
     private int currentPhotoLoadOperationsCount = 0;
     private int currentUploadOperationsCount = 0;
+    private int currentUploadSmallOperationsCount = 0;
 
     private static volatile FileLoader Instance = null;
     public static FileLoader getInstance() {
@@ -62,18 +64,16 @@ public class FileLoader {
         fileLoaderQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
+                FileUploadOperation operation = null;
                 if (!enc) {
-                    FileUploadOperation operation = uploadOperationPaths.get(location);
-                    if (operation != null) {
-                        uploadOperationQueue.remove(operation);
-                        operation.cancel();
-                    }
+                    operation = uploadOperationPaths.get(location);
                 } else {
-                    FileUploadOperation operation = uploadOperationPathsEnc.get(location);
-                    if (operation != null) {
-                        uploadOperationQueue.remove(operation);
-                        operation.cancel();
-                    }
+                    operation = uploadOperationPathsEnc.get(location);
+                }
+                if (operation != null) {
+                    uploadOperationQueue.remove(operation);
+                    uploadSmallOperationQueue.remove(operation);
+                    operation.cancel();
                 }
             }
         });
@@ -83,7 +83,7 @@ public class FileLoader {
         return fileProgresses.get(location);
     }
 
-    public void uploadFile(final String location, final boolean encrypted) {
+    public void uploadFile(final String location, final boolean encrypted, final boolean small) {
         fileLoaderQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -113,12 +113,23 @@ public class FileLoader {
                                 } else {
                                     uploadOperationPaths.remove(location);
                                 }
-                                currentUploadOperationsCount--;
-                                if (currentUploadOperationsCount < 2) {
-                                    FileUploadOperation operation = uploadOperationQueue.poll();
-                                    if (operation != null) {
-                                        currentUploadOperationsCount++;
-                                        operation.start();
+                                if (small) {
+                                    currentUploadSmallOperationsCount--;
+                                    if (currentUploadSmallOperationsCount < 2) {
+                                        FileUploadOperation operation = uploadSmallOperationQueue.poll();
+                                        if (operation != null) {
+                                            currentUploadSmallOperationsCount++;
+                                            operation.start();
+                                        }
+                                    }
+                                } else {
+                                    currentUploadOperationsCount--;
+                                    if (currentUploadOperationsCount < 2) {
+                                        FileUploadOperation operation = uploadOperationQueue.poll();
+                                        if (operation != null) {
+                                            currentUploadOperationsCount++;
+                                            operation.start();
+                                        }
                                     }
                                 }
                                 if (delegate != null) {
@@ -153,12 +164,23 @@ public class FileLoader {
                                         fileProgresses.remove(location);
                                     }
                                 });
-                                currentUploadOperationsCount--;
-                                if (currentUploadOperationsCount < 2) {
-                                    FileUploadOperation operation = uploadOperationQueue.poll();
-                                    if (operation != null) {
-                                        currentUploadOperationsCount++;
-                                        operation.start();
+                                if (small) {
+                                    currentUploadSmallOperationsCount--;
+                                    if (currentUploadSmallOperationsCount < 2) {
+                                        FileUploadOperation operation = uploadSmallOperationQueue.poll();
+                                        if (operation != null) {
+                                            currentUploadSmallOperationsCount++;
+                                            operation.start();
+                                        }
+                                    }
+                                } else {
+                                    currentUploadOperationsCount--;
+                                    if (currentUploadOperationsCount < 2) {
+                                        FileUploadOperation operation = uploadOperationQueue.poll();
+                                        if (operation != null) {
+                                            currentUploadOperationsCount++;
+                                            operation.start();
+                                        }
                                     }
                                 }
                             }
@@ -175,11 +197,20 @@ public class FileLoader {
                         }
                     }
                 };
-                if (currentUploadOperationsCount < 2) {
-                    currentUploadOperationsCount++;
-                    operation.start();
+                if (small) {
+                    if (currentUploadSmallOperationsCount < 2) {
+                        currentUploadSmallOperationsCount++;
+                        operation.start();
+                    } else {
+                        uploadSmallOperationQueue.add(operation);
+                    }
                 } else {
-                    uploadOperationQueue.add(operation);
+                    if (currentUploadOperationsCount < 2) {
+                        currentUploadOperationsCount++;
+                        operation.start();
+                    } else {
+                        uploadOperationQueue.add(operation);
+                    }
                 }
             }
         });
@@ -296,10 +327,30 @@ public class FileLoader {
                 if (fileName == null || fileName.contains("" + Integer.MIN_VALUE)) {
                     return;
                 }
-                if (loadOperationPaths.containsKey(fileName)) {
+
+                FileLoadOperation operation = null;
+                operation = loadOperationPaths.get(fileName);
+                if (operation != null) {
+                    if (force) {
+                        LinkedList<FileLoadOperation> downloadQueue = null;
+                        if (audio != null) {
+                            downloadQueue = audioLoadOperationQueue;
+                        } else if (location != null) {
+                            downloadQueue = photoLoadOperationQueue;
+                        } else {
+                            downloadQueue = loadOperationQueue;
+                        }
+                        if (downloadQueue != null) {
+                            int index = downloadQueue.indexOf(operation);
+                            if (index != -1) {
+                                downloadQueue.remove(index);
+                                downloadQueue.add(0, operation);
+                            }
+                        }
+                    }
                     return;
                 }
-                FileLoadOperation operation = null;
+
                 if (video != null) {
                     operation = new FileLoadOperation(video);
                 } else if (location != null) {

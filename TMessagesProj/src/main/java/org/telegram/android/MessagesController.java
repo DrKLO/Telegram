@@ -909,7 +909,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     public void uploadAndApplyUserAvatar(TLRPC.PhotoSize bigPhoto) {
         if (bigPhoto != null) {
             uploadingAvatar = AndroidUtilities.getCacheDir() + "/" + bigPhoto.location.volume_id + "_" + bigPhoto.location.local_id + ".jpg";
-            FileLoader.getInstance().uploadFile(uploadingAvatar, false);
+            FileLoader.getInstance().uploadFile(uploadingAvatar, false, true);
         }
     }
 

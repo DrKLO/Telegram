@@ -583,9 +583,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             queue = documentDownloadQueue;
         }
         queue.addAll(objects);
-        for (DownloadObject downloadObject : queue) {
-            String path = FileLoader.getAttachFileName(downloadObject.object);
-            downloadQueueKeys.put(path, downloadObject);
+        for (int a = 0; a < queue.size(); a++) {
+            DownloadObject downloadObject = queue.get(a);
+
+            boolean added = true;
             if (downloadObject.object instanceof TLRPC.Audio) {
                 FileLoader.getInstance().loadFile((TLRPC.Audio)downloadObject.object, false);
             } else if (downloadObject.object instanceof TLRPC.PhotoSize) {
@@ -594,6 +595,15 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 FileLoader.getInstance().loadFile((TLRPC.Video)downloadObject.object);
             } else if (downloadObject.object instanceof TLRPC.Document) {
                 FileLoader.getInstance().loadFile((TLRPC.Document)downloadObject.object);
+            } else {
+                added = false;
+                queue.remove(a);
+                a--;
+            }
+            if (added) {
+                String path = FileLoader.getAttachFileName(downloadObject.object);
+                downloadQueueKeys.put(path, downloadObject);
+                FileLog.e("tmessages", "download file " + path);
             }
         }
     }
@@ -617,6 +627,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private void checkDownloadFinished(String fileName, boolean canceled) {
         DownloadObject downloadObject = downloadQueueKeys.get(fileName);
         if (downloadObject != null) {
+            FileLog.e("tmessages", "check download finished " + fileName + " canceled = " + canceled);
             downloadQueueKeys.remove(fileName);
             if (!canceled) {
                 MessagesStorage.getInstance().removeFromDownloadQueue(downloadObject.id, downloadObject.type);
