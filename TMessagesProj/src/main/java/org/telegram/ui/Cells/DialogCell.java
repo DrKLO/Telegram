@@ -151,7 +151,7 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
         }
 
         if (cellLayout == null) {
-            cellLayout = new DialogCellLayout();
+            cellLayout = new DialogCellLayout(this);
         }
     }
 
@@ -371,6 +371,17 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
     }
 
     @Override
+    public void removeTextWatchers() {
+
+    }
+
+    @Override
+    public void addBackTheTextWatchers() {
+        //TODO: temp!!
+        setDialog(currentDialog);
+    }
+
+    @Override
     protected void onDetachedFromWindow() {
         this.mLoadingImageSpansContainer.onDetachFromWindowCalled();
 
@@ -378,6 +389,7 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
     }
 
     private class DialogCellLayout {
+        private final IAniwaysTextContainer mTextContainer;
         private int nameLeft;
         private int nameTop = Utilities.dp(10);
         private int nameWidth;
@@ -422,6 +434,10 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
                 return null;
             }
             return (Spannable) messageLayout.getText();
+        }
+
+        public DialogCellLayout(IAniwaysTextContainer textContainer){
+            mTextContainer = textContainer;
         }
 
         public void build(int width, int height) {
@@ -728,7 +744,7 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
             }
 
             // TODO: need to put a textcontainer there, make this a text container
-            messageString = Aniways.decodeMessage(messageString, new AniwaysIconInfoDisplayer(), null, true);
+            messageString = Aniways.decodeMessage(messageString, new AniwaysIconInfoDisplayer(), this.mTextContainer, true);
             CharSequence messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - Utilities.dp(12), TextUtils.TruncateAt.END);
             Spannable oldText = this.getText();
             messageLayout = new StaticLayout(messageStringFinal, currentMessagePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);

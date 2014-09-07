@@ -17,7 +17,7 @@ import android.text.style.ClickableSpan;
 import android.view.MotionEvent;
 import android.view.View;
 
-import com.aniways.AniwaysIconInfoSpan;
+import com.aniways.IAniwaysIconInfoSpan;
 import com.aniways.AniwaysLoadingImageSpan;
 import com.aniways.AniwaysLoadingImageSpansContainer;
 import com.aniways.IAniwaysTextContainer;
@@ -34,7 +34,7 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     private int textX, textY;
     private int totalHeight = 0;
     private ClickableSpan pressedLink;
-    private AniwaysIconInfoSpan pressedIcon;
+    private IAniwaysIconInfoSpan pressedIcon;
 
     private int lastVisibleBlockNum = 0;
     private int firstVisibleBlockNum = 0;
@@ -53,7 +53,7 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
 
             @Override
             public void onSuccess() {
-                currentMessageObject.generateLayout();
+                currentMessageObject.generateLayout(ChatMessageCell.this);
                 setMessageObject(currentMessageObject, true);
             }
         });
@@ -79,7 +79,7 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
                         if (left <= x && left + block.textLayout.getLineWidth(line) >= x) {
                             Spannable buffer = (Spannable)currentMessageObject.getAniwaysDecodedMessageTextBigIcons(this);
                             ClickableSpan[] link = buffer.getSpans(off, off, ClickableSpan.class);
-                            AniwaysIconInfoSpan[] iconInfos = buffer.getSpans(off, off, AniwaysIconInfoSpan.class);
+                            IAniwaysIconInfoSpan[] iconInfos = buffer.getSpans(off, off, IAniwaysIconInfoSpan.class);
 
                             if (link.length != 0) {
                                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -179,6 +179,10 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     }
 
     private void setMessageObject(MessageObject messageObject, boolean force) {
+        if(messageObject.mtextContainer == null){
+            messageObject.generateLayout(this);
+        }
+
         Spannable oldText = this.getText();
         if (currentMessageObject != messageObject || isUserDataChanged() || force) {
             if (currentMessageObject != messageObject || force) {
@@ -367,6 +371,18 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     @Override
     public AniwaysLoadingImageSpansContainer getLoadingImageSpansContainer() {
         return this.mLoadingImageSpansContainer;
+    }
+
+    @Override
+    public void removeTextWatchers() {
+
+    }
+
+    @Override
+    public void addBackTheTextWatchers() {
+        // TODO: temp!!
+        currentMessageObject.generateLayout(this);
+        setMessageObject(currentMessageObject, true);
     }
 
     @Override

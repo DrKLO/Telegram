@@ -57,6 +57,7 @@ public class MessageObject {
     public int textHeight;
     public int blockHeight = Integer.MAX_VALUE;
     private Editable mDecodedMessageCache;
+    public IAniwaysTextContainer mtextContainer;
 
     public static class TextLayoutBlock {
         public StaticLayout textLayout;
@@ -336,10 +337,14 @@ public class MessageObject {
         int dateMonth = rightNow.get(Calendar.MONTH);
         dateKey = String.format("%d_%02d_%02d", dateYear, dateMonth, dateDay);
 
-        generateLayout();
+        generateLayout(null);
     }
 
     public CharSequence getAniwaysDecodedMessageTextBigIcons(IAniwaysTextContainer textContainer){
+        if(textContainer == null){
+            return this.messageText;
+        }
+
         if(mDecodedMessageCache == null){
             try {
                 mDecodedMessageCache = Aniways.decodeMessage(this.messageText, new AniwaysIconInfoDisplayer(), textContainer, false);
@@ -408,10 +413,12 @@ public class MessageObject {
         return "";
     }
 
-    public void generateLayout() {
+    public void generateLayout(IAniwaysTextContainer textContainer) {
+
+        this.mtextContainer = textContainer;
 
         // This is used only by the views that display the normal sized icons, so it is OK to assume the large icons here..
-        CharSequence messageTextDecoded = getAniwaysDecodedMessageTextBigIcons(null);
+        CharSequence messageTextDecoded = getAniwaysDecodedMessageTextBigIcons(textContainer);
 
         if (type != 0 && type != 1 && type != 8 && type != 9 || messageOwner.to_id == null || messageTextDecoded == null || messageTextDecoded.length() == 0) {
             return;
