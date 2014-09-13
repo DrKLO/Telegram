@@ -109,7 +109,6 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         }
         if (sizeNotifierRelativeLayout != null) {
             sizeNotifierRelativeLayout.delegate = null;
-            sizeNotifierRelativeLayout = null;
         }
     }
 
@@ -451,12 +450,16 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 currentHeight = keyboardHeight;
             }
             emojiPopup.setHeight(View.MeasureSpec.makeMeasureSpec(currentHeight, View.MeasureSpec.EXACTLY));
-            emojiPopup.setWidth(View.MeasureSpec.makeMeasureSpec(sizeNotifierRelativeLayout.getWidth(), View.MeasureSpec.EXACTLY));
+            if (sizeNotifierRelativeLayout != null) {
+                emojiPopup.setWidth(View.MeasureSpec.makeMeasureSpec(sizeNotifierRelativeLayout.getWidth(), View.MeasureSpec.EXACTLY));
+            }
 
             emojiPopup.showAtLocation(parentActivity.getWindow().getDecorView(), 83, 0, 0);
             if (!keyboardVisible) {
-                sizeNotifierRelativeLayout.setPadding(0, 0, 0, currentHeight);
-                emojiButton.setImageResource(R.drawable.ic_msg_panel_hide);
+                if (sizeNotifierRelativeLayout != null) {
+                    sizeNotifierRelativeLayout.setPadding(0, 0, 0, currentHeight);
+                    emojiButton.setImageResource(R.drawable.ic_msg_panel_hide);
+                }
                 return;
             }
             emojiButton.setImageResource(R.drawable.ic_msg_panel_kb);

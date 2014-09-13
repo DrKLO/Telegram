@@ -419,7 +419,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         if (!updatingInviteText) {
             updatingInviteText = true;
             TLRPC.TL_help_getInviteText req = new TLRPC.TL_help_getInviteText();
-            req.lang_code = Locale.getDefault().getCountry();
+            req.lang_code = LocaleController.getLocaleString(Locale.getDefault());
             if (req.lang_code == null || req.lang_code.length() == 0) {
                 req.lang_code = "en";
             }

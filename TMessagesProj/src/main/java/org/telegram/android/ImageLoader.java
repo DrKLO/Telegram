@@ -21,6 +21,7 @@ import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 
+import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.TLRPC;
@@ -50,9 +51,8 @@ public class ImageLoader {
     private ConcurrentHashMap<String, CacheImage> imageLoadingByUrl = new ConcurrentHashMap<String, CacheImage>();
     private ConcurrentHashMap<String, CacheImage> imageLoadingByKeys = new ConcurrentHashMap<String, CacheImage>();
     private HashMap<Integer, CacheImage> imageLoadingByTag = new HashMap<Integer, CacheImage>();
-    private LinkedList<CacheOutTask> cacheOutTasks = new LinkedList<CacheOutTask>();
     private LinkedList<HttpTask> httpTasks = new LinkedList<HttpTask>();
-    private int currentCacheTasksCount = 0;
+    private DispatchQueue cacheOutQueue = new DispatchQueue("cacheOutQueue");
     private int currentHttpTasksCount = 0;
 
     protected VMRuntimeHack runtimeHack = null;
@@ -84,7 +84,7 @@ public class ImageLoader {
                 httpConnectionStream = httpConnection.getInputStream();
 
                 fileOutputStream = new RandomAccessFile(cacheImage.tempFilePath, "rws");
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 FileLog.e("tmessages", e);
             }
 
@@ -109,7 +109,7 @@ public class ImageLoader {
                         break;
                     }
                 }
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 FileLog.e("tmessages", e);
             }
 
@@ -118,7 +118,7 @@ public class ImageLoader {
                     fileOutputStream.close();
                     fileOutputStream = null;
                 }
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 FileLog.e("tmessages", e);
             }
 
@@ -127,7 +127,7 @@ public class ImageLoader {
                     httpConnectionStream.close();
                 }
                 httpConnectionStream = null;
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 FileLog.e("tmessages", e);
             }
 
@@ -152,15 +152,27 @@ public class ImageLoader {
         }
     }
 
-    private class CacheOutTask extends AsyncTask<Void, Void, BitmapDrawable> {
+    private class CacheOutTask implements Runnable {
+        private Thread runningThread = null;
+        private final Integer sync = 1;
 
         private CacheImage cacheImage = null;
+        private boolean isCancelled = false;
 
         public CacheOutTask(CacheImage cacheImage) {
             this.cacheImage = cacheImage;
         }
 
-        protected BitmapDrawable doInBackground(Void... voids) {
+        @Override
+        public void run() {
+            synchronized (sync) {
+                runningThread = Thread.currentThread();
+                Thread.interrupted();
+                if (isCancelled) {
+                    return;
+                }
+            }
+
             Long mediaId = null;
             Bitmap image = null;
             File cacheFileFinal = null;
@@ -198,8 +210,10 @@ public class ImageLoader {
                     Thread.sleep(delay);
                 }
                 lastCacheOutTime = System.currentTimeMillis();
-                if (isCancelled()) {
-                    return null;
+                synchronized (sync) {
+                    if (isCancelled) {
+                        return;
+                    }
                 }
 
                 BitmapFactory.Options opts = new BitmapFactory.Options();
@@ -235,8 +249,10 @@ public class ImageLoader {
                     opts.inJustDecodeBounds = false;
                     opts.inSampleSize = (int)scaleFactor;
                 }
-                if (isCancelled()) {
-                    return null;
+                synchronized (sync) {
+                    if (isCancelled) {
+                        return;
+                    }
                 }
 
                 if (cacheImage.filter == null || blur) {
@@ -270,31 +286,43 @@ public class ImageLoader {
                             }
                         }
                         if (image != null && blur && bitmapH < 100 && bitmapW < 100) {
-                            Utilities.blurBitmap(image, (int)bitmapW, (int)bitmapH, image.getRowBytes());
+                            Utilities.blurBitmap(image);
                         }
                     }
                     if (runtimeHack != null) {
                         runtimeHack.trackFree(image.getRowBytes() * image.getHeight());
                     }
                 }
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 //don't promt
             }
-            return image != null ? new BitmapDrawable(image) : null;
+            Thread.interrupted();
+            onPostExecute(image != null ? new BitmapDrawable(image) : null);
         }
 
-        @Override
-        protected void onPostExecute(BitmapDrawable bitmapDrawable) {
-            if (bitmapDrawable != null && memCache.get(cacheImage.key) == null) {
-                memCache.put(cacheImage.key, bitmapDrawable);
+        private void onPostExecute(final BitmapDrawable bitmapDrawable) {
+            AndroidUtilities.RunOnUIThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (bitmapDrawable != null && memCache.get(cacheImage.key) == null) {
+                        memCache.put(cacheImage.key, bitmapDrawable);
+                    }
+                    cacheImage.setImageAndClear(bitmapDrawable);
+                }
+            });
+        }
+
+        public void cancel() {
+            synchronized (sync) {
+                try {
+                    isCancelled = true;
+                    if (runningThread != null) {
+                        runningThread.interrupt();
+                    }
+                } catch (Exception e) {
+                    //don't promt
+                }
             }
-            cacheImage.setImageAndClear(bitmapDrawable);
-            runCacheTasks(true);
-        }
-
-        @Override
-        protected void onCancelled() {
-            runCacheTasks(true);
         }
     }
 
@@ -402,8 +430,8 @@ public class ImageLoader {
                 FileLoader.getInstance().cancelLoadFile(fileLocation);
             }
             if (cacheTask != null) {
-                cacheOutTasks.remove(cacheTask);
-                cacheTask.cancel(true);
+                cacheOutQueue.cancelRunnable(cacheTask);
+                cacheTask.cancel();
                 cacheTask = null;
             }
             if (httpTask != null) {
@@ -743,8 +771,7 @@ public class ImageLoader {
                 img.addImageView(imageView);
                 imageLoadingByKeys.put(key, img);
                 img.cacheTask = new CacheOutTask(img);
-                cacheOutTasks.add(img.cacheTask);
-                runCacheTasks(false);
+                cacheOutQueue.postRunnable(img.cacheTask);
             } else {
                 img.url = url;
                 img.fileLocation = fileLocation;
@@ -791,11 +818,10 @@ public class ImageLoader {
                     cacheImage.filter = imageReceiver.getFilter();
                 }
                 imageLoadingByKeys.put(cacheImage.key, cacheImage);
-                cacheOutTasks.add(cacheImage.cacheTask);
+                cacheOutQueue.postRunnable(cacheImage.cacheTask);
             }
             cacheImage.addImageView(imageReceiver);
         }
-        runCacheTasks(false);
     }
 
     private void fileDidFailedLoad(String location) {
@@ -823,21 +849,6 @@ public class ImageLoader {
         }
     }
 
-    private void runCacheTasks(boolean complete) {
-        if (complete) {
-            currentCacheTasksCount--;
-        }
-        while (currentCacheTasksCount < 1 && !cacheOutTasks.isEmpty()) {
-            CacheOutTask task = cacheOutTasks.poll();
-            if (android.os.Build.VERSION.SDK_INT >= 11) {
-                task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
-            } else {
-                task.execute(null, null, null);
-            }
-            currentCacheTasksCount++;
-        }
-    }
-
     public static Bitmap loadBitmap(String path, Uri uri, float maxWidth, float maxHeight) {
         BitmapFactory.Options bmOptions = new BitmapFactory.Options();
         bmOptions.inJustDecodeBounds = true;
@@ -851,7 +862,7 @@ public class ImageLoader {
             } else {
                 try {
                     path = Utilities.getPath(uri);
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     FileLog.e("tmessages", e);
                 }
             }
@@ -865,13 +876,13 @@ public class ImageLoader {
                 parcelFD = ApplicationLoader.applicationContext.getContentResolver().openFileDescriptor(uri, "r");
                 fileDescriptor = parcelFD.getFileDescriptor();
                 BitmapFactory.decodeFileDescriptor(fileDescriptor, null, bmOptions);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 FileLog.e("tmessages", e);
                 try {
                     if (parcelFD != null) {
                         parcelFD.close();
                     }
-                } catch (Exception e2) {
+                } catch (Throwable e2) {
                     FileLog.e("tmessages", e2);
                 }
                 return null;
@@ -912,7 +923,7 @@ public class ImageLoader {
                         matrix.postRotate(270);
                         break;
                 }
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 FileLog.e("tmessages", e);
             }
         }
@@ -924,7 +935,7 @@ public class ImageLoader {
                 if (b != null) {
                     b = Bitmap.createBitmap(b, 0, 0, b.getWidth(), b.getHeight(), matrix, true);
                 }
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 FileLog.e("tmessages", e);
                 ImageLoader.getInstance().clearMemory();
                 if (b == null) {
@@ -940,14 +951,14 @@ public class ImageLoader {
                 if (b != null) {
                     b = Bitmap.createBitmap(b, 0, 0, b.getWidth(), b.getHeight(), matrix, true);
                 }
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 FileLog.e("tmessages", e);
             } finally {
                 try {
                     if (parcelFD != null) {
                         parcelFD.close();
                     }
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     FileLog.e("tmessages", e);
                 }
             }
@@ -1005,7 +1016,7 @@ public class ImageLoader {
                 scaledBitmap.recycle();
             }
             return size;
-        } catch (Exception e) {
+        } catch (Throwable e) {
             return null;
         }
     }

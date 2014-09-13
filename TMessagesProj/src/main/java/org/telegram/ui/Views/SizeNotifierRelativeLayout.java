@@ -15,6 +15,7 @@ import android.graphics.drawable.Drawable;
 import android.widget.RelativeLayout;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 
 public class SizeNotifierRelativeLayout extends RelativeLayout {
 
@@ -39,7 +40,11 @@ public class SizeNotifierRelativeLayout extends RelativeLayout {
     }
 
     public void setBackgroundImage(int resourceId) {
-        backgroundDrawable = getResources().getDrawable(resourceId);
+        try {
+            backgroundDrawable = getResources().getDrawable(resourceId);
+        } catch (Throwable e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     public void setBackgroundImage(Drawable bitmap) {

@@ -18,7 +18,7 @@ public class NotificationCenter {
     public static final int dialogsNeedReload = 4;
     public static final int closeChats = 5;
     public static final int messagesDeleted = 6;
-    public static final int messagesReaded = 7;
+    public static final int messagesRead = 7;
     public static final int messagesDidLoaded = 8;
     public static final int messageReceivedByAck = 9;
     public static final int messageReceivedByServer = 10;

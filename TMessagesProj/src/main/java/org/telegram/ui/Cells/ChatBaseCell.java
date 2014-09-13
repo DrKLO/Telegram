@@ -575,7 +575,7 @@ public class ChatBaseCell extends BaseCell {
                     drawClock = false;
                     drawError = true;
                 } else if (currentMessageObject.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SENT) {
-                    if (!currentMessageObject.messageOwner.unread) {
+                    if (!currentMessageObject.isUnread()) {
                         drawCheck1 = true;
                         drawCheck2 = true;
                     } else {

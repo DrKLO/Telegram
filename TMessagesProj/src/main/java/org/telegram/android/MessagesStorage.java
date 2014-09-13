@@ -32,6 +32,7 @@ import org.telegram.ui.ApplicationLoader;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -1947,6 +1948,56 @@ public class MessagesStorage {
                             }
                         }
                         buffersStorage.reuseFreeBuffer(data);
+
+                        Collections.sort(res.messages, new Comparator<TLRPC.Message>() {
+                            @Override
+                            public int compare(TLRPC.Message lhs, TLRPC.Message rhs) {
+                                if (lhs.id > 0 && rhs.id > 0) {
+                                    if (!forward) {
+                                        if (lhs.id > rhs.id) {
+                                            return -1;
+                                        } else if (lhs.id < rhs.id) {
+                                            return 1;
+                                        }
+                                    } else {
+                                        if (lhs.id < rhs.id) {
+                                            return -1;
+                                        } else if (lhs.id > rhs.id) {
+                                            return 1;
+                                        }
+                                    }
+                                } else if (lhs.id < 0 && rhs.id < 0) {
+                                    if (!forward) {
+                                        if (lhs.id < rhs.id) {
+                                            return -1;
+                                        } else if (lhs.id > rhs.id) {
+                                            return 1;
+                                        }
+                                    } else {
+                                        if (lhs.id > rhs.id) {
+                                            return -1;
+                                        } else if (lhs.id < rhs.id) {
+                                            return 1;
+                                        }
+                                    }
+                                } else {
+                                    if (!forward) {
+                                        if (lhs.date > rhs.date) {
+                                            return -1;
+                                        } else if (lhs.date < rhs.date) {
+                                            return 1;
+                                        }
+                                    } else {
+                                        if (lhs.date < rhs.date) {
+                                            return -1;
+                                        } else if (lhs.date > rhs.date) {
+                                            return 1;
+                                        }
+                                    }
+                                }
+                                return 0;
+                            }
+                        });
                     }
                     cursor.dispose();
 
@@ -2261,9 +2312,6 @@ public class MessagesStorage {
     }
 
     private void putUsersAndChatsInternal(final ArrayList<TLRPC.User> users, final ArrayList<TLRPC.Chat> chats, final boolean withTransaction) {
-        if (Thread.currentThread().getId() != storageQueue.getId()) {
-            throw new RuntimeException("wrong db thread");
-        }
         try {
             if (withTransaction) {
                 database.beginTransaction();

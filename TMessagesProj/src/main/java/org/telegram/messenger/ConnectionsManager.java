@@ -19,6 +19,7 @@ import android.util.Base64;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
+import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.ui.ApplicationLoader;
@@ -410,7 +411,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
                 if (currentDatacenterId != 0 && UserConfig.isClientActivated()) {
                     Datacenter datacenter = datacenterWithId(currentDatacenterId);
-                    if (datacenter.authKey == null) {
+                    if (datacenter == null || datacenter.authKey == null) {
                         currentDatacenterId = 0;
                         datacenters.clear();
                         UserConfig.clearConfig();
@@ -800,7 +801,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 invoke.query = object;
                 invoke.api_id = BuildVars.APP_ID;
                 try {
-                    invoke.lang_code = Locale.getDefault().getCountry();
+                    invoke.lang_code = LocaleController.getLocaleString(Locale.getDefault());
                     invoke.device_model = Build.MANUFACTURER + Build.MODEL;
                     if (invoke.device_model == null) {
                         invoke.device_model = "Android unknown";
@@ -1778,7 +1779,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         req.token = "" + pushSessionId;
         req.app_sandbox = false;
         try {
-            req.lang_code = Locale.getDefault().getCountry();
+            req.lang_code = LocaleController.getLocaleString(Locale.getDefault());
             req.device_model = Build.MANUFACTURER + Build.MODEL;
             if (req.device_model == null) {
                 req.device_model = "Android unknown";

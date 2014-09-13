@@ -345,7 +345,6 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 int maxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(122 + 86 + 24);
                 if (currentNameString == null || !currentNameString.equals(name)) {
                     currentNameString = name;
-                    nameWidth = (int) Math.ceil(namePaint.measureText(currentNameString));
                     nameWidth = Math.min(maxWidth, (int) Math.ceil(namePaint.measureText(currentNameString)));
                     CharSequence str = TextUtils.ellipsize(currentNameString, namePaint, nameWidth, TextUtils.TruncateAt.END);
                     nameLayout = new StaticLayout(str, namePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);

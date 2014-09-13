@@ -492,7 +492,6 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         if (currentMask == lastCheckMask) {
             return;
         }
-        FileLog.e("tmessages", "check download mask = " + currentMask);
         lastCheckMask = currentMask;
         if ((currentMask & AUTODOWNLOAD_MASK_PHOTO) != 0) {
             if (photoDownloadQueue.isEmpty()) {
@@ -582,9 +581,11 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         } else if (type == AUTODOWNLOAD_MASK_DOCUMENT) {
             queue = documentDownloadQueue;
         }
-        queue.addAll(objects);
-        for (int a = 0; a < queue.size(); a++) {
-            DownloadObject downloadObject = queue.get(a);
+        for (DownloadObject downloadObject : objects) {
+            String path = FileLoader.getAttachFileName(downloadObject.object);
+            if (downloadQueueKeys.containsKey(path)) {
+                continue;
+            }
 
             boolean added = true;
             if (downloadObject.object instanceof TLRPC.Audio) {
@@ -597,13 +598,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 FileLoader.getInstance().loadFile((TLRPC.Document)downloadObject.object);
             } else {
                 added = false;
-                queue.remove(a);
-                a--;
             }
             if (added) {
-                String path = FileLoader.getAttachFileName(downloadObject.object);
+                queue.add(downloadObject);
                 downloadQueueKeys.put(path, downloadObject);
-                FileLog.e("tmessages", "download file " + path);
             }
         }
     }
@@ -627,7 +625,6 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private void checkDownloadFinished(String fileName, boolean canceled) {
         DownloadObject downloadObject = downloadQueueKeys.get(fileName);
         if (downloadObject != null) {
-            FileLog.e("tmessages", "check download finished " + fileName + " canceled = " + canceled);
             downloadQueueKeys.remove(fileName);
             if (!canceled) {
                 MessagesStorage.getInstance().removeFromDownloadQueue(downloadObject.id, downloadObject.type);
@@ -1349,6 +1346,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     }
 
     public void startRecording(final long dialog_id) {
+        clenupPlayer(true);
+
         try {
             Vibrator v = (Vibrator) ApplicationLoader.applicationContext.getSystemService(Context.VIBRATOR_SERVICE);
             v.vibrate(20);

@@ -914,6 +914,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     public void deleteMessages(ArrayList<Integer> messages, ArrayList<Long> randoms, TLRPC.EncryptedChat encryptedChat) {
+        if (messages == null) {
+            return;
+        }
         for (Integer id : messages) {
             MessageObject obj = dialogMessage.get(id);
             if (obj != null) {
@@ -2209,7 +2212,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         req.token = regid;
         req.app_sandbox = false;
         try {
-            req.lang_code = Locale.getDefault().getCountry();
+            req.lang_code = LocaleController.getLocaleString(Locale.getDefault());
             req.device_model = Build.MANUFACTURER + Build.MODEL;
             if (req.device_model == null) {
                 req.device_model = "Android unknown";
@@ -3326,7 +3329,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     public void run() {
                         int updateMask = 0;
                         if (!markAsReadMessages.isEmpty()) {
-                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.messagesReaded, markAsReadMessages);
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.messagesRead, markAsReadMessages);
                             NotificationsController.getInstance().processReadMessages(markAsReadMessages, 0, 0, 0, false);
 
                             for (Integer id : markAsReadMessages) {

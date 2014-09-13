@@ -10,7 +10,7 @@
                       android:resizeable="true"
                       android:xlargeScreens="true"/>
 
-    <uses-feature android:glEsVersion="0x00020000" android:required="true"/>
+    <uses-feature android:glEsVersion="0x00020000" android:required="false"/>
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />

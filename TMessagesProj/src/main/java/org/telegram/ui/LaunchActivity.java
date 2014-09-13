@@ -426,6 +426,13 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             pushOpened = true;
         }
         if (!pushOpened && !isNew) {
+            if (fragmentsStack.isEmpty()) {
+                if (!UserConfig.isClientActivated()) {
+                    addFragmentToStack(new LoginActivity());
+                } else {
+                    addFragmentToStack(new MessagesActivity(null));
+                }
+            }
             showLastFragment();
         }
 
@@ -463,7 +470,7 @@ public class LaunchActivity extends ActionBarActivity implements NotificationCen
             ChatActivity fragment = new ChatActivity(args);
             presentFragment(fragment, true);
             if (videoPath != null) {
-                fragment.processSendingVideo(videoPath);
+                fragment.processSendingVideo(videoPath, null, 0, 0, 0, 0);
             }
             if (sendingText != null) {
                 fragment.processSendingText(sendingText);

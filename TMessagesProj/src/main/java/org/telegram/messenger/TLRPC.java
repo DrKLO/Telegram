@@ -4145,7 +4145,10 @@ public class TLRPC {
             stream.readInt32();
             int count = stream.readInt32();
             for (int a = 0; a < count; a++) {
-                sizes.add((PhotoSize)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32()));
+                PhotoSize size = (PhotoSize)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+                if (size != null) {
+                    sizes.add(size);
+                }
             }
         }
 
@@ -8967,6 +8970,7 @@ public class TLRPC {
         public String path;
         public byte[] key;
         public byte[] iv;
+        public boolean estimatedSize;
     }
 
     public static class Document extends TLObject {

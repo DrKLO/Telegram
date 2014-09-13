@@ -432,6 +432,11 @@ public class NotificationsController {
                 }
                 if (choosenSoundPath != null && !choosenSoundPath.equals("NoSound")) {
                     if (choosenSoundPath.equals(defaultPath)) {
+                        /*MediaPlayer mediaPlayer = new MediaPlayer();
+                        mediaPlayer.setAudioStreamType(AudioManager.STREAM_ALARM);
+                        mediaPlayer.setDataSource(ApplicationLoader.applicationContext, Settings.System.DEFAULT_NOTIFICATION_URI);
+                        mediaPlayer.prepare();
+                        mediaPlayer.start();*/
                         mBuilder.setSound(Settings.System.DEFAULT_NOTIFICATION_URI, AudioManager.STREAM_NOTIFICATION);
                     } else {
                         mBuilder.setSound(Uri.parse(choosenSoundPath), AudioManager.STREAM_NOTIFICATION);
@@ -444,10 +449,10 @@ public class NotificationsController {
                     mBuilder.setVibrate(new long[]{0, 0});
                 } else if (needVibrate == 1) {
                     mBuilder.setVibrate(new long[]{0, 100, 0, 100});
-                } else if (needVibrate == 0 || needVibrate == 5) {
+                } else if (needVibrate == 0 || needVibrate == 4) {
                     mBuilder.setDefaults(NotificationCompat.DEFAULT_VIBRATE);
                 } else if (needVibrate == 3) {
-                    mBuilder.setVibrate(new long[]{0, 500});
+                    mBuilder.setVibrate(new long[]{0, 1000});
                 }
             } else {
                 mBuilder.setVibrate(new long[]{0, 0});
@@ -693,9 +698,9 @@ public class NotificationsController {
         }
         if (total_unread_count == 0) {
             popupMessages.clear();
-            showOrUpdateNotification(false);
             NotificationCenter.getInstance().postNotificationName(NotificationCenter.pushMessagesUpdated);
         }
+        showOrUpdateNotification(SystemClock.uptimeMillis() / 1000 < 60);
 
         if (preferences.getBoolean("badgeNumber", true)) {
             setBadge(ApplicationLoader.applicationContext, total_unread_count);

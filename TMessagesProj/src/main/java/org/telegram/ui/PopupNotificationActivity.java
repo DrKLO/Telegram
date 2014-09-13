@@ -158,7 +158,9 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 if (currentMessageObject == null) {
                     return;
                 }
-                NotificationsController.getInstance().popupMessages.remove(currentMessageNum);
+                if (currentMessageNum >= 0 && currentMessageNum < NotificationsController.getInstance().popupMessages.size()) {
+                    NotificationsController.getInstance().popupMessages.remove(currentMessageNum);
+                }
                 MessagesController.getInstance().markDialogAsRead(currentMessageObject.getDialogId(), currentMessageObject.messageOwner.id, Math.max(0, currentMessageObject.messageOwner.id), 0, currentMessageObject.messageOwner.date, true, true);
                 currentMessageObject = null;
                 getNewMessage();

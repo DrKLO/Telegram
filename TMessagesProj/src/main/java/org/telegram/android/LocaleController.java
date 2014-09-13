@@ -296,15 +296,15 @@ public class LocaleController {
         }
     }
 
-    private String getLocaleString(Locale locale) {
+    public static String getLocaleString(Locale locale) {
         if (locale == null) {
-            return "";
+            return "en";
         }
         String languageCode = locale.getLanguage();
         String countryCode = locale.getCountry();
         String variantCode = locale.getVariant();
         if (languageCode.length() == 0 && countryCode.length() == 0) {
-            return "";
+            return "en";
         }
         StringBuilder result = new StringBuilder(11);
         result.append(languageCode);

@@ -55,6 +55,7 @@ import org.telegram.android.MediaController;
 import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationsController;
 import org.telegram.android.SendMessagesHelper;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
@@ -324,7 +325,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.didReceivedNewMessages);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeChats);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagesReaded);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagesRead);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagesDeleted);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.messageReceivedByServer);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.messageReceivedByAck);
@@ -361,7 +362,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didReceivedNewMessages);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagesReaded);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagesRead);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagesDeleted);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messageReceivedByServer);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messageReceivedByAck);
@@ -1330,14 +1331,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                     currentPicturePath = null;
                 }
-                /*if(android.os.Build.VERSION.SDK_INT >= 10) {
+                /*if(android.os.Build.VERSION.SDK_INT >= 18) {
                     Bundle args = new Bundle();
                     args.putString("videoPath", videoPath);
                     VideoEditorActivity fragment = new VideoEditorActivity(args);
                     fragment.setDelegate(this);
                     presentFragment(fragment);
                 } else {*/
-                    processSendingVideo(videoPath);
+                    processSendingVideo(videoPath, null, 0, 0, 0, 0);
                 //}
             } else if (requestCode == 21) {
                 if (data == null || data.getData() == null) {
@@ -1360,8 +1361,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     @Override
-    public void didFinishedVideoConverting(String videoPath) {
-        processSendingVideo(videoPath);
+    public void didStartVideoConverting(String videoPath, String originalPath, long esimatedSize, int duration, int width, int height) {
+        processSendingVideo(videoPath, originalPath, esimatedSize, duration, width, height);
+    }
+
+    @Override
+    public void didAppenedVideoData(String videoPath, long finalSize) {
+        FileLoader.getInstance().checkUploadNewDataAvailable(videoPath, currentEncryptedChat != null, finalSize);
     }
 
     private void showAttachmentError() {
@@ -1599,19 +1605,29 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }).start();
     }
 
-    public void processSendingVideo(final String videoPath) {
+    public void processSendingVideo(final String videoPath, final String originalFile, final long estimatedSize, final int duration, final int width, final int height) {
         if (videoPath == null || videoPath.length() == 0) {
             return;
         }
         new Thread(new Runnable() {
             @Override
             public void run() {
-                String originalPath = videoPath;
+                String originalPath = null;
+                if (originalFile != null) {
+                    originalPath = originalFile;
+                } else {
+                    originalPath = videoPath;
+                }
                 File temp = new File(originalPath);
                 originalPath += temp.length() + "_" + temp.lastModified();
-                TLRPC.TL_video video = (TLRPC.TL_video)MessagesStorage.getInstance().getSentFile(originalPath, currentEncryptedChat == null ? 2 : 5);
+                TLRPC.TL_video video = null;// (TLRPC.TL_video)MessagesStorage.getInstance().getSentFile(originalPath, currentEncryptedChat == null ? 2 : 5);
                 if (video == null) {
-                    Bitmap thumb = ThumbnailUtils.createVideoThumbnail(videoPath, MediaStore.Video.Thumbnails.MINI_KIND);
+                    Bitmap thumb = null;
+                    if (originalFile != null) {
+                        thumb = ThumbnailUtils.createVideoThumbnail(originalFile, MediaStore.Video.Thumbnails.MINI_KIND);
+                    } else {
+                        thumb = ThumbnailUtils.createVideoThumbnail(videoPath, MediaStore.Video.Thumbnails.MINI_KIND);
+                    }
                     TLRPC.PhotoSize size = ImageLoader.scaleAndSaveImage(thumb, 90, 90, 55, currentEncryptedChat != null);
                     if (size == null) {
                         return;
@@ -1622,20 +1638,30 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     video.caption = "";
                     video.mime_type = "video/mp4";
                     video.id = 0;
-                    if (temp != null && temp.exists()) {
-                        video.size = (int) temp.length();
+                    if (estimatedSize != 0) {
+                        video.size = (int)estimatedSize;
+                    } else {
+                        if (temp != null && temp.exists()) {
+                            video.size = (int) temp.length();
+                        }
                     }
-                    UserConfig.lastLocalId--;
                     UserConfig.saveConfig(false);
 
-                    MediaPlayer mp = MediaPlayer.create(ApplicationLoader.applicationContext, Uri.fromFile(new File(videoPath)));
-                    if (mp == null) {
-                        return;
+                    if (duration != 0) {
+                        video.duration = duration / 1000;
+                        video.w = width;
+                        video.h = height;
+                        video.estimatedSize = true;
+                    } else {
+                        MediaPlayer mp = MediaPlayer.create(ApplicationLoader.applicationContext, Uri.fromFile(new File(videoPath)));
+                        if (mp == null) {
+                            return;
+                        }
+                        video.duration = (int) Math.ceil(mp.getDuration() / 1000.0f);
+                        video.w = mp.getVideoWidth();
+                        video.h = mp.getVideoHeight();
+                        mp.release();
                     }
-                    video.duration = (int) Math.ceil(mp.getDuration() / 1000.0f);
-                    video.w = mp.getVideoWidth();
-                    video.h = mp.getVideoHeight();
-                    mp.release();
                 }
                 video.path = videoPath;
 
@@ -1730,7 +1756,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (minDate == 0 || obj.messageOwner.date < minDate) {
                         minDate = obj.messageOwner.date;
                     }
-                    if (!obj.isOut() && obj.messageOwner.unread) {
+                    if (!obj.isOut() && obj.isUnread()) {
                         wasUnread = true;
                     }
                     messagesDict.put(obj.messageOwner.id, obj);
@@ -1948,7 +1974,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             currentMinMsgId = Math.min(obj.messageOwner.id, currentMinMsgId);
                         }
 
-                        if (!obj.isOut() && obj.messageOwner.unread) {
+                        if (!obj.isOut() && obj.isUnread()) {
                             unread_to_load++;
                             currentMarkAsRead = true;
                         }
@@ -2013,7 +2039,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             dateObj.contentType = 7;
                             messages.add(0, dateObj);
                         }
-                        if (!obj.isOut() && obj.messageOwner.unread) {
+                        if (!obj.isOut() && obj.isUnread()) {
                             if (!paused) {
                                 obj.messageOwner.unread = false;
                             }
@@ -2076,7 +2102,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
         } else if (id == NotificationCenter.closeChats) {
             removeSelfFromStack();
-        } else if (id == NotificationCenter.messagesReaded) {
+        } else if (id == NotificationCenter.messagesRead) {
             ArrayList<Integer> markAsReadMessages = (ArrayList<Integer>)args[0];
             boolean updated = false;
             for (Integer ids : markAsReadMessages) {
@@ -2397,7 +2423,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (!messageObject.isUnread() && !messageObject.isFromMe()) {
                     break;
                 }
-                messageObject.messageOwner.unread = false;
+                if (!messageObject.isOut()) {
+                    messageObject.messageOwner.unread = false;
+                }
             }
             readWhenResume = false;
             MessagesController.getInstance().markDialogAsRead(dialog_id, messages.get(0).messageOwner.id, readWithMid, 0, readWithDate, true, false);

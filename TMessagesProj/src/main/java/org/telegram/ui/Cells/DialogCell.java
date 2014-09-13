@@ -20,6 +20,7 @@ import android.text.TextUtils;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.ContactsController;
 import org.telegram.android.Emoji;
@@ -288,10 +289,12 @@ public class DialogCell extends BaseCell {
             broadcastDrawable.draw(canvas);
         }
 
-        canvas.save();
-        canvas.translate(cellLayout.nameLeft, cellLayout.nameTop);
-        cellLayout.nameLayout.draw(canvas);
-        canvas.restore();
+        if (cellLayout.nameLayout != null) {
+            canvas.save();
+            canvas.translate(cellLayout.nameLeft, cellLayout.nameTop);
+            cellLayout.nameLayout.draw(canvas);
+            canvas.restore();
+        }
 
         canvas.save();
         canvas.translate(cellLayout.timeLeft, cellLayout.timeTop);
@@ -530,7 +533,7 @@ public class DialogCell extends BaseCell {
                         drawError = true;
                         drawCount = false;
                     } else if (message.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SENT) {
-                        if (!message.messageOwner.unread) {
+                        if (!message.isUnread()) {
                             drawCheck1 = true;
                             drawCheck2 = true;
                         } else {
@@ -627,7 +630,11 @@ public class DialogCell extends BaseCell {
             }
 
             CharSequence nameStringFinal = TextUtils.ellipsize(nameString.replace("\n", " "), currentNamePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
-            nameLayout = new StaticLayout(nameStringFinal, currentNamePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            try {
+                nameLayout = new StaticLayout(nameStringFinal, currentNamePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
 
             messageWidth = width - AndroidUtilities.dp(88);
             if (!LocaleController.isRTL) {
@@ -680,7 +687,7 @@ public class DialogCell extends BaseCell {
             double widthpx = 0;
             float left = 0;
             if (LocaleController.isRTL) {
-                if (nameLayout.getLineCount() > 0) {
+                if (nameLayout != null && nameLayout.getLineCount() > 0) {
                     left = nameLayout.getLineLeft(0);
                     if (left == 0) {
                         widthpx = Math.ceil(nameLayout.getLineWidth(0));
@@ -699,7 +706,7 @@ public class DialogCell extends BaseCell {
                     }
                 }
             } else {
-                if (nameLayout.getLineCount() > 0) {
+                if (nameLayout != null && nameLayout.getLineCount() > 0) {
                     left = nameLayout.getLineRight(0);
                     if (left == nameWidth) {
                         widthpx = Math.ceil(nameLayout.getLineWidth(0));

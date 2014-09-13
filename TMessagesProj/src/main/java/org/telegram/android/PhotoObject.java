@@ -11,6 +11,7 @@ package org.telegram.android;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.Utilities;
 
@@ -29,14 +30,18 @@ public class PhotoObject {
             opts.inDither = false;
             opts.outWidth = photo.w;
             opts.outHeight = photo.h;
-            image = BitmapFactory.decodeByteArray(photoOwner.bytes, 0, photoOwner.bytes.length, opts);
-            if (image != null) {
-                if (preview == 2) {
-                    Utilities.blurBitmap(image, image.getWidth(), image.getHeight(), image.getRowBytes());
+            try {
+                image = BitmapFactory.decodeByteArray(photoOwner.bytes, 0, photoOwner.bytes.length, opts);
+                if (image != null) {
+                    if (preview == 2) {
+                        Utilities.blurBitmap(image);
+                    }
+                    if (ImageLoader.getInstance().runtimeHack != null) {
+                        ImageLoader.getInstance().runtimeHack.trackFree(image.getRowBytes() * image.getHeight());
+                    }
                 }
-                if (ImageLoader.getInstance().runtimeHack != null) {
-                    ImageLoader.getInstance().runtimeHack.trackFree(image.getRowBytes() * image.getHeight());
-                }
+            } catch (Throwable throwable) {
+                FileLog.e("tmessages", throwable);
             }
         }
     }

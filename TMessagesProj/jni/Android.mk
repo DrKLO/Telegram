@@ -175,7 +175,8 @@ LOCAL_C_INCLUDES    := \
 ./opus/silk/fixed \
 ./opus/celt \
 ./opus/ \
-./opus/opusfile
+./opus/opusfile \
+./libyuv/include
 
 LOCAL_SRC_FILES     += \
 ./libjpeg/jcapimin.c \

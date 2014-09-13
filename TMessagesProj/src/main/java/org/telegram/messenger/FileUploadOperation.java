@@ -41,6 +41,7 @@ public class FileUploadOperation {
     private int fingerprint = 0;
     private boolean isBigFile = false;
     private String fileKey;
+    private int estimatedSize = 0;
     FileInputStream stream;
     MessageDigest mdEnc = null;
 
@@ -50,9 +51,10 @@ public class FileUploadOperation {
         public abstract void didChangedUploadProgress(FileUploadOperation operation, float progress);
     }
 
-    public FileUploadOperation(String location, boolean encrypted) {
+    public FileUploadOperation(String location, boolean encrypted, int estimated) {
         uploadingFilePath = location;
         isEncrypted = encrypted;
+        estimatedSize = estimated;
     }
 
     public void start() {
@@ -60,7 +62,12 @@ public class FileUploadOperation {
             return;
         }
         state = 1;
-        startUploadRequest();
+        Utilities.stageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                startUploadRequest();
+            }
+        });
     }
 
     public void cancel() {
@@ -86,6 +93,22 @@ public class FileUploadOperation {
                 remove(fileKey + "_ivc").commit();
     }
 
+    public void checkNewDataAvailable(final long finalSize) {
+        Utilities.stageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                if (finalSize != 0) {
+                    estimatedSize = 0;
+                    totalFileSize = finalSize;
+                    totalPartsCount = (int) Math.ceil((float) totalFileSize / (float) uploadChunkSize);
+                }
+                if (requestToken == 0) {
+                    startUploadRequest();
+                }
+            }
+        });
+    }
+
     private void startUploadRequest() {
         if (state != 1) {
             return;
@@ -97,7 +120,11 @@ public class FileUploadOperation {
             if (stream == null) {
                 File cacheFile = new File(uploadingFilePath);
                 stream = new FileInputStream(cacheFile);
-                totalFileSize = cacheFile.length();
+                if (estimatedSize != 0) {
+                    totalFileSize = estimatedSize;
+                } else {
+                    totalFileSize = cacheFile.length();
+                }
                 if (totalFileSize > 10 * 1024 * 1024) {
                     isBigFile = true;
                 } else {
@@ -126,7 +153,7 @@ public class FileUploadOperation {
                 long fileSize = preferences.getLong(fileKey + "_size", 0);
                 int currentTime = (int)(System.currentTimeMillis() / 1000);
                 boolean rewrite = false;
-                if (fileSize == totalFileSize) {
+                if (estimatedSize == 0 && fileSize == totalFileSize) {
                     currentFileId = preferences.getLong(fileKey + "_id", 0);
                     int date = preferences.getInt(fileKey + "_time", 0);
                     long uploadedSize = preferences.getLong(fileKey + "_uploaded", 0);
@@ -207,17 +234,19 @@ public class FileUploadOperation {
                         System.arraycopy(iv, 0, ivChange, 0, 32);
                     }
                     currentFileId = Utilities.random.nextLong();
-                    SharedPreferences.Editor editor = preferences.edit();
-                    editor.putInt(fileKey + "_time", currentTime);
-                    editor.putLong(fileKey + "_size", totalFileSize);
-                    editor.putLong(fileKey + "_id", currentFileId);
-                    editor.remove(fileKey + "_uploaded");
-                    if (isEncrypted) {
-                        editor.putString(fileKey + "_iv", Utilities.bytesToHex(iv));
-                        editor.putString(fileKey + "_ivc", Utilities.bytesToHex(ivChange));
-                        editor.putString(fileKey + "_key", Utilities.bytesToHex(key));
+                    if (estimatedSize == 0) {
+                        SharedPreferences.Editor editor = preferences.edit();
+                        editor.putInt(fileKey + "_time", currentTime);
+                        editor.putLong(fileKey + "_size", totalFileSize);
+                        editor.putLong(fileKey + "_id", currentFileId);
+                        editor.remove(fileKey + "_uploaded");
+                        if (isEncrypted) {
+                            editor.putString(fileKey + "_iv", Utilities.bytesToHex(iv));
+                            editor.putString(fileKey + "_ivc", Utilities.bytesToHex(ivChange));
+                            editor.putString(fileKey + "_key", Utilities.bytesToHex(key));
+                        }
+                        editor.commit();
                     }
-                    editor.commit();
                 }
 
                 if (isEncrypted) {
@@ -234,7 +263,7 @@ public class FileUploadOperation {
                         FileLog.e("tmessages", e);
                     }
                 }
-            } else {
+            } else if (estimatedSize == 0) {
                 if (saveInfoTimes >= 4) {
                     saveInfoTimes = 0;
                 }
@@ -250,13 +279,20 @@ public class FileUploadOperation {
                 saveInfoTimes++;
             }
 
+            if (estimatedSize != 0) {
+                long size = stream.getChannel().size();
+                if (currentUploaded + uploadChunkSize > size) {
+                    return;
+                }
+            }
+
             int read = stream.read(readBuffer);
             int toAdd = 0;
             if (isEncrypted && read % 16 != 0) {
                 toAdd += 16 - read % 16;
             }
             ByteBufferDesc sendBuffer = BuffersStorage.getInstance().getFreeBuffer(read + toAdd);
-            if (read != uploadChunkSize || totalPartsCount == currentPartNum + 1) {
+            if (read != uploadChunkSize || estimatedSize == 0 && totalPartsCount == currentPartNum + 1) {
                 isLastPart = true;
             }
             sendBuffer.writeRaw(readBuffer, 0, read);
@@ -274,7 +310,11 @@ public class FileUploadOperation {
                 TLRPC.TL_upload_saveBigFilePart req = new TLRPC.TL_upload_saveBigFilePart();
                 req.file_part = currentPartNum;
                 req.file_id = currentFileId;
-                req.file_total_parts = totalPartsCount;
+                if (estimatedSize != 0) {
+                    req.file_total_parts = -1;
+                } else {
+                    req.file_total_parts = totalPartsCount;
+                }
                 req.bytes = sendBuffer;
                 finalRequest = req;
             } else {

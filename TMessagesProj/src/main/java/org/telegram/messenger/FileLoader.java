@@ -83,7 +83,28 @@ public class FileLoader {
         return fileProgresses.get(location);
     }
 
+    public void checkUploadNewDataAvailable(final String location, final boolean encrypted, final long finalSize) {
+        fileLoaderQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                FileUploadOperation operation = null;
+                if (encrypted) {
+                    operation = uploadOperationPathsEnc.get(location);
+                } else {
+                    operation = uploadOperationPaths.get(location);
+                }
+                if (operation != null) {
+                    operation.checkNewDataAvailable(finalSize);
+                }
+            }
+        });
+    }
+
     public void uploadFile(final String location, final boolean encrypted, final boolean small) {
+        uploadFile(location, encrypted, small, 0);
+    }
+
+    public void uploadFile(final String location, final boolean encrypted, final boolean small, final int estimatedSize) {
         fileLoaderQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -96,7 +117,7 @@ public class FileLoader {
                         return;
                     }
                 }
-                FileUploadOperation operation = new FileUploadOperation(location, encrypted);
+                FileUploadOperation operation = new FileUploadOperation(location, encrypted, estimatedSize);
                 if (encrypted) {
                     uploadOperationPathsEnc.put(location, operation);
                 } else {

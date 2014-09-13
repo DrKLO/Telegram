@@ -80,7 +80,7 @@
     <string name="SdCard">SD-Karte</string>
 
     <!--chat view-->
-    <string name="Invisible">offline</string>
+    <string name="Invisible">unsichtbar</string>
     <string name="Typing">schreibt…</string>
     <string name="Attach">Anhängen</string>
     <string name="IsTyping">schreibt...</string>

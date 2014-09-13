@@ -283,7 +283,7 @@
     <string name="BadgeNumber">Badgenummer</string>
     <string name="Short">Kort</string>
     <string name="Long">Lang</string>
-    <string name="SystemDefault">Standaardinstelling</string>
+    <string name="SystemDefault">Systeem standaard</string>
     <string name="SettingsDefault">Standaardinstelling</string>
     <string name="AutomaticMediaDownload">AUTOMATISCH MEDIA OPHALEN</string>
     <string name="WhenUsingMobileData">Bij mobiel datagebruik</string>

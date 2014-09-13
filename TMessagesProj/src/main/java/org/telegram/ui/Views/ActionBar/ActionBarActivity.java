@@ -619,6 +619,9 @@ public class ActionBarActivity extends Activity {
     }
 
     public void showLastFragment() {
+        if (fragmentsStack.isEmpty()) {
+            return;
+        }
         BaseFragment previousFragment = fragmentsStack.get(fragmentsStack.size() - 1);
         previousFragment.setParentActivity(this);
         View fragmentView = previousFragment.createView(getLayoutInflater(), null);
