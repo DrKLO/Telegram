@@ -732,16 +732,16 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
                 drawCount = false;
             }
 
-            if (checkMessage) {
-                if (messageString == null) {
-                    messageString = "";
-                }
-                String mess = messageString.toString().replace("\n", " ");
-                if (mess.length() > 150) {
-                    mess = mess.substring(0, 150);
-                }
-                messageString = mess;
-            }
+            //if (checkMessage) {
+            //    if (messageString == null) {
+            //        messageString = "";
+            //    }
+            //    String mess = messageString.toString().replace("\n", " ");
+            //    if (mess.length() > 150) {
+            //        mess = mess.substring(0, 150);
+            //    }
+            //    messageString = mess;
+            //}
 
             // TODO: need to put a textcontainer there, make this a text container
             messageString = Aniways.decodeMessage(messageString, new AniwaysIconInfoDisplayer(), this.mTextContainer, true);
