@@ -41,6 +41,7 @@ public class AndroidUtilities {
     public static int statusBarHeight = 0;
     public static float density = 1;
     public static Point displaySize = new Point();
+    private static Boolean isTablet = null;
 
     public static int[] arrColors = {0xffee4928, 0xff41a903, 0xffe09602, 0xff0f94ed, 0xff8f3bf7, 0xfffc4380, 0xff00a1c4, 0xffeb7002};
     public static int[] arrUsersAvatars = {
@@ -268,7 +269,10 @@ public class AndroidUtilities {
     }
 
     public static boolean isTablet() {
-        return (ApplicationLoader.applicationContext.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_LARGE;
+        if (isTablet == null) {
+            isTablet = ApplicationLoader.applicationContext.getResources().getBoolean(R.bool.isTablet);
+        }
+        return isTablet;
     }
 
     public static int getColorIndex(int id) {
