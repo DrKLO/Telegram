@@ -19,13 +19,13 @@ import android.text.TextUtils;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.android.ContactsController;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
 import org.telegram.android.ImageReceiver;
 
 public class ChatOrUserCell extends BaseCell {
@@ -157,12 +157,16 @@ public class ChatOrUserCell extends BaseCell {
             if (user.photo != null) {
                 photo = user.photo.photo_small;
             }
-            placeHolderId = Utilities.getUserAvatarForId(user.id);
+            placeHolderId = AndroidUtilities.getUserAvatarForId(user.id);
         } else if (chat != null) {
             if (chat.photo != null) {
                 photo = chat.photo.photo_small;
             }
-            placeHolderId = Utilities.getGroupAvatarForId(chat.id);
+            if (chat.id > 0) {
+                placeHolderId = AndroidUtilities.getGroupAvatarForId(chat.id);
+            } else {
+                placeHolderId = AndroidUtilities.getBroadcastAvatarForId(chat.id);
+            }
         }
 
         if (mask != 0) {
@@ -339,7 +343,7 @@ public class ChatOrUserCell extends BaseCell {
                 if (chat != null) {
                     nameString2 = chat.title;
                 } else if (user != null) {
-                    nameString2 = Utilities.formatName(user.first_name, user.last_name);
+                    nameString2 = ContactsController.formatName(user.first_name, user.last_name);
                 }
                 nameString = nameString2.replace("\n", " ");
             }

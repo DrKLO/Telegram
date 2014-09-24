@@ -451,7 +451,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             }
             emojiPopup.setHeight(View.MeasureSpec.makeMeasureSpec(currentHeight, View.MeasureSpec.EXACTLY));
             if (sizeNotifierRelativeLayout != null) {
-                emojiPopup.setWidth(View.MeasureSpec.makeMeasureSpec(sizeNotifierRelativeLayout.getWidth(), View.MeasureSpec.EXACTLY));
+                emojiPopup.setWidth(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, View.MeasureSpec.EXACTLY));
             }
 
             emojiPopup.showAtLocation(parentActivity.getWindow().getDecorView(), 83, 0, 0);
@@ -585,7 +585,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         if (emojiPopup != null && emojiPopup.isShowing()) {
             WindowManager wm = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
             final WindowManager.LayoutParams layoutParams = (WindowManager.LayoutParams)emojiPopup.getContentView().getLayoutParams();
-            layoutParams.width = sizeNotifierRelativeLayout.getWidth();
+            layoutParams.width = AndroidUtilities.displaySize.x;
             if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
                 layoutParams.height = keyboardHeightLand;
             } else {

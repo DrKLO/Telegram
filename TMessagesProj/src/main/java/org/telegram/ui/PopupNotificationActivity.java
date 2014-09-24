@@ -13,7 +13,6 @@ import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.util.AttributeSet;
@@ -43,7 +42,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.Utilities;
 import org.telegram.android.MessageObject;
 import org.telegram.android.PhotoObject;
 import org.telegram.ui.Views.ActionBar.ActionBar;
@@ -53,6 +51,7 @@ import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ChatActivityEnterView;
 import org.telegram.ui.Views.FrameLayoutFixed;
 import org.telegram.ui.Views.PopupAudioView;
+import org.telegram.ui.Views.TypingDotsDrawable;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -71,6 +70,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     private ArrayList<ViewGroup> imageViews = new ArrayList<ViewGroup>();
     private ArrayList<ViewGroup> audioViews = new ArrayList<ViewGroup>();
     private VelocityTracker velocityTracker = null;
+    private TypingDotsDrawable typingDotsDrawable;
 
     private int classGuid;
     private TLRPC.User currentUser;
@@ -150,6 +150,8 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioDidReset);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.contactsDidLoaded);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
+
+        typingDotsDrawable = new TypingDotsDrawable();
 
         chatActivityEnterView = new ChatActivityEnterView();
         chatActivityEnterView.setDelegate(new ChatActivityEnterView.ChatActivityEnterViewDelegate() {
@@ -624,7 +626,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 messageContainer.getViewTreeObserver().removeOnPreDrawListener(this);
                 if (!checkTransitionAnimation() && !startedMoving) {
                     ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams)messageContainer.getLayoutParams();
-                    if (!Utilities.isTablet(PopupNotificationActivity.this) && PopupNotificationActivity.this.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                    if (!AndroidUtilities.isTablet() && PopupNotificationActivity.this.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
                         layoutParams.topMargin = AndroidUtilities.dp(40);
                     } else {
                         layoutParams.topMargin = AndroidUtilities.dp(48);
@@ -739,10 +741,10 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
         if (currentChat != null && currentUser != null) {
             actionBarLayer.setTitle(currentChat.title);
-            actionBarLayer.setSubtitle(Utilities.formatName(currentUser.first_name, currentUser.last_name));
+            actionBarLayer.setSubtitle(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
             actionBarLayer.setTitleIcon(0, 0);
         } else if (currentUser != null) {
-            actionBarLayer.setTitle(Utilities.formatName(currentUser.first_name, currentUser.last_name));
+            actionBarLayer.setTitle(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
             if ((int)dialog_id == 0) {
                 actionBarLayer.setTitleIcon(R.drawable.ic_lock_white, AndroidUtilities.dp(4));
             } else {
@@ -767,10 +769,10 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             if (currentUser.phone != null && currentUser.phone.length() != 0) {
                 actionBarLayer.setTitle(PhoneFormat.getInstance().format("+" + currentUser.phone));
             } else {
-                actionBarLayer.setTitle(Utilities.formatName(currentUser.first_name, currentUser.last_name));
+                actionBarLayer.setTitle(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
             }
         } else {
-            actionBarLayer.setTitle(Utilities.formatName(currentUser.first_name, currentUser.last_name));
+            actionBarLayer.setTitle(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
         }
         CharSequence printString = MessagesController.getInstance().printingStrings.get(currentMessageObject.getDialogId());
         if (printString == null || printString.length() == 0) {
@@ -800,7 +802,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             if (currentChat.photo != null) {
                 newPhoto = currentChat.photo.photo_small;
             }
-            placeHolderId = Utilities.getGroupAvatarForId(currentChat.id);
+            placeHolderId = AndroidUtilities.getGroupAvatarForId(currentChat.id);
         } else if (currentUser != null) {
             TLRPC.User user = MessagesController.getInstance().getUser(currentUser.id);
             if (user == null) {
@@ -810,7 +812,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             if (currentUser.photo != null) {
                 newPhoto = currentUser.photo.photo_small;
             }
-            placeHolderId = Utilities.getUserAvatarForId(currentUser.id);
+            placeHolderId = AndroidUtilities.getUserAvatarForId(currentUser.id);
         }
         if (avatarImageView != null) {
             avatarImageView.setImage(newPhoto, "50_50", placeHolderId);
@@ -823,15 +825,14 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
         if (start) {
             try {
-                actionBarLayer.setSubTitleIcon(R.drawable.typing_dots, AndroidUtilities.dp(4));
-                AnimationDrawable mAnim = (AnimationDrawable)actionBarLayer.getSubTitleIcon();
-                mAnim.setAlpha(200);
-                mAnim.start();
+                actionBarLayer.setSubTitleIcon(0, typingDotsDrawable, AndroidUtilities.dp(4));
+                typingDotsDrawable.start();
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
         } else {
-            actionBarLayer.setSubTitleIcon(0, 0);
+            actionBarLayer.setSubTitleIcon(0, null, 0);
+            typingDotsDrawable.stop();
         }
     }
 

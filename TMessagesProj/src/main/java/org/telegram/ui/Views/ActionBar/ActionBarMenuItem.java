@@ -14,8 +14,12 @@ import android.os.Build;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
+import android.view.ActionMode;
+import android.view.ContextMenu;
 import android.view.Gravity;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -28,7 +32,6 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 
 import java.lang.reflect.Field;
 
@@ -257,6 +260,30 @@ public class ActionBarMenuItem extends ImageView {
             searchField.setBackgroundResource(R.drawable.search_light_states);
             searchField.setPadding(AndroidUtilities.dp(6), 0, AndroidUtilities.dp(6), 0);
             searchField.setInputType(EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+            if (android.os.Build.VERSION.SDK_INT < 11) {
+                searchField.setOnCreateContextMenuListener(new OnCreateContextMenuListener() {
+                    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+                        menu.clear();
+                    }
+                });
+            } else {
+                searchField.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
+                    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                        return false;
+                    }
+
+                    public void onDestroyActionMode(ActionMode mode) {
+                    }
+
+                    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                        return false;
+                    }
+
+                    public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                        return false;
+                    }
+                });
+            }
             searchField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {

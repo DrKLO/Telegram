@@ -28,6 +28,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
 
     private TLRPC.ChatParticipants currentChatInfo = null;
     private HashMap<String, ArrayList<DelayedMessage>> delayedMessages = new HashMap<String, ArrayList<DelayedMessage>>();
+    private HashMap<Integer, MessageObject> unsentMessages = new HashMap<Integer, MessageObject>();
 
     private class DelayedMessage {
         public TLObject sendRequest;
@@ -153,6 +154,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                 arr.remove(a);
                                 a--;
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, obj.obj.messageOwner.id);
+                                processSentMessage(obj.obj.messageOwner.id);
                             }
                         }
                         if (arr.isEmpty()) {
@@ -191,12 +193,23 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         MessagesController.getInstance().deleteMessages(messages, null, null);
     }
 
-    public boolean retrySendMessage(MessageObject messageObject) {
+    public boolean retrySendMessage(MessageObject messageObject, boolean unsent) {
         if (messageObject.messageOwner.id >= 0) {
             return false;
         }
+        if (unsent) {
+            unsentMessages.put(messageObject.messageOwner.id, messageObject);
+        }
         sendMessage(messageObject);
         return true;
+    }
+
+    private void processSentMessage(int id) {
+        int prevSize = unsentMessages.size();
+        unsentMessages.remove(id);
+        if (prevSize != 0 && unsentMessages.size() == 0) {
+            checkUnsentMessages();
+        }
     }
 
     public void processForwardFromMyName(MessageObject messageObject, long did) {
@@ -271,7 +284,6 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
     }
 
     private void sendMessage(String message, double lat, double lon, TLRPC.TL_photo photo, TLRPC.TL_video video, MessageObject msgObj, TLRPC.User user, TLRPC.TL_document document, TLRPC.TL_audio audio, String originalPath, long peer, boolean retry) {
-
         TLRPC.Message newMsg = null;
         int type = -1;
         if (retry) {
@@ -394,12 +406,12 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             newMsg.local_id = newMsg.id = UserConfig.getNewMessageId();
             newMsg.from_id = UserConfig.getClientUserId();
             newMsg.out = true;
-            newMsg.date = ConnectionsManager.getInstance().getCurrentTime();
             UserConfig.saveConfig(false);
         }
         if (newMsg.random_id == 0) {
             newMsg.random_id = getNextRandomId();
         }
+        newMsg.date = ConnectionsManager.getInstance().getCurrentTime();
         newMsg.unread = true;
         newMsg.dialog_id = peer;
         int lower_id = (int) peer;
@@ -410,6 +422,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         if (lower_id != 0) {
             if (high_id == 1) {
                 if (currentChatInfo == null) {
+                    processSentMessage(newMsg.id);
                     return;
                 }
                 sendToPeers = new ArrayList<TLRPC.InputUser>();
@@ -434,6 +447,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
 
                     TLRPC.User sendToUser = MessagesController.getInstance().getUser(lower_id);
                     if (sendToUser == null) {
+                        processSentMessage(newMsg.id);
                         return;
                     }
                     if (sendToUser instanceof TLRPC.TL_userForeign || sendToUser instanceof TLRPC.TL_userRequest) {
@@ -767,6 +781,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             MessagesStorage.getInstance().markMessageAsSendError(newMsgObj.messageOwner.id);
             newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
             NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, newMsgObj.messageOwner.id);
+            processSentMessage(newMsgObj.messageOwner.id);
         }
     }
 
@@ -855,11 +870,12 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     final boolean isBroadcast = req instanceof TLRPC.TL_messages_sendBroadcast;
                     final ArrayList<TLRPC.Message> sentMessages = new ArrayList<TLRPC.Message>();
 
-                    if (response instanceof TLRPC.TL_messages_sentMessage) {
+                    if (response instanceof TLRPC.messages_SentMessage) {
                         TLRPC.TL_messages_sentMessage res = (TLRPC.TL_messages_sentMessage) response;
                         newMsgObj.messageOwner.id = res.id;
                         newMsgObj.messageOwner.date = res.date;
                         MessagesController.getInstance().processNewDifferenceParams(res.seq, res.pts, res.date);
+                        //TODO link check
                     } else if (response instanceof TLRPC.messages_StatedMessage) {
                         TLRPC.messages_StatedMessage res = (TLRPC.messages_StatedMessage) response;
                         sentMessages.add(res.message);
@@ -903,6 +919,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
                                     }
                                     NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageReceivedByServer, oldId, (isBroadcast ? oldId : newMsgObj.messageOwner.id), newMsgObj);
+                                    processSentMessage(oldId);
                                 }
                             });
                         }
@@ -914,6 +931,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         public void run() {
                             newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, newMsgObj.messageOwner.id);
+                            processSentMessage(newMsgObj.messageOwner.id);
                         }
                     });
                 }
@@ -1009,6 +1027,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                     public void run() {
                                         newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
                                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageReceivedByServer, newMsgObj.messageOwner.id, newMsgObj.messageOwner.id, newMsgObj);
+                                        processSentMessage(newMsgObj.messageOwner.id);
                                     }
                                 });
                             }
@@ -1020,6 +1039,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                             public void run() {
                                 newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, newMsgObj.messageOwner.id);
+                                processSentMessage(newMsgObj.messageOwner.id);
                             }
                         });
                     }
@@ -1370,7 +1390,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 MessagesController.getInstance().putEncryptedChats(encryptedChats, true);
                 for (TLRPC.Message message : messages) {
                     MessageObject messageObject = new MessageObject(message, null, 0);
-                    retrySendMessage(messageObject);
+                    retrySendMessage(messageObject, true);
                 }
             }
         });

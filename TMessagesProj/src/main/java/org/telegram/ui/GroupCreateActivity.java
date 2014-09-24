@@ -332,7 +332,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         LayoutInflater lf = (LayoutInflater)ApplicationLoader.applicationContext.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
         View textView = lf.inflate(R.layout.group_create_bubble, null);
         TextView text = (TextView)textView.findViewById(R.id.bubble_text_view);
-        String name = Utilities.formatName(user.first_name, user.last_name);
+        String name = ContactsController.formatName(user.first_name, user.last_name);
         if (name.length() == 0 && user.phone != null && user.phone.length() != 0) {
             name = PhoneFormat.getInstance().format("+" + user.phone);
         }
@@ -539,7 +539,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             if (searchWas && searching) {
                 holder.nameTextView.setText(searchResultNames.get(position));
             } else {
-                String name = Utilities.formatName(user.first_name, user.last_name);
+                String name = ContactsController.formatName(user.first_name, user.last_name);
                 if (name.length() == 0) {
                     if (user.phone != null && user.phone.length() != 0) {
                         name = PhoneFormat.getInstance().format("+" + user.phone);
@@ -554,7 +554,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             if (user.photo != null) {
                 photo = user.photo.photo_small;
             }
-            int placeHolderId = Utilities.getUserAvatarForId(user.id);
+            int placeHolderId = AndroidUtilities.getUserAvatarForId(user.id);
             holder.avatarImage.setImage(photo, "50_50", placeHolderId);
 
             holder.messageTextView.setText(LocaleController.formatUserStatus(user));

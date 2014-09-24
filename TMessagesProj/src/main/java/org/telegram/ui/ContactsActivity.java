@@ -349,7 +349,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             }
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-            builder.setMessage(LocaleController.formatStringSimple(selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
+            builder.setMessage(LocaleController.formatStringSimple(selectAlertString, ContactsController.formatName(user.first_name, user.last_name)));
             final EditText editText = new EditText(getParentActivity());
             if (android.os.Build.VERSION.SDK_INT < 11) {
                 editText.setBackgroundResource(android.R.drawable.editbox_background_normal);

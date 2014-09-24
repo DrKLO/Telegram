@@ -12,17 +12,14 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Point;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.AttributeSet;
-import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -302,14 +299,12 @@ public class PhotoCropActivity extends BaseFragment {
                 return false;
             }
         }
-        Point displaySize = new Point();
-        Display display = ((WindowManager)ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
-        if(android.os.Build.VERSION.SDK_INT < 13) {
-            displaySize.set(display.getWidth(), display.getHeight());
+        int size = 0;
+        if (AndroidUtilities.isTablet()) {
+            size = AndroidUtilities.dp(520);
         } else {
-            display.getSize(displaySize);
+            size = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
         }
-        int size = Math.max(displaySize.x, displaySize.y);
         imageToCrop = ImageLoader.loadBitmap(photoPath, photoUri, size, size);
         if (imageToCrop == null) {
             return false;

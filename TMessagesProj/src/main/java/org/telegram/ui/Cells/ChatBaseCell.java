@@ -23,11 +23,11 @@ import android.view.SoundEffectConstants;
 import android.view.ViewConfiguration;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.android.ContactsController;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 import org.telegram.android.MessageObject;
 import org.telegram.android.ImageReceiver;
 
@@ -233,7 +233,7 @@ public class ChatBaseCell extends BaseCell {
 
         String newNameString = null;
         if (drawName && isChat && newUser != null && !currentMessageObject.isOut()) {
-            newNameString = Utilities.formatName(newUser.first_name, newUser.last_name);
+            newNameString = ContactsController.formatName(newUser.first_name, newUser.last_name);
         }
 
         if (currentNameString == null && newNameString != null || currentNameString != null && newNameString == null || currentNameString != null && newNameString != null && !currentNameString.equals(newNameString)) {
@@ -243,7 +243,7 @@ public class ChatBaseCell extends BaseCell {
         newUser = MessagesController.getInstance().getUser(currentMessageObject.messageOwner.fwd_from_id);
         newNameString = null;
         if (newUser != null && drawForwardedName && currentMessageObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
-            newNameString = Utilities.formatName(newUser.first_name, newUser.last_name);
+            newNameString = ContactsController.formatName(newUser.first_name, newUser.last_name);
         }
         return currentForwardNameString == null && newNameString != null || currentForwardNameString != null && newNameString == null || currentForwardNameString != null && newNameString != null && !currentForwardNameString.equals(newNameString);
     }
@@ -265,7 +265,7 @@ public class ChatBaseCell extends BaseCell {
                 } else {
                     currentPhoto = null;
                 }
-                avatarImage.setImage(currentPhoto, "50_50", getResources().getDrawable(Utilities.getUserAvatarForId(currentUser.id)));
+                avatarImage.setImage(currentPhoto, "50_50", getResources().getDrawable(AndroidUtilities.getUserAvatarForId(currentUser.id)));
             } else {
                 avatarImage.setImage((TLRPC.FileLocation)null, "50_50", null);
             }
@@ -287,7 +287,7 @@ public class ChatBaseCell extends BaseCell {
         namesOffset = 0;
 
         if (drawName && isChat && currentUser != null && !currentMessageObject.isOut()) {
-            currentNameString = Utilities.formatName(currentUser.first_name, currentUser.last_name);
+            currentNameString = ContactsController.formatName(currentUser.first_name, currentUser.last_name);
             nameWidth = getMaxNameWidth();
 
             CharSequence nameStringFinal = TextUtils.ellipsize(currentNameString.replace("\n", " "), namePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
@@ -308,7 +308,7 @@ public class ChatBaseCell extends BaseCell {
         if (drawForwardedName && messageObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
             currentForwardUser = MessagesController.getInstance().getUser(messageObject.messageOwner.fwd_from_id);
             if (currentForwardUser != null) {
-                currentForwardNameString = Utilities.formatName(currentForwardUser.first_name, currentForwardUser.last_name);
+                currentForwardNameString = ContactsController.formatName(currentForwardUser.first_name, currentForwardUser.last_name);
 
                 forwardedNameWidth = getMaxNameWidth();
 
@@ -520,7 +520,7 @@ public class ChatBaseCell extends BaseCell {
         if (drawName && nameLayout != null) {
             canvas.save();
             canvas.translate(currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(19) - nameOffsetX, AndroidUtilities.dp(10));
-            namePaint.setColor(Utilities.getColorForId(currentUser.id));
+            namePaint.setColor(AndroidUtilities.getColorForId(currentUser.id));
             nameLayout.draw(canvas);
             canvas.restore();
         }

@@ -23,7 +23,6 @@ import org.telegram.android.MediaController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 import org.telegram.android.MessageObject;
 import org.telegram.android.ImageReceiver;
 import org.telegram.ui.Views.ProgressView;
@@ -355,9 +354,9 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
                 if (audioUser.photo != null) {
                     currentPhoto = audioUser.photo.photo_small;
                 }
-                avatarImage.setImage(currentPhoto, "50_50", getResources().getDrawable(Utilities.getUserAvatarForId(uid)));
+                avatarImage.setImage(currentPhoto, "50_50", getResources().getDrawable(AndroidUtilities.getUserAvatarForId(uid)));
             } else {
-                avatarImage.setImage((TLRPC.FileLocation)null, "50_50", getResources().getDrawable(Utilities.getUserAvatarForId(uid)));
+                avatarImage.setImage((TLRPC.FileLocation)null, "50_50", getResources().getDrawable(AndroidUtilities.getUserAvatarForId(uid)));
             }
 
             if (messageObject.isOut()) {

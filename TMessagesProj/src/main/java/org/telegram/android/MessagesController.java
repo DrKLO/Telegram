@@ -143,7 +143,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         maxGroupCount = preferences.getInt("maxGroupCount", 200);
         maxBroadcastCount = preferences.getInt("maxBroadcastCount", 100);
-        fontSize = preferences.getInt("fons_size", 16);
+        fontSize = preferences.getInt("fons_size", AndroidUtilities.isTablet() ? 18 : 16);
     }
 
     public void updateConfig(final TLRPC.TL_config config) {
@@ -1175,7 +1175,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         if (label.length() != 0) {
                             label += ", ";
                         }
-                        label += Utilities.formatName(user.first_name, user.last_name);
+                        label += ContactsController.formatName(user.first_name, user.last_name);
                         count++;
                     }
                     if (count == 2) {
@@ -3462,9 +3462,23 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 changed = true;
             }
         } else {
+            boolean change = false;
             if (dialog.top_message > 0 && lastMessage.messageOwner.id > 0 && lastMessage.messageOwner.id > dialog.top_message ||
-                    dialog.top_message < 0 && lastMessage.messageOwner.id < 0 && lastMessage.messageOwner.id < dialog.top_message ||
-                    dialog.last_message_date < lastMessage.messageOwner.date) {
+                    dialog.top_message < 0 && lastMessage.messageOwner.id < 0 && lastMessage.messageOwner.id < dialog.top_message) {
+                change = true;
+            } else {
+                MessageObject currentDialogMessage = dialogMessage.get(dialog.top_message);
+                if (currentDialogMessage != null) {
+                    if (currentDialogMessage.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SENDING && lastMessage.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SENDING) {
+                        change = true;
+                    } else if (dialog.last_message_date < lastMessage.messageOwner.date || dialog.last_message_date == lastMessage.messageOwner.date && lastMessage.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SENDING) {
+                        change = true;
+                    }
+                } else {
+                    change = true;
+                }
+            }
+            if (change) {
                 dialogMessage.remove(dialog.top_message);
                 dialog.top_message = lastMessage.messageOwner.id;
                 if (!isBroadcast) {

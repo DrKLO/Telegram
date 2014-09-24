@@ -394,10 +394,14 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
         int columnsCount = 2;
         if (selectedAlbum != null) {
-            if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                columnsCount = 5;
-            } else {
+            if (AndroidUtilities.isTablet()) {
                 columnsCount = 3;
+            } else {
+                if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
+                    columnsCount = 5;
+                } else {
+                    columnsCount = 3;
+                }
             }
         } else {
             if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
@@ -405,7 +409,11 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             }
         }
         listView.setNumColumns(columnsCount);
-        itemWidth = (getParentActivity().getResources().getDisplayMetrics().widthPixels - ((columnsCount + 1) * AndroidUtilities.dp(4))) / columnsCount;
+        if (AndroidUtilities.isTablet()) {
+            itemWidth = (AndroidUtilities.dp(490) - ((columnsCount + 1) * AndroidUtilities.dp(4))) / columnsCount;
+        } else {
+            itemWidth = (AndroidUtilities.displaySize.x - ((columnsCount + 1) * AndroidUtilities.dp(4))) / columnsCount;
+        }
         listView.setColumnWidth(itemWidth);
 
         listAdapter.notifyDataSetChanged();

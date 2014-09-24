@@ -17,6 +17,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.provider.BaseColumns;
 import android.provider.ContactsContract;
+import android.provider.Settings;
 import android.util.SparseArray;
 
 import org.telegram.PhoneFormat.PhoneFormat;
@@ -48,6 +49,7 @@ public class ContactsController {
     private boolean contactsBookLoaded = false;
     private String lastContactsVersions = "";
     private ArrayList<Integer> delayedContactsUpdate = new ArrayList<Integer>();
+    public int nameDisplayOrder = 1;
 
     public static class Contact {
         public int id;
@@ -97,6 +99,14 @@ public class ContactsController {
             }
         }
         return localInstance;
+    }
+
+    public ContactsController() {
+        try {
+            nameDisplayOrder = Settings.System.getInt(ApplicationLoader.applicationContext.getContentResolver(), "android.contacts.DISPLAY_ORDER");
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     public void cleanup() {
@@ -1465,7 +1475,7 @@ public class ContactsController {
                     MessagesStorage.getInstance().putContacts(arrayList, false);
 
                     if (u.phone != null && u.phone.length() > 0) {
-                        String name = Utilities.formatName(u.first_name, u.last_name);
+                        String name = formatName(u.first_name, u.last_name);
                         MessagesStorage.getInstance().applyPhoneBookUpdates(u.phone, "");
                         Contact contact = contactsBookSPhones.get(u.phone);
                         if (contact != null) {
@@ -1529,7 +1539,7 @@ public class ContactsController {
 
                 for (TLRPC.User user : users) {
                     if (user.phone != null && user.phone.length() > 0) {
-                        String name = Utilities.formatName(user.first_name, user.last_name);
+                        String name = ContactsController.formatName(user.first_name, user.last_name);
                         MessagesStorage.getInstance().applyPhoneBookUpdates(user.phone, "");
                         Contact contact = contactsBookSPhones.get(user.phone);
                         if (contact != null) {
@@ -1562,5 +1572,25 @@ public class ContactsController {
                 });
             }
         }, true, RPCRequest.RPCRequestClassGeneric);
+    }
+
+    public static String formatName(String firstName, String lastName) {
+        String result = null;
+        if (ContactsController.getInstance().nameDisplayOrder == 1) {
+            result = firstName;
+            if (result == null || result.length() == 0) {
+                result = lastName;
+            } else if (result.length() != 0 && lastName != null && lastName.length() != 0) {
+                result += " " + lastName;
+            }
+        } else {
+            result = lastName;
+            if (result == null || result.length() == 0) {
+                result = firstName;
+            } else if (result.length() != 0 && firstName != null && firstName.length() != 0) {
+                result += " " + firstName;
+            }
+        }
+        return result.trim();
     }
 }

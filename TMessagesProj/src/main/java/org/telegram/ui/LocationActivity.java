@@ -27,6 +27,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
@@ -34,7 +36,6 @@ import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
@@ -235,8 +236,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                         if (user.photo != null) {
                             photo = user.photo.photo_small;
                         }
-                        avatarImageView.setImage(photo, "50_50", Utilities.getUserAvatarForId(user.id));
-                        nameTextView.setText(Utilities.formatName(user.first_name, user.last_name));
+                        avatarImageView.setImage(photo, "50_50", AndroidUtilities.getUserAvatarForId(user.id));
+                        nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
                     }
                     userLocation = new Location("network");
                     userLocation.setLatitude(messageObject.messageOwner.media.geo.lat);
@@ -284,8 +285,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 if (user.photo != null) {
                     photo = user.photo.photo_small;
                 }
-                avatarImageView.setImage(photo, null, Utilities.getUserAvatarForId(user.id));
-                nameTextView.setText(Utilities.formatName(user.first_name, user.last_name));
+                avatarImageView.setImage(photo, null, AndroidUtilities.getUserAvatarForId(user.id));
+                nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
             }
         }
     }

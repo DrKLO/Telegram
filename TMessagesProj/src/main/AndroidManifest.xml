@@ -98,8 +98,7 @@
         </activity>
         <activity
             android:name="org.telegram.ui.IntroActivity"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
-            android:screenOrientation="portrait">
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize">
         </activity>
         <activity
             android:name="org.telegram.ui.PopupNotificationActivity"

@@ -38,6 +38,7 @@ public class NotificationCenter {
     public static final int notificationsSettingsUpdated = 26;
     public static final int pushMessagesUpdated = 27;
     public static final int blockedUsersDidLoaded = 28;
+    public static final int openedChatChanged = 29;
 
     public static final int wallpapersDidLoaded = 171;
     public static final int closeOtherAppActivities = 702;
@@ -67,7 +68,7 @@ public class NotificationCenter {
     final private HashMap<Integer, Object> removeAfterBroadcast = new HashMap<Integer, Object>();
     final private HashMap<Integer, Object> addAfterBroadcast = new HashMap<Integer, Object>();
 
-    private boolean broadcasting = false;
+    private int broadcasting = 0;
 
     private static volatile NotificationCenter Instance = null;
     public static NotificationCenter getInstance() {
@@ -89,32 +90,34 @@ public class NotificationCenter {
 
     public void postNotificationName(int id, Object... args) {
         synchronized (observers) {
-            broadcasting = true;
+            broadcasting++;
             ArrayList<Object> objects = observers.get(id);
             if (objects != null) {
                 for (Object obj : objects) {
                     ((NotificationCenterDelegate)obj).didReceivedNotification(id, args);
                 }
             }
-            broadcasting = false;
-            if (!removeAfterBroadcast.isEmpty()) {
-                for (HashMap.Entry<Integer, Object> entry : removeAfterBroadcast.entrySet()) {
-                    removeObserver(entry.getValue(), entry.getKey());
+            broadcasting--;
+            if (broadcasting == 0) {
+                if (!removeAfterBroadcast.isEmpty()) {
+                    for (HashMap.Entry<Integer, Object> entry : removeAfterBroadcast.entrySet()) {
+                        removeObserver(entry.getValue(), entry.getKey());
+                    }
+                    removeAfterBroadcast.clear();
                 }
-                removeAfterBroadcast.clear();
-            }
-            if (!addAfterBroadcast.isEmpty()) {
-                for (HashMap.Entry<Integer, Object> entry : addAfterBroadcast.entrySet()) {
-                    addObserver(entry.getValue(), entry.getKey());
+                if (!addAfterBroadcast.isEmpty()) {
+                    for (HashMap.Entry<Integer, Object> entry : addAfterBroadcast.entrySet()) {
+                        addObserver(entry.getValue(), entry.getKey());
+                    }
+                    addAfterBroadcast.clear();
                 }
-                addAfterBroadcast.clear();
             }
         }
     }
 
     public void addObserver(Object observer, int id) {
         synchronized (observers) {
-            if (broadcasting) {
+            if (broadcasting != 0) {
                 addAfterBroadcast.put(id, observer);
                 return;
             }
@@ -131,7 +134,7 @@ public class NotificationCenter {
 
     public void removeObserver(Object observer, int id) {
         synchronized (observers) {
-            if (broadcasting) {
+            if (broadcasting != 0) {
                 removeAfterBroadcast.put(id, observer);
                 return;
             }

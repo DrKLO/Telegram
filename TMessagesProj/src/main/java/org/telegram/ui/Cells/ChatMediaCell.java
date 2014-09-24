@@ -11,6 +11,7 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
@@ -19,6 +20,7 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
+import android.view.animation.DecelerateInterpolator;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ImageLoader;
@@ -32,7 +34,6 @@ import org.telegram.android.PhotoObject;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.Views.GifDrawable;
 import org.telegram.android.ImageReceiver;
-import org.telegram.ui.Views.RoundProgressView;
 
 import java.io.File;
 import java.util.Locale;
@@ -54,6 +55,9 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     private static MessageObject lastDownloadedGifMessage = null;
     private static TextPaint namePaint;
     private static Paint docBackPaint;
+    private static Paint progressPaint;
+    private static Paint progressBackgroundPaint;
+    private static DecelerateInterpolator decelerateInterpolator;
 
     private GifDrawable gifDrawable = null;
 
@@ -63,7 +67,6 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     private String currentUrl;
     private String currentPhotoFilter;
     private ImageReceiver photoImage;
-    private RoundProgressView progressView;
     private boolean progressVisible = false;
     private boolean photoNotSet = false;
     private boolean cancelLoading = false;
@@ -86,6 +89,15 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     private String currentNameString;
 
     public ChatMediaCellDelegate mediaDelegate = null;
+
+    private float currentProgress = 0;
+    private RectF progressRect = new RectF();
+    private long lastUpdateTime = 0;
+    private boolean animationStarted = false;
+    private float radOffset = 0;
+    private float animatedProgressValue = 0;
+    private long currentProgressTime = 0;
+    private float animationProgressStart = 0;
 
     public ChatMediaCell(Context context) {
         super(context);
@@ -113,12 +125,21 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             namePaint.setTextSize(AndroidUtilities.dp(16));
 
             docBackPaint = new Paint();
+
+            progressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            progressPaint.setStyle(Paint.Style.STROKE);
+            progressPaint.setStrokeWidth(AndroidUtilities.dp(2));
+
+            decelerateInterpolator = new DecelerateInterpolator();
+
+            progressBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            progressBackgroundPaint.setStyle(Paint.Style.STROKE);
+            progressBackgroundPaint.setStrokeWidth(AndroidUtilities.dp(2));
         }
 
         TAG = MediaController.getInstance().generateObserverTag();
 
         photoImage = new ImageReceiver(this);
-        progressView = new RoundProgressView();
     }
 
     public void clearGifImage() {
@@ -260,6 +281,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 FileLoader.getInstance().loadFile(currentMessageObject.messageOwner.media.video);
             }
             progressVisible = true;
+            startAnimation();
             buttonState = 1;
             invalidate();
         } else if (buttonState == 1) {
@@ -280,6 +302,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     FileLoader.getInstance().cancelLoadFile(currentMessageObject.messageOwner.media.video);
                 }
                 progressVisible = false;
+                stopAnimation();
                 buttonState = 0;
                 invalidate();
             }
@@ -342,7 +365,17 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 if (name == null || name.length() == 0) {
                     name = LocaleController.getString("AttachDocument", R.string.AttachDocument);
                 }
-                int maxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(122 + 86 + 24);
+                int maxWidth;
+                if (AndroidUtilities.isTablet()) {
+                    int min = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+                    int leftWidth = min / 100 * 35;
+                    if (leftWidth < AndroidUtilities.dp(320)) {
+                        leftWidth = AndroidUtilities.dp(320);
+                    }
+                    maxWidth = min - leftWidth - AndroidUtilities.dp(122 + 86 + 24);
+                } else {
+                    maxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(122 + 86 + 24);
+                }
                 if (currentNameString == null || !currentNameString.equals(name)) {
                     currentNameString = name;
                     nameWidth = Math.min(maxWidth, (int) Math.ceil(namePaint.measureText(currentNameString)));
@@ -427,7 +460,16 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 currentUrl = String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=13&size=100x100&maptype=roadmap&scale=%d&markers=color:red|size:big|%f,%f&sensor=false", lat, lon, Math.min(2, (int)Math.ceil(AndroidUtilities.density)), lat, lon);
                 photoImage.setImage(currentUrl, null, messageObject.isOut() ? placeholderOutDrawable : placeholderInDrawable);
             } else {
-                photoWidth = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.7f);
+                if (AndroidUtilities.isTablet()) {
+                    int min = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+                    int leftWidth = min / 100 * 35;
+                    if (leftWidth < AndroidUtilities.dp(320)) {
+                        leftWidth = AndroidUtilities.dp(320);
+                    }
+                    photoWidth = (int)((min - leftWidth) * 0.7f);
+                } else {
+                    photoWidth = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.7f);
+                }
                 photoHeight = photoWidth + AndroidUtilities.dp(100);
 
                 if (photoWidth > 800) {
@@ -549,13 +591,10 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             if (currentMessageObject.messageOwner.attachPath != null) {
                 MediaController.getInstance().addLoadingFileObserver(currentMessageObject.messageOwner.attachPath, this);
                 progressVisible = true;
+                startAnimation();
                 buttonState = 1;
                 Float progress = FileLoader.getInstance().getFileProgress(currentMessageObject.messageOwner.attachPath);
-                if (progress != null) {
-                    progressView.setProgress(progress);
-                } else {
-                    progressView.setProgress(0);
-                }
+                setProgress(progress != null ? progress : 0, false);
                 invalidate();
             }
         } else {
@@ -571,25 +610,25 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     if (cancelLoading || currentMessageObject.type != 1 || !MediaController.getInstance().canDownloadMedia(MediaController.AUTODOWNLOAD_MASK_PHOTO)) {
                         buttonState = 0;
                         progressVisible = false;
+                        stopAnimation();
                     } else {
                         buttonState = 1;
                         progressVisible = true;
+                        startAnimation();
                     }
-                    progressView.setProgress(0);
+                    setProgress(0, false);
                 } else {
                     buttonState = 1;
                     progressVisible = true;
+                    startAnimation();
                     Float progress = FileLoader.getInstance().getFileProgress(fileName);
-                    if (progress != null) {
-                        progressView.setProgress(progress);
-                    } else {
-                        progressView.setProgress(0);
-                    }
+                    setProgress(progress != null ? progress : 0, false);
                 }
                 invalidate();
             } else {
                 MediaController.getInstance().removeLoadingFileObserver(this);
                 progressVisible = false;
+                stopAnimation();
                 if (currentMessageObject.type == 8 && (gifDrawable == null || gifDrawable != null && !gifDrawable.isRunning())) {
                     buttonState = 2;
                 } else if (currentMessageObject.type == 3) {
@@ -600,6 +639,54 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 invalidate();
             }
         }
+    }
+
+    private void updateAnimation() {
+        long newTime = System.currentTimeMillis();
+        long dt = newTime - lastUpdateTime;
+        lastUpdateTime = newTime;
+
+        radOffset += 360 * dt / 3000.0f;
+        float progressDiff = currentProgress - animationProgressStart;
+        if (progressDiff > 0) {
+            currentProgressTime += dt;
+            if (currentProgressTime >= 300) {
+                animatedProgressValue = currentProgress;
+                animationProgressStart = currentProgress;
+                currentProgressTime = 0;
+            } else {
+                animatedProgressValue = animationProgressStart + progressDiff * decelerateInterpolator.getInterpolation(currentProgressTime / 300.0f);
+            }
+        }
+
+        invalidateProgress();
+    }
+
+    private void startAnimation() {
+        lastUpdateTime = System.currentTimeMillis();
+        animationStarted = true;
+        invalidateProgress();
+    }
+
+    private void setProgress(float value, boolean animated) {
+        if (!animated) {
+            animatedProgressValue = value;
+            animationProgressStart = value;
+        } else {
+            animationProgressStart = animatedProgressValue;
+        }
+        currentProgress = value;
+        currentProgressTime = 0;
+    }
+
+    private void invalidateProgress() {
+        int offset = AndroidUtilities.dp(1);
+        invalidate((int)progressRect.left - offset, (int)progressRect.top - offset, (int)progressRect.right + offset * 2, (int)progressRect.bottom + offset * 2);
+    }
+
+    private void stopAnimation() {
+        radOffset = 0;
+        animationStarted = false;
     }
 
     @Override
@@ -629,7 +716,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         int size = AndroidUtilities.dp(44);
         buttonX = (int)(x + (photoWidth - size) / 2.0f);
         buttonY = (int)(AndroidUtilities.dp(7) + (photoHeight - size) / 2.0f);
-        progressView.rect.set(buttonX + AndroidUtilities.dp(1), buttonY + AndroidUtilities.dp(1), buttonX + AndroidUtilities.dp(43), buttonY + AndroidUtilities.dp(43));
+        progressRect.set(buttonX + AndroidUtilities.dp(1), buttonY + AndroidUtilities.dp(1), buttonX + AndroidUtilities.dp(43), buttonY + AndroidUtilities.dp(43));
     }
 
     @Override
@@ -646,6 +733,8 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             drawTime = photoImage.getVisible();
         }
 
+
+        boolean needProgressBackground = false;
         if (currentMessageObject.type == 9) {
             if (currentMessageObject.isOut()) {
                 infoPaint.setColor(0xff75b166);
@@ -664,15 +753,21 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     drawable.draw(canvas);
                 }
                 if (currentMessageObject.isOut()) {
-                    progressView.setColor(0xff81bd72);
+                    progressPaint.setColor(0xff81bd72);
+                    progressBackgroundPaint.setColor(0xffbae4a2);
+
                 } else {
-                    progressView.setColor(0xffadbdcc);
+                    progressPaint.setColor(0xffadbdcc);
+                    progressBackgroundPaint.setColor(0xffd5dee7);
                 }
+                needProgressBackground = true;
             } else {
-                progressView.setColor(0xffffffff);
+                progressPaint.setColor(0xffffffff);
+                needProgressBackground = false;
             }
         } else {
-            progressView.setColor(0xffffffff);
+            progressPaint.setColor(0xffffffff);
+            needProgressBackground = false;
         }
 
         if (buttonState >= 0 && buttonState < 4) {
@@ -687,7 +782,10 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         }
 
         if (progressVisible) {
-            progressView.draw(canvas);
+            if (needProgressBackground) {
+                canvas.drawArc(progressRect, 0, 360, false, progressBackgroundPaint);
+            }
+            canvas.drawArc(progressRect, -90 + radOffset, Math.max(4, 360 * animatedProgressValue), false, progressPaint);
         }
 
         if (nameLayout != null) {
@@ -717,6 +815,10 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             infoLayout.draw(canvas);
             canvas.restore();
         }
+
+        if (animationStarted) {
+            updateAnimation();
+        }
     }
 
     @Override
@@ -738,17 +840,17 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     @Override
     public void onProgressDownload(String fileName, float progress) {
         progressVisible = true;
-        progressView.setProgress(progress);
+        setProgress(progress, true);
         if (buttonState != 1) {
             updateButtonState();
         }
-        invalidate();
+        invalidateProgress();
     }
 
     @Override
     public void onProgressUpload(String fileName, float progress, boolean isEncrypted) {
-        progressView.setProgress(progress);
-        invalidate();
+        setProgress(progress, true);
+        invalidateProgress();
     }
 
     @Override

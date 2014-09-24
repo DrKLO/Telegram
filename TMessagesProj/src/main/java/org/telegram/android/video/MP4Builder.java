@@ -87,7 +87,7 @@ public class MP4Builder {
         fos.flush();
     }
 
-    public void writeSampleData(int trackIndex, ByteBuffer byteBuf, MediaCodec.BufferInfo bufferInfo) throws Exception {
+    public boolean writeSampleData(int trackIndex, ByteBuffer byteBuf, MediaCodec.BufferInfo bufferInfo) throws Exception {
         if (writeNewMdat) {
             mdat.setContentSize(0);
             mdat.getBox(fc);
@@ -111,16 +111,18 @@ public class MP4Builder {
         currentMp4Movie.addSample(trackIndex, dataOffset, bufferInfo);
         byteBuf.position(bufferInfo.offset);
         byteBuf.limit(bufferInfo.offset + bufferInfo.size);
+
         fc.write(byteBuf);
         dataOffset += bufferInfo.size;
 
         if (flush) {
             fos.flush();
         }
+        return flush;
     }
 
-    public int addTrack(MediaFormat mediaFormat, boolean isVideo) throws Exception {
-        return currentMp4Movie.addTrack(mediaFormat, isVideo);
+    public int addTrack(MediaFormat mediaFormat, boolean isAudio) throws Exception {
+        return currentMp4Movie.addTrack(mediaFormat, isAudio);
     }
 
     public void finishMovie(boolean error) throws Exception {

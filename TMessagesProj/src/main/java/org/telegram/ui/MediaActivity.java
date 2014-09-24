@@ -326,14 +326,20 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     WindowManager manager = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
                     int rotation = manager.getDefaultDisplay().getRotation();
 
-                    if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                        listView.setNumColumns(6);
-                        itemWidth = getParentActivity().getResources().getDisplayMetrics().widthPixels / 6 - AndroidUtilities.dp(2) * 5;
+                    if (AndroidUtilities.isTablet()) {
+                        listView.setNumColumns(4);
+                        itemWidth = AndroidUtilities.dp(490) / 4 - AndroidUtilities.dp(2) * 3;
                         listView.setColumnWidth(itemWidth);
                     } else {
-                        listView.setNumColumns(4);
-                        itemWidth = getParentActivity().getResources().getDisplayMetrics().widthPixels / 4 - AndroidUtilities.dp(2) * 3;
-                        listView.setColumnWidth(itemWidth);
+                        if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
+                            listView.setNumColumns(6);
+                            itemWidth = AndroidUtilities.displaySize.x / 6 - AndroidUtilities.dp(2) * 5;
+                            listView.setColumnWidth(itemWidth);
+                        } else {
+                            listView.setNumColumns(4);
+                            itemWidth = AndroidUtilities.displaySize.x / 4 - AndroidUtilities.dp(2) * 3;
+                            listView.setColumnWidth(itemWidth);
+                        }
                     }
                     listView.setPadding(listView.getPaddingLeft(), AndroidUtilities.dp(4), listView.getPaddingRight(), listView.getPaddingBottom());
                     listAdapter.notifyDataSetChanged();

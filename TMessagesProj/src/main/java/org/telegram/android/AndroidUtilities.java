@@ -23,10 +23,13 @@ import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ApplicationLoader;
 
 import java.io.File;
 import java.util.Hashtable;
+import java.util.Locale;
 
 public class AndroidUtilities {
     private static final Hashtable<String, Typeface> typefaceCache = new Hashtable<String, Typeface>();
@@ -39,13 +42,44 @@ public class AndroidUtilities {
     public static float density = 1;
     public static Point displaySize = new Point();
 
+    public static int[] arrColors = {0xffee4928, 0xff41a903, 0xffe09602, 0xff0f94ed, 0xff8f3bf7, 0xfffc4380, 0xff00a1c4, 0xffeb7002};
+    public static int[] arrUsersAvatars = {
+            R.drawable.user_red,
+            R.drawable.user_green,
+            R.drawable.user_yellow,
+            R.drawable.user_blue,
+            R.drawable.user_violet,
+            R.drawable.user_pink,
+            R.drawable.user_aqua,
+            R.drawable.user_orange};
+
+    public static int[] arrGroupsAvatars = {
+            R.drawable.group_red,
+            R.drawable.group_green,
+            R.drawable.group_yellow,
+            R.drawable.group_blue,
+            R.drawable.group_violet,
+            R.drawable.group_pink,
+            R.drawable.group_aqua,
+            R.drawable.group_orange};
+
+    public static int[] arrBroadcastAvatars = {
+            R.drawable.broadcast_red,
+            R.drawable.broadcast_green,
+            R.drawable.broadcast_yellow,
+            R.drawable.broadcast_blue,
+            R.drawable.broadcast_violet,
+            R.drawable.broadcast_pink,
+            R.drawable.broadcast_aqua,
+            R.drawable.broadcast_orange};
+
     static {
         density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
         checkDisplaySize();
     }
 
     public static void lockOrientation(Activity activity) {
-        if (prevOrientation != -10) {
+        if (activity == null || prevOrientation != -10) {
             return;
         }
         try {
@@ -103,6 +137,9 @@ public class AndroidUtilities {
     }
 
     public static void unlockOrientation(Activity activity) {
+        if (activity == null) {
+            return;
+        }
         try {
             if (prevOrientation != -10) {
                 activity.setRequestedOrientation(prevOrientation);
@@ -228,5 +265,61 @@ public class AndroidUtilities {
 
     public static void RunOnUIThread(Runnable runnable) {
         ApplicationLoader.applicationHandler.post(runnable);
+    }
+
+    public static boolean isTablet() {
+        return (ApplicationLoader.applicationContext.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_LARGE;
+    }
+
+    public static int getColorIndex(int id) {
+        int[] arr;
+        if (id >= 0) {
+            arr = arrUsersAvatars;
+        } else {
+            arr = arrGroupsAvatars;
+        }
+        try {
+            String str;
+            if (id >= 0) {
+                str = String.format(Locale.US, "%d%d", id, UserConfig.getClientUserId());
+            } else {
+                str = String.format(Locale.US, "%d", id);
+            }
+            if (str.length() > 15) {
+                str = str.substring(0, 15);
+            }
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+            byte[] digest = md.digest(str.getBytes());
+            int b = digest[Math.abs(id % 16)];
+            if (b < 0) {
+                b += 256;
+            }
+            return Math.abs(b) % arr.length;
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return id % arr.length;
+    }
+
+    public static int getColorForId(int id) {
+        if (id / 1000 == 333) {
+            return 0xff0f94ed;
+        }
+        return arrColors[getColorIndex(id)];
+    }
+
+    public static int getUserAvatarForId(int id) {
+        if (id / 1000 == 333 || id / 1000 == 777) {
+            return R.drawable.telegram_avatar;
+        }
+        return arrUsersAvatars[getColorIndex(id)];
+    }
+
+    public static int getGroupAvatarForId(int id) {
+        return arrGroupsAvatars[getColorIndex(-Math.abs(id))];
+    }
+
+    public static int getBroadcastAvatarForId(int id) {
+        return arrBroadcastAvatars[getColorIndex(-Math.abs(id))];
     }
 }

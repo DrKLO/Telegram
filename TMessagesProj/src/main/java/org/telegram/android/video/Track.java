@@ -67,9 +67,9 @@ public class Track {
         samplingFrequencyIndexMap.put(8000, 0xb);
     }
 
-    public Track(int id, MediaFormat format, boolean isVideo) throws Exception {
+    public Track(int id, MediaFormat format, boolean isAudio) throws Exception {
         trackId = id;
-        if (isVideo) {
+        if (!isAudio) {
             sampleDurations.add((long)3015);
             duration = 3015;
             width = format.getInteger(MediaFormat.KEY_WIDTH);
@@ -79,46 +79,62 @@ public class Track {
             handler = "vide";
             headerBox = new VideoMediaHeaderBox();
             sampleDescriptionBox = new SampleDescriptionBox();
-            VisualSampleEntry visualSampleEntry = new VisualSampleEntry("avc1");
-            visualSampleEntry.setDataReferenceIndex(1);
-            visualSampleEntry.setDepth(24);
-            visualSampleEntry.setFrameCount(1);
-            visualSampleEntry.setHorizresolution(72);
-            visualSampleEntry.setVertresolution(72);
-            visualSampleEntry.setWidth(width);
-            visualSampleEntry.setHeight(height);
+            String mime = format.getString(MediaFormat.KEY_MIME);
+            if (mime.equals("video/avc")) {
+                VisualSampleEntry visualSampleEntry = new VisualSampleEntry("avc1");
+                visualSampleEntry.setDataReferenceIndex(1);
+                visualSampleEntry.setDepth(24);
+                visualSampleEntry.setFrameCount(1);
+                visualSampleEntry.setHorizresolution(72);
+                visualSampleEntry.setVertresolution(72);
+                visualSampleEntry.setWidth(width);
+                visualSampleEntry.setHeight(height);
 
-            AvcConfigurationBox avcConfigurationBox = new AvcConfigurationBox();
+                AvcConfigurationBox avcConfigurationBox = new AvcConfigurationBox();
 
-            ArrayList<byte[]> spsArray = new ArrayList<byte[]>();
-            ByteBuffer spsBuff = format.getByteBuffer("csd-0");
-            spsBuff.position(4);
-            byte[] spsBytes = new byte[spsBuff.remaining()];
-            spsBuff.get(spsBytes);
-            spsArray.add(spsBytes);
+                if (format.getByteBuffer("csd-0") != null) {
+                    ArrayList<byte[]> spsArray = new ArrayList<byte[]>();
+                    ByteBuffer spsBuff = format.getByteBuffer("csd-0");
+                    spsBuff.position(4);
+                    byte[] spsBytes = new byte[spsBuff.remaining()];
+                    spsBuff.get(spsBytes);
+                    spsArray.add(spsBytes);
 
-            ArrayList<byte[]> ppsArray = new ArrayList<byte[]>();
-            ByteBuffer ppsBuff = format.getByteBuffer("csd-1");
-            ppsBuff.position(4);
-            byte[] ppsBytes = new byte[ppsBuff.remaining()];
-            ppsBuff.get(ppsBytes);
-            ppsArray.add(ppsBytes);
-            //ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(spsBytes);
-            //SeqParameterSet seqParameterSet = SeqParameterSet.read(byteArrayInputStream);
+                    ArrayList<byte[]> ppsArray = new ArrayList<byte[]>();
+                    ByteBuffer ppsBuff = format.getByteBuffer("csd-1");
+                    ppsBuff.position(4);
+                    byte[] ppsBytes = new byte[ppsBuff.remaining()];
+                    ppsBuff.get(ppsBytes);
+                    ppsArray.add(ppsBytes);
+                    avcConfigurationBox.setSequenceParameterSets(spsArray);
+                    avcConfigurationBox.setPictureParameterSets(ppsArray);
+                }
+                //ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(spsBytes);
+                //SeqParameterSet seqParameterSet = SeqParameterSet.read(byteArrayInputStream);
 
-            avcConfigurationBox.setSequenceParameterSets(spsArray);
-            avcConfigurationBox.setPictureParameterSets(ppsArray);
-            avcConfigurationBox.setAvcLevelIndication(13);
-            avcConfigurationBox.setAvcProfileIndication(100);
-            avcConfigurationBox.setBitDepthLumaMinus8(-1);
-            avcConfigurationBox.setBitDepthChromaMinus8(-1);
-            avcConfigurationBox.setChromaFormat(-1);
-            avcConfigurationBox.setConfigurationVersion(1);
-            avcConfigurationBox.setLengthSizeMinusOne(3);
-            avcConfigurationBox.setProfileCompatibility(0);
+                avcConfigurationBox.setAvcLevelIndication(13);
+                avcConfigurationBox.setAvcProfileIndication(100);
+                avcConfigurationBox.setBitDepthLumaMinus8(-1);
+                avcConfigurationBox.setBitDepthChromaMinus8(-1);
+                avcConfigurationBox.setChromaFormat(-1);
+                avcConfigurationBox.setConfigurationVersion(1);
+                avcConfigurationBox.setLengthSizeMinusOne(3);
+                avcConfigurationBox.setProfileCompatibility(0);
 
-            visualSampleEntry.addBox(avcConfigurationBox);
-            sampleDescriptionBox.addBox(visualSampleEntry);
+                visualSampleEntry.addBox(avcConfigurationBox);
+                sampleDescriptionBox.addBox(visualSampleEntry);
+            } else if (mime.equals("video/mp4v")) {
+                VisualSampleEntry visualSampleEntry = new VisualSampleEntry("mp4v");
+                visualSampleEntry.setDataReferenceIndex(1);
+                visualSampleEntry.setDepth(24);
+                visualSampleEntry.setFrameCount(1);
+                visualSampleEntry.setHorizresolution(72);
+                visualSampleEntry.setVertresolution(72);
+                visualSampleEntry.setWidth(width);
+                visualSampleEntry.setHeight(height);
+
+                sampleDescriptionBox.addBox(visualSampleEntry);
+            }
         } else {
             sampleDurations.add((long)1024);
             duration = 1024;

@@ -47,6 +47,7 @@ import android.widget.Scroller;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.android.ContactsController;
 import org.telegram.android.MessagesStorage;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
@@ -62,7 +63,6 @@ import org.telegram.messenger.Utilities;
 import org.telegram.android.MessageObject;
 import org.telegram.android.PhotoObject;
 import org.telegram.ui.Views.ActionBar.ActionBar;
-import org.telegram.ui.Views.ActionBar.ActionBarActivity;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
@@ -521,7 +521,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         closePhoto(false);
                         Bundle args2 = new Bundle();
                         args2.putLong("dialog_id", currentDialogId);
-                        ((ActionBarActivity)parentActivity).presentFragment(new MediaActivity(args2), false, true);
+                        ((LaunchActivity)parentActivity).presentFragment(new MediaActivity(args2), false, true);
                     }
                 } else if (id == gallery_menu_send) {
                     /*Intent intent = new Intent(this, MessagesActivity.class);
@@ -1219,7 +1219,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             currentMessageObject = imagesArr.get(currentIndex);
             TLRPC.User user = MessagesController.getInstance().getUser(currentMessageObject.messageOwner.from_id);
             if (user != null) {
-                nameTextView.setText(Utilities.formatName(user.first_name, user.last_name));
+                nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
             } else {
                 nameTextView.setText("");
             }

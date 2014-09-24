@@ -18,32 +18,44 @@ package org.telegram.android.video;
 
 import android.annotation.TargetApi;
 import android.graphics.SurfaceTexture;
-import android.opengl.EGL14;
+import android.opengl.GLES20;
 import android.view.Surface;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.egl.EGLContext;
 import javax.microedition.khronos.egl.EGLDisplay;
 import javax.microedition.khronos.egl.EGLSurface;
 
-@TargetApi(17)
+@TargetApi(16)
 public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
 
     private static final int EGL_OPENGL_ES2_BIT = 4;
+    private static final int EGL_CONTEXT_CLIENT_VERSION = 0x3098;
     private EGL10 mEGL;
-    private EGLDisplay mEGLDisplay;
-    private EGLContext mEGLContext;
-    private EGLSurface mEGLSurface;
+    private EGLDisplay mEGLDisplay = null;
+    private EGLContext mEGLContext = null;
+    private EGLSurface mEGLSurface = null;
     private SurfaceTexture mSurfaceTexture;
     private Surface mSurface;
     private final Object mFrameSyncObject = new Object();
     private boolean mFrameAvailable;
     private TextureRenderer mTextureRender;
+    private int mWidth;
+    private int mHeight;
+    private ByteBuffer mPixelBuf;
 
     public OutputSurface(int width, int height) {
         if (width <= 0 || height <= 0) {
             throw new IllegalArgumentException();
         }
+        mWidth = width;
+        mHeight = height;
+        mPixelBuf = ByteBuffer.allocateDirect(mWidth * mHeight * 4);
+        mPixelBuf.order(ByteOrder.LITTLE_ENDIAN);
         eglSetup(width, height);
         makeCurrent();
         setup();
@@ -64,28 +76,35 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     private void eglSetup(int width, int height) {
         mEGL = (EGL10) EGLContext.getEGL();
         mEGLDisplay = mEGL.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
+
+        if (mEGLDisplay == EGL10.EGL_NO_DISPLAY) {
+            throw new RuntimeException("unable to get EGL10 display");
+        }
+
         if (!mEGL.eglInitialize(mEGLDisplay, null)) {
+            mEGLDisplay = null;
             throw new RuntimeException("unable to initialize EGL10");
         }
+
         int[] attribList = {
                 EGL10.EGL_RED_SIZE, 8,
                 EGL10.EGL_GREEN_SIZE, 8,
                 EGL10.EGL_BLUE_SIZE, 8,
+                EGL10.EGL_ALPHA_SIZE, 8,
                 EGL10.EGL_SURFACE_TYPE, EGL10.EGL_PBUFFER_BIT,
                 EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
                 EGL10.EGL_NONE
         };
         EGLConfig[] configs = new EGLConfig[1];
         int[] numConfigs = new int[1];
-        if (!mEGL.eglChooseConfig(mEGLDisplay, attribList, configs, 1, numConfigs)) {
+        if (!mEGL.eglChooseConfig(mEGLDisplay, attribList, configs, configs.length, numConfigs)) {
             throw new RuntimeException("unable to find RGB888+pbuffer EGL config");
         }
         int[] attrib_list = {
-                EGL14.EGL_CONTEXT_CLIENT_VERSION, 2,
+                EGL_CONTEXT_CLIENT_VERSION, 2,
                 EGL10.EGL_NONE
         };
-        mEGLContext = mEGL.eglCreateContext(mEGLDisplay, configs[0], EGL10.EGL_NO_CONTEXT,
-                attrib_list);
+        mEGLContext = mEGL.eglCreateContext(mEGLDisplay, configs[0], EGL10.EGL_NO_CONTEXT, attrib_list);
         checkEglError("eglCreateContext");
         if (mEGLContext == null) {
             throw new RuntimeException("null context");
@@ -139,7 +158,7 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     }
 
     public void awaitNewImage() {
-        final int TIMEOUT_MS = 500;
+        final int TIMEOUT_MS = 2500;
         synchronized (mFrameSyncObject) {
             while (!mFrameAvailable) {
                 try {
@@ -157,8 +176,8 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
         mSurfaceTexture.updateTexImage();
     }
 
-    public void drawImage() {
-        mTextureRender.drawFrame(mSurfaceTexture);
+    public void drawImage(boolean invert) {
+        mTextureRender.drawFrame(mSurfaceTexture, invert);
     }
 
     @Override
@@ -170,6 +189,12 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
             mFrameAvailable = true;
             mFrameSyncObject.notifyAll();
         }
+    }
+
+    public ByteBuffer getFrame() {
+        mPixelBuf.rewind();
+        GLES20.glReadPixels(0, 0, mWidth, mHeight, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, mPixelBuf);
+        return mPixelBuf;
     }
 
     private void checkEglError(String msg) {

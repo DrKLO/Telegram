@@ -74,8 +74,8 @@ public class Mp4Movie {
         track.addSample(offset, bufferInfo);
     }
 
-    public int addTrack(MediaFormat mediaFormat, boolean isVideo) throws Exception {
-        tracks.add(new Track(tracks.size(), mediaFormat, isVideo));
+    public int addTrack(MediaFormat mediaFormat, boolean isAudio) throws Exception {
+        tracks.add(new Track(tracks.size(), mediaFormat, isAudio));
         return tracks.size() - 1;
     }
 }

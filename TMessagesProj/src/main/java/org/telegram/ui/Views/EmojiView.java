@@ -104,7 +104,11 @@ public class EmojiView extends LinearLayout {
         setOrientation(LinearLayout.VERTICAL);
         for (int i = 0; i < Emoji.data.length; i++) {
             GridView gridView = new GridView(getContext());
-            gridView.setColumnWidth(AndroidUtilities.dpf(45.0f));
+            if (AndroidUtilities.isTablet()) {
+                gridView.setColumnWidth(AndroidUtilities.dp(60));
+            } else {
+                gridView.setColumnWidth(AndroidUtilities.dp(45));
+            }
             gridView.setNumColumns(-1);
             views.add(gridView);
 
@@ -122,7 +126,7 @@ public class EmojiView extends LinearLayout {
         tabs.setIndicatorColor(0xff33b5e5);
         tabs.setIndicatorHeight(AndroidUtilities.dpf(2.0f));
         tabs.setUnderlineHeight(AndroidUtilities.dpf(2.0f));
-        tabs.setUnderlineColor(1711276032);
+        tabs.setUnderlineColor(0x66000000);
         tabs.setTabBackground(0);
         LinearLayout localLinearLayout = new LinearLayout(getContext());
         localLinearLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -138,7 +142,7 @@ public class EmojiView extends LinearLayout {
                 }
             }
         });
-        localLinearLayout.addView(localImageView, new LinearLayout.LayoutParams(AndroidUtilities.dpf(61.0f), LayoutParams.MATCH_PARENT));
+        localLinearLayout.addView(localImageView, new LinearLayout.LayoutParams(AndroidUtilities.dp(61), LayoutParams.MATCH_PARENT));
         recentsWrap = new FrameLayout(getContext());
         recentsWrap.addView(views.get(0));
         TextView localTextView = new TextView(getContext());

@@ -9,6 +9,7 @@
 package org.telegram.messenger;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
@@ -37,6 +38,7 @@ public class FileLoader {
     private ConcurrentHashMap<String, FileUploadOperation> uploadOperationPathsEnc = new ConcurrentHashMap<String, FileUploadOperation>();
     private ConcurrentHashMap<String, FileLoadOperation> loadOperationPaths = new ConcurrentHashMap<String, FileLoadOperation>();
     private ConcurrentHashMap<String, Float> fileProgresses = new ConcurrentHashMap<String, Float>();
+    private HashMap<String, Long> uploadSizes = new HashMap<String, Long>();
 
     private FileLoaderDelegate delegate = null;
 
@@ -70,6 +72,7 @@ public class FileLoader {
                 } else {
                     operation = uploadOperationPathsEnc.get(location);
                 }
+                uploadSizes.remove(location);
                 if (operation != null) {
                     uploadOperationQueue.remove(operation);
                     uploadSmallOperationQueue.remove(operation);
@@ -95,6 +98,8 @@ public class FileLoader {
                 }
                 if (operation != null) {
                     operation.checkNewDataAvailable(finalSize);
+                } else if (finalSize != 0) {
+                    uploadSizes.put(location, finalSize);
                 }
             }
         });
@@ -117,7 +122,15 @@ public class FileLoader {
                         return;
                     }
                 }
-                FileUploadOperation operation = new FileUploadOperation(location, encrypted, estimatedSize);
+                int esimated = estimatedSize;
+                if (esimated != 0) {
+                    Long finalSize = uploadSizes.get(location);
+                    if (finalSize != null) {
+                        esimated = 0;
+                        uploadSizes.remove(location);
+                    }
+                }
+                FileUploadOperation operation = new FileUploadOperation(location, encrypted, esimated);
                 if (encrypted) {
                     uploadOperationPathsEnc.put(location, operation);
                 } else {

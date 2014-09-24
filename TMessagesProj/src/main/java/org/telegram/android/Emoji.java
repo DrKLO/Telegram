@@ -214,7 +214,11 @@ public class Emoji {
             emojiFullSize = 90;
         }
 		drawImgSize = AndroidUtilities.dp(20);
-		bigImgSize = AndroidUtilities.dp(30);
+        if (AndroidUtilities.isTablet()) {
+            bigImgSize = AndroidUtilities.dp(40);
+        } else {
+            bigImgSize = AndroidUtilities.dp(30);
+        }
 
 		for (int j = 1; j < data.length; j++) {
 			for (int i = 0; i < data[j].length; i++) {

@@ -30,7 +30,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PopupNotificationActivity;
@@ -126,9 +125,9 @@ public class NotificationsController {
                 if (preferences.getBoolean("EnablePreviewAll", true)) {
                     if (messageObject.messageOwner instanceof TLRPC.TL_messageService) {
                         if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionUserJoined) {
-                            msg = LocaleController.formatString("NotificationContactJoined", R.string.NotificationContactJoined, Utilities.formatName(user.first_name, user.last_name));
+                            msg = LocaleController.formatString("NotificationContactJoined", R.string.NotificationContactJoined, ContactsController.formatName(user.first_name, user.last_name));
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
-                            msg = LocaleController.formatString("NotificationContactNewPhoto", R.string.NotificationContactNewPhoto, Utilities.formatName(user.first_name, user.last_name));
+                            msg = LocaleController.formatString("NotificationContactNewPhoto", R.string.NotificationContactNewPhoto, ContactsController.formatName(user.first_name, user.last_name));
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionLoginUnknownLocation) {
                             String date = String.format("%s %s %s", LocaleController.formatterYear.format(((long)messageObject.messageOwner.date) * 1000), LocaleController.getString("OtherAt", R.string.OtherAt), LocaleController.formatterDay.format(((long)messageObject.messageOwner.date) * 1000));
                             msg = LocaleController.formatString("NotificationUnrecognizedDevice", R.string.NotificationUnrecognizedDevice, UserConfig.getCurrentUser().first_name, date, messageObject.messageOwner.action.title, messageObject.messageOwner.action.address);
@@ -136,26 +135,26 @@ public class NotificationsController {
                     } else {
                         if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty) {
                             if (messageObject.messageOwner.message != null && messageObject.messageOwner.message.length() != 0) {
-                                msg = LocaleController.formatString("NotificationMessageText", R.string.NotificationMessageText, Utilities.formatName(user.first_name, user.last_name), messageObject.messageOwner.message);
+                                msg = LocaleController.formatString("NotificationMessageText", R.string.NotificationMessageText, ContactsController.formatName(user.first_name, user.last_name), messageObject.messageOwner.message);
                             } else {
-                                msg = LocaleController.formatString("NotificationMessageNoText", R.string.NotificationMessageNoText, Utilities.formatName(user.first_name, user.last_name));
+                                msg = LocaleController.formatString("NotificationMessageNoText", R.string.NotificationMessageNoText, ContactsController.formatName(user.first_name, user.last_name));
                             }
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
-                            msg = LocaleController.formatString("NotificationMessagePhoto", R.string.NotificationMessagePhoto, Utilities.formatName(user.first_name, user.last_name));
+                            msg = LocaleController.formatString("NotificationMessagePhoto", R.string.NotificationMessagePhoto, ContactsController.formatName(user.first_name, user.last_name));
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
-                            msg = LocaleController.formatString("NotificationMessageVideo", R.string.NotificationMessageVideo, Utilities.formatName(user.first_name, user.last_name));
+                            msg = LocaleController.formatString("NotificationMessageVideo", R.string.NotificationMessageVideo, ContactsController.formatName(user.first_name, user.last_name));
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaContact) {
-                            msg = LocaleController.formatString("NotificationMessageContact", R.string.NotificationMessageContact, Utilities.formatName(user.first_name, user.last_name));
+                            msg = LocaleController.formatString("NotificationMessageContact", R.string.NotificationMessageContact, ContactsController.formatName(user.first_name, user.last_name));
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaGeo) {
-                            msg = LocaleController.formatString("NotificationMessageMap", R.string.NotificationMessageMap, Utilities.formatName(user.first_name, user.last_name));
+                            msg = LocaleController.formatString("NotificationMessageMap", R.string.NotificationMessageMap, ContactsController.formatName(user.first_name, user.last_name));
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
-                            msg = LocaleController.formatString("NotificationMessageDocument", R.string.NotificationMessageDocument, Utilities.formatName(user.first_name, user.last_name));
+                            msg = LocaleController.formatString("NotificationMessageDocument", R.string.NotificationMessageDocument, ContactsController.formatName(user.first_name, user.last_name));
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaAudio) {
-                            msg = LocaleController.formatString("NotificationMessageAudio", R.string.NotificationMessageAudio, Utilities.formatName(user.first_name, user.last_name));
+                            msg = LocaleController.formatString("NotificationMessageAudio", R.string.NotificationMessageAudio, ContactsController.formatName(user.first_name, user.last_name));
                         }
                     }
                 } else {
-                    msg = LocaleController.formatString("NotificationMessageNoText", R.string.NotificationMessageNoText, Utilities.formatName(user.first_name, user.last_name));
+                    msg = LocaleController.formatString("NotificationMessageNoText", R.string.NotificationMessageNoText, ContactsController.formatName(user.first_name, user.last_name));
                 }
             } else if (chat_id != 0) {
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
@@ -163,29 +162,29 @@ public class NotificationsController {
                     if (messageObject.messageOwner instanceof TLRPC.TL_messageService) {
                         if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionChatAddUser) {
                             if (messageObject.messageOwner.action.user_id == UserConfig.getClientUserId()) {
-                                msg = LocaleController.formatString("NotificationInvitedToGroup", R.string.NotificationInvitedToGroup, Utilities.formatName(user.first_name, user.last_name), chat.title);
+                                msg = LocaleController.formatString("NotificationInvitedToGroup", R.string.NotificationInvitedToGroup, ContactsController.formatName(user.first_name, user.last_name), chat.title);
                             } else {
                                 TLRPC.User u2 = MessagesController.getInstance().getUser(messageObject.messageOwner.action.user_id);
                                 if (u2 == null) {
                                     return null;
                                 }
-                                msg = LocaleController.formatString("NotificationGroupAddMember", R.string.NotificationGroupAddMember, Utilities.formatName(user.first_name, user.last_name), chat.title, Utilities.formatName(u2.first_name, u2.last_name));
+                                msg = LocaleController.formatString("NotificationGroupAddMember", R.string.NotificationGroupAddMember, ContactsController.formatName(user.first_name, user.last_name), chat.title, ContactsController.formatName(u2.first_name, u2.last_name));
                             }
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionChatEditTitle) {
-                            msg = LocaleController.formatString("NotificationEditedGroupName", R.string.NotificationEditedGroupName, Utilities.formatName(user.first_name, user.last_name), messageObject.messageOwner.action.title);
+                            msg = LocaleController.formatString("NotificationEditedGroupName", R.string.NotificationEditedGroupName, ContactsController.formatName(user.first_name, user.last_name), messageObject.messageOwner.action.title);
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionChatEditPhoto || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionChatDeletePhoto) {
-                            msg = LocaleController.formatString("NotificationEditedGroupPhoto", R.string.NotificationEditedGroupPhoto, Utilities.formatName(user.first_name, user.last_name), chat.title);
+                            msg = LocaleController.formatString("NotificationEditedGroupPhoto", R.string.NotificationEditedGroupPhoto, ContactsController.formatName(user.first_name, user.last_name), chat.title);
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionChatDeleteUser) {
                             if (messageObject.messageOwner.action.user_id == UserConfig.getClientUserId()) {
-                                msg = LocaleController.formatString("NotificationGroupKickYou", R.string.NotificationGroupKickYou, Utilities.formatName(user.first_name, user.last_name), chat.title);
+                                msg = LocaleController.formatString("NotificationGroupKickYou", R.string.NotificationGroupKickYou, ContactsController.formatName(user.first_name, user.last_name), chat.title);
                             } else if (messageObject.messageOwner.action.user_id == user.id) {
-                                msg = LocaleController.formatString("NotificationGroupLeftMember", R.string.NotificationGroupLeftMember, Utilities.formatName(user.first_name, user.last_name), chat.title);
+                                msg = LocaleController.formatString("NotificationGroupLeftMember", R.string.NotificationGroupLeftMember, ContactsController.formatName(user.first_name, user.last_name), chat.title);
                             } else {
                                 TLRPC.User u2 = MessagesController.getInstance().getUser(messageObject.messageOwner.action.user_id);
                                 if (u2 == null) {
                                     return null;
                                 }
-                                msg = LocaleController.formatString("NotificationGroupKickMember", R.string.NotificationGroupKickMember, Utilities.formatName(user.first_name, user.last_name), chat.title, Utilities.formatName(u2.first_name, u2.last_name));
+                                msg = LocaleController.formatString("NotificationGroupKickMember", R.string.NotificationGroupKickMember, ContactsController.formatName(user.first_name, user.last_name), chat.title, ContactsController.formatName(u2.first_name, u2.last_name));
                             }
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionChatCreate) {
                             msg = messageObject.messageText.toString();
@@ -193,26 +192,26 @@ public class NotificationsController {
                     } else {
                         if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty) {
                             if (messageObject.messageOwner.message != null && messageObject.messageOwner.message.length() != 0) {
-                                msg = LocaleController.formatString("NotificationMessageGroupText", R.string.NotificationMessageGroupText, Utilities.formatName(user.first_name, user.last_name), chat.title, messageObject.messageOwner.message);
+                                msg = LocaleController.formatString("NotificationMessageGroupText", R.string.NotificationMessageGroupText, ContactsController.formatName(user.first_name, user.last_name), chat.title, messageObject.messageOwner.message);
                             } else {
-                                msg = LocaleController.formatString("NotificationMessageGroupNoText", R.string.NotificationMessageGroupNoText, Utilities.formatName(user.first_name, user.last_name), chat.title);
+                                msg = LocaleController.formatString("NotificationMessageGroupNoText", R.string.NotificationMessageGroupNoText, ContactsController.formatName(user.first_name, user.last_name), chat.title);
                             }
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
-                            msg = LocaleController.formatString("NotificationMessageGroupPhoto", R.string.NotificationMessageGroupPhoto, Utilities.formatName(user.first_name, user.last_name), chat.title);
+                            msg = LocaleController.formatString("NotificationMessageGroupPhoto", R.string.NotificationMessageGroupPhoto, ContactsController.formatName(user.first_name, user.last_name), chat.title);
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
-                            msg = LocaleController.formatString("NotificationMessageGroupVideo", R.string.NotificationMessageGroupVideo, Utilities.formatName(user.first_name, user.last_name), chat.title);
+                            msg = LocaleController.formatString("NotificationMessageGroupVideo", R.string.NotificationMessageGroupVideo, ContactsController.formatName(user.first_name, user.last_name), chat.title);
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaContact) {
-                            msg = LocaleController.formatString("NotificationMessageGroupContact", R.string.NotificationMessageGroupContact, Utilities.formatName(user.first_name, user.last_name), chat.title);
+                            msg = LocaleController.formatString("NotificationMessageGroupContact", R.string.NotificationMessageGroupContact, ContactsController.formatName(user.first_name, user.last_name), chat.title);
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaGeo) {
-                            msg = LocaleController.formatString("NotificationMessageGroupMap", R.string.NotificationMessageGroupMap, Utilities.formatName(user.first_name, user.last_name), chat.title);
+                            msg = LocaleController.formatString("NotificationMessageGroupMap", R.string.NotificationMessageGroupMap, ContactsController.formatName(user.first_name, user.last_name), chat.title);
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
-                            msg = LocaleController.formatString("NotificationMessageGroupDocument", R.string.NotificationMessageGroupDocument, Utilities.formatName(user.first_name, user.last_name), chat.title);
+                            msg = LocaleController.formatString("NotificationMessageGroupDocument", R.string.NotificationMessageGroupDocument, ContactsController.formatName(user.first_name, user.last_name), chat.title);
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaAudio) {
-                            msg = LocaleController.formatString("NotificationMessageGroupAudio", R.string.NotificationMessageGroupAudio, Utilities.formatName(user.first_name, user.last_name), chat.title);
+                            msg = LocaleController.formatString("NotificationMessageGroupAudio", R.string.NotificationMessageGroupAudio, ContactsController.formatName(user.first_name, user.last_name), chat.title);
                         }
                     }
                 } else {
-                    msg = LocaleController.formatString("NotificationMessageGroupNoText", R.string.NotificationMessageGroupNoText, Utilities.formatName(user.first_name, user.last_name), chat.title);
+                    msg = LocaleController.formatString("NotificationMessageGroupNoText", R.string.NotificationMessageGroupNoText, ContactsController.formatName(user.first_name, user.last_name), chat.title);
                 }
             }
         } else {
@@ -358,7 +357,7 @@ public class NotificationsController {
                 if (chat != null) {
                     name = chat.title;
                 } else {
-                    name = Utilities.formatName(user.first_name, user.last_name);
+                    name = ContactsController.formatName(user.first_name, user.last_name);
                 }
             }
 
