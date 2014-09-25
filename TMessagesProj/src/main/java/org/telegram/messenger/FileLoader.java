@@ -606,7 +606,7 @@ public class FileLoader {
             }
         } else if (attach instanceof TLRPC.PhotoSize) {
             TLRPC.PhotoSize photoSize = (TLRPC.PhotoSize)attach;
-            if (photoSize.location == null || photoSize.location.key != null) {
+            if (photoSize.location == null || photoSize.location.key != null || photoSize.location.volume_id == Integer.MIN_VALUE && photoSize.location.local_id < 0) {
                 dir = getInstance().getDirectory(MEDIA_DIR_CACHE);
             } else {
                 dir = getInstance().getDirectory(MEDIA_DIR_IMAGE);
@@ -620,7 +620,7 @@ public class FileLoader {
             }
         } else if (attach instanceof TLRPC.FileLocation) {
             TLRPC.FileLocation fileLocation = (TLRPC.FileLocation)attach;
-            if (fileLocation.key != null) {
+            if (fileLocation.key != null || fileLocation.volume_id == Integer.MIN_VALUE && fileLocation.local_id < 0) {
                 dir = getInstance().getDirectory(MEDIA_DIR_CACHE);
             } else {
                 dir = getInstance().getDirectory(MEDIA_DIR_IMAGE);

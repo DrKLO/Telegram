@@ -1064,7 +1064,12 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                 break;
                             }
                             File cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName + ".jpg");
-                            File cacheFile2 = FileLoader.getPathToAttach(size);
+                            File cacheFile2 = null;
+                            if (sentMessage.media.photo.sizes.size() == 1 || size.w > 80 || size.h > 80) {
+                                cacheFile2 = FileLoader.getPathToAttach(size);
+                            } else {
+                                cacheFile2 = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName2 + ".jpg");
+                            }
                             cacheFile.renameTo(cacheFile2);
                             ImageLoader.getInstance().replaceImageInCache(fileName, fileName2);
                             size2.location = size.location;
@@ -1086,7 +1091,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     String fileName2 = size.location.volume_id + "_" + size.location.local_id;
                     if (!fileName.equals(fileName2)) {
                         File cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName + ".jpg");
-                        File cacheFile2 = FileLoader.getPathToAttach(size);
+                        File cacheFile2 = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName2 + ".jpg");
                         cacheFile.renameTo(cacheFile2);
                         ImageLoader.getInstance().replaceImageInCache(fileName, fileName2);
                         size2.location = size.location;
@@ -1107,7 +1112,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     String fileName2 = size.location.volume_id + "_" + size.location.local_id;
                     if (!fileName.equals(fileName2)) {
                         File cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName + ".jpg");
-                        File cacheFile2 = FileLoader.getPathToAttach(size);
+                        File cacheFile2 = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName2 + ".jpg");
                         cacheFile.renameTo(cacheFile2);
                         ImageLoader.getInstance().replaceImageInCache(fileName, fileName2);
                         size2.location = size.location;

@@ -42,6 +42,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
 
     public static interface ChatMediaCellDelegate {
         public abstract void didPressedImage(ChatMediaCell cell);
+        public abstract void didPressedOther(ChatMediaCell cell);
     }
 
     private static Drawable placeholderInDrawable;
@@ -77,6 +78,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     private int buttonState = 0;
     private int buttonPressed = 0;
     private boolean imagePressed = false;
+    private boolean otherPressed = false;
     private int buttonX;
     private int buttonY;
 
@@ -182,6 +184,9 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                         if (x >= photoImage.getImageX() && x <= photoImage.getImageX() + backgroundWidth - AndroidUtilities.dp(50) && y >= photoImage.getImageY() && y <= photoImage.getImageY() + photoImage.getImageHeight()) {
                             imagePressed = true;
                             result = true;
+                        } else if (x >= photoImage.getImageX() + backgroundWidth - AndroidUtilities.dp(50) && x <= photoImage.getImageX() + backgroundWidth && y >= photoImage.getImageY() && y <= photoImage.getImageY() + photoImage.getImageHeight()) {
+                            otherPressed = true;
+                            result = true;
                         }
                     } else {
                         if (x >= photoImage.getImageX() && x <= photoImage.getImageX() + backgroundWidth && y >= photoImage.getImageY() && y <= photoImage.getImageY() + photoImage.getImageHeight()) {
@@ -223,9 +228,32 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     imagePressed = false;
                     invalidate();
                 } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                    if (!photoImage.isInsideImage(x, y)) {
-                        imagePressed = false;
-                        invalidate();
+                    if (currentMessageObject.type == 9) {
+                        if (!(x >= photoImage.getImageX() && x <= photoImage.getImageX() + backgroundWidth - AndroidUtilities.dp(50) && y >= photoImage.getImageY() && y <= photoImage.getImageY() + photoImage.getImageHeight())) {
+                            imagePressed = false;
+                            invalidate();
+                        }
+                    } else {
+                        if (!photoImage.isInsideImage(x, y)) {
+                            imagePressed = false;
+                            invalidate();
+                        }
+                    }
+                }
+            } else if (otherPressed) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    otherPressed = false;
+                    playSoundEffect(SoundEffectConstants.CLICK);
+                    if (mediaDelegate != null) {
+                        mediaDelegate.didPressedOther(this);
+                    }
+                } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    otherPressed = false;
+                } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                    if (currentMessageObject.type == 9) {
+                        if (!(x >= photoImage.getImageX() + backgroundWidth - AndroidUtilities.dp(50) && x <= photoImage.getImageX() + backgroundWidth && y >= photoImage.getImageY() && y <= photoImage.getImageY() + photoImage.getImageHeight())) {
+                            otherPressed = false;
+                        }
                     }
                 }
             }

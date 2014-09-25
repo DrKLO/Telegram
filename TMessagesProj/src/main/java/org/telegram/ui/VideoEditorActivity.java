@@ -412,7 +412,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
         }
         int width = rotationValue == 90 || rotationValue == 270 ? resultHeight : resultWidth;
         int height = rotationValue == 90 || rotationValue == 270 ? resultWidth : resultHeight;
-        String videoDimension = String.format("%dx%d", resultWidth, resultHeight);
+        String videoDimension = String.format("%dx%d", width, height);
 
         esimatedDuration = (long)Math.max(1000, (videoTimelineView.getRightProgress() - videoTimelineView.getLeftProgress()) * videoDuration);
         estimatedSize = calculateEstimatedSize((float)esimatedDuration / videoDuration);
@@ -638,7 +638,9 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             @Override
             public void run() {
                 if (firstWrite) {
-                    delegate.didStartVideoConverting(videoPath, VideoEditorActivity.this.videoPath, estimatedSize, (int)esimatedDuration, resultWidth, resultHeight);
+                    int width = rotationValue == 90 || rotationValue == 270 ? resultHeight : resultWidth;
+                    int height = rotationValue == 90 || rotationValue == 270 ? resultWidth : resultHeight;
+                    delegate.didStartVideoConverting(videoPath, VideoEditorActivity.this.videoPath, estimatedSize, (int)esimatedDuration, width, height);
                     firstWrite = false;
                     finishFragment();
                 } else {
@@ -880,7 +882,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                             colorFormat = selectColorFormat(codecInfo, MIME_TYPE);
                             if (codecInfo.getName().contains("OMX.qcom.")) {
                                 processorType = PROCESSOR_TYPE_QCOM;
-                                if (Build.MANUFACTURER.toLowerCase().equals("nokia")) {
+                                if (Build.VERSION.SDK_INT == 16) { //nokia, lge
                                     swapUV = 1;
                                 }
                             }
@@ -900,9 +902,11 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                                 bufferSize += padding * 5 / 4;
                             }
                         } else if (processorType == PROCESSOR_TYPE_QCOM) {
-                            int uvoffset = (resultWidth * resultHeight + 2047) & ~2047;
-                            padding = uvoffset - (resultWidth * resultHeight);
-                            bufferSize += padding;
+                            if (!Build.MANUFACTURER.toLowerCase().equals("lge")) {
+                                int uvoffset = (resultWidth * resultHeight + 2047) & ~2047;
+                                padding = uvoffset - (resultWidth * resultHeight);
+                                bufferSize += padding;
+                            }
                         }
 
                         extractor.selectTrack(videoIndex);

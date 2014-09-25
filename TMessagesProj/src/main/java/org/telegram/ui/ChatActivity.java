@@ -3375,6 +3375,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 }
                             }
                         }
+
+                        @Override
+                        public void didPressedOther(ChatMediaCell cell) {
+                            createMenu(cell, true);
+                        }
                     };
                 }
 
@@ -3477,11 +3482,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (type == 11 || type == 10) {
                 int width = 0;
                 if (AndroidUtilities.isTablet()) {
-                    int leftWidth = AndroidUtilities.displaySize.x / 100 * 35;
-                    if (leftWidth < AndroidUtilities.dp(320)) {
-                        leftWidth = AndroidUtilities.dp(320);
-                    }
-                    width = AndroidUtilities.displaySize.x - leftWidth - AndroidUtilities.dp(30);
+                    width = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(30);
                 } else {
                     width = AndroidUtilities.displaySize.x - AndroidUtilities.dp(30);
                 }

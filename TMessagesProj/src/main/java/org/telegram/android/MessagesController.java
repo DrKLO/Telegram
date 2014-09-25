@@ -1654,11 +1654,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             size.type = "s";
             sizes.add(size);
         }
-        size = ImageLoader.scaleAndSaveImage(bitmap, 320, 320, 80, false);
-        if (size != null) {
-            size.type = "m";
-            sizes.add(size);
-        }
         size = ImageLoader.scaleAndSaveImage(bitmap, 800, 800, 80, false);
         if (size != null) {
             size.type = "x";

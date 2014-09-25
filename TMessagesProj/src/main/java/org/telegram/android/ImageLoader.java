@@ -585,7 +585,14 @@ public class ImageLoader {
 
     private HashMap<Integer, File> createMediaPaths() {
         HashMap<Integer, File> mediaDirs = new HashMap<Integer, File>();
-        mediaDirs.put(FileLoader.MEDIA_DIR_CACHE, AndroidUtilities.getCacheDir());
+        File cachePath = AndroidUtilities.getCacheDir();
+        try {
+            cachePath.mkdirs();
+            new File(cachePath, ".nomedia").createNewFile();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        mediaDirs.put(FileLoader.MEDIA_DIR_CACHE, cachePath);
         try {
             if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
                 File telegramPath = new File(Environment.getExternalStorageDirectory(), LocaleController.getString("AppName", R.string.AppName));
@@ -780,7 +787,7 @@ public class ImageLoader {
         if (!added) {
             boolean onlyCache = false;
             File cacheFile = null;
-            if (size == 0 || httpUrl != null || fileLocation != null && fileLocation.key != null) {
+            if (size == 0 || httpUrl != null || fileLocation != null && (fileLocation.key != null || fileLocation.volume_id == Integer.MIN_VALUE && fileLocation.local_id < 0)) {
                 cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), url);
             } else {
                 cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_IMAGE), url);

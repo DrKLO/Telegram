@@ -259,7 +259,7 @@
     <string name="ContactJoined">اشترك صديق في تيليجرام</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">اللغة</string>
-    <string name="AskAQuestionInfo">نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحاول الرد بسرعة قدر المستطاع، لكن ربما نستغرق القليل من الوقت.<![CDATA[<br><br>]]>يرجى الإطلاع على <![CDATA[<a href="http://telegram.org/faq/ar">الأسئلة الشائعة عن تيليجرام</a>]]>: يوجد بها حلول للمشاكل وإجابات لمعظم الأسئلة.</string>
+    <string name="AskAQuestionInfo">نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحاول الرد بسرعة قدر المستطاع، لكن ربما نستغرق القليل من الوقت.<![CDATA[<br><br>]]>يرجى الإطلاع على <![CDATA[<a href=\"http://telegram.org/faq/ar\">الأسئلة الشائعة عن تيليجرام</a>]]>: يوجد بها حلول للمشاكل وإجابات لمعظم الأسئلة.</string>
     <string name="AskButton">اسأل أحد المتطوعين</string>
     <string name="TelegramFaq">الأسئلة الشائعة عن تيليجرام</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq/ar</string>

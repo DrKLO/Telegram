@@ -46,12 +46,12 @@
     <string name="WaitingForNetwork">Wachten op netwerk…</string>
     <string name="Connecting">Verbinden…</string>
     <string name="Updating">Bijwerken…</string>
-    <string name="NewSecretChat">Nieuw privégesprek</string>
+    <string name="NewSecretChat">Nieuwe geheime chat</string>
     <string name="AwaitingEncryption">Wachten tot %s online komt…</string>
-    <string name="EncryptionRejected">Privégesprek geannuleerd</string>
+    <string name="EncryptionRejected">Geheime chat geannuleerd</string>
     <string name="EncryptionProcessing">Encryptiesleutels uitwisselen…</string>
-    <string name="EncryptedChatStartedOutgoing">%s neemt nu deel aan het privégesprek.</string>
-    <string name="EncryptedChatStartedIncoming">Je neemt nu deel aan het privégesprek.</string>
+    <string name="EncryptedChatStartedOutgoing">Geheime chat gestart met %s</string>
+    <string name="EncryptedChatStartedIncoming">Toegevoegd aan de geheime chat.</string>
     <string name="ClearHistory">Geschiedenis wissen</string>
     <string name="DeleteChat">Verwijderen en verlaten</string>
     <string name="HiddenName">Verborgen naam</string>
@@ -104,13 +104,13 @@
     <string name="Selected">Geselecteerd: %d</string>
     <string name="ShareMyContactInfo">MIJN CONTACTGEGEVENS DELEN</string>
     <string name="AddToContacts">TOEVOEGEN AAN CONTACTEN</string>
-    <string name="EncryptedPlaceholderTitleIncoming">%s heeft je uitgenodigd voor een privégesprek.</string>
-    <string name="EncryptedPlaceholderTitleOutgoing">Je hebt %s uitgenodigd voor een privégesprek.</string>
-    <string name="EncryptedDescriptionTitle">Privégesprekken:</string>
-    <string name="EncryptedDescription1">gebruiken end-to-endversleuteling</string>
-    <string name="EncryptedDescription2">laten geen sporen achter op onze server</string>
-    <string name="EncryptedDescription3">verlopen automatisch</string>
-    <string name="EncryptedDescription4">staan doorsturen niet toe</string>
+    <string name="EncryptedPlaceholderTitleIncoming">%s heeft je uitgenodigd voor een geheime chat.</string>
+    <string name="EncryptedPlaceholderTitleOutgoing">Je hebt %s uitgenodigd voor een geheime chat.</string>
+    <string name="EncryptedDescriptionTitle">Geheime chat functies:</string>
+    <string name="EncryptedDescription1">End-to-end encryptie</string>
+    <string name="EncryptedDescription2">Ontraceerbaar via onze servers</string>
+    <string name="EncryptedDescription3">Zelfvernietigingstimers</string>
+    <string name="EncryptedDescription4">Doorstuurbescherming</string>
     <string name="YouWereKicked">Je bent verwijderd uit deze groep</string>
     <string name="YouLeft">Je hebt deze groep verlaten</string>
     <string name="DeleteThisGroup">Deze groep verwijderen</string>
@@ -121,12 +121,12 @@
     <string name="UnsupportedAttachment">Bestandstype niet ondersteund</string>
 
     <!--notification-->
-    <string name="EncryptedChatRequested">Privégesprek aangevraagd</string>
-    <string name="EncryptedChatAccepted">Privégesprek gestart</string>
-    <string name="MessageLifetimeChanged">%1$s heeft de verlooptijd ingesteld op %2$s</string>
-    <string name="MessageLifetimeChangedOutgoing">Je hebt de verlooptijd ingesteld op %1$s</string>
-    <string name="MessageLifetimeRemoved">%1$s heeft de verlooptijd uitgeschakeld</string>
-    <string name="MessageLifetimeYouRemoved">Je hebt de verlooptijd uitgeschakeld</string>
+    <string name="EncryptedChatRequested">Geheime chat aangevraagd</string>
+    <string name="EncryptedChatAccepted">Geheime chat gestart</string>
+    <string name="MessageLifetimeChanged">%1$s heeft de zelfvernietigingstimer ingesteld op %2$s</string>
+    <string name="MessageLifetimeChangedOutgoing">Je hebt de zelfvernietigingstimer ingesteld op %1$s</string>
+    <string name="MessageLifetimeRemoved">%1$s heeft de zelfvernietigingstimer uitgeschakeld</string>
+    <string name="MessageLifetimeYouRemoved">Je hebt de zelfvernietigingstimer uitgeschakeld</string>
     <string name="MessageLifetime2s">2 seconden</string>
     <string name="MessageLifetime5s">5 seconden</string>
     <string name="MessageLifetime1m">1 minuut</string>
@@ -206,12 +206,12 @@
     <string name="PhoneMain">ALGEMEEN</string>
     <string name="ContactInfo">Contactinformatie</string>
     <string name="PHONE">TELEFOON</string>
-    <string name="StartEncryptedChat">Privégesprek starten</string>
+    <string name="StartEncryptedChat">Geheime chat starten</string>
     <string name="CreateEncryptedChatError">Er is een fout opgetreden.</string>
-    <string name="CreateEncryptedChatOutdatedError">Kan geen privégesprek starten met %1$s.\n\n%2$s gebruikt een oudere versie van Telegram en moet eerst een update installeren.</string>
-    <string name="SecretTitle">Privégesprek</string>
+    <string name="CreateEncryptedChatOutdatedError">Kan geen geheime chat starten met %1$s.\n\n%2$s gebruikt een oudere versie van Telegram en moet eerst een update installeren.</string>
+    <string name="SecretTitle">Geheime chat</string>
     <string name="EncryptionKey">Encryptiesleutel</string>
-    <string name="MessageLifetime">Verlooptijd</string>
+    <string name="MessageLifetime">Zelfvernietigingstimer</string>
     <string name="ShortMessageLifetimeForever">Uit</string>
     <string name="ShortMessageLifetime2s">2s</string>
     <string name="ShortMessageLifetime5s">5s</string>
@@ -219,7 +219,7 @@
     <string name="ShortMessageLifetime1h">1u</string>
     <string name="ShortMessageLifetime1d">1d</string>
     <string name="ShortMessageLifetime1w">1w</string>
-    <string name="EncryptionKeyDescription">Dit is een weergave van de encryptiesleutel voor dit privégesprek met <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Als deze afbeelding er bij <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> hetzelfde uitziet, is jullie gesprek 200%% beveiligd.<![CDATA[<br><br>]]>Lees meer op telegram.org.</string>
+    <string name="EncryptionKeyDescription">Dit is een weergave van de encryptiesleutel voor deze geheime chat met <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Als deze afbeelding er bij <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> hetzelfde uitziet, is jullie gesprek 200%% beveiligd.<![CDATA[<br><br>]]>Lees meer op telegram.org.</string>
 
     <!--settings view-->
     <string name="ResetNotificationsText">Alle meldingsinstellingen herstellen</string>
@@ -251,12 +251,12 @@
     <string name="NoSound">Geen geluid</string>
     <string name="Default">Standaard</string>
     <string name="Support">ONDERSTEUNING</string>
-    <string name="ChatBackground">Achtergrond gesprekken</string>
+    <string name="ChatBackground">Achtergrond</string>
     <string name="MessagesSettings">BERICHTEN</string>
     <string name="SendByEnter">Verzenden met Enter</string>
     <string name="TerminateAllSessions">Beëindig alle andere sessies</string>
     <string name="Events">GEBEURTENISSEN</string>
-    <string name="ContactJoined">Contact lid geworden van Telegram</string>
+    <string name="ContactJoined">Contact lid van Telegram</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Taal</string>
     <string name="AskAQuestionInfo">Houd er rekening mee dat de ondersteuning van Telegram door vrijwilligers wordt gedaan. We doen ons best om zo snel mogelijk te antwoorden, maar het kan even even duren.<![CDATA[<br><br>]]>Bekijk ook de <![CDATA[<a href=\"http://telegram.org/faq#general\">veelgestelde vragen</a>]]>: hier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href=\"http://telegram.org/faq#troubleshooting\">het oplossen van problemen</a>]]>.</string>
@@ -275,20 +275,20 @@
     <string name="SortFirstName">Voornaam</string>
     <string name="SortLastName">Achternaam</string>
     <string name="LedColor">LED kleur</string>
-    <string name="PopupNotification">Popup meldingen</string>
-    <string name="NoPopup">Geen popup</string>
-    <string name="OnlyWhenScreenOn">Alleen wanneer scherm \"aan\" staat</string>
-    <string name="OnlyWhenScreenOff">Alleen wanneer scherm \"uit\" staat</string>
-    <string name="AlwaysShowPopup">Altijd popup tonen</string>
+    <string name="PopupNotification">Pop-up meldingen</string>
+    <string name="NoPopup">Geen pop-up</string>
+    <string name="OnlyWhenScreenOn">Alleen bij scherm aan</string>
+    <string name="OnlyWhenScreenOff">Alleen bij scherm uit</string>
+    <string name="AlwaysShowPopup">Altijd pop-up tonen</string>
     <string name="BadgeNumber">Badgenummer</string>
     <string name="Short">Kort</string>
     <string name="Long">Lang</string>
     <string name="SystemDefault">Systeem standaard</string>
     <string name="SettingsDefault">Standaardinstelling</string>
     <string name="AutomaticMediaDownload">AUTOMATISCH MEDIA OPHALEN</string>
-    <string name="WhenUsingMobileData">Bij mobiel datagebruik</string>
-    <string name="WhenConnectedOnWiFi">Bij Wi-Fi verbinding</string>
-    <string name="WhenRoaming">Bij roamen</string>
+    <string name="WhenUsingMobileData">Bij mobiele verbinding</string>
+    <string name="WhenConnectedOnWiFi">Bij Wi-Fi-verbinding</string>
+    <string name="WhenRoaming">Bij roaming</string>
     <string name="NoMediaAutoDownload">Geen media</string>
 
     <!--media view-->
@@ -393,7 +393,7 @@
     <string name="AreYouSureBlockContact">Weet je zeker dat je deze persoon wilt blokkeren?</string>
     <string name="AreYouSureUnblockContact">Weet je zeker dat je deze persoon wilt deblokkeren?</string>
     <string name="AreYouSureDeleteContact">Weet je zeker dat je deze contactpersoon wilt verwijderen?</string>
-    <string name="AreYouSureSecretChat">Weet je zeker dat je een privégesprek wilt starten?</string>
+    <string name="AreYouSureSecretChat">Weet je zeker dat je een geheime chat wilt starten?</string>
     <string name="ForwardFromMyName">doorsturen via mijn eigen naam</string>
 
     <!--Intro view-->
@@ -404,14 +404,14 @@
     <string name="Page5Title">Krachtig</string>
     <string name="Page6Title">In de cloud</string>
     <string name="Page7Title">Privé</string>
-    <string name="Page1Message">Welkom in het tijdperk van snel en veilig chatten</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> bezorgt berichten sneller dan elke andere app</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is altijd gratis. Geen advertenties. Geen abonnementskosten</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> beveiligt je berichten tegen hackers</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> heeft geen beperkingen op de grootte van je media en gesprekken</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> biedt toegang tot je berichten vanaf meerdere apparaten</string>
+    <string name="Page1Message">\'s Werelds <![CDATA[<b>snelste</b>]]> berichtendienst.<![CDATA[<br/>]]>Het is <![CDATA[<b>veilig</b>]]> en  <![CDATA[<b>gratis</b>]]>.</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> bezorgt berichten<![CDATA[<br/>]]>sneller dan elke andere applicatie.</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is altijd gratis. <![CDATA[<br/>]]>Geen advertenties.<![CDATA[<br/>]]>Geen abonnementskosten.</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> beveiligt je berichten<![CDATA[<br/>]]>tegen aanvallen van hackers.</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> beperkt je niet<![CDATA[<br/>]]>in de grootte van je media of gesprekken.</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> biedt toegang tot je berichten<![CDATA[<br/>]]>vanaf meerdere apparaten.</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> berichten zijn sterk versleuteld<![CDATA[<br/>]]>en kunnen zichzelf vernietigen</string>
-    <string name="StartMessaging">Begin nu met chatten</string>
+    <string name="StartMessaging">Begin met chatten</string>
 
     <!--plurals-->
     <string name="Members_zero">geen deelnemers</string>

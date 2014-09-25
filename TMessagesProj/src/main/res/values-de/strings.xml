@@ -43,7 +43,7 @@
     <string name="NoResult">Keine Ergebnisse</string>
     <string name="NoChats">Noch keine Chats…</string>
     <string name="NoChatsHelp">Beginne Telegram zu nutzen, indem du\neine neue Nachricht erstellst (rechte obere Ecke)\noder deine Kontakte aufrufst.</string>
-    <string name="WaitingForNetwork">Warte auf Verbindung…</string>
+    <string name="WaitingForNetwork">Warte auf Netzwerk...</string>
     <string name="Connecting">Verbinde…</string>
     <string name="Updating">Aktualisiere…</string>
     <string name="NewSecretChat">Neuer geheimer Chat</string>
@@ -60,7 +60,7 @@
     <!--broadcasts-->
     <string name="BroadcastList">Broadcast Liste</string>
     <string name="NewBroadcastList">Neue Broadcast Liste</string>
-    <string name="EnterListName">Name der Liste eingeben</string>
+    <string name="EnterListName">Listenname</string>
     <string name="YouCreatedBroadcastList">Du hast eine Broadcast Liste erstellt</string>
     <string name="AddRecipient">Empfänger hinzufügen</string>
     <string name="KickFromBroadcast">Aus Broadcast Liste entfernen</string>
@@ -85,12 +85,12 @@
     <string name="Attach">Anhängen</string>
     <string name="IsTyping">schreibt...</string>
     <string name="AreTyping">tippen…</string>
-    <string name="GotAQuestion">Du hast eine Frage\nzu Telegram?</string>
+    <string name="GotAQuestion">Hast du eine Frage\nzu Telegram?</string>
     <string name="ChatTakePhoto">Foto aufnehmen</string>
     <string name="ChatGallery">Galerie</string>
     <string name="ChatLocation">Standort</string>
     <string name="ChatVideo">Video</string>
-    <string name="ChatDocument">Dokument</string>
+    <string name="ChatDocument">Datei</string>
     <string name="NoMessages">Noch keine Nachrichten…</string>
     <string name="ViewPhoto">Foto anzeigen</string>
     <string name="ViewLocation">Standort anzeigen</string>
@@ -106,18 +106,18 @@
     <string name="AddToContacts">ZU KONTAKTEN HINZUFÜGEN</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s hat dich zu einem geheimen Chat eingeladen.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">Du hast %s zu einem geheimen Chat eingeladen.</string>
-    <string name="EncryptedDescriptionTitle">Geheime Chats:</string>
-    <string name="EncryptedDescription1">Verwenden End-to-End-Verschlüsselung</string>
-    <string name="EncryptedDescription2">Hinterlassen keine Spuren auf unseren Servern</string>
-    <string name="EncryptedDescription3">Haben einen Selbstzerstörungs-Timer</string>
-    <string name="EncryptedDescription4">Erlauben keine Weiterleitung von Nachrichten</string>
+    <string name="EncryptedDescriptionTitle">Geheime Chats in Kürze:</string>
+    <string name="EncryptedDescription1">Ende-zu-Ende Verschlüsselung</string>
+    <string name="EncryptedDescription2">Keine Serverspeicherung</string>
+    <string name="EncryptedDescription3">Selbstzerstörungs-Timer</string>
+    <string name="EncryptedDescription4">Verbieten Weiterleitung</string>
     <string name="YouWereKicked">Du wurdest aus der Gruppe entfernt</string>
     <string name="YouLeft">Du hast die Gruppe verlassen</string>
     <string name="DeleteThisGroup">Diese Gruppe löschen</string>
     <string name="DeleteThisChat">Diesen Chat löschen</string>
     <string name="SlideToCancel">WISCHEN UM ABZUBRECHEN</string>
-    <string name="SaveToDownloads">Im Ordner Downloads speichern</string>
-    <string name="ApplyLocalizationFile">Standort-Datei benutzen</string>
+    <string name="SaveToDownloads">In Downloads speichern</string>
+    <string name="ApplyLocalizationFile">Sprachdatei benutzen</string>
     <string name="UnsupportedAttachment">Nicht unterstützte Datei</string>
 
     <!--notification-->
@@ -140,7 +140,7 @@
     <string name="NotificationMessageVideo">%1$s hat dir ein Video gesendet</string>
     <string name="NotificationMessageContact">%1$s hat dir einen Kontakt gesendet</string>
     <string name="NotificationMessageMap">%1$s hat dir einen Standort gesendet</string>
-    <string name="NotificationMessageDocument">%1$s hat dir ein Dokument gesendet</string>
+    <string name="NotificationMessageDocument">%1$s hat dir eine Datei gesendet</string>
     <string name="NotificationMessageAudio">%1$s hat dir eine Audio-Datei gesendet</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s hat eine Nachricht an die Gruppe %2$s gesendet</string>
@@ -148,7 +148,7 @@
     <string name="NotificationMessageGroupVideo">%1$s hat ein Video an die Gruppe %2$s gesendet</string>
     <string name="NotificationMessageGroupContact">%1$s hat einen Kontakt an die Gruppe %2$s gesendet</string>
     <string name="NotificationMessageGroupMap">%1$s hat einen Standort an die Gruppe %2$s gesendet</string>
-    <string name="NotificationMessageGroupDocument">%1$s hat ein Dokument an die Gruppe %2$s gesendet</string>
+    <string name="NotificationMessageGroupDocument">%1$s hat eine Datei an die Gruppe %2$s gesendet</string>
     <string name="NotificationMessageGroupAudio">%1$s hat eine Audio-Datei an die Gruppe %2$s gesendet</string>
     <string name="NotificationInvitedToGroup">%1$s hat dich in die Gruppe %2$s eingeladen</string>
     <string name="NotificationEditedGroupName">%1$s hat den Namen der Gruppe %2$s geändert</string>
@@ -177,7 +177,7 @@
 
     <!--group create view-->
     <string name="SendMessageTo">Sende Nachricht an…</string>
-    <string name="EnterGroupNamePlaceholder">Gruppennamen eingeben</string>
+    <string name="EnterGroupNamePlaceholder">Gruppenname</string>
     <string name="GroupName">Gruppenname</string>
     <string name="AllContacts">ALLE KONTAKTE</string>
     <string name="MembersCount">%1$d/%2$d Mitglieder</string>
@@ -190,7 +190,7 @@
     <string name="SETTINGS">EINSTELLUNGEN</string>
     <string name="AddMember">Mitglied hinzufügen</string>
     <string name="DeleteAndExit">Gruppe löschen und verlassen</string>
-    <string name="Notifications">Benachrichtigungen</string>
+    <string name="Notifications">Mitteilungen</string>
     <string name="KickFromGroup">Aus der Gruppe entfernen</string>
 
     <!--contact info view-->
@@ -222,7 +222,7 @@
     <string name="EncryptionKeyDescription">Dieses Bild ist eine Visualisierung des geheimen Schlüssels für den geheimen Chat mit <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Wenn dieses Bild auf <![CDATA[<b>]]>%2$s\s<![CDATA[</b>]]> Telefon genau so aussieht, ist euer Chat zu 200%% sicher.<![CDATA[<br><br>]]>Erfahre mehr über die Sicherheit auf telegram.org</string>
 
     <!--settings view-->
-    <string name="ResetNotificationsText">Alle Einstellungen für Benachrichtigungen zurücksetzen</string>
+    <string name="ResetNotificationsText">Alle Einstellungen für Mitteilungen zurücksetzen</string>
     <string name="TextSize">Textgröße für Nachrichten</string>
     <string name="AskAQuestion">Eine Frage stellen</string>
     <string name="EnableAnimations">Animationen aktivieren</string>
@@ -241,9 +241,9 @@
     <string name="Vibrate">Vibrieren</string>
     <string name="InAppPreview">In-App-Vorschau</string>
     <string name="Reset">ZURÜCKSETZEN</string>
-    <string name="ResetAllNotifications">Alle Benachrichtigungs-Einstellungen zurücksetzen</string>
-    <string name="UndoAllCustom">Setzt alle benutzerdefinierten Einstellungen für Benachrichtigungen zurück</string>
-    <string name="NotificationsAndSounds">Benachrichtigungen</string>
+    <string name="ResetAllNotifications">Mitteilungseinstellungen zurücksetzen</string>
+    <string name="UndoAllCustom">Setzt alle benutzerdefinierten Einstellungen für Mitteilungen zurück</string>
+    <string name="NotificationsAndSounds">Mitteilungen und Töne</string>
     <string name="BlockedUsers">Blockierte Benutzer</string>
     <string name="SaveIncomingPhotos">Speichere eingehende Bilder</string>
     <string name="LogOut">Abmelden</string>
@@ -253,34 +253,34 @@
     <string name="Support">SUPPORT</string>
     <string name="ChatBackground">Chat-Hintergrundbild</string>
     <string name="MessagesSettings">NACHRICHTEN</string>
-    <string name="SendByEnter">Mit ENTER senden</string>
+    <string name="SendByEnter">Mit Enter senden</string>
     <string name="TerminateAllSessions">Alle anderen Sitzungen beenden</string>
     <string name="Events">EREIGNISSE</string>
     <string name="ContactJoined">Kontakt ist Telegram beigetreten</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Sprache</string>
-    <string name="AskAQuestionInfo">Bedenke bitte, dass der Telegram Support von Freiwilligen geleistet wird. Wir versuchen so schnell wie möglich zu antworten. Dies kann jedoch manchmal etwas länger dauern.<![CDATA[<br><br>]]>Bitte schau in den <![CDATA[<a href="http://telegram.org/faq#general">Telegram FAQ</a>]]> nach. Dort findest du Antworten auf die meisten Fragen und wichtige Tipps zur <![CDATA[<a href="http://telegram.org/faq#troubleshooting">Problemlösung</a>]]>.</string>
+    <string name="AskAQuestionInfo">Bedenke bitte, dass der Telegram Support von einem ehrenamtlichen Team betreut wird. Wir versuchen so schnell wie möglich zu antworten, dies kann jedoch manchmal ein bisschen dauern.<![CDATA[<br><br>]]>Bitte schau auch in den <![CDATA[<a href=\"http://telegram.org/faq/de\">Fragen und Antworten </a>]]> nach. Dort findest du Antworten auf die meisten Fragen und wichtige Tipps zur <![CDATA[<a href=\"https://telegram.org/faq/de#problembehandlung\">Problembehandlung</a>]]>.</string>
     <string name="AskButton">Frage einen Freiwilligen</string>
-    <string name="TelegramFaq">Telegram-FAQ</string>
+    <string name="TelegramFaq">Fragen und Antworten zu Telegram</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
     <string name="DeleteLocalization">Lokalisierung löschen?</string>
     <string name="IncorrectLocalization">Falsche Sprachdatei</string>
     <string name="Enabled">Aktiviert</string>
     <string name="Disabled">Deaktiviert</string>
-    <string name="NotificationsService">Dienst für Benachrichtigungen</string>
-    <string name="NotificationsServiceDisableInfo">Sofern Google Play Dienste ausreichend für deine Benachrichtigungen sind, kannst du unseren Benachrichtigungsdienst abschalten. Wir empfehlen allerdings, unseren Dienst dauerhaft aktiviert zu lassen um über neue Nachrichten in Echtzeit informiert zu werden.</string>
+    <string name="NotificationsService">Mitteilungsdienst</string>
+    <string name="NotificationsServiceDisableInfo">Sofern Google Play Dienste ausreichend für deine Mitteilungen sind, kannst du unseren Mitteilungsdienst abschalten. Wir empfehlen allerdings, unseren Dienst dauerhaft aktiviert zu lassen um über neue Nachrichten in Echtzeit informiert zu werden.</string>
     <string name="SortBy">sortiert nach</string>
     <string name="ImportContacts">Kontakte importieren</string>
     <string name="WiFiOnly">Nur über W-LAN</string>
     <string name="SortFirstName">Vorname</string>
     <string name="SortLastName">Nachname</string>
     <string name="LedColor">LED-Farbe</string>
-    <string name="PopupNotification">Popup Benachrichtigungen</string>
+    <string name="PopupNotification">Popup Mitteilungen</string>
     <string name="NoPopup">Kein Popup</string>
     <string name="OnlyWhenScreenOn">Nur wenn Bildschirm „an“</string>
     <string name="OnlyWhenScreenOff">Nur wenn Bildschirm „aus“</string>
     <string name="AlwaysShowPopup">Popups immer anzeigen</string>
-    <string name="BadgeNumber">BADGE (Anzahl)</string>
+    <string name="BadgeNumber">Kennzeichensymbol</string>
     <string name="Short">Kurz</string>
     <string name="Long">Lang</string>
     <string name="SystemDefault">Systemstandard</string>
@@ -361,7 +361,7 @@
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Standort</string>
     <string name="AttachContact">Kontakt</string>
-    <string name="AttachDocument">Dokument</string>
+    <string name="AttachDocument">Datei</string>
     <string name="AttachAudio">Audio</string>
     <string name="FromYou">Du</string>
     <string name="ActionTakeScreenshootYou">Du hast ein Bildschirmfoto gemacht!</string>
@@ -406,7 +406,7 @@
     <string name="Page7Title">Vertraulich</string>
     <string name="Page1Message">Willkommen im Zeitalter der sicheren und schnellen Kommunikation.</string>
     <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> stellt Nachrichten schneller zu als andere Anwendungen</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> ist für immer kostenlos. Keine Werbung. Keine wiederkehrenden Kosten.</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> ist für immer kostenlos. Keine Werbung. Keine Abo-Gebühr.</string>
     <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> schützt deine Nachrichten vor Hacker-Angriffen</string>
     <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> unterstützt unbegrenzt große Chats und Mediendateien</string>
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lässt sich von verschiedenen Geräten gleichzeitig nutzen</string>
@@ -420,12 +420,12 @@
     <string name="Members_few">%1$d Mitglieder</string>
     <string name="Members_many">%1$d Mitglieder</string>
     <string name="Members_other">%1$d Mitglieder</string>
-    <string name="AndMoreTyping_zero">und %1$d weitere Personen schreiben</string>
-    <string name="AndMoreTyping_one">und %1$d weitere Personen schreiben</string>
-    <string name="AndMoreTyping_two">und %1$d weitere Personen schreiben</string>
-    <string name="AndMoreTyping_few">und %1$d weitere Personen schreiben</string>
-    <string name="AndMoreTyping_many">und %1$d weitere Personen schreiben</string>
-    <string name="AndMoreTyping_other">und %1$d weitere Personen schreiben</string>
+    <string name="AndMoreTyping_zero">und %1$d weitere schreiben</string>
+    <string name="AndMoreTyping_one">und %1$d weitere schreiben</string>
+    <string name="AndMoreTyping_two">und %1$d weitere schreiben</string>
+    <string name="AndMoreTyping_few">und %1$d weitere schreiben</string>
+    <string name="AndMoreTyping_many">und %1$d weitere schreiben</string>
+    <string name="AndMoreTyping_other">und %1$d weitere schreiben</string>
     <string name="NewMessages_zero">keine neuen Nachrichten</string>
     <string name="NewMessages_one">%1$d neue Nachricht</string>
     <string name="NewMessages_two">%1$d neue Nachrichten</string>

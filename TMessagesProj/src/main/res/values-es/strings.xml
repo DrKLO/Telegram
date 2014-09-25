@@ -29,7 +29,7 @@
     <string name="RegisterText">Ingresa tu nombre y apellidos</string>
     <!--<string name="RegisterText">Set up your name and picture</string>-->
     <string name="FirstName">Nombre (requerido)</string>
-    <string name="LastName">Apellido(s) (opcional)</string>
+    <string name="LastName">Apellido (opcional)</string>
     <string name="CancelRegistration">Cancelar registro</string>
 
     <!--chats view-->
@@ -107,11 +107,11 @@
     <string name="EncryptedPlaceholderTitleIncoming">%s te ha invitado a un chat secreto.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">Has invitado a %s a un chat secreto.</string>
     <string name="EncryptedDescriptionTitle">Los chats secretos:</string>
-    <string name="EncryptedDescription1">Usan cifrado de móvil-a-móvil</string>
-    <string name="EncryptedDescription2">No dejan rastro en nuestros servidores</string>
+    <string name="EncryptedDescription1">Usan cifrado end-to-end</string>
+    <string name="EncryptedDescription2">No dejan rastro en el servidor</string>
     <string name="EncryptedDescription3">Tienen autodestrucción de mensajes</string>
     <string name="EncryptedDescription4">No permiten reenvíos de mensajes</string>
-    <string name="YouWereKicked">Has sido expulsado de este grupo</string>
+    <string name="YouWereKicked">Te han expulsado de este grupo</string>
     <string name="YouLeft">Has abandonado este grupo</string>
     <string name="DeleteThisGroup">Eliminar este grupo</string>
     <string name="DeleteThisChat">Eliminar esta conversación</string>
@@ -170,7 +170,7 @@
     <string name="YesterdayAt">ayer a las</string>
     <string name="OtherAt">a las</string>
     <string name="Online">en línea</string>
-    <string name="Offline">desconectado</string>
+    <string name="Offline">fuera de línea</string>
     <string name="LastSeen">últ. vez</string>
     <string name="LastSeenDate">últ. vez el</string>
     <string name="InviteFriends">Invitar a amigos</string>
@@ -185,7 +185,7 @@
     <!--group info view-->
     <string name="EnterGroupNameTitle">INGRESA EL NOMBRE DEL GRUPO</string>
     <string name="SharedMedia">Fotos y vídeos</string>
-    <string name="GroupInfo">Información del grupo</string>
+    <string name="GroupInfo">Información </string>
     <string name="SHAREDMEDIA">FOTOS Y VÍDEOS</string>
     <string name="SETTINGS">AJUSTES</string>
     <string name="AddMember">Añadir miembro</string>
@@ -227,7 +227,7 @@
     <string name="AskAQuestion">Hacer una pregunta</string>
     <string name="EnableAnimations">Activar animaciones</string>
     <string name="Unblock">Desbloquear</string>
-    <string name="UnblockText">Mantén pulsado un usuario para desbloquearlo</string>
+    <string name="UnblockText">Mantén pulsado un usuario para desbloquearlo.</string>
     <string name="NoBlocked">No hay usuarios bloqueados</string>
     <string name="YourPhoneNumber">TU NÚMERO DE TELÉFONO</string>
     <string name="MessageNotifications">NOTIFICACIONES DE MENSAJES</string>
@@ -242,7 +242,7 @@
     <string name="InAppPreview">Vista previa en la app</string>
     <string name="Reset">RESTABLECER</string>
     <string name="ResetAllNotifications">Restablecer todas las notificaciones</string>
-    <string name="UndoAllCustom">Deshacer todas las notificaciones personalizadas para todos tus usuarios y grupos</string>
+    <string name="UndoAllCustom">Deshacer las notificaciones personalizadas para todos tus usuarios y grupos</string>
     <string name="NotificationsAndSounds">Notificaciones y sonidos</string>
     <string name="BlockedUsers">Usuarios bloqueados</string>
     <string name="SaveIncomingPhotos">Guardar fotos entrantes</string>
@@ -271,7 +271,7 @@
     <string name="NotificationsServiceDisableInfo">Si los Servicios de Google Play son suficientes para que recibas las notificaciones, puedes desactivar el Servicio de notificaciones. Sin embargo, te recomendamos que lo dejes activo para mantener funcionando la aplicación en segundo plano y recibir las notificaciones al instante.</string>
     <string name="SortBy">Ordenar por</string>
     <string name="ImportContacts">Importar contactos</string>
-    <string name="WiFiOnly">Solo vía Wifi</string>
+    <string name="WiFiOnly">Sólo vía Wi-Fi</string>
     <string name="SortFirstName">Nombre</string>
     <string name="SortLastName">Apellido</string>
     <string name="LedColor">Color del LED</string>
@@ -373,27 +373,27 @@
     <string name="FloodWait">Demasiados intentos. Por favor, prueba de nuevo más tarde.</string>
     <string name="InvalidCode">Código inválido</string>
     <string name="InvalidFirstName">Nombre inválido</string>
-    <string name="InvalidLastName">Apellido/s inválido/s</string>
+    <string name="InvalidLastName">Apellido inválido</string>
     <string name="Loading">Cargando...</string>
     <string name="NoPlayerInstalled">No tienes reproductor de vídeo. Por favor, instala uno para continuar.</string>
     <string name="NoMailInstalled">Por favor, envíanos un correo electrónico a sms@telegram.org y cuéntanos tu problema.</string>
     <string name="NoHandleAppInstalled">No tienes aplicaciones que puedan manejar el tipo de archivo \'%1$s\'. Por favor, instala una para continuar.</string>
     <string name="InviteUser">Este usuario no tiene Telegram aún. ¿Enviarle una invitación?</string>
-    <string name="AreYouSure">¿Estás seguro?</string>
+    <string name="AreYouSure">¿Quieres hacerlo?</string>
     <string name="AddContactQ">¿Añadir contacto?</string>
     <string name="AddToTheGroup">¿Añadir a %1$s al grupo?\n\nNúmero de los últimos mensajes para reenviar:</string>
     <string name="ForwardMessagesTo">¿Reenviar mensajes a %1$s?</string>
     <string name="DeleteChatQuestion">¿Eliminar este chat?</string>
     <string name="SendMessagesTo">¿Enviar mensajes a %1$s?</string>
-    <string name="AreYouSureLogout">¿Estás seguro/a que quieres cerrar sesión?</string>
-    <string name="AreYouSureSessions">¿Estás seguro/a que quieres terminar todas las otras sesiones?</string>
-    <string name="AreYouSureDeleteAndExit">¿Estás seguro/a que quieres eliminar y dejar el grupo?</string>
-    <string name="AreYouSureDeleteThisChat">¿Estás seguro/a que quieres eliminar este chat?</string>
-    <string name="AreYouSureShareMyContactInfo">¿Estás seguro/a que quieres compartir tu información de contacto?</string>
-    <string name="AreYouSureBlockContact">¿Estás seguro/a que quieres bloquear este contacto?</string>
-    <string name="AreYouSureUnblockContact">¿Estás seguro/a que quieres desbloquear este contacto?</string>
-    <string name="AreYouSureDeleteContact">¿Estás seguro/a que quieres eliminar este contacto?</string>
-    <string name="AreYouSureSecretChat">¿Estás seguro/a que quieres iniciar un chat secreto?</string>
+    <string name="AreYouSureLogout">¿Quieres cerrar sesión?</string>
+    <string name="AreYouSureSessions">¿Quieres terminar todas las otras sesiones?</string>
+    <string name="AreYouSureDeleteAndExit">¿Quieres eliminar y dejar el grupo?</string>
+    <string name="AreYouSureDeleteThisChat">¿Quieres eliminar este chat?</string>
+    <string name="AreYouSureShareMyContactInfo">¿Quieres compartir tu información de contacto?</string>
+    <string name="AreYouSureBlockContact">¿Quieres bloquear este contacto?</string>
+    <string name="AreYouSureUnblockContact">¿Quieres desbloquear este contacto?</string>
+    <string name="AreYouSureDeleteContact">¿Quieres eliminar este contacto?</string>
+    <string name="AreYouSureSecretChat">¿Quieres iniciar un chat secreto?</string>
     <string name="ForwardFromMyName">reenviar desde mi nombre</string>
 
     <!--Intro view-->
