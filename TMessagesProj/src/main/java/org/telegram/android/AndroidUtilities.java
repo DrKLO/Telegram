@@ -42,6 +42,7 @@ public class AndroidUtilities {
     public static float density = 1;
     public static Point displaySize = new Point();
     private static Boolean isTablet = null;
+    private static Boolean isSmallTablet = null;
 
     public static int[] arrColors = {0xffee4928, 0xff41a903, 0xffe09602, 0xff0f94ed, 0xff8f3bf7, 0xfffc4380, 0xff00a1c4, 0xffeb7002};
     public static int[] arrUsersAvatars = {
@@ -273,6 +274,33 @@ public class AndroidUtilities {
             isTablet = ApplicationLoader.applicationContext.getResources().getBoolean(R.bool.isTablet);
         }
         return isTablet;
+    }
+
+    public static boolean isSmallTablet() {
+        if (isSmallTablet == null) {
+            float minSide = Math.min(displaySize.x, displaySize.y) / density;
+            isSmallTablet = minSide <= 700;
+        }
+        return isSmallTablet;
+    }
+
+    public static int getMinTabletSide() {
+        if (!isSmallTablet()) {
+            int smallSide = Math.min(displaySize.x, displaySize.y);
+            int leftSide = smallSide * 35 / 100;
+            if (leftSide < dp(320)) {
+                leftSide = dp(320);
+            }
+            return smallSide - leftSide;
+        } else {
+            int smallSide = Math.min(displaySize.x, displaySize.y);
+            int maxSide = Math.max(displaySize.x, displaySize.y);
+            int leftSide = maxSide * 35 / 100;
+            if (leftSide < dp(320)) {
+                leftSide = dp(320);
+            }
+            return Math.min(smallSide, maxSide - leftSide);
+        }
     }
 
     public static int getColorIndex(int id) {

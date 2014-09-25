@@ -53,6 +53,7 @@ import org.telegram.android.video.InputSurface;
 import org.telegram.android.video.MP4Builder;
 import org.telegram.android.video.Mp4Movie;
 import org.telegram.android.video.OutputSurface;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -125,7 +126,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
     private Runnable progressRunnable = new Runnable() {
         @Override
         public void run() {
-            while (videoPlayer.isPlaying()) {
+            while (videoPlayer != null && videoPlayer.isPlaying()) {
                 AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
@@ -208,6 +209,15 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                     if (id == -1) {
                         finishFragment();
                     } else if (id == 1) {
+                        if (videoPlayer != null) {
+                            try {
+                                videoPlayer.stop();
+                                videoPlayer.release();
+                                videoPlayer = null;
+                            } catch (Exception e) {
+                                FileLog.e("tmessages", e);
+                            }
+                        }
                         try {
                             //startConvert();
                             VideoEditWrapper.runTest(VideoEditorActivity.this);
@@ -240,6 +250,9 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             videoTimelineView.setDelegate(new VideoTimelineView.VideoTimelineViewDelegate() {
                 @Override
                 public void onLeftProgressChanged(float progress) {
+                    if (videoPlayer == null) {
+                        return;
+                    }
                     try {
                         if (videoPlayer.isPlaying()) {
                             videoPlayer.pause();
@@ -257,6 +270,9 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
 
                 @Override
                 public void onRifhtProgressChanged(float progress) {
+                    if (videoPlayer == null) {
+                        return;
+                    }
                     try {
                         if (videoPlayer.isPlaying()) {
                             videoPlayer.pause();
@@ -277,6 +293,9 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             videoSeekBarView.delegate = new VideoSeekBarView.SeekBarDelegate() {
                 @Override
                 public void onSeekBarDrag(float progress) {
+                    if (videoPlayer == null) {
+                        return;
+                    }
                     if (videoPlayer.isPlaying()) {
                         try {
                             float prog = videoTimelineView.getLeftProgress() + (videoTimelineView.getRightProgress() - videoTimelineView.getLeft()) * progress;
@@ -328,6 +347,9 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
 
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+        if (videoPlayer == null) {
+            return;
+        }
         try {
             Surface s = new Surface(surface);
             videoPlayer.setSurface(s);
@@ -346,6 +368,9 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
 
     @Override
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+        if (videoPlayer == null) {
+            return true;
+        }
         videoPlayer.setDisplay(null);
         return true;
     }
@@ -359,7 +384,9 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
         playButton.setImageResource(R.drawable.video_play);
         videoSeekBarView.setProgress(videoTimelineView.getLeftProgress());
         try {
-            videoPlayer.seekTo((int) (videoTimelineView.getLeftProgress() * videoDuration));
+            if (videoPlayer != null) {
+                videoPlayer.seekTo((int) (videoTimelineView.getLeftProgress() * videoDuration));
+            }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
@@ -389,8 +416,16 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
 
         esimatedDuration = (long)Math.max(1000, (videoTimelineView.getRightProgress() - videoTimelineView.getLeftProgress()) * videoDuration);
         estimatedSize = calculateEstimatedSize((float)esimatedDuration / videoDuration);
-        startTime = (long)(videoTimelineView.getLeftProgress() * videoDuration) * 1000;
-        endTime = (long)(videoTimelineView.getRightProgress() * videoDuration) * 1000;
+        if (videoTimelineView.getLeftProgress() == 0) {
+            startTime = -1;
+        } else {
+            startTime = (long) (videoTimelineView.getLeftProgress() * videoDuration) * 1000;
+        }
+        if (videoTimelineView.getRightProgress() == 1) {
+            endTime = -1;
+        } else {
+            endTime = (long) (videoTimelineView.getRightProgress() * videoDuration) * 1000;
+        }
 
         int minutes = (int)(esimatedDuration / 1000 / 60);
         int seconds = (int) Math.ceil(esimatedDuration / 1000) - minutes * 60;
@@ -511,6 +546,9 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
     }
 
     private void play() {
+        if (videoPlayer == null) {
+            return;
+        }
         if (videoPlayer.isPlaying()) {
             videoPlayer.pause();
             playButton.setImageResource(R.drawable.video_play);
@@ -659,7 +697,11 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             int muxerTrackIndex = mediaMuxer.addTrack(trackFormat, isAudio);
             int maxBufferSize = trackFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
             boolean inputDone = false;
-            extractor.seekTo(start, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+            if (start > 0) {
+                extractor.seekTo(start, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+            } else {
+                extractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+            }
             ByteBuffer buffer = ByteBuffer.allocateDirect(maxBufferSize);
             long startTime = -1;
 
@@ -668,17 +710,23 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                 int index = extractor.getSampleTrackIndex();
                 if (index == trackIndex) {
                     info.size = extractor.readSampleData(buffer, 0);
+
                     if (info.size < 0) {
                         info.size = 0;
                         eof = true;
                     } else {
                         info.presentationTimeUs = extractor.getSampleTime();
-                        if (startTime == -1) {
+                        if (start > 0 && startTime == -1) {
                             startTime = info.presentationTimeUs;
                         }
-                        if (info.presentationTimeUs < end) {
+                        if (end < 0 || info.presentationTimeUs < end) {
                             info.offset = 0;
                             info.flags = extractor.getSampleFlags();
+                            if (!isAudio) {
+                                buffer.limit(info.offset + info.size);
+                                buffer.position(info.offset);
+                                buffer.putInt(info.size - 4);
+                            }
                             if (mediaMuxer.writeSampleData(muxerTrackIndex, buffer, info)) {
                                 didWriteData(file.toString(), 0);
                             }
@@ -729,6 +777,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                     if (bitrate > 900000) {
                         bitrate = 900000;
                     }
+                    videoFramesSize += sampleSizes;
                 } else {
                     audioFramesSize += sampleSizes;
                 }
@@ -801,7 +850,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             try {
                 String fileName = Integer.MIN_VALUE + "_" + UserConfig.lastLocalId + ".mp4";
                 UserConfig.lastLocalId--;
-                cacheFile = new File(AndroidUtilities.getCacheDir(), fileName);
+                cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
                 UserConfig.saveConfig(false);
 
                 MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
@@ -820,6 +869,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                         boolean outputDone = false;
                         boolean inputDone = false;
                         boolean decoderDone = false;
+                        int swapUV = 0;
                         int videoTrackIndex = -5;
                         long videoTime = -1;
 
@@ -830,6 +880,9 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                             colorFormat = selectColorFormat(codecInfo, MIME_TYPE);
                             if (codecInfo.getName().contains("OMX.qcom.")) {
                                 processorType = PROCESSOR_TYPE_QCOM;
+                                if (Build.MANUFACTURER.toLowerCase().equals("nokia")) {
+                                    swapUV = 1;
+                                }
                             }
                             FileLog.e("tmessages", "codec = " + codecInfo.getName());
                         } else {
@@ -853,7 +906,11 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                         }
 
                         extractor.selectTrack(videoIndex);
-                        extractor.seekTo(startTime, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+                        if (startTime > 0) {
+                            extractor.seekTo(startTime, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+                        } else {
+                            extractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+                        }
                         MediaFormat inputFormat = extractor.getTrackFormat(videoIndex);
 
                         MediaFormat outputFormat = MediaFormat.createVideoFormat(MIME_TYPE, resultWidth, resultHeight);
@@ -1001,13 +1058,13 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                                         } else {
                                             doRender = info.size != 0 || info.presentationTimeUs != 0;
                                         }
-                                        if (info.presentationTimeUs >= endTime) {
+                                        if (endTime > 0 && info.presentationTimeUs >= endTime) {
                                             inputDone = true;
                                             decoderDone = true;
                                             doRender = false;
                                             info.flags |= MediaCodec.BUFFER_FLAG_END_OF_STREAM;
                                         }
-                                        if (videoTime == -1) {
+                                        if (startTime > 0 && videoTime == -1) {
                                             if (info.presentationTimeUs < startTime) {
                                                 doRender = false;
                                                 FileLog.e("tmessages", "drop frame startTime = " + startTime + " present time = " + info.presentationTimeUs);
@@ -1036,7 +1093,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                                                         ByteBuffer rgbBuf = outputSurface.getFrame();
                                                         ByteBuffer yuvBuf = encoderInputBuffers[inputBufIndex];
                                                         yuvBuf.clear();
-                                                        Utilities.convertVideoFrame(rgbBuf, yuvBuf, colorFormat, resultWidth, resultHeight, padding);
+                                                        Utilities.convertVideoFrame(rgbBuf, yuvBuf, colorFormat, resultWidth, resultHeight, padding, swapUV);
                                                         encoder.queueInputBuffer(inputBufIndex, 0, bufferSize, info.presentationTimeUs, 0);
                                                     } else {
                                                         FileLog.e("tmessages", "input buffer not available");
@@ -1165,7 +1222,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
 
         String fileName = Integer.MIN_VALUE + "_" + UserConfig.lastLocalId + ".mp4";
         UserConfig.lastLocalId--;
-        File cacheFile = new File(AndroidUtilities.getCacheDir(), fileName);
+        File cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
         UserConfig.saveConfig(false);
 
         FileOutputStream fos = new FileOutputStream(cacheFile);

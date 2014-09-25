@@ -352,7 +352,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 type = 2;
                 newMsg.message = "-1";
                 TLRPC.FileLocation location1 = photo.sizes.get(photo.sizes.size() - 1).location;
-                newMsg.attachPath = AndroidUtilities.getCacheDir() + "/" + location1.volume_id + "_" + location1.local_id + ".jpg";
+                newMsg.attachPath = FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE) + "/" + location1.volume_id + "_" + location1.local_id + ".jpg";
             } else if (video != null) {
                 newMsg = new TLRPC.TL_message();
                 newMsg.media = new TLRPC.TL_messageMediaVideo();
@@ -787,7 +787,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
 
     private void performSendDelayedMessage(final DelayedMessage message) {
         if (message.type == 0) {
-            String location = AndroidUtilities.getCacheDir() + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
+            String location = FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE) + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
             putToDelayedMessages(location, message);
             if (message.sendRequest != null) {
                 FileLoader.getInstance().uploadFile(location, false, true);
@@ -803,13 +803,13 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     media = ((TLRPC.TL_messages_sendBroadcast)message.sendRequest).media;
                 }
                 if (media.thumb == null) {
-                    String location = AndroidUtilities.getCacheDir() + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
+                    String location = FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE) + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
                     putToDelayedMessages(location, message);
                     FileLoader.getInstance().uploadFile(location, false, true);
                 } else {
                     String location = message.videoLocation.path;
                     if (location == null) {
-                        location = AndroidUtilities.getCacheDir() + "/" + message.videoLocation.id + ".mp4";
+                        location = FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE) + "/" + message.videoLocation.id + ".mp4";
                     }
                     putToDelayedMessages(location, message);
                     if (message.videoLocation.estimatedSize) {
@@ -821,7 +821,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             } else {
                 String location = message.videoLocation.path;
                 if (location == null) {
-                    location = AndroidUtilities.getCacheDir() + "/" + message.videoLocation.id + ".mp4";
+                    location = FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE) + "/" + message.videoLocation.id + ".mp4";
                 }
                 putToDelayedMessages(location, message);
                 if (message.videoLocation.estimatedSize) {
@@ -838,7 +838,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 media = ((TLRPC.TL_messages_sendBroadcast)message.sendRequest).media;
             }
             if (message.sendRequest != null && media.thumb == null && message.location != null) {
-                String location = AndroidUtilities.getCacheDir() + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
+                String location = FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE) + "/" + message.location.volume_id + "_" + message.location.local_id + ".jpg";
                 putToDelayedMessages(location, message);
                 FileLoader.getInstance().uploadFile(location, false, true);
             } else {
@@ -871,11 +871,10 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     final ArrayList<TLRPC.Message> sentMessages = new ArrayList<TLRPC.Message>();
 
                     if (response instanceof TLRPC.messages_SentMessage) {
-                        TLRPC.TL_messages_sentMessage res = (TLRPC.TL_messages_sentMessage) response;
+                        TLRPC.messages_SentMessage res = (TLRPC.messages_SentMessage) response;
                         newMsgObj.messageOwner.id = res.id;
                         newMsgObj.messageOwner.date = res.date;
                         MessagesController.getInstance().processNewDifferenceParams(res.seq, res.pts, res.date);
-                        //TODO link check
                     } else if (response instanceof TLRPC.messages_StatedMessage) {
                         TLRPC.messages_StatedMessage res = (TLRPC.messages_StatedMessage) response;
                         sentMessages.add(res.message);
@@ -1064,8 +1063,8 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                             if (fileName.equals(fileName2)) {
                                 break;
                             }
-                            File cacheFile = new File(AndroidUtilities.getCacheDir(), fileName + ".jpg");
-                            File cacheFile2 = new File(AndroidUtilities.getCacheDir(), fileName2 + ".jpg");
+                            File cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName + ".jpg");
+                            File cacheFile2 = FileLoader.getPathToAttach(size);
                             cacheFile.renameTo(cacheFile2);
                             ImageLoader.getInstance().replaceImageInCache(fileName, fileName2);
                             size2.location = size.location;
@@ -1086,9 +1085,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     String fileName = size2.location.volume_id + "_" + size2.location.local_id;
                     String fileName2 = size.location.volume_id + "_" + size.location.local_id;
                     if (!fileName.equals(fileName2)) {
-                        File cacheFile = new File(AndroidUtilities.getCacheDir(), fileName + ".jpg");
-                        File cacheFile2 = new File(AndroidUtilities.getCacheDir(), fileName2 + ".jpg");
-                        boolean result = cacheFile.renameTo(cacheFile2);
+                        File cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName + ".jpg");
+                        File cacheFile2 = FileLoader.getPathToAttach(size);
+                        cacheFile.renameTo(cacheFile2);
                         ImageLoader.getInstance().replaceImageInCache(fileName, fileName2);
                         size2.location = size.location;
                     }
@@ -1107,16 +1106,16 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     String fileName = size2.location.volume_id + "_" + size2.location.local_id;
                     String fileName2 = size.location.volume_id + "_" + size.location.local_id;
                     if (!fileName.equals(fileName2)) {
-                        File cacheFile = new File(AndroidUtilities.getCacheDir(), fileName + ".jpg");
-                        File cacheFile2 = new File(AndroidUtilities.getCacheDir(), fileName2 + ".jpg");
-                        boolean result = cacheFile.renameTo(cacheFile2);
+                        File cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName + ".jpg");
+                        File cacheFile2 = FileLoader.getPathToAttach(size);
+                        cacheFile.renameTo(cacheFile2);
                         ImageLoader.getInstance().replaceImageInCache(fileName, fileName2);
                         size2.location = size.location;
                     }
                 }
-                if (newMsg.attachPath != null && newMsg.attachPath.startsWith(AndroidUtilities.getCacheDir().getAbsolutePath())) {
+                if (newMsg.attachPath != null && newMsg.attachPath.startsWith(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE).getAbsolutePath())) {
                     File cacheFile = new File(newMsg.attachPath);
-                    File cacheFile2 = new File(AndroidUtilities.getCacheDir(), FileLoader.getAttachFileName(sentMessage.media.document));
+                    File cacheFile2 = FileLoader.getPathToAttach(sentMessage.media.document);
                     boolean result = cacheFile.renameTo(cacheFile2);
                     if (result) {
                         newMsg.attachPath = null;
@@ -1135,11 +1134,11 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 sentMessage.message = newMsg.message;
                 sentMessage.attachPath = newMsg.attachPath;
 
-                String fileName = newMsg.media.audio.dc_id + "_" + newMsg.media.audio.id + ".m4a";
-                String fileName2 = sentMessage.media.audio.dc_id + "_" + sentMessage.media.audio.id + ".m4a";
+                String fileName = newMsg.media.audio.dc_id + "_" + newMsg.media.audio.id + ".ogg";
+                String fileName2 = sentMessage.media.audio.dc_id + "_" + sentMessage.media.audio.id + ".ogg";
                 if (!fileName.equals(fileName2)) {
-                    File cacheFile = new File(AndroidUtilities.getCacheDir(), fileName);
-                    File cacheFile2 = new File(AndroidUtilities.getCacheDir(), fileName2);
+                    File cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
+                    File cacheFile2 = FileLoader.getPathToAttach(sentMessage.media.audio);
                     cacheFile.renameTo(cacheFile2);
                 }
                 newMsg.media.audio.dc_id = sentMessage.media.audio.dc_id;
@@ -1158,8 +1157,8 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 size.location.secret = file.access_hash;
                 size.location.local_id = file.key_fingerprint;
                 String fileName2 = size.location.volume_id + "_" + size.location.local_id;
-                File cacheFile = new File(AndroidUtilities.getCacheDir(), fileName + ".jpg");
-                File cacheFile2 = new File(AndroidUtilities.getCacheDir(), fileName2 + ".jpg");
+                File cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName + ".jpg");
+                File cacheFile2 = FileLoader.getPathToAttach(size);
                 boolean result = cacheFile.renameTo(cacheFile2);
                 ImageLoader.getInstance().replaceImageInCache(fileName, fileName2);
                 ArrayList<TLRPC.Message> arr = new ArrayList<TLRPC.Message>();
@@ -1206,9 +1205,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 newMsg.media.document.thumb = document.thumb;
                 newMsg.media.document.dc_id = file.dc_id;
 
-                if (document.path != null && document.path.startsWith(AndroidUtilities.getCacheDir().getAbsolutePath())) {
+                if (document.path != null && document.path.startsWith(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE).getAbsolutePath())) {
                     File cacheFile = new File(document.path);
-                    File cacheFile2 = new File(AndroidUtilities.getCacheDir(), FileLoader.getAttachFileName(newMsg.media.document));
+                    File cacheFile2 = FileLoader.getPathToAttach(newMsg.media.document);
                     cacheFile.renameTo(cacheFile2);
                 }
 
@@ -1232,11 +1231,11 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 newMsg.media.audio.path = audio.path;
                 newMsg.media.audio.mime_type = audio.mime_type;
 
-                String fileName = audio.dc_id + "_" + audio.id + ".m4a";
-                String fileName2 = newMsg.media.audio.dc_id + "_" + newMsg.media.audio.id + ".m4a";
+                String fileName = audio.dc_id + "_" + audio.id + ".ogg";
+                String fileName2 = newMsg.media.audio.dc_id + "_" + newMsg.media.audio.id + ".ogg";
                 if (!fileName.equals(fileName2)) {
-                    File cacheFile = new File(AndroidUtilities.getCacheDir(), fileName);
-                    File cacheFile2 = new File(AndroidUtilities.getCacheDir(), fileName2);
+                    File cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
+                    File cacheFile2 = FileLoader.getPathToAttach(newMsg.media.audio);
                     cacheFile.renameTo(cacheFile2);
                 }
 

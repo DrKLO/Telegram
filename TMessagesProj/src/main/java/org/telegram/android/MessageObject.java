@@ -21,7 +21,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -418,7 +417,7 @@ public class MessageObject {
         } else if (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
             ArrayList<TLRPC.PhotoSize> sizes = messageOwner.media.photo.sizes;
             if (sizes.size() > 0) {
-                TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(sizes, 800, 800);
+                TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(sizes, 800, 800);
                 if (sizeFull != null) {
                     return FileLoader.getAttachFileName(sizeFull);
                 }
@@ -444,15 +443,10 @@ public class MessageObject {
 
         int maxWidth;
         if (AndroidUtilities.isTablet()) {
-            int min = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
-            int leftWidth = min / 100 * 35;
-            if (leftWidth < AndroidUtilities.dp(320)) {
-                leftWidth = AndroidUtilities.dp(320);
-            }
             if (messageOwner.to_id.chat_id != 0) {
-                maxWidth = min - leftWidth - AndroidUtilities.dp(122);
+                maxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(122);
             } else {
-                maxWidth = min - leftWidth - AndroidUtilities.dp(80);
+                maxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(80);
             }
         } else {
             if (messageOwner.to_id.chat_id != 0) {

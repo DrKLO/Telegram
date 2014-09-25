@@ -287,7 +287,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
 
     public void updateButtonState() {
         String fileName = currentMessageObject.getFileName();
-        File cacheFile = new File(AndroidUtilities.getCacheDir(), fileName);
+        File cacheFile = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
         if (cacheFile.exists()) {
             MediaController.getInstance().removeLoadingFileObserver(this);
             boolean playing = MediaController.getInstance().isPlayingAudio(currentMessageObject);

@@ -66,7 +66,7 @@ int isSemiPlanarYUV(int colorFormat) {
     }
 }
 
-JNIEXPORT int Java_org_telegram_messenger_Utilities_convertVideoFrame(JNIEnv *env, jclass class, jobject src, jobject dest, int destFormat, int width, int height, int padding) {
+JNIEXPORT int Java_org_telegram_messenger_Utilities_convertVideoFrame(JNIEnv *env, jclass class, jobject src, jobject dest, int destFormat, int width, int height, int padding, int swap) {
     if (!src || !dest || !destFormat) {
         return 0;
     }
@@ -78,16 +78,31 @@ JNIEXPORT int Java_org_telegram_messenger_Utilities_convertVideoFrame(JNIEnv *en
     int half_height = (height + 1) / 2;
     
     if (!isSemiPlanarYUV(destFormat)) {
-        ARGBToI420(srcBuff, width * 4,
-                   destBuff, width,
-                   destBuff + width * height + half_width * half_height + padding * 5 / 4, half_width,
-                   destBuff + width * height + padding, half_width,
-                   width, height);
+        if (!swap) {
+            ARGBToI420(srcBuff, width * 4,
+                       destBuff, width,
+                       destBuff + width * height + half_width * half_height + padding * 5 / 4, half_width,
+                       destBuff + width * height + padding, half_width,
+                       width, height);
+        } else {
+            ARGBToI420(srcBuff, width * 4,
+                       destBuff, width,
+                       destBuff + width * height + padding, half_width,
+                       destBuff + width * height + half_width * half_height + padding * 5 / 4, half_width,
+                       width, height);
+        }
     } else {
-        ARGBToNV21(srcBuff, width * 4,
-                   destBuff, width,
-                   destBuff + width * height + padding, half_width * 2,
-                   width, height);
+        if (!swap) {
+            ARGBToNV21(srcBuff, width * 4,
+                       destBuff, width,
+                       destBuff + width * height + padding, half_width * 2,
+                       width, height);
+        } else {
+            ARGBToNV12(srcBuff, width * 4,
+                       destBuff, width,
+                       destBuff + width * height + padding, half_width * 2,
+                       width, height);
+        }
     }
     
     return 1;

@@ -21,6 +21,7 @@ import org.telegram.messenger.BuffersStorage;
 import org.telegram.messenger.ByteBufferDesc;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.DispatchQueue;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.TLClassStore;
 import org.telegram.messenger.TLObject;
@@ -2587,7 +2588,7 @@ public class MessagesStorage {
                             }
                         } else if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
                             if ((downloadMask & MediaController.AUTODOWNLOAD_MASK_PHOTO) != 0) {
-                                TLRPC.PhotoSize photoSize = PhotoObject.getClosestPhotoSizeWithSize(message.media.photo.sizes, 800, 800);
+                                TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(message.media.photo.sizes, 800, 800);
                                 if (photoSize != null) {
                                     id = message.media.photo.id;
                                     type = MediaController.AUTODOWNLOAD_MASK_PHOTO;

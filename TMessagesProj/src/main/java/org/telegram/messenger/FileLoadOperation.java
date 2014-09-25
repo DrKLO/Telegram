@@ -50,6 +50,8 @@ public class FileLoadOperation {
     private String ext;
     private RandomAccessFile fileOutputStream;
     private RandomAccessFile fiv;
+    private File storePath = null;
+    private File tempPath = null;
 
     public static interface FileLoadOperationDelegate {
         public abstract void didFinishLoadingFile(FileLoadOperation operation, File finalFile, File tempFile);
@@ -113,7 +115,7 @@ public class FileLoadOperation {
             location.access_hash = audioLocation.access_hash;
         }
         totalBytesCount = audioLocation.size;
-        ext = ".m4a";
+        ext = ".ogg";
     }
 
     public FileLoadOperation(TLRPC.Document documentLocation) {
@@ -142,6 +144,11 @@ public class FileLoadOperation {
                 ext = "";
             }
         }
+    }
+
+    public void setPaths(File store, File temp) {
+        storePath = store;
+        tempPath = temp;
     }
 
     public void start() {
@@ -186,7 +193,7 @@ public class FileLoadOperation {
             }
         }
 
-        cacheFileFinal = new File(FileLoader.getInstance().getCacheDir(), fileNameFinal);
+        cacheFileFinal = new File(storePath, fileNameFinal);
         boolean exist = cacheFileFinal.exists();
         if (exist && totalBytesCount != 0 && totalBytesCount != cacheFileFinal.length()) {
             exist = false;
@@ -194,13 +201,13 @@ public class FileLoadOperation {
         }
 
         if (!cacheFileFinal.exists()) {
-            cacheFileTemp = new File(FileLoader.getInstance().getCacheDir(), fileNameTemp);
+            cacheFileTemp = new File(tempPath, fileNameTemp);
             if (cacheFileTemp.exists()) {
                 downloadedBytes = (int)cacheFileTemp.length();
                 nextDownloadOffset = downloadedBytes = downloadedBytes / 1024 * 1024;
             }
             if (fileNameIv != null) {
-                cacheIvTemp = new File(FileLoader.getInstance().getCacheDir(), fileNameIv);
+                cacheIvTemp = new File(tempPath, fileNameIv);
                 try {
                     fiv = new RandomAccessFile(cacheIvTemp, "rws");
                     long len = cacheIvTemp.length();

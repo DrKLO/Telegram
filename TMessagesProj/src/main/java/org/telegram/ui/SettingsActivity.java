@@ -40,6 +40,7 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.MediaController;
 import org.telegram.messenger.BuildVars;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.SerializedData;
 import org.telegram.messenger.TLClassStore;
 import org.telegram.messenger.TLObject;
@@ -53,7 +54,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.UserConfig;
 import org.telegram.android.MessageObject;
-import org.telegram.android.PhotoObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.AvatarUpdater;
@@ -142,8 +142,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             }
                             TLRPC.TL_photos_photo photo = (TLRPC.TL_photos_photo)response;
                             ArrayList<TLRPC.PhotoSize> sizes = photo.photo.sizes;
-                            TLRPC.PhotoSize smallSize = PhotoObject.getClosestPhotoSizeWithSize(sizes, 100, 100);
-                            TLRPC.PhotoSize bigSize = PhotoObject.getClosestPhotoSizeWithSize(sizes, 1000, 1000);
+                            TLRPC.PhotoSize smallSize = FileLoader.getClosestPhotoSizeWithSize(sizes, 100, 100);
+                            TLRPC.PhotoSize bigSize = FileLoader.getClosestPhotoSizeWithSize(sizes, 1000, 1000);
                             user.photo = new TLRPC.TL_userProfilePhoto();
                             user.photo.photo_id = photo.photo.id;
                             if (smallSize != null) {

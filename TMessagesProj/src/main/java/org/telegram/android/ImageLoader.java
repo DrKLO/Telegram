@@ -18,12 +18,14 @@ import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -576,12 +578,43 @@ public class ImageLoader {
                     });
                 }
             }
-
-            @Override
-            public File getCacheDir() {
-                return AndroidUtilities.getCacheDir();
-            }
         });
+
+        FileLoader.getInstance().setMediaDirs(createMediaPaths());
+    }
+
+    private HashMap<Integer, File> createMediaPaths() {
+        HashMap<Integer, File> mediaDirs = new HashMap<Integer, File>();
+        mediaDirs.put(FileLoader.MEDIA_DIR_CACHE, AndroidUtilities.getCacheDir());
+        try {
+            if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+                File telegramPath = new File(Environment.getExternalStorageDirectory(), LocaleController.getString("AppName", R.string.AppName));
+                telegramPath.mkdirs();
+
+                File imagePath = new File(telegramPath, "Images");
+                imagePath.mkdir();
+                new File(imagePath, ".nomedia").createNewFile();
+                mediaDirs.put(FileLoader.MEDIA_DIR_IMAGE, imagePath);
+
+                File videoPath = new File(telegramPath, "Video");
+                videoPath.mkdir();
+                new File(videoPath, ".nomedia").createNewFile();
+                mediaDirs.put(FileLoader.MEDIA_DIR_VIDEO, videoPath);
+
+                File audioPath = new File(telegramPath, "Audio");
+                audioPath.mkdir();
+                new File(audioPath, ".nomedia").createNewFile();
+                mediaDirs.put(FileLoader.MEDIA_DIR_AUDIO, audioPath);
+
+                File documentPath = new File(telegramPath, "Documents");
+                documentPath.mkdir();
+                new File(documentPath, ".nomedia").createNewFile();
+                mediaDirs.put(FileLoader.MEDIA_DIR_DOCUMENT, documentPath);
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return mediaDirs;
     }
 
     private void performReplace(String oldKey, String newKey) {
@@ -746,7 +779,12 @@ public class ImageLoader {
 
         if (!added) {
             boolean onlyCache = false;
-            File cacheFile = new File(AndroidUtilities.getCacheDir(), url);
+            File cacheFile = null;
+            if (size == 0 || httpUrl != null || fileLocation != null && fileLocation.key != null) {
+                cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), url);
+            } else {
+                cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_IMAGE), url);
+            }
             if (httpUrl != null) {
                 if (!httpUrl.startsWith("http")) {
                     onlyCache = true;
@@ -779,11 +817,12 @@ public class ImageLoader {
                 img.addImageView(imageView);
                 imageLoadingByUrl.put(url, img);
                 if (httpUrl == null) {
-                    FileLoader.getInstance().loadFile(fileLocation, size);
+                    FileLoader.getInstance().loadFile(fileLocation, size, size == 0 || fileLocation.key != null);
                 } else {
                     String file = Utilities.MD5(httpUrl);
-                    img.tempFilePath = new File(AndroidUtilities.getCacheDir(), file + "_temp.jpg");
-                    img.finalFilePath = new File(AndroidUtilities.getCacheDir(), file + ".jpg");
+                    File cacheDir = FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE);
+                    img.tempFilePath = new File(cacheDir, file + "_temp.jpg");
+                    img.finalFilePath = cacheFile;
                     img.httpTask = new HttpTask(img);
                     httpTasks.add(img.httpTask);
                     runHttpTasks(false);
@@ -1002,7 +1041,7 @@ public class ImageLoader {
         try {
             if (!cache) {
                 String fileName = location.volume_id + "_" + location.local_id + ".jpg";
-                final File cacheFile = new File(AndroidUtilities.getCacheDir(), fileName);
+                final File cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
                 FileOutputStream stream = new FileOutputStream(cacheFile);
                 scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream);
                 size.size = (int)stream.getChannel().size();

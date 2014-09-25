@@ -50,6 +50,7 @@ public class NotificationsController {
     public ArrayList<MessageObject> popupMessages = new ArrayList<MessageObject>();
     private long openned_dialog_id = 0;
     private int total_unread_count = 0;
+    private int personal_count = 0;
     private boolean notifyCheck = false;
 
     private static volatile NotificationsController Instance = null;
@@ -73,6 +74,7 @@ public class NotificationsController {
     public void cleanup() {
         openned_dialog_id = 0;
         total_unread_count = 0;
+        personal_count = 0;
         pushMessages.clear();
         pushMessagesDict.clear();
         pushDialogs.clear();
@@ -88,7 +90,7 @@ public class NotificationsController {
         openned_dialog_id = dialog_id;
     }
 
-    private String getStringForMessage(MessageObject messageObject) {
+    private String getStringForMessage(MessageObject messageObject, boolean shortMessage) {
         long dialog_id = messageObject.messageOwner.dialog_id;
         int chat_id = messageObject.messageOwner.to_id.chat_id;
         int user_id = messageObject.messageOwner.to_id.user_id;
@@ -129,13 +131,17 @@ public class NotificationsController {
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
                             msg = LocaleController.formatString("NotificationContactNewPhoto", R.string.NotificationContactNewPhoto, ContactsController.formatName(user.first_name, user.last_name));
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionLoginUnknownLocation) {
-                            String date = String.format("%s %s %s", LocaleController.formatterYear.format(((long)messageObject.messageOwner.date) * 1000), LocaleController.getString("OtherAt", R.string.OtherAt), LocaleController.formatterDay.format(((long)messageObject.messageOwner.date) * 1000));
+                            String date = String.format("%s %s %s", LocaleController.formatterYear.format(((long) messageObject.messageOwner.date) * 1000), LocaleController.getString("OtherAt", R.string.OtherAt), LocaleController.formatterDay.format(((long) messageObject.messageOwner.date) * 1000));
                             msg = LocaleController.formatString("NotificationUnrecognizedDevice", R.string.NotificationUnrecognizedDevice, UserConfig.getCurrentUser().first_name, date, messageObject.messageOwner.action.title, messageObject.messageOwner.action.address);
                         }
                     } else {
                         if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty) {
-                            if (messageObject.messageOwner.message != null && messageObject.messageOwner.message.length() != 0) {
-                                msg = LocaleController.formatString("NotificationMessageText", R.string.NotificationMessageText, ContactsController.formatName(user.first_name, user.last_name), messageObject.messageOwner.message);
+                            if (!shortMessage) {
+                                if (messageObject.messageOwner.message != null && messageObject.messageOwner.message.length() != 0) {
+                                    msg = LocaleController.formatString("NotificationMessageText", R.string.NotificationMessageText, ContactsController.formatName(user.first_name, user.last_name), messageObject.messageOwner.message);
+                                } else {
+                                    msg = LocaleController.formatString("NotificationMessageNoText", R.string.NotificationMessageNoText, ContactsController.formatName(user.first_name, user.last_name));
+                                }
                             } else {
                                 msg = LocaleController.formatString("NotificationMessageNoText", R.string.NotificationMessageNoText, ContactsController.formatName(user.first_name, user.last_name));
                             }
@@ -191,7 +197,7 @@ public class NotificationsController {
                         }
                     } else {
                         if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty) {
-                            if (messageObject.messageOwner.message != null && messageObject.messageOwner.message.length() != 0) {
+                            if (!shortMessage && messageObject.messageOwner.message != null && messageObject.messageOwner.message.length() != 0) {
                                 msg = LocaleController.formatString("NotificationMessageGroupText", R.string.NotificationMessageGroupText, ContactsController.formatName(user.first_name, user.last_name), chat.title, messageObject.messageOwner.message);
                             } else {
                                 msg = LocaleController.formatString("NotificationMessageGroupNoText", R.string.NotificationMessageGroupNoText, ContactsController.formatName(user.first_name, user.last_name), chat.title);
@@ -221,9 +227,17 @@ public class NotificationsController {
     }
 
     private void scheduleNotificationRepeat() {
-        PendingIntent pintent = PendingIntent.getService(ApplicationLoader.applicationContext, 0, new Intent(ApplicationLoader.applicationContext, NotificationRepeat.class), 0);
-        AlarmManager alarm = (AlarmManager) ApplicationLoader.applicationContext.getSystemService(Context.ALARM_SERVICE);
-        alarm.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + 60 * 60 * 1000, pintent);
+        try {
+            AlarmManager alarm = (AlarmManager) ApplicationLoader.applicationContext.getSystemService(Context.ALARM_SERVICE);
+            PendingIntent pintent = PendingIntent.getService(ApplicationLoader.applicationContext, 0, new Intent(ApplicationLoader.applicationContext, NotificationRepeat.class), 0);
+            if (personal_count > 0) {
+                alarm.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + 60 * 60 * 1000, pintent);
+            } else {
+                alarm.cancel(pintent);
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     protected void repeatNotificationMaybe() {
@@ -376,8 +390,10 @@ public class NotificationsController {
                     .setContentIntent(contentIntent);
 
             String lastMessage = null;
+            String lastMessageFull = null;
             if (pushMessages.size() == 1) {
-                String message = lastMessage = getStringForMessage(pushMessages.get(0));
+                String message = lastMessageFull = getStringForMessage(pushMessages.get(0), false);
+                lastMessage = getStringForMessage(pushMessages.get(0), true);
                 if (message == null) {
                     return;
                 }
@@ -396,12 +412,13 @@ public class NotificationsController {
                 inboxStyle.setBigContentTitle(name);
                 int count = Math.min(10, pushMessages.size());
                 for (int i = 0; i < count; i++) {
-                    String message = getStringForMessage(pushMessages.get(i));
+                    String message = getStringForMessage(pushMessages.get(i), false);
                     if (message == null) {
                         continue;
                     }
                     if (i == 0) {
-                        lastMessage = message;
+                        lastMessageFull = message;
+                        lastMessage = getStringForMessage(pushMessages.get(i), true);
                     }
                     if (pushDialogs.size() == 1) {
                         if (replace) {
@@ -461,7 +478,7 @@ public class NotificationsController {
 
             notificationManager.notify(1, mBuilder.build());
             if (preferences.getBoolean("EnablePebbleNotifications", false)) {
-                sendAlertToPebble(lastMessage);
+                sendAlertToPebble(lastMessageFull);
             }
             scheduleNotificationRepeat();
         } catch (Exception e) {
@@ -507,6 +524,9 @@ public class NotificationsController {
             for (Integer id : readMessages) {
                 MessageObject messageObject = pushMessagesDict.get(id);
                 if (messageObject != null) {
+                    if (isPersonalMessage(messageObject)) {
+                        personal_count--;
+                    }
                     pushMessages.remove(messageObject);
                     popupMessages.remove(messageObject);
                     pushMessagesDict.remove(id);
@@ -534,6 +554,9 @@ public class NotificationsController {
                         }
                     }
                     if (remove) {
+                        if (isPersonalMessage(messageObject)) {
+                            personal_count--;
+                        }
                         pushMessages.remove(a);
                         popupMessages.remove(messageObject);
                         pushMessagesDict.remove(messageObject.messageOwner.id);
@@ -565,6 +588,9 @@ public class NotificationsController {
             long dialog_id = messageObject.getDialogId();
             if (dialog_id == openned_dialog_id && ApplicationLoader.isScreenOn) {
                 continue;
+            }
+            if (isPersonalMessage(messageObject)) {
+                personal_count++;
             }
             added = true;
 
@@ -628,6 +654,9 @@ public class NotificationsController {
                 for (int a = 0; a < pushMessages.size(); a++) {
                     MessageObject messageObject = pushMessages.get(a);
                     if (messageObject.getDialogId() == dialog_id) {
+                        if (isPersonalMessage(messageObject)) {
+                            personal_count--;
+                        }
                         pushMessages.remove(a);
                         a--;
                         pushMessagesDict.remove(messageObject.messageOwner.id);
@@ -657,6 +686,7 @@ public class NotificationsController {
         pushMessages.clear();
         pushMessagesDict.clear();
         total_unread_count = 0;
+        personal_count = 0;
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
         HashMap<Long, Boolean> settingsCache = new HashMap<Long, Boolean>();
 
@@ -681,6 +711,9 @@ public class NotificationsController {
                     continue;
                 }
                 MessageObject messageObject = new MessageObject(message, null, 0);
+                if (isPersonalMessage(messageObject)) {
+                    personal_count++;
+                }
                 long dialog_id = messageObject.getDialogId();
                 Boolean value = settingsCache.get(dialog_id);
                 if (value == null) {
@@ -744,5 +777,10 @@ public class NotificationsController {
             FileLog.e("tmessages", e);
         }
         return null;
+    }
+
+    private boolean isPersonalMessage(MessageObject messageObject) {
+        return messageObject.messageOwner.to_id != null && messageObject.messageOwner.to_id.chat_id == 0
+                && (messageObject.messageOwner.action == null || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionEmpty);
     }
 }

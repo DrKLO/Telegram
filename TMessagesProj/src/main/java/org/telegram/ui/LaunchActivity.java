@@ -12,6 +12,7 @@ import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
@@ -25,6 +26,7 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -69,6 +71,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     private FrameLayout shadowTablet = null;
     private LinearLayout buttonLayoutTablet = null;
     private FrameLayout shadowTabletSide = null;
+    private ImageView backgroundTablet = null;
+    private boolean tabletFullSize = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -106,6 +110,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             shadowTablet = (FrameLayout)findViewById(R.id.shadow_tablet);
             buttonLayoutTablet = (LinearLayout)findViewById(R.id.launch_button_layout);
             shadowTabletSide = (FrameLayout)findViewById(R.id.shadow_tablet_side);
+            backgroundTablet = (ImageView)findViewById(R.id.launch_background);
 
             shadowTablet.setOnTouchListener(new View.OnTouchListener() {
                 @Override
@@ -144,8 +149,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             rightActionBarLayout.setLayoutParams(relativeLayoutParams);
             rightActionBarLayout.init(rightFragmentsStack);
             rightActionBarLayout.setDelegate(this);
-            rightActionBarLayout.setVisibility(rightFragmentsStack.isEmpty() ? View.GONE : View.VISIBLE);
-            buttonLayoutTablet.setVisibility(rightFragmentsStack.isEmpty() ? View.VISIBLE : View.GONE);
 
             TextView button = (TextView)findViewById(R.id.new_group_button);
             button.setText(LocaleController.getString("NewGroup", R.string.NewGroup));
@@ -649,31 +652,65 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     public void needLayout() {
         if (AndroidUtilities.isTablet()) {
-            int leftWidth = AndroidUtilities.displaySize.x / 100 * 35;
-            if (leftWidth < AndroidUtilities.dp(320)) {
-                leftWidth = AndroidUtilities.dp(320);
+            if (!AndroidUtilities.isSmallTablet() || getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                tabletFullSize = false;
+                int leftWidth = AndroidUtilities.displaySize.x / 100 * 35;
+                if (leftWidth < AndroidUtilities.dp(320)) {
+                    leftWidth = AndroidUtilities.dp(320);
+                }
+
+                RelativeLayout.LayoutParams relativeLayoutParams = (RelativeLayout.LayoutParams) actionBarLayout.getLayoutParams();
+                relativeLayoutParams.width = leftWidth;
+                relativeLayoutParams.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+                actionBarLayout.setLayoutParams(relativeLayoutParams);
+
+                relativeLayoutParams = (RelativeLayout.LayoutParams) shadowTabletSide.getLayoutParams();
+                relativeLayoutParams.leftMargin = leftWidth;
+                shadowTabletSide.setLayoutParams(relativeLayoutParams);
+
+                relativeLayoutParams = (RelativeLayout.LayoutParams) rightActionBarLayout.getLayoutParams();
+                relativeLayoutParams.width = AndroidUtilities.displaySize.x - leftWidth;
+                relativeLayoutParams.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+                relativeLayoutParams.leftMargin = leftWidth;
+                rightActionBarLayout.setLayoutParams(relativeLayoutParams);
+
+                relativeLayoutParams = (RelativeLayout.LayoutParams) buttonLayoutTablet.getLayoutParams();
+                relativeLayoutParams.width = AndroidUtilities.displaySize.x - leftWidth;
+                relativeLayoutParams.height = RelativeLayout.LayoutParams.WRAP_CONTENT;
+                relativeLayoutParams.leftMargin = leftWidth;
+                buttonLayoutTablet.setLayoutParams(relativeLayoutParams);
+
+                if (AndroidUtilities.isSmallTablet() && mainFragmentsStack.size() == 2) {
+                    BaseFragment chatFragment = mainFragmentsStack.get(1);
+                    mainFragmentsStack.remove(1);
+                    actionBarLayout.showLastFragment();
+                    rightFragmentsStack.add(chatFragment);
+                    rightActionBarLayout.showLastFragment();
+                }
+
+                rightActionBarLayout.setVisibility(rightFragmentsStack.isEmpty() ? View.GONE : View.VISIBLE);
+                buttonLayoutTablet.setVisibility(!mainFragmentsStack.isEmpty() && rightFragmentsStack.isEmpty() ? View.VISIBLE : View.GONE);
+                backgroundTablet.setVisibility(rightFragmentsStack.isEmpty() ? View.VISIBLE : View.GONE);
+                shadowTabletSide.setVisibility(!mainFragmentsStack.isEmpty() ? View.VISIBLE : View.GONE);
+            } else {
+                tabletFullSize = true;
+
+                RelativeLayout.LayoutParams relativeLayoutParams = (RelativeLayout.LayoutParams) actionBarLayout.getLayoutParams();
+                relativeLayoutParams.width = RelativeLayout.LayoutParams.MATCH_PARENT;
+                relativeLayoutParams.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+                actionBarLayout.setLayoutParams(relativeLayoutParams);
+
+                shadowTabletSide.setVisibility(View.GONE);
+                rightActionBarLayout.setVisibility(View.GONE);
+                backgroundTablet.setVisibility(View.GONE);
+                buttonLayoutTablet.setVisibility(View.GONE);
+
+                if (rightFragmentsStack.size() == 1) {
+                    BaseFragment chatFragment = rightFragmentsStack.get(0);
+                    rightFragmentsStack.remove(0);
+                    actionBarLayout.presentFragment(chatFragment, false, true);
+                }
             }
-
-            RelativeLayout.LayoutParams relativeLayoutParams = (RelativeLayout.LayoutParams) actionBarLayout.getLayoutParams();
-            relativeLayoutParams.width = leftWidth;
-            relativeLayoutParams.height = RelativeLayout.LayoutParams.MATCH_PARENT;
-            actionBarLayout.setLayoutParams(relativeLayoutParams);
-
-            relativeLayoutParams = (RelativeLayout.LayoutParams) shadowTabletSide.getLayoutParams();
-            relativeLayoutParams.leftMargin = leftWidth;
-            shadowTabletSide.setLayoutParams(relativeLayoutParams);
-
-            relativeLayoutParams = (RelativeLayout.LayoutParams) rightActionBarLayout.getLayoutParams();
-            relativeLayoutParams.width = AndroidUtilities.displaySize.x - leftWidth;
-            relativeLayoutParams.height = RelativeLayout.LayoutParams.MATCH_PARENT;
-            relativeLayoutParams.leftMargin = leftWidth;
-            rightActionBarLayout.setLayoutParams(relativeLayoutParams);
-
-            relativeLayoutParams = (RelativeLayout.LayoutParams) buttonLayoutTablet.getLayoutParams();
-            relativeLayoutParams.width = AndroidUtilities.displaySize.x - leftWidth;
-            relativeLayoutParams.height = RelativeLayout.LayoutParams.WRAP_CONTENT;
-            relativeLayoutParams.leftMargin = leftWidth;
-            buttonLayoutTablet.setLayoutParams(relativeLayoutParams);
         }
     }
 
@@ -909,17 +946,28 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     actionBarLayout.presentFragment(fragment, removeLast, forceWithoutAnimation);
                     layersActionBarLayout.removeAllFragments();
                     layersActionBarLayout.setVisibility(View.GONE);
-                    if (rightFragmentsStack.isEmpty()) {
-                        buttonLayoutTablet.setVisibility(View.VISIBLE);
+                    if (!tabletFullSize) {
+                        shadowTabletSide.setVisibility(View.VISIBLE);
+                        if (rightFragmentsStack.isEmpty()) {
+                            buttonLayoutTablet.setVisibility(View.VISIBLE);
+                            backgroundTablet.setVisibility(View.VISIBLE);
+                        }
                     }
                     return false;
                 }
             } else if (fragment instanceof ChatActivity) {
-                if (layout != rightActionBarLayout) {
+                if (!tabletFullSize && layout != rightActionBarLayout) {
                     rightActionBarLayout.setVisibility(View.VISIBLE);
                     buttonLayoutTablet.setVisibility(View.GONE);
+                    backgroundTablet.setVisibility(View.GONE);
                     rightActionBarLayout.removeAllFragments();
                     rightActionBarLayout.presentFragment(fragment, removeLast, true);
+                    if (removeLast) {
+                        layout.closeLastFragment(true);
+                    }
+                    return false;
+                } else if (tabletFullSize && layout != actionBarLayout) {
+                    actionBarLayout.presentFragment(fragment, false, forceWithoutAnimation);
                     if (removeLast) {
                         layout.closeLastFragment(true);
                     }
@@ -929,6 +977,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 layersActionBarLayout.setVisibility(View.VISIBLE);
                 if (fragment instanceof LoginActivity) {
                     buttonLayoutTablet.setVisibility(View.GONE);
+                    backgroundTablet.setVisibility(View.VISIBLE);
+                    shadowTabletSide.setVisibility(View.GONE);
                     shadowTablet.setBackgroundColor(0x00000000);
                 } else {
                     shadowTablet.setBackgroundColor(0x7F000000);
@@ -952,23 +1002,33 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     actionBarLayout.addFragmentToStack(fragment);
                     layersActionBarLayout.removeAllFragments();
                     layersActionBarLayout.setVisibility(View.GONE);
-                    if (rightFragmentsStack.isEmpty()) {
-                        buttonLayoutTablet.setVisibility(View.VISIBLE);
+                    if (!tabletFullSize) {
+                        shadowTabletSide.setVisibility(View.VISIBLE);
+                        if (rightFragmentsStack.isEmpty()) {
+                            buttonLayoutTablet.setVisibility(View.VISIBLE);
+                            backgroundTablet.setVisibility(View.VISIBLE);
+                        }
                     }
                     return false;
                 }
             } else if (fragment instanceof ChatActivity) {
-                if (layout != rightActionBarLayout) {
+                if (!tabletFullSize && layout != rightActionBarLayout) {
                     rightActionBarLayout.setVisibility(View.VISIBLE);
                     buttonLayoutTablet.setVisibility(View.GONE);
+                    backgroundTablet.setVisibility(View.GONE);
                     rightActionBarLayout.removeAllFragments();
                     rightActionBarLayout.addFragmentToStack(fragment);
+                    return false;
+                } else if (tabletFullSize && layout != actionBarLayout) {
+                    actionBarLayout.addFragmentToStack(fragment);
                     return false;
                 }
             } else if (layout != layersActionBarLayout) {
                 layersActionBarLayout.setVisibility(View.VISIBLE);
                 if (fragment instanceof LoginActivity) {
                     buttonLayoutTablet.setVisibility(View.GONE);
+                    backgroundTablet.setVisibility(View.VISIBLE);
+                    shadowTabletSide.setVisibility(View.GONE);
                     shadowTablet.setBackgroundColor(0x00000000);
                 } else {
                     shadowTablet.setBackgroundColor(0x7F000000);
@@ -990,7 +1050,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 finish();
                 return false;
             } else if (layout == rightActionBarLayout) {
-                buttonLayoutTablet.setVisibility(View.VISIBLE);
+                if (!tabletFullSize) {
+                    buttonLayoutTablet.setVisibility(View.VISIBLE);
+                    backgroundTablet.setVisibility(View.VISIBLE);
+                }
             }
         } else {
             if (layout.fragmentsStack.size() <= 1) {

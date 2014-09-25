@@ -61,7 +61,6 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.android.MessageObject;
-import org.telegram.android.PhotoObject;
 import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
@@ -336,7 +335,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (photo instanceof TLRPC.TL_photoEmpty || photo.sizes == null) {
                         continue;
                     }
-                    TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(photo.sizes, 640, 640);
+                    TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 640, 640);
                     if (sizeFull != null) {
                         if (currentFileLocation != null) {
                             for (TLRPC.PhotoSize size : photo.sizes) {
@@ -561,8 +560,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
             @Override
             public boolean canOpenMenu() {
-                if (currentFileName != null) {
-                    File f = new File(AndroidUtilities.getCacheDir(), currentFileName);
+                if (currentMessageObject != null) {
+                    File f = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
+                    if (f.exists()) {
+                        return true;
+                    }
+                } else if (currentFileLocation != null) {
+                    File f = FileLoader.getPathToAttach(currentFileLocation);
                     if (f.exists()) {
                         return true;
                     }
@@ -601,14 +605,15 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     return;
                 }
                 try {
-                    String fileName = getFileName(currentIndex, null);
-                    if (fileName == null) {
+                    int size[] = new int[1];
+                    TLRPC.FileLocation fileLocation = getFileLocation(currentIndex, size);
+                    if (fileLocation == null) {
                         return;
                     }
-                    File f = new File(AndroidUtilities.getCacheDir(), fileName);
+                    File f = FileLoader.getPathToAttach(fileLocation);
                     if (f.exists()) {
                         Intent intent = new Intent(Intent.ACTION_SEND);
-                        if (fileName.endsWith("mp4")) {
+                        if (f.toString().endsWith("mp4")) {
                             intent.setType("video/mp4");
                         } else {
                             intent.setType("image/jpeg");
@@ -940,7 +945,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 if (message.messageOwner.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
                     return message.messageOwner.action.newUserPhoto.photo_big;
                 } else {
-                    TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(message.messageOwner.action.photo.sizes, 800, 800);
+                    TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(message.messageOwner.action.photo.sizes, 800, 800);
                     if (sizeFull != null) {
                         size[0] = sizeFull.size;
                         if (size[0] == 0) {
@@ -952,7 +957,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                 }
             } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && message.messageOwner.media.photo != null) {
-                TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, 800, 800);
+                TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, 800, 800);
                 if (sizeFull != null) {
                     size[0] = sizeFull.size;
                     if (size[0] == 0) {
@@ -1003,7 +1008,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     location.secret = sizeFull.secret;
                     return location;
                 } else {
-                    TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(message.messageOwner.action.photo.sizes, 800, 800);
+                    TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(message.messageOwner.action.photo.sizes, 800, 800);
                     if (sizeFull != null) {
                         TLRPC.TL_inputFileLocation location = new TLRPC.TL_inputFileLocation();
                         location.local_id = sizeFull.location.local_id;
@@ -1014,7 +1019,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                 }
             } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
-                TLRPC.PhotoSize sizeFull = PhotoObject.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, 800, 800);
+                TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, 800, 800);
                 if (sizeFull != null) {
                     TLRPC.TL_inputFileLocation location = new TLRPC.TL_inputFileLocation();
                     location.local_id = sizeFull.location.local_id;
@@ -1067,7 +1072,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         load = true;
                     }
                 } else {
-                    File cacheFile = new File(AndroidUtilities.getCacheDir(), currentFileName);
+                    File cacheFile = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
                     if (cacheFile.exists()) {
                         currentOverlay.actionButton.setText(LocaleController.getString("ViewVideo", R.string.ViewVideo));
                     } else {
@@ -1326,7 +1331,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
 
         if (currentFileName != null) {
-            File f = new File(AndroidUtilities.getCacheDir(), currentFileName);
+            File f = null;
+            if (currentMessageObject != null) {
+                f = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
+            } else if (currentFileLocation != null) {
+                f = FileLoader.getPathToAttach(currentFileLocation);
+            }
             if (f.exists()) {
                 progressBar.setVisibility(View.GONE);
             } else {
@@ -2285,7 +2295,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 loadFile = true;
             }
         } else {
-            File cacheFile = new File(AndroidUtilities.getCacheDir(), currentFileName);
+            File cacheFile = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
             if (cacheFile.exists()) {
                 Intent intent = new Intent(Intent.ACTION_VIEW);
                 intent.setDataAndType(Uri.fromFile(cacheFile), "video/mp4");

@@ -42,7 +42,6 @@ import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
-import org.telegram.android.PhotoObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
@@ -120,9 +119,9 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                             width = height;
                             height = temp;
                         }
-                        TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, width, height);
+                        TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(wallPaper.sizes, width, height);
                         String fileName = size.location.volume_id + "_" + size.location.local_id + ".jpg";
-                        File f = new File(AndroidUtilities.getCacheDir(), fileName);
+                        File f = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
                         File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
                         try {
                             done = Utilities.copyFile(f, toFile);
@@ -274,9 +273,9 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 width = height;
                 height = temp;
             }
-            TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, width, height);
+            TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(wallPaper.sizes, width, height);
             String fileName = size.location.volume_id + "_" + size.location.local_id + ".jpg";
-            File f = new File(AndroidUtilities.getCacheDir(), fileName);
+            File f = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
             if (!f.exists()) {
                 progressBar.setProgress(0);
                 loadingFile = fileName;
@@ -285,7 +284,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 progressBar.setVisibility(View.VISIBLE);
                 loadingSize = size;
                 selectedColor = 0;
-                FileLoader.getInstance().loadFile(size);
+                FileLoader.getInstance().loadFile(size, true);
                 backgroundImage.setBackgroundColor(0);
             } else {
                 if (loadingFile != null) {
@@ -533,7 +532,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 BackupImageView image = (BackupImageView)view.findViewById(R.id.image);
                 View selection = view.findViewById(R.id.selection);
                 TLRPC.WallPaper wallPaper = wallPapers.get(i - 1);
-                TLRPC.PhotoSize size = PhotoObject.getClosestPhotoSizeWithSize(wallPaper.sizes, AndroidUtilities.dp(100), AndroidUtilities.dp(100));
+                TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(wallPaper.sizes, AndroidUtilities.dp(100), AndroidUtilities.dp(100));
                 if (size != null && size.location != null) {
                     image.setImage(size.location, "100_100", 0);
                 }

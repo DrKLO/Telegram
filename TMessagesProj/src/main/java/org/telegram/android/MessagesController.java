@@ -228,8 +228,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             }
                             TLRPC.TL_photos_photo photo = (TLRPC.TL_photos_photo) response;
                             ArrayList<TLRPC.PhotoSize> sizes = photo.photo.sizes;
-                            TLRPC.PhotoSize smallSize = PhotoObject.getClosestPhotoSizeWithSize(sizes, 100, 100);
-                            TLRPC.PhotoSize bigSize = PhotoObject.getClosestPhotoSizeWithSize(sizes, 1000, 1000);
+                            TLRPC.PhotoSize smallSize = FileLoader.getClosestPhotoSizeWithSize(sizes, 100, 100);
+                            TLRPC.PhotoSize bigSize = FileLoader.getClosestPhotoSizeWithSize(sizes, 1000, 1000);
                             user.photo = new TLRPC.TL_userProfilePhoto();
                             user.photo.photo_id = photo.photo.id;
                             if (smallSize != null) {
@@ -908,7 +908,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
     public void uploadAndApplyUserAvatar(TLRPC.PhotoSize bigPhoto) {
         if (bigPhoto != null) {
-            uploadingAvatar = AndroidUtilities.getCacheDir() + "/" + bigPhoto.location.volume_id + "_" + bigPhoto.location.local_id + ".jpg";
+            uploadingAvatar = FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE) + "/" + bigPhoto.location.volume_id + "_" + bigPhoto.location.local_id + ".jpg";
             FileLoader.getInstance().uploadFile(uploadingAvatar, false, true);
         }
     }

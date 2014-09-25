@@ -449,9 +449,8 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             boolean photoSet = false;
             if (currentPhotoObject != null) {
                 boolean photoExist = true;
-                String fileName = FileLoader.getAttachFileName(currentPhotoObject.photoOwner);
                 if (messageObject.type == 1) {
-                    File cacheFile = new File(AndroidUtilities.getCacheDir(), fileName);
+                    File cacheFile = FileLoader.getPathToMessage(messageObject.messageOwner);
                     if (!cacheFile.exists()) {
                         photoExist = false;
                     }

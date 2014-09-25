@@ -113,7 +113,7 @@ public class Utilities {
     public native static long doPQNative(long _what);
     public native static void loadBitmap(String path, int[] bitmap, int scale, int format, int width, int height);
     public native static void blurBitmap(Object bitmap);
-    public native static int convertVideoFrame(ByteBuffer src, ByteBuffer dest, int destFormat, int width, int height, int padding);
+    public native static int convertVideoFrame(ByteBuffer src, ByteBuffer dest, int destFormat, int width, int height, int padding, int swap);
     private native static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, int offset, int length);
 
     public static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, boolean changeIv, int offset, int length) {

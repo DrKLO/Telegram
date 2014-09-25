@@ -133,16 +133,11 @@ public class ChatMessageCell extends ChatBaseCell {
             int maxWidth;
 
             if (AndroidUtilities.isTablet()) {
-                int min = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
-                int leftWidth = min / 100 * 35;
-                if (leftWidth < AndroidUtilities.dp(320)) {
-                    leftWidth = AndroidUtilities.dp(320);
-                }
                 if (isChat && !messageObject.isOut()) {
-                    maxWidth = min - leftWidth - AndroidUtilities.dp(122);
+                    maxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(122);
                     drawName = true;
                 } else {
-                    maxWidth = min - leftWidth - AndroidUtilities.dp(80);
+                    maxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(80);
                     drawName = false;
                 }
             } else {

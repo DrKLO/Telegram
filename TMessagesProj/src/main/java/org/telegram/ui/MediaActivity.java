@@ -25,12 +25,12 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.android.PhotoObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.BackupImageView;
@@ -413,7 +413,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     if (message.imagePreview != null) {
                         imageView.setImageBitmap(message.imagePreview);
                     } else {
-                        TLRPC.PhotoSize photoSize = PhotoObject.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, 80, 80);
+                        TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, 80, 80);
                         imageView.setImage(photoSize.location, null, R.drawable.photo_placeholder_in);
                     }
                 } else {

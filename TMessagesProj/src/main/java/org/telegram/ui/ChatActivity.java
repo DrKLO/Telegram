@@ -1104,7 +1104,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 }
                             }
                             if (!canSave) {
-                                File f = new File(AndroidUtilities.getCacheDir(), messageObject.getFileName());
+                                File f = FileLoader.getPathToMessage(messageObject.messageOwner);
                                 if (f.exists()) {
                                     canSave = true;
                                 }
@@ -1152,7 +1152,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             }
                         }
                         if (!canSave) {
-                            File f = new File(AndroidUtilities.getCacheDir(), messageObject.getFileName());
+                            File f = FileLoader.getPathToMessage(messageObject.messageOwner);
                             if (f.exists()) {
                                 canSave = true;
                             }
@@ -2855,7 +2855,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
             }
             if (locFile == null) {
-                File f = new File(AndroidUtilities.getCacheDir(), selectedObject.getFileName());
+                File f = FileLoader.getPathToMessage(selectedObject.messageOwner);
                 if (f.exists()) {
                     locFile = f;
                 }
@@ -3316,7 +3316,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                         f = new File(message.messageOwner.attachPath);
                                     }
                                     if (f == null || f != null && !f.exists()) {
-                                        f = new File(AndroidUtilities.getCacheDir(), message.getFileName());
+                                        f = FileLoader.getPathToMessage(message.messageOwner);
                                     }
                                     Intent intent = new Intent(Intent.ACTION_VIEW);
                                     intent.setDataAndType(Uri.fromFile(f), "video/mp4");
@@ -3338,7 +3338,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     f = new File(message.messageOwner.attachPath);
                                 }
                                 if (f == null || f != null && !f.exists()) {
-                                    f = new File(AndroidUtilities.getCacheDir(), fileName);
+                                    f = FileLoader.getPathToMessage(message.messageOwner);
                                 }
                                 if (f != null && f.exists()) {
                                     String realMimeType = null;

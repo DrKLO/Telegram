@@ -591,7 +591,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             if (downloadObject.object instanceof TLRPC.Audio) {
                 FileLoader.getInstance().loadFile((TLRPC.Audio)downloadObject.object, false);
             } else if (downloadObject.object instanceof TLRPC.PhotoSize) {
-                FileLoader.getInstance().loadFile((TLRPC.PhotoSize)downloadObject.object);
+                FileLoader.getInstance().loadFile((TLRPC.PhotoSize)downloadObject.object, false);
             } else if (downloadObject.object instanceof TLRPC.Video) {
                 FileLoader.getInstance().loadFile((TLRPC.Video)downloadObject.object);
             } else if (downloadObject.object instanceof TLRPC.Document) {
@@ -1152,7 +1152,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             return true;
         }
         clenupPlayer(true);
-        final File cacheFile = new File(AndroidUtilities.getCacheDir(), messageObject.getFileName());
+        final File cacheFile = FileLoader.getPathToMessage(messageObject.messageOwner);
 
         if (isOpusFile(cacheFile.getAbsolutePath()) == 1) {
             synchronized (playerObjectSync) {
@@ -1376,7 +1376,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 UserConfig.lastLocalId--;
                 UserConfig.saveConfig(false);
 
-                recordingAudioFile = new File(AndroidUtilities.getCacheDir(), FileLoader.getAttachFileName(recordingAudio));
+                recordingAudioFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), FileLoader.getAttachFileName(recordingAudio));
 
                 try {
                     if (startRecord(recordingAudioFile.getAbsolutePath()) == 0) {
@@ -1515,7 +1515,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             }
         }
         if (file == null) {
-            file = new File(AndroidUtilities.getCacheDir(), path);
+            file = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), path);
         }
 
         final File sourceFile = file;
@@ -1647,7 +1647,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 }
             }
             if (cacheFile == null) {
-                cacheFile = new File(AndroidUtilities.getCacheDir(), messageObject.getFileName());
+                cacheFile = FileLoader.getPathToMessage(messageObject.messageOwner);
             }
             try {
                 currentGifDrawable = new GifDrawable(cacheFile);
@@ -1726,7 +1726,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             UserConfig.lastLocalId--;
             parcelFD = ApplicationLoader.applicationContext.getContentResolver().openFileDescriptor(uri, "r");
             input = new FileInputStream(parcelFD.getFileDescriptor());
-            File f = new File(AndroidUtilities.getCacheDir(), String.format(Locale.US, "%d.%s", id, ext));
+            File f = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), String.format(Locale.US, "%d.%s", id, ext));
             output = new FileOutputStream(f);
             input.getChannel().transferTo(0, input.getChannel().size(), output.getChannel());
             UserConfig.saveConfig(false);
