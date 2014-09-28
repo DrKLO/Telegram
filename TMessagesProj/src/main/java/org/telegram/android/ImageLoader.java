@@ -586,41 +586,69 @@ public class ImageLoader {
     private HashMap<Integer, File> createMediaPaths() {
         HashMap<Integer, File> mediaDirs = new HashMap<Integer, File>();
         File cachePath = AndroidUtilities.getCacheDir();
-        try {
-            cachePath.mkdirs();
-            new File(cachePath, ".nomedia").createNewFile();
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
+        if (!cachePath.isDirectory()) {
+            try {
+                cachePath.mkdirs();
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
         }
         mediaDirs.put(FileLoader.MEDIA_DIR_CACHE, cachePath);
+
         try {
             if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
                 File telegramPath = new File(Environment.getExternalStorageDirectory(), LocaleController.getString("AppName", R.string.AppName));
                 telegramPath.mkdirs();
+                if (telegramPath.isDirectory()) {
+                    try {
+                        File imagePath = new File(telegramPath, "Images");
+                        imagePath.mkdir();
+                        if (imagePath.isDirectory()) {
+                            new File(imagePath, ".nomedia").createNewFile();
+                            mediaDirs.put(FileLoader.MEDIA_DIR_IMAGE, imagePath);
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
 
-                File imagePath = new File(telegramPath, "Images");
-                imagePath.mkdir();
-                new File(imagePath, ".nomedia").createNewFile();
-                mediaDirs.put(FileLoader.MEDIA_DIR_IMAGE, imagePath);
+                    try {
+                        File videoPath = new File(telegramPath, "Video");
+                        videoPath.mkdir();
+                        if (videoPath.isDirectory()) {
+                            new File(videoPath, ".nomedia").createNewFile();
+                            mediaDirs.put(FileLoader.MEDIA_DIR_VIDEO, videoPath);
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
 
-                File videoPath = new File(telegramPath, "Video");
-                videoPath.mkdir();
-                new File(videoPath, ".nomedia").createNewFile();
-                mediaDirs.put(FileLoader.MEDIA_DIR_VIDEO, videoPath);
+                    try {
+                        File audioPath = new File(telegramPath, "Audio");
+                        audioPath.mkdir();
+                        if (audioPath.isDirectory()) {
+                            new File(audioPath, ".nomedia").createNewFile();
+                            mediaDirs.put(FileLoader.MEDIA_DIR_AUDIO, audioPath);
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
 
-                File audioPath = new File(telegramPath, "Audio");
-                audioPath.mkdir();
-                new File(audioPath, ".nomedia").createNewFile();
-                mediaDirs.put(FileLoader.MEDIA_DIR_AUDIO, audioPath);
-
-                File documentPath = new File(telegramPath, "Documents");
-                documentPath.mkdir();
-                new File(documentPath, ".nomedia").createNewFile();
-                mediaDirs.put(FileLoader.MEDIA_DIR_DOCUMENT, documentPath);
+                    try {
+                        File documentPath = new File(telegramPath, "Documents");
+                        documentPath.mkdir();
+                        if (documentPath.isDirectory()) {
+                            new File(documentPath, ".nomedia").createNewFile();
+                            mediaDirs.put(FileLoader.MEDIA_DIR_DOCUMENT, documentPath);
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                }
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
+
         return mediaDirs;
     }
 

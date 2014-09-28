@@ -645,7 +645,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         return;
                     }
                     MessageObject obj = imagesArr.get(currentIndex);
-                    if (obj.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SENT) {
+                    if (obj.isSent()) {
                         ArrayList<Integer> arr = new ArrayList<Integer>();
                         arr.add(obj.messageOwner.id);
                         MessagesController.getInstance().deleteMessages(arr, null, null);
@@ -1061,7 +1061,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             return;
         }
         if (currentFileName.endsWith("mp4")) {
-            if (currentMessageObject.messageOwner.send_state != MessageObject.MESSAGE_SEND_STATE_SENDING && currentMessageObject.messageOwner.send_state != MessageObject.MESSAGE_SEND_STATE_SEND_ERROR) {
+            if (!currentMessageObject.isSending() && !currentMessageObject.isSendError()) {
                 currentOverlay.setVisibility(View.VISIBLE);
                 boolean load = false;
                 if (currentMessageObject.messageOwner.attachPath != null && currentMessageObject.messageOwner.attachPath.length() != 0) {
@@ -1393,7 +1393,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         if (currentThumb != null && imageReceiver == centerImage) {
                             placeHolder = currentThumb;
                         }
-                        imageReceiver.setImage(fileLocation, null, placeHolder != null ? new BitmapDrawable(null, placeHolder) : null, size[0]);
+                        imageReceiver.setImage(fileLocation, null, placeHolder != null ? new BitmapDrawable(null, placeHolder) : null, 0);
                     } else {
                         imageReceiver.setImageBitmap(parentActivity.getResources().getDrawable(R.drawable.photoview_placeholder));
                     }

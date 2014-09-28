@@ -52,8 +52,8 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     private static Drawable videoIconDrawable;
     private static Drawable docMenuInDrawable;
     private static Drawable docMenuOutDrawable;
-    private static Drawable[] buttonStatesDrawables = new Drawable[4];
-    private static Drawable[][] buttonStatesDrawablesDoc = new Drawable[2][2];
+    private static Drawable[] buttonStatesDrawables = new Drawable[5];
+    private static Drawable[][] buttonStatesDrawablesDoc = new Drawable[3][2];
     private static TextPaint infoPaint;
     private static MessageObject lastDownloadedGifMessage = null;
     private static TextPaint namePaint;
@@ -114,10 +114,13 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             buttonStatesDrawables[1] = getResources().getDrawable(R.drawable.photocancel);
             buttonStatesDrawables[2] = getResources().getDrawable(R.drawable.photogif);
             buttonStatesDrawables[3] = getResources().getDrawable(R.drawable.playvideo);
+            buttonStatesDrawables[4] = getResources().getDrawable(R.drawable.photopause);
             buttonStatesDrawablesDoc[0][0] = getResources().getDrawable(R.drawable.docload_b);
             buttonStatesDrawablesDoc[1][0] = getResources().getDrawable(R.drawable.doccancel_b);
+            buttonStatesDrawablesDoc[2][0] = getResources().getDrawable(R.drawable.docpause_b);
             buttonStatesDrawablesDoc[0][1] = getResources().getDrawable(R.drawable.docload_g);
             buttonStatesDrawablesDoc[1][1] = getResources().getDrawable(R.drawable.doccancel_g);
+            buttonStatesDrawablesDoc[2][1] = getResources().getDrawable(R.drawable.docpause_g);
             videoIconDrawable = getResources().getDrawable(R.drawable.ic_video);
             docMenuInDrawable = getResources().getDrawable(R.drawable.doc_actions_b);
             docMenuOutDrawable = getResources().getDrawable(R.drawable.doc_actions_g);
@@ -172,7 +175,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         float y = event.getY();
 
         boolean result = false;
-        int side = AndroidUtilities.dp(44);
+        int side = AndroidUtilities.dp(48);
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             if (delegate == null || delegate.canPerformActions()) {
                 if (buttonState != -1 && x >= buttonX && x <= buttonX + side && y >= buttonY && y <= buttonY + side) {
@@ -321,7 +324,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             buttonState = 1;
             invalidate();
         } else if (buttonState == 1) {
-            if (currentMessageObject.isOut() && currentMessageObject.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SENDING) {
+            if (currentMessageObject.isOut() && currentMessageObject.isSending()) {
                 if (delegate != null) {
                     delegate.didPressedCancelSendButton(this);
                 }
@@ -616,7 +619,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         if (fileName == null) {
             return;
         }
-        if (currentMessageObject.isOut() && currentMessageObject.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SENDING) {
+        if (currentMessageObject.isOut() && currentMessageObject.isSending()) {
             if (currentMessageObject.messageOwner.attachPath != null) {
                 MediaController.getInstance().addLoadingFileObserver(currentMessageObject.messageOwner.attachPath, this);
                 progressVisible = true;
@@ -709,7 +712,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     }
 
     private void invalidateProgress() {
-        int offset = AndroidUtilities.dp(1);
+        int offset = AndroidUtilities.dp(2);
         invalidate((int)progressRect.left - offset, (int)progressRect.top - offset, (int)progressRect.right + offset * 2, (int)progressRect.bottom + offset * 2);
     }
 
@@ -742,10 +745,10 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             }
         }
         photoImage.setImageCoords(x, AndroidUtilities.dp(7), photoWidth, photoHeight);
-        int size = AndroidUtilities.dp(44);
+        int size = AndroidUtilities.dp(48);
         buttonX = (int)(x + (photoWidth - size) / 2.0f);
         buttonY = (int)(AndroidUtilities.dp(7) + (photoHeight - size) / 2.0f);
-        progressRect.set(buttonX + AndroidUtilities.dp(1), buttonY + AndroidUtilities.dp(1), buttonX + AndroidUtilities.dp(43), buttonY + AndroidUtilities.dp(43));
+        progressRect.set(buttonX + AndroidUtilities.dp(1), buttonY + AndroidUtilities.dp(1), buttonX + AndroidUtilities.dp(47), buttonY + AndroidUtilities.dp(47));
     }
 
     @Override
@@ -783,7 +786,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
 
                 if (buttonState == -1) {
                     Drawable drawable = currentMessageObject.isOut() ? placeholderDocOutDrawable : placeholderDocInDrawable;
-                    setDrawableBounds(drawable, photoImage.getImageX() + AndroidUtilities.dp(27), photoImage.getImageY() + AndroidUtilities.dp(27));
+                    setDrawableBounds(drawable, photoImage.getImageX() + AndroidUtilities.dp(19), photoImage.getImageY() + AndroidUtilities.dp(19));
                     drawable.draw(canvas);
                 }
                 if (currentMessageObject.isOut()) {
@@ -802,9 +805,17 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         if (buttonState >= 0 && buttonState < 4) {
             Drawable currentButtonDrawable = null;
             if (currentMessageObject.type == 9 && !imageDrawn) {
-                currentButtonDrawable = buttonStatesDrawablesDoc[buttonState][currentMessageObject.isOut() ? 1 : 0];
+                if (buttonState == 1 && !currentMessageObject.isSending()) {
+                    currentButtonDrawable = buttonStatesDrawablesDoc[2][currentMessageObject.isOut() ? 1 : 0];
+                } else {
+                    currentButtonDrawable = buttonStatesDrawablesDoc[buttonState][currentMessageObject.isOut() ? 1 : 0];
+                }
             } else {
-                currentButtonDrawable = buttonStatesDrawables[buttonState];
+                if (buttonState == 1 && !currentMessageObject.isSending()) {
+                    currentButtonDrawable = buttonStatesDrawables[4];
+                } else {
+                    currentButtonDrawable = buttonStatesDrawables[buttonState];
+                }
             }
             setDrawableBounds(currentButtonDrawable, buttonX, buttonY);
             currentButtonDrawable.draw(canvas);

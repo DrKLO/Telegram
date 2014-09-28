@@ -564,17 +564,17 @@ public class ChatBaseCell extends BaseCell {
                 boolean drawError = false;
                 boolean isBroadcast = (int)(currentMessageObject.getDialogId() >> 32) == 1;
 
-                if (currentMessageObject.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SENDING) {
+                if (currentMessageObject.isSending()) {
                     drawCheck1 = false;
                     drawCheck2 = false;
                     drawClock = true;
                     drawError = false;
-                } else if (currentMessageObject.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SEND_ERROR) {
+                } else if (currentMessageObject.isSendError()) {
                     drawCheck1 = false;
                     drawCheck2 = false;
                     drawClock = false;
                     drawError = true;
-                } else if (currentMessageObject.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SENT) {
+                } else if (currentMessageObject.isSent()) {
                     if (!currentMessageObject.isUnread()) {
                         drawCheck1 = true;
                         drawCheck2 = true;

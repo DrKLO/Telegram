@@ -105,7 +105,7 @@ public class ContactsController {
         try {
             nameDisplayOrder = Settings.System.getInt(ApplicationLoader.applicationContext.getContentResolver(), "android.contacts.DISPLAY_ORDER");
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            //don't promt
         }
     }
 

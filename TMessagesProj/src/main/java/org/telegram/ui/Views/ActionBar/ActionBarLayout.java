@@ -31,6 +31,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 
@@ -199,11 +200,11 @@ public class ActionBarLayout extends FrameLayout {
     }
 
     private void onSlideAnimationEnd(boolean backAnimation) {
-        containerView.setX(0);
-        containerViewBack.setX(0);
+        containerView.setTranslationX(0);
+        containerViewBack.setTranslationX(0);
         actionBar.stopMoving(backAnimation);
         shadowView.setVisibility(View.INVISIBLE);
-        shadowView.setX(-AndroidUtilities.dp(2));
+        shadowView.setTranslationX(-AndroidUtilities.dp(2));
         if (!backAnimation) {
             BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
             lastFragment.onPause();
@@ -240,7 +241,7 @@ public class ActionBarLayout extends FrameLayout {
         startedTracking = true;
         startedTrackingX = (int) ev.getX();
         shadowView.setVisibility(View.VISIBLE);
-        shadowView.setX(-AndroidUtilities.dp(2));
+        shadowView.setTranslationX(-AndroidUtilities.dp(2));
         containerViewBack.setVisibility(View.VISIBLE);
         beginTrackingSent = false;
 
@@ -297,8 +298,8 @@ public class ActionBarLayout extends FrameLayout {
                         beginTrackingSent = true;
                     }
                     actionBar.moveActionBarByX(dx);
-                    containerView.setX(dx);
-                    shadowView.setX(dx - AndroidUtilities.dp(2));
+                    containerView.setTranslationX(dx);
+                    shadowView.setTranslationX(dx - AndroidUtilities.dp(2));
                 }
             } else if (ev != null && ev.getPointerId(0) == startedTrackingPointerId && (ev.getAction() == MotionEvent.ACTION_CANCEL || ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_POINTER_UP)) {
                 if (velocityTracker == null) {
@@ -488,19 +489,20 @@ public class ActionBarLayout extends FrameLayout {
     }
 
     public boolean presentFragment(BaseFragment fragment) {
-        return presentFragment(fragment, false, false);
+        return presentFragment(fragment, false, false, true);
     }
 
     public boolean presentFragment(BaseFragment fragment, boolean removeLast) {
-        return presentFragment(fragment, removeLast, false);
+        return presentFragment(fragment, removeLast, false, true);
     }
 
-    public boolean presentFragment(final BaseFragment fragment, final boolean removeLast, boolean forceWithoutAnimation) {
-        if (checkTransitionAnimation() || delegate != null && !delegate.needPresentFragment(fragment, removeLast, forceWithoutAnimation, this) || !fragment.onFragmentCreate()) {
+    public boolean presentFragment(final BaseFragment fragment, final boolean removeLast, boolean forceWithoutAnimation, boolean check) {
+        if (checkTransitionAnimation() || delegate != null && check && !delegate.needPresentFragment(fragment, removeLast, forceWithoutAnimation, this) || !fragment.onFragmentCreate()) {
             return false;
         }
         if (parentActivity.getCurrentFocus() != null) {
             AndroidUtilities.hideKeyboard(parentActivity.getCurrentFocus());
+            NotificationCenter.getInstance().postNotificationName(NotificationCenter.hideEmojiKeyboard);
         }
         boolean needAnimation = openAnimation != null && !forceWithoutAnimation && parentActivity.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).getBoolean("view_animations", true);
         if (useAlphaAnimations && fragmentsStack.size() == 0 && alphaOpenAnimation == null) {
@@ -533,6 +535,9 @@ public class ActionBarLayout extends FrameLayout {
 
         if (!needAnimation) {
             presentFragmentInternalRemoveOld(removeLast, currentFragment);
+            if (backgroundView != null) {
+                backgroundView.setVisibility(VISIBLE);
+            }
         }
 
         if (needAnimation) {

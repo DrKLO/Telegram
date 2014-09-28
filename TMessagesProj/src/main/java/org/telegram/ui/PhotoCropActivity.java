@@ -288,6 +288,7 @@ public class PhotoCropActivity extends BaseFragment {
 
     @Override
     public boolean onFragmentCreate() {
+        swipeBackEnabled = false;
         String photoPath = getArguments().getString("photoPath");
         Uri photoUri = getArguments().getParcelable("photoUri");
         if (photoPath == null && photoUri == null) {

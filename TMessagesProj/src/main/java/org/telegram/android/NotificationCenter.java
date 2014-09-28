@@ -39,6 +39,7 @@ public class NotificationCenter {
     public static final int pushMessagesUpdated = 27;
     public static final int blockedUsersDidLoaded = 28;
     public static final int openedChatChanged = 29;
+    public static final int hideEmojiKeyboard = 30;
 
     public static final int wallpapersDidLoaded = 171;
     public static final int closeOtherAppActivities = 702;
@@ -52,6 +53,9 @@ public class NotificationCenter {
     public static final int FileLoadProgressChanged = 10003;
     public static final int FileDidLoaded = 10004;
     public static final int FileDidFailedLoad = 10005;
+    public static final int FilePreparingStarted = 10006;
+    public static final int FileNewChunkAvailable = 10007;
+    public static final int FilePreparingFailed = 10008;
 
     public final static int audioProgressDidChanged = 50001;
     public final static int audioDidReset = 50002;

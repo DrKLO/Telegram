@@ -317,6 +317,7 @@
     <string name="EditVideo">تحرير الفيديو</string>
     <string name="OriginalVideo">الفيديو الأصلي</string>
     <string name="EditedVideo">تم تحرير الفيديو</string>
+    <string name="SendingVideo">Sending video...</string>
 
     <!--button titles-->
     <string name="Next">التالي</string>

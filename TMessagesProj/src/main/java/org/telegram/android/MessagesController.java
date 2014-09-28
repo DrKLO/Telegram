@@ -2450,7 +2450,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                         public void run() {
                                             for (HashMap.Entry<Integer, Integer> entry : corrected.entrySet()) {
                                                 Integer oldId = entry.getKey();
-                                                SendMessagesHelper.getInstance().setMessageSent(oldId);
+                                                SendMessagesHelper.getInstance().processSentMessage(oldId);
                                                 Integer newId = entry.getValue();
                                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageReceivedByServer, oldId, newId, null);
                                             }
@@ -3464,9 +3464,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             } else {
                 MessageObject currentDialogMessage = dialogMessage.get(dialog.top_message);
                 if (currentDialogMessage != null) {
-                    if (currentDialogMessage.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SENDING && lastMessage.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SENDING) {
+                    if (currentDialogMessage.isSending() && lastMessage.isSending()) {
                         change = true;
-                    } else if (dialog.last_message_date < lastMessage.messageOwner.date || dialog.last_message_date == lastMessage.messageOwner.date && lastMessage.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SENDING) {
+                    } else if (dialog.last_message_date < lastMessage.messageOwner.date || dialog.last_message_date == lastMessage.messageOwner.date && lastMessage.isSending()) {
                         change = true;
                     }
                 } else {

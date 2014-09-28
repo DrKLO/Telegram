@@ -115,7 +115,35 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             shadowTablet.setOnTouchListener(new View.OnTouchListener() {
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
-                    return true;
+                    if (!actionBarLayout.fragmentsStack.isEmpty() && event.getAction() == MotionEvent.ACTION_UP) {
+                        float x = event.getX();
+                        float y = event.getY();
+                        int location[] = new int[2];
+                        layersActionBarLayout.getLocationOnScreen(location);
+                        int viewX = location[0];
+                        int viewY = location[1];
+
+                        if (x > viewX && x < viewX + layersActionBarLayout.getWidth() && y > viewY && y < viewY + layersActionBarLayout.getHeight()) {
+                            return false;
+                        } else {
+                            if (!layersActionBarLayout.fragmentsStack.isEmpty()) {
+                                for (int a = 0; a < layersActionBarLayout.fragmentsStack.size() - 1; a++) {
+                                    layersActionBarLayout.removeFragmentFromStack(layersActionBarLayout.fragmentsStack.get(0));
+                                    a--;
+                                }
+                                layersActionBarLayout.closeLastFragment(true);
+                            }
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            });
+
+            shadowTablet.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+
                 }
             });
 
@@ -514,7 +542,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 Bundle args = new Bundle();
                 args.putInt("user_id", push_user_id);
                 ChatActivity fragment = new ChatActivity(args);
-                if (actionBarLayout.presentFragment(fragment, false, true)) {
+                if (actionBarLayout.presentFragment(fragment, false, true, true)) {
                     pushOpened = true;
                 }
             }
@@ -522,14 +550,14 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             Bundle args = new Bundle();
             args.putInt("chat_id", push_chat_id);
             ChatActivity fragment = new ChatActivity(args);
-            if (actionBarLayout.presentFragment(fragment, false, true)) {
+            if (actionBarLayout.presentFragment(fragment, false, true, true)) {
                 pushOpened = true;
             }
         } else if (push_enc_id != 0) {
             Bundle args = new Bundle();
             args.putInt("enc_id", push_enc_id);
             ChatActivity fragment = new ChatActivity(args);
-            if (actionBarLayout.presentFragment(fragment, false, true)) {
+            if (actionBarLayout.presentFragment(fragment, false, true, true)) {
                 pushOpened = true;
             }
         } else if (showDialogsList) {
@@ -541,28 +569,42 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             isNew = false;
         }
         if (videoPath != null || photoPathsArray != null || sendingText != null || documentsPathsArray != null || contactsToSend != null) {
-            NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+            if (!AndroidUtilities.isTablet()) {
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+            }
             Bundle args = new Bundle();
             args.putBoolean("onlySelect", true);
             args.putString("selectAlertString", LocaleController.getString("SendMessagesTo", R.string.SendMessagesTo));
             MessagesActivity fragment = new MessagesActivity(args);
             fragment.setDelegate(this);
-            actionBarLayout.presentFragment(fragment, false, true);
+            actionBarLayout.presentFragment(fragment, false, true, true);
             pushOpened = true;
             if (PhotoViewer.getInstance().isVisible()) {
                 PhotoViewer.getInstance().closePhoto(true);
             }
         }
         if (open_settings != 0) {
-            actionBarLayout.presentFragment(new SettingsActivity(), false, true);
+            actionBarLayout.presentFragment(new SettingsActivity(), false, true, true);
             pushOpened = true;
         }
         if (!pushOpened && !isNew) {
-            if (actionBarLayout.fragmentsStack.isEmpty()) {
-                if (!UserConfig.isClientActivated()) {
-                    actionBarLayout.addFragmentToStack(new LoginActivity());
+            if (AndroidUtilities.isTablet()) {
+                if (UserConfig.isClientActivated()) {
+                    if (actionBarLayout.fragmentsStack.isEmpty()) {
+                        actionBarLayout.addFragmentToStack(new MessagesActivity(null));
+                    }
                 } else {
-                    actionBarLayout.addFragmentToStack(new MessagesActivity(null));
+                    if (layersActionBarLayout.fragmentsStack.isEmpty()) {
+                        layersActionBarLayout.addFragmentToStack(new LoginActivity());
+                    }
+                }
+            } else {
+                if (actionBarLayout.fragmentsStack.isEmpty()) {
+                    if (!UserConfig.isClientActivated()) {
+                        actionBarLayout.addFragmentToStack(new LoginActivity());
+                    } else {
+                        actionBarLayout.addFragmentToStack(new MessagesActivity(null));
+                    }
                 }
             }
             actionBarLayout.showLastFragment();
@@ -589,7 +631,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
             Bundle args = new Bundle();
             args.putBoolean("scrollToTopOnResume", true);
-            NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+            if (!AndroidUtilities.isTablet()) {
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+            }
             if (lower_part != 0) {
                 if (high_id == 1) {
                     args.putInt("chat_id", lower_part);
@@ -606,7 +650,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             ChatActivity fragment = new ChatActivity(args);
             actionBarLayout.presentFragment(fragment, true);
             if (videoPath != null) {
-                fragment.processSendingVideo(videoPath, null, 0, 0, 0, 0);
+                fragment.processSendingVideo(videoPath, 0, 0, 0, 0, null);
             }
             if (sendingText != null) {
                 fragment.processSendingText(sendingText);
@@ -647,7 +691,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     }
 
     public boolean presentFragment(final BaseFragment fragment, final boolean removeLast, boolean forceWithoutAnimation) {
-        return actionBarLayout.presentFragment(fragment, removeLast, forceWithoutAnimation);
+        return actionBarLayout.presentFragment(fragment, removeLast, forceWithoutAnimation, true);
     }
 
     public void needLayout() {
@@ -680,18 +724,18 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 relativeLayoutParams.leftMargin = leftWidth;
                 buttonLayoutTablet.setLayoutParams(relativeLayoutParams);
 
-                if (AndroidUtilities.isSmallTablet() && mainFragmentsStack.size() == 2) {
-                    BaseFragment chatFragment = mainFragmentsStack.get(1);
-                    mainFragmentsStack.remove(1);
+                if (AndroidUtilities.isSmallTablet() && actionBarLayout.fragmentsStack.size() == 2) {
+                    BaseFragment chatFragment = actionBarLayout.fragmentsStack.get(1);
+                    actionBarLayout.fragmentsStack.remove(1);
                     actionBarLayout.showLastFragment();
-                    rightFragmentsStack.add(chatFragment);
+                    rightActionBarLayout.fragmentsStack.add(chatFragment);
                     rightActionBarLayout.showLastFragment();
                 }
 
-                rightActionBarLayout.setVisibility(rightFragmentsStack.isEmpty() ? View.GONE : View.VISIBLE);
-                buttonLayoutTablet.setVisibility(!mainFragmentsStack.isEmpty() && rightFragmentsStack.isEmpty() ? View.VISIBLE : View.GONE);
-                backgroundTablet.setVisibility(rightFragmentsStack.isEmpty() ? View.VISIBLE : View.GONE);
-                shadowTabletSide.setVisibility(!mainFragmentsStack.isEmpty() ? View.VISIBLE : View.GONE);
+                rightActionBarLayout.setVisibility(rightActionBarLayout.fragmentsStack.isEmpty() ? View.GONE : View.VISIBLE);
+                buttonLayoutTablet.setVisibility(!actionBarLayout.fragmentsStack.isEmpty() && rightActionBarLayout.fragmentsStack.isEmpty() ? View.VISIBLE : View.GONE);
+                backgroundTablet.setVisibility(rightActionBarLayout.fragmentsStack.isEmpty() ? View.VISIBLE : View.GONE);
+                shadowTabletSide.setVisibility(!actionBarLayout.fragmentsStack.isEmpty() ? View.VISIBLE : View.GONE);
             } else {
                 tabletFullSize = true;
 
@@ -702,13 +746,13 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
                 shadowTabletSide.setVisibility(View.GONE);
                 rightActionBarLayout.setVisibility(View.GONE);
-                backgroundTablet.setVisibility(View.GONE);
+                backgroundTablet.setVisibility(!actionBarLayout.fragmentsStack.isEmpty() ? View.GONE : View.VISIBLE);
                 buttonLayoutTablet.setVisibility(View.GONE);
 
-                if (rightFragmentsStack.size() == 1) {
-                    BaseFragment chatFragment = rightFragmentsStack.get(0);
-                    rightFragmentsStack.remove(0);
-                    actionBarLayout.presentFragment(chatFragment, false, true);
+                if (rightActionBarLayout.fragmentsStack.size() == 1) {
+                    BaseFragment chatFragment = rightActionBarLayout.fragmentsStack.get(0);
+                    rightActionBarLayout.fragmentsStack.remove(0);
+                    actionBarLayout.presentFragment(chatFragment, false, true, false);
                 }
             }
         }
@@ -831,8 +875,22 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     protected void onSaveInstanceState(Bundle outState) {
         try {
             super.onSaveInstanceState(outState);
-            if (!actionBarLayout.fragmentsStack.isEmpty()) {
-                BaseFragment lastFragment = actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1);
+            BaseFragment lastFragment = null;
+            if (AndroidUtilities.isTablet()) {
+                if (!layersActionBarLayout.fragmentsStack.isEmpty()) {
+                    lastFragment = layersActionBarLayout.fragmentsStack.get(layersActionBarLayout.fragmentsStack.size() - 1);
+                } else if (!rightActionBarLayout.fragmentsStack.isEmpty()) {
+                    lastFragment = rightActionBarLayout.fragmentsStack.get(rightActionBarLayout.fragmentsStack.size() - 1);
+                } else if (!actionBarLayout.fragmentsStack.isEmpty()) {
+                    lastFragment = actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1);
+                }
+            } else {
+                if (!actionBarLayout.fragmentsStack.isEmpty()) {
+                    lastFragment = actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1);
+                }
+            }
+
+            if (lastFragment != null) {
                 Bundle args = lastFragment.getArguments();
                 if (lastFragment instanceof ChatActivity && args != null) {
                     outState.putBundle("args", args);
@@ -943,35 +1001,52 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 MessagesActivity messagesActivity = (MessagesActivity)fragment;
                 if (messagesActivity.getDelegate() == null && layout != actionBarLayout) {
                     actionBarLayout.removeAllFragments();
-                    actionBarLayout.presentFragment(fragment, removeLast, forceWithoutAnimation);
+                    actionBarLayout.presentFragment(fragment, removeLast, forceWithoutAnimation, false);
                     layersActionBarLayout.removeAllFragments();
                     layersActionBarLayout.setVisibility(View.GONE);
                     if (!tabletFullSize) {
                         shadowTabletSide.setVisibility(View.VISIBLE);
-                        if (rightFragmentsStack.isEmpty()) {
+                        if (rightActionBarLayout.fragmentsStack.isEmpty()) {
                             buttonLayoutTablet.setVisibility(View.VISIBLE);
                             backgroundTablet.setVisibility(View.VISIBLE);
                         }
                     }
                     return false;
                 }
-            } else if (fragment instanceof ChatActivity) {
+            }
+            if (fragment instanceof ChatActivity) {
                 if (!tabletFullSize && layout != rightActionBarLayout) {
                     rightActionBarLayout.setVisibility(View.VISIBLE);
                     buttonLayoutTablet.setVisibility(View.GONE);
                     backgroundTablet.setVisibility(View.GONE);
                     rightActionBarLayout.removeAllFragments();
-                    rightActionBarLayout.presentFragment(fragment, removeLast, true);
-                    if (removeLast) {
-                        layout.closeLastFragment(true);
+                    rightActionBarLayout.presentFragment(fragment, removeLast, true, false);
+                    if (!layersActionBarLayout.fragmentsStack.isEmpty()) {
+                        for (int a = 0; a < layersActionBarLayout.fragmentsStack.size() - 1; a++) {
+                            layersActionBarLayout.removeFragmentFromStack(layersActionBarLayout.fragmentsStack.get(0));
+                            a--;
+                        }
+                        layersActionBarLayout.closeLastFragment(true);
                     }
                     return false;
                 } else if (tabletFullSize && layout != actionBarLayout) {
-                    actionBarLayout.presentFragment(fragment, false, forceWithoutAnimation);
-                    if (removeLast) {
-                        layout.closeLastFragment(true);
+                    actionBarLayout.presentFragment(fragment, actionBarLayout.fragmentsStack.size() > 1, forceWithoutAnimation, false);
+                    if (!layersActionBarLayout.fragmentsStack.isEmpty()) {
+                        for (int a = 0; a < layersActionBarLayout.fragmentsStack.size() - 1; a++) {
+                            layersActionBarLayout.removeFragmentFromStack(layersActionBarLayout.fragmentsStack.get(0));
+                            a--;
+                        }
+                        layersActionBarLayout.closeLastFragment(true);
                     }
                     return false;
+                } else {
+                    if (!layersActionBarLayout.fragmentsStack.isEmpty()) {
+                        for (int a = 0; a < layersActionBarLayout.fragmentsStack.size() - 1; a++) {
+                            layersActionBarLayout.removeFragmentFromStack(layersActionBarLayout.fragmentsStack.get(0));
+                            a--;
+                        }
+                        layersActionBarLayout.closeLastFragment(true);
+                    }
                 }
             } else if (layout != layersActionBarLayout) {
                 layersActionBarLayout.setVisibility(View.VISIBLE);
@@ -983,7 +1058,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 } else {
                     shadowTablet.setBackgroundColor(0x7F000000);
                 }
-                layersActionBarLayout.presentFragment(fragment, removeLast, forceWithoutAnimation);
+                layersActionBarLayout.presentFragment(fragment, removeLast, forceWithoutAnimation, false);
                 return false;
             }
             return true;
@@ -1004,7 +1079,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     layersActionBarLayout.setVisibility(View.GONE);
                     if (!tabletFullSize) {
                         shadowTabletSide.setVisibility(View.VISIBLE);
-                        if (rightFragmentsStack.isEmpty()) {
+                        if (rightActionBarLayout.fragmentsStack.isEmpty()) {
                             buttonLayoutTablet.setVisibility(View.VISIBLE);
                             backgroundTablet.setVisibility(View.VISIBLE);
                         }
@@ -1018,9 +1093,23 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     backgroundTablet.setVisibility(View.GONE);
                     rightActionBarLayout.removeAllFragments();
                     rightActionBarLayout.addFragmentToStack(fragment);
+                    if (!layersActionBarLayout.fragmentsStack.isEmpty()) {
+                        for (int a = 0; a < layersActionBarLayout.fragmentsStack.size() - 1; a++) {
+                            layersActionBarLayout.removeFragmentFromStack(layersActionBarLayout.fragmentsStack.get(0));
+                            a--;
+                        }
+                        layersActionBarLayout.closeLastFragment(true);
+                    }
                     return false;
                 } else if (tabletFullSize && layout != actionBarLayout) {
                     actionBarLayout.addFragmentToStack(fragment);
+                    if (!layersActionBarLayout.fragmentsStack.isEmpty()) {
+                        for (int a = 0; a < layersActionBarLayout.fragmentsStack.size() - 1; a++) {
+                            layersActionBarLayout.removeFragmentFromStack(layersActionBarLayout.fragmentsStack.get(0));
+                            a--;
+                        }
+                        layersActionBarLayout.closeLastFragment(true);
+                    }
                     return false;
                 }
             } else if (layout != layersActionBarLayout) {
@@ -1054,6 +1143,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     buttonLayoutTablet.setVisibility(View.VISIBLE);
                     backgroundTablet.setVisibility(View.VISIBLE);
                 }
+            } else if (layout == layersActionBarLayout && actionBarLayout.fragmentsStack.isEmpty()) {
+                onFinish();
+                finish();
+                return false;
             }
         } else {
             if (layout.fragmentsStack.size() <= 1) {

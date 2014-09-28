@@ -528,18 +528,18 @@ public class DialogCell extends BaseCell {
                 }
 
                 if (message.isFromMe() && message.isOut()) {
-                    if (message.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SENDING) {
+                    if (message.isSending()) {
                         drawCheck1 = false;
                         drawCheck2 = false;
                         drawClock = true;
                         drawError = false;
-                    } else if (message.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SEND_ERROR) {
+                    } else if (message.isSendError()) {
                         drawCheck1 = false;
                         drawCheck2 = false;
                         drawClock = false;
                         drawError = true;
                         drawCount = false;
-                    } else if (message.messageOwner.send_state == MessageObject.MESSAGE_SEND_STATE_SENT) {
+                    } else if (message.isSent()) {
                         if (!message.isUnread()) {
                             drawCheck1 = true;
                             drawCheck2 = true;

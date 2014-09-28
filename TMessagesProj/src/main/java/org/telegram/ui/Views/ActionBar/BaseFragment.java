@@ -157,11 +157,14 @@ public class BaseFragment {
         if (parentLayout == null) {
             return;
         }
-        parentLayout.presentFragment(fragment, removeLast, forceWithoutAnimation);
+        parentLayout.presentFragment(fragment, removeLast, forceWithoutAnimation, true);
     }
 
     public Activity getParentActivity() {
-        return parentLayout.parentActivity;
+        if (parentLayout != null) {
+            return parentLayout.parentActivity;
+        }
+        return null;
     }
 
     public void showActionBar() {

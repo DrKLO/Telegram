@@ -213,30 +213,26 @@ public class EmojiView extends LinearLayout {
         }
 
         public int getCount() {
-            return this.data.length;
+            return data.length;
         }
 
-        public Object getItem(int paramInt)
-        {
+        public Object getItem(int i) {
             return null;
         }
 
-        public long getItemId(int paramInt)
-        {
-            return this.data[paramInt];
+        public long getItemId(int i) {
+            return data[i];
         }
 
-        public View getView(int paramInt, View paramView, ViewGroup paramViewGroup) {
-            ImageView localObject;
-            if (paramView != null) {
-                localObject = (ImageView)paramView;
-            } else {
-                localObject = new ImageView(EmojiView.this.getContext()) {
+        public View getView(int i, View view, ViewGroup paramViewGroup) {
+            ImageView imageView = (ImageView)view;
+            if (imageView == null) {
+                imageView = new ImageView(EmojiView.this.getContext()) {
                     public void onMeasure(int paramAnonymousInt1, int paramAnonymousInt2) {
                         setMeasuredDimension(View.MeasureSpec.getSize(paramAnonymousInt1), View.MeasureSpec.getSize(paramAnonymousInt1));
                     }
                 };
-                localObject.setOnClickListener(new View.OnClickListener() {
+                imageView.setOnClickListener(new View.OnClickListener() {
                     public void onClick(View view) {
                         if (EmojiView.this.listener != null) {
                             EmojiView.this.listener.onEmojiSelected(EmojiView.this.convert((Long)view.getTag()));
@@ -244,13 +240,12 @@ public class EmojiView extends LinearLayout {
                         EmojiView.this.addToRecent((Long)view.getTag());
                     }
                 });
-                localObject.setBackgroundResource(R.drawable.list_selector);
-                localObject.setScaleType(ImageView.ScaleType.CENTER);
+                imageView.setBackgroundResource(R.drawable.list_selector);
+                imageView.setScaleType(ImageView.ScaleType.CENTER);
             }
-
-            localObject.setImageDrawable(Emoji.getEmojiBigDrawable(this.data[paramInt]));
-            localObject.setTag(this.data[paramInt]);
-            return localObject;
+            imageView.setImageDrawable(Emoji.getEmojiBigDrawable(data[i]));
+            imageView.setTag(data[i]);
+            return imageView;
         }
 
         @Override

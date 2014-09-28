@@ -75,7 +75,14 @@ public class FileLoader {
     public File getDirectory(int type) {
         File dir = mediaDirs.get(type);
         if (dir == null && type != MEDIA_DIR_CACHE) {
-            return mediaDirs.get(MEDIA_DIR_CACHE);
+            dir = mediaDirs.get(MEDIA_DIR_CACHE);
+        }
+        try {
+            if (!dir.isDirectory()) {
+                dir.mkdirs();
+            }
+        } catch (Exception e) {
+            //don't promt
         }
         return dir;
     }
@@ -586,6 +593,16 @@ public class FileLoader {
             }
         }
         return new File("");
+    }
+
+    public static File getExistPathToAttach(TLObject attach) {
+        File path = getInstance().getDirectory(MEDIA_DIR_CACHE);
+        String fileName = getAttachFileName(attach);
+        File attachPath = new File(path, fileName);
+        if (attachPath.exists()) {
+            return attachPath;
+        }
+        return getPathToAttach(attach);
     }
 
     public static File getPathToAttach(TLObject attach) {

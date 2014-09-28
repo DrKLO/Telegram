@@ -42,8 +42,9 @@ public class FileUploadOperation {
     private boolean isBigFile = false;
     private String fileKey;
     private int estimatedSize = 0;
-    FileInputStream stream;
-    MessageDigest mdEnc = null;
+    private int uploadStartTime = 0;
+    private FileInputStream stream;
+    private MessageDigest mdEnc = null;
 
     public static interface FileUploadOperationDelegate {
         public abstract void didFinishUploadingFile(FileUploadOperation operation, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile);
@@ -93,20 +94,36 @@ public class FileUploadOperation {
                 remove(fileKey + "_ivc").commit();
     }
 
-    public void checkNewDataAvailable(final long finalSize) {
+    protected void checkNewDataAvailable(final long finalSize) {
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
-                if (finalSize != 0) {
+                if (estimatedSize != 0 && finalSize != 0) {
                     estimatedSize = 0;
                     totalFileSize = finalSize;
                     totalPartsCount = (int) Math.ceil((float) totalFileSize / (float) uploadChunkSize);
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("uploadinfo", Activity.MODE_PRIVATE);
+                    storeFileUploadInfo(preferences);
                 }
                 if (requestToken == 0) {
                     startUploadRequest();
                 }
             }
         });
+    }
+
+    private void storeFileUploadInfo(SharedPreferences preferences) {
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putInt(fileKey + "_time", uploadStartTime);
+        editor.putLong(fileKey + "_size", totalFileSize);
+        editor.putLong(fileKey + "_id", currentFileId);
+        editor.remove(fileKey + "_uploaded");
+        if (isEncrypted) {
+            editor.putString(fileKey + "_iv", Utilities.bytesToHex(iv));
+            editor.putString(fileKey + "_ivc", Utilities.bytesToHex(ivChange));
+            editor.putString(fileKey + "_key", Utilities.bytesToHex(key));
+        }
+        editor.commit();
     }
 
     private void startUploadRequest() {
@@ -151,7 +168,7 @@ public class FileUploadOperation {
                 fileKey = Utilities.MD5(uploadingFilePath + (isEncrypted ? "enc" : ""));
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("uploadinfo", Activity.MODE_PRIVATE);
                 long fileSize = preferences.getLong(fileKey + "_size", 0);
-                int currentTime = (int)(System.currentTimeMillis() / 1000);
+                uploadStartTime = (int)(System.currentTimeMillis() / 1000);
                 boolean rewrite = false;
                 if (estimatedSize == 0 && fileSize == totalFileSize) {
                     currentFileId = preferences.getLong(fileKey + "_id", 0);
@@ -170,9 +187,9 @@ public class FileUploadOperation {
                         }
                     }
                     if (!rewrite && date != 0) {
-                        if (isBigFile && date < currentTime - 60 * 60 * 24) {
+                        if (isBigFile && date < uploadStartTime - 60 * 60 * 24) {
                             date = 0;
-                        } else if (!isBigFile && date < currentTime - 60 * 60 * 1.5f) {
+                        } else if (!isBigFile && date < uploadStartTime - 60 * 60 * 1.5f) {
                             date = 0;
                         }
                         if (date != 0) {
@@ -235,17 +252,7 @@ public class FileUploadOperation {
                     }
                     currentFileId = Utilities.random.nextLong();
                     if (estimatedSize == 0) {
-                        SharedPreferences.Editor editor = preferences.edit();
-                        editor.putInt(fileKey + "_time", currentTime);
-                        editor.putLong(fileKey + "_size", totalFileSize);
-                        editor.putLong(fileKey + "_id", currentFileId);
-                        editor.remove(fileKey + "_uploaded");
-                        if (isEncrypted) {
-                            editor.putString(fileKey + "_iv", Utilities.bytesToHex(iv));
-                            editor.putString(fileKey + "_ivc", Utilities.bytesToHex(ivChange));
-                            editor.putString(fileKey + "_key", Utilities.bytesToHex(key));
-                        }
-                        editor.commit();
+                        storeFileUploadInfo(preferences);
                     }
                 }
 

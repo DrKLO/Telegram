@@ -9,6 +9,7 @@
 package org.telegram.messenger;
 
 import java.util.ArrayList;
+import java.util.Locale;
 
 @SuppressWarnings("unchecked")
 public class TLRPC {
@@ -8539,6 +8540,7 @@ public class TLRPC {
         public int local_id = 0;
         public long dialog_id;
         public int ttl;
+        public VideoEditedInfo videoEditedInfo = null;
     }
 
     public static class TL_messageForwarded extends Message {
@@ -8559,8 +8561,12 @@ public class TLRPC {
             if (id < 0) {
                 fwd_msg_id = stream.readInt32();
             }
-            if (id < 0 || (media != null && !(media instanceof TL_messageMediaEmpty) && message != null && message.length() != 0 && message.equals("-1"))) {
+            if (id < 0 || (media != null && !(media instanceof TL_messageMediaEmpty) && message != null && message.length() != 0 && message.startsWith("-1"))) {
                 attachPath = stream.readString();
+            }
+            if (id < 0 && message.length() > 6 && media instanceof TL_messageMediaVideo) {
+                videoEditedInfo = new VideoEditedInfo();
+                videoEditedInfo.parseString(message);
             }
         }
 
@@ -8595,8 +8601,12 @@ public class TLRPC {
             date = stream.readInt32();
             message = stream.readString();
             media = (MessageMedia)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
-            if (id < 0 || (media != null && !(media instanceof TL_messageMediaEmpty) && message != null && message.length() != 0 && message.equals("-1"))) {
+            if (id < 0 || (media != null && !(media instanceof TL_messageMediaEmpty) && message != null && message.length() != 0 && message.startsWith("-1"))) {
                 attachPath = stream.readString();
+            }
+            if (id < 0 && message.length() > 6 && media instanceof TL_messageMediaVideo) {
+                videoEditedInfo = new VideoEditedInfo();
+                videoEditedInfo.parseString(message);
             }
         }
 
@@ -8954,6 +8964,46 @@ public class TLRPC {
         }
     }
 
+    public static class VideoEditedInfo {
+        public long startTime;
+        public long endTime;
+        public int rotationValue;
+        public int originalWidth;
+        public int originalHeight;
+        public int resultWidth;
+        public int resultHeight;
+        public int bitrate;
+        public String originalPath;
+
+        public String getString() {
+            return String.format(Locale.US, "-1_%d_%d_%d_%d_%d_%d_%d_%d_%s", startTime, endTime, rotationValue, originalWidth, originalHeight, bitrate, resultWidth, resultHeight, originalPath);
+        }
+
+        public void parseString(String string) {
+            if (string.length() < 6) {
+                return;
+            }
+            String args[] = string.split("_");
+            if (args.length >= 10) {
+                startTime = Long.parseLong(args[1]);
+                endTime = Long.parseLong(args[2]);
+                rotationValue = Integer.parseInt(args[3]);
+                originalWidth = Integer.parseInt(args[4]);
+                originalHeight = Integer.parseInt(args[5]);
+                bitrate = Integer.parseInt(args[6]);
+                resultWidth = Integer.parseInt(args[7]);
+                resultHeight = Integer.parseInt(args[8]);
+                for (int a = 9; a < args.length; a++) {
+                    if (originalPath == null) {
+                        originalPath = args[a];
+                    } else {
+                        originalPath += "_" + args[a];
+                    }
+                }
+            }
+        }
+    }
+
     public static class Video extends TLObject {
         public long id;
         public long access_hash;
@@ -8967,10 +9017,9 @@ public class TLRPC {
         public int dc_id;
         public int w;
         public int h;
-        public String path;
         public byte[] key;
         public byte[] iv;
-        public boolean estimatedSize;
+        public VideoEditedInfo videoEditedInfo = null;
     }
 
     public static class Document extends TLObject {
@@ -8983,7 +9032,6 @@ public class TLRPC {
         public int size;
         public PhotoSize thumb;
         public int dc_id;
-        public String path;
         public byte[] key;
         public byte[] iv;
     }
@@ -8997,7 +9045,6 @@ public class TLRPC {
         public String mime_type;
         public int size;
         public int dc_id;
-        public String path;
         public byte[] key;
         public byte[] iv;
     }

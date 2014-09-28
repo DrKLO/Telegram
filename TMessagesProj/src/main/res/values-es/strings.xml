@@ -317,6 +317,7 @@
     <string name="EditVideo">Editar vídeo</string>
     <string name="OriginalVideo">Vídeo original</string>
     <string name="EditedVideo">Vídeo editado</string>
+    <string name="SendingVideo">Sending video...</string>
 
     <!--button titles-->
     <string name="Next">Siguiente</string>

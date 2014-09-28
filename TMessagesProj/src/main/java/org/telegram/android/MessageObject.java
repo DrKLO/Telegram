@@ -623,4 +623,16 @@ public class MessageObject {
             }
         }
     }
+
+    public boolean isSending() {
+        return messageOwner.send_state == MESSAGE_SEND_STATE_SENDING;
+    }
+
+    public boolean isSendError() {
+        return messageOwner.send_state == MESSAGE_SEND_STATE_SEND_ERROR;
+    }
+
+    public boolean isSent() {
+        return messageOwner.send_state == MESSAGE_SEND_STATE_SENT;
+    }
 }

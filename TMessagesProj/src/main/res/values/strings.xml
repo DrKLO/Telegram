@@ -317,6 +317,7 @@
     <string name="EditVideo">Edit Video</string>
     <string name="OriginalVideo">Original Video</string>
     <string name="EditedVideo">Edited Video</string>
+    <string name="SendingVideo">Sending video...</string>
 
     <!--button titles-->
     <string name="Next">Next</string>
@@ -404,7 +405,7 @@
     <string name="Page5Title">Powerful</string>
     <string name="Page6Title">Cloud-Based</string>
     <string name="Page7Title">Private</string>
-    <string name="Page1Message">Welcome to the era of fast and secure messaging</string>
+    <string name="Page1Message">The world\'s fastets messaging app.\nIt is free and secure.</string>
     <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> delivers messages faster than<![CDATA[<br/>]]>any other application</string>
     <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is free forever. No ads.<![CDATA[<br/>]]>No subscription fees</string>
     <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> keeps your messages safe<![CDATA[<br/>]]>from hacker attacks</string>

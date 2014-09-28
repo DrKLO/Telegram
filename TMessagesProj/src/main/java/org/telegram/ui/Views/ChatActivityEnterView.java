@@ -45,6 +45,8 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.ApplicationLoader;
 
+import java.lang.reflect.Method;
+
 public class ChatActivityEnterView implements NotificationCenter.NotificationCenterDelegate, SizeNotifierRelativeLayout.SizeNotifierRelativeLayoutDelegate {
 
     public static interface ChatActivityEnterViewDelegate {
@@ -87,6 +89,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeChats);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioDidSent);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.hideEmojiKeyboard);
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         sendByEnter = preferences.getBoolean("send_by_enter", false);
     }
@@ -99,6 +102,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioDidSent);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.emojiDidLoaded);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.hideEmojiKeyboard);
         if (mWakeLock != null) {
             try {
                 mWakeLock.release();
@@ -507,6 +511,15 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             }
         });
         emojiPopup = new PopupWindow(emojiView);
+
+        /*Utry {
+            Method method = emojiPopup.getClass().getMethod("setWindowLayoutType", int.class);
+            if (method != null) {
+                method.invoke(emojiPopup, WindowManager.LayoutParams.LAST_SUB_WINDOW);
+            }
+        } catch (Exception e) {
+            //don't promt
+        }*/
     }
 
     public void setDelegate(ChatActivityEnterViewDelegate delegate) {
@@ -646,6 +659,8 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             if (delegate != null) {
                 delegate.onMessageSend();
             }
+        } else if (id == NotificationCenter.hideEmojiKeyboard) {
+            hideEmojiPopup();
         }
     }
 }
