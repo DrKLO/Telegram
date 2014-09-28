@@ -1364,7 +1364,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     args.putString("videoPath", videoPath);
                     VideoEditorActivity fragment = new VideoEditorActivity(args);
                     fragment.setDelegate(this);
-                    presentFragment(fragment);
+                    presentFragment(fragment, false, true);
                 } else {
                     processSendingVideo(videoPath, 0, 0, 0, 0, null);
                 }

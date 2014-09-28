@@ -69,7 +69,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
 
     public void openGallery() {
         try {
-            Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+            Intent photoPickerIntent = new Intent(Intent.ACTION_GET_CONTENT);
             photoPickerIntent.setType("image/*");
             parentFragment.getParentActivity().startActivityForResult(photoPickerIntent, 14);
         } catch (Exception e) {

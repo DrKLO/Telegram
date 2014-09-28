@@ -12,6 +12,7 @@ import android.annotation.TargetApi;
 import android.content.res.Configuration;
 import android.graphics.SurfaceTexture;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -76,6 +77,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
 
     private final Object sync = new Object();
     private Thread thread = null;
+    private long createTime = 0;
 
     private int rotationValue = 0;
     private int originalWidth = 0;
@@ -106,7 +108,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                 AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        if (videoPlayer.isPlaying()) {
+                        if (videoPlayer != null && videoPlayer.isPlaying()) {
                             float startTime = videoTimelineView.getLeftProgress() * videoDuration;
                             float endTime = videoTimelineView.getRightProgress() * videoDuration;
                             if (startTime == endTime) {
@@ -185,6 +187,15 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
     public void onFragmentDestroy() {
         if (videoTimelineView != null) {
             videoTimelineView.destroy();
+        }
+        if (videoPlayer != null) {
+            try {
+                videoPlayer.stop();
+                videoPlayer.release();
+                videoPlayer = null;
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
         }
         super.onFragmentDestroy();
     }
@@ -323,13 +334,15 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                 parent.removeView(fragmentView);
             }
         }
+        fixLayoutInternal();
+        createTime = System.currentTimeMillis();
         return fragmentView;
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        fixLayout();
+        fixLayoutInternal();
     }
 
     @Override
@@ -479,64 +492,77 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
         textureView.setLayoutParams(layoutParams);
     }
 
+    private void fixLayoutInternal() {
+        if (!AndroidUtilities.isTablet() && getParentActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) videoContainerView.getLayoutParams();
+            layoutParams.topMargin = AndroidUtilities.dp(16);
+            layoutParams.bottomMargin = AndroidUtilities.dp(16);
+            layoutParams.width = AndroidUtilities.displaySize.x / 3 - AndroidUtilities.dp(24);
+            layoutParams.leftMargin = AndroidUtilities.dp(16);
+            videoContainerView.setLayoutParams(layoutParams);
+
+            layoutParams = (FrameLayout.LayoutParams) controlView.getLayoutParams();
+            layoutParams.topMargin = AndroidUtilities.dp(16);
+            layoutParams.bottomMargin = 0;
+            layoutParams.width = AndroidUtilities.displaySize.x / 3 * 2 - AndroidUtilities.dp(32);
+            layoutParams.leftMargin = AndroidUtilities.displaySize.x / 3 + AndroidUtilities.dp(16);
+            layoutParams.gravity = Gravity.TOP;
+            controlView.setLayoutParams(layoutParams);
+
+            layoutParams = (FrameLayout.LayoutParams) textContainerView.getLayoutParams();
+            layoutParams.width = AndroidUtilities.displaySize.x / 3 * 2 - AndroidUtilities.dp(32);
+            layoutParams.leftMargin = AndroidUtilities.displaySize.x / 3 + AndroidUtilities.dp(16);
+            layoutParams.rightMargin = AndroidUtilities.dp(16);
+            layoutParams.bottomMargin = AndroidUtilities.dp(16);
+            textContainerView.setLayoutParams(layoutParams);
+        } else {
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) videoContainerView.getLayoutParams();
+            layoutParams.topMargin = AndroidUtilities.dp(16);
+            layoutParams.bottomMargin = AndroidUtilities.dp(260);
+            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.leftMargin = 0;
+            videoContainerView.setLayoutParams(layoutParams);
+
+            layoutParams = (FrameLayout.LayoutParams) controlView.getLayoutParams();
+            layoutParams.topMargin = 0;
+            layoutParams.leftMargin = 0;
+            layoutParams.bottomMargin = AndroidUtilities.dp(150);
+            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.gravity = Gravity.BOTTOM;
+            controlView.setLayoutParams(layoutParams);
+
+            layoutParams = (FrameLayout.LayoutParams) textContainerView.getLayoutParams();
+            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.leftMargin = AndroidUtilities.dp(16);
+            layoutParams.rightMargin = AndroidUtilities.dp(16);
+            layoutParams.bottomMargin = AndroidUtilities.dp(16);
+            textContainerView.setLayoutParams(layoutParams);
+        }
+        fixVideoSize();
+        videoTimelineView.clearFrames();
+    }
+
     private void fixLayout() {
         if (originalSizeTextView == null) {
             return;
         }
-        originalSizeTextView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-            @Override
-            public boolean onPreDraw() {
-                originalSizeTextView.getViewTreeObserver().removeOnPreDrawListener(this);
-                if (!AndroidUtilities.isTablet() && getParentActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) videoContainerView.getLayoutParams();
-                    layoutParams.topMargin = AndroidUtilities.dp(16);
-                    layoutParams.bottomMargin = AndroidUtilities.dp(16);
-                    layoutParams.width = AndroidUtilities.displaySize.x / 3 - AndroidUtilities.dp(24);
-                    layoutParams.leftMargin = AndroidUtilities.dp(16);
-                    videoContainerView.setLayoutParams(layoutParams);
-
-                    layoutParams = (FrameLayout.LayoutParams) controlView.getLayoutParams();
-                    layoutParams.topMargin = AndroidUtilities.dp(16);
-                    layoutParams.bottomMargin = 0;
-                    layoutParams.width = AndroidUtilities.displaySize.x / 3 * 2 - AndroidUtilities.dp(32);
-                    layoutParams.leftMargin = AndroidUtilities.displaySize.x / 3 + AndroidUtilities.dp(16);
-                    layoutParams.gravity = Gravity.TOP;
-                    controlView.setLayoutParams(layoutParams);
-
-                    layoutParams = (FrameLayout.LayoutParams) textContainerView.getLayoutParams();
-                    layoutParams.width = AndroidUtilities.displaySize.x / 3 * 2 - AndroidUtilities.dp(32);
-                    layoutParams.leftMargin = AndroidUtilities.displaySize.x / 3 + AndroidUtilities.dp(16);
-                    layoutParams.rightMargin = AndroidUtilities.dp(16);
-                    layoutParams.bottomMargin = AndroidUtilities.dp(16);
-                    textContainerView.setLayoutParams(layoutParams);
-                } else {
-                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) videoContainerView.getLayoutParams();
-                    layoutParams.topMargin = AndroidUtilities.dp(16);
-                    layoutParams.bottomMargin = AndroidUtilities.dp(260);
-                    layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-                    layoutParams.leftMargin = 0;
-                    videoContainerView.setLayoutParams(layoutParams);
-
-                    layoutParams = (FrameLayout.LayoutParams) controlView.getLayoutParams();
-                    layoutParams.topMargin = 0;
-                    layoutParams.leftMargin = 0;
-                    layoutParams.bottomMargin = AndroidUtilities.dp(150);
-                    layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-                    layoutParams.gravity = Gravity.BOTTOM;
-                    controlView.setLayoutParams(layoutParams);
-
-                    layoutParams = (FrameLayout.LayoutParams) textContainerView.getLayoutParams();
-                    layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-                    layoutParams.leftMargin = AndroidUtilities.dp(16);
-                    layoutParams.rightMargin = AndroidUtilities.dp(16);
-                    layoutParams.bottomMargin = AndroidUtilities.dp(16);
-                    textContainerView.setLayoutParams(layoutParams);
+        if (createTime < System.currentTimeMillis() - 3000) {
+            originalSizeTextView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                @Override
+                public void onGlobalLayout() {
+                    if (originalSizeTextView != null) {
+                        if (Build.VERSION.SDK_INT < 16) {
+                            originalSizeTextView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                        } else {
+                            originalSizeTextView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                        }
+                    }
+                    fixLayoutInternal();
                 }
-                fixVideoSize();
-                videoTimelineView.clearFrames();
-                return false;
-            }
-        });
+            });
+        } else {
+            fixLayoutInternal();
+        }
     }
 
     private void play() {
@@ -571,7 +597,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                 });
                 videoPlayer.start();
                 synchronized (sync) {
-                    if (thread != null) {
+                    if (thread == null) {
                         thread = new Thread(progressRunnable);
                         thread.start();
                     }
