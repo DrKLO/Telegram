@@ -1,0 +1,75 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="13dp"
+    android:paddingBottom="12dp">
+
+    <ImageButton
+        android:id="@+id/settings_edit_name"
+        android:background="@drawable/list_selector"
+        android:clickable="true"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_edit"
+        android:layout_marginTop="4dp"/>
+
+    <View
+        android:background="#e8e8e8"
+        android:layout_width="1dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="4dp"/>
+
+    <LinearLayout
+        android:layout_gravity="center_vertical"
+        android:orientation="vertical"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="13dp"
+        android:layout_marginLeft="4dp"
+        android:layout_marginTop="1dp"
+        android:layout_weight="1.0"
+        android:gravity="right">
+
+        <TextView
+            android:textSize="19dp"
+            android:textColor="#000000"
+            android:ellipsize="end"
+            android:id="@+id/settings_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:lines="1"
+            android:singleLine="true"
+            android:gravity="right"/>
+
+        <TextView
+            android:textSize="17dp"
+            android:textColor="#ababab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:id="@+id/settings_online"
+            android:gravity="right"/>
+
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="64dp"
+        android:layout_height="64dp">
+
+        <org.telegram.ui.Views.BackupImageView
+            android:id="@+id/settings_avatar_image"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"/>
+
+        <ImageButton
+            android:id="@+id/settings_change_avatar_button"
+            android:background="@drawable/photo_spinner"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"/>
+
+    </FrameLayout>
+
+</LinearLayout>

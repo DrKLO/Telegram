@@ -1,0 +1,65 @@
+<org.telegram.ui.Views.NotificationView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:id="@+id/container_view"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:layout_width="fill_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="#ffffff">
+
+        <org.telegram.ui.Views.BackupImageView
+            android:layout_height="48dp"
+            android:layout_width="48dp"
+            android:id="@+id/avatar_image"
+            android:layout_gravity="right|top"/>
+
+        <FrameLayout
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:layout_marginLeft="40dp"
+            android:orientation="vertical"
+            android:layout_marginRight="56dp"
+            android:layout_gravity="top|right"
+            android:id="@+id/text_layout">
+
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:gravity="right|center"
+                android:textSize="15dp"
+                android:textColor="#000000"
+                android:id="@+id/name_text_view"
+                android:paddingTop="4dp"
+                android:ellipsize="end"
+                android:layout_gravity="top|right"
+                android:singleLine="true"/>
+
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:gravity="right|center"
+                android:textColor="#000000"
+                android:textSize="15dp"
+                android:id="@+id/message_text_view"
+                android:paddingTop="24dp"
+                android:ellipsize="end"
+                android:layout_gravity="top|right"
+                android:singleLine="true"/>
+
+        </FrameLayout>
+
+        <ImageView
+            android:layout_height="40dp"
+            android:layout_width="40dp"
+            android:layout_gravity="left|center"
+            android:src="@drawable/ic_profile_cross"
+            android:scaleType="center"
+            android:id="@+id/close_button"/>
+
+    </FrameLayout>
+
+</org.telegram.ui.Views.NotificationView>

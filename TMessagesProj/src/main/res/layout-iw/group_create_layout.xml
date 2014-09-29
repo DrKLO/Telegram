@@ -1,0 +1,68 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/top_layout"
+        android:layout_gravity="top">
+
+        <EditText
+            android:textSize="16dp"
+            android:textColorHint="#a6a6a6"
+            android:id="@+id/bubble_input_text"
+            android:paddingLeft="60dp"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"
+            android:minHeight="52dp"
+            android:gravity="right|center_vertical"
+            android:maxLines="2"
+            android:paddingTop="3dp"
+            android:layout_marginTop="0dp"
+            android:inputType="textFilter|textNoSuggestions|textMultiLine"
+            android:imeOptions="flagNoExtractUi"
+            android:textCursorDrawable="@null"
+            android:textColor="#000000"/>
+
+    </FrameLayout>
+
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <org.telegram.ui.Views.PinnedHeaderListView
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:id="@+id/listView"
+            android:clipToPadding="false"
+            android:fadingEdge="none"
+            android:fadingEdgeLength="0dp"
+            android:paddingLeft="30dp"
+            android:paddingRight="16dp"
+            android:dividerHeight="0dp"
+            android:divider="@null"
+            android:paddingBottom="16dp"
+            android:fastScrollEnabled="true"
+            android:fastScrollAlwaysVisible="true"
+            android:scrollbarStyle="outsideOverlay"
+            android:verticalScrollbarPosition="left"/>
+
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:textColor="#808080"
+            android:gravity="center"
+            android:textSize="24dp"
+            android:id="@+id/searchEmptyView"
+            android:visibility="invisible"/>
+
+    </FrameLayout>
+
+</LinearLayout>
