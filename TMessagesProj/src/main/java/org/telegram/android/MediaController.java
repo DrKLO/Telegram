@@ -148,6 +148,9 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private final static int PROCESSOR_TYPE_OTHER = 0;
     private final static int PROCESSOR_TYPE_QCOM = 1;
     private final static int PROCESSOR_TYPE_INTEL = 2;
+    private final static int PROCESSOR_TYPE_MTK = 3;
+    private final static int PROCESSOR_TYPE_SEC = 4;
+    private final static int PROCESSOR_TYPE_TI = 5;
     private final Object videoConvertSync = new Object();
 
     private ArrayList<MessageObject> videoConvertQueue = new ArrayList<MessageObject>();
@@ -490,6 +493,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         documentDownloadQueue.clear();
         videoDownloadQueue.clear();
         downloadQueueKeys.clear();
+        videoConvertQueue.clear();
+        cancelVideoConvert(null);
     }
 
     protected int getAutodownloadMask() {
@@ -615,9 +620,9 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             } else if (downloadObject.object instanceof TLRPC.PhotoSize) {
                 FileLoader.getInstance().loadFile((TLRPC.PhotoSize)downloadObject.object, false);
             } else if (downloadObject.object instanceof TLRPC.Video) {
-                FileLoader.getInstance().loadFile((TLRPC.Video)downloadObject.object);
+                FileLoader.getInstance().loadFile((TLRPC.Video)downloadObject.object, false);
             } else if (downloadObject.object instanceof TLRPC.Document) {
-                FileLoader.getInstance().loadFile((TLRPC.Document)downloadObject.object);
+                FileLoader.getInstance().loadFile((TLRPC.Document)downloadObject.object, false);
             } else {
                 added = false;
             }
@@ -644,12 +649,12 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         }
     }
 
-    private void checkDownloadFinished(String fileName, boolean canceled) {
+    private void checkDownloadFinished(String fileName, int state) {
         DownloadObject downloadObject = downloadQueueKeys.get(fileName);
         if (downloadObject != null) {
             downloadQueueKeys.remove(fileName);
-            if (!canceled) {
-                MessagesStorage.getInstance().removeFromDownloadQueue(downloadObject.id, downloadObject.type);
+            if (state == 0 || state == 2) {
+                MessagesStorage.getInstance().removeFromDownloadQueue(downloadObject.id, downloadObject.type, state != 0);
             }
             if (downloadObject.type == AUTODOWNLOAD_MASK_PHOTO) {
                 photoDownloadQueue.remove(downloadObject);
@@ -907,7 +912,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             }
             listenerInProgress = false;
             processLaterArrays();
-            checkDownloadFinished(fileName, (Boolean)args[1]);
+            checkDownloadFinished(fileName, (Integer)args[1]);
         } else if (id == NotificationCenter.FileDidLoaded) {
             listenerInProgress = true;
             String fileName = (String)args[0];
@@ -923,7 +928,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             }
             listenerInProgress = false;
             processLaterArrays();
-            checkDownloadFinished(fileName, false);
+            checkDownloadFinished(fileName, 0);
         } else if (id == NotificationCenter.FileLoadProgressChanged) {
             listenerInProgress = true;
             String fileName = (String)args[0];
@@ -939,7 +944,6 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             listenerInProgress = false;
             processLaterArrays();
         } else if (id == NotificationCenter.FileUploadProgressChanged) {
-            String location = (String)args[0];
             listenerInProgress = true;
             String fileName = (String)args[0];
             ArrayList<WeakReference<FileDownloadProgressListener>> arrayList = loadingFileObservers.get(fileName);
@@ -1523,8 +1527,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         });
     }
 
-    public static void saveFile(String path, String fullPath, Context context, final int type, final String name) {
-        if (path == null && fullPath == null) {
+    public static void saveFile(String fullPath, Context context, final int type, final String name) {
+        if (fullPath == null) {
             return;
         }
 
@@ -1535,8 +1539,9 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 file = null;
             }
         }
+
         if (file == null) {
-            file = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), path);
+            return;
         }
 
         final File sourceFile = file;
@@ -1868,19 +1873,31 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     }
 
     public void cancelVideoConvert(MessageObject messageObject) {
-        if (!videoConvertQueue.isEmpty()) {
-            if (videoConvertQueue.get(0) == messageObject) {
-                synchronized (videoConvertSync) {
-                    cancelCurrentVideoConversion = true;
-                }
+        if (messageObject == null) {
+            synchronized (videoConvertSync) {
+                cancelCurrentVideoConversion = true;
             }
-            videoConvertQueue.remove(messageObject);
+        } else {
+            if (!videoConvertQueue.isEmpty()) {
+                if (videoConvertQueue.get(0) == messageObject) {
+                    synchronized (videoConvertSync) {
+                        cancelCurrentVideoConversion = true;
+                    }
+                }
+                videoConvertQueue.remove(messageObject);
+            }
         }
     }
 
     private void startVideoConvertFromQueue() {
         if (!videoConvertQueue.isEmpty()) {
+            synchronized (videoConvertSync) {
+                cancelCurrentVideoConversion = false;
+            }
             MessageObject messageObject = videoConvertQueue.get(0);
+            Intent intent = new Intent(ApplicationLoader.applicationContext, VideoEncodingService.class);
+            intent.putExtra("path", messageObject.messageOwner.attachPath);
+            ApplicationLoader.applicationContext.startService(intent);
             VideoConvertRunnable.runConversion(messageObject);
         }
     }
@@ -1897,7 +1914,11 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             for (String type : types) {
                 if (type.equalsIgnoreCase(mimeType)) {
                     lastCodecInfo = codecInfo;
-                    FileLog.e("tmessages", "available codec = " + codecInfo.getName());
+                    if (!lastCodecInfo.getName().equals("OMX.SEC.avc.enc")) {
+                        return lastCodecInfo;
+                    } else if (lastCodecInfo.getName().equals("OMX.SEC.AVC.Encoder")) {
+                        return lastCodecInfo;
+                    }
                 }
             }
         }
@@ -1919,13 +1940,17 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
     private static int selectColorFormat(MediaCodecInfo codecInfo, String mimeType) {
         MediaCodecInfo.CodecCapabilities capabilities = codecInfo.getCapabilitiesForType(mimeType);
+        int lastColorFormat = 0;
         for (int i = 0; i < capabilities.colorFormats.length; i++) {
             int colorFormat = capabilities.colorFormats[i];
             if (isRecognizedFormat(colorFormat)) {
-                return colorFormat;
+                lastColorFormat = colorFormat;
+                if (!(codecInfo.getName().equals("OMX.SEC.AVC.Encoder") && colorFormat == 19)) {
+                    return colorFormat;
+                }
             }
         }
-        return 0;
+        return lastColorFormat;
     }
 
     @TargetApi(16)
@@ -1963,7 +1988,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     }
                     NotificationCenter.getInstance().postNotificationName(NotificationCenter.FileNewChunkAvailable, messageObject, file.toString(), finalSize);
                 }
-                if (finalSize != 0) {
+                if (error || finalSize != 0) {
                     synchronized (videoConvertSync) {
                         cancelCurrentVideoConversion = false;
                     }
@@ -2090,7 +2115,16 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         int originalWidth = messageObject.messageOwner.videoEditedInfo.originalWidth;
         int originalHeight = messageObject.messageOwner.videoEditedInfo.originalHeight;
         int bitrate = messageObject.messageOwner.videoEditedInfo.bitrate;
+        int rotateRender = 0;
         File cacheFile = new File(messageObject.messageOwner.attachPath);
+
+        if (Build.VERSION.SDK_INT < 18 && resultHeight > resultWidth && resultWidth != originalWidth && resultHeight != originalHeight) {
+            int temp = resultHeight;
+            resultHeight = resultWidth;
+            resultWidth = temp;
+            rotationValue = 90;
+            rotateRender = 270;
+        }
 
         File inputFile = new File(videoPath);
         if (!inputFile.canRead()) {
@@ -2112,7 +2146,6 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 Mp4Movie movie = new Mp4Movie();
                 movie.setCacheFile(cacheFile);
                 movie.setRotation(rotationValue);
-                resultHeight = 352;
                 movie.setSize(resultWidth, resultHeight);
                 mediaMuxer = new MP4Builder().createMovie(movie);
                 extractor = new MediaExtractor();
@@ -2142,18 +2175,29 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                             if (Build.VERSION.SDK_INT < 18) {
                                 MediaCodecInfo codecInfo = selectCodec(MIME_TYPE);
                                 colorFormat = selectColorFormat(codecInfo, MIME_TYPE);
+                                if (colorFormat == 0) {
+                                    throw new RuntimeException("no supported color format");
+                                }
                                 String manufacturer = Build.MANUFACTURER.toLowerCase();
-                                if (codecInfo.getName().contains("OMX.qcom.")) {
+                                String codecName = codecInfo.getName();
+                                if (codecName.contains("OMX.qcom.")) {
                                     processorType = PROCESSOR_TYPE_QCOM;
                                     if (Build.VERSION.SDK_INT == 16) {
                                         if (manufacturer.equals("lge") || manufacturer.equals("nokia")) {
                                             swapUV = 1;
                                         }
                                     }
-                                } else if (codecInfo.getName().contains("OMX.Intel.")) {
+                                } else if (codecName.contains("OMX.Intel.")) {
                                     processorType = PROCESSOR_TYPE_INTEL;
+                                } else if (codecName.equals("OMX.MTK.VIDEO.ENCODER.AVC")) {
+                                    processorType = PROCESSOR_TYPE_MTK;
+                                } else if (codecName.equals("OMX.SEC.AVC.Encoder")) {
+                                    processorType = PROCESSOR_TYPE_SEC;
+                                    swapUV = 1;
+                                } else if (codecName.equals("OMX.TI.DUCATI1.VIDEO.H264E")) {
+                                    processorType = PROCESSOR_TYPE_TI;
                                 }
-                                FileLog.e("tmessages", "codec = " + codecInfo.getName() + " manufacturer = " + manufacturer);
+                                FileLog.e("tmessages", "codec = " + codecInfo.getName() + " manufacturer = " + manufacturer + "device = " + Build.MODEL);
                             } else {
                                 colorFormat = MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
                             }
@@ -2174,8 +2218,12 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                                     padding = uvoffset - (resultWidth * resultHeight);
                                     bufferSize += padding;
                                 }
-                            } else if (processorType == PROCESSOR_TYPE_INTEL) {
-
+                            } else if (processorType == PROCESSOR_TYPE_TI) {
+                                //resultHeightAligned = 368;
+                                //bufferSize = resultWidth * resultHeightAligned * 3 / 2;
+                                //resultHeightAligned += (16 - (resultHeight % 16));
+                                //padding = resultWidth * (resultHeightAligned - resultHeight);
+                                //bufferSize += padding * 5 / 4;
                             }
 
                             extractor.selectTrack(videoIndex);
@@ -2192,8 +2240,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                             outputFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 25);
                             outputFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 10);
                             if (Build.VERSION.SDK_INT < 18) {
-                                outputFormat.setInteger("stride", resultWidth);
-                                outputFormat.setInteger("slice-height", resultHeightAligned);
+                                outputFormat.setInteger("stride", resultWidth + 32);
+                                outputFormat.setInteger("slice-height", resultHeight);
                             }
 
                             encoder = MediaCodec.createEncoderByType(MIME_TYPE);
@@ -2208,7 +2256,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                             if (Build.VERSION.SDK_INT >= 18) {
                                 outputSurface = new OutputSurface();
                             } else {
-                                outputSurface = new OutputSurface(resultWidth, resultHeight);
+                                outputSurface = new OutputSurface(resultWidth, resultHeight, rotateRender);
                             }
                             decoder.configure(inputFormat, outputSurface.getSurface(), null, 0);
                             decoder.start();
@@ -2326,6 +2374,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
                                         } else if (decoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                                             MediaFormat newFormat = decoder.getOutputFormat();
+                                            FileLog.e("tmessages", "newFormat = " + newFormat);
                                         } else if (decoderStatus < 0) {
                                             throw new RuntimeException("unexpected result from decoder.dequeueOutputBuffer: " + decoderStatus);
                                         } else {
@@ -2399,6 +2448,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                             }
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
+                            error = true;
                         }
 
                         extractor.unselectTrack(videoIndex);
@@ -2430,7 +2480,9 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                         videoStartTime = videoTime;
                     }
                 }
-                readAndWriteTrack(messageObject, extractor, mediaMuxer, info, videoStartTime, endTime, cacheFile, true);
+                if (!error) {
+                    readAndWriteTrack(messageObject, extractor, mediaMuxer, info, videoStartTime, endTime, cacheFile, true);
+                }
             } catch (Exception e) {
                 error = true;
                 FileLog.e("tmessages", e);

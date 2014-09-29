@@ -69,8 +69,10 @@ public class TextureRenderer {
     private int muSTMatrixHandle;
     private int maPositionHandle;
     private int maTextureHandle;
+    private int rotationAngle = 0;
 
-    public TextureRenderer() {
+    public TextureRenderer(int rotation) {
+        rotationAngle = rotation;
         mTriangleVertices = ByteBuffer.allocateDirect(mTriangleVerticesData.length * FLOAT_SIZE_BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
         mTriangleVertices.put(mTriangleVerticesData).position(0);
         Matrix.setIdentityM(mSTMatrix, 0);
@@ -147,6 +149,9 @@ public class TextureRenderer {
         checkGlError("glTexParameter");
 
         Matrix.setIdentityM(mMVPMatrix, 0);
+        if (rotationAngle != 0) {
+            Matrix.rotateM(mMVPMatrix, 0, rotationAngle, 0, 0, 1);
+        }
     }
 
     public void changeFragmentShader(String fragmentShader) {

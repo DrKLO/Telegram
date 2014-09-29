@@ -45,8 +45,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.ApplicationLoader;
 
-import java.lang.reflect.Method;
-
 public class ChatActivityEnterView implements NotificationCenter.NotificationCenterDelegate, SizeNotifierRelativeLayout.SizeNotifierRelativeLayoutDelegate {
 
     public static interface ChatActivityEnterViewDelegate {

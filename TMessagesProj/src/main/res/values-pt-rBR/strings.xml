@@ -42,7 +42,7 @@
     <string name="Yesterday">ontem</string>
     <string name="NoResult">Nenhum resultado</string>
     <string name="NoChats">Ainda não há conversas...</string>
-    <string name="NoChatsHelp">Comece a conversar pressionando o\nbotão \'Nova Mensagem\' no canto superior direito\nou vá para a seção \'Contatos\'</string>
+    <string name="NoChatsHelp">Comece a conversar pressionando o\nbotão \'Nova Mensagem\' no canto superior direito\nou vá para a seção \'Contatos\'.</string>
     <string name="WaitingForNetwork">Aguardando rede...</string>
     <string name="Connecting">Conectando...</string>
     <string name="Updating">Atualizando...</string>
@@ -166,13 +166,13 @@
     <string name="SelectContact">Selecionar Contato</string>
     <string name="NoContacts">Ainda não há contatos</string>
     <string name="InviteText">Ei, vamos mudar para o Telegram: http://telegram.org/dl2</string>
-    <string name="TodayAt">hoje à(s)</string>
-    <string name="YesterdayAt">ontem à(s)</string>
-    <string name="OtherAt">em</string>
+    <string name="TodayAt">hoje às</string>
+    <string name="YesterdayAt">ontem às</string>
+    <string name="OtherAt">às</string>
     <string name="Online">online</string>
     <string name="Offline">offline</string>
-    <string name="LastSeen">visto pela última vez</string>
-    <string name="LastSeenDate">visto pela última vez</string>
+    <string name="LastSeen">visto por último</string>
+    <string name="LastSeenDate">visto por último</string>
     <string name="InviteFriends">Convidar Amigos</string>
 
     <!--group create view-->
@@ -318,6 +318,7 @@
     <string name="OriginalVideo">Vídeo Original</string>
     <string name="EditedVideo">Vídeo Editado</string>
     <string name="SendingVideo">Sending video...</string>
+    <string name="CompressVideo">Compress video</string>
 
     <!--button titles-->
     <string name="Next">Próximo</string>
@@ -405,7 +406,7 @@
     <string name="Page5Title">Poderoso</string>
     <string name="Page6Title">Baseado na nuvem</string>
     <string name="Page7Title">Privado</string>
-    <string name="Page1Message">Bem-vindo à era das mensagens<![CDATA[<br/>]]> rápidas e seguras</string>
+    <string name="Page1Message">O Mais <![CDATA[<b>rápido</b>]]> aplicativo de mensagens\ndo mundo.  É <![CDATA[<b>grátis</b>]]> e <![CDATA[<b>seguro</b>]]>.</string>
     <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> envia mensagens mais rapidamente do que qualquer outro aplicativo</string>
     <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> será gratuito para sempre. Sem propagandas. Sem mensalidades</string>
     <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> mantém suas mensagens seguras contra ataques de hackers</string>

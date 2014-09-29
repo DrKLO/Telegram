@@ -46,14 +46,16 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     private TextureRenderer mTextureRender;
     private int mWidth;
     private int mHeight;
+    private int rotateRender = 0;
     private ByteBuffer mPixelBuf;
 
-    public OutputSurface(int width, int height) {
+    public OutputSurface(int width, int height, int rotate) {
         if (width <= 0 || height <= 0) {
             throw new IllegalArgumentException();
         }
         mWidth = width;
         mHeight = height;
+        rotateRender = rotate;
         mPixelBuf = ByteBuffer.allocateDirect(mWidth * mHeight * 4);
         mPixelBuf.order(ByteOrder.LITTLE_ENDIAN);
         eglSetup(width, height);
@@ -66,7 +68,7 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     }
 
     private void setup() {
-        mTextureRender = new TextureRenderer();
+        mTextureRender = new TextureRenderer(rotateRender);
         mTextureRender.surfaceCreated();
         mSurfaceTexture = new SurfaceTexture(mTextureRender.getTextureId());
         mSurfaceTexture.setOnFrameAvailableListener(this);

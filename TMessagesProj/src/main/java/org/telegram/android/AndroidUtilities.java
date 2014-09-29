@@ -41,8 +41,8 @@ public class AndroidUtilities {
     public static int statusBarHeight = 0;
     public static float density = 1;
     public static Point displaySize = new Point();
+    public static Integer photoSize = null;
     private static Boolean isTablet = null;
-    private static Boolean isSmallTablet = null;
 
     public static int[] arrColors = {0xffee4928, 0xff41a903, 0xffe09602, 0xff0f94ed, 0xff8f3bf7, 0xfffc4380, 0xff00a1c4, 0xffeb7002};
     public static int[] arrUsersAvatars = {
@@ -277,11 +277,8 @@ public class AndroidUtilities {
     }
 
     public static boolean isSmallTablet() {
-        if (isSmallTablet == null) {
-            float minSide = Math.min(displaySize.x, displaySize.y) / density;
-            isSmallTablet = minSide <= 700;
-        }
-        return isSmallTablet;
+        float minSide = Math.min(displaySize.x, displaySize.y) / density;
+        return minSide <= 700;
     }
 
     public static int getMinTabletSide() {
@@ -353,5 +350,16 @@ public class AndroidUtilities {
 
     public static int getBroadcastAvatarForId(int id) {
         return arrBroadcastAvatars[getColorIndex(-Math.abs(id))];
+    }
+
+    public static int getPhotoSize() {
+        if (photoSize == null) {
+            if (Build.VERSION.SDK_INT >= 16) {
+                photoSize = 1280;
+            } else {
+                photoSize = 800;
+            }
+        }
+        return photoSize;
     }
 }

@@ -42,7 +42,7 @@
     <string name="Yesterday">gisteren</string>
     <string name="NoResult">Geen resultaten</string>
     <string name="NoChats">Nog geen gesprekken…</string>
-    <string name="NoChatsHelp">Tik op de opstelknop rechtsbovenin\nom een gesprek te beginnen\nof ga naar de contactenlijst.</string>
+    <string name="NoChatsHelp">Begin een gesprek door op de\nopstellen-knop rechtsboven te drukken\nof druk op de menuknop voor meer opties.</string>
     <string name="WaitingForNetwork">Wachten op netwerk…</string>
     <string name="Connecting">Verbinden…</string>
     <string name="Updating">Bijwerken…</string>
@@ -108,7 +108,7 @@
     <string name="EncryptedPlaceholderTitleOutgoing">Je hebt %s uitgenodigd voor een geheime chat.</string>
     <string name="EncryptedDescriptionTitle">Geheime chat functies:</string>
     <string name="EncryptedDescription1">End-to-end encryptie</string>
-    <string name="EncryptedDescription2">Ontraceerbaar via onze servers</string>
+    <string name="EncryptedDescription2">Geen serveropslag</string>
     <string name="EncryptedDescription3">Zelfvernietigingstimers</string>
     <string name="EncryptedDescription4">Doorstuurbescherming</string>
     <string name="YouWereKicked">Je bent verwijderd uit deze groep</string>
@@ -171,8 +171,8 @@
     <string name="OtherAt">om</string>
     <string name="Online">online</string>
     <string name="Offline">offline</string>
-    <string name="LastSeen">laatst gez.:</string>
-    <string name="LastSeenDate">laatst gez.:</string>
+    <string name="LastSeen">gezien</string>
+    <string name="LastSeenDate">gezien</string>
     <string name="InviteFriends">Vrienden uitnodigen</string>
 
     <!--group create view-->
@@ -219,7 +219,7 @@
     <string name="ShortMessageLifetime1h">1u</string>
     <string name="ShortMessageLifetime1d">1d</string>
     <string name="ShortMessageLifetime1w">1w</string>
-    <string name="EncryptionKeyDescription">Dit is een weergave van de encryptiesleutel voor deze geheime chat met <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Als deze afbeelding er bij <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> hetzelfde uitziet, is jullie gesprek 200%% beveiligd.<![CDATA[<br><br>]]>Lees meer op telegram.org.</string>
+    <string name="EncryptionKeyDescription">Dit is een weergave van de encryptiesleutel voor deze geheime chat met <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.\n\nAls deze afbeelding er bij <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> hetzelfde uitziet, is jullie gesprek 200%% beveiligd.\n\nLees meer op telegram.org.</string>
 
     <!--settings view-->
     <string name="ResetNotificationsText">Alle meldingsinstellingen herstellen</string>
@@ -242,7 +242,7 @@
     <string name="InAppPreview">Voorvertoningen</string>
     <string name="Reset">RESETTEN</string>
     <string name="ResetAllNotifications">Alle meldingen resetten</string>
-    <string name="UndoAllCustom">Alle aangepaste meldingsinstellingen ongedaan maken voor alle contacten en groepen.</string>
+    <string name="UndoAllCustom">Aangepaste meldingsinstellingen wissen voor contacten en groepen.</string>
     <string name="NotificationsAndSounds">Meldingen en geluiden</string>
     <string name="BlockedUsers">Geblokkeerde gebruikers</string>
     <string name="SaveIncomingPhotos">Inkomende foto\'s opslaan</string>
@@ -259,7 +259,7 @@
     <string name="ContactJoined">Contact lid van Telegram</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Taal</string>
-    <string name="AskAQuestionInfo">Houd er rekening mee dat de ondersteuning van Telegram door vrijwilligers wordt gedaan. We doen ons best om zo snel mogelijk te antwoorden, maar het kan even even duren.<![CDATA[<br><br>]]>Bekijk ook de <![CDATA[<a href=\"http://telegram.org/faq#general\">veelgestelde vragen</a>]]>: hier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href=\"http://telegram.org/faq#troubleshooting\">het oplossen van problemen</a>]]>.</string>
+    <string name="AskAQuestionInfo">Houd er rekening mee dat de ondersteuning van Telegram door vrijwilligers wordt gedaan. We doen ons best om zo snel mogelijk te antwoorden, maar het kan even even duren.\n\nBekijk ook de <![CDATA[<a href=\"http://telegram.org/faq#general\">veelgestelde vragen</a>]]>: hier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href=\"http://telegram.org/faq#troubleshooting\">het oplossen van problemen</a>]]>.</string>
     <string name="AskButton">Vraag een vrijwilliger</string>
     <string name="TelegramFaq">Veelgestelde vragen</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
@@ -317,7 +317,8 @@
     <string name="EditVideo">Video bewerken</string>
     <string name="OriginalVideo">Originele video</string>
     <string name="EditedVideo">Bewerkte video</string>
-    <string name="SendingVideo">Sending video...</string>
+    <string name="SendingVideo">Video versturen...</string>
+    <string name="CompressVideo">Video comprimeren</string>
 
     <!--button titles-->
     <string name="Next">Volgende</string>
@@ -387,7 +388,7 @@
     <string name="DeleteChatQuestion">Dit gesprek verwijderen?</string>
     <string name="SendMessagesTo">Berichten naar %1$s verzenden?</string>
     <string name="AreYouSureLogout">Weet je zeker dat je wilt uitloggen?</string>
-    <string name="AreYouSureSessions">Weet je zeker dat je alle andere sessies wilt beëindigen?</string>
+    <string name="AreYouSureSessions">Alle apparaten behalve het huidige apparaat uitloggen?</string>
     <string name="AreYouSureDeleteAndExit">Weet je zeker dat je alles wilt verwijderen en de groep wilt verlaten?</string>
     <string name="AreYouSureDeleteThisChat">Weet je zeker dat je dit gesprek wilt verwijderen?</string>
     <string name="AreYouSureShareMyContactInfo">Weet je zeker dat je je contactinformatie wilt delen?</string>
@@ -405,13 +406,13 @@
     <string name="Page5Title">Krachtig</string>
     <string name="Page6Title">In de cloud</string>
     <string name="Page7Title">Privé</string>
-    <string name="Page1Message">\'s Werelds <![CDATA[<b>snelste</b>]]> berichtendienst.<![CDATA[<br/>]]>Het is <![CDATA[<b>veilig</b>]]> en  <![CDATA[<b>gratis</b>]]>.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> bezorgt berichten<![CDATA[<br/>]]>sneller dan elke andere applicatie.</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is altijd gratis. <![CDATA[<br/>]]>Geen advertenties.<![CDATA[<br/>]]>Geen abonnementskosten.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> beveiligt je berichten<![CDATA[<br/>]]>tegen aanvallen van hackers.</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> beperkt je niet<![CDATA[<br/>]]>in de grootte van je media of gesprekken.</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> biedt toegang tot je berichten<![CDATA[<br/>]]>vanaf meerdere apparaten.</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> berichten zijn sterk versleuteld<![CDATA[<br/>]]>en kunnen zichzelf vernietigen</string>
+    <string name="Page1Message">\'s Werelds <![CDATA[<b>snelste</b>]]> berichtendienst.\nHet is <![CDATA[<b>veilig</b>]]> en <![CDATA[<b>gratis</b>]]>.</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> bezorgt berichten\nsneller dan elke andere applicatie.</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is altijd gratis. \nGeen advertenties.\nGeen abonnementskosten.</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> beveiligt je berichten\ntegen aanvallen van hackers.</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> beperkt je niet\nin de grootte van je media of gesprekken.</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> biedt toegang tot je berichten\nvanaf meerdere apparaten.</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> berichten zijn sterk versleuteld\nen kunnen zichzelf vernietigen.</string>
     <string name="StartMessaging">Begin met chatten</string>
 
     <!--plurals-->

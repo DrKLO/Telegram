@@ -39,6 +39,9 @@ public class TypingDotsDrawable extends Drawable {
         long newTime = System.currentTimeMillis();
         long dt = newTime - lastUpdateTime;
         lastUpdateTime = newTime;
+        if (dt > 50) {
+            dt = 50;
+        }
 
         for (int a = 0; a < 3; a++) {
             elapsedTimes[a] += dt;

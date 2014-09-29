@@ -1116,6 +1116,30 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 }
 
                 request.retryCount++;
+
+                if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0) {
+                    int retryMax = 10;
+                    if ((request.flags & RPCRequest.RPCRequestClassForceDownload) == 0) {
+                        if (request.wait) {
+                            retryMax = 1;
+                        } else {
+                            retryMax = 3;
+                        }
+                    }
+                    if (request.retryCount >= retryMax) {
+                        FileLog.e("tmessages", "timed out " + request.rawRequest);
+                        TLRPC.TL_error error = new TLRPC.TL_error();
+                        error.code = -123;
+                        error.text = "RETRY_LIMIT";
+                        if (request.completionBlock != null) {
+                            request.completionBlock.run(null, error);
+                        }
+                        runningRequests.remove(i);
+                        i--;
+                        continue;
+                    }
+                }
+
                 NetworkMessage networkMessage = new NetworkMessage();
                 networkMessage.protoMessage = new TLRPC.TL_protoMessage();
 
@@ -2081,6 +2105,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                         waitTime = Math.min(30, waitTime);
 
                                         discardResponse = true;
+                                        request.wait = true;
                                         request.runningMinStartTime = (int)(System.currentTimeMillis() / 1000 + waitTime);
                                         request.confirmed = false;
                                     }

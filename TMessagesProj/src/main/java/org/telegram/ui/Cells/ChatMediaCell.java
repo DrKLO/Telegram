@@ -314,10 +314,10 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     photoImage.setImage(currentPhotoObject.photoOwner.location, currentPhotoFilter, currentMessageObject.isOut() ? placeholderOutDrawable : placeholderInDrawable, currentPhotoObject.photoOwner.size);
                 }
             } else if (currentMessageObject.type == 8 || currentMessageObject.type == 9) {
-                FileLoader.getInstance().loadFile(currentMessageObject.messageOwner.media.document);
+                FileLoader.getInstance().loadFile(currentMessageObject.messageOwner.media.document, true);
                 lastDownloadedGifMessage = currentMessageObject;
             } else if (currentMessageObject.type == 3) {
-                FileLoader.getInstance().loadFile(currentMessageObject.messageOwner.media.video);
+                FileLoader.getInstance().loadFile(currentMessageObject.messageOwner.media.video, true);
             }
             progressVisible = true;
             startAnimation();
@@ -472,7 +472,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 photoWidth = AndroidUtilities.dp(86);
                 photoHeight = AndroidUtilities.dp(86);
                 backgroundWidth = photoWidth + Math.max(nameWidth, infoWidth) + AndroidUtilities.dp(68);
-                currentPhotoObject = PhotoObject.getClosestImageWithSize(messageObject.photoThumbs, 800, 800);
+                currentPhotoObject = PhotoObject.getClosestImageWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize(), AndroidUtilities.getPhotoSize());
                 if (currentPhotoObject != null) {
                     if (currentPhotoObject.image != null) {
                         photoImage.setImageBitmap(currentPhotoObject.image);
@@ -500,20 +500,24 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 }
                 photoHeight = photoWidth + AndroidUtilities.dp(100);
 
-                if (photoWidth > 800) {
-                    photoWidth = 800;
+                if (photoWidth > AndroidUtilities.getPhotoSize()) {
+                    photoWidth = AndroidUtilities.getPhotoSize();
                 }
-                if (photoHeight > 800) {
-                    photoHeight = 800;
+                if (photoHeight > AndroidUtilities.getPhotoSize()) {
+                    photoHeight = AndroidUtilities.getPhotoSize();
                 }
 
-                currentPhotoObject = PhotoObject.getClosestImageWithSize(messageObject.photoThumbs, 800, 800);
+                currentPhotoObject = PhotoObject.getClosestImageWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize(), AndroidUtilities.getPhotoSize());
                 if (currentPhotoObject != null) {
                     boolean noSize = false;
                     if (currentMessageObject.type == 3 || currentMessageObject.type == 8) {
                         noSize = true;
                     }
                     float scale = (float) currentPhotoObject.photoOwner.w / (float) photoWidth;
+
+                    if (!noSize && currentPhotoObject.photoOwner.size == 0) {
+                        currentPhotoObject.photoOwner.size = -1;
+                    }
 
                     int w = (int) (currentPhotoObject.photoOwner.w / scale);
                     int h = (int) (currentPhotoObject.photoOwner.h / scale);

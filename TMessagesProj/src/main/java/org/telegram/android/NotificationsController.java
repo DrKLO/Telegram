@@ -393,7 +393,8 @@ public class NotificationsController {
             String lastMessageFull = null;
             if (pushMessages.size() == 1) {
                 String message = lastMessageFull = getStringForMessage(pushMessages.get(0), false);
-                lastMessage = getStringForMessage(pushMessages.get(0), true);
+                //lastMessage = getStringForMessage(pushMessages.get(0), true);
+                lastMessage = lastMessageFull;
                 if (message == null) {
                     return;
                 }
@@ -418,7 +419,8 @@ public class NotificationsController {
                     }
                     if (i == 0) {
                         lastMessageFull = message;
-                        lastMessage = getStringForMessage(pushMessages.get(i), true);
+                        //lastMessage = getStringForMessage(pushMessages.get(i), true);
+                        lastMessage = lastMessageFull;
                     }
                     if (pushDialogs.size() == 1) {
                         if (replace) {
@@ -444,6 +446,9 @@ public class NotificationsController {
 
             if (!notifyDisabled) {
                 if (ApplicationLoader.mainInterfacePaused || inAppPreview) {
+                    if (lastMessage.length() > 100) {
+                        lastMessage = lastMessage.substring(0, 100).replace("\n", " ").trim() + "...";
+                    }
                     mBuilder.setTicker(lastMessage);
                 }
                 if (choosenSoundPath != null && !choosenSoundPath.equals("NoSound")) {

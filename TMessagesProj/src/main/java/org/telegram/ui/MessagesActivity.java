@@ -366,6 +366,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                                         public void onClick(DialogInterface dialogInterface, int i) {
                                             MessagesController.getInstance().deleteUserFromChat((int) -selectedDialog, MessagesController.getInstance().getUser(UserConfig.getClientUserId()), null);
                                             MessagesController.getInstance().deleteDialog(selectedDialog, 0, false);
+                                            if (AndroidUtilities.isTablet()) {
+                                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats, selectedDialog);
+                                            }
                                         }
                                     });
                                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -387,6 +390,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                                         @Override
                                         public void onClick(DialogInterface dialogInterface, int i) {
                                             MessagesController.getInstance().deleteDialog(selectedDialog, 0, false);
+                                            if (AndroidUtilities.isTablet()) {
+                                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats, selectedDialog);
+                                            }
                                         }
                                     });
                                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -486,7 +492,15 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             updateVisibleRows(0);
         } else if (id == NotificationCenter.openedChatChanged) {
             if (!serverOnly && AndroidUtilities.isTablet()) {
-                openedDialogId = (Long)args[0];
+                boolean close = (Boolean)args[1];
+                long dialog_id = (Long)args[0];
+                if (close) {
+                    if (dialog_id == openedDialogId) {
+                        openedDialogId = 0;
+                    }
+                } else {
+                    openedDialogId = dialog_id;
+                }
                 updateVisibleRows(0);
             }
         }

@@ -57,6 +57,8 @@
         android:layout_marginLeft="16dp"
         android:layout_marginRight="16dp"
         android:layout_marginBottom="16dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
         android:id="@+id/info_container"
         android:orientation="vertical">
     
@@ -65,7 +67,6 @@
             android:layout_height="wrap_content"
             android:textColor="#f0f0f0"
             android:textSize="15dp"
-            android:layout_marginTop="8dp"
             android:layout_marginLeft="13dp"
             android:id="@+id/original_title"/>
 
@@ -92,8 +93,16 @@
             android:textColor="#bebebe"
             android:textSize="15dp"
             android:layout_marginLeft="13dp"
-            android:layout_marginBottom="8dp"
             android:id="@+id/edited_size"/>
+
+        <CheckBox
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="8dp"
+            android:layout_marginTop="6dp"
+            android:textColor="#f0f0f0"
+            android:textSize="15dp"
+            android:id="@+id/compress_video"/>
 
     </LinearLayout>
 

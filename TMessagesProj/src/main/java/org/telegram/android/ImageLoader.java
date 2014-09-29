@@ -64,6 +64,8 @@ public class ImageLoader {
     private int lastImageNum = 0;
     private long lastProgressUpdateTime = 0;
 
+    private File telegramPath = null;
+
     private class HttpTask extends AsyncTask<Void, Void, Boolean> {
 
         private CacheImage cacheImage = null;
@@ -548,6 +550,13 @@ public class ImageLoader {
                 AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
+                        if (location != null) {
+                            if (telegramPath != null && finalFile != null && finalFile.exists() && location.endsWith(".mp4") || location.endsWith(".jpg")) {
+                                if (finalFile.toString().startsWith(telegramPath.toString())) {
+                                    Utilities.addMediaToGallery(finalFile.toString());
+                                }
+                            }
+                        }
                         ImageLoader.this.fileDidLoaded(location, finalFile, tempFile);
                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.FileDidLoaded, location);
                     }
@@ -555,12 +564,12 @@ public class ImageLoader {
             }
 
             @Override
-            public void fileDidFailedLoad(final String location, final boolean canceled) {
+            public void fileDidFailedLoad(final String location, final int state) {
                 AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         ImageLoader.this.fileDidFailedLoad(location);
-                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.FileDidFailedLoad, location, canceled);
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.FileDidFailedLoad, location, state);
                     }
                 });
             }
@@ -597,14 +606,14 @@ public class ImageLoader {
 
         try {
             if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
-                File telegramPath = new File(Environment.getExternalStorageDirectory(), LocaleController.getString("AppName", R.string.AppName));
+                telegramPath = new File(Environment.getExternalStorageDirectory(), LocaleController.getString("AppName", R.string.AppName));
                 telegramPath.mkdirs();
                 if (telegramPath.isDirectory()) {
                     try {
-                        File imagePath = new File(telegramPath, "Images");
+                        File imagePath = new File(telegramPath, LocaleController.getString("AppName", R.string.AppName) + " Images");
                         imagePath.mkdir();
                         if (imagePath.isDirectory()) {
-                            new File(imagePath, ".nomedia").createNewFile();
+                            //new File(imagePath, ".nomedia").delete();
                             mediaDirs.put(FileLoader.MEDIA_DIR_IMAGE, imagePath);
                         }
                     } catch (Exception e) {
@@ -612,10 +621,10 @@ public class ImageLoader {
                     }
 
                     try {
-                        File videoPath = new File(telegramPath, "Video");
+                        File videoPath = new File(telegramPath, LocaleController.getString("AppName", R.string.AppName) + " Video");
                         videoPath.mkdir();
                         if (videoPath.isDirectory()) {
-                            new File(videoPath, ".nomedia").createNewFile();
+                            //new File(videoPath, ".nomedia").delete();
                             mediaDirs.put(FileLoader.MEDIA_DIR_VIDEO, videoPath);
                         }
                     } catch (Exception e) {
@@ -623,7 +632,7 @@ public class ImageLoader {
                     }
 
                     try {
-                        File audioPath = new File(telegramPath, "Audio");
+                        File audioPath = new File(telegramPath, LocaleController.getString("AppName", R.string.AppName) + " Audio");
                         audioPath.mkdir();
                         if (audioPath.isDirectory()) {
                             new File(audioPath, ".nomedia").createNewFile();
@@ -634,7 +643,7 @@ public class ImageLoader {
                     }
 
                     try {
-                        File documentPath = new File(telegramPath, "Documents");
+                        File documentPath = new File(telegramPath, LocaleController.getString("AppName", R.string.AppName) + " Documents");
                         documentPath.mkdir();
                         if (documentPath.isDirectory()) {
                             new File(documentPath, ".nomedia").createNewFile();
@@ -1041,22 +1050,7 @@ public class ImageLoader {
         return b;
     }
 
-    public static TLRPC.PhotoSize scaleAndSaveImage(Bitmap bitmap, float maxWidth, float maxHeight, int quality, boolean cache) {
-        if (bitmap == null) {
-            return null;
-        }
-        float photoW = bitmap.getWidth();
-        float photoH = bitmap.getHeight();
-        if (photoW == 0 || photoH == 0) {
-            return null;
-        }
-        float scaleFactor = Math.max(photoW / maxWidth, photoH / maxHeight);
-        int w = (int)(photoW / scaleFactor);
-        int h = (int)(photoH / scaleFactor);
-        if (h == 0 || w == 0) {
-            return null;
-        }
-
+    private static TLRPC.PhotoSize scaleAndSaveImageInternal(Bitmap bitmap, int w, int h, float photoW, float photoH, float scaleFactor, int quality, boolean cache) throws Exception {
         Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, w, h, true);
 
         TLRPC.TL_fileLocation location = new TLRPC.TL_fileLocation();
@@ -1073,25 +1067,54 @@ public class ImageLoader {
         size.location = location;
         size.w = (int)(photoW / scaleFactor);
         size.h = (int)(photoH / scaleFactor);
-        try {
-            if (!cache) {
-                String fileName = location.volume_id + "_" + location.local_id + ".jpg";
-                final File cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
-                FileOutputStream stream = new FileOutputStream(cacheFile);
-                scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream);
-                size.size = (int)stream.getChannel().size();
-            } else {
-                ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream);
-                size.bytes = stream.toByteArray();
-                size.size = size.bytes.length;
-            }
-            if (scaledBitmap != bitmap) {
-                scaledBitmap.recycle();
-            }
-            return size;
-        } catch (Throwable e) {
+
+        if (!cache) {
+            String fileName = location.volume_id + "_" + location.local_id + ".jpg";
+            final File cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
+            FileOutputStream stream = new FileOutputStream(cacheFile);
+            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream);
+            size.size = (int)stream.getChannel().size();
+        } else {
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream);
+            size.bytes = stream.toByteArray();
+            size.size = size.bytes.length;
+        }
+        if (scaledBitmap != bitmap) {
+            scaledBitmap.recycle();
+        }
+
+        return size;
+    }
+
+    public static TLRPC.PhotoSize scaleAndSaveImage(Bitmap bitmap, float maxWidth, float maxHeight, int quality, boolean cache) {
+        if (bitmap == null) {
             return null;
+        }
+        float photoW = bitmap.getWidth();
+        float photoH = bitmap.getHeight();
+        if (photoW == 0 || photoH == 0) {
+            return null;
+        }
+        float scaleFactor = Math.max(photoW / maxWidth, photoH / maxHeight);
+        int w = (int)(photoW / scaleFactor);
+        int h = (int)(photoH / scaleFactor);
+        if (h == 0 || w == 0) {
+            return null;
+        }
+
+        try {
+            return scaleAndSaveImageInternal(bitmap, w, h, photoW, photoH, scaleFactor, quality, cache);
+        } catch (Throwable e) {
+            FileLog.e("tmessages", e);
+            ImageLoader.getInstance().clearMemory();
+            System.gc();
+            try {
+                return scaleAndSaveImageInternal(bitmap, w, h, photoW, photoH, scaleFactor, quality, cache);
+            } catch (Throwable e2) {
+                FileLog.e("tmessages", e2);
+                return null;
+            }
         }
     }
 }

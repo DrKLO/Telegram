@@ -27,6 +27,7 @@ public class RPCRequest {
     public static int RPCRequestClassPush = 64;
     public static int RPCRequestClassWithoutLogin = 128;
     public static int RPCRequestClassTryDifferentDc = 256;
+    public static int RPCRequestClassForceDownload = 512;
 
     static int RPCRequestClassTransportMask = (RPCRequestClassGeneric | RPCRequestClassDownloadMedia | RPCRequestClassUploadMedia);
 
@@ -35,6 +36,7 @@ public class RPCRequest {
 
     int serverFailureCount;
     int flags;
+    boolean wait = false;
     protected int retryCount = 0;
     protected int lastResendTime = 0;
     protected boolean completed = false;

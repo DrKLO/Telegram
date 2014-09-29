@@ -8,6 +8,9 @@
 
 package org.telegram.android;
 
+import android.graphics.Bitmap;
+import android.net.Uri;
+
 import org.telegram.messenger.BuffersStorage;
 import org.telegram.messenger.ByteBufferDesc;
 import org.telegram.messenger.ConnectionsManager;
@@ -198,6 +201,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         if (message.obj == messageObject) {
                             message.obj.messageOwner.videoEditedInfo = null;
                             message.obj.messageOwner.message = "-1";
+                            message.obj.messageOwner.media.video.size = (int)finalSize;
 
                             ArrayList<TLRPC.Message> messages = new ArrayList<TLRPC.Message>();
                             messages.add(message.obj.messageOwner);
@@ -213,6 +217,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         } else if (id == NotificationCenter.FilePreparingFailed) {
             MessageObject messageObject = (MessageObject)args[0];
             String finalPath = (String)args[1];
+            stopVideoService(messageObject.messageOwner.attachPath);
 
             ArrayList<DelayedMessage> arr = delayedMessages.get(finalPath);
             if (arr != null) {
@@ -949,6 +954,20 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         }
     }
 
+    private void stopVideoService(final String path) {
+        MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                AndroidUtilities.RunOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.stopEncodingService, path);
+                    }
+                });
+            }
+        });
+    }
+
     private void performSendMessageRequest(final TLObject req, final MessageObject newMsgObj, final String originalPath) {
         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
@@ -957,6 +976,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     final int oldId = newMsgObj.messageOwner.id;
                     final boolean isBroadcast = req instanceof TLRPC.TL_messages_sendBroadcast;
                     final ArrayList<TLRPC.Message> sentMessages = new ArrayList<TLRPC.Message>();
+                    final String attachPath = newMsgObj.messageOwner.attachPath;
 
                     if (response instanceof TLRPC.messages_SentMessage) {
                         TLRPC.messages_SentMessage res = (TLRPC.messages_SentMessage) response;
@@ -1009,6 +1029,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                     processSentMessage(oldId);
                                 }
                             });
+                            if (newMsgObj.messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
+                                stopVideoService(attachPath);
+                            }
                         }
                     });
                 } else {
@@ -1019,6 +1042,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                             newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, newMsgObj.messageOwner.id);
                             processSentMessage(newMsgObj.messageOwner.id);
+                            if (newMsgObj.messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
+                                stopVideoService(newMsgObj.messageOwner.attachPath);
+                            }
                         }
                     });
                 }
@@ -1100,6 +1126,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             public void run(TLObject response, TLRPC.TL_error error) {
                 if (newMsgObj != null) {
                     if (error == null) {
+                        final String attachPath = newMsgObj.messageOwner.attachPath;
                         final TLRPC.messages_SentEncryptedMessage res = (TLRPC.messages_SentEncryptedMessage) response;
                         newMsgObj.messageOwner.date = res.date;
                         if (res.file instanceof TLRPC.TL_encryptedFile) {
@@ -1115,6 +1142,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                         newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
                                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageReceivedByServer, newMsgObj.messageOwner.id, newMsgObj.messageOwner.id, newMsgObj);
                                         processSentMessage(newMsgObj.messageOwner.id);
+                                        if (newMsgObj.messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
+                                            stopVideoService(attachPath);
+                                        }
                                     }
                                 });
                             }
@@ -1127,6 +1157,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                 newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, newMsgObj.messageOwner.id);
                                 processSentMessage(newMsgObj.messageOwner.id);
+                                if (newMsgObj.messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
+                                    stopVideoService(newMsgObj.messageOwner.attachPath);
+                                }
                             }
                         });
                     }
@@ -1185,11 +1218,21 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         size2.location = size.location;
                     }
                 }
+
                 sentMessage.message = newMsg.message;
-                sentMessage.attachPath = newMsg.attachPath;
                 newMsg.media.video.dc_id = sentMessage.media.video.dc_id;
                 newMsg.media.video.id = sentMessage.media.video.id;
                 newMsg.media.video.access_hash = sentMessage.media.video.access_hash;
+
+                if (newMsg.attachPath != null && newMsg.attachPath.startsWith(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE).getAbsolutePath())) {
+                    File cacheFile = new File(newMsg.attachPath);
+                    File cacheFile2 = FileLoader.getPathToAttach(newMsg.media.video);
+                    if (!cacheFile.renameTo(cacheFile2)) {
+                        sentMessage.attachPath = newMsg.attachPath;
+                    }
+                } else {
+                    sentMessage.attachPath = newMsg.attachPath;
+                }
             } else if (sentMessage.media instanceof TLRPC.TL_messageMediaDocument && sentMessage.media.document != null && newMsg.media instanceof TLRPC.TL_messageMediaDocument && newMsg.media.document != null) {
                 MessagesStorage.getInstance().putSentFile(originalPath, sentMessage.media.document, 1);
 
@@ -1206,37 +1249,39 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         size2.location = size.location;
                     }
                 }
+
+                newMsg.media.document.dc_id = sentMessage.media.document.dc_id;
+                newMsg.media.document.id = sentMessage.media.document.id;
+                newMsg.media.document.access_hash = sentMessage.media.document.access_hash;
+
                 if (newMsg.attachPath != null && newMsg.attachPath.startsWith(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE).getAbsolutePath())) {
                     File cacheFile = new File(newMsg.attachPath);
                     File cacheFile2 = FileLoader.getPathToAttach(sentMessage.media.document);
-                    boolean result = cacheFile.renameTo(cacheFile2);
-                    if (result) {
-                        newMsg.attachPath = null;
-                    } else {
+                    if (!cacheFile.renameTo(cacheFile2)) {
                         sentMessage.attachPath = newMsg.attachPath;
                         sentMessage.message = newMsg.message;
+                    } else {
+                        newMsg.attachPath = "";
                     }
                 } else {
                     sentMessage.attachPath = newMsg.attachPath;
                     sentMessage.message = newMsg.message;
                 }
-                newMsg.media.document.dc_id = sentMessage.media.document.dc_id;
-                newMsg.media.document.id = sentMessage.media.document.id;
-                newMsg.media.document.access_hash = sentMessage.media.document.access_hash;
             } else if (sentMessage.media instanceof TLRPC.TL_messageMediaAudio && sentMessage.media.audio != null && newMsg.media instanceof TLRPC.TL_messageMediaAudio && newMsg.media.audio != null) {
                 sentMessage.message = newMsg.message;
-                sentMessage.attachPath = newMsg.attachPath;
 
                 String fileName = newMsg.media.audio.dc_id + "_" + newMsg.media.audio.id + ".ogg";
+                newMsg.media.audio.dc_id = sentMessage.media.audio.dc_id;
+                newMsg.media.audio.id = sentMessage.media.audio.id;
+                newMsg.media.audio.access_hash = sentMessage.media.audio.access_hash;
                 String fileName2 = sentMessage.media.audio.dc_id + "_" + sentMessage.media.audio.id + ".ogg";
                 if (!fileName.equals(fileName2)) {
                     File cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
                     File cacheFile2 = FileLoader.getPathToAttach(sentMessage.media.audio);
-                    cacheFile.renameTo(cacheFile2);
+                    if (!cacheFile.renameTo(cacheFile2)) {
+                        sentMessage.attachPath = newMsg.attachPath;
+                    }
                 }
-                newMsg.media.audio.dc_id = sentMessage.media.audio.dc_id;
-                newMsg.media.audio.id = sentMessage.media.audio.id;
-                newMsg.media.audio.access_hash = sentMessage.media.audio.access_hash;
             }
         } else if (file != null) {
             if (newMsg.media instanceof TLRPC.TL_messageMediaPhoto && newMsg.media.photo != null) {
@@ -1252,7 +1297,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 String fileName2 = size.location.volume_id + "_" + size.location.local_id;
                 File cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName + ".jpg");
                 File cacheFile2 = FileLoader.getPathToAttach(size);
-                boolean result = cacheFile.renameTo(cacheFile2);
+                cacheFile.renameTo(cacheFile2);
                 ImageLoader.getInstance().replaceImageInCache(fileName, fileName2);
                 ArrayList<TLRPC.Message> arr = new ArrayList<TLRPC.Message>();
                 arr.add(newMsg);
@@ -1276,6 +1321,15 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 newMsg.media.video.key = decryptedMessage.media.key;
                 newMsg.media.video.iv = decryptedMessage.media.iv;
                 newMsg.media.video.mime_type = video.mime_type;
+
+                if (newMsg.attachPath != null && newMsg.attachPath.startsWith(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE).getAbsolutePath())) {
+                    File cacheFile = new File(newMsg.attachPath);
+                    File cacheFile2 = FileLoader.getPathToAttach(newMsg.media.video);
+                    if (cacheFile.renameTo(cacheFile2)) {
+                        newMsg.attachPath = "";
+                    }
+                }
+
                 ArrayList<TLRPC.Message> arr = new ArrayList<TLRPC.Message>();
                 arr.add(newMsg);
                 MessagesStorage.getInstance().putMessages(arr, false, true, false, 0);
@@ -1299,7 +1353,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 if (newMsg.attachPath != null && newMsg.attachPath.startsWith(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE).getAbsolutePath())) {
                     File cacheFile = new File(newMsg.attachPath);
                     File cacheFile2 = FileLoader.getPathToAttach(newMsg.media.document);
-                    cacheFile.renameTo(cacheFile2);
+                    if (cacheFile.renameTo(cacheFile2)) {
+                        newMsg.attachPath = "";
+                    }
                 }
 
                 ArrayList<TLRPC.Message> arr = new ArrayList<TLRPC.Message>();
@@ -1326,7 +1382,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 if (!fileName.equals(fileName2)) {
                     File cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
                     File cacheFile2 = FileLoader.getPathToAttach(newMsg.media.audio);
-                    cacheFile.renameTo(cacheFile2);
+                    if (cacheFile.renameTo(cacheFile2)) {
+                        newMsg.attachPath = "";
+                    }
                 }
 
                 ArrayList<TLRPC.Message> arr = new ArrayList<TLRPC.Message>();
@@ -1485,94 +1543,38 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         });
     }
 
-    /*
-    private void startConvert() throws Exception {
-        IsoFile isoFile = new IsoFile(videoPath);
-        TrackBox trackBox = (TrackBox) Path.getPath(isoFile, "/moov/trak/mdia/minf/stbl/stsd/avc1/../../../../../");
-        AvcConfigurationBox avcConfigurationBox = (AvcConfigurationBox) Path.getPath(trackBox, "mdia/minf/stbl/stsd/avc1/avcC");
-        avcConfigurationBox.parseDetails();
-
-        Movie movie = MovieCreator.build(videoPath);
-
-        List<Track> tracks = movie.getTracks();
-        movie.setTracks(new LinkedList<Track>());
-
-        double startTime = 0;
-        double endTime = 0;
-
-        for (Track track : tracks) {
-            if (track.getSyncSamples() != null && track.getSyncSamples().length > 0) {
-                double duration = (double) track.getDuration() / (double) track.getTrackMetaData().getTimescale();
-                startTime = correctTimeToSyncSample(track, videoTimelineView.getLeftProgress() * duration, false);
-                endTime = videoTimelineView.getRightProgress() * duration;
-                break;
-            }
+    public TLRPC.TL_photo generatePhotoSizes(String path, Uri imageUri) {
+        long time = System.currentTimeMillis();
+        Bitmap bitmap = ImageLoader.loadBitmap(path, imageUri, AndroidUtilities.getPhotoSize(), AndroidUtilities.getPhotoSize());
+        ArrayList<TLRPC.PhotoSize> sizes = new ArrayList<TLRPC.PhotoSize>();
+        TLRPC.PhotoSize size = ImageLoader.scaleAndSaveImage(bitmap, 90, 90, 55, true);
+        if (size != null) {
+            size.type = "s";
+            sizes.add(size);
         }
-
-        for (Track track : tracks) {
-            long currentSample = 0;
-            double currentTime = 0;
-            double lastTime = 0;
-            long startSample = 0;
-            long endSample = -1;
-
-            for (int i = 0; i < track.getSampleDurations().length; i++) {
-                long delta = track.getSampleDurations()[i];
-                if (currentTime > lastTime && currentTime <= startTime) {
-                    startSample = currentSample;
-                }
-                if (currentTime > lastTime && currentTime <= endTime) {
-                    endSample = currentSample;
-                }
-                lastTime = currentTime;
-                currentTime += (double) delta / (double) track.getTrackMetaData().getTimescale();
-                currentSample++;
+        size = ImageLoader.scaleAndSaveImage(bitmap, AndroidUtilities.getPhotoSize(), AndroidUtilities.getPhotoSize(), 80, false);
+        if (size != null) {
+            if (AndroidUtilities.getPhotoSize() == 800) {
+                size.type = "x";
+            } else {
+                size.type = "y";
             }
-            movie.addTrack(new CroppedTrack(track, startSample, endSample));
+            sizes.add(size);
         }
-        Container out = new DefaultMp4Builder().build(movie);
-
-        String fileName = Integer.MIN_VALUE + "_" + UserConfig.lastLocalId + ".mp4";
-        UserConfig.lastLocalId--;
-        File cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
-        UserConfig.saveConfig(false);
-
-        FileOutputStream fos = new FileOutputStream(cacheFile);
-        FileChannel fc = fos.getChannel();
-        out.writeContainer(fc);
-
-        fc.close();
-        fos.close();
-        if (delegate != null) {
-            //delegate.didFinishedVideoConverting(cacheFile.getAbsolutePath());
-            finishFragment();
+        if (bitmap != null) {
+            bitmap.recycle();
+        }
+        if (sizes.isEmpty()) {
+            return null;
+        } else {
+            UserConfig.saveConfig(false);
+            TLRPC.TL_photo photo = new TLRPC.TL_photo();
+            photo.user_id = UserConfig.getClientUserId();
+            photo.date = ConnectionsManager.getInstance().getCurrentTime();
+            photo.sizes = sizes;
+            photo.caption = "";
+            photo.geo = new TLRPC.TL_geoPointEmpty();
+            return photo;
         }
     }
-
-    private static double correctTimeToSyncSample(Track track, double cutHere, boolean next) {
-        double[] timeOfSyncSamples = new double[track.getSyncSamples().length];
-        long currentSample = 0;
-        double currentTime = 0;
-        for (int i = 0; i < track.getSampleDurations().length; i++) {
-            long delta = track.getSampleDurations()[i];
-            if (Arrays.binarySearch(track.getSyncSamples(), currentSample + 1) >= 0) {
-                timeOfSyncSamples[Arrays.binarySearch(track.getSyncSamples(), currentSample + 1)] = currentTime;
-            }
-            currentTime += (double) delta / (double) track.getTrackMetaData().getTimescale();
-            currentSample++;
-        }
-        double previous = 0;
-        for (double timeOfSyncSample : timeOfSyncSamples) {
-            if (timeOfSyncSample > cutHere) {
-                if (next) {
-                    return timeOfSyncSample;
-                } else {
-                    return previous;
-                }
-            }
-            previous = timeOfSyncSample;
-        }
-        return timeOfSyncSamples[timeOfSyncSamples.length - 1];
-    }
-     */
 }

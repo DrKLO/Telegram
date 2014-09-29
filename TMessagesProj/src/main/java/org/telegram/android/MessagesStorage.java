@@ -2384,12 +2384,24 @@ public class MessagesStorage {
         }
     }
 
-    public void removeFromDownloadQueue(final long id, final int type) {
+    public void removeFromDownloadQueue(final long id, final int type, final boolean move) {
         storageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
                 try {
-                    database.executeFast(String.format(Locale.US, "DELETE FROM download_queue WHERE uid = %d AND type = %d", id, type)).stepThis().dispose();
+                    if (move) {
+                        int minDate = -1;
+                        SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT min(date) FROM download_queue WHERE type = %d", type));
+                        if (cursor.next()) {
+                            minDate = cursor.intValue(0);
+                        }
+                        cursor.dispose();
+                        if (minDate != -1) {
+                            database.executeFast(String.format(Locale.US, "UPDATE download_queue SET date = %d WHERE uid = %d AND type = %d", minDate - 1, id, type)).stepThis().dispose();
+                        }
+                    } else {
+                        database.executeFast(String.format(Locale.US, "DELETE FROM download_queue WHERE uid = %d AND type = %d", id, type)).stepThis().dispose();
+                    }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
@@ -2588,7 +2600,7 @@ public class MessagesStorage {
                             }
                         } else if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
                             if ((downloadMask & MediaController.AUTODOWNLOAD_MASK_PHOTO) != 0) {
-                                TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(message.media.photo.sizes, 800, 800);
+                                TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(message.media.photo.sizes, AndroidUtilities.getPhotoSize(), AndroidUtilities.getPhotoSize());
                                 if (photoSize != null) {
                                     id = message.media.photo.id;
                                     type = MediaController.AUTODOWNLOAD_MASK_PHOTO;

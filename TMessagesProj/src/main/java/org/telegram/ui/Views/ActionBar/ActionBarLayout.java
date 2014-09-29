@@ -568,11 +568,19 @@ public class ActionBarLayout extends FrameLayout {
     }
 
     public boolean addFragmentToStack(BaseFragment fragment) {
+        return addFragmentToStack(fragment, -1);
+    }
+
+    public boolean addFragmentToStack(BaseFragment fragment, int position) {
         if (delegate != null && !delegate.needAddFragmentToStack(fragment, this) || !fragment.onFragmentCreate()) {
             return false;
         }
         fragment.setParentLayout(this);
-        fragmentsStack.add(fragment);
+        if (position == -1) {
+            fragmentsStack.add(fragment);
+        } else {
+            fragmentsStack.add(position, fragment);
+        }
         return true;
     }
 

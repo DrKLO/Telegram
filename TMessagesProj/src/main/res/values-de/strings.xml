@@ -11,7 +11,7 @@
 
     <!--signin view-->
     <string name="YourPhone">Dein Telefon</string>
-    <string name="StartText">Bitte bestätige deine Landesvorwahl und deine Telefonnummer.</string>
+    <string name="StartText">Bitte Landeskennzahl und\nTelefonnummer bestätigen.</string>
     <string name="ChooseCountry">Wähle ein Land</string>
     <string name="WrongCountry">Falsche Landesvorwahl</string>
 
@@ -42,7 +42,7 @@
     <string name="Yesterday">gestern</string>
     <string name="NoResult">Keine Ergebnisse</string>
     <string name="NoChats">Noch keine Chats…</string>
-    <string name="NoChatsHelp">Beginne Telegram zu nutzen, indem du\neine neue Nachricht erstellst (rechte obere Ecke)\noder deine Kontakte aufrufst.</string>
+    <string name="NoChatsHelp">Tippe rechts oben für deine erste\nChatnachricht, oder auf den Menüknopf\num die restlichen Optionen zu öffnen.</string>
     <string name="WaitingForNetwork">Warte auf Netzwerk...</string>
     <string name="Connecting">Verbinde…</string>
     <string name="Updating">Aktualisiere…</string>
@@ -219,7 +219,7 @@
     <string name="ShortMessageLifetime1h">1 Std.</string>
     <string name="ShortMessageLifetime1d">1 Tag</string>
     <string name="ShortMessageLifetime1w">1 Woche</string>
-    <string name="EncryptionKeyDescription">Dieses Bild ist eine Visualisierung des geheimen Schlüssels für den geheimen Chat mit <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Wenn dieses Bild auf <![CDATA[<b>]]>%2$s\s<![CDATA[</b>]]> Telefon genau so aussieht, ist euer Chat zu 200%% sicher.<![CDATA[<br><br>]]>Erfahre mehr über die Sicherheit auf telegram.org</string>
+    <string name="EncryptionKeyDescription">Das ist eine Darstellung des Schlüssels für den Geheimen Chat mit <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Wenn dieses Bild auf <![CDATA[<b>]]>%2$s\s<![CDATA[</b>]]>s Telefon genau so aussieht, ist euer Chat zu 200%% sicher.<![CDATA[<br><br>]]>Erfahre mehr auf telegram.org</string>
 
     <!--settings view-->
     <string name="ResetNotificationsText">Alle Einstellungen für Mitteilungen zurücksetzen</string>
@@ -317,7 +317,8 @@
     <string name="EditVideo">Video bearbeiten</string>
     <string name="OriginalVideo">Originalvideo</string>
     <string name="EditedVideo">Bearbeitetes Video</string>
-    <string name="SendingVideo">Sending video...</string>
+    <string name="SendingVideo">Sende Video...</string>
+    <string name="CompressVideo">Video komprimieren</string>
 
     <!--button titles-->
     <string name="Next">Weiter</string>
@@ -405,12 +406,12 @@
     <string name="Page5Title">Leistungsstark</string>
     <string name="Page6Title">Cloud-Basiert</string>
     <string name="Page7Title">Vertraulich</string>
-    <string name="Page1Message">Willkommen im Zeitalter der sicheren und schnellen Kommunikation.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> stellt Nachrichten schneller zu als andere Anwendungen</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> ist für immer kostenlos. Keine Werbung. Keine Abo-Gebühr.</string>
+    <string name="Page1Message">Die <![CDATA[<b>schnellste</b>]]> Messaging App der Welt. <![CDATA[<b>Kostenlos</b>]]> und <![CDATA[<b>sicher</b>]]>.</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> stellt Nachrichten schneller zu als alle andere Anwendungen</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> ist für immer kostenlos. Keine Werbung. <![CDATA[<br/>]]>Keine Abo-Gebühr.</string>
     <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> schützt deine Nachrichten vor Hacker-Angriffen</string>
     <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> unterstützt unbegrenzt große Chats und Mediendateien</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lässt sich von verschiedenen Geräten gleichzeitig nutzen</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> kannst du vom Handy, Tablet oder auch Computer syncronisiert benutzen</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]>-Nachrichten sind stark verschlüsselt und können sich selbst zerstören</string>
     <string name="StartMessaging">Jetzt beginnen</string>
 

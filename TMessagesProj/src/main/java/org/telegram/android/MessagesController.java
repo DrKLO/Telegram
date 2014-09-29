@@ -1645,37 +1645,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         });
     }
 
-    public TLRPC.TL_photo generatePhotoSizes(String path, Uri imageUri) {
-        long time = System.currentTimeMillis();
-        Bitmap bitmap = ImageLoader.loadBitmap(path, imageUri, 800, 800);
-        ArrayList<TLRPC.PhotoSize> sizes = new ArrayList<TLRPC.PhotoSize>();
-        TLRPC.PhotoSize size = ImageLoader.scaleAndSaveImage(bitmap, 90, 90, 55, true);
-        if (size != null) {
-            size.type = "s";
-            sizes.add(size);
-        }
-        size = ImageLoader.scaleAndSaveImage(bitmap, 800, 800, 80, false);
-        if (size != null) {
-            size.type = "x";
-            sizes.add(size);
-        }
-        if (bitmap != null) {
-            bitmap.recycle();
-        }
-        if (sizes.isEmpty()) {
-            return null;
-        } else {
-            UserConfig.saveConfig(false);
-            TLRPC.TL_photo photo = new TLRPC.TL_photo();
-            photo.user_id = UserConfig.getClientUserId();
-            photo.date = ConnectionsManager.getInstance().getCurrentTime();
-            photo.sizes = sizes;
-            photo.caption = "";
-            photo.geo = new TLRPC.TL_geoPointEmpty();
-            return photo;
-        }
-    }
-
     public void markDialogAsRead(final long dialog_id, final int max_id, final int max_positive_id, final int offset, final int max_date, final boolean was, final boolean popup) {
         int lower_part = (int)dialog_id;
         int high_id = (int)(dialog_id >> 32);
