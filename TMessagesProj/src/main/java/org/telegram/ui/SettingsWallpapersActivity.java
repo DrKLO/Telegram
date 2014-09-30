@@ -184,11 +184,11 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                                             takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
                                             currentPicturePath = image.getAbsolutePath();
                                         }
-                                        getParentActivity().startActivityForResult(takePictureIntent, 10);
+                                        startActivityForResult(takePictureIntent, 10);
                                     } else if (i == 1) {
                                         Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
                                         photoPickerIntent.setType("image/*");
-                                        getParentActivity().startActivityForResult(photoPickerIntent, 11);
+                                        startActivityForResult(photoPickerIntent, 11);
                                     }
                                 } catch (Exception e) {
                                     FileLog.e("tmessages", e);

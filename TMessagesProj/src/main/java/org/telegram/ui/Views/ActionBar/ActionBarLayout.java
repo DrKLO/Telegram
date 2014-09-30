@@ -418,8 +418,7 @@ public class ActionBarLayout extends FrameLayout {
     }
 
     private void fixLayout() {
-        ViewTreeObserver obs = getViewTreeObserver();
-        obs.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+        getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
                 needLayout();
@@ -790,6 +789,9 @@ public class ActionBarLayout extends FrameLayout {
     }
 
     public void startActivityForResult(final Intent intent, final int requestCode) {
+        if (parentActivity == null) {
+            return;
+        }
         if (transitionAnimationInProgress) {
             if (onCloseAnimationEndRunnable != null) {
                 closeAnimation.cancel();

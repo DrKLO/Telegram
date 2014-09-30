@@ -4,17 +4,14 @@
 
 <resources>
     <string name="AppName">Telegram</string>
-
     <string name="LanguageName">العربية</string>
     <string name="LanguageNameInEnglish">Arabic</string>
     <string name="LanguageCode">ar</string>
-
     <!--signin view-->
     <string name="YourPhone">رقم هاتفك المحمول</string>
     <string name="StartText">يرجى التحقق من صحة رمز بلدك وإدخال رقم هاتفك المحمول</string>
     <string name="ChooseCountry">اختر دولة</string>
     <string name="WrongCountry">رمز البلد خاطئ</string>
-
     <!--code enter view-->
     <string name="YourCode">رمز التفعيل</string>
     <string name="SentSmsCode">تم إرسال رسالة قصيرة تحتوي على رمز التفعيل الخاص بك</string>
@@ -23,7 +20,6 @@
     <string name="Code">رمز التفعيل</string>
     <string name="WrongNumber">الرقم خاطئ؟</string>
     <string name="DidNotGetTheCode">هل استقبلت الرمز؟</string>
-
     <!--signup view-->
     <string name="YourName">اسمك</string>
     <string name="RegisterText">اختر الاسم الأول واسم العائلة</string>
@@ -31,7 +27,6 @@
     <string name="FirstName">الاسم الأول</string>
     <string name="LastName">اسم العائلة</string>
     <string name="CancelRegistration">إلغاء التسجيل</string>
-
     <!--chats view-->
     <string name="Chats">الدردشات</string>
     <string name="Search">بحث</string>
@@ -42,7 +37,7 @@
     <string name="Yesterday">أمس</string>
     <string name="NoResult">لا توجد نتائج</string>
     <string name="NoChats">...لا توجد محادثات بعد</string>
-    <string name="NoChatsHelp">إبدأ المراسلة بالضغط على\nأيقونة النقاط في أعلى يمين الشاشة\nأو اذهب لقسم جهات الاتصال.</string>
+    <string name="NoChatsHelp">إبدأ المراسلة بالضغط على\nأيقونة النقاط في أعلى يمين الشاشة\nأو اضغط على زر القائمة الرئيسية لخيارات أكثر.</string>
     <string name="WaitingForNetwork">في إنتظار الشبكة...</string>
     <string name="Connecting">جاري الاتصال...</string>
     <string name="Updating">جاري التحديث...</string>
@@ -56,7 +51,6 @@
     <string name="DeleteChat">حذف وخروج</string>
     <string name="HiddenName">الاسم مخفي</string>
     <string name="SelectChat">اختر محادثة</string>
-
     <!--broadcasts-->
     <string name="BroadcastList">قائمة الرسالة الجماعية</string>
     <string name="NewBroadcastList">قائمة رسالة جماعية جديدة</string>
@@ -64,7 +58,6 @@
     <string name="YouCreatedBroadcastList">أنت قمت بإنشاء قائمة رسالة جماعية</string>
     <string name="AddRecipient">إضافة مستلم</string>
     <string name="KickFromBroadcast">إزالة من قائمة الرسالة الجماعية</string>
-
     <!--documents view-->
     <string name="SelectFile">اختر ملف</string>
     <string name="FreeOfTotal">متاح %1$s من %2$s</string>
@@ -78,7 +71,6 @@
     <string name="ExternalStorage">الذاكرة الخارجية</string>
     <string name="SystemRoot">جذر النظام</string>
     <string name="SdCard">بطاقة الذاكرة</string>
-
     <!--chat view-->
     <string name="Invisible">مخفي</string>
     <string name="Typing">جاري الكتابة… </string>
@@ -119,7 +111,6 @@
     <string name="SaveToDownloads">حفظ في الجهاز</string>
     <string name="ApplyLocalizationFile">تطبيق ملف التعريب</string>
     <string name="UnsupportedAttachment">المرفق غير مدعوم</string>
-
     <!--notification-->
     <string name="EncryptedChatRequested">تم طلب محادثة سرية</string>
     <string name="EncryptedChatAccepted">تم بدء المحادثة السرية</string>
@@ -161,7 +152,6 @@
     <string name="NotificationUnrecognizedDevice">%1$s,\nتم تسجيل الدخول لحسابك من جهاز جديد يوم %2$s\n\nالجهاز: %3$s\nالموقع: %4$s\n\nإذا لم يكن أنت من سجل الدخول، يمكنك الذهاب للإعدادات ثم تسجيل الخروج من كافة الأجهزة الأخرى.\n\nشكرًا,\nفريق عمل تيليجرام</string>
     <string name="NotificationContactNewPhoto">%1$s قام بتغيير صورته الشخصية</string>
     <string name="Reply">الرد</string>
-
     <!--contacts view-->
     <string name="SelectContact">اختر جهة اتصال</string>
     <string name="NoContacts">لا توجد جهات اتصال بعد</string>
@@ -174,14 +164,12 @@
     <string name="LastSeen">آخر ظهور</string>
     <string name="LastSeenDate">آخر ظهور</string>
     <string name="InviteFriends">قم بدعوة صديق</string>
-
     <!--group create view-->
     <string name="SendMessageTo">إرسال الرسالة إلى...</string>
     <string name="EnterGroupNamePlaceholder">أدخل اسم للمجموعة</string>
     <string name="GroupName">اسم المجموعة</string>
     <string name="AllContacts">جميع جهات الاتصال</string>
     <string name="MembersCount">%1$d/%2$d عضو</string>
-
     <!--group info view-->
     <string name="EnterGroupNameTitle">أدخل سم للمجموعة</string>
     <string name="SharedMedia">عدد الوسائط المشتركة</string>
@@ -192,7 +180,6 @@
     <string name="DeleteAndExit">مغادرة المجموعة وحذفها</string>
     <string name="Notifications">الإشعارات</string>
     <string name="KickFromGroup">إخراج من المجموعة</string>
-
     <!--contact info view-->
     <string name="ShareContact">مشاركة</string>
     <string name="AddContact">إضافة</string>
@@ -220,7 +207,6 @@
     <string name="ShortMessageLifetime1d">يوم</string>
     <string name="ShortMessageLifetime1w">أسبوع</string>
     <string name="EncryptionKeyDescription">هذه الصورة هي تصور لمفتاح التشفير لهذه المحادثة السرية مع <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>إذا كانت مطابقة للصورة التي في جهاز <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, فمحادثتكم آمنة ٢٠٠٪.<![CDATA[<br><br>]]>للمزيد نرجو الذهاب إلى telegram.org</string>
-
     <!--settings view-->
     <string name="ResetNotificationsText">تم تعيين كافة الإشعارات افتراضيا</string>
     <string name="TextSize">حجم نص الرسائل</string>
@@ -290,11 +276,10 @@
     <string name="WhenConnectedOnWiFi">عند الاتصال بالشبكة اللاسلكية</string>
     <string name="WhenRoaming">عند تواجدك خارج البلاد</string>
     <string name="NoMediaAutoDownload">لا يوجد وسائط</string>
-
+    <string name="SaveToGallerySettings">حفظ في الجهاز</string>
     <!--media view-->
     <string name="NoMedia">لا توجد وسائط بعد</string>
     <string name="CancelDownload">إلغاء التنزيل</string>
-
     <!--map view-->
     <string name="MyLocation">موقعي</string>
     <string name="Map">الخريطة</string>
@@ -304,7 +289,6 @@
     <string name="KMetersAway">كيلومتر يبعد</string>
     <string name="SendLocation">أرسل موقعك</string>
     <string name="ShareLocation">مشاركة الموقع</string>
-
     <!--photo gallery view-->
     <string name="ShowAllMedia">عرض كافة الوسائط</string>
     <string name="SaveToGallery">حفظ في الجهاز</string>
@@ -312,14 +296,12 @@
     <string name="Gallery">الألبوم</string>
     <string name="AllPhotos">جميع الصور</string>
     <string name="NoPhotos">لا توجد صور حتى الآن</string>
-
     <!--edit video view-->
     <string name="EditVideo">تحرير الفيديو</string>
     <string name="OriginalVideo">الفيديو الأصلي</string>
     <string name="EditedVideo">تم تحرير الفيديو</string>
-    <string name="SendingVideo">Sending video...</string>
-    <string name="CompressVideo">Compress Video</string>
-
+    <string name="SendingVideo">جاري إرسال المقطع المرئي...</string>
+    <string name="CompressVideo">اضغط المقطع المرئي</string>
     <!--button titles-->
     <string name="Next">التالي</string>
     <string name="Back">رجوع</string>
@@ -340,7 +322,6 @@
     <string name="OpenPhoto">فتح الصورة</string>
     <string name="Set">تعيين</string>
     <string name="OK">موافق</string>
-
     <!--messages-->
     <string name="ActionKickUser">un1 أزال un2</string>
     <string name="ActionLeftUser">غادر المجموعة العضو un1</string>
@@ -358,7 +339,7 @@
     <string name="ActionYouCreateGroup">لقد قمت بإنشاء المجموعة</string>
     <string name="ActionKickUserYou">un1 قام بإخراجك</string>
     <string name="ActionAddUserYou">un1 قام بإضافتك</string>
-    <string name="UnsuppotedMedia">نسخة تيليجرام الموجودة لديك لا تدعم هذه الرسالة. الرجاء التحديث لأحدث نسخة:\nhttp://telegram.org/update</string>
+    <string name="UnsuppotedMedia">نسخة تيليجرام الموجودة لديك لا تدعم هذه الرسالة. الرجاء التحديث لأحدث نسخة: http://telegram.org/update</string>
     <string name="AttachPhoto">صورة</string>
     <string name="AttachVideo">مقطع مرئي</string>
     <string name="AttachLocation">موقع</string>
@@ -368,7 +349,6 @@
     <string name="FromYou">أنت</string>
     <string name="ActionTakeScreenshootYou">أنت أخذت لقطة للشاشة !</string>
     <string name="ActionTakeScreenshoot">un1 أخذ لقطة للشاشة !</string>
-
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">رقم الهاتف غير صحيح</string>
     <string name="CodeExpired">انتهت صلاحية الرمز الخاص بك، يرجى تسجيل الدخول مرة أخرى</string>
@@ -397,7 +377,6 @@
     <string name="AreYouSureDeleteContact">هل أنت متأكد من رغبتك في حذف جهة الاتصال هذه؟</string>
     <string name="AreYouSureSecretChat">هل أنت متأكد من أنك تريد بدء محادثة سرية؟</string>
     <string name="ForwardFromMyName">أعد الإرسال باستخدام اسمي</string>
-
     <!--Intro view-->
     <string name="Page1Title">تيليجرام</string>
     <string name="Page2Title">سريع</string>
@@ -406,15 +385,14 @@
     <string name="Page5Title">قوي</string>
     <string name="Page6Title">مرتبط بالسحاب</string>
     <string name="Page7Title">خصوصي</string>
-    <string name="Page1Message">مرحبًا بك في عصر جديد من المراسلة</string>
-    <string name="Page2Message"><![CDATA[<b>تيليجرام</b>]]> يوصل الرسائل بسرعة أفضل من أي تطبيق آخر.</string>
+    <string name="Page1Message">أسرع تطبيق مراسلة في العالم.<![CDATA[<br/>]]>كما أنه مجاني و آمن.</string>
+    <string name="Page2Message"><![CDATA[<b>تيليجرام</b>]]> يوصل الرسائل أسرع من أي تطبيق آخر.</string>
     <string name="Page3Message"><![CDATA[<b>تيليجرام</b>]]> مجاني للأبد. بدون أية إعلانات. وبدون رسوم إشتراك.</string>
     <string name="Page4Message"><![CDATA[<b>تيليجرام</b>]]>  يحمي الرسائل الخاصة بك من هجمات المخترقين.</string>
     <string name="Page5Message"><![CDATA[<b>تيليجرام</b>]]>  لا يفرض عليك حدود لحجم الوسائط والمحادثات.</string>
     <string name="Page6Message"><![CDATA[<b>تيليجرام</b>]]> يمكنك الوصول إلى الرسائل الخاصة بك من أجهزة متعددة.</string>
     <string name="Page7Message"><![CDATA[<b>تيليجرام</b>]]> الرسائل مشفرة بشكل قوي وتستطيع تدمير ذاتها</string>
     <string name="StartMessaging">إبدأ المراسلة</string>
-
     <!--plurals-->
     <string name="Members_zero">لا يوجد أعضاء</string>
     <string name="Members_one">%1$d عضو</string>
@@ -446,7 +424,6 @@
     <string name="FromContacts_few">من %1$d جهات اتصال</string>
     <string name="FromContacts_many">من %1$d جهة اتصال</string>
     <string name="FromContacts_other">من %1$d جهة اتصال</string>
-
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
 </resources>

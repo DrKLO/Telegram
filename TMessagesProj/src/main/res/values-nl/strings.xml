@@ -4,17 +4,14 @@
 
 <resources>
     <string name="AppName">Telegram</string>
-
     <string name="LanguageName">Nederlands</string>
     <string name="LanguageNameInEnglish">Dutch</string>
     <string name="LanguageCode">nl</string>
-
     <!--signin view-->
     <string name="YourPhone">Je telefoon</string>
     <string name="StartText">Bevestig je landcode\nen voer je telefoonnummer in.</string>
     <string name="ChooseCountry">Kies een land</string>
     <string name="WrongCountry">Onjuist landcode</string>
-
     <!--code enter view-->
     <string name="YourCode">Je code</string>
     <string name="SentSmsCode">We hebben een sms met een activatiecode verzonden naar je telefoon</string>
@@ -23,7 +20,6 @@
     <string name="Code">Code</string>
     <string name="WrongNumber">Verkeerd nummer?</string>
     <string name="DidNotGetTheCode">Geen code ontvangen?</string>
-
     <!--signup view-->
     <string name="YourName">Je naam</string>
     <string name="RegisterText">Voer je voor- en achternaam in</string>
@@ -31,7 +27,6 @@
     <string name="FirstName">Voornaam (verplicht)</string>
     <string name="LastName">Achternaam (optioneel)</string>
     <string name="CancelRegistration">Registratie annuleren</string>
-
     <!--chats view-->
     <string name="Chats">Gesprekken</string>
     <string name="Search">Zoeken</string>
@@ -56,7 +51,6 @@
     <string name="DeleteChat">Verwijderen en verlaten</string>
     <string name="HiddenName">Verborgen naam</string>
     <string name="SelectChat">Kies een gesprek</string>
-
     <!--broadcasts-->
     <string name="BroadcastList">Verzendlijst</string>
     <string name="NewBroadcastList">Nieuwe verzendlijst</string>
@@ -64,7 +58,6 @@
     <string name="YouCreatedBroadcastList">Je hebt een verzendlijst gemaakt</string>
     <string name="AddRecipient">Ontvanger toevoegen</string>
     <string name="KickFromBroadcast">Verwijder van verzendlijst</string>
-
     <!--documents view-->
     <string name="SelectFile">Kies een bestand</string>
     <string name="FreeOfTotal">Vrij: %1$s van %2$s</string>
@@ -78,7 +71,6 @@
     <string name="ExternalStorage">Externe opslag</string>
     <string name="SystemRoot">Systeemmap</string>
     <string name="SdCard">SD-kaart</string>
-
     <!--chat view-->
     <string name="Invisible">onzichtbaar</string>
     <string name="Typing">aan het typen…</string>
@@ -119,7 +111,6 @@
     <string name="SaveToDownloads">Opslaan in Downloads</string>
     <string name="ApplyLocalizationFile">Vertaling toepassen</string>
     <string name="UnsupportedAttachment">Bestandstype niet ondersteund</string>
-
     <!--notification-->
     <string name="EncryptedChatRequested">Geheime chat aangevraagd</string>
     <string name="EncryptedChatAccepted">Geheime chat gestart</string>
@@ -161,7 +152,6 @@
     <string name="NotificationUnrecognizedDevice">%1$s,\nEr is op je account ingelogd vanaf een nieuw apparaat op %2$s\n\nApparaat: %3$s\nLocatie: %4$s\n\nAls jij dit niet was, kun je alle sessies beëindigen via Instellingen – Beëindig alle andere sessies.\n\nBedankt,\nHet Telegram-team</string>
     <string name="NotificationContactNewPhoto">%1$s heeft zijn/haar profielfoto gewijzigd</string>
     <string name="Reply">Antwoord</string>
-
     <!--contacts view-->
     <string name="SelectContact">Kies een contact</string>
     <string name="NoContacts">Nog geen contacten</string>
@@ -174,14 +164,12 @@
     <string name="LastSeen">gezien</string>
     <string name="LastSeenDate">gezien</string>
     <string name="InviteFriends">Vrienden uitnodigen</string>
-
     <!--group create view-->
     <string name="SendMessageTo">Bericht verzenden naar…</string>
     <string name="EnterGroupNamePlaceholder">Groepsnaam...</string>
     <string name="GroupName">Groepsnaam</string>
     <string name="AllContacts">ALLE CONTACTEN</string>
     <string name="MembersCount">%1$d/%2$d deelnemers</string>
-
     <!--group info view-->
     <string name="EnterGroupNameTitle">GROEPSNAAM INSTELLEN</string>
     <string name="SharedMedia">Gedeelde media</string>
@@ -192,7 +180,6 @@
     <string name="DeleteAndExit">Groep verwijderen en verlaten</string>
     <string name="Notifications">Meldingen</string>
     <string name="KickFromGroup">Verwijderen uit groep</string>
-
     <!--contact info view-->
     <string name="ShareContact">Delen</string>
     <string name="AddContact">Toevoegen</string>
@@ -219,8 +206,7 @@
     <string name="ShortMessageLifetime1h">1u</string>
     <string name="ShortMessageLifetime1d">1d</string>
     <string name="ShortMessageLifetime1w">1w</string>
-    <string name="EncryptionKeyDescription">Dit is een weergave van de encryptiesleutel voor deze geheime chat met <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.\n\nAls deze afbeelding er bij <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> hetzelfde uitziet, is jullie gesprek 200%% beveiligd.\n\nLees meer op telegram.org.</string>
-
+    <string name="EncryptionKeyDescription">Dit is een weergave van de encryptiesleutel voor deze geheime chat met <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Als deze afbeelding er bij <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> hetzelfde uitziet, is jullie gesprek 200%% beveiligd.<![CDATA[<br><br>]]>Lees meer op telegram.org.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Alle meldingsinstellingen herstellen</string>
     <string name="TextSize">Tekstgrootte berichten</string>
@@ -259,7 +245,7 @@
     <string name="ContactJoined">Contact lid van Telegram</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Taal</string>
-    <string name="AskAQuestionInfo">Houd er rekening mee dat de ondersteuning van Telegram door vrijwilligers wordt gedaan. We doen ons best om zo snel mogelijk te antwoorden, maar het kan even even duren.\n\nBekijk ook de <![CDATA[<a href=\"http://telegram.org/faq#general\">veelgestelde vragen</a>]]>: hier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href=\"http://telegram.org/faq#troubleshooting\">het oplossen van problemen</a>]]>.</string>
+    <string name="AskAQuestionInfo">De ondersteuning van Telegram wordt gedaan door vrijwilligers.<![CDATA[<br>]]>We doen ons best om zo snel mogelijk te antwoorden.<![CDATA[<br><br>]]>Bekijk ook de <![CDATA[<a href=\"http://telegram.org/faq#general\">veelgestelde vragen</a>]]>. Hier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href=\"http://telegram.org/faq#troubleshooting\">het oplossen van problemen</a>]]>.</string>
     <string name="AskButton">Vraag een vrijwilliger</string>
     <string name="TelegramFaq">Veelgestelde vragen</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
@@ -290,11 +276,10 @@
     <string name="WhenConnectedOnWiFi">Bij Wi-Fi-verbinding</string>
     <string name="WhenRoaming">Bij roaming</string>
     <string name="NoMediaAutoDownload">Geen media</string>
-
+    <string name="SaveToGallerySettings">Opslaan in galerij</string>
     <!--media view-->
     <string name="NoMedia">Nog geen media gedeeld</string>
     <string name="CancelDownload">Downloaden annuleren</string>
-
     <!--map view-->
     <string name="MyLocation">Mijn locatie</string>
     <string name="Map">Kaart</string>
@@ -304,7 +289,6 @@
     <string name="KMetersAway">km hiervandaan</string>
     <string name="SendLocation">Locatie verzenden</string>
     <string name="ShareLocation">Locatie delen</string>
-
     <!--photo gallery view-->
     <string name="ShowAllMedia">Alle media weergeven</string>
     <string name="SaveToGallery">Opslaan in galerij</string>
@@ -312,14 +296,12 @@
     <string name="Gallery">Galerij</string>
     <string name="AllPhotos">Alle foto\'s</string>
     <string name="NoPhotos">Nog geen foto\'s</string>
-
     <!--edit video view-->
     <string name="EditVideo">Video bewerken</string>
     <string name="OriginalVideo">Originele video</string>
     <string name="EditedVideo">Bewerkte video</string>
     <string name="SendingVideo">Video versturen...</string>
     <string name="CompressVideo">Video comprimeren</string>
-
     <!--button titles-->
     <string name="Next">Volgende</string>
     <string name="Back">Vorige</string>
@@ -340,7 +322,6 @@
     <string name="OpenPhoto">Foto openen</string>
     <string name="Set">Instellen</string>
     <string name="OK">OK</string>
-
     <!--messages-->
     <string name="ActionKickUser">un1 heeft un2 verwijderd</string>
     <string name="ActionLeftUser">un1 heeft de groep verlaten</string>
@@ -368,7 +349,6 @@
     <string name="FromYou">Jij</string>
     <string name="ActionTakeScreenshootYou">Je hebt een schermafbeelding gemaakt!</string>
     <string name="ActionTakeScreenshoot">un1 maakte een schermafbeeling!</string>
-
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Ongeldig telefoonnummer</string>
     <string name="CodeExpired">Code verlopen. Log opnieuw in.</string>
@@ -397,7 +377,6 @@
     <string name="AreYouSureDeleteContact">Weet je zeker dat je deze contactpersoon wilt verwijderen?</string>
     <string name="AreYouSureSecretChat">Weet je zeker dat je een geheime chat wilt starten?</string>
     <string name="ForwardFromMyName">doorsturen via mijn eigen naam</string>
-
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Snel</string>
@@ -406,15 +385,14 @@
     <string name="Page5Title">Krachtig</string>
     <string name="Page6Title">In de cloud</string>
     <string name="Page7Title">Privé</string>
-    <string name="Page1Message">\'s Werelds <![CDATA[<b>snelste</b>]]> berichtendienst.\nHet is <![CDATA[<b>veilig</b>]]> en <![CDATA[<b>gratis</b>]]>.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> bezorgt berichten\nsneller dan elke andere applicatie.</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is altijd gratis. \nGeen advertenties.\nGeen abonnementskosten.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> beveiligt je berichten\ntegen aanvallen van hackers.</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> beperkt je niet\nin de grootte van je media of gesprekken.</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> biedt toegang tot je berichten\nvanaf meerdere apparaten.</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> berichten zijn sterk versleuteld\nen kunnen zichzelf vernietigen.</string>
+    <string name="Page1Message">\'s Werelds <![CDATA[<b>snelste</b>]]> berichtendienst.<![CDATA[<br/>]]>Het is <![CDATA[<b>gratis</b>]]> en <![CDATA[<b>veilig</b>]]>.</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> bezorgt berichten sneller dan<![CDATA[<br/>]]>elke andere applicatie.</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is altijd gratis. Geen advertenties.<![CDATA[<br/>]]>Geen abonnementskosten.</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> beveiligd je berichten<![CDATA[<br/>]]>tegen aanvallen van hackers.</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> beperkt je niet in de grootte van<![CDATA[<br/>]]>je media of gesprekken.</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> biedt toegang tot je berichten<![CDATA[<br/>]]>vanaf meerdere apparaten.</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> berichten zijn sterk versleuteld<![CDATA[<br/>]]>en kunnen zichzelf vernietigen.</string>
     <string name="StartMessaging">Begin met chatten</string>
-
     <!--plurals-->
     <string name="Members_zero">geen deelnemers</string>
     <string name="Members_one">%1$d deelnemer</string>
@@ -446,7 +424,6 @@
     <string name="FromContacts_few">van %1$d contactpersonen</string>
     <string name="FromContacts_many">van %1$d contactpersonen</string>
     <string name="FromContacts_other">van %1$d contactpersonen</string>
-
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
 </resources>

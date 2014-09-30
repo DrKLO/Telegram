@@ -14,6 +14,7 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.SurfaceTexture;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -99,10 +100,19 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
         @Override
         public void run() {
             boolean playerCheck = false;
-            synchronized (sync) {
-                playerCheck = videoPlayer != null && videoPlayer.isPlaying();
-            }
-            while (playerCheck) {
+
+            while (true) {
+                synchronized (sync) {
+                    try {
+                        playerCheck = videoPlayer != null && videoPlayer.isPlaying();
+                    } catch (Exception e) {
+                        playerCheck = false;
+                        FileLog.e("tmessages", e);
+                    }
+                }
+                if (!playerCheck) {
+                    break;
+                }
                 AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
@@ -176,6 +186,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             videoPlayer.prepareAsync();
         } catch (Exception e) {
             FileLog.e("tmessages", e);
+            return false;
         }
 
         return super.onFragmentCreate();
@@ -357,8 +368,22 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                 parent.removeView(fragmentView);
             }
         }
-        fixLayoutInternal();
         return fragmentView;
+    }
+
+    private void setPlayerSurface() {
+        if (textureView == null || !textureView.isAvailable() || videoPlayer == null) {
+            return;
+        }
+        try {
+            Surface s = new Surface(textureView.getSurfaceTexture());
+            videoPlayer.setSurface(s);
+            if (playerPrepared) {
+                videoPlayer.seekTo((int) (videoTimelineView.getLeftProgress() * videoDuration));
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     @Override
@@ -375,18 +400,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
 
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-        if (videoPlayer == null) {
-            return;
-        }
-        try {
-            Surface s = new Surface(surface);
-            videoPlayer.setSurface(s);
-            if (playerPrepared) {
-                videoPlayer.seekTo((int) (videoTimelineView.getLeftProgress() * videoDuration));
-            }
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
+        setPlayerSurface();
     }
 
     @Override
@@ -515,12 +529,14 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             height = (int) (width / ar);
         }
 
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)textureView.getLayoutParams();
-        layoutParams.width = width;
-        layoutParams.height = height;
-        layoutParams.leftMargin = 0;
-        layoutParams.topMargin = 0;
-        textureView.setLayoutParams(layoutParams);
+        if (textureView != null) {
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) textureView.getLayoutParams();
+            layoutParams.width = width;
+            layoutParams.height = height;
+            layoutParams.leftMargin = 0;
+            layoutParams.topMargin = 0;
+            textureView.setLayoutParams(layoutParams);
+        }
     }
 
     private void fixLayoutInternal() {
@@ -574,17 +590,20 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
     }
 
     private void fixLayout() {
-        if (originalSizeTextView == null) {
+        if (fragmentView == null) {
             return;
         }
-        fragmentView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+        fragmentView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
-            public boolean onPreDraw() {
+            public void onGlobalLayout() {
                 fixLayoutInternal();
                 if (fragmentView != null) {
-                    fragmentView.getViewTreeObserver().removeOnPreDrawListener(this);
+                    if (Build.VERSION.SDK_INT < 16) {
+                        fragmentView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                    } else {
+                        fragmentView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                    }
                 }
-                return true;
             }
         });
     }
@@ -644,9 +663,19 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             List<Box> boxes = Path.getPaths(isoFile, "/moov/trak/");
             TrackHeaderBox trackHeaderBox = null;
             boolean isAvc = true;
+            boolean isMp4A = true;
 
-            Box avc = Path.getPath(isoFile, "/moov/trak/mdia/minf/stbl/stsd/avc1/");
-            if (avc == null) {
+            Box boxTest = Path.getPath(isoFile, "/moov/trak/mdia/minf/stbl/stsd/mp4a/");
+            if (boxTest == null) {
+                isMp4A = false;
+            }
+
+            if (!isMp4A) {
+                return false;
+            }
+
+            boxTest = Path.getPath(isoFile, "/moov/trak/mdia/minf/stbl/stsd/avc1/");
+            if (boxTest == null) {
                 isAvc = false;
             }
 

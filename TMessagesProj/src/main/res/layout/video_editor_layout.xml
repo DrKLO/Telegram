@@ -68,6 +68,7 @@
             android:textColor="#f0f0f0"
             android:textSize="15dp"
             android:layout_marginLeft="13dp"
+            android:layout_marginRight="13dp"
             android:id="@+id/original_title"/>
 
         <TextView
@@ -76,6 +77,7 @@
             android:textColor="#bebebe"
             android:textSize="15dp"
             android:layout_marginLeft="13dp"
+            android:layout_marginRight="13dp"
             android:id="@+id/original_size"/>
 
         <TextView
@@ -85,6 +87,7 @@
             android:textSize="15dp"
             android:layout_marginTop="10dp"
             android:layout_marginLeft="13dp"
+            android:layout_marginRight="13dp"
             android:id="@+id/edited_title"/>
 
         <TextView
@@ -93,12 +96,14 @@
             android:textColor="#bebebe"
             android:textSize="15dp"
             android:layout_marginLeft="13dp"
+            android:layout_marginRight="13dp"
             android:id="@+id/edited_size"/>
 
         <CheckBox
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="8dp"
+            android:layout_marginRight="8dp"
             android:layout_marginTop="6dp"
             android:textColor="#f0f0f0"
             android:textSize="15dp"

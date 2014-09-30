@@ -4,17 +4,14 @@
 
 <resources>
     <string name="AppName">Telegram</string>
-
     <string name="LanguageName">English</string>
     <string name="LanguageNameInEnglish">English</string>
     <string name="LanguageCode">en</string>
-
     <!--signin view-->
     <string name="YourPhone">Your phone</string>
     <string name="StartText">Please confirm your country code\nand enter your phone number.</string>
     <string name="ChooseCountry">Choose a country</string>
     <string name="WrongCountry">Wrong country code</string>
-
     <!--code enter view-->
     <string name="YourCode">Your code</string>
     <string name="SentSmsCode">We\'ve sent an SMS with an activation code to your phone</string>
@@ -23,7 +20,6 @@
     <string name="Code">Code</string>
     <string name="WrongNumber">Wrong number?</string>
     <string name="DidNotGetTheCode">Didn\'t get the code?</string>
-
     <!--signup view-->
     <string name="YourName">Your name</string>
     <string name="RegisterText">Set up your first and last name</string>
@@ -31,7 +27,6 @@
     <string name="FirstName">First name (required)</string>
     <string name="LastName">Last name (optional)</string>
     <string name="CancelRegistration">Cancel registration</string>
-
     <!--chats view-->
     <string name="Chats">Chats</string>
     <string name="Search">Search</string>
@@ -56,7 +51,6 @@
     <string name="DeleteChat">Delete and exit</string>
     <string name="HiddenName">Hidden Name</string>
     <string name="SelectChat">Select Chat</string>
-
     <!--broadcasts-->
     <string name="BroadcastList">Broadcast List</string>
     <string name="NewBroadcastList">New Broadcast List</string>
@@ -64,7 +58,6 @@
     <string name="YouCreatedBroadcastList">You created a broadcast list</string>
     <string name="AddRecipient">Add Recipient</string>
     <string name="KickFromBroadcast">Remove from broadcast list</string>
-
     <!--documents view-->
     <string name="SelectFile">Select File</string>
     <string name="FreeOfTotal">Free %1$s of %2$s</string>
@@ -78,7 +71,6 @@
     <string name="ExternalStorage">External Storage</string>
     <string name="SystemRoot">System Root</string>
     <string name="SdCard">SD Card</string>
-
     <!--chat view-->
     <string name="Invisible">invisible</string>
     <string name="Typing">typing...</string>
@@ -119,7 +111,6 @@
     <string name="SaveToDownloads">Save to downloads</string>
     <string name="ApplyLocalizationFile">Apply localization file</string>
     <string name="UnsupportedAttachment">Unsupported attachment</string>
-
     <!--notification-->
     <string name="EncryptedChatRequested">Secret chat requested</string>
     <string name="EncryptedChatAccepted">Secret chat started</string>
@@ -161,7 +152,6 @@
     <string name="NotificationUnrecognizedDevice">%1$s,\nWe detected a login into your account from a new device on %2$s\n\nDevice: %3$s\nLocation: %4$s\n\nIf this wasn\'t you, you can go to Settings - Terminate all sessions.\n\nSincerely,\nThe Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s updated profile photo</string>
     <string name="Reply">Reply</string>
-
     <!--contacts view-->
     <string name="SelectContact">Select Contact</string>
     <string name="NoContacts">No contacts yet</string>
@@ -174,14 +164,12 @@
     <string name="LastSeen">last seen</string>
     <string name="LastSeenDate">last seen</string>
     <string name="InviteFriends">Invite Friends</string>
-
     <!--group create view-->
     <string name="SendMessageTo">Send message to...</string>
     <string name="EnterGroupNamePlaceholder">Enter group name</string>
     <string name="GroupName">Group name</string>
     <string name="AllContacts">ALL CONTACTS</string>
     <string name="MembersCount">%1$d/%2$d members</string>
-
     <!--group info view-->
     <string name="EnterGroupNameTitle">ENTER GROUP NAME</string>
     <string name="SharedMedia">Shared Media</string>
@@ -192,7 +180,6 @@
     <string name="DeleteAndExit">Delete and leave group</string>
     <string name="Notifications">Notifications</string>
     <string name="KickFromGroup">Remove from group</string>
-
     <!--contact info view-->
     <string name="ShareContact">Share</string>
     <string name="AddContact">Add</string>
@@ -220,7 +207,6 @@
     <string name="ShortMessageLifetime1d">1d</string>
     <string name="ShortMessageLifetime1w">1w</string>
     <string name="EncryptionKeyDescription">This image is a visualization of the encryption key for this secret chat with <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>If this image looks the same on <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> phone, your chat is 200%% secure.<![CDATA[<br><br>]]>Learn more at telegram.org</string>
-
     <!--settings view-->
     <string name="ResetNotificationsText">Reset all notification settings to default</string>
     <string name="TextSize">Messages Text Size</string>
@@ -290,11 +276,10 @@
     <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
     <string name="WhenRoaming">When roaming</string>
     <string name="NoMediaAutoDownload">No media</string>
-
+    <string name="SaveToGallerySettings">Save to gallery</string>
     <!--media view-->
     <string name="NoMedia">No shared media yet</string>
     <string name="CancelDownload">Cancel Download</string>
-
     <!--map view-->
     <string name="MyLocation">My location</string>
     <string name="Map">Map</string>
@@ -304,7 +289,6 @@
     <string name="KMetersAway">km away</string>
     <string name="SendLocation">Send Location</string>
     <string name="ShareLocation">Share Location</string>
-
     <!--photo gallery view-->
     <string name="ShowAllMedia">Show all media</string>
     <string name="SaveToGallery">Save to gallery</string>
@@ -312,14 +296,12 @@
     <string name="Gallery">Gallery</string>
     <string name="AllPhotos">All Photos</string>
     <string name="NoPhotos">No photos yet</string>
-
     <!--edit video view-->
     <string name="EditVideo">Edit Video</string>
     <string name="OriginalVideo">Original Video</string>
     <string name="EditedVideo">Edited Video</string>
     <string name="SendingVideo">Sending video...</string>
     <string name="CompressVideo">Compress Video</string>
-
     <!--button titles-->
     <string name="Next">Next</string>
     <string name="Back">Back</string>
@@ -340,7 +322,6 @@
     <string name="OpenPhoto">Open photo</string>
     <string name="Set">Set</string>
     <string name="OK">OK</string>
-
     <!--messages-->
     <string name="ActionKickUser">un1 removed un2</string>
     <string name="ActionLeftUser">un1 left group</string>
@@ -368,7 +349,6 @@
     <string name="FromYou">You</string>
     <string name="ActionTakeScreenshootYou">You took a screenshot!</string>
     <string name="ActionTakeScreenshoot">un1 took a screenshot!</string>
-
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Invalid phone number</string>
     <string name="CodeExpired">Code expired, please login again</string>
@@ -397,7 +377,6 @@
     <string name="AreYouSureDeleteContact">Are you sure you want to delete this contact?</string>
     <string name="AreYouSureSecretChat">Are you sure you want to start a secret chat?</string>
     <string name="ForwardFromMyName">forward from my name</string>
-
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Fast</string>
@@ -406,15 +385,14 @@
     <string name="Page5Title">Powerful</string>
     <string name="Page6Title">Cloud-Based</string>
     <string name="Page7Title">Private</string>
-    <string name="Page1Message">The world\'s <![CDATA[<b>fastest</b>]]> messaging app.\nIt is <![CDATA[<b>free</b>]]> and <![CDATA[<b>secure</b>]]>.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> delivers messages faster than<![CDATA[<br/>]]>any other application</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is free forever. No ads.<![CDATA[<br/>]]>No subscription fees</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> keeps your messages safe<![CDATA[<br/>]]>from hacker attacks</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> has no limits on the size of<![CDATA[<br/>]]>your media and chats</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lets you access your messages<![CDATA[<br/>]]>from multiple devices</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> messages are heavily encrypted<![CDATA[<br/>]]>and can self-destruct</string>
+    <string name="Page1Message">The world\'s <![CDATA[<b>fastest</b>]]> messaging app.<![CDATA[<br/>]]>It is <![CDATA[<b>free</b>]]> and <![CDATA[<b>secure</b>]]>.</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> delivers messages faster than<![CDATA[<br/>]]>any other application.</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is free forever. No ads.<![CDATA[<br/>]]>No subscription fees.</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> keeps your messages safe<![CDATA[<br/>]]>from hacker attacks.</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> has no limits on the size of<![CDATA[<br/>]]>your media and chats.</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lets you access your messages<![CDATA[<br/>]]>from multiple devices.</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> messages are heavily encrypted<![CDATA[<br/>]]>and can self-destruct.</string>
     <string name="StartMessaging">Start Messaging</string>
-
     <!--plurals-->
     <string name="Members_zero">no members</string>
     <string name="Members_one">%1$d member</string>
@@ -446,7 +424,6 @@
     <string name="FromContacts_few">from %1$d contacts</string>
     <string name="FromContacts_many">from %1$d contacts</string>
     <string name="FromContacts_other">from %1$d contacts</string>
-
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
 </resources>

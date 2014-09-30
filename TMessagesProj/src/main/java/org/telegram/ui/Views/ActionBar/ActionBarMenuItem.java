@@ -31,6 +31,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
 
 import java.lang.reflect.Field;
@@ -155,7 +156,7 @@ public class ActionBarMenuItem extends ImageView {
             delimeter.setBackgroundColor(0xffdcdcdc);
             popupLayout.addView(delimeter);
             LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)delimeter.getLayoutParams();
-            layoutParams.width = AndroidUtilities.dp(196);
+            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
             layoutParams.height = AndroidUtilities.density >= 3 ? 2 : 1;
             delimeter.setLayoutParams(layoutParams);
             delimeter.setTag(100 + id);
@@ -163,7 +164,11 @@ public class ActionBarMenuItem extends ImageView {
         TextView textView = new TextView(getContext());
         textView.setTextColor(0xff000000);
         textView.setBackgroundResource(R.drawable.list_selector);
-        textView.setGravity(Gravity.CENTER_VERTICAL);
+        if (!LocaleController.isRTL) {
+            textView.setGravity(Gravity.CENTER_VERTICAL);
+        } else {
+            textView.setGravity(Gravity.CENTER_VERTICAL | Gravity.RIGHT);
+        }
         textView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
         textView.setTextSize(18);
         textView.setMinWidth(AndroidUtilities.dp(196));
@@ -171,10 +176,17 @@ public class ActionBarMenuItem extends ImageView {
         textView.setText(text);
         if (icon != 0) {
             textView.setCompoundDrawablePadding(AndroidUtilities.dp(12));
-            textView.setCompoundDrawablesWithIntrinsicBounds(getResources().getDrawable(icon), null, null, null);
+            if (!LocaleController.isRTL) {
+                textView.setCompoundDrawablesWithIntrinsicBounds(getResources().getDrawable(icon), null, null, null);
+            } else {
+                textView.setCompoundDrawablesWithIntrinsicBounds(null, null, getResources().getDrawable(icon), null);
+            }
         }
         popupLayout.addView(textView);
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)textView.getLayoutParams();
+        if (LocaleController.isRTL) {
+            layoutParams.gravity = Gravity.RIGHT;
+        }
         layoutParams.width = LinearLayout.LayoutParams.WRAP_CONTENT;
         layoutParams.height = AndroidUtilities.dp(48);
         textView.setLayoutParams(layoutParams);

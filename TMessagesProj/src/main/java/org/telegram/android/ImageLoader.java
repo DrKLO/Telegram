@@ -551,7 +551,7 @@ public class ImageLoader {
                     @Override
                     public void run() {
                         if (location != null) {
-                            if (telegramPath != null && finalFile != null && finalFile.exists() && location.endsWith(".mp4") || location.endsWith(".jpg")) {
+                            if (MediaController.getInstance().canSaveToGallery() && telegramPath != null && finalFile != null && finalFile.exists() && (location.endsWith(".mp4") || location.endsWith(".jpg"))) {
                                 if (finalFile.toString().startsWith(telegramPath.toString())) {
                                     Utilities.addMediaToGallery(finalFile.toString());
                                 }
@@ -624,7 +624,6 @@ public class ImageLoader {
                         File videoPath = new File(telegramPath, LocaleController.getString("AppName", R.string.AppName) + " Video");
                         videoPath.mkdir();
                         if (videoPath.isDirectory()) {
-                            //new File(videoPath, ".nomedia").delete();
                             mediaDirs.put(FileLoader.MEDIA_DIR_VIDEO, videoPath);
                         }
                     } catch (Exception e) {

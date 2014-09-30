@@ -45,6 +45,7 @@ public class FileUploadOperation {
     private int uploadStartTime = 0;
     private FileInputStream stream;
     private MessageDigest mdEnc = null;
+    private boolean started = false;
 
     public static interface FileUploadOperationDelegate {
         public abstract void didFinishUploadingFile(FileUploadOperation operation, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile);
@@ -102,8 +103,10 @@ public class FileUploadOperation {
                     estimatedSize = 0;
                     totalFileSize = finalSize;
                     totalPartsCount = (int) Math.ceil((float) totalFileSize / (float) uploadChunkSize);
-                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("uploadinfo", Activity.MODE_PRIVATE);
-                    storeFileUploadInfo(preferences);
+                    if (started) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("uploadinfo", Activity.MODE_PRIVATE);
+                        storeFileUploadInfo(preferences);
+                    }
                 }
                 if (requestToken == 0) {
                     startUploadRequest();
@@ -134,6 +137,7 @@ public class FileUploadOperation {
         TLObject finalRequest;
 
         try {
+            started = true;
             if (stream == null) {
                 File cacheFile = new File(uploadingFilePath);
                 stream = new FileInputStream(cacheFile);

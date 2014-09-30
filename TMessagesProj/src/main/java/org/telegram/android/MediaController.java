@@ -172,6 +172,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private ArrayList<DownloadObject> videoDownloadQueue = new ArrayList<DownloadObject>();
     private HashMap<String, DownloadObject> downloadQueueKeys = new HashMap<String, DownloadObject>();
 
+    private boolean saveToGallery = true;
+
     private HashMap<String, ArrayList<WeakReference<FileDownloadProgressListener>>> loadingFileObservers = new HashMap<String, ArrayList<WeakReference<FileDownloadProgressListener>>>();
     private HashMap<Integer, String> observersByTag = new HashMap<Integer, String>();
     private boolean listenerInProgress = false;
@@ -392,6 +394,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         mobileDataDownloadMask = preferences.getInt("mobileDataDownloadMask", AUTODOWNLOAD_MASK_PHOTO | AUTODOWNLOAD_MASK_AUDIO);
         wifiDownloadMask = preferences.getInt("wifiDownloadMask", AUTODOWNLOAD_MASK_PHOTO | AUTODOWNLOAD_MASK_AUDIO);
         roamingDownloadMask = preferences.getInt("roamingDownloadMask", 0);
+        saveToGallery = preferences.getBoolean("save_gallery", false);
 
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileDidFailedLoad);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileDidLoaded);
@@ -1785,6 +1788,43 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         return null;
     }
 
+    public void toggleSaveToGallery() {
+        saveToGallery = !saveToGallery;
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("save_gallery", saveToGallery);
+        editor.commit();
+        try {
+            File telegramPath = new File(Environment.getExternalStorageDirectory(), LocaleController.getString("AppName", R.string.AppName));
+            File imagePath = new File(telegramPath, LocaleController.getString("AppName", R.string.AppName) + " Images");
+            imagePath.mkdir();
+            File videoPath = new File(telegramPath, LocaleController.getString("AppName", R.string.AppName) + " Video");
+            videoPath.mkdir();
+
+            if (saveToGallery) {
+                if (imagePath.isDirectory()) {
+                    new File(imagePath, ".nomedia").delete();
+                }
+                if (videoPath.isDirectory()) {
+                    new File(videoPath, ".nomedia").delete();
+                }
+            } else {
+                if (imagePath.isDirectory()) {
+                    new File(imagePath, ".nomedia").createNewFile();
+                }
+                if (videoPath.isDirectory()) {
+                    new File(videoPath, ".nomedia").createNewFile();
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
+    public boolean canSaveToGallery() {
+        return saveToGallery;
+    }
+
     public static void loadGalleryPhotosAlbums(final int guid) {
         new Thread(new Runnable() {
             @Override
@@ -1972,7 +2012,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         return -5;
     }
 
-    private void didWriteData(final MessageObject messageObject, final File file, final long finalSize, final boolean error) {
+    private void didWriteData(final MessageObject messageObject, final File file, final boolean last, final boolean error) {
         final boolean firstWrite = videoConvertFirstWrite;
         if (firstWrite) {
             videoConvertFirstWrite = false;
@@ -1986,9 +2026,9 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     if (firstWrite) {
                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.FilePreparingStarted, messageObject, file.toString());
                     }
-                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.FileNewChunkAvailable, messageObject, file.toString(), finalSize);
+                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.FileNewChunkAvailable, messageObject, file.toString(), last ? file.length() : 0);
                 }
-                if (error || finalSize != 0) {
+                if (error || last) {
                     synchronized (videoConvertSync) {
                         cancelCurrentVideoConversion = false;
                     }
@@ -2043,7 +2083,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                                 buffer.putInt(info.size - 4);
                             }
                             if (mediaMuxer.writeSampleData(muxerTrackIndex, buffer, info)) {
-                                didWriteData(messageObject, file, 0, false);
+                                didWriteData(messageObject, file, false, false);
                             }
                             extractor.advance();
                         } else {
@@ -2172,13 +2212,13 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
                             int colorFormat = 0;
                             int processorType = PROCESSOR_TYPE_OTHER;
+                            String manufacturer = Build.MANUFACTURER.toLowerCase();
                             if (Build.VERSION.SDK_INT < 18) {
                                 MediaCodecInfo codecInfo = selectCodec(MIME_TYPE);
                                 colorFormat = selectColorFormat(codecInfo, MIME_TYPE);
                                 if (colorFormat == 0) {
                                     throw new RuntimeException("no supported color format");
                                 }
-                                String manufacturer = Build.MANUFACTURER.toLowerCase();
                                 String codecName = codecInfo.getName();
                                 if (codecName.contains("OMX.qcom.")) {
                                     processorType = PROCESSOR_TYPE_QCOM;
@@ -2213,7 +2253,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                                     bufferSize += padding * 5 / 4;
                                 }
                             } else if (processorType == PROCESSOR_TYPE_QCOM) {
-                                if (!Build.MANUFACTURER.toLowerCase().equals("lge")) {
+                                if (!manufacturer.toLowerCase().equals("lge")) {
                                     int uvoffset = (resultWidth * resultHeight + 2047) & ~2047;
                                     padding = uvoffset - (resultWidth * resultHeight);
                                     bufferSize += padding;
@@ -2224,6 +2264,12 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                                 //resultHeightAligned += (16 - (resultHeight % 16));
                                 //padding = resultWidth * (resultHeightAligned - resultHeight);
                                 //bufferSize += padding * 5 / 4;
+                            } else if (processorType == PROCESSOR_TYPE_MTK) {
+                                if (manufacturer.equals("baidu")) {
+                                    resultHeightAligned += (16 - (resultHeight % 16));
+                                    padding = resultWidth * (resultHeightAligned - resultHeight);
+                                    bufferSize += padding * 5 / 4;
+                                }
                             }
 
                             extractor.selectTrack(videoIndex);
@@ -2328,7 +2374,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                                                 encodedData.position(info.offset);
                                                 encodedData.putInt(Integer.reverseBytes(info.size - 4));
                                                 if (mediaMuxer.writeSampleData(videoTrackIndex, encodedData, info)) {
-                                                    didWriteData(messageObject, cacheFile, 0, false);
+                                                    didWriteData(messageObject, cacheFile, false, false);
                                                 }
                                             } else if (videoTrackIndex == -5) {
                                                 byte[] csd = new byte[info.size];
@@ -2504,7 +2550,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         } else {
             return false;
         }
-        didWriteData(messageObject, cacheFile, cacheFile.length(), error);
+        didWriteData(messageObject, cacheFile, true, error);
         return true;
     }
 }

@@ -105,7 +105,11 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                 } else if (message.type == 1) {
                                     if (media.file == null) {
                                         media.file = file;
-                                        performSendDelayedMessage(message);
+                                        if (media.thumb == null && message.location != null) {
+                                            performSendDelayedMessage(message);
+                                        } else {
+                                            performSendMessageRequest(message.sendRequest, message.obj, message.originalPath);
+                                        }
                                     } else {
                                         media.thumb = file;
                                         performSendMessageRequest(message.sendRequest, message.obj, message.originalPath);
@@ -261,6 +265,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         }
         if (keyToRemvoe != null) {
             FileLoader.getInstance().cancelUploadFile(keyToRemvoe, enc);
+            stopVideoService(keyToRemvoe);
         }
         ArrayList<Integer> messages = new ArrayList<Integer>();
         messages.add(object.messageOwner.id);
@@ -610,7 +615,11 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         }
                     } else if (type == 3) {
                         if (video.access_hash == 0) {
-                            inputMedia = new TLRPC.TL_inputMediaUploadedThumbVideo();
+                            if (video.thumb.location != null) {
+                                inputMedia = new TLRPC.TL_inputMediaUploadedThumbVideo();
+                            } else {
+                                inputMedia = new TLRPC.TL_inputMediaUploadedVideo();
+                            }
                             inputMedia.duration = video.duration;
                             inputMedia.w = video.w;
                             inputMedia.h = video.h;
@@ -910,7 +919,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         location = FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE) + "/" + message.videoLocation.id + ".mp4";
                     }
                     putToDelayedMessages(location, message);
-                    if (message.videoLocation.videoEditedInfo != null) {
+                    if (message.obj.messageOwner.videoEditedInfo != null) {
                         FileLoader.getInstance().uploadFile(location, true, false, message.videoLocation.size);
                     } else {
                         FileLoader.getInstance().uploadFile(location, true, false);

@@ -183,7 +183,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                             }
 
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentSound);
-                            getParentActivity().startActivityForResult(tmpIntent, 12);
+                            startActivityForResult(tmpIntent, 12);
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
                         }
