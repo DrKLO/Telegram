@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="me.ji5.googleimagesearch">
+
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <application
+        android:icon="@drawable/ic_launcher">
+        <activity
+            android:theme="@style/Theme.AppCompat.Light"
+            android:name=".GoogleImageSearchActivity"/>
+    </application>
+
+</manifest>
