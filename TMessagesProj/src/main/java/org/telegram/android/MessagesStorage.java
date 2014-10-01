@@ -2600,7 +2600,7 @@ public class MessagesStorage {
                             }
                         } else if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
                             if ((downloadMask & MediaController.AUTODOWNLOAD_MASK_PHOTO) != 0) {
-                                TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(message.media.photo.sizes, AndroidUtilities.getPhotoSize(), AndroidUtilities.getPhotoSize());
+                                TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(message.media.photo.sizes, AndroidUtilities.getPhotoSize());
                                 if (photoSize != null) {
                                     id = message.media.photo.id;
                                     type = MediaController.AUTODOWNLOAD_MASK_PHOTO;

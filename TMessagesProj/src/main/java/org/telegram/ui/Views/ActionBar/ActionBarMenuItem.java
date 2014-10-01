@@ -218,6 +218,17 @@ public class ActionBarMenuItem extends ImageView {
             popupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
             popupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
             popupLayout.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), MeasureSpec.AT_MOST));
+            popupWindow.getContentView().setFocusableInTouchMode(true);
+            popupWindow.getContentView().setOnKeyListener(new OnKeyListener() {
+                @Override
+                public boolean onKey(View v, int keyCode, KeyEvent event) {
+                    if (keyCode ==  KeyEvent.KEYCODE_MENU && event.getRepeatCount() == 0 && event.getAction() == KeyEvent.ACTION_UP && popupWindow != null && popupWindow.isShowing()) {
+                        popupWindow.dismiss();
+                        return true;
+                    }
+                    return false;
+                }
+            });
         }
         popupWindow.setFocusable(true);
         if (popupLayout.getMeasuredWidth() == 0) {

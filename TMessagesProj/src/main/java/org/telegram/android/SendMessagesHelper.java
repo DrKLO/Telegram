@@ -1555,19 +1555,16 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
     public TLRPC.TL_photo generatePhotoSizes(String path, Uri imageUri) {
         long time = System.currentTimeMillis();
         Bitmap bitmap = ImageLoader.loadBitmap(path, imageUri, AndroidUtilities.getPhotoSize(), AndroidUtilities.getPhotoSize());
+        if (bitmap == null && AndroidUtilities.getPhotoSize() != 800) {
+            bitmap = ImageLoader.loadBitmap(path, imageUri, 800, 800);
+        }
         ArrayList<TLRPC.PhotoSize> sizes = new ArrayList<TLRPC.PhotoSize>();
         TLRPC.PhotoSize size = ImageLoader.scaleAndSaveImage(bitmap, 90, 90, 55, true);
         if (size != null) {
-            size.type = "s";
             sizes.add(size);
         }
         size = ImageLoader.scaleAndSaveImage(bitmap, AndroidUtilities.getPhotoSize(), AndroidUtilities.getPhotoSize(), 80, false);
         if (size != null) {
-            if (AndroidUtilities.getPhotoSize() == 800) {
-                size.type = "x";
-            } else {
-                size.type = "y";
-            }
             sizes.add(size);
         }
         if (bitmap != null) {

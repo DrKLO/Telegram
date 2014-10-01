@@ -206,7 +206,16 @@ public class ImageReceiver {
                     bitmapH /= scale;
                     drawRegion.set(x + (w - bitmapW) / 2, y + (h - bitmapH) / 2, x + (w + bitmapW) / 2, y + (h + bitmapH) / 2);
                     bitmapDrawable.setBounds(drawRegion);
-                    bitmapDrawable.draw(canvas);
+                    try {
+                        bitmapDrawable.draw(canvas);
+                    } catch (Exception e) {
+                        if (currentPath != null) {
+                            ImageLoader.getInstance().removeImage(currentPath);
+                            currentPath = null;
+                        }
+                        setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size);
+                        FileLog.e("tmessages", e);
+                    }
                     canvas.restore();
                 } else {
                     if (Math.abs(scaleW - scaleH) > 0.00001f) {
@@ -222,7 +231,16 @@ public class ImageReceiver {
                         }
                         bitmapDrawable.setBounds(drawRegion);
                         if (isVisible) {
-                            bitmapDrawable.draw(canvas);
+                            try {
+                                bitmapDrawable.draw(canvas);
+                            } catch (Exception e) {
+                                if (currentPath != null) {
+                                    ImageLoader.getInstance().removeImage(currentPath);
+                                    currentPath = null;
+                                }
+                                setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size);
+                                FileLog.e("tmessages", e);
+                            }
                         }
 
                         canvas.restore();
@@ -230,7 +248,16 @@ public class ImageReceiver {
                         drawRegion.set(x, y, x + w, y + h);
                         bitmapDrawable.setBounds(drawRegion);
                         if (isVisible) {
-                            bitmapDrawable.draw(canvas);
+                            try {
+                                bitmapDrawable.draw(canvas);
+                            } catch (Exception e) {
+                                if (currentPath != null) {
+                                    ImageLoader.getInstance().removeImage(currentPath);
+                                    currentPath = null;
+                                }
+                                setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size);
+                                FileLog.e("tmessages", e);
+                            }
                         }
                     }
                 }
@@ -239,16 +266,20 @@ public class ImageReceiver {
                 drawRegion.set(x, y, x + w, y + h);
                 last_placeholder.setBounds(drawRegion);
                 if (isVisible) {
-                    last_placeholder.draw(canvas);
+                    try {
+                        last_placeholder.draw(canvas);
+                    } catch (Exception e) {
+                        if (currentPath != null) {
+                            ImageLoader.getInstance().removeImage(currentPath);
+                            currentPath = null;
+                        }
+                        setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size);
+                        FileLog.e("tmessages", e);
+                    }
                 }
                 return true;
             }
         } catch (Exception e) {
-            if (currentPath != null) {
-                ImageLoader.getInstance().removeImage(currentPath);
-                currentPath = null;
-            }
-            setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size);
             FileLog.e("tmessages", e);
         }
         return false;

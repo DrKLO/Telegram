@@ -20,6 +20,7 @@ import android.os.Bundle;
 import android.os.Parcelable;
 import android.provider.ContactsContract;
 import android.view.ActionMode;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -1011,6 +1012,22 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         } else if (currentConnectionState == 3) {
             statusText.setText(LocaleController.getString("Updating", R.string.Updating));
         }
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (AndroidUtilities.isTablet()) {
+            if (layersActionBarLayout.getVisibility() == View.VISIBLE && !layersActionBarLayout.fragmentsStack.isEmpty()) {
+                layersActionBarLayout.onKeyUp(keyCode, event);
+            } else if (rightActionBarLayout.getVisibility() == View.VISIBLE && !rightActionBarLayout.fragmentsStack.isEmpty()) {
+                rightActionBarLayout.onKeyUp(keyCode, event);
+            } else {
+                actionBarLayout.onKeyUp(keyCode, event);
+            }
+        } else {
+            actionBarLayout.onKeyUp(keyCode, event);
+        }
+        return super.onKeyUp(keyCode, event);
     }
 
     @Override

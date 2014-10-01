@@ -413,7 +413,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     if (message.imagePreview != null) {
                         imageView.setImageBitmap(message.imagePreview);
                     } else {
-                        TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, 80, 80);
+                        TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, 80);
                         imageView.setImage(photoSize.location, null, R.drawable.photo_placeholder_in);
                     }
                 } else {

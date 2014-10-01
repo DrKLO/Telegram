@@ -1794,6 +1794,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean("save_gallery", saveToGallery);
         editor.commit();
+        checkSaveToGalleryFiles();
+    }
+
+    public void checkSaveToGalleryFiles() {
         try {
             File telegramPath = new File(Environment.getExternalStorageDirectory(), LocaleController.getString("AppName", R.string.AppName));
             File imagePath = new File(telegramPath, LocaleController.getString("AppName", R.string.AppName) + " Images");

@@ -946,17 +946,17 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         try {
             ConnectivityManager cm = (ConnectivityManager)ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo netInfo = cm.getActiveNetworkInfo();
-            if (netInfo != null && (netInfo.isConnectedOrConnecting() || netInfo.isRoaming() || netInfo.isAvailable())) {
+            if (netInfo != null && (netInfo.isConnectedOrConnecting() || netInfo.isAvailable())) {
                 return true;
             }
 
             netInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
 
-            if (netInfo != null && (netInfo.isConnectedOrConnecting() || netInfo.isRoaming())) {
+            if (netInfo != null && netInfo.isConnectedOrConnecting()) {
                 return true;
             } else {
                 netInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-                if(netInfo != null && (netInfo.isConnectedOrConnecting() || netInfo.isRoaming())) {
+                if(netInfo != null && netInfo.isConnectedOrConnecting()) {
                     return true;
                 }
             }

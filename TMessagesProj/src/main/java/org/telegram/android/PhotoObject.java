@@ -46,23 +46,21 @@ public class PhotoObject {
         }
     }
 
-    public static PhotoObject getClosestImageWithSize(ArrayList<PhotoObject> arr, int width, int height) {
+    public static PhotoObject getClosestImageWithSize(ArrayList<PhotoObject> arr, int side) {
         if (arr == null) {
             return null;
         }
-        int closestWidth = 9999;
-        int closestHeight = 9999;
+
+        int lastSide = 0;
         PhotoObject closestObject = null;
         for (PhotoObject obj : arr) {
             if (obj == null || obj.photoOwner == null) {
                 continue;
             }
-            int diffW = Math.abs(obj.photoOwner.w - width);
-            int diffH = Math.abs(obj.photoOwner.h - height);
-            if (closestObject == null || closestWidth > diffW || closestHeight > diffH || closestObject.photoOwner instanceof TLRPC.TL_photoCachedSize) {
+            int currentSide = obj.photoOwner.w >= obj.photoOwner.h ? obj.photoOwner.w : obj.photoOwner.h;
+            if (closestObject == null || closestObject.photoOwner instanceof TLRPC.TL_photoCachedSize || currentSide <= side && lastSide < currentSide) {
                 closestObject = obj;
-                closestWidth = diffW;
-                closestHeight = diffH;
+                lastSide = currentSide;
             }
         }
         return closestObject;

@@ -9,7 +9,10 @@
 package org.telegram.android;
 
 import android.app.ActivityManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
@@ -589,6 +592,36 @@ public class ImageLoader {
             }
         });
 
+        BroadcastReceiver receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context arg0, Intent intent) {
+                FileLog.e("tmessages", "file system changed");
+                Runnable r = new Runnable() {
+                    public void run() {
+                        FileLoader.getInstance().setMediaDirs(createMediaPaths());
+                    }
+                };
+                if (Intent.ACTION_MEDIA_UNMOUNTED.equals(intent.getAction())) {
+                    AndroidUtilities.RunOnUIThread(r, 1000);
+                } else {
+                    r.run();
+                }
+            }
+        };
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_MEDIA_BAD_REMOVAL);
+        filter.addAction(Intent.ACTION_MEDIA_CHECKING);
+        filter.addAction(Intent.ACTION_MEDIA_EJECT);
+        filter.addAction(Intent.ACTION_MEDIA_MOUNTED);
+        filter.addAction(Intent.ACTION_MEDIA_NOFS);
+        filter.addAction(Intent.ACTION_MEDIA_REMOVED);
+        filter.addAction(Intent.ACTION_MEDIA_SHARED);
+        filter.addAction(Intent.ACTION_MEDIA_UNMOUNTABLE);
+        filter.addAction(Intent.ACTION_MEDIA_UNMOUNTED);
+        filter.addDataScheme("file");
+        ApplicationLoader.applicationContext.registerReceiver(receiver, filter);
+
         FileLoader.getInstance().setMediaDirs(createMediaPaths());
     }
 
@@ -603,6 +636,7 @@ public class ImageLoader {
             }
         }
         mediaDirs.put(FileLoader.MEDIA_DIR_CACHE, cachePath);
+        FileLog.e("tmessages", "cache path = " + cachePath);
 
         try {
             if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
@@ -613,8 +647,8 @@ public class ImageLoader {
                         File imagePath = new File(telegramPath, LocaleController.getString("AppName", R.string.AppName) + " Images");
                         imagePath.mkdir();
                         if (imagePath.isDirectory()) {
-                            //new File(imagePath, ".nomedia").delete();
                             mediaDirs.put(FileLoader.MEDIA_DIR_IMAGE, imagePath);
+                            FileLog.e("tmessages", "image path = " + imagePath);
                         }
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
@@ -625,6 +659,7 @@ public class ImageLoader {
                         videoPath.mkdir();
                         if (videoPath.isDirectory()) {
                             mediaDirs.put(FileLoader.MEDIA_DIR_VIDEO, videoPath);
+                            FileLog.e("tmessages", "video path = " + videoPath);
                         }
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
@@ -636,6 +671,7 @@ public class ImageLoader {
                         if (audioPath.isDirectory()) {
                             new File(audioPath, ".nomedia").createNewFile();
                             mediaDirs.put(FileLoader.MEDIA_DIR_AUDIO, audioPath);
+                            FileLog.e("tmessages", "audio path = " + audioPath);
                         }
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
@@ -647,12 +683,14 @@ public class ImageLoader {
                         if (documentPath.isDirectory()) {
                             new File(documentPath, ".nomedia").createNewFile();
                             mediaDirs.put(FileLoader.MEDIA_DIR_DOCUMENT, documentPath);
+                            FileLog.e("tmessages", "documents path = " + documentPath);
                         }
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
                     }
                 }
             }
+            MediaController.getInstance().checkSaveToGalleryFiles();
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
@@ -1020,11 +1058,15 @@ public class ImageLoader {
             } catch (Throwable e) {
                 FileLog.e("tmessages", e);
                 ImageLoader.getInstance().clearMemory();
-                if (b == null) {
-                    b = BitmapFactory.decodeFile(path, bmOptions);
-                }
-                if (b != null) {
-                    b = Bitmap.createBitmap(b, 0, 0, b.getWidth(), b.getHeight(), matrix, true);
+                try {
+                    if (b == null) {
+                        b = BitmapFactory.decodeFile(path, bmOptions);
+                    }
+                    if (b != null) {
+                        b = Bitmap.createBitmap(b, 0, 0, b.getWidth(), b.getHeight(), matrix, true);
+                    }
+                } catch (Throwable e2) {
+                    FileLog.e("tmessages", e2);
                 }
             }
         } else if (uri != null) {
@@ -1050,7 +1092,12 @@ public class ImageLoader {
     }
 
     private static TLRPC.PhotoSize scaleAndSaveImageInternal(Bitmap bitmap, int w, int h, float photoW, float photoH, float scaleFactor, int quality, boolean cache) throws Exception {
-        Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, w, h, true);
+        Bitmap scaledBitmap = null;
+        if (scaleFactor > 1) {
+            scaledBitmap = Bitmap.createScaledBitmap(bitmap, w, h, true);
+        } else {
+            scaledBitmap = bitmap;
+        }
 
         TLRPC.TL_fileLocation location = new TLRPC.TL_fileLocation();
         location.volume_id = Integer.MIN_VALUE;
@@ -1064,8 +1111,19 @@ public class ImageLoader {
             size = new TLRPC.TL_photoCachedSize();
         }
         size.location = location;
-        size.w = (int)(photoW / scaleFactor);
-        size.h = (int)(photoH / scaleFactor);
+        size.w = scaledBitmap.getWidth();
+        size.h = scaledBitmap.getHeight();
+        if (size.w <= 100 && size.h <= 100) {
+            size.type = "s";
+        } else if (size.w <= 320 && size.h <= 320) {
+            size.type = "m";
+        } else if (size.w <= 800 && size.h <= 800) {
+            size.type = "x";
+        } else if (size.w <= 1280 && size.h <= 1280) {
+            size.type = "y";
+        } else {
+            size.type = "w";
+        }
 
         if (!cache) {
             String fileName = location.volume_id + "_" + location.local_id + ".jpg";

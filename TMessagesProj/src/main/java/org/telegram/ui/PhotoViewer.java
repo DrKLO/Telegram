@@ -335,7 +335,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (photo instanceof TLRPC.TL_photoEmpty || photo.sizes == null) {
                         continue;
                     }
-                    TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 640, 640);
+                    TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 640);
                     if (sizeFull != null) {
                         if (currentFileLocation != null) {
                             for (TLRPC.PhotoSize size : photo.sizes) {
@@ -682,7 +682,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (current) {
                         MessagesController.getInstance().deleteUserPhoto(null);
                         closePhoto(false);
-                    } else {
+                    } else if (photo != null) {
                         TLRPC.TL_inputPhoto inputPhoto = new TLRPC.TL_inputPhoto();
                         inputPhoto.id = photo.id;
                         inputPhoto.access_hash = photo.access_hash;
@@ -951,7 +951,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 if (message.messageOwner.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
                     return message.messageOwner.action.newUserPhoto.photo_big;
                 } else {
-                    TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(message.messageOwner.action.photo.sizes, AndroidUtilities.getPhotoSize(), AndroidUtilities.getPhotoSize());
+                    TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(message.messageOwner.action.photo.sizes, AndroidUtilities.getPhotoSize());
                     if (sizeFull != null) {
                         size[0] = sizeFull.size;
                         if (size[0] == 0) {
@@ -963,7 +963,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                 }
             } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && message.messageOwner.media.photo != null) {
-                TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, AndroidUtilities.getPhotoSize(), AndroidUtilities.getPhotoSize());
+                TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, AndroidUtilities.getPhotoSize());
                 if (sizeFull != null) {
                     size[0] = sizeFull.size;
                     if (size[0] == 0) {
@@ -1014,7 +1014,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     location.secret = sizeFull.secret;
                     return location;
                 } else {
-                    TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(message.messageOwner.action.photo.sizes, AndroidUtilities.getPhotoSize(), AndroidUtilities.getPhotoSize());
+                    TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(message.messageOwner.action.photo.sizes, AndroidUtilities.getPhotoSize());
                     if (sizeFull != null) {
                         TLRPC.TL_inputFileLocation location = new TLRPC.TL_inputFileLocation();
                         location.local_id = sizeFull.location.local_id;
@@ -1025,7 +1025,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                 }
             } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
-                TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, AndroidUtilities.getPhotoSize(), AndroidUtilities.getPhotoSize());
+                TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, AndroidUtilities.getPhotoSize());
                 if (sizeFull != null) {
                     TLRPC.TL_inputFileLocation location = new TLRPC.TL_inputFileLocation();
                     location.local_id = sizeFull.location.local_id;

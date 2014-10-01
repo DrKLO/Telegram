@@ -266,7 +266,15 @@ public class AndroidUtilities {
     }
 
     public static void RunOnUIThread(Runnable runnable) {
-        ApplicationLoader.applicationHandler.post(runnable);
+        RunOnUIThread(runnable, 0);
+    }
+
+    public static void RunOnUIThread(Runnable runnable, long delay) {
+        if (delay == 0) {
+            ApplicationLoader.applicationHandler.post(runnable);
+        } else {
+            ApplicationLoader.applicationHandler.postDelayed(runnable, delay);
+        }
     }
 
     public static boolean isTablet() {

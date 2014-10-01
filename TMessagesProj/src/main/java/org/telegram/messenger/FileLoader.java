@@ -573,7 +573,7 @@ public class FileLoader {
         } else if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
             ArrayList<TLRPC.PhotoSize> sizes = message.media.photo.sizes;
             if (sizes.size() > 0) {
-                TLRPC.PhotoSize sizeFull = getClosestPhotoSizeWithSize(sizes, AndroidUtilities.getPhotoSize(), AndroidUtilities.getPhotoSize());
+                TLRPC.PhotoSize sizeFull = getClosestPhotoSizeWithSize(sizes, AndroidUtilities.getPhotoSize());
                 if (sizeFull != null) {
                     return getPathToAttach(sizeFull);
                 }
@@ -636,23 +636,20 @@ public class FileLoader {
         return new File(dir, getAttachFileName(attach));
     }
 
-    public static TLRPC.PhotoSize getClosestPhotoSizeWithSize(ArrayList<TLRPC.PhotoSize> sizes, int width, int height) {
+    public static TLRPC.PhotoSize getClosestPhotoSizeWithSize(ArrayList<TLRPC.PhotoSize> sizes, int side) {
         if (sizes == null) {
             return null;
         }
-        int closestWidth = 9999;
-        int closestHeight = 9999;
+        int lastSide = 0;
         TLRPC.PhotoSize closestObject = null;
         for (TLRPC.PhotoSize obj : sizes) {
             if (obj == null) {
                 continue;
             }
-            int diffW = Math.abs(obj.w - width);
-            int diffH = Math.abs(obj.h - height);
-            if (closestObject == null || closestObject instanceof TLRPC.TL_photoCachedSize || closestWidth > diffW || closestHeight > diffH) {
+            int currentSide = obj.w >= obj.h ? obj.w : obj.h;
+            if (closestObject == null || closestObject instanceof TLRPC.TL_photoCachedSize || currentSide <= side && lastSide < currentSide) {
                 closestObject = obj;
-                closestWidth = diffW;
-                closestHeight = diffH;
+                lastSide = currentSide;
             }
         }
         return closestObject;

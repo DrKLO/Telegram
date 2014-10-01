@@ -472,7 +472,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 photoWidth = AndroidUtilities.dp(86);
                 photoHeight = AndroidUtilities.dp(86);
                 backgroundWidth = photoWidth + Math.max(nameWidth, infoWidth) + AndroidUtilities.dp(68);
-                currentPhotoObject = PhotoObject.getClosestImageWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize(), AndroidUtilities.getPhotoSize());
+                currentPhotoObject = PhotoObject.getClosestImageWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
                 if (currentPhotoObject != null) {
                     if (currentPhotoObject.image != null) {
                         photoImage.setImageBitmap(currentPhotoObject.image);
@@ -507,7 +507,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     photoHeight = AndroidUtilities.getPhotoSize();
                 }
 
-                currentPhotoObject = PhotoObject.getClosestImageWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize(), AndroidUtilities.getPhotoSize());
+                currentPhotoObject = PhotoObject.getClosestImageWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
                 if (currentPhotoObject != null) {
                     boolean noSize = false;
                     if (currentMessageObject.type == 3 || currentMessageObject.type == 8) {

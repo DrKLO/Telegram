@@ -110,7 +110,7 @@ public class ActionBarLayer extends FrameLayout {
     }
 
     private void positionLogoImage(int height) {
-        if (logoImageView != null) {
+        if (logoImageView != null && logoImageView.getDrawable() != null) {
             LayoutParams layoutParams = (LayoutParams) logoImageView.getLayoutParams();
             if (!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 layoutParams.width = (int)(logoImageView.getDrawable().getIntrinsicWidth() / 1.3f);
@@ -482,7 +482,7 @@ public class ActionBarLayer extends FrameLayout {
     }
 
     public void setBackOverlayVisible(boolean visible) {
-        if (actionOverlay == null) {
+        if (actionOverlay == null || parentFragment == null || parentFragment.parentLayout == null) {
             return;
         }
         isBackOverlayVisible = visible;

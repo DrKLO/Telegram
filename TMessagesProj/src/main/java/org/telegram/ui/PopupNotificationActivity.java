@@ -445,7 +445,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             TextView messageText = (TextView)view.findViewById(R.id.message_text);
             BackupImageView imageView = (BackupImageView) view.findViewById(R.id.message_image);
             imageView.imageReceiver.setAspectFit(true);
-            PhotoObject currentPhotoObject = PhotoObject.getClosestImageWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize(), AndroidUtilities.getPhotoSize());
+            PhotoObject currentPhotoObject = PhotoObject.getClosestImageWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
             boolean photoSet = false;
             if (currentPhotoObject != null) {
                 boolean photoExist = true;

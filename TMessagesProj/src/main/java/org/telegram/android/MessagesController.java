@@ -15,8 +15,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
-import android.graphics.Bitmap;
-import android.net.Uri;
 import android.os.Build;
 import android.text.Html;
 
@@ -228,8 +226,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             }
                             TLRPC.TL_photos_photo photo = (TLRPC.TL_photos_photo) response;
                             ArrayList<TLRPC.PhotoSize> sizes = photo.photo.sizes;
-                            TLRPC.PhotoSize smallSize = FileLoader.getClosestPhotoSizeWithSize(sizes, 100, 100);
-                            TLRPC.PhotoSize bigSize = FileLoader.getClosestPhotoSizeWithSize(sizes, 1000, 1000);
+                            TLRPC.PhotoSize smallSize = FileLoader.getClosestPhotoSizeWithSize(sizes, 100);
+                            TLRPC.PhotoSize bigSize = FileLoader.getClosestPhotoSizeWithSize(sizes, 1000);
                             user.photo = new TLRPC.TL_userProfilePhoto();
                             user.photo.photo_id = photo.photo.id;
                             if (smallSize != null) {

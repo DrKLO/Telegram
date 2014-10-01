@@ -532,8 +532,8 @@ public class Utilities {
         if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
             storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), LocaleController.getString("AppName", R.string.AppName));
             if (storageDir != null) {
-                if (! storageDir.mkdirs()) {
-                    if (! storageDir.exists()){
+                if (!storageDir.mkdirs()) {
+                    if (!storageDir.exists()){
                         FileLog.d("tmessages", "failed to create directory");
                         return null;
                     }
@@ -633,8 +633,7 @@ public class Utilities {
         try {
             File storageDir = getAlbumDir();
             String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-            String imageFileName = "IMG_" + timeStamp + "_";
-            return File.createTempFile(imageFileName, ".jpg", storageDir);
+            return new File(storageDir, "IMG_" + timeStamp + ".jpg");
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
@@ -683,8 +682,7 @@ public class Utilities {
         try {
             File storageDir = getAlbumDir();
             String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-            String imageFileName = "VID_" + timeStamp + "_";
-            return File.createTempFile(imageFileName, ".mp4", storageDir);
+            return new File(storageDir, "VID_" + timeStamp + ".mp4");
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }

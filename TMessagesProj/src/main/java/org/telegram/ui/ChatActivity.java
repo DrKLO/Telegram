@@ -1599,7 +1599,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     Bitmap bitmap = ImageLoader.loadBitmap(f.getAbsolutePath(), null, 90, 90);
                     if (bitmap != null) {
                         document.thumb = ImageLoader.scaleAndSaveImage(bitmap, 90, 90, 55, currentEncryptedChat != null);
-                        document.thumb.type = "s";
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -1674,6 +1673,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     video.thumb = size;
                     if (video.thumb == null) {
                         video.thumb = new TLRPC.TL_photoSizeEmpty();
+                        video.thumb.type = "s";
                     } else {
                         video.thumb.type = "s";
                     }
@@ -1702,31 +1702,50 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (temp != null && temp.exists()) {
                             video.size = (int) temp.length();
                         }
+                        boolean infoObtained = false;
                         if (Build.VERSION.SDK_INT >= 14) {
-                            MediaMetadataRetriever mediaMetadataRetriever = new MediaMetadataRetriever();
-                            mediaMetadataRetriever.setDataSource(videoPath);
-                            String width = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH);
-                            if (width != null) {
-                                video.w = Integer.parseInt(width);
+                            MediaMetadataRetriever mediaMetadataRetriever = null;
+                            try {
+                                mediaMetadataRetriever = new MediaMetadataRetriever();
+                                mediaMetadataRetriever.setDataSource(videoPath);
+                                String width = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH);
+                                if (width != null) {
+                                    video.w = Integer.parseInt(width);
+                                }
+                                String height = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT);
+                                if (height != null) {
+                                    video.h = Integer.parseInt(height);
+                                }
+                                String duration = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+                                if (duration != null) {
+                                    video.duration = (int) Math.ceil(Long.parseLong(duration) / 1000.0f);
+                                }
+                                infoObtained = true;
+                            } catch (Exception e) {
+                                FileLog.e("tmessages", e);
+                            } finally {
+                                try {
+                                    if (mediaMetadataRetriever != null) {
+                                        mediaMetadataRetriever.release();
+                                        mediaMetadataRetriever = null;
+                                    }
+                                } catch (Exception e) {
+                                    FileLog.e("tmessages", e);
+                                }
                             }
-                            String height = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT);
-                            if (height != null) {
-                                video.h = Integer.parseInt(height);
+                        }
+                        if (!infoObtained) {
+                            try {
+                                MediaPlayer mp = MediaPlayer.create(ApplicationLoader.applicationContext, Uri.fromFile(new File(videoPath)));
+                                if (mp != null) {
+                                    video.duration = (int) Math.ceil(mp.getDuration() / 1000.0f);
+                                    video.w = mp.getVideoWidth();
+                                    video.h = mp.getVideoHeight();
+                                    mp.release();
+                                }
+                            } catch (Exception e) {
+                                FileLog.e("tmessages", e);
                             }
-                            String duration = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
-                            if (duration != null) {
-                                video.duration = (int) Math.ceil(Long.parseLong(duration) / 1000.0f);
-                            }
-                            mediaMetadataRetriever.release();
-                        } else {
-                            MediaPlayer mp = MediaPlayer.create(ApplicationLoader.applicationContext, Uri.fromFile(new File(videoPath)));
-                            if (mp == null) {
-                                return;
-                            }
-                            video.duration = (int) Math.ceil(mp.getDuration() / 1000.0f);
-                            video.w = mp.getVideoWidth();
-                            video.h = mp.getVideoHeight();
-                            mp.release();
                         }
                     }
                 }
@@ -3572,7 +3591,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (message.messageOwner.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
                         photoImage.setImage(message.messageOwner.action.newUserPhoto.photo_small, "50_50", AndroidUtilities.getUserAvatarForId(currentUser.id));
                     } else {
-                        PhotoObject photo = PhotoObject.getClosestImageWithSize(message.photoThumbs, AndroidUtilities.dp(64), AndroidUtilities.dp(64));
+                        PhotoObject photo = PhotoObject.getClosestImageWithSize(message.photoThumbs, AndroidUtilities.dp(64));
                         if (photo != null) {
                             if (photo.image != null) {
                                 photoImage.setImageBitmap(photo.image);

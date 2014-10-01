@@ -11,6 +11,8 @@ package org.telegram.android;
 import android.graphics.drawable.BitmapDrawable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -28,11 +30,6 @@ public class LruCache {
     /** Size of this cache in units. Not necessarily the number of elements. */
     private int size;
     private int maxSize;
-
-    private int putCount;
-    private int evictionCount;
-    private int hitCount;
-    private int missCount;
 
     /**
      * @param maxSize for caches that do not override {@link #sizeOf}, this is
@@ -63,10 +60,8 @@ public class LruCache {
         synchronized (this) {
             mapValue = map.get(key);
             if (mapValue != null) {
-                hitCount++;
                 return mapValue;
             }
-            missCount++;
         }
         return null;
     }
@@ -92,7 +87,6 @@ public class LruCache {
 
         BitmapDrawable previous;
         synchronized (this) {
-            putCount++;
             size += safeSizeOf(key, value);
             previous = map.put(key, value);
             if (previous != null) {
@@ -114,7 +108,7 @@ public class LruCache {
             entryRemoved(false, key, previous, value);
         }
 
-        trimToSize(maxSize);
+        trimToSize(maxSize, key);
         return previous;
     }
 
@@ -122,40 +116,36 @@ public class LruCache {
      * @param maxSize the maximum size of the cache before returning. May be -1
      *     to evict even 0-sized elements.
      */
-    private void trimToSize(int maxSize) {
-        while (true) {
-            String key;
-            BitmapDrawable value;
-            synchronized (this) {
-                if (size < 0 || (map.isEmpty() && size != 0)) {
-                    throw new IllegalStateException(getClass().getName()
-                            + ".sizeOf() is reporting inconsistent results!");
-                }
-
+    private void trimToSize(int maxSize, String justAdded) {
+        synchronized (this) {
+            Iterator<HashMap.Entry<String, BitmapDrawable>> iterator = map.entrySet().iterator();
+            while (iterator.hasNext()) {
                 if (size <= maxSize || map.isEmpty()) {
                     break;
                 }
+                HashMap.Entry<String, BitmapDrawable> entry = iterator.next();
 
-                Map.Entry<String, BitmapDrawable> toEvict = map.entrySet().iterator().next();
-                key = toEvict.getKey();
-                value = toEvict.getValue();
-                map.remove(key);
+                String key = entry.getKey();
+                if (justAdded != null && justAdded.equals(key)) {
+                    continue;
+                }
+                BitmapDrawable value = entry.getValue();
                 size -= safeSizeOf(key, value);
-                evictionCount++;
-            }
+                iterator.remove();
 
-            String[] args = key.split("@");
-            if (args.length > 1) {
-                ArrayList<String> arr = mapFilters.get(args[0]);
-                if (arr != null) {
-                    arr.remove(key);
-                    if (arr.isEmpty()) {
-                        mapFilters.remove(args[1]);
+                String[] args = key.split("@");
+                if (args.length > 1) {
+                    ArrayList<String> arr = mapFilters.get(args[0]);
+                    if (arr != null) {
+                        arr.remove(key);
+                        if (arr.isEmpty()) {
+                            mapFilters.remove(args[1]);
+                        }
                     }
                 }
-            }
 
-            entryRemoved(true, key, value, null);
+                entryRemoved(true, key, value, null);
+            }
         }
     }
 
@@ -239,7 +229,7 @@ public class LruCache {
      * Clear the cache, calling {@link #entryRemoved} on each removed entry.
      */
     public final void evictAll() {
-        trimToSize(-1); // -1 will evict 0-sized elements
+        trimToSize(-1, null); // -1 will evict 0-sized elements
     }
 
     /**
@@ -258,41 +248,5 @@ public class LruCache {
      */
     public synchronized final int maxSize() {
         return maxSize;
-    }
-
-    /**
-     * Returns the number of times {@link #get} returned a value.
-     */
-    public synchronized final int hitCount() {
-        return hitCount;
-    }
-
-    /**
-     * Returns the number of times {@link #get} returned null or required a new
-     * value to be created.
-     */
-    public synchronized final int missCount() {
-        return missCount;
-    }
-
-    /**
-     * Returns the number of times {@link #put} was called.
-     */
-    public synchronized final int putCount() {
-        return putCount;
-    }
-
-    /**
-     * Returns the number of values that have been evicted.
-     */
-    public synchronized final int evictionCount() {
-        return evictionCount;
-    }
-
-    @Override public synchronized final String toString() {
-        int accesses = hitCount + missCount;
-        int hitPercent = accesses != 0 ? (100 * hitCount / accesses) : 0;
-        return String.format("LruCache[maxSize=%d,hits=%d,misses=%d,hitRate=%d%%]",
-                maxSize, hitCount, missCount, hitPercent);
     }
 }
