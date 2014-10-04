@@ -214,7 +214,7 @@ public class MessageObject {
                         }
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionLoginUnknownLocation) {
-                    String date = String.format("%s %s %s", LocaleController.formatterYear.format(((long)message.date) * 1000), LocaleController.getString("OtherAt", R.string.OtherAt), LocaleController.formatterDay.format(((long)message.date) * 1000));
+                    String date = String.format("%s %s%s", LocaleController.formatterYear.format(((long)message.date) * 1000), LocaleController.getOtherAt(), LocaleController.formatterDay.format(((long)message.date) * 1000));
                     TLRPC.User to_user = UserConfig.getCurrentUser();
                     if (to_user == null) {
                         if (users != null) {
