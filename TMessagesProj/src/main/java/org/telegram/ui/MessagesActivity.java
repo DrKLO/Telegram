@@ -53,6 +53,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     private View progressView;
     private View empryView;
     private String selectAlertString;
+    private String selectAlertStringGroup;
     private boolean serverOnly = false;
 
     private static boolean dialogsLoaded = false;
@@ -101,6 +102,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             onlySelect = arguments.getBoolean("onlySelect", false);
             serverOnly = arguments.getBoolean("serverOnly", false);
             selectAlertString = arguments.getString("selectAlertString");
+            selectAlertStringGroup = arguments.getString("selectAlertStringGroup");
         }
         if (!dialogsLoaded) {
             MessagesController.getInstance().loadDialogs(0, 0, 100, true);
@@ -538,7 +540,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     }
 
     private void didSelectResult(final long dialog_id, boolean useAlert, final boolean param) {
-        if (useAlert && selectAlertString != null) {
+        if (useAlert && selectAlertString != null && selectAlertStringGroup != null) {
             if (getParentActivity() == null) {
                 return;
             }
@@ -552,7 +554,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     if (chat == null) {
                         return;
                     }
-                    builder.setMessage(LocaleController.formatStringSimple(selectAlertString, chat.title));
+                    builder.setMessage(LocaleController.formatStringSimple(selectAlertStringGroup, chat.title));
                 } else {
                     if (lower_part > 0) {
                         TLRPC.User user = MessagesController.getInstance().getUser(lower_part);
@@ -565,7 +567,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                         if (chat == null) {
                             return;
                         }
-                        builder.setMessage(LocaleController.formatStringSimple(selectAlertString, chat.title));
+                        builder.setMessage(LocaleController.formatStringSimple(selectAlertStringGroup, chat.title));
                     }
                 }
             } else {

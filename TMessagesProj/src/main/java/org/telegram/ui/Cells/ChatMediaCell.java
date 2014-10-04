@@ -136,6 +136,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
 
             progressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             progressPaint.setStyle(Paint.Style.STROKE);
+            progressPaint.setStrokeCap(Paint.Cap.ROUND);
             progressPaint.setStrokeWidth(AndroidUtilities.dp(2));
 
             decelerateInterpolator = new DecelerateInterpolator();

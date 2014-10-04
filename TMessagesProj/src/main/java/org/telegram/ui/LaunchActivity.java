@@ -576,6 +576,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             Bundle args = new Bundle();
             args.putBoolean("onlySelect", true);
             args.putString("selectAlertString", LocaleController.getString("SendMessagesTo", R.string.SendMessagesTo));
+            args.putString("selectAlertStringGroup", LocaleController.getString("SendMessagesToGroup", R.string.SendMessagesToGroup));
             MessagesActivity fragment = new MessagesActivity(args);
             fragment.setDelegate(this);
             actionBarLayout.presentFragment(fragment, false, true, true);

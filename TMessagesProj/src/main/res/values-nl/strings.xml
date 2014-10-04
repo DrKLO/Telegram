@@ -152,6 +152,8 @@
     <string name="NotificationUnrecognizedDevice">%1$s,\nEr is op je account ingelogd vanaf een nieuw apparaat op %2$s\n\nApparaat: %3$s\nLocatie: %4$s\n\nAls jij dit niet was, kun je alle sessies beëindigen via Instellingen – Beëindig alle andere sessies.\n\nBedankt,\nHet Telegram-team</string>
     <string name="NotificationContactNewPhoto">%1$s heeft zijn/haar profielfoto gewijzigd</string>
     <string name="Reply">Antwoord</string>
+    <string name="ReplyToGroup">Reply to %1$s</string>
+    <string name="ReplyToUser">Reply to %1$s</string>
     <!--contacts view-->
     <string name="SelectContact">Kies een contact</string>
     <string name="NoContacts">Nog geen contacten</string>
@@ -377,6 +379,8 @@
     <string name="AreYouSureDeleteContact">Weet je zeker dat je deze contactpersoon wilt verwijderen?</string>
     <string name="AreYouSureSecretChat">Weet je zeker dat je een geheime chat wilt starten?</string>
     <string name="ForwardFromMyName">doorsturen via mijn eigen naam</string>
+    <string name="SendMessagesToGroup">Berichten naar %1$s verzenden?</string>
+    <string name="ForwardMessagesToGroup">Berichten doorsturen naar %1$s?</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Snel</string>
@@ -424,6 +428,12 @@
     <string name="FromContacts_few">van %1$d contactpersonen</string>
     <string name="FromContacts_many">van %1$d contactpersonen</string>
     <string name="FromContacts_other">van %1$d contactpersonen</string>
+    <!--date formatters-->
+    <string name="formatterMonth">dd MMM</string>
+    <string name="formatterYear">dd.MM.yy</string>
+    <string name="formatterYearMax">dd.MM.yyyy</string>
+    <string name="chatDate">d MMMM</string>
+    <string name="chatFullDate">d MMMM yyyy</string>
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
 </resources>

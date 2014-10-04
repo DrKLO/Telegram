@@ -1648,7 +1648,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         int high_id = (int)(dialog_id >> 32);
 
         if (lower_part != 0) {
-            if (max_id == 0 && offset == 0 || high_id == 1) {
+            if (max_positive_id == 0 && offset == 0 || high_id == 1) {
                 return;
             }
             TLRPC.TL_messages_readHistory req = new TLRPC.TL_messages_readHistory();

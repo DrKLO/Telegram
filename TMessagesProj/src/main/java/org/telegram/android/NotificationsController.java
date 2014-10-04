@@ -18,10 +18,12 @@ import android.content.pm.ResolveInfo;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.app.RemoteInput;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -47,6 +49,8 @@ public class NotificationsController {
     private HashMap<Integer, MessageObject> pushMessagesDict = new HashMap<Integer, MessageObject>();
     private NotificationManagerCompat notificationManager = null;
     private HashMap<Long, Integer> pushDialogs = new HashMap<Long, Integer>();
+    private HashMap<Long, Integer> wearNoticationsIds = new HashMap<Long, Integer>();
+    private int wearNotificationId = 10000;
     public ArrayList<MessageObject> popupMessages = new ArrayList<MessageObject>();
     private long openned_dialog_id = 0;
     private int total_unread_count = 0;
@@ -79,6 +83,7 @@ public class NotificationsController {
         pushMessagesDict.clear();
         pushDialogs.clear();
         popupMessages.clear();
+        wearNoticationsIds.clear();
         notifyCheck = false;
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
@@ -261,6 +266,7 @@ public class NotificationsController {
             MessageObject lastMessageObject = pushMessages.get(0);
 
             long dialog_id = lastMessageObject.getDialogId();
+            int mid = lastMessageObject.messageOwner.id;
             int chat_id = lastMessageObject.messageOwner.to_id.chat_id;
             int user_id = lastMessageObject.messageOwner.to_id.user_id;
             if (user_id == 0) {
@@ -387,7 +393,9 @@ public class NotificationsController {
                     .setSmallIcon(R.drawable.notification)
                     .setAutoCancel(true)
                     .setNumber(total_unread_count)
-                    .setContentIntent(contentIntent);
+                    .setContentIntent(contentIntent)
+                    .setGroup("messages")
+                    .setGroupSummary(true);
 
             String lastMessage = null;
             String lastMessageFull = null;
@@ -479,15 +487,116 @@ public class NotificationsController {
                 mBuilder.setVibrate(new long[]{0, 0});
             }
 
-            //RemoteInput remoteInput = new RemoteInput.Builder(EXTRA_VOICE_REPLY).setLabel(LocaleController.getString("Reply", R.string.Reply)).build();
-
             notificationManager.notify(1, mBuilder.build());
             if (preferences.getBoolean("EnablePebbleNotifications", false)) {
                 sendAlertToPebble(lastMessageFull);
             }
+            showWearNotifications(notifyAboutLast);
             scheduleNotificationRepeat();
         } catch (Exception e) {
             FileLog.e("tmessages", e);
+        }
+    }
+
+    public void showWearNotifications(boolean notifyAboutLast) {
+        if (Build.VERSION.SDK_INT < 19) {
+            return;
+        }
+        ArrayList<Long> sortedDialogs = new ArrayList<Long>();
+        HashMap<Long, ArrayList<MessageObject>> messagesByDialogs = new HashMap<Long, ArrayList<MessageObject>>();
+        for (MessageObject messageObject : pushMessages) {
+            long dialog_id = messageObject.getDialogId();
+            if ((int)dialog_id == 0) {
+                continue;
+            }
+
+            ArrayList<MessageObject> arrayList = messagesByDialogs.get(dialog_id);
+            if (arrayList == null) {
+                arrayList = new ArrayList<MessageObject>();
+                messagesByDialogs.put(dialog_id, arrayList);
+                sortedDialogs.add(0, dialog_id);
+            }
+            arrayList.add(messageObject);
+        }
+
+        HashMap<Long, Integer> oldIds = new HashMap<Long, Integer>();
+        oldIds.putAll(wearNoticationsIds);
+        wearNoticationsIds.clear();
+
+        for (long dialog_id : sortedDialogs) {
+            ArrayList<MessageObject> messageObjects = messagesByDialogs.get(dialog_id);
+            int max_id = messageObjects.get(0).messageOwner.id;
+            TLRPC.Chat chat = null;
+            TLRPC.User user = null;
+            String name = null;
+            if (dialog_id > 0) {
+                user = MessagesController.getInstance().getUser((int)dialog_id);
+                if (user == null) {
+                    continue;
+                }
+            } else {
+                chat = MessagesController.getInstance().getChat(-(int)dialog_id);
+                if (chat == null) {
+                    continue;
+                }
+            }
+            if (chat != null) {
+                name = chat.title;
+            } else {
+                name = ContactsController.formatName(user.first_name, user.last_name);
+            }
+
+            Integer notificationId = oldIds.get(dialog_id);
+            if (notificationId == null) {
+                notificationId = wearNotificationId++;
+            } else {
+                oldIds.remove(dialog_id);
+            }
+
+            Intent replyIntent = new Intent(ApplicationLoader.applicationContext, WearReplyReceiver.class);
+            replyIntent.putExtra("dialog_id", dialog_id);
+            replyIntent.putExtra("max_id", max_id);
+            PendingIntent replyPendingIntent = PendingIntent.getBroadcast(ApplicationLoader.applicationContext, notificationId, replyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            RemoteInput remoteInput = new RemoteInput.Builder(EXTRA_VOICE_REPLY).setLabel(LocaleController.getString("Reply", R.string.Reply)).build();
+            String replyToString;
+            if (chat != null) {
+                replyToString = LocaleController.formatString("ReplyToGroup", R.string.ReplyToGroup, name);
+            } else {
+                replyToString = LocaleController.formatString("ReplyToUser", R.string.ReplyToUser, name);
+            }
+            NotificationCompat.Action action = new NotificationCompat.Action.Builder(R.drawable.ic_reply_icon, replyToString, replyPendingIntent).addRemoteInput(remoteInput).build();
+
+            String text = "";
+            for (MessageObject messageObject : messageObjects) {
+                String message = getStringForMessage(messageObject, false);
+                if (message == null) {
+                    continue;
+                }
+                if (chat != null) {
+                    message = message.replace(" @ " + name, "");
+                } else {
+                    message = message.replace(name + ": ", "").replace(name + " ", "");
+                }
+                if (text.length() > 0) {
+                    text += "\n\n";
+                }
+                text += message;
+            }
+
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(ApplicationLoader.applicationContext)
+                    .setContentTitle(name)
+                    .setSmallIcon(R.drawable.notification)
+                    .setGroup("messages")
+                    .setContentText(text)
+                    .setGroupSummary(false)
+                    .extend(new NotificationCompat.WearableExtender().addAction(action));
+
+            notificationManager.notify(notificationId, builder.build());
+            wearNoticationsIds.put(dialog_id, notificationId);
+        }
+
+        for (HashMap.Entry<Long, Integer> entry : oldIds.entrySet()) {
+            notificationManager.cancel(entry.getValue());
         }
     }
 

@@ -152,6 +152,8 @@
     <string name="NotificationUnrecognizedDevice">%1$s,\nتم تسجيل الدخول لحسابك من جهاز جديد يوم %2$s\n\nالجهاز: %3$s\nالموقع: %4$s\n\nإذا لم يكن أنت من سجل الدخول، يمكنك الذهاب للإعدادات ثم تسجيل الخروج من كافة الأجهزة الأخرى.\n\nشكرًا,\nفريق عمل تيليجرام</string>
     <string name="NotificationContactNewPhoto">%1$s قام بتغيير صورته الشخصية</string>
     <string name="Reply">الرد</string>
+    <string name="ReplyToGroup">Reply to %1$s</string>
+    <string name="ReplyToUser">Reply to %1$s</string>
     <!--contacts view-->
     <string name="SelectContact">اختر جهة اتصال</string>
     <string name="NoContacts">لا توجد جهات اتصال بعد</string>
@@ -377,6 +379,8 @@
     <string name="AreYouSureDeleteContact">هل أنت متأكد من رغبتك في حذف جهة الاتصال هذه؟</string>
     <string name="AreYouSureSecretChat">هل أنت متأكد من أنك تريد بدء محادثة سرية؟</string>
     <string name="ForwardFromMyName">أعد الإرسال باستخدام اسمي</string>
+    <string name="SendMessagesToGroup">هل ترغب في إرسال رسالة إلى %1$s؟</string>
+    <string name="ForwardMessagesToGroup">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
     <!--Intro view-->
     <string name="Page1Title">تيليجرام</string>
     <string name="Page2Title">سريع</string>
@@ -424,6 +428,12 @@
     <string name="FromContacts_few">من %1$d جهات اتصال</string>
     <string name="FromContacts_many">من %1$d جهة اتصال</string>
     <string name="FromContacts_other">من %1$d جهة اتصال</string>
+    <!--date formatters-->
+    <string name="formatterMonth">dd MMM</string>
+    <string name="formatterYear">dd.MM.yy</string>
+    <string name="formatterYearMax">dd.MM.yyyy</string>
+    <string name="chatDate">d MMMM</string>
+    <string name="chatFullDate">d MMMM yyyy</string>
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
 </resources>

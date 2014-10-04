@@ -152,6 +152,8 @@
     <string name="NotificationUnrecognizedDevice">%1$s,\nNós detectamos um login na sua conta de um novo dispositivo %2$s\n\nDispositivo: %3$s\nLocalização: %4$s\nSe não foi você, você pode ir em Configurações - Terminar todas as sessões.\n\nAtenciosamente,\nTime do Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s atualizou a foto do perfil</string>
     <string name="Reply">Responder</string>
+    <string name="ReplyToGroup">Reply to %1$s</string>
+    <string name="ReplyToUser">Reply to %1$s</string>
     <!--contacts view-->
     <string name="SelectContact">Selecionar Contato</string>
     <string name="NoContacts">Ainda não há contatos</string>
@@ -377,6 +379,8 @@
     <string name="AreYouSureDeleteContact">Você tem certeza que deseja deletar este contato?</string>
     <string name="AreYouSureSecretChat">Você tem certeza que deseja começar uma conversa secreta?</string>
     <string name="ForwardFromMyName">encaminhar pelo meu nome</string>
+    <string name="SendMessagesToGroup">Enviar mensagens para %1$s?</string>
+    <string name="ForwardMessagesToGroup">Encaminhar mensagem para %1$s?</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Rápido</string>
@@ -424,6 +428,12 @@
     <string name="FromContacts_few">de %1$d contatos</string>
     <string name="FromContacts_many">de %1$d contatos</string>
     <string name="FromContacts_other">de %1$d contatos</string>
+    <!--date formatters-->
+    <string name="formatterMonth">dd MMM</string>
+    <string name="formatterYear">dd.MM.yy</string>
+    <string name="formatterYearMax">dd.MM.yyyy</string>
+    <string name="chatDate">d MMMM</string>
+    <string name="chatFullDate">d MMMM yyyy</string>
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
 </resources>
