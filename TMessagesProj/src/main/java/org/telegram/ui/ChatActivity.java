@@ -1271,7 +1271,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         count = info.participants.size();
                     }
                     if (onlineCount > 0 && count != 0) {
-                        actionBarLayer.setSubtitle(String.format("%s, %d %s", LocaleController.formatPluralString("Members", count), onlineCount, LocaleController.getString("Online", R.string.Online)));
+                        actionBarLayer.setSubtitle(LocaleController.formatPluralString("Members", count) + ", " + LocaleController.formatString("OnlineCount", R.string.OnlineCount, onlineCount));
                     } else {
                         actionBarLayer.setSubtitle(LocaleController.formatPluralString("Members", count));
                     }

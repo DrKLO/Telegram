@@ -15,7 +15,7 @@
     <!--code enter view-->
     <string name="YourCode">Your code</string>
     <string name="SentSmsCode">We\'ve sent an SMS with an activation code to your phone</string>
-    <string name="CallText">We will call you in</string>
+    <string name="CallText">We will call you in %1$d:%2$02d</string>
     <string name="Calling">Calling you...</string>
     <string name="Code">Code</string>
     <string name="WrongNumber">Wrong number?</string>
@@ -162,6 +162,7 @@
     <string name="YesterdayAt">yesterday at</string>
     <string name="OtherAt">at</string>
     <string name="Online">online</string>
+    <string name="OnlineCount">%d online</string>
     <string name="Offline">offline</string>
     <string name="LastSeen">last seen</string>
     <string name="LastSeenDate">last seen</string>
@@ -428,6 +429,7 @@
     <string name="FromContacts_few">from %1$d contacts</string>
     <string name="FromContacts_many">from %1$d contacts</string>
     <string name="FromContacts_other">from %1$d contacts</string>
+    <string name="DetailTextOrder">%1$s %2$s</string>
     <!--date formatters-->
     <string name="formatterMonth">MMM dd</string>
     <string name="formatterYear">dd.MM.yy</string>
