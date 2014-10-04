@@ -27,9 +27,10 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.android.NotificationsController;
-import org.telegram.messenger.NotificationCenter;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
@@ -37,7 +38,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
@@ -104,7 +104,7 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
         resetSectionRow = rowCount++;
         resetNotificationsRow = rowCount++;
 
-        NotificationCenter.getInstance().addObserver(this, MessagesController.notificationsSettingsUpdated);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.notificationsSettingsUpdated);
 
         return super.onFragmentCreate();
     }
@@ -112,7 +112,7 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.notificationsSettingsUpdated);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.notificationsSettingsUpdated);
     }
 
     @Override
@@ -165,19 +165,6 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
                         editor.commit();
                         listView.invalidateViews();
                         updateServerNotificationsSettings(i == groupPreviewRow);
-                    } else if (i == messageVibrateRow || i == groupVibrateRow) {
-                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                        SharedPreferences.Editor editor = preferences.edit();
-                        boolean enabled;
-                        if (i == messageVibrateRow) {
-                            enabled = preferences.getBoolean("EnableVibrateAll", true);
-                            editor.putBoolean("EnableVibrateAll", !enabled);
-                        } else if (i == groupVibrateRow) {
-                            enabled = preferences.getBoolean("EnableVibrateGroup", true);
-                            editor.putBoolean("EnableVibrateGroup", !enabled);
-                        }
-                        editor.commit();
-                        listView.invalidateViews();
                     } else if (i == messageSoundRow || i == groupSoundRow) {
                         try {
                             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
@@ -213,7 +200,7 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
                                 }
                             }
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentSound);
-                            getParentActivity().startActivityForResult(tmpIntent, i);
+                            startActivityForResult(tmpIntent, i);
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
                         }
@@ -226,7 +213,7 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
                         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                             @Override
                             public void run(TLObject response, TLRPC.TL_error error) {
-                                Utilities.RunOnUIThread(new Runnable() {
+                                AndroidUtilities.RunOnUIThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         MessagesController.getInstance().enableJoined = true;
@@ -393,6 +380,40 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         showAlertDialog(builder);
+                    } else if (i == messageVibrateRow || i == groupVibrateRow) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("Vibrate", R.string.Vibrate));
+                        builder.setItems(new CharSequence[] {
+                                LocaleController.getString("Disabled", R.string.Disabled),
+                                LocaleController.getString("Default", R.string.Default),
+                                LocaleController.getString("Short", R.string.Short),
+                                LocaleController.getString("Long", R.string.Long)
+                        }, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                String param = "vibrate_messages";
+                                if (i == groupVibrateRow) {
+                                    param = "vibrate_group";
+                                }
+                                if (which == 0) {
+                                    editor.putInt(param, 2);
+                                } else if (which == 1) {
+                                    editor.putInt(param, 0);
+                                } else if (which == 2) {
+                                    editor.putInt(param, 1);
+                                } else if (which == 3) {
+                                    editor.putInt(param, 3);
+                                }
+                                editor.commit();
+                                if (listView != null) {
+                                    listView.invalidateViews();
+                                }
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showAlertDialog(builder);
                     }
                 }
             });
@@ -473,7 +494,7 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
 
     @Override
     public void didReceivedNotification(int id, Object... args) {
-        if (id == MessagesController.notificationsSettingsUpdated) {
+        if (id == NotificationCenter.notificationsSettingsUpdated) {
             listView.invalidateViews();
         }
     }
@@ -566,14 +587,6 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
                         enabled = preferences.getBoolean("EnablePreviewGroup", true);
                     }
                     textView.setText(LocaleController.getString("MessagePreview", R.string.MessagePreview));
-                    divider.setVisibility(View.VISIBLE);
-                } else if (i == messageVibrateRow || i == groupVibrateRow) {
-                    if (i == messageVibrateRow) {
-                        enabled = preferences.getBoolean("EnableVibrateAll", true);
-                    } else if (i == groupVibrateRow) {
-                        enabled = preferences.getBoolean("EnableVibrateGroup", true);
-                    }
-                    textView.setText(LocaleController.getString("Vibrate", R.string.Vibrate));
                     divider.setVisibility(View.VISIBLE);
                 } else if (i == inappSoundRow) {
                     enabled = preferences.getBoolean("EnableInAppSounds", true);
@@ -674,6 +687,33 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
                     colorView.setBackgroundColor(preferences.getInt("GroupLed", 0xff00ff00));
                 }
                 divider.setVisibility(View.VISIBLE);
+            } else if (type == 4) {
+                if (view == null) {
+                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                    view = li.inflate(R.layout.user_profile_leftright_row_layout, viewGroup, false);
+                }
+                TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
+                TextView detailTextView = (TextView)view.findViewById(R.id.settings_row_text_detail);
+
+                View divider = view.findViewById(R.id.settings_row_divider);
+                SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                int value = 0;
+                textView.setText(LocaleController.getString("Vibrate", R.string.Vibrate));
+                divider.setVisibility(View.VISIBLE);
+                if (i == messageVibrateRow) {
+                    value = preferences.getInt("vibrate_messages", 0);
+                } else if (i == groupVibrateRow) {
+                    value = preferences.getInt("vibrate_group", 0);
+                }
+                if (value == 0) {
+                    detailTextView.setText(LocaleController.getString("Default", R.string.Default));
+                } else if (value == 1) {
+                    detailTextView.setText(LocaleController.getString("Short", R.string.Short));
+                } else if (value == 2) {
+                    detailTextView.setText(LocaleController.getString("Disabled", R.string.Disabled));
+                } else if (value == 3) {
+                    detailTextView.setText(LocaleController.getString("Long", R.string.Long));
+                }
             }
             return view;
         }
@@ -682,14 +722,16 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
         public int getItemViewType(int i) {
             if (i == messageSectionRow || i == groupSectionRow || i == inappSectionRow || i == eventsSectionRow || i == otherSectionRow || i == resetSectionRow) {
                 return 0;
-            } else if (i == messageAlertRow || i == messagePreviewRow || i == messageVibrateRow ||
-                    i == groupAlertRow || i == groupPreviewRow || i == groupVibrateRow ||
+            } else if (i == messageAlertRow || i == messagePreviewRow ||
+                    i == groupAlertRow || i == groupPreviewRow ||
                     i == inappSoundRow || i == inappVibrateRow || i == inappPreviewRow ||
                     i == contactJoinedRow ||
                     i == pebbleAlertRow || i == notificationsServiceRow || i == badgeNumberRow) {
                 return 1;
             } else if (i == messageLedRow || i == groupLedRow) {
                 return 3;
+            } else if (i == groupVibrateRow || i == messageVibrateRow) {
+                return 4;
             } else {
                 return 2;
             }
@@ -697,7 +739,7 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
 
         @Override
         public int getViewTypeCount() {
-            return 4;
+            return 5;
         }
 
         @Override

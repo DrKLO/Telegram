@@ -27,14 +27,15 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
-import org.telegram.objects.MessageObject;
+import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
-import org.telegram.messenger.NotificationCenter;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
@@ -55,19 +56,24 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     private boolean userLocationMoved = false;
     private boolean firstWas = false;
     private MapView mapView;
+    private LocationActivityDelegate delegate;
 
     private final static int map_to_my_location = 1;
     private final static int map_list_menu_map = 2;
     private final static int map_list_menu_satellite = 3;
     private final static int map_list_menu_hybrid = 4;
 
+    public static interface LocationActivityDelegate {
+        public abstract void didSelectLocation(double latitude, double longitude);
+    }
+
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
         swipeBackEnabled = false;
-        NotificationCenter.getInstance().addObserver(this, MessagesController.closeChats);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeChats);
         if (messageObject != null) {
-            NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
+            NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
         }
         return true;
     }
@@ -75,8 +81,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.updateInterfaces);
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.closeChats);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
         if (mapView != null) {
             mapView.onDestroy();
         }
@@ -180,7 +186,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                     sendButton.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            NotificationCenter.getInstance().postNotificationName(997, userLocation.getLatitude(), userLocation.getLongitude());
+                            if (delegate != null) {
+                                delegate.didSelectLocation(userLocation.getLatitude(), userLocation.getLongitude());
+                            }
                             finishFragment();
                         }
                     });
@@ -222,14 +230,14 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                     if (messageObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
                         fromId = messageObject.messageOwner.fwd_from_id;
                     }
-                    TLRPC.User user = MessagesController.getInstance().users.get(fromId);
+                    TLRPC.User user = MessagesController.getInstance().getUser(fromId);
                     if (user != null) {
                         TLRPC.FileLocation photo = null;
                         if (user.photo != null) {
                             photo = user.photo.photo_small;
                         }
-                        avatarImageView.setImage(photo, "50_50", Utilities.getUserAvatarForId(user.id));
-                        nameTextView.setText(Utilities.formatName(user.first_name, user.last_name));
+                        avatarImageView.setImage(photo, "50_50", AndroidUtilities.getUserAvatarForId(user.id));
+                        nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
                     }
                     userLocation = new Location("network");
                     userLocation.setLatitude(messageObject.messageOwner.media.geo.lat);
@@ -271,14 +279,14 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             if (messageObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
                 fromId = messageObject.messageOwner.fwd_from_id;
             }
-            TLRPC.User user = MessagesController.getInstance().users.get(fromId);
+            TLRPC.User user = MessagesController.getInstance().getUser(fromId);
             if (user != null) {
                 TLRPC.FileLocation photo = null;
                 if (user.photo != null) {
                     photo = user.photo.photo_small;
                 }
-                avatarImageView.setImage(photo, null, Utilities.getUserAvatarForId(user.id));
-                nameTextView.setText(Utilities.formatName(user.first_name, user.last_name));
+                avatarImageView.setImage(photo, null, AndroidUtilities.getUserAvatarForId(user.id));
+                nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
             }
         }
     }
@@ -320,12 +328,12 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public void didReceivedNotification(int id, Object... args) {
-        if (id == MessagesController.updateInterfaces) {
+        if (id == NotificationCenter.updateInterfaces) {
             int mask = (Integer)args[0];
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
                 updateUserData();
             }
-        } else if (id == MessagesController.closeChats) {
+        } else if (id == NotificationCenter.closeChats) {
             removeSelfFromStack();
         }
     }
@@ -356,5 +364,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         if (mapView != null) {
             mapView.onLowMemory();
         }
+    }
+
+    public void setDelegate(LocationActivityDelegate delegate) {
+        this.delegate = delegate;
     }
 }

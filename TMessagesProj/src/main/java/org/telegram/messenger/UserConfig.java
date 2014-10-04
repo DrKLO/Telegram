@@ -27,6 +27,7 @@ public class UserConfig {
     public static int lastBroadcastId = -1;
     public static String contactsHash = "";
     public static String importHash = "";
+    public static boolean blockedUsersLoaded = false;
     private final static Integer sync = 1;
     public static boolean saveIncomingPhotos = false;
     public static int contactsVersion = 1;
@@ -59,6 +60,7 @@ public class UserConfig {
                 editor.putInt("contactsVersion", contactsVersion);
                 editor.putInt("lastBroadcastId", lastBroadcastId);
                 editor.putBoolean("registeredForInternalPush", registeredForInternalPush);
+                editor.putBoolean("blockedUsersLoaded", blockedUsersLoaded);
                 if (currentUser != null) {
                     if (withFile) {
                         SerializedData data = new SerializedData();
@@ -178,6 +180,7 @@ public class UserConfig {
                 contactsVersion = preferences.getInt("contactsVersion", 0);
                 lastBroadcastId = preferences.getInt("lastBroadcastId", -1);
                 registeredForInternalPush = preferences.getBoolean("registeredForInternalPush", false);
+                blockedUsersLoaded = preferences.getBoolean("blockedUsersLoaded", false);
                 String user = preferences.getString("user", null);
                 if (user != null) {
                     byte[] userBytes = Base64.decode(user, Base64.DEFAULT);
@@ -201,6 +204,7 @@ public class UserConfig {
         contactsVersion = 1;
         lastBroadcastId = -1;
         saveIncomingPhotos = false;
+        blockedUsersLoaded = false;
         saveConfig(true);
     }
 }

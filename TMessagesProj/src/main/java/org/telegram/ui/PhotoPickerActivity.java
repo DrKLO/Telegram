@@ -26,11 +26,10 @@ import android.widget.TextView;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MediaController;
-import org.telegram.android.MessagesController;
-import org.telegram.messenger.NotificationCenter;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
-import org.telegram.objects.MessageObject;
+import org.telegram.android.MessageObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
@@ -69,15 +68,15 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     public boolean onFragmentCreate() {
         loading = true;
         MediaController.loadGalleryPhotosAlbums(classGuid);
-        NotificationCenter.getInstance().addObserver(this, MediaController.albumsDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, MessagesController.closeChats);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.albumsDidLoaded);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeChats);
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
-        NotificationCenter.getInstance().removeObserver(this, MediaController.albumsDidLoaded);
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.closeChats);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.albumsDidLoaded);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
         super.onFragmentDestroy();
     }
 
@@ -199,7 +198,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     @SuppressWarnings("unchecked")
     @Override
     public void didReceivedNotification(int id, Object... args) {
-        if (id == MediaController.albumsDidLoaded) {
+        if (id == NotificationCenter.albumsDidLoaded) {
             int guid = (Integer)args[0];
             if (classGuid == guid) {
                 albumsSorted = (ArrayList<MediaController.AlbumEntry>)args[1];
@@ -217,7 +216,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 }
                 loading = false;
             }
-        } else if (id == MessagesController.closeChats) {
+        } else if (id == NotificationCenter.closeChats) {
             removeSelfFromStack();
         }
     }
@@ -395,10 +394,14 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
         int columnsCount = 2;
         if (selectedAlbum != null) {
-            if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                columnsCount = 5;
-            } else {
+            if (AndroidUtilities.isTablet()) {
                 columnsCount = 3;
+            } else {
+                if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
+                    columnsCount = 5;
+                } else {
+                    columnsCount = 3;
+                }
             }
         } else {
             if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
@@ -406,7 +409,11 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             }
         }
         listView.setNumColumns(columnsCount);
-        itemWidth = (getParentActivity().getResources().getDisplayMetrics().widthPixels - ((columnsCount + 1) * AndroidUtilities.dp(4))) / columnsCount;
+        if (AndroidUtilities.isTablet()) {
+            itemWidth = (AndroidUtilities.dp(490) - ((columnsCount + 1) * AndroidUtilities.dp(4))) / columnsCount;
+        } else {
+            itemWidth = (AndroidUtilities.displaySize.x - ((columnsCount + 1) * AndroidUtilities.dp(4))) / columnsCount;
+        }
         listView.setColumnWidth(itemWidth);
 
         listAdapter.notifyDataSetChanged();

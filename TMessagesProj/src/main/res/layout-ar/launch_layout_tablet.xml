@@ -1,0 +1,128 @@
+<!--
+  ~ This is the source code of Telegram for Android v. 1.7.x.
+  ~ It is licensed under GNU GPL v. 2 or later.
+  ~ You should have received a copy of the license in this archive (see LICENSE).
+  ~
+  ~ Copyright Nikolai Kudashov, 2013-2014.
+  -->
+
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/launch_layout">
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="@drawable/cats"
+        android:scaleType="centerCrop"
+        android:id="@+id/launch_background"/>
+
+    <LinearLayout
+        android:layout_width="320dp"
+        android:layout_height="wrap_content"
+        android:id="@+id/launch_button_layout"
+        android:layout_centerVertical="true"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="308dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/btnshadow"
+            android:layout_gravity="center">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:id="@+id/new_group_button"
+                android:textColor="#ff54759e"
+                android:gravity="center_vertical"
+                android:textSize="20dp"
+                android:paddingRight="17dp"
+                android:background="@drawable/launch_button_states"/>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="1px"
+                android:background="#ffd6dee4"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:id="@+id/new_secret_button"
+                android:textColor="#ff54759e"
+                android:gravity="center_vertical"
+                android:textSize="20dp"
+                android:paddingRight="17dp"
+                android:background="@drawable/launch_button_states"/>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="1px"
+                android:background="#ffd6dee4"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:id="@+id/new_broadcast_button"
+                android:textColor="#ff54759e"
+                android:gravity="center_vertical"
+                android:textSize="20dp"
+                android:paddingRight="17dp"
+                android:background="@drawable/launch_button_states"/>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="308dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/btnshadow"
+            android:layout_gravity="center"
+            android:layout_marginTop="18dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:id="@+id/contacts_button"
+                android:textColor="#ff54759e"
+                android:gravity="center_vertical"
+                android:textSize="20dp"
+                android:paddingRight="17dp"
+                android:background="@drawable/launch_button_states"/>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="1px"
+                android:background="#ffd6dee4"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:id="@+id/settings_button"
+                android:textColor="#ff54759e"
+                android:gravity="center_vertical"
+                android:textSize="20dp"
+                android:paddingRight="17dp"
+                android:background="@drawable/launch_button_states"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_height="match_parent"
+        android:layout_width="1dp"
+        android:background="#40295274"
+        android:id="@+id/shadow_tablet_side"/>
+
+    <FrameLayout
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:id="@+id/shadow_tablet"
+        android:background="#7F000000"
+        android:visibility="gone"/>
+
+</RelativeLayout>

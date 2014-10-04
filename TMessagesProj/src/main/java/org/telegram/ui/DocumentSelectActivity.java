@@ -80,7 +80,7 @@ public class DocumentSelectActivity extends BaseFragment {
             Runnable r = new Runnable() {
                 public void run() {
                     try {
-                        if (currentDir == null){
+                        if (currentDir == null) {
                             listRoots();
                         } else {
                             listFiles(currentDir);
@@ -159,13 +159,22 @@ public class DocumentSelectActivity extends BaseFragment {
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                     ListItem item = items.get(i);
                     File file = item.file;
-                    if (file.isDirectory()) {
+                    if (file == null) {
+                        HistoryEntry he = history.remove(history.size() - 1);
+                        actionBarLayer.setTitle(he.title);
+                        if (he.dir != null) {
+                            listFiles(he.dir);
+                        } else {
+                            listRoots();
+                        }
+                        listView.setSelectionFromTop(he.scrollItem, he.scrollOffset);
+                    } else if (file.isDirectory()) {
                         HistoryEntry he = new HistoryEntry();
                         he.scrollItem = listView.getFirstVisiblePosition();
                         he.scrollOffset = listView.getChildAt(0).getTop();
                         he.dir = currentDir;
                         he.title = actionBarLayer.getTitle().toString();
-                        if (!listFiles(file)){
+                        if (!listFiles(file)) {
                             return;
                         }
                         history.add(he);
@@ -212,7 +221,7 @@ public class DocumentSelectActivity extends BaseFragment {
 
     @Override
     public boolean onBackPressed() {
-        if (history.size() > 0){
+        if (history.size() > 0) {
             HistoryEntry he = history.remove(history.size() - 1);
             actionBarLayer.setTitle(he.title);
             if (he.dir != null) {
@@ -240,7 +249,7 @@ public class DocumentSelectActivity extends BaseFragment {
                     currentDir = dir;
                     items.clear();
                     String state = Environment.getExternalStorageState();
-                    if (Environment.MEDIA_SHARED.equals(state)){
+                    if (Environment.MEDIA_SHARED.equals(state)) {
                         emptyView.setText(LocaleController.getString("UsbActive", R.string.UsbActive));
                     } else {
                         emptyView.setText(LocaleController.getString("NotMounted", R.string.NotMounted));
@@ -273,6 +282,15 @@ public class DocumentSelectActivity extends BaseFragment {
                     return lhs.isDirectory() ? -1 : 1;
                 }
                 return lhs.getName().compareToIgnoreCase(rhs.getName());
+                /*long lm = lhs.lastModified();
+                long rm = lhs.lastModified();
+                if (lm == rm) {
+                    return 0;
+                } else if (lm > rm) {
+                    return -1;
+                } else {
+                    return 1;
+                }*/
             }
         });
         for (File file : files) {
@@ -296,6 +314,12 @@ public class DocumentSelectActivity extends BaseFragment {
             }
             items.add(item);
         }
+        ListItem item = new ListItem();
+        item.title = "..";
+        item.subtitle = "";
+        item.icon = R.drawable.ic_directory;
+        item.file = null;
+        items.add(0, item);
         listAdapter.notifyDataSetChanged();
         return true;
     }
@@ -374,10 +398,25 @@ public class DocumentSelectActivity extends BaseFragment {
         fs.icon = R.drawable.ic_directory;
         fs.file = new File("/");
         items.add(fs);
+
+        try {
+            File telegramPath = new File(Environment.getExternalStorageDirectory(), LocaleController.getString("AppName", R.string.AppName));
+            if (telegramPath.exists()) {
+                fs = new ListItem();
+                fs.title = LocaleController.getString("AppName", R.string.AppName);
+                fs.subtitle = telegramPath.toString();
+                fs.icon = R.drawable.ic_directory;
+                fs.file = telegramPath;
+                items.add(fs);
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+
         listAdapter.notifyDataSetChanged();
     }
 
-    private String getRootSubtitle(String path){
+    private String getRootSubtitle(String path) {
         StatFs stat = new StatFs(path);
         long total = (long)stat.getBlockCount() * (long)stat.getBlockSize();
         long free = (long)stat.getAvailableBlocks() * (long)stat.getBlockSize();
@@ -409,11 +448,11 @@ public class DocumentSelectActivity extends BaseFragment {
             return 0;
         }
 
-        public int getViewTypeCount(){
+        public int getViewTypeCount() {
             return 2;
         }
 
-        public int getItemViewType(int pos){
+        public int getItemViewType(int pos) {
             return items.get(pos).subtitle.length() > 0 ? 0 : 1;
         }
 

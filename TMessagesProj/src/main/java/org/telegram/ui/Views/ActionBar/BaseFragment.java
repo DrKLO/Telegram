@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Views.ActionBar;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -23,7 +24,7 @@ import org.telegram.messenger.R;
 public class BaseFragment {
     private boolean isFinished = false;
     protected View fragmentView;
-    private ActionBarActivity parentActivity;
+    protected ActionBarLayout parentLayout;
     protected ActionBarLayer actionBarLayer;
     protected int classGuid = 0;
     protected Bundle arguments;
@@ -47,9 +48,9 @@ public class BaseFragment {
         return arguments;
     }
 
-    public void setParentActivity(ActionBarActivity activity) {
-        if (parentActivity != activity) {
-            parentActivity = activity;
+    public void setParentLayout(ActionBarLayout layout) {
+        if (parentLayout != layout) {
+            parentLayout = layout;
             if (fragmentView != null) {
                 ViewGroup parent = (ViewGroup) fragmentView.getParent();
                 if (parent != null) {
@@ -57,11 +58,11 @@ public class BaseFragment {
                 }
                 fragmentView = null;
             }
-            if (parentActivity != null) {
+            if (parentLayout != null) {
                 if (actionBarLayer != null) {
                     actionBarLayer.onDestroy();
                 }
-                actionBarLayer = parentActivity.getInternalActionBar().createLayer();
+                actionBarLayer = parentLayout.getInternalActionBar().createLayer();
                 actionBarLayer.parentFragment = this;
                 actionBarLayer.setBackgroundResource(R.color.header);
                 actionBarLayer.setItemsBackground(R.drawable.bar_selector);
@@ -74,17 +75,17 @@ public class BaseFragment {
     }
 
     public void finishFragment(boolean animated) {
-        if (isFinished || parentActivity == null) {
+        if (isFinished || parentLayout == null) {
             return;
         }
-        parentActivity.closeLastFragment(animated);
+        parentLayout.closeLastFragment(animated);
     }
 
     public void removeSelfFromStack() {
-        if (isFinished || parentActivity == null) {
+        if (isFinished || parentLayout == null) {
             return;
         }
-        parentActivity.removeFragmentFromStack(this);
+        parentLayout.removeFragmentFromStack(this);
     }
 
     public boolean onFragmentCreate() {
@@ -138,40 +139,40 @@ public class BaseFragment {
 
     }
 
-    public void presentFragment(BaseFragment fragment) {
-        if (parentActivity == null) {
-            return;
-        }
-        parentActivity.presentFragment(fragment);
+    public boolean presentFragment(BaseFragment fragment) {
+        return parentLayout != null && parentLayout.presentFragment(fragment);
     }
 
-    public void presentFragment(BaseFragment fragment, boolean removeLast) {
-        if (parentActivity == null) {
-            return;
-        }
-        parentActivity.presentFragment(fragment, removeLast);
+    public boolean presentFragment(BaseFragment fragment, boolean removeLast) {
+        return parentLayout != null && parentLayout.presentFragment(fragment, removeLast);
     }
 
-    public void presentFragment(BaseFragment fragment, boolean removeLast, boolean forceWithoutAnimation) {
-        if (parentActivity == null) {
-            return;
-        }
-        parentActivity.presentFragment(fragment, removeLast, forceWithoutAnimation);
+    public boolean presentFragment(BaseFragment fragment, boolean removeLast, boolean forceWithoutAnimation) {
+        return parentLayout != null && parentLayout.presentFragment(fragment, removeLast, forceWithoutAnimation, true);
     }
 
-    public ActionBarActivity getParentActivity() {
-        return parentActivity;
+    public Activity getParentActivity() {
+        if (parentLayout != null) {
+            return parentLayout.parentActivity;
+        }
+        return null;
+    }
+
+    public void startActivityForResult(final Intent intent, final int requestCode) {
+        if (parentLayout != null) {
+            parentLayout.startActivityForResult(intent, requestCode);
+        }
     }
 
     public void showActionBar() {
-        if (parentActivity != null) {
-            parentActivity.showActionBar();
+        if (parentLayout != null) {
+            parentLayout.showActionBar();
         }
     }
 
     public void hideActionBar() {
-        if (parentActivity != null) {
-            parentActivity.hideActionBar();
+        if (parentLayout != null) {
+            parentLayout.hideActionBar();
         }
     }
 
@@ -198,7 +199,7 @@ public class BaseFragment {
     }
 
     protected void showAlertDialog(AlertDialog.Builder builder) {
-        if (parentActivity == null || parentActivity.checkTransitionAnimation() || parentActivity.animationInProgress || parentActivity.startedTracking) {
+        if (parentLayout == null || parentLayout.checkTransitionAnimation() || parentLayout.animationInProgress || parentLayout.startedTracking) {
             return;
         }
         try {
@@ -215,7 +216,12 @@ public class BaseFragment {
             @Override
             public void onDismiss(DialogInterface dialog) {
                 visibleDialog = null;
+                onDialogDismiss();
             }
         });
+    }
+
+    protected void onDialogDismiss() {
+
     }
 }

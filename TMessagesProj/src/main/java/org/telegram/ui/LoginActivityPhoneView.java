@@ -31,7 +31,6 @@ import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.SlideView;
 
@@ -83,6 +82,9 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
         countryButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
+                if (delegate == null) {
+                    return;
+                }
                 BaseFragment activity = (BaseFragment)delegate;
                 CountrySelectActivity fragment = new CountrySelectActivity();
                 fragment.setCountrySelectActivityDelegate(new CountrySelectActivity.CountrySelectActivityDelegate() {
@@ -342,7 +344,7 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
         req.api_id = BuildVars.APP_ID;
         req.sms_type = 0;
         req.phone_number = phone;
-        req.lang_code = Locale.getDefault().getCountry();
+        req.lang_code = LocaleController.getLocaleString(Locale.getDefault());
         if (req.lang_code == null || req.lang_code.length() == 0) {
             req.lang_code = "en";
         }
@@ -351,11 +353,13 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
         params.putString("phone", "+" + codeField.getText() + phoneField.getText());
         params.putString("phoneFormated", phone);
         nextPressed = true;
-        delegate.needShowProgress();
+        if (delegate != null) {
+            delegate.needShowProgress();
+        }
         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(final TLObject response, final TLRPC.TL_error error) {
-                Utilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         nextPressed = false;

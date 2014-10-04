@@ -125,7 +125,7 @@ public class LanguageSelectActivity extends BaseFragment {
                     }
                     if (localeInfo != null) {
                         LocaleController.getInstance().applyLanguage(localeInfo, true);
-                        getParentActivity().rebuildAllFragmentViews();
+                        parentLayout.rebuildAllFragmentViews(false);
                     }
                     finishFragment();
                 }
@@ -257,7 +257,7 @@ public class LanguageSelectActivity extends BaseFragment {
     }
 
     private void updateSearchResults(final ArrayList<LocaleController.LocaleInfo> arrCounties) {
-        Utilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.RunOnUIThread(new Runnable() {
             @Override
             public void run() {
                 searchResult = arrCounties;

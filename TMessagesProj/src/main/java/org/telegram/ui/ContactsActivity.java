@@ -35,11 +35,10 @@ import org.telegram.messenger.ConnectionsManager;
 import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.MessagesController;
-import org.telegram.messenger.NotificationCenter;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.Adapters.ContactsActivityAdapter;
 import org.telegram.ui.Adapters.ContactsActivitySearchAdapter;
 import org.telegram.ui.Cells.ChatOrUserCell;
@@ -86,9 +85,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        NotificationCenter.getInstance().addObserver(this, MessagesController.contactsDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
-        NotificationCenter.getInstance().addObserver(this, MessagesController.encryptedChatCreated);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.contactsDidLoaded);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.encryptedChatCreated);
         if (arguments != null) {
             onlyUsers = getArguments().getBoolean("onlyUsers", false);
             destroyAfterSelect = getArguments().getBoolean("destroyAfterSelect", false);
@@ -111,9 +110,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.contactsDidLoaded);
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.updateInterfaces);
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.encryptedChatCreated);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.contactsDidLoaded);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.encryptedChatCreated);
         delegate = null;
     }
 
@@ -242,7 +241,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
                                 if (row < arr.size()) {
                                     TLRPC.TL_contact contact = arr.get(row);
-                                    user = MessagesController.getInstance().users.get(contact.user_id);
+                                    user = MessagesController.getInstance().getUser(contact.user_id);
                                 } else {
                                     return;
                                 }
@@ -261,7 +260,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                     return;
                                 } else {
                                     if (row - 1 < ContactsController.getInstance().contacts.size()) {
-                                        user = MessagesController.getInstance().users.get(ContactsController.getInstance().contacts.get(row - 1).user_id);
+                                        user = MessagesController.getInstance().getUser(ContactsController.getInstance().contacts.get(row - 1).user_id);
                                     } else {
                                         return;
                                     }
@@ -349,7 +348,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             }
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-            builder.setMessage(LocaleController.formatStringSimple(selectAlertString, Utilities.formatName(user.first_name, user.last_name)));
+            builder.setMessage(LocaleController.formatStringSimple(selectAlertString, ContactsController.formatName(user.first_name, user.last_name)));
             final EditText editText = new EditText(getParentActivity());
             if (android.os.Build.VERSION.SDK_INT < 11) {
                 editText.setBackgroundResource(android.R.drawable.editbox_background_normal);
@@ -396,16 +395,16 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public void didReceivedNotification(int id, Object... args) {
-        if (id == MessagesController.contactsDidLoaded) {
+        if (id == NotificationCenter.contactsDidLoaded) {
             if (listViewAdapter != null) {
                 listViewAdapter.notifyDataSetChanged();
             }
-        } else if (id == MessagesController.updateInterfaces) {
+        } else if (id == NotificationCenter.updateInterfaces) {
             int mask = (Integer)args[0];
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0 || (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
                 updateVisibleRows(mask);
             }
-        } else if (id == MessagesController.encryptedChatCreated) {
+        } else if (id == NotificationCenter.encryptedChatCreated) {
             if (createSecretChat && creatingChat) {
                 TLRPC.EncryptedChat encryptedChat = (TLRPC.EncryptedChat)args[0];
                 Bundle args2 = new Bundle();
@@ -419,7 +418,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         if (!updatingInviteText) {
             updatingInviteText = true;
             TLRPC.TL_help_getInviteText req = new TLRPC.TL_help_getInviteText();
-            req.lang_code = Locale.getDefault().getCountry();
+            req.lang_code = LocaleController.getLocaleString(Locale.getDefault());
             if (req.lang_code == null || req.lang_code.length() == 0) {
                 req.lang_code = "en";
             }
@@ -429,7 +428,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     if (error == null) {
                         final TLRPC.TL_help_inviteText res = (TLRPC.TL_help_inviteText)response;
                         if (res.message.length() != 0) {
-                            Utilities.RunOnUIThread(new Runnable() {
+                            AndroidUtilities.RunOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     updatingInviteText = false;

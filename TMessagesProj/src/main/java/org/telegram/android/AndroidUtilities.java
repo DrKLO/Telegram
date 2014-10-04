@@ -23,10 +23,13 @@ import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ApplicationLoader;
 
 import java.io.File;
 import java.util.Hashtable;
+import java.util.Locale;
 
 public class AndroidUtilities {
     private static final Hashtable<String, Typeface> typefaceCache = new Hashtable<String, Typeface>();
@@ -38,6 +41,39 @@ public class AndroidUtilities {
     public static int statusBarHeight = 0;
     public static float density = 1;
     public static Point displaySize = new Point();
+    public static Integer photoSize = null;
+    private static Boolean isTablet = null;
+
+    public static int[] arrColors = {0xffee4928, 0xff41a903, 0xffe09602, 0xff0f94ed, 0xff8f3bf7, 0xfffc4380, 0xff00a1c4, 0xffeb7002};
+    public static int[] arrUsersAvatars = {
+            R.drawable.user_red,
+            R.drawable.user_green,
+            R.drawable.user_yellow,
+            R.drawable.user_blue,
+            R.drawable.user_violet,
+            R.drawable.user_pink,
+            R.drawable.user_aqua,
+            R.drawable.user_orange};
+
+    public static int[] arrGroupsAvatars = {
+            R.drawable.group_red,
+            R.drawable.group_green,
+            R.drawable.group_yellow,
+            R.drawable.group_blue,
+            R.drawable.group_violet,
+            R.drawable.group_pink,
+            R.drawable.group_aqua,
+            R.drawable.group_orange};
+
+    public static int[] arrBroadcastAvatars = {
+            R.drawable.broadcast_red,
+            R.drawable.broadcast_green,
+            R.drawable.broadcast_yellow,
+            R.drawable.broadcast_blue,
+            R.drawable.broadcast_violet,
+            R.drawable.broadcast_pink,
+            R.drawable.broadcast_aqua,
+            R.drawable.broadcast_orange};
 
     static {
         density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
@@ -45,7 +81,7 @@ public class AndroidUtilities {
     }
 
     public static void lockOrientation(Activity activity) {
-        if (prevOrientation != -10) {
+        if (activity == null || prevOrientation != -10) {
             return;
         }
         try {
@@ -103,6 +139,9 @@ public class AndroidUtilities {
     }
 
     public static void unlockOrientation(Activity activity) {
+        if (activity == null) {
+            return;
+        }
         try {
             if (prevOrientation != -10) {
                 activity.setRequestedOrientation(prevOrientation);
@@ -224,5 +263,111 @@ public class AndroidUtilities {
 
     public static long makeBroadcastId(int id) {
         return 0x0000000100000000L | ((long)id & 0x00000000FFFFFFFFL);
+    }
+
+    public static void RunOnUIThread(Runnable runnable) {
+        RunOnUIThread(runnable, 0);
+    }
+
+    public static void RunOnUIThread(Runnable runnable, long delay) {
+        if (delay == 0) {
+            ApplicationLoader.applicationHandler.post(runnable);
+        } else {
+            ApplicationLoader.applicationHandler.postDelayed(runnable, delay);
+        }
+    }
+
+    public static boolean isTablet() {
+        if (isTablet == null) {
+            isTablet = ApplicationLoader.applicationContext.getResources().getBoolean(R.bool.isTablet);
+        }
+        return isTablet;
+    }
+
+    public static boolean isSmallTablet() {
+        float minSide = Math.min(displaySize.x, displaySize.y) / density;
+        return minSide <= 700;
+    }
+
+    public static int getMinTabletSide() {
+        if (!isSmallTablet()) {
+            int smallSide = Math.min(displaySize.x, displaySize.y);
+            int leftSide = smallSide * 35 / 100;
+            if (leftSide < dp(320)) {
+                leftSide = dp(320);
+            }
+            return smallSide - leftSide;
+        } else {
+            int smallSide = Math.min(displaySize.x, displaySize.y);
+            int maxSide = Math.max(displaySize.x, displaySize.y);
+            int leftSide = maxSide * 35 / 100;
+            if (leftSide < dp(320)) {
+                leftSide = dp(320);
+            }
+            return Math.min(smallSide, maxSide - leftSide);
+        }
+    }
+
+    public static int getColorIndex(int id) {
+        int[] arr;
+        if (id >= 0) {
+            arr = arrUsersAvatars;
+        } else {
+            arr = arrGroupsAvatars;
+        }
+        try {
+            String str;
+            if (id >= 0) {
+                str = String.format(Locale.US, "%d%d", id, UserConfig.getClientUserId());
+            } else {
+                str = String.format(Locale.US, "%d", id);
+            }
+            if (str.length() > 15) {
+                str = str.substring(0, 15);
+            }
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+            byte[] digest = md.digest(str.getBytes());
+            int b = digest[Math.abs(id % 16)];
+            if (b < 0) {
+                b += 256;
+            }
+            return Math.abs(b) % arr.length;
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return id % arr.length;
+    }
+
+    public static int getColorForId(int id) {
+        if (id / 1000 == 333) {
+            return 0xff0f94ed;
+        }
+        return arrColors[getColorIndex(id)];
+    }
+
+    public static int getUserAvatarForId(int id) {
+        if (id / 1000 == 333 || id / 1000 == 777) {
+            return R.drawable.telegram_avatar;
+        }
+        return arrUsersAvatars[getColorIndex(id)];
+    }
+
+    public static int getGroupAvatarForId(int id) {
+        return arrGroupsAvatars[getColorIndex(-Math.abs(id))];
+    }
+
+    public static int getBroadcastAvatarForId(int id) {
+        return arrBroadcastAvatars[getColorIndex(-Math.abs(id))];
+    }
+
+    public static int getPhotoSize() {
+        if (photoSize == null) {
+            if (Build.VERSION.SDK_INT >= 16) {
+                photoSize = 1280;
+            } else {
+                photoSize = 800;
+            }
+        }
+        return photoSize;
     }
 }

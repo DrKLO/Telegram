@@ -25,7 +25,7 @@ import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.android.MessagesController;
-import org.telegram.messenger.NotificationCenter;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.UserConfig;
@@ -65,7 +65,7 @@ public class SettingsChangeNameActivity extends BaseFragment {
 
             fragmentView = inflater.inflate(R.layout.settings_change_name_layout, container, false);
 
-            TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.getClientUserId());
+            TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
             if (user == null) {
                 user = UserConfig.getCurrentUser();
             }
@@ -131,13 +131,13 @@ public class SettingsChangeNameActivity extends BaseFragment {
         }
         UserConfig.getCurrentUser().first_name = req.first_name = firstNameField.getText().toString();
         UserConfig.getCurrentUser().last_name = req.last_name = lastNameField.getText().toString();
-        TLRPC.User user = MessagesController.getInstance().users.get(UserConfig.getClientUserId());
+        TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
         if (user != null) {
             user.first_name = req.first_name;
             user.last_name = req.last_name;
         }
         UserConfig.saveConfig(true);
-        NotificationCenter.getInstance().postNotificationName(MessagesController.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
+        NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {

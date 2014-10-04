@@ -29,7 +29,7 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
         FileLog.d("tmessages", "GCM received intent: " + intent);
 
         if (intent.getAction().equals("com.google.android.c2dm.intent.RECEIVE")) {
-            Utilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.RunOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     ApplicationLoader.postInitApplication();
@@ -52,13 +52,6 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
                     }
-
-                    /*SharedPreferences preferences = context.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
-                    boolean globalEnabled = preferences.getBoolean("EnableAll", true);
-                    if (!globalEnabled) {
-                        FileLog.d("tmessages", "GCM disabled");
-                        return;
-                    }*/
 
                     ConnectionsManager.getInstance().resumeNetworkMaybe();
                 }

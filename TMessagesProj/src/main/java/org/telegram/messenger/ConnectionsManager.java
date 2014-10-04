@@ -17,8 +17,11 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.util.Base64;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
+import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
+import org.telegram.android.NotificationCenter;
 import org.telegram.ui.ApplicationLoader;
 
 import java.io.File;
@@ -408,7 +411,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
                 if (currentDatacenterId != 0 && UserConfig.isClientActivated()) {
                     Datacenter datacenter = datacenterWithId(currentDatacenterId);
-                    if (datacenter.authKey == null) {
+                    if (datacenter == null || datacenter.authKey == null) {
                         currentDatacenterId = 0;
                         datacenters.clear();
                         UserConfig.clearConfig();
@@ -456,7 +459,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
                 datacenter = new Datacenter();
                 datacenter.datacenterId = 5;
-                datacenter.addAddressAndPort("116.51.22.2", 443);
+                datacenter.addAddressAndPort("149.154.171.5", 443);
                 datacenters.put(datacenter.datacenterId, datacenter);
             } else {
                 Datacenter datacenter = new Datacenter();
@@ -643,7 +646,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     public void bindRequestToGuid(final Long request, final int guid) {
-        Utilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.RunOnUIThread(new Runnable() {
             @Override
             public void run() {
                 ArrayList<Long> requests = requestsByGuids.get(guid);
@@ -656,7 +659,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     public void removeRequestInClass(final Long request) {
-        Utilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.RunOnUIThread(new Runnable() {
             @Override
             public void run() {
                 Integer guid = requestsByClass.get(request);
@@ -798,7 +801,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 invoke.query = object;
                 invoke.api_id = BuildVars.APP_ID;
                 try {
-                    invoke.lang_code = Locale.getDefault().getCountry();
+                    invoke.lang_code = LocaleController.getLocaleString(Locale.getDefault());
                     invoke.device_model = Build.MANUFACTURER + Build.MODEL;
                     if (invoke.device_model == null) {
                         invoke.device_model = "Android unknown";
@@ -943,23 +946,36 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         try {
             ConnectivityManager cm = (ConnectivityManager)ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo netInfo = cm.getActiveNetworkInfo();
-            if (netInfo != null && (netInfo.isConnectedOrConnecting() || netInfo.isRoaming() || netInfo.isAvailable())) {
+            if (netInfo != null && (netInfo.isConnectedOrConnecting() || netInfo.isAvailable())) {
                 return true;
             }
 
             netInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
 
-            if (netInfo != null && (netInfo.isConnectedOrConnecting() || netInfo.isRoaming())) {
+            if (netInfo != null && netInfo.isConnectedOrConnecting()) {
                 return true;
             } else {
                 netInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-                if(netInfo != null && (netInfo.isConnectedOrConnecting() || netInfo.isRoaming())) {
+                if(netInfo != null && netInfo.isConnectedOrConnecting()) {
                     return true;
                 }
             }
         } catch(Exception e) {
             FileLog.e("tmessages", e);
             return true;
+        }
+        return false;
+    }
+
+    public static boolean isRoaming() {
+        try {
+            ConnectivityManager cm = (ConnectivityManager)ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo netInfo = cm.getActiveNetworkInfo();
+            if (netInfo != null) {
+                return netInfo.isRoaming();
+            }
+        } catch(Exception e) {
+            FileLog.e("tmessages", e);
         }
         return false;
     }
@@ -973,7 +989,6 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             }
         } catch(Exception e) {
             FileLog.e("tmessages", e);
-            return true;
         }
         return false;
     }
@@ -1101,6 +1116,30 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 }
 
                 request.retryCount++;
+
+                if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0) {
+                    int retryMax = 10;
+                    if ((request.flags & RPCRequest.RPCRequestClassForceDownload) == 0) {
+                        if (request.wait) {
+                            retryMax = 1;
+                        } else {
+                            retryMax = 3;
+                        }
+                    }
+                    if (request.retryCount >= retryMax) {
+                        FileLog.e("tmessages", "timed out " + request.rawRequest);
+                        TLRPC.TL_error error = new TLRPC.TL_error();
+                        error.code = -123;
+                        error.text = "RETRY_LIMIT";
+                        if (request.completionBlock != null) {
+                            request.completionBlock.run(null, error);
+                        }
+                        runningRequests.remove(i);
+                        i--;
+                        continue;
+                    }
+                }
+
                 NetworkMessage networkMessage = new NetworkMessage();
                 networkMessage.protoMessage = new TLRPC.TL_protoMessage();
 
@@ -1764,7 +1803,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         req.token = "" + pushSessionId;
         req.app_sandbox = false;
         try {
-            req.lang_code = Locale.getDefault().getCountry();
+            req.lang_code = LocaleController.getLocaleString(Locale.getDefault());
             req.device_model = Build.MANUFACTURER + Build.MODEL;
             if (req.device_model == null) {
                 req.device_model = "Android unknown";
@@ -2066,6 +2105,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                         waitTime = Math.min(30, waitTime);
 
                                         discardResponse = true;
+                                        request.wait = true;
                                         request.runningMinStartTime = (int)(System.currentTimeMillis() / 1000 + waitTime);
                                         request.confirmed = false;
                                     }
@@ -2094,7 +2134,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                 } else {
                                     if (resultContainer.result instanceof TLRPC.updates_Difference) {
                                         pushMessagesReceived = true;
-                                        Utilities.RunOnUIThread(new Runnable() {
+                                        AndroidUtilities.RunOnUIThread(new Runnable() {
                                             @Override
                                             public void run() {
                                                 if (wakeLock.isHeld()) {
@@ -2113,10 +2153,10 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                     if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0) {
                                         if (UserConfig.isClientActivated()) {
                                             UserConfig.clearConfig();
-                                            Utilities.RunOnUIThread(new Runnable() {
+                                            AndroidUtilities.RunOnUIThread(new Runnable() {
                                                 @Override
                                                 public void run() {
-                                                    NotificationCenter.getInstance().postNotificationName(1234);
+                                                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.appDidLogout);
                                                 }
                                             });
                                         }
@@ -2272,7 +2312,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 if (paused) {
                     pushMessagesReceived = false;
                 }
-                Utilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         wakeLock.acquire(20000);
@@ -2281,7 +2321,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 resumeNetworkInternal();
             } else {
                 pushMessagesReceived = true;
-                Utilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if (wakeLock.isHeld()) {
@@ -2386,10 +2426,10 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 }
             }
             final int stateCopy = connectionState;
-            Utilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.RunOnUIThread(new Runnable() {
                 @Override
                 public void run() {
-                    NotificationCenter.getInstance().postNotificationName(703, stateCopy);
+                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.didUpdatedConnectionState, stateCopy);
                 }
             });
         } else if ((connection.transportRequestClass & RPCRequest.RPCRequestClassPush) != 0) {
@@ -2435,10 +2475,10 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             if (ConnectionsManager.getInstance().connectionState == 3 && !MessagesController.getInstance().gettingDifference && !MessagesController.getInstance().gettingDifferenceAgain) {
                 ConnectionsManager.getInstance().connectionState = 0;
                 final int stateCopy = ConnectionsManager.getInstance().connectionState;
-                Utilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        NotificationCenter.getInstance().postNotificationName(703, stateCopy);
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.didUpdatedConnectionState, stateCopy);
                     }
                 });
             }
@@ -2451,10 +2491,10 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             if (connectionState == 1 || connectionState == 2) {
                 connectionState = 3;
                 final int stateCopy = connectionState;
-                Utilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        NotificationCenter.getInstance().postNotificationName(703, stateCopy);
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.didUpdatedConnectionState, stateCopy);
                     }
                 });
             }

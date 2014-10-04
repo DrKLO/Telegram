@@ -104,7 +104,11 @@ public class EmojiView extends LinearLayout {
         setOrientation(LinearLayout.VERTICAL);
         for (int i = 0; i < Emoji.data.length; i++) {
             GridView gridView = new GridView(getContext());
-            gridView.setColumnWidth(AndroidUtilities.dpf(45.0f));
+            if (AndroidUtilities.isTablet()) {
+                gridView.setColumnWidth(AndroidUtilities.dp(60));
+            } else {
+                gridView.setColumnWidth(AndroidUtilities.dp(45));
+            }
             gridView.setNumColumns(-1);
             views.add(gridView);
 
@@ -122,7 +126,7 @@ public class EmojiView extends LinearLayout {
         tabs.setIndicatorColor(0xff33b5e5);
         tabs.setIndicatorHeight(AndroidUtilities.dpf(2.0f));
         tabs.setUnderlineHeight(AndroidUtilities.dpf(2.0f));
-        tabs.setUnderlineColor(1711276032);
+        tabs.setUnderlineColor(0x66000000);
         tabs.setTabBackground(0);
         LinearLayout localLinearLayout = new LinearLayout(getContext());
         localLinearLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -138,7 +142,7 @@ public class EmojiView extends LinearLayout {
                 }
             }
         });
-        localLinearLayout.addView(localImageView, new LinearLayout.LayoutParams(AndroidUtilities.dpf(61.0f), LayoutParams.MATCH_PARENT));
+        localLinearLayout.addView(localImageView, new LinearLayout.LayoutParams(AndroidUtilities.dp(61), LayoutParams.MATCH_PARENT));
         recentsWrap = new FrameLayout(getContext());
         recentsWrap.addView(views.get(0));
         TextView localTextView = new TextView(getContext());
@@ -209,30 +213,26 @@ public class EmojiView extends LinearLayout {
         }
 
         public int getCount() {
-            return this.data.length;
+            return data.length;
         }
 
-        public Object getItem(int paramInt)
-        {
+        public Object getItem(int i) {
             return null;
         }
 
-        public long getItemId(int paramInt)
-        {
-            return this.data[paramInt];
+        public long getItemId(int i) {
+            return data[i];
         }
 
-        public View getView(int paramInt, View paramView, ViewGroup paramViewGroup) {
-            ImageView localObject;
-            if (paramView != null) {
-                localObject = (ImageView)paramView;
-            } else {
-                localObject = new ImageView(EmojiView.this.getContext()) {
+        public View getView(int i, View view, ViewGroup paramViewGroup) {
+            ImageView imageView = (ImageView)view;
+            if (imageView == null) {
+                imageView = new ImageView(EmojiView.this.getContext()) {
                     public void onMeasure(int paramAnonymousInt1, int paramAnonymousInt2) {
                         setMeasuredDimension(View.MeasureSpec.getSize(paramAnonymousInt1), View.MeasureSpec.getSize(paramAnonymousInt1));
                     }
                 };
-                localObject.setOnClickListener(new View.OnClickListener() {
+                imageView.setOnClickListener(new View.OnClickListener() {
                     public void onClick(View view) {
                         if (EmojiView.this.listener != null) {
                             EmojiView.this.listener.onEmojiSelected(EmojiView.this.convert((Long)view.getTag()));
@@ -240,13 +240,12 @@ public class EmojiView extends LinearLayout {
                         EmojiView.this.addToRecent((Long)view.getTag());
                     }
                 });
-                localObject.setBackgroundResource(R.drawable.list_selector);
-                localObject.setScaleType(ImageView.ScaleType.CENTER);
+                imageView.setBackgroundResource(R.drawable.list_selector);
+                imageView.setScaleType(ImageView.ScaleType.CENTER);
             }
-
-            localObject.setImageDrawable(Emoji.getEmojiBigDrawable(this.data[paramInt]));
-            localObject.setTag(this.data[paramInt]);
-            return localObject;
+            imageView.setImageDrawable(Emoji.getEmojiBigDrawable(data[i]));
+            imageView.setTag(data[i]);
+            return imageView;
         }
 
         @Override

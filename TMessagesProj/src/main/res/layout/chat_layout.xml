@@ -7,7 +7,8 @@
     <org.telegram.ui.Views.FrameLayoutFixed
         android:layout_height="fill_parent"
         android:layout_width="fill_parent"
-        android:paddingBottom="48dp">
+        android:paddingBottom="48dp"
+        android:id="@+id/empty_view">
 
         <TextView
             android:layout_width="wrap_content"
@@ -20,7 +21,6 @@
             android:paddingRight="7dp"
             android:textSize="14dp"
             android:id="@+id/searchEmptyView"
-            android:visibility="gone"
             android:layout_gravity="center"/>
 
         <include
@@ -262,10 +262,7 @@
         android:layout_alignParentBottom="true"
         android:background="#fbfcfd"
         android:id="@+id/bottom_overlay_chat"
-        android:visibility="gone"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
-        android:clickable="true">
+        android:visibility="gone">
 
         <TextView
             android:layout_width="wrap_content"

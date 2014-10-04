@@ -23,13 +23,13 @@ import android.view.SoundEffectConstants;
 import android.view.ViewConfiguration;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.android.ContactsController;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
-import org.telegram.objects.MessageObject;
-import org.telegram.ui.Views.ImageReceiver;
+import org.telegram.android.MessageObject;
+import org.telegram.android.ImageReceiver;
 
 public class ChatBaseCell extends BaseCell {
 
@@ -146,12 +146,10 @@ public class ChatBaseCell extends BaseCell {
         }
     }
 
-    public ChatBaseCell(Context context, boolean isMedia) {
+    public ChatBaseCell(Context context) {
         super(context);
         init();
-        media = isMedia;
-        avatarImage = new ImageReceiver();
-        avatarImage.parentView = this;
+        avatarImage = new ImageReceiver(this);
     }
 
     @Override
@@ -222,7 +220,7 @@ public class ChatBaseCell extends BaseCell {
             return true;
         }
 
-        TLRPC.User newUser = MessagesController.getInstance().users.get(currentMessageObject.messageOwner.from_id);
+        TLRPC.User newUser = MessagesController.getInstance().getUser(currentMessageObject.messageOwner.from_id);
         TLRPC.FileLocation newPhoto = null;
 
         if (isAvatarVisible && newUser != null && newUser.photo != null) {
@@ -235,17 +233,17 @@ public class ChatBaseCell extends BaseCell {
 
         String newNameString = null;
         if (drawName && isChat && newUser != null && !currentMessageObject.isOut()) {
-            newNameString = Utilities.formatName(newUser.first_name, newUser.last_name);
+            newNameString = ContactsController.formatName(newUser.first_name, newUser.last_name);
         }
 
         if (currentNameString == null && newNameString != null || currentNameString != null && newNameString == null || currentNameString != null && newNameString != null && !currentNameString.equals(newNameString)) {
             return true;
         }
 
-        newUser = MessagesController.getInstance().users.get(currentMessageObject.messageOwner.fwd_from_id);
+        newUser = MessagesController.getInstance().getUser(currentMessageObject.messageOwner.fwd_from_id);
         newNameString = null;
         if (newUser != null && drawForwardedName && currentMessageObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
-            newNameString = Utilities.formatName(newUser.first_name, newUser.last_name);
+            newNameString = ContactsController.formatName(newUser.first_name, newUser.last_name);
         }
         return currentForwardNameString == null && newNameString != null || currentForwardNameString != null && newNameString == null || currentForwardNameString != null && newNameString != null && !currentForwardNameString.equals(newNameString);
     }
@@ -258,13 +256,7 @@ public class ChatBaseCell extends BaseCell {
         isAvatarVisible = false;
         wasLayout = false;
 
-        if (currentMessageObject.messageOwner.id < 0 && currentMessageObject.messageOwner.send_state != MessagesController.MESSAGE_SEND_STATE_SEND_ERROR && currentMessageObject.messageOwner.send_state != MessagesController.MESSAGE_SEND_STATE_SENT) {
-            if (MessagesController.getInstance().sendingMessages.get(currentMessageObject.messageOwner.id) == null) {
-                currentMessageObject.messageOwner.send_state = MessagesController.MESSAGE_SEND_STATE_SEND_ERROR;
-            }
-        }
-
-        currentUser = MessagesController.getInstance().users.get(messageObject.messageOwner.from_id);
+        currentUser = MessagesController.getInstance().getUser(messageObject.messageOwner.from_id);
         if (isChat && !messageObject.isOut()) {
             isAvatarVisible = true;
             if (currentUser != null) {
@@ -273,7 +265,7 @@ public class ChatBaseCell extends BaseCell {
                 } else {
                     currentPhoto = null;
                 }
-                avatarImage.setImage(currentPhoto, "50_50", getResources().getDrawable(Utilities.getUserAvatarForId(currentUser.id)));
+                avatarImage.setImage(currentPhoto, "50_50", getResources().getDrawable(AndroidUtilities.getUserAvatarForId(currentUser.id)));
             } else {
                 avatarImage.setImage((TLRPC.FileLocation)null, "50_50", null);
             }
@@ -295,7 +287,7 @@ public class ChatBaseCell extends BaseCell {
         namesOffset = 0;
 
         if (drawName && isChat && currentUser != null && !currentMessageObject.isOut()) {
-            currentNameString = Utilities.formatName(currentUser.first_name, currentUser.last_name);
+            currentNameString = ContactsController.formatName(currentUser.first_name, currentUser.last_name);
             nameWidth = getMaxNameWidth();
 
             CharSequence nameStringFinal = TextUtils.ellipsize(currentNameString.replace("\n", " "), namePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
@@ -314,9 +306,9 @@ public class ChatBaseCell extends BaseCell {
         }
 
         if (drawForwardedName && messageObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
-            currentForwardUser = MessagesController.getInstance().users.get(messageObject.messageOwner.fwd_from_id);
+            currentForwardUser = MessagesController.getInstance().getUser(messageObject.messageOwner.fwd_from_id);
             if (currentForwardUser != null) {
-                currentForwardNameString = Utilities.formatName(currentForwardUser.first_name, currentForwardUser.last_name);
+                currentForwardNameString = ContactsController.formatName(currentForwardUser.first_name, currentForwardUser.last_name);
 
                 forwardedNameWidth = getMaxNameWidth();
 
@@ -380,7 +372,7 @@ public class ChatBaseCell extends BaseCell {
         float y = event.getY();
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             if (delegate == null || delegate.canPerformActions()) {
-                if (isAvatarVisible && x >= avatarImage.imageX && x <= avatarImage.imageX + avatarImage.imageW && y >= avatarImage.imageY && y <= avatarImage.imageY + avatarImage.imageH) {
+                if (isAvatarVisible && avatarImage.isInsideImage(x, y)) {
                     avatarPressed = true;
                     result = true;
                 } else if (drawForwardedName && forwardedNameLayout != null) {
@@ -407,7 +399,7 @@ public class ChatBaseCell extends BaseCell {
                 } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
                     avatarPressed = false;
                 } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                    if (isAvatarVisible && !(x >= avatarImage.imageX && x <= avatarImage.imageX + avatarImage.imageW && y >= avatarImage.imageY && y <= avatarImage.imageY + avatarImage.imageH)) {
+                    if (isAvatarVisible && !avatarImage.isInsideImage(x, y)) {
                         avatarPressed = false;
                     }
                 }
@@ -458,10 +450,7 @@ public class ChatBaseCell extends BaseCell {
             }
 
             if (isAvatarVisible) {
-                avatarImage.imageX = AndroidUtilities.dp(6);
-                avatarImage.imageY = layoutHeight - AndroidUtilities.dp(45);
-                avatarImage.imageW = AndroidUtilities.dp(42);
-                avatarImage.imageH = AndroidUtilities.dp(42);
+                avatarImage.setImageCoords(AndroidUtilities.dp(6), layoutHeight - AndroidUtilities.dp(45), AndroidUtilities.dp(42), AndroidUtilities.dp(42));
             }
 
             wasLayout = true;
@@ -531,7 +520,7 @@ public class ChatBaseCell extends BaseCell {
         if (drawName && nameLayout != null) {
             canvas.save();
             canvas.translate(currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(19) - nameOffsetX, AndroidUtilities.dp(10));
-            namePaint.setColor(Utilities.getColorForId(currentUser.id));
+            namePaint.setColor(AndroidUtilities.getColorForId(currentUser.id));
             nameLayout.draw(canvas);
             canvas.restore();
         }
@@ -575,18 +564,18 @@ public class ChatBaseCell extends BaseCell {
                 boolean drawError = false;
                 boolean isBroadcast = (int)(currentMessageObject.getDialogId() >> 32) == 1;
 
-                if (currentMessageObject.messageOwner.send_state == MessagesController.MESSAGE_SEND_STATE_SENDING) {
+                if (currentMessageObject.isSending()) {
                     drawCheck1 = false;
                     drawCheck2 = false;
                     drawClock = true;
                     drawError = false;
-                } else if (currentMessageObject.messageOwner.send_state == MessagesController.MESSAGE_SEND_STATE_SEND_ERROR) {
+                } else if (currentMessageObject.isSendError()) {
                     drawCheck1 = false;
                     drawCheck2 = false;
                     drawClock = false;
                     drawError = true;
-                } else if (currentMessageObject.messageOwner.send_state == MessagesController.MESSAGE_SEND_STATE_SENT) {
-                    if (!currentMessageObject.messageOwner.unread) {
+                } else if (currentMessageObject.isSent()) {
+                    if (!currentMessageObject.isUnread()) {
                         drawCheck1 = true;
                         drawCheck2 = true;
                     } else {

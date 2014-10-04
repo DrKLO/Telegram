@@ -21,7 +21,7 @@
         <item name="android:listViewStyle">@style/Theme.TMessages.ListView</item>
         <item name="android:listChoiceBackgroundIndicator">@drawable/list_selector</item>
         <item name="android:editTextStyle">@style/Theme.TMessages.EditText</item>
-        <item name="android:actionBarItemBackground">@drawable/bar_selector</item>
+        <item name="android:actionBarItemBackground">@drawable/bar_selector_style</item>
     </style>
 
     <style name="Theme.TMessages.PopupNotification" parent="Theme.TMessages">

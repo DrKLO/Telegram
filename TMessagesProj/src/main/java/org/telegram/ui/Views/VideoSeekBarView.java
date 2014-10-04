@@ -22,7 +22,6 @@ import org.telegram.messenger.R;
 public class VideoSeekBarView extends View {
 
     private static Drawable thumbDrawable1;
-    private static Drawable thumbDrawablePressed1;
     private static Paint innerPaint1 = new Paint();
     private static int thumbWidth;
     private static int thumbHeight;
@@ -37,8 +36,7 @@ public class VideoSeekBarView extends View {
 
     private void init(Context context) {
         if (thumbDrawable1 == null) {
-            thumbDrawable1 = context.getResources().getDrawable(R.drawable.playback);
-            thumbDrawablePressed1 = context.getResources().getDrawable(R.drawable.playback_active);
+            thumbDrawable1 = context.getResources().getDrawable(R.drawable.videolapse);
             innerPaint1.setColor(0x99999999);
             thumbWidth = thumbDrawable1.getIntrinsicWidth();
             thumbHeight = thumbDrawable1.getIntrinsicHeight();
@@ -118,16 +116,10 @@ public class VideoSeekBarView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        Drawable thumb = null;
-        if (!pressed) {
-            thumb = thumbDrawable1;
-        } else {
-            thumb = thumbDrawablePressed1;
-        }
         int y = (getMeasuredHeight() - thumbHeight) / 2;
         int thumbX = (int)((getMeasuredWidth() - thumbWidth) * progress);
         canvas.drawRect(thumbWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), getMeasuredWidth() - thumbWidth / 2, getMeasuredHeight() / 2 + AndroidUtilities.dp(1), innerPaint1);
-        thumb.setBounds(thumbX, y, thumbX + thumbWidth, y + thumbHeight);
-        thumb.draw(canvas);
+        thumbDrawable1.setBounds(thumbX, y, thumbX + thumbWidth, y + thumbHeight);
+        thumbDrawable1.draw(canvas);
     }
 }
