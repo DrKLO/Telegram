@@ -91,6 +91,7 @@
     <string name="ChatLocation">Ubicación</string>
     <string name="ChatVideo">Vídeo</string>
     <string name="ChatDocument">Archivo</string>
+    <string name="ChatWebImage">Búsqueda Web Imágenes…</string>
     <string name="NoMessages">No hay mensajes aún...</string>
     <string name="ViewPhoto">Ver foto</string>
     <string name="ViewLocation">Ver ubicación</string>

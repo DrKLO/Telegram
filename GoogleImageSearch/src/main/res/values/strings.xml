@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="search">Search</string>
+    <string name="image_download_fail">Invalid image to download!</string>
+    <string name="dlg_title_download">Downloading...</string>
+</resources>

@@ -9,6 +9,7 @@
 package org.telegram.ui;
 
 import android.animation.Animator;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -48,24 +49,24 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.ContactsController;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MediaController;
+import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationsController;
-import org.telegram.messenger.TLRPC;
-import org.telegram.android.ContactsController;
-import org.telegram.messenger.FileLog;
-import org.telegram.objects.MessageObject;
-import org.telegram.objects.PhotoObject;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
-import org.telegram.android.MessagesController;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.objects.MessageObject;
+import org.telegram.objects.PhotoObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.ChatAudioCell;
 import org.telegram.ui.Cells.ChatBaseCell;
@@ -74,8 +75,8 @@ import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ChatActivityEnterView;
 import org.telegram.ui.Views.ImageReceiver;
 import org.telegram.ui.Views.LayoutListView;
@@ -88,6 +89,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.Semaphore;
+
+import me.ji5.googleimagesearch.GoogleImageSearchActivity;
 
 public class ChatActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate,
         DocumentSelectActivity.DocumentSelectActivityDelegate, PhotoViewer.PhotoViewerProvider, PhotoPickerActivity.PhotoPickerActivityDelegate,
@@ -180,6 +183,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private final static int attach_document = 9;
     private final static int attach_location = 10;
     private final static int chat_menu_avatar = 11;
+    private final static int attach_web_image = 12;
 
     public ChatActivity(Bundle args) {
         super(args);
@@ -543,6 +547,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         MessagesActivity fragment = new MessagesActivity(args);
                         fragment.setDelegate(ChatActivity.this);
                         presentFragment(fragment);
+                    } else if (id == attach_web_image) {
+                        getParentActivity().startActivityForResult(new Intent(getParentActivity(), GoogleImageSearchActivity.class), 10);
                     }
                 }
             });
@@ -567,6 +573,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             item.addSubItem(attach_video, LocaleController.getString("ChatVideo", R.string.ChatVideo), R.drawable.ic_attach_video);
             item.addSubItem(attach_document, LocaleController.getString("ChatDocument", R.string.ChatDocument), R.drawable.ic_ab_doc);
             item.addSubItem(attach_location, LocaleController.getString("ChatLocation", R.string.ChatLocation), R.drawable.ic_attach_location);
+            item.addSubItem(attach_web_image, LocaleController.getString("ChatWebImage", R.string.ChatWebImage), R.drawable.ic_attach_gallery);
             menuItem = item;
 
             ActionBarMenu actionMode = actionBarLayer.createActionMode();
@@ -883,6 +890,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
     }
 
+    @SuppressLint("NewApi")
     private void showPagedownButton(boolean show, boolean animated) {
         if (pagedownButton == null) {
             return;
@@ -1372,6 +1380,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 } else {*/
                     processSendingVideo(videoPath);
                 //}
+            } else if (requestCode == 10) {
+                currentPicturePath = data.getStringExtra(GoogleImageSearchActivity.FILE_PATH);
+                processSendingPhoto(currentPicturePath, null);
             } else if (requestCode == 21) {
                 if (data == null || data.getData() == null) {
                     showAttachmentError();
