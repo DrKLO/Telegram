@@ -7,7 +7,9 @@
         android:icon="@drawable/ic_launcher">
         <activity
             android:theme="@style/Theme.AppCompat.Light"
-            android:name=".GoogleImageSearchActivity"/>
+            android:name=".GoogleImageSearchActivity">
+        </activity>
+
     </application>
 
 </manifest>
