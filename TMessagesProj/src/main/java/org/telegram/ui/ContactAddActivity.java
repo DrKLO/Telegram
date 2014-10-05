@@ -27,9 +27,8 @@ import org.telegram.android.ContactsController;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessagesController;
-import org.telegram.messenger.NotificationCenter;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 
@@ -49,17 +48,17 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
 
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
         user_id = getArguments().getInt("user_id", 0);
         phone = getArguments().getString("phone");
-        TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+        TLRPC.User user = MessagesController.getInstance().getUser(user_id);
         return user != null && super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.updateInterfaces);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
     }
 
     @Override
@@ -78,12 +77,12 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                 @Override
                 public void onClick(View view) {
                     if (firstNameField.getText().length() != 0) {
-                        TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+                        TLRPC.User user = MessagesController.getInstance().getUser(user_id);
                         user.first_name = firstNameField.getText().toString();
                         user.last_name = lastNameField.getText().toString();
                         ContactsController.getInstance().addContact(user);
                         finishFragment();
-                        NotificationCenter.getInstance().postNotificationName(MessagesController.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
                     }
                 }
             });
@@ -94,7 +93,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
 
             fragmentView = inflater.inflate(R.layout.contact_add_layout, container, false);
 
-            TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+            TLRPC.User user = MessagesController.getInstance().getUser(user_id);
             if (user.phone == null) {
                 if (phone != null) {
                     user.phone = PhoneFormat.stripExceptNumbers(phone);
@@ -154,7 +153,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         if (phoneText == null) {
             return;
         }
-        TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+        TLRPC.User user = MessagesController.getInstance().getUser(user_id);
         if (user == null) {
             return;
         }
@@ -165,11 +164,11 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         if (user.photo != null) {
             photo = user.photo.photo_small;
         }
-        avatarImage.setImage(photo, "50_50", Utilities.getUserAvatarForId(user.id));
+        avatarImage.setImage(photo, "50_50", AndroidUtilities.getUserAvatarForId(user.id));
     }
 
     public void didReceivedNotification(int id, Object... args) {
-        if (id == MessagesController.updateInterfaces) {
+        if (id == NotificationCenter.updateInterfaces) {
             int mask = (Integer)args[0];
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
                 updateAvatarLayout();

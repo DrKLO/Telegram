@@ -18,11 +18,11 @@ static void fastBlur(int imageWidth, int imageHeight, int imageStride, void *pix
     const int r1 = radius + 1;
     const int div = radius * 2 + 1;
     
-    if (radius > 15 || div >= w || div >= h) {
+    if (radius > 15 || div >= w || div >= h || w * h > 90 * 90 || imageStride > imageWidth * 4) {
         return;
     }
     
-    uint64_t rgb[imageStride * imageHeight];
+    uint64_t *rgb = malloc(imageWidth * imageHeight * sizeof(uint64_t));
     
     int x, y, i;
     
@@ -95,6 +95,8 @@ static void fastBlur(int imageWidth, int imageHeight, int imageStride, void *pix
         }
         #undef update
     }
+    
+    free(rgb);
 }
 
 typedef struct my_error_mgr {
@@ -109,12 +111,26 @@ METHODDEF(void) my_error_exit(j_common_ptr cinfo) {
     longjmp(myerr->setjmp_buffer, 1);
 }
 
-JNIEXPORT void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jclass class, jobject bitmap, int width, int height, int stride) {
+JNIEXPORT void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jclass class, jobject bitmap) {
+    if (!bitmap) {
+        return;
+    }
+    
+    AndroidBitmapInfo info;
+    
+    if (AndroidBitmap_getInfo(env, bitmap, &info) < 0) {
+        return;
+    }
+    
+    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888 || !info.width || !info.height || !info.stride) {
+        return;
+    }
+    
     void *pixels = 0;
     if (AndroidBitmap_lockPixels(env, bitmap, &pixels) < 0) {
         return;
     }
-    fastBlur(width, height, stride, pixels);
+    fastBlur(info.width, info.height, info.stride, pixels);
     AndroidBitmap_unlockPixels(env, bitmap);
 }
 

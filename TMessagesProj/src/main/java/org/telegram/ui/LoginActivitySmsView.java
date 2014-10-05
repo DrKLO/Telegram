@@ -31,11 +31,10 @@ import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
-import org.telegram.messenger.NotificationCenter;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.SlideView;
 
 import java.util.ArrayList;
@@ -55,7 +54,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
 
     private Timer timeTimer;
     private Timer codeTimer;
-    private static final Integer timerSync = 1;
+    private static final Object timerSync = new Object();
     private volatile int time = 60000;
     private volatile int codeTime = 15000;
     private double lastCurrentTime;
@@ -166,7 +165,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
 
         destroyTimer();
         destroyCodeTimer();
-        timeText.setText(String.format("%s 1:00", LocaleController.getString("CallText", R.string.CallText)));
+        timeText.setText(LocaleController.formatString("CallText", R.string.CallText, 1, 0));
         lastCurrentTime = System.currentTimeMillis();
         problemText.setVisibility(time < 1000 ? VISIBLE : GONE);
 
@@ -187,7 +186,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                 double diff = currentTime - lastCodeTime;
                 codeTime -= diff;
                 lastCodeTime = currentTime;
-                Utilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if (codeTime <= 1000) {
@@ -225,13 +224,13 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                 double diff = currentTime - lastCurrentTime;
                 time -= diff;
                 lastCurrentTime = currentTime;
-                Utilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if (time >= 1000) {
                             int minutes = time / 1000 / 60;
                             int seconds = time / 1000 - minutes * 60;
-                            timeText.setText(String.format("%s %d:%02d", LocaleController.getString("CallText", R.string.CallText), minutes, seconds));
+                            timeText.setText(LocaleController.formatString("CallText", R.string.CallText, minutes, seconds));
                         } else {
                             timeText.setText(LocaleController.getString("Calling", R.string.Calling));
                             destroyTimer();
@@ -243,7 +242,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                                 @Override
                                 public void run(TLObject response, final TLRPC.TL_error error) {
                                     if (error != null && error.text != null) {
-                                        Utilities.RunOnUIThread(new Runnable() {
+                                        AndroidUtilities.RunOnUIThread(new Runnable() {
                                             @Override
                                             public void run() {
                                                 lastError = error.text;
@@ -292,7 +291,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(final TLObject response, final TLRPC.TL_error error) {
-                Utilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.RunOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if (delegate == null) {
@@ -312,8 +311,9 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                             ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
                             users.add(res.user);
                             MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
-                            MessagesController.getInstance().users.put(res.user.id, res.user);
+                            MessagesController.getInstance().putUser(res.user, false);
                             ContactsController.getInstance().checkAppAccount();
+                            MessagesController.getInstance().getBlockedUsers(true);
                             delegate.needFinishActivity();
                             ConnectionsManager.getInstance().initPushConnection();
                         } else {
@@ -379,7 +379,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     @Override
     public void didReceivedNotification(int id, final Object... args) {
         if (id == 998) {
-            Utilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.RunOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     if (!waitingForSms) {

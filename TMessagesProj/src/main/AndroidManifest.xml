@@ -10,7 +10,7 @@
                       android:resizeable="true"
                       android:xlargeScreens="true"/>
 
-    <uses-feature android:glEsVersion="0x00020000" android:required="true"/>
+    <uses-feature android:glEsVersion="0x00020000" android:required="false"/>
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
@@ -98,8 +98,7 @@
         </activity>
         <activity
             android:name="org.telegram.ui.IntroActivity"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
-            android:screenOrientation="portrait">
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize">
         </activity>
         <activity
             android:name="org.telegram.ui.PopupNotificationActivity"
@@ -138,6 +137,8 @@
         </service>
 
         <service android:name="org.telegram.android.NotificationsService" android:enabled="true"/>
+        <service android:name="org.telegram.android.NotificationRepeat" android:exported="false"/>
+        <service android:name="org.telegram.android.VideoEncodingService" android:enabled="true"/>
 
         <receiver android:name="org.telegram.android.AppStartReceiver" android:enabled="true">
             <intent-filter>
@@ -145,6 +146,8 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <receiver android:name="org.telegram.android.WearReplyReceiver" android:enabled="true"/>
 
         <uses-library android:name="com.sec.android.app.multiwindow" android:required="false" />
         <meta-data android:name="com.sec.android.support.multiwindow" android:value="true" />

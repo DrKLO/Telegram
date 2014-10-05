@@ -26,18 +26,15 @@ import android.widget.TextView;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.LocaleController;
-import org.telegram.messenger.TLObject;
+import org.telegram.android.SendMessagesHelper;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.ConnectionsManager;
 import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
-import org.telegram.messenger.NotificationCenter;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.RPCRequest;
-import org.telegram.messenger.Utilities;
-import org.telegram.objects.MessageObject;
+import org.telegram.android.MessageObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
@@ -56,6 +53,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     private boolean creatingChat = false;
     private long dialog_id;
     private TLRPC.EncryptedChat currentEncryptedChat;
+    private boolean userBlocked = false;
 
     private final static int add_contact = 1;
     private final static int block_contact = 2;
@@ -80,28 +78,34 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
 
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
-        NotificationCenter.getInstance().addObserver(this, MessagesController.contactsDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, MessagesController.mediaCountDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, MessagesController.encryptedChatCreated);
-        NotificationCenter.getInstance().addObserver(this, MessagesController.encryptedChatUpdated);
         user_id = arguments.getInt("user_id", 0);
         dialog_id = arguments.getLong("dialog_id", 0);
         if (dialog_id != 0) {
-            currentEncryptedChat = MessagesController.getInstance().encryptedChats.get((int)(dialog_id >> 32));
+            currentEncryptedChat = MessagesController.getInstance().getEncryptedChat((int)(dialog_id >> 32));
         }
         updateRowsIds();
-        return MessagesController.getInstance().users.get(user_id) != null && super.onFragmentCreate();
+        if (MessagesController.getInstance().getUser(user_id) == null) {
+            return false;
+        }
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.contactsDidLoaded);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.mediaCountDidLoaded);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.encryptedChatCreated);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.encryptedChatUpdated);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.blockedUsersDidLoaded);
+        userBlocked = MessagesController.getInstance().blockedUsers.contains(user_id);
+        return true;
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.updateInterfaces);
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.contactsDidLoaded);
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.mediaCountDidLoaded);
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.encryptedChatCreated);
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.encryptedChatUpdated);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.contactsDidLoaded);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.mediaCountDidLoaded);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.encryptedChatCreated);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.encryptedChatUpdated);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.blockedUsersDidLoaded);
     }
 
     private void updateRowsIds() {
@@ -135,37 +139,31 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             }
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
-                public void onItemClick(int id) {
+                public void onItemClick(final int id) {
                     if (id == -1) {
                         finishFragment();
                     } else if (id == block_contact) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setMessage(LocaleController.getString("AreYouSureBlockContact", R.string.AreYouSureBlockContact));
+                        if (!userBlocked) {
+                            builder.setMessage(LocaleController.getString("AreYouSureBlockContact", R.string.AreYouSureBlockContact));
+                        } else {
+                            builder.setMessage(LocaleController.getString("AreYouSureUnblockContact", R.string.AreYouSureUnblockContact));
+                        }
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
-                                TLRPC.User user = MessagesController.getInstance().users.get(user_id);
-                                if (user == null) {
-                                    return;
+                                if (!userBlocked) {
+                                    MessagesController.getInstance().blockUser(user_id);
+                                } else {
+                                    MessagesController.getInstance().unblockUser(user_id);
                                 }
-                                TLRPC.TL_contacts_block req = new TLRPC.TL_contacts_block();
-                                req.id = MessagesController.getInputUser(user);
-                                TLRPC.TL_contactBlocked blocked = new TLRPC.TL_contactBlocked();
-                                blocked.user_id = user_id;
-                                blocked.date = (int)(System.currentTimeMillis() / 1000);
-                                ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
-                                    @Override
-                                    public void run(TLObject response, TLRPC.TL_error error) {
-
-                                    }
-                                });
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         showAlertDialog(builder);
                     } else if (id == add_contact) {
-                        TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+                        TLRPC.User user = MessagesController.getInstance().getUser(user_id);
                         Bundle args = new Bundle();
                         args.putInt("user_id", user.id);
                         presentFragment(new ContactAddActivity(args));
@@ -181,7 +179,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         args.putInt("user_id", user_id);
                         presentFragment(new ContactAddActivity(args));
                     } else if (id == delete_contact) {
-                        final TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+                        final TLRPC.User user = MessagesController.getInstance().getUser(user_id);
                         if (user == null || getParentActivity() == null) {
                             return;
                         }
@@ -224,7 +222,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
                             creatingChat = true;
-                            MessagesController.getInstance().startSecretChat(getParentActivity(), MessagesController.getInstance().users.get(user_id));
+                            MessagesController.getInstance().startSecretChat(getParentActivity(), MessagesController.getInstance().getUser(user_id));
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -292,7 +290,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                                     if (listView != null) {
                                         listView.invalidateViews();
                                     }
-                                    MessagesController.getInstance().sendTTLMessage(currentEncryptedChat);
+                                    SendMessagesHelper.getInstance().sendTTLMessage(currentEncryptedChat);
                                     MessagesStorage.getInstance().updateEncryptedChat(currentEncryptedChat);
                                 }
                             }
@@ -321,16 +319,16 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     }
 
     public void didReceivedNotification(int id, Object... args) {
-        if (id == MessagesController.updateInterfaces) {
+        if (id == NotificationCenter.updateInterfaces) {
             int mask = (Integer)args[0];
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
                 if (listView != null) {
                     listView.invalidateViews();
                 }
             }
-        } else if (id == MessagesController.contactsDidLoaded) {
+        } else if (id == NotificationCenter.contactsDidLoaded) {
             createActionBarMenu();
-        } else if (id == MessagesController.mediaCountDidLoaded) {
+        } else if (id == NotificationCenter.mediaCountDidLoaded) {
             long uid = (Long)args[0];
             if (uid > 0 && user_id == uid && dialog_id == 0 || dialog_id != 0 && dialog_id == uid) {
                 totalMediaCount = (Integer)args[1];
@@ -338,15 +336,15 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     listView.invalidateViews();
                 }
             }
-        } else if (id == MessagesController.encryptedChatCreated) {
+        } else if (id == NotificationCenter.encryptedChatCreated) {
             if (creatingChat) {
-                NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
                 TLRPC.EncryptedChat encryptedChat = (TLRPC.EncryptedChat)args[0];
                 Bundle args2 = new Bundle();
                 args2.putInt("enc_id", encryptedChat.id);
                 presentFragment(new ChatActivity(args2), true);
             }
-        } else if (id == MessagesController.encryptedChatUpdated) {
+        } else if (id == NotificationCenter.encryptedChatUpdated) {
             TLRPC.EncryptedChat chat = (TLRPC.EncryptedChat)args[0];
             if (currentEncryptedChat != null && chat.id == currentEncryptedChat.id) {
                 currentEncryptedChat = chat;
@@ -354,6 +352,12 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 if (listAdapter != null) {
                     listAdapter.notifyDataSetChanged();
                 }
+            }
+        } else if (id == NotificationCenter.blockedUsersDidLoaded) {
+            boolean oldValue = userBlocked;
+            userBlocked = MessagesController.getInstance().blockedUsers.contains(user_id);
+            if (oldValue != userBlocked) {
+                createActionBarMenu();
             }
         }
     }
@@ -371,7 +375,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         if (fileLocation == null) {
             return null;
         }
-        TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+        TLRPC.User user = MessagesController.getInstance().getUser(user_id);
         if (user != null && user.photo != null && user.photo.photo_big != null) {
             TLRPC.FileLocation photoBig = user.photo.photo_big;
             if (photoBig.local_id == fileLocation.local_id && photoBig.volume_id == fileLocation.volume_id && photoBig.dc_id == fileLocation.dc_id) {
@@ -424,21 +428,22 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         menu.clearItems();
 
         if (ContactsController.getInstance().contactsDict.get(user_id) == null) {
-            TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+            TLRPC.User user = MessagesController.getInstance().getUser(user_id);
             if (user == null) {
                 return;
             }
             ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
             if (user.phone != null && user.phone.length() != 0) {
                 item.addSubItem(add_contact, LocaleController.getString("AddContact", R.string.AddContact), 0);
-                item.addSubItem(block_contact, LocaleController.getString("BlockContact", R.string.BlockContact), 0);
+                item.addSubItem(share_contact, LocaleController.getString("ShareContact", R.string.ShareContact), 0);
+                item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BlockContact", R.string.BlockContact) : LocaleController.getString("Unblock", R.string.Unblock), 0);
             } else {
-                item.addSubItem(block_contact, LocaleController.getString("BlockContact", R.string.BlockContact), 0);
+                item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BlockContact", R.string.BlockContact) : LocaleController.getString("Unblock", R.string.Unblock), 0);
             }
         } else {
             ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
             item.addSubItem(share_contact, LocaleController.getString("ShareContact", R.string.ShareContact), 0);
-            item.addSubItem(block_contact, LocaleController.getString("BlockContact", R.string.BlockContact), 0);
+            item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BlockContact", R.string.BlockContact) : LocaleController.getString("Unblock", R.string.Unblock), 0);
             item.addSubItem(edit_contact, LocaleController.getString("EditContact", R.string.EditContact), 0);
             item.addSubItem(delete_contact, LocaleController.getString("DeleteContact", R.string.DeleteContact), 0);
         }
@@ -449,7 +454,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         if (dialog_id != 0) {
             Bundle args = new Bundle();
             args.putBoolean("scrollToTopOnResume", true);
-            NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
+            NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
             int lower_part = (int)dialog_id;
             if (lower_part != 0) {
                 if (lower_part > 0) {
@@ -461,10 +466,9 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 args.putInt("enc_id", (int)(dialog_id >> 32));
             }
             presentFragment(new ChatActivity(args), true);
-            messageFragment.removeSelfFromStack();
             removeSelfFromStack();
-            TLRPC.User user = MessagesController.getInstance().users.get(user_id);
-            MessagesController.getInstance().sendMessage(user, dialog_id);
+            TLRPC.User user = MessagesController.getInstance().getUser(user_id);
+            SendMessagesHelper.getInstance().sendMessage(user, dialog_id);
         }
     }
 
@@ -511,7 +515,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             if (type == 0) {
                 BackupImageView avatarImage;
                 TextView onlineText;
-                TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+                TLRPC.User user = MessagesController.getInstance().getUser(user_id);
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.user_profile_avatar_layout, viewGroup, false);
@@ -522,7 +526,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     avatarImage.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+                            TLRPC.User user = MessagesController.getInstance().getUser(user_id);
                             if (user.photo != null && user.photo.photo_big != null) {
                                 PhotoViewer.getInstance().setParentActivity(getParentActivity());
                                 PhotoViewer.getInstance().openPhoto(user.photo.photo_big, UserProfileActivity.this);
@@ -537,7 +541,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 Typeface typeface = AndroidUtilities.getTypeface("fonts/rmedium.ttf");
                 textView.setTypeface(typeface);
 
-                textView.setText(Utilities.formatName(user.first_name, user.last_name));
+                textView.setText(ContactsController.formatName(user.first_name, user.last_name));
                 onlineText.setText(LocaleController.formatUserStatus(user));
 
                 TLRPC.FileLocation photo = null;
@@ -546,7 +550,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     photo = user.photo.photo_small;
                     photoBig = user.photo.photo_big;
                 }
-                avatarImage.setImage(photo, "50_50", Utilities.getUserAvatarForId(user.id));
+                avatarImage.setImage(photo, "50_50", AndroidUtilities.getUserAvatarForId(user.id));
                 avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
                 return view;
             } else if (type == 1) {
@@ -563,7 +567,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     textView.setText(LocaleController.getString("SHAREDMEDIA", R.string.SHAREDMEDIA));
                 }
             } else if (type == 2) {
-                final TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+                final TLRPC.User user = MessagesController.getInstance().getUser(user_id);
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.user_profile_phone_layout, viewGroup, false);
@@ -599,11 +603,11 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     button.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            TLRPC.User user = MessagesController.getInstance().users.get(user_id);
+                            TLRPC.User user = MessagesController.getInstance().getUser(user_id);
                             if (user == null || user instanceof TLRPC.TL_userEmpty) {
                                 return;
                             }
-                            NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
                             Bundle args = new Bundle();
                             args.putInt("user_id", user_id);
                             presentFragment(new ChatActivity(args), true);
@@ -656,7 +660,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     }
                     divider.setVisibility(View.INVISIBLE);
                 } else if (i == settingsTimerRow) {
-                    TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().encryptedChats.get((int)(dialog_id >> 32));
+                    TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat((int)(dialog_id >> 32));
                     textView.setText(LocaleController.getString("MessageLifetime", R.string.MessageLifetime));
                     divider.setVisibility(View.VISIBLE);
                     if (encryptedChat.ttl == 0) {
@@ -686,7 +690,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 View divider = view.findViewById(R.id.settings_row_divider);
                 divider.setVisibility(View.VISIBLE);
                 IdenticonView identiconView = (IdenticonView)view.findViewById(R.id.identicon_view);
-                TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().encryptedChats.get((int)(dialog_id >> 32));
+                TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat((int)(dialog_id >> 32));
                 identiconView.setBytes(encryptedChat.auth_key);
                 textView.setText(LocaleController.getString("EncryptionKey", R.string.EncryptionKey));
             } else if (type == 5) {

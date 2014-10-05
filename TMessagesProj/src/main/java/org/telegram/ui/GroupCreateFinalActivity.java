@@ -21,15 +21,15 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesStorage;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.MessagesController;
-import org.telegram.messenger.NotificationCenter;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.Cells.ChatOrUserCell;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
@@ -66,15 +66,15 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     @SuppressWarnings("unchecked")
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance().addObserver(this, MessagesController.updateInterfaces);
-        NotificationCenter.getInstance().addObserver(this, MessagesController.chatDidCreated);
-        NotificationCenter.getInstance().addObserver(this, MessagesController.chatDidFailCreate);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.chatDidCreated);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.chatDidFailCreate);
         avatarUpdater.parentFragment = this;
         avatarUpdater.delegate = this;
         selectedContacts = getArguments().getIntegerArrayList("result");
         final ArrayList<Integer> usersToLoad = new ArrayList<Integer>();
         for (Integer uid : selectedContacts) {
-            if (MessagesController.getInstance().users.get(uid) == null) {
+            if (MessagesController.getInstance().getUser(uid) == null) {
                 usersToLoad.add(uid);
             }
         }
@@ -99,7 +99,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             }
             if (!users.isEmpty()) {
                 for (TLRPC.User user : users) {
-                    MessagesController.getInstance().users.putIfAbsent(user.id, user);
+                    MessagesController.getInstance().putUser(user, true);
                 }
             } else {
                 return false;
@@ -111,9 +111,9 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.updateInterfaces);
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.chatDidCreated);
-        NotificationCenter.getInstance().removeObserver(this, MessagesController.chatDidFailCreate);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.chatDidCreated);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.chatDidFailCreate);
         avatarUpdater.clear();
     }
 
@@ -247,7 +247,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
     @Override
     public void didUploadedPhoto(final TLRPC.InputFile file, final TLRPC.PhotoSize small, final TLRPC.PhotoSize big) {
-        Utilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.RunOnUIThread(new Runnable() {
             @Override
             public void run() {
                 uploadedAvatar = file;
@@ -296,12 +296,12 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
     @Override
     public void didReceivedNotification(int id, final Object... args) {
-        if (id == MessagesController.updateInterfaces) {
+        if (id == NotificationCenter.updateInterfaces) {
             int mask = (Integer)args[0];
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0 || (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
                 updateVisibleRows(mask);
             }
-        } else if (id == MessagesController.chatDidFailCreate) {
+        } else if (id == NotificationCenter.chatDidFailCreate) {
             if (progressDialog != null) {
                 try {
                     progressDialog.dismiss();
@@ -310,8 +310,8 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 }
             }
             donePressed = false;
-        } else if (id == MessagesController.chatDidCreated) {
-            Utilities.RunOnUIThread(new Runnable() {
+        } else if (id == NotificationCenter.chatDidCreated) {
+            AndroidUtilities.RunOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     if (progressDialog != null) {
@@ -384,7 +384,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
         @Override
         public View getItemView(int section, int position, View convertView, ViewGroup parent) {
-            TLRPC.User user = MessagesController.getInstance().users.get(selectedContacts.get(position));
+            TLRPC.User user = MessagesController.getInstance().getUser(selectedContacts.get(position));
 
             if (convertView == null) {
                 convertView = new ChatOrUserCell(mContext);

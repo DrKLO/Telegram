@@ -61,7 +61,11 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     public ActionBarMenuItem addItem(int id, int icon) {
-        ActionBarMenuItem menuItem = new ActionBarMenuItem(getContext(), this, parentActionBar, parentActionBarLayer.itemsBackgroundResourceId);
+        return addItem(id, icon, parentActionBarLayer.itemsBackgroundResourceId);
+    }
+
+    public ActionBarMenuItem addItem(int id, int icon, int backgroundResource) {
+        ActionBarMenuItem menuItem = new ActionBarMenuItem(getContext(), this, parentActionBar, backgroundResource);
         menuItem.setTag(id);
         menuItem.setScaleType(ImageView.ScaleType.CENTER);
         menuItem.setImageResource(icon);

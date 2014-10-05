@@ -16,6 +16,7 @@ import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.View;
 
+import org.telegram.android.ImageReceiver;
 import org.telegram.messenger.TLRPC;
 
 public class BackupImageView extends View {
@@ -38,8 +39,7 @@ public class BackupImageView extends View {
     }
 
     private void init() {
-        imageReceiver = new ImageReceiver();
-        imageReceiver.parentView = this;
+        imageReceiver = new ImageReceiver(this);
     }
 
     public void setImage(TLRPC.FileLocation path, String filter, int placeholder) {
@@ -90,10 +90,7 @@ public class BackupImageView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        imageReceiver.imageX = 0;
-        imageReceiver.imageY = 0;
-        imageReceiver.imageW = getWidth();
-        imageReceiver.imageH = getHeight();
-        imageReceiver.draw(canvas, 0, 0, imageReceiver.imageW, imageReceiver.imageH);
+        imageReceiver.setImageCoords(0, 0, getWidth(), getHeight());
+        imageReceiver.draw(canvas, 0, 0, getWidth(), getHeight());
     }
 }

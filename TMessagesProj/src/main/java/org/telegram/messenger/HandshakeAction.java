@@ -87,7 +87,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
         reqPQMsgData = sendMessageData(reqPq, generateMessageId());
     }
 
-    final Integer lock = 1;
+    final Object lock = new Object();
     static ArrayList<HashMap<String, Object>> serverPublicKeys = null;
     HashMap<String, Object> selectPublicKey(ArrayList<Long> fingerprints) {
         synchronized (lock) {

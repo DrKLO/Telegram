@@ -30,7 +30,9 @@ import com.google.android.gms.gcm.GoogleCloudMessaging;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
+import org.telegram.android.MediaController;
 import org.telegram.android.NotificationsService;
+import org.telegram.android.SendMessagesHelper;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
@@ -92,9 +94,11 @@ public class ApplicationLoader extends Application {
 
         UserConfig.loadConfig();
         if (UserConfig.getCurrentUser() != null) {
-            MessagesController.getInstance().users.put(UserConfig.getClientUserId(), UserConfig.getCurrentUser());
+            MessagesController.getInstance().putUser(UserConfig.getCurrentUser(), true);
             ConnectionsManager.getInstance().applyCountryPortNumber(UserConfig.getCurrentUser().phone);
             ConnectionsManager.getInstance().initPushConnection();
+            MessagesController.getInstance().getBlockedUsers(true);
+            SendMessagesHelper.getInstance().checkUnsentMessages();
         }
 
         ApplicationLoader app = (ApplicationLoader)ApplicationLoader.applicationContext;
@@ -102,6 +106,7 @@ public class ApplicationLoader extends Application {
         FileLog.e("tmessages", "app initied");
 
         ContactsController.getInstance().checkAppAccount();
+        MediaController.getInstance();
     }
 
     @Override
@@ -263,7 +268,7 @@ public class ApplicationLoader extends Application {
                 UserConfig.registeredForPush = !isNew;
                 UserConfig.saveConfig(false);
                 if (UserConfig.getClientUserId() != 0) {
-                    Utilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.RunOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             MessagesController.getInstance().registerForPush(regid);

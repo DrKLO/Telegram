@@ -14,8 +14,12 @@ import android.os.Build;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
+import android.view.ActionMode;
+import android.view.ContextMenu;
 import android.view.Gravity;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -27,8 +31,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 
 import java.lang.reflect.Field;
 
@@ -152,7 +156,7 @@ public class ActionBarMenuItem extends ImageView {
             delimeter.setBackgroundColor(0xffdcdcdc);
             popupLayout.addView(delimeter);
             LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)delimeter.getLayoutParams();
-            layoutParams.width = AndroidUtilities.dp(196);
+            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
             layoutParams.height = AndroidUtilities.density >= 3 ? 2 : 1;
             delimeter.setLayoutParams(layoutParams);
             delimeter.setTag(100 + id);
@@ -160,7 +164,11 @@ public class ActionBarMenuItem extends ImageView {
         TextView textView = new TextView(getContext());
         textView.setTextColor(0xff000000);
         textView.setBackgroundResource(R.drawable.list_selector);
-        textView.setGravity(Gravity.CENTER_VERTICAL);
+        if (!LocaleController.isRTL) {
+            textView.setGravity(Gravity.CENTER_VERTICAL);
+        } else {
+            textView.setGravity(Gravity.CENTER_VERTICAL | Gravity.RIGHT);
+        }
         textView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
         textView.setTextSize(18);
         textView.setMinWidth(AndroidUtilities.dp(196));
@@ -168,10 +176,17 @@ public class ActionBarMenuItem extends ImageView {
         textView.setText(text);
         if (icon != 0) {
             textView.setCompoundDrawablePadding(AndroidUtilities.dp(12));
-            textView.setCompoundDrawablesWithIntrinsicBounds(getResources().getDrawable(icon), null, null, null);
+            if (!LocaleController.isRTL) {
+                textView.setCompoundDrawablesWithIntrinsicBounds(getResources().getDrawable(icon), null, null, null);
+            } else {
+                textView.setCompoundDrawablesWithIntrinsicBounds(null, null, getResources().getDrawable(icon), null);
+            }
         }
         popupLayout.addView(textView);
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)textView.getLayoutParams();
+        if (LocaleController.isRTL) {
+            layoutParams.gravity = Gravity.RIGHT;
+        }
         layoutParams.width = LinearLayout.LayoutParams.WRAP_CONTENT;
         layoutParams.height = AndroidUtilities.dp(48);
         textView.setLayoutParams(layoutParams);
@@ -203,6 +218,17 @@ public class ActionBarMenuItem extends ImageView {
             popupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
             popupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
             popupLayout.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), MeasureSpec.AT_MOST));
+            popupWindow.getContentView().setFocusableInTouchMode(true);
+            popupWindow.getContentView().setOnKeyListener(new OnKeyListener() {
+                @Override
+                public boolean onKey(View v, int keyCode, KeyEvent event) {
+                    if (keyCode ==  KeyEvent.KEYCODE_MENU && event.getRepeatCount() == 0 && event.getAction() == KeyEvent.ACTION_UP && popupWindow != null && popupWindow.isShowing()) {
+                        popupWindow.dismiss();
+                        return true;
+                    }
+                    return false;
+                }
+            });
         }
         popupWindow.setFocusable(true);
         if (popupLayout.getMeasuredWidth() == 0) {
@@ -257,6 +283,30 @@ public class ActionBarMenuItem extends ImageView {
             searchField.setBackgroundResource(R.drawable.search_light_states);
             searchField.setPadding(AndroidUtilities.dp(6), 0, AndroidUtilities.dp(6), 0);
             searchField.setInputType(EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+            if (android.os.Build.VERSION.SDK_INT < 11) {
+                searchField.setOnCreateContextMenuListener(new OnCreateContextMenuListener() {
+                    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+                        menu.clear();
+                    }
+                });
+            } else {
+                searchField.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
+                    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                        return false;
+                    }
+
+                    public void onDestroyActionMode(ActionMode mode) {
+                    }
+
+                    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                        return false;
+                    }
+
+                    public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                        return false;
+                    }
+                });
+            }
             searchField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {

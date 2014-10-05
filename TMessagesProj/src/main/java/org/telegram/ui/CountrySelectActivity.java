@@ -314,7 +314,7 @@ public class CountrySelectActivity extends BaseFragment {
     }
 
     private void updateSearchResults(final ArrayList<Country> arrCounties) {
-        Utilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.RunOnUIThread(new Runnable() {
             @Override
             public void run() {
                 searchResult = arrCounties;

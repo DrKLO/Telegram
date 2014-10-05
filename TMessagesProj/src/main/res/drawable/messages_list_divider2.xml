@@ -1,0 +1,6 @@
+<inset
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <shape android:shape="rectangle">
+        <solid android:color="@color/divider"/>
+    </shape>
+</inset>

@@ -10,6 +10,7 @@ package org.telegram.ui;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -24,6 +25,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
@@ -46,7 +48,12 @@ public class IntroActivity extends Activity {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-        setContentView(R.layout.intro_layout);
+        if (AndroidUtilities.isTablet()) {
+            setContentView(R.layout.intro_layout_tablet);
+        } else {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            setContentView(R.layout.intro_layout);
+        }
 
         if (LocaleController.isRTL) {
             icons = new int[] {

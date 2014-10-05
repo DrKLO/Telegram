@@ -16,7 +16,6 @@ import android.os.Bundle;
 import android.telephony.SmsMessage;
 
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.NotificationCenter;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

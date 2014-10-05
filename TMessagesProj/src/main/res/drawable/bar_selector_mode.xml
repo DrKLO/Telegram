@@ -1,0 +1,25 @@
+<selector
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <inset android:insetBottom="2dp">
+            <shape android:shape="rectangle">
+                <solid android:color="#fff0f0f0" />
+            </shape>
+        </inset>
+    </item>
+    <item android:state_focused="true">
+        <inset android:insetBottom="2dp">
+            <shape android:shape="rectangle">
+                <solid android:color="#fff0f0f0" />
+            </shape>
+        </inset>
+    </item>
+    <item android:state_selected="true">
+        <inset android:insetBottom="2dp">
+            <shape android:shape="rectangle">
+                <solid android:color="#fff0f0f0" />
+            </shape>
+        </inset>
+    </item>
+    <item android:drawable="@drawable/transparent" />
+</selector>

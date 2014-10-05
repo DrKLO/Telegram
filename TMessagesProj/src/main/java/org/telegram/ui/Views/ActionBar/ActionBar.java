@@ -21,7 +21,6 @@ import android.widget.FrameLayout;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 
 import java.util.ArrayList;
 
@@ -171,7 +170,7 @@ public class ActionBar extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        if (!Utilities.isTablet(getContext()) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        if (!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(40), MeasureSpec.EXACTLY));
         } else {
             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
