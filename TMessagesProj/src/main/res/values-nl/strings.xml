@@ -15,7 +15,7 @@
     <!--code enter view-->
     <string name="YourCode">Je code</string>
     <string name="SentSmsCode">We hebben een sms met een activatiecode verzonden naar je telefoon</string>
-    <string name="CallText">We bellen je over</string>
+    <string name="CallText">We bellen je over %1$d:%2$02d</string>
     <string name="Calling">We bellen je…</string>
     <string name="Code">Code</string>
     <string name="WrongNumber">Verkeerd nummer?</string>
@@ -152,15 +152,15 @@
     <string name="NotificationUnrecognizedDevice">%1$s,\nEr is op je account ingelogd vanaf een nieuw apparaat op %2$s\n\nApparaat: %3$s\nLocatie: %4$s\n\nAls jij dit niet was, kun je alle sessies beëindigen via Instellingen – Beëindig alle andere sessies.\n\nBedankt,\nHet Telegram-team</string>
     <string name="NotificationContactNewPhoto">%1$s heeft zijn/haar profielfoto gewijzigd</string>
     <string name="Reply">Antwoord</string>
-    <string name="ReplyToGroup">Reply to %1$s</string>
-    <string name="ReplyToUser">Reply to %1$s</string>
+    <string name="ReplyToGroup">Antwoord op %1$s</string>
+    <string name="ReplyToUser">Antwoord op %1$s</string>
+    <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
     <!--contacts view-->
     <string name="SelectContact">Kies een contact</string>
     <string name="NoContacts">Nog geen contacten</string>
     <string name="InviteText">Hey! Zullen we overstappen op Telegram? http://telegram.org/dl2</string>
     <string name="TodayAt">vandaag om</string>
     <string name="YesterdayAt">gisteren om</string>
-    <string name="OtherAt">om</string>
     <string name="Online">online</string>
     <string name="Offline">offline</string>
     <string name="LastSeen">gezien</string>
@@ -380,7 +380,7 @@
     <string name="AreYouSureSecretChat">Weet je zeker dat je een geheime chat wilt starten?</string>
     <string name="ForwardFromMyName">doorsturen via mijn eigen naam</string>
     <string name="SendMessagesToGroup">Berichten naar %1$s verzenden?</string>
-    <string name="ForwardMessagesToGroup">Berichten doorsturen naar %1$s?</string>
+    <string name="ForwardMessagesToGroup">Berichten naar %1$s doorsturen?</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Snel</string>
@@ -397,7 +397,13 @@
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> biedt toegang tot je berichten<![CDATA[<br/>]]>vanaf meerdere apparaten.</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> berichten zijn sterk versleuteld<![CDATA[<br/>]]>en kunnen zichzelf vernietigen.</string>
     <string name="StartMessaging">Begin met chatten</string>
-    <!--plurals-->
+    <!--plural-->
+    <string name="Online_zero">%1$d online</string>
+    <string name="Online_one">%1$d online</string>
+    <string name="Online_two">%1$d online</string>
+    <string name="Online_few">%1$d online</string>
+    <string name="Online_many">%1$d online</string>
+    <string name="Online_other">%1$d online</string>
     <string name="Members_zero">geen deelnemers</string>
     <string name="Members_one">%1$d deelnemer</string>
     <string name="Members_two">%1$d deelnemers</string>
@@ -430,10 +436,14 @@
     <string name="FromContacts_other">van %1$d contactpersonen</string>
     <!--date formatters-->
     <string name="formatterMonth">dd MMM</string>
-    <string name="formatterYear">dd.MM.yy</string>
-    <string name="formatterYearMax">dd.MM.yyyy</string>
+    <string name="formatterYear">dd-MM-yy</string>
+    <string name="formatterYearMax">dd-MM-yyyy</string>
     <string name="chatDate">d MMMM</string>
     <string name="chatFullDate">d MMMM yyyy</string>
+    <string name="formatterWeek">EEE</string>
+    <string name="formatterDay24H">HH:mm</string>
+    <string name="formatterDay12H">h:mm a</string>
+    <string name="formatDateAtTime">%1$s \'om\' %2$s</string>
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
 </resources>

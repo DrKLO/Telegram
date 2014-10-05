@@ -16,13 +16,11 @@ import android.content.Intent;
 import org.json.JSONObject;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.ApplicationLoader;
 
 public class GcmBroadcastReceiver extends BroadcastReceiver {
 
     public static final int NOTIFICATION_ID = 1;
-    private static final Integer sync = 1;
 
     @Override
     public void onReceive(final Context context, final Intent intent) {

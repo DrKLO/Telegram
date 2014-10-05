@@ -630,7 +630,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 }
 
                 if (count != 0 && onlineCount > 1) {
-                    onlineText.setText(Html.fromHtml(String.format("%s, <font color='#357aa8'>%d %s</font>", LocaleController.formatPluralString("Members", count), onlineCount, LocaleController.getString("Online", R.string.Online))));
+                    onlineText.setText(Html.fromHtml(String.format("%s, <font color='#357aa8'>%d %s</font>", LocaleController.formatPluralString("Members", count), onlineCount, LocaleController.formatPluralString("Online", onlineCount))));
                 } else {
                     onlineText.setText(LocaleController.formatPluralString("Members", count));
                 }

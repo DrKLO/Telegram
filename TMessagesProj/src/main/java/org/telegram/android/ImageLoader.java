@@ -161,7 +161,7 @@ public class ImageLoader {
 
     private class CacheOutTask implements Runnable {
         private Thread runningThread = null;
-        private final Integer sync = 1;
+        private final Object sync = new Object();
 
         private CacheImage cacheImage = null;
         private boolean isCancelled = false;

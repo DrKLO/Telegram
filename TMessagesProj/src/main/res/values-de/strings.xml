@@ -15,7 +15,7 @@
     <!--code enter view-->
     <string name="YourCode">Dein Code</string>
     <string name="SentSmsCode">Wir haben dir eine SMS mit einem Aktivierungscode zugeschickt</string>
-    <string name="CallText">Wir rufen dich an in</string>
+    <string name="CallText">Wir rufen dich an in %1$d:%2$02d</string>
     <string name="Calling">Wir rufen dich an…</string>
     <string name="Code">Code</string>
     <string name="WrongNumber">Falsche Nummer?</string>
@@ -96,13 +96,13 @@
     <string name="Selected">Ausgewählt: %d</string>
     <string name="ShareMyContactInfo">MEINE TELEFONNUMMER TEILEN</string>
     <string name="AddToContacts">ZU KONTAKTEN HINZUFÜGEN</string>
-    <string name="EncryptedPlaceholderTitleIncoming">%s hat dich zu einem geheimen Chat eingeladen.</string>
-    <string name="EncryptedPlaceholderTitleOutgoing">Du hast %s zu einem geheimen Chat eingeladen.</string>
+    <string name="EncryptedPlaceholderTitleIncoming">%s hat dich zu einem\nEnde-zu-Ende verschlüsselten\nGeheimen Chat eingeladen.</string>
+    <string name="EncryptedPlaceholderTitleOutgoing">Du hast %s zu einem\nEnde-zu-Ende verschlüsselten\nGeheimen Chat eingeladen.</string>
     <string name="EncryptedDescriptionTitle">Geheime Chats in Kürze:</string>
-    <string name="EncryptedDescription1">Ende-zu-Ende Verschlüsselung</string>
-    <string name="EncryptedDescription2">Keine Serverspeicherung</string>
-    <string name="EncryptedDescription3">Selbstzerstörungs-Timer</string>
-    <string name="EncryptedDescription4">Verbieten Weiterleitung</string>
+    <string name="EncryptedDescription1">Keine Serverspeicherung</string>
+    <string name="EncryptedDescription2">Selbstzerstörungs-Timer</string>
+    <string name="EncryptedDescription3">Verbieten Weiterleitung</string>
+    <string name="EncryptedDescription4">Löschen sich bei Abmeldung</string>
     <string name="YouWereKicked">Du wurdest aus der Gruppe entfernt</string>
     <string name="YouLeft">Du hast die Gruppe verlassen</string>
     <string name="DeleteThisGroup">Diese Gruppe löschen</string>
@@ -152,15 +152,15 @@
     <string name="NotificationUnrecognizedDevice">%1$s,\nWir haben eine Anmeldung von einem neuen Gerät am %2$s festgestellt.\n\nGerät: %3$s\nStandort: %4$s\n\nWenn du das nicht selbst gewesen bist, melde alle anderen Sitzungen in den Telegram Einstellungen unverzüglich ab.\n\nMit freundlichen Grüßen,\nDas Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s hat das Profilbild geändert</string>
     <string name="Reply">Beantworten</string>
-    <string name="ReplyToGroup">Reply to %1$s</string>
-    <string name="ReplyToUser">Reply to %1$s</string>
+    <string name="ReplyToGroup">%1$s antworten</string>
+    <string name="ReplyToUser">%1$s antworten</string>
+    <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
     <!--contacts view-->
     <string name="SelectContact">Kontakt auswählen</string>
     <string name="NoContacts">Noch keine Kontakte</string>
     <string name="InviteText">Hey, lass uns zu Telegram wechseln: http://telegram.org/dl2</string>
     <string name="TodayAt">heute um</string>
     <string name="YesterdayAt">gestern um</string>
-    <string name="OtherAt">um</string>
     <string name="Online">online</string>
     <string name="Offline">offline</string>
     <string name="LastSeen">zul. online</string>
@@ -256,7 +256,7 @@
     <string name="Enabled">Aktiviert</string>
     <string name="Disabled">Deaktiviert</string>
     <string name="NotificationsService">Mitteilungsdienst</string>
-    <string name="NotificationsServiceDisableInfo">Sofern Google Play Dienste ausreichend für deine Mitteilungen sind, kannst du unseren Mitteilungsdienst abschalten. Wir empfehlen allerdings, unseren Dienst dauerhaft aktiviert zu lassen um über neue Nachrichten in Echtzeit informiert zu werden.</string>
+    <string name="NotificationsServiceDisableInfo">Sofern Google Play Dienste ausreichend für deine Mitteilungen sind, kannst du unseren Mitteilungsdienst abschalten. Wir empfehlen allerdings, unseren Dienst dauerhaft aktiviert zu lassen, um über neue Nachrichten in Echtzeit informiert zu werden.</string>
     <string name="SortBy">sortiert nach</string>
     <string name="ImportContacts">Kontakte importieren</string>
     <string name="WiFiOnly">Nur über W-LAN</string>
@@ -380,7 +380,7 @@
     <string name="AreYouSureSecretChat">Geheimen Chat starten?</string>
     <string name="ForwardFromMyName">mit meinem Namen weiterleiten</string>
     <string name="SendMessagesToGroup">Nachricht an %1$s senden?</string>
-    <string name="ForwardMessagesToGroup">Nachrichten an %1$s weiterleiten?</string>
+    <string name="ForwardMessagesToGroup">Weiterleiten an %1$s?</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Schnell</string>
@@ -397,7 +397,13 @@
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lässt sich von verschiedenen Geräten<![CDATA[<br/>]]>gleichzeitig nutzen.</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]>-Nachrichten sind stark verschlüsselt<![CDATA[<br/>]]>und können sich selbst zerstören.</string>
     <string name="StartMessaging">Jetzt beginnen</string>
-    <!--plurals-->
+    <!--plural-->
+    <string name="Online_zero">%1$d online</string>
+    <string name="Online_one">%1$d online</string>
+    <string name="Online_two">%1$d online</string>
+    <string name="Online_few">%1$d online</string>
+    <string name="Online_many">%1$d online</string>
+    <string name="Online_other">%1$d online</string>
     <string name="Members_zero">keine Mitglieder</string>
     <string name="Members_one">%1$d Mitglied</string>
     <string name="Members_two">%1$d Mitglieder</string>
@@ -433,7 +439,11 @@
     <string name="formatterYear">dd.MM.yy</string>
     <string name="formatterYearMax">dd.MM.yyyy</string>
     <string name="chatDate">d MMMM</string>
-    <string name="chatFullDate">d MMMM yyyy</string>
+    <string name="chatFullDate">d MMMM, yyyy</string>
+    <string name="formatterWeek">EEE</string>
+    <string name="formatterDay24H">HH:mm</string>
+    <string name="formatterDay12H">h:mm a</string>
+    <string name="formatDateAtTime">%1$s \'um\' %2$s</string>
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
 </resources>

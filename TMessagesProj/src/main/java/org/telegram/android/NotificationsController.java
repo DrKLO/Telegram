@@ -136,7 +136,7 @@ public class NotificationsController {
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
                             msg = LocaleController.formatString("NotificationContactNewPhoto", R.string.NotificationContactNewPhoto, ContactsController.formatName(user.first_name, user.last_name));
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionLoginUnknownLocation) {
-                            String date = String.format("%s %s %s", LocaleController.formatterYear.format(((long) messageObject.messageOwner.date) * 1000), LocaleController.getString("OtherAt", R.string.OtherAt), LocaleController.formatterDay.format(((long) messageObject.messageOwner.date) * 1000));
+                            String date = LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, LocaleController.formatterYear.format(((long) messageObject.messageOwner.date) * 1000), LocaleController.formatterDay.format(((long) messageObject.messageOwner.date) * 1000));
                             msg = LocaleController.formatString("NotificationUnrecognizedDevice", R.string.NotificationUnrecognizedDevice, UserConfig.getCurrentUser().first_name, date, messageObject.messageOwner.action.title, messageObject.messageOwner.action.address);
                         }
                     } else {
@@ -385,7 +385,7 @@ public class NotificationsController {
             if (pushDialogs.size() == 1) {
                 detailText = LocaleController.formatPluralString("NewMessages", total_unread_count);
             } else {
-                detailText = String.format("%s %s", LocaleController.formatPluralString("NewMessages", total_unread_count), LocaleController.formatPluralString("FromContacts", pushDialogs.size()));
+                detailText = LocaleController.formatString("NotificationMessagesPeopleDisplayOrder", R.string.NotificationMessagesPeopleDisplayOrder, LocaleController.formatPluralString("NewMessages", total_unread_count), LocaleController.formatPluralString("FromContacts", pushDialogs.size()));
             }
 
             NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(ApplicationLoader.applicationContext)
@@ -583,12 +583,23 @@ public class NotificationsController {
                 text += message;
             }
 
+            Intent intent = new Intent(ApplicationLoader.applicationContext, LaunchActivity.class);
+            intent.setAction("com.tmessages.openchat" + Math.random() + Integer.MAX_VALUE);
+            intent.setFlags(32768);
+            if (chat != null) {
+                intent.putExtra("chatId", chat.id);
+            } else if (user != null) {
+                intent.putExtra("userId", user.id);
+            }
+            PendingIntent contentIntent = PendingIntent.getActivity(ApplicationLoader.applicationContext, 0, intent, PendingIntent.FLAG_ONE_SHOT);
+
             NotificationCompat.Builder builder = new NotificationCompat.Builder(ApplicationLoader.applicationContext)
                     .setContentTitle(name)
                     .setSmallIcon(R.drawable.notification)
                     .setGroup("messages")
                     .setContentText(text)
                     .setGroupSummary(false)
+                    .setContentIntent(contentIntent)
                     .extend(new NotificationCompat.WearableExtender().addAction(action));
 
             notificationManager.notify(notificationId, builder.build());

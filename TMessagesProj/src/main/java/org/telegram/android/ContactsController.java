@@ -40,10 +40,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ContactsController {
     private Account currentAccount;
     private boolean loadingContacts = false;
-    private static final Integer loadContactsSync = 1;
+    private static final Object loadContactsSync = new Object();
     private boolean ignoreChanges = false;
     private boolean contactsSyncInProgress = false;
-    private final Integer observerLock = 1;
+    private final Object observerLock = new Object();
     public boolean contactsLoaded = false;
     private boolean contactsBookLoaded = false;
     private String lastContactsVersions = "";

@@ -28,7 +28,7 @@ public class UserConfig {
     public static String contactsHash = "";
     public static String importHash = "";
     public static boolean blockedUsersLoaded = false;
-    private final static Integer sync = 1;
+    private final static Object sync = new Object();
     public static boolean saveIncomingPhotos = false;
     public static int contactsVersion = 1;
 

@@ -15,7 +15,7 @@
     <!--code enter view-->
     <string name="YourCode">Tu código</string>
     <string name="SentSmsCode">Enviamos un SMS con el código de activación al número</string>
-    <string name="CallText">Te llamaremos en</string>
+    <string name="CallText">Te llamaremos en %1$d:%2$02d</string>
     <string name="Calling">Llamándote...</string>
     <string name="Code">Código</string>
     <string name="WrongNumber">¿Número incorrecto?</string>
@@ -152,15 +152,15 @@
     <string name="NotificationUnrecognizedDevice">%1$s,\nDetectamos un inicio de sesión en tu cuenta desde un nuevo dispositivo, el %2$s\n\nDispositivo: %3$s\nUbicación: %4$s\n\nSi no eras tú, puedes ir a Ajustes - Cerrar todas las otras sesiones.\n\nAtentamente,\nEl equipo de Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s actualizó su foto de perfil</string>
     <string name="Reply">Responder</string>
-    <string name="ReplyToGroup">Reply to %1$s</string>
-    <string name="ReplyToUser">Reply to %1$s</string>
+    <string name="ReplyToGroup">Responder a %1$s</string>
+    <string name="ReplyToUser">Responder a %1$s</string>
+    <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
     <!--contacts view-->
     <string name="SelectContact">Elegir contacto</string>
     <string name="NoContacts">Aún sin contactos</string>
     <string name="InviteText">Oye, cambiémonos a Telegram: http://telegram.org/dl2</string>
     <string name="TodayAt">hoy a las</string>
     <string name="YesterdayAt">ayer a las</string>
-    <string name="OtherAt">a las</string>
     <string name="Online">en línea</string>
     <string name="Offline">fuera de línea</string>
     <string name="LastSeen">últ. vez</string>
@@ -397,7 +397,13 @@
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> te permite acceder a tus<![CDATA[<br/>]]>mensajes desde múltiples dispositivos.</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> posee mensajes fuertemente<![CDATA[<br/>]]>cifrados y se pueden autodestruir.</string>
     <string name="StartMessaging">Empieza a conversar</string>
-    <!--plurals-->
+    <!--plural-->
+    <string name="Online_zero">%1$d en línea</string>
+    <string name="Online_one">%1$d en línea</string>
+    <string name="Online_two">%1$d en línea</string>
+    <string name="Online_few">%1$d en línea</string>
+    <string name="Online_many">%1$d en línea</string>
+    <string name="Online_other">%1$d en línea</string>
     <string name="Members_zero">sin miembros</string>
     <string name="Members_one">%1$d miembro</string>
     <string name="Members_two">%1$d miembros</string>
@@ -434,6 +440,10 @@
     <string name="formatterYearMax">dd.MM.yyyy</string>
     <string name="chatDate">d \'de\' MMMM</string>
     <string name="chatFullDate">d \'de\' MMMM \'de\' yyyy</string>
+    <string name="formatterWeek">EEE</string>
+    <string name="formatterDay24H">HH:mm</string>
+    <string name="formatterDay12H">h:mm a</string>
+    <string name="formatDateAtTime">%1$s \'a las\' %2$s</string>
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
 </resources>

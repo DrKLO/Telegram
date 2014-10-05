@@ -41,7 +41,7 @@ public class VideoTimelineView extends View {
     private VideoTimelineViewDelegate delegate = null;
     private ArrayList<Bitmap> frames = new ArrayList<Bitmap>();
     private AsyncTask<Integer, Integer, Bitmap> currentTask = null;
-    private static final Integer sync = 1;
+    private static final Object sync = new Object();
     private long frameTimeOffset = 0;
     private int frameWidth = 0;
     private int frameHeight = 0;

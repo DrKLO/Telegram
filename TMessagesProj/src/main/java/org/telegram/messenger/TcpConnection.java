@@ -48,7 +48,7 @@ public class TcpConnection extends ConnectionContext {
     private boolean hasSomeDataSinceLastConnect = false;
     private int willRetryConnectCount = 5;
     private boolean isNextPort = false;
-    private final Integer timerSync = 1;
+    private final Object timerSync = new Object();
     private boolean wasConnected;
     private int lastPacketLength;
 

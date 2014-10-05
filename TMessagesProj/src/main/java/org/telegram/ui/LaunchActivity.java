@@ -562,9 +562,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 pushOpened = true;
             }
         } else if (showDialogsList) {
-            for (int a = 1; a < actionBarLayout.fragmentsStack.size(); a++) {
-                actionBarLayout.removeFragmentFromStack(actionBarLayout.fragmentsStack.get(a));
-                a--;
+            if (!AndroidUtilities.isTablet()) {
+                actionBarLayout.removeAllFragments();
             }
             pushOpened = false;
             isNew = false;

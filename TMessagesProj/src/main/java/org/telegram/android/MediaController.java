@@ -196,7 +196,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private long lastPlayPcm;
     private int ignoreFirstProgress = 0;
     private Timer progressTimer = null;
-    private final Integer progressTimerSync = 1;
+    private final Object progressTimerSync = new Object();
 
     private AudioRecord audioRecorder = null;
     private TLRPC.TL_audio recordingAudio = null;
@@ -208,10 +208,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private DispatchQueue playerQueue;
     private ArrayList<AudioBuffer> usedPlayerBuffers = new ArrayList<AudioBuffer>();
     private ArrayList<AudioBuffer> freePlayerBuffers = new ArrayList<AudioBuffer>();
-    private final Integer playerSync = 2;
-    private final Integer playerObjectSync = 3;
+    private final Object playerSync = new Object();
+    private final Object playerObjectSync = new Object();
 
-    private final Integer sync = 1;
+    private final Object sync = new Object();
 
     private ArrayList<ByteBuffer> recordBuffers = new ArrayList<ByteBuffer>();
     private ByteBuffer fileBuffer;

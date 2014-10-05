@@ -35,7 +35,7 @@ public class AndroidUtilities {
     private static final Hashtable<String, Typeface> typefaceCache = new Hashtable<String, Typeface>();
     private static int prevOrientation = -10;
     private static boolean waitingForSms = false;
-    private static final Integer smsLock = 2;
+    private static final Object smsLock = new Object();
     public static int externalCacheNotAvailableState = 0;
 
     public static int statusBarHeight = 0;

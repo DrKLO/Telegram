@@ -15,7 +15,7 @@
     <!--code enter view-->
     <string name="YourCode">Il tuo codice</string>
     <string name="SentSmsCode">Abbiamo inviato un SMS al tuo telefono con il codice di attivazione</string>
-    <string name="CallText">Ti telefoneremo tra</string>
+    <string name="CallText">Ti telefoneremo tra %1$d:%2$02d</string>
     <string name="Calling">Ti stiamo chiamando…</string>
     <string name="Code">Codice</string>
     <string name="WrongNumber">Numero errato?</string>
@@ -152,15 +152,15 @@
     <string name="NotificationUnrecognizedDevice">%1$s,\nAbbiamo rilevato un accesso al tuo account da un nuovo dispositivo %2$s\n\nDispositivo: %3$s\nPosizione: %4$s\n\nSe non sei stato tu, puoi andare su Impostazioni - Termina tutte le sessioni.\n\nGrazie,\nil team di Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s ha aggiornato la foto del profilo</string>
     <string name="Reply">Rispondi</string>
-    <string name="ReplyToGroup">Reply to %1$s</string>
-    <string name="ReplyToUser">Reply to %1$s</string>
+    <string name="ReplyToGroup">Rispondi a %1$s</string>
+    <string name="ReplyToUser">Rispondi a %1$s</string>
+    <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
     <!--contacts view-->
     <string name="SelectContact">Seleziona contatto</string>
     <string name="NoContacts">Ancora nessun contatto</string>
     <string name="InviteText">Ciao, passa a Telegram: http://telegram.org/dl2</string>
     <string name="TodayAt">oggi alle</string>
     <string name="YesterdayAt">ieri alle</string>
-    <string name="OtherAt">alle</string>
     <string name="Online">in linea</string>
     <string name="Offline">non in linea</string>
     <string name="LastSeen">ultimo accesso</string>
@@ -379,8 +379,8 @@
     <string name="AreYouSureDeleteContact">Eliminare questo contatto?</string>
     <string name="AreYouSureSecretChat">Iniziare una chat segreta?</string>
     <string name="ForwardFromMyName">inoltra dal mio nome</string>
-    <string name="SendMessagesToGroup">Inviare i messaggi a %1$s?</string>
-    <string name="ForwardMessagesToGroup">Vuoi inoltrare i messaggi a %1$s?</string>
+    <string name="SendMessagesToGroup">Inviare messaggi a %1$s?</string>
+    <string name="ForwardMessagesToGroup">Inoltra messaggi a %1$s?</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Veloce</string>
@@ -397,7 +397,13 @@
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> ti consente di accedere<![CDATA[<br/>]]>ai messaggi da più dispositivi.</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> cifra in maniera sicura i messaggi<![CDATA[<br/>]]>e può far sì che si autodistruggano.</string>
     <string name="StartMessaging">Inizia a inviare messaggi</string>
-    <!--plurals-->
+    <!--plural-->
+    <string name="Online_zero">%1$d in linea</string>
+    <string name="Online_one">%1$d in linea</string>
+    <string name="Online_two">%1$d in linea</string>
+    <string name="Online_few">%1$d in linea</string>
+    <string name="Online_many">%1$d in linea</string>
+    <string name="Online_other">%1$d in linea</string>
     <string name="Members_zero">nessun membro</string>
     <string name="Members_one">%1$d membro</string>
     <string name="Members_two">%1$d membri</string>
@@ -433,7 +439,11 @@
     <string name="formatterYear">dd.MM.yy</string>
     <string name="formatterYearMax">dd.MM.yyyy</string>
     <string name="chatDate">d MMMM</string>
-    <string name="chatFullDate">d MMMM yyyy</string>
+    <string name="chatFullDate">d MMMM, yyyy</string>
+    <string name="formatterWeek">EEE</string>
+    <string name="formatterDay24H">HH:mm</string>
+    <string name="formatterDay12H">h:mm a</string>
+    <string name="formatDateAtTime">%1$s \'alle\' %2$s</string>
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
 </resources>

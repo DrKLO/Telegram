@@ -15,7 +15,7 @@
     <!--code enter view-->
     <string name="YourCode">Your code</string>
     <string name="SentSmsCode">We\'ve sent an SMS with an activation code to your phone</string>
-    <string name="CallText">We will call you in</string>
+    <string name="CallText">We will call you in %1$d:%2$02d</string>
     <string name="Calling">Calling you...</string>
     <string name="Code">Code</string>
     <string name="WrongNumber">Wrong number?</string>
@@ -154,13 +154,13 @@
     <string name="Reply">Reply</string>
     <string name="ReplyToGroup">Reply to %1$s</string>
     <string name="ReplyToUser">Reply to %1$s</string>
+    <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
     <!--contacts view-->
     <string name="SelectContact">Select Contact</string>
     <string name="NoContacts">No contacts yet</string>
     <string name="InviteText">Hey, let\'s switch to Telegram: http://telegram.org/dl2</string>
     <string name="TodayAt">today at</string>
     <string name="YesterdayAt">yesterday at</string>
-    <string name="OtherAt">at</string>
     <string name="Online">online</string>
     <string name="Offline">offline</string>
     <string name="LastSeen">last seen</string>
@@ -397,7 +397,13 @@
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lets you access your messages<![CDATA[<br/>]]>from multiple devices.</string>
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> messages are heavily encrypted<![CDATA[<br/>]]>and can self-destruct.</string>
     <string name="StartMessaging">Start Messaging</string>
-    <!--plurals-->
+    <!--plural-->
+    <string name="Online_zero">%1$d online</string>
+    <string name="Online_one">%1$d online</string>
+    <string name="Online_two">%1$d online</string>
+    <string name="Online_few">%1$d online</string>
+    <string name="Online_many">%1$d online</string>
+    <string name="Online_other">%1$d online</string>
     <string name="Members_zero">no members</string>
     <string name="Members_one">%1$d member</string>
     <string name="Members_two">%1$d members</string>
@@ -434,6 +440,10 @@
     <string name="formatterYearMax">dd.MM.yyyy</string>
     <string name="chatDate">MMMM d</string>
     <string name="chatFullDate">MMMM d, yyyy</string>
+    <string name="formatterWeek">EEE</string>
+    <string name="formatterDay24H">HH:mm</string>
+    <string name="formatterDay12H">h:mm a</string>
+    <string name="formatDateAtTime">%1$s \'at\' %2$s</string>
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
 </resources>

@@ -15,7 +15,7 @@
     <!--code enter view-->
     <string name="YourCode">Seu código</string>
     <string name="SentSmsCode">Enviamos uma SMS com um código de ativação para o seu telefone</string>
-    <string name="CallText">Vamos te ligar em</string>
+    <string name="CallText">Vamos te ligar em %1$d:%2$02d</string>
     <string name="Calling">Estamos te ligando...</string>
     <string name="Code">Código</string>
     <string name="WrongNumber">Número incorreto?</string>
@@ -154,13 +154,13 @@
     <string name="Reply">Responder</string>
     <string name="ReplyToGroup">Reply to %1$s</string>
     <string name="ReplyToUser">Reply to %1$s</string>
+    <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
     <!--contacts view-->
     <string name="SelectContact">Selecionar Contato</string>
     <string name="NoContacts">Ainda não há contatos</string>
     <string name="InviteText">Ei, vamos mudar para o Telegram: http://telegram.org/dl2</string>
     <string name="TodayAt">hoje às</string>
     <string name="YesterdayAt">ontem às</string>
-    <string name="OtherAt">às</string>
     <string name="Online">online</string>
     <string name="Offline">offline</string>
     <string name="LastSeen">visto</string>
@@ -398,6 +398,12 @@
     <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> possui mensagens fortemente<![CDATA[<br/>]]>encriptadas e podem se auto-destruir.</string>
     <string name="StartMessaging">Comece a conversar</string>
     <!--plurals-->
+    <string name="Online_zero">%1$d online</string>
+    <string name="Online_one">%1$d online</string>
+    <string name="Online_two">%1$d online</string>
+    <string name="Online_few">%1$d online</string>
+    <string name="Online_many">%1$d online</string>
+    <string name="Online_other">%1$d online</string>
     <string name="Members_zero">sem membros</string>
     <string name="Members_one">%1$d membro</string>
     <string name="Members_two">%1$d membros</string>
@@ -434,6 +440,10 @@
     <string name="formatterYearMax">dd.MM.yyyy</string>
     <string name="chatDate">d MMMM</string>
     <string name="chatFullDate">d MMMM yyyy</string>
+    <string name="formatterWeek">EEE</string>
+    <string name="formatterDay24H">HH:mm</string>
+    <string name="formatterDay12H">h:mm a</string>
+    <string name="formatDateAtTime">%1$s \'às\' %2$s</string>
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
 </resources>

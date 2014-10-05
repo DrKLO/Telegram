@@ -15,7 +15,7 @@
     <!--code enter view-->
     <string name="YourCode">رمز التفعيل</string>
     <string name="SentSmsCode">تم إرسال رسالة قصيرة تحتوي على رمز التفعيل الخاص بك</string>
-    <string name="CallText">سنتصل بك خلال</string>
+    <string name="CallText">%1$d:%2$02d سنتصل بك خلال</string>
     <string name="Calling">جاري الاتصال بك ...</string>
     <string name="Code">رمز التفعيل</string>
     <string name="WrongNumber">الرقم خاطئ؟</string>
@@ -154,13 +154,13 @@
     <string name="Reply">الرد</string>
     <string name="ReplyToGroup">Reply to %1$s</string>
     <string name="ReplyToUser">Reply to %1$s</string>
+    <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
     <!--contacts view-->
     <string name="SelectContact">اختر جهة اتصال</string>
     <string name="NoContacts">لا توجد جهات اتصال بعد</string>
     <string name="InviteText">http://telegram.org/dl2 مرحبا! هيا نستخدم تيليجرام: </string>
     <string name="TodayAt">اليوم الساعة</string>
     <string name="YesterdayAt">أمس الساعة</string>
-    <string name="OtherAt">الساعة</string>
     <string name="Online">متصل</string>
     <string name="Offline">غير متصل</string>
     <string name="LastSeen">آخر ظهور</string>
@@ -398,6 +398,12 @@
     <string name="Page7Message"><![CDATA[<b>تيليجرام</b>]]> الرسائل مشفرة بشكل قوي وتستطيع تدمير ذاتها</string>
     <string name="StartMessaging">إبدأ المراسلة</string>
     <!--plurals-->
+    <string name="Online_zero">%1$d متصل</string>
+    <string name="Online_one">%1$d متصل</string>
+    <string name="Online_two">%1$d متصل</string>
+    <string name="Online_few">%1$d متصل</string>
+    <string name="Online_many">%1$d متصل</string>
+    <string name="Online_other">%1$d متصل</string>
     <string name="Members_zero">لا يوجد أعضاء</string>
     <string name="Members_one">%1$d عضو</string>
     <string name="Members_two">%1$d عضوان</string>
@@ -434,6 +440,10 @@
     <string name="formatterYearMax">dd.MM.yyyy</string>
     <string name="chatDate">d MMMM</string>
     <string name="chatFullDate">d MMMM yyyy</string>
+    <string name="formatterWeek">EEE</string>
+    <string name="formatterDay24H">HH:mm</string>
+    <string name="formatterDay12H">h:mm a</string>
+    <string name="formatDateAtTime">%1$s \'الساعة\' %2$s</string>
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
 </resources>

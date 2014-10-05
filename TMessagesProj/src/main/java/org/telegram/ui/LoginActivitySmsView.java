@@ -54,7 +54,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
 
     private Timer timeTimer;
     private Timer codeTimer;
-    private static final Integer timerSync = 1;
+    private static final Object timerSync = new Object();
     private volatile int time = 60000;
     private volatile int codeTime = 15000;
     private double lastCurrentTime;
@@ -165,7 +165,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
 
         destroyTimer();
         destroyCodeTimer();
-        timeText.setText(String.format("%s 1:00", LocaleController.getString("CallText", R.string.CallText)));
+        timeText.setText(LocaleController.formatString("CallText", R.string.CallText, 1, 0));
         lastCurrentTime = System.currentTimeMillis();
         problemText.setVisibility(time < 1000 ? VISIBLE : GONE);
 
@@ -230,7 +230,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                         if (time >= 1000) {
                             int minutes = time / 1000 / 60;
                             int seconds = time / 1000 - minutes * 60;
-                            timeText.setText(String.format("%s %d:%02d", LocaleController.getString("CallText", R.string.CallText), minutes, seconds));
+                            timeText.setText(LocaleController.formatString("CallText", R.string.CallText, minutes, seconds));
                         } else {
                             timeText.setText(LocaleController.getString("Calling", R.string.Calling));
                             destroyTimer();
