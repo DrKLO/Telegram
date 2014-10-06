@@ -216,6 +216,14 @@ public class LocaleController {
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "한국어";
+        localeInfo.nameEnglish = "Korean";
+        localeInfo.shortName = "ko";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
         loadOtherLanguages();
 
         for (LocaleInfo locale : otherLanguages) {
@@ -727,7 +735,11 @@ public class LocaleController {
                 formatString = "h:mm a";
             }
         }
-        formatterDay = FastDateFormat.getInstance(formatString, locale);
+        if (lang.toLowerCase().equals("ar") || lang.toLowerCase().equals("ko")) {
+            formatterDay = FastDateFormat.getInstance(formatString, locale);
+        } else {
+            formatterDay = FastDateFormat.getInstance(formatString, Locale.US);
+        }
     }
 
     public static String stringForMessageListDate(long date) {

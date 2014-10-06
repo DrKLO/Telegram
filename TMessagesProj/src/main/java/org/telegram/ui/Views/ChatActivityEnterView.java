@@ -587,7 +587,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         }
         int rotation = manager.getDefaultDisplay().getRotation();
 
-        if (height > AndroidUtilities.dp(50)) {
+        if (height > AndroidUtilities.dp(50) && keyboardVisible) {
             if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
                 keyboardHeightLand = height;
                 ApplicationLoader.applicationContext.getSharedPreferences("emoji", 0).edit().putInt("kbd_height_land3", keyboardHeightLand).commit();
@@ -598,25 +598,29 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         }
 
         if (emojiPopup != null && emojiPopup.isShowing()) {
-            WindowManager wm = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
-            final WindowManager.LayoutParams layoutParams = (WindowManager.LayoutParams)emojiPopup.getContentView().getLayoutParams();
-            layoutParams.width = AndroidUtilities.displaySize.x;
+            int newHeight = 0;
             if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                layoutParams.height = keyboardHeightLand;
+                newHeight = keyboardHeightLand;
             } else {
-                layoutParams.height = keyboardHeight;
+                newHeight = keyboardHeight;
             }
-            wm.updateViewLayout(emojiPopup.getContentView(), layoutParams);
-            if (!keyboardVisible) {
-                sizeNotifierRelativeLayout.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (sizeNotifierRelativeLayout != null) {
-                            sizeNotifierRelativeLayout.setPadding(0, 0, 0, layoutParams.height);
-                            sizeNotifierRelativeLayout.requestLayout();
+            final WindowManager.LayoutParams layoutParams = (WindowManager.LayoutParams)emojiPopup.getContentView().getLayoutParams();
+            if (layoutParams.width != AndroidUtilities.displaySize.x || layoutParams.height != newHeight) {
+                WindowManager wm = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+                layoutParams.width = AndroidUtilities.displaySize.x;
+                layoutParams.height = newHeight;
+                wm.updateViewLayout(emojiPopup.getContentView(), layoutParams);
+                if (!keyboardVisible) {
+                    sizeNotifierRelativeLayout.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (sizeNotifierRelativeLayout != null) {
+                                sizeNotifierRelativeLayout.setPadding(0, 0, 0, layoutParams.height);
+                                sizeNotifierRelativeLayout.requestLayout();
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
         }
 
