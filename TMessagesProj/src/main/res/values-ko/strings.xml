@@ -250,7 +250,7 @@
     <string name="AskAQuestionInfo">텔레그램에 관한 질문은 자원봉사자들이 답변해 드립니다. 신속한 답변을 위해 노력하지만 답변이 다소 늦을 수 있습니다.<![CDATA[<br><br>]]>일반적인 문제와 <![CDATA[<a href=\"http://telegram.org/faq/ko#g\">해결방법</a>]]>에 대해서는 \'<![CDATA[<a href=\"http://telegram.org/faq/ko#a\">자주 묻는 질문</a>]]>\'을 확인해 보세요.</string>
     <string name="AskButton">질문하기</string>
     <string name="TelegramFaq">자주 묻는 질문</string>
-    <string name="TelegramFaqUrl">https://telegram.org/faq</string>
+    <string name="TelegramFaqUrl">https://telegram.org/faq/ko</string>
     <string name="DeleteLocalization">언어를 삭제할까요?</string>
     <string name="IncorrectLocalization">언어 파일이 올바르지 않습니다.</string>
     <string name="Enabled">켜기</string>

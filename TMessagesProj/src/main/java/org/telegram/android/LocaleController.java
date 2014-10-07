@@ -518,6 +518,19 @@ public class LocaleController {
                 SharedPreferences.Editor editor = preferences.edit();
                 editor.remove("language");
                 editor.commit();
+
+                if (newLocale != null) {
+                    LocaleInfo info = null;
+                    if (newLocale.getLanguage() != null) {
+                        info = languagesDict.get(newLocale.getLanguage());
+                    }
+                    if (info == null) {
+                        info = languagesDict.get(getLocaleString(newLocale));
+                    }
+                    if (info == null) {
+                        newLocale = Locale.US;
+                    }
+                }
             }
             if (newLocale != null) {
                 if (localeInfo.pathToFile == null) {
@@ -680,7 +693,10 @@ public class LocaleController {
     }
 
     public void recreateFormatters() {
-        Locale locale = Locale.getDefault();
+        Locale locale = currentLocale;
+        if (locale == null) {
+            locale = Locale.getDefault();
+        }
         String lang = locale.getLanguage();
         if (lang == null) {
             lang = "en";

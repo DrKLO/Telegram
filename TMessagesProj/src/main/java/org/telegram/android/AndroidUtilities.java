@@ -36,7 +36,6 @@ public class AndroidUtilities {
     private static int prevOrientation = -10;
     private static boolean waitingForSms = false;
     private static final Object smsLock = new Object();
-    public static int externalCacheNotAvailableState = 0;
 
     public static int statusBarHeight = 0;
     public static float density = 1;
@@ -211,8 +210,7 @@ public class AndroidUtilities {
     }
 
     public static File getCacheDir() {
-        if (externalCacheNotAvailableState == 1 || externalCacheNotAvailableState == 0 && Environment.getExternalStorageState().startsWith(Environment.MEDIA_MOUNTED)) {
-            externalCacheNotAvailableState = 1;
+        if (Environment.getExternalStorageState().startsWith(Environment.MEDIA_MOUNTED)) {
             try {
                 File file = ApplicationLoader.applicationContext.getExternalCacheDir();
                 if (file != null) {
@@ -222,7 +220,6 @@ public class AndroidUtilities {
                 FileLog.e("tmessages", e);
             }
         }
-        externalCacheNotAvailableState = 2;
         try {
             File file = ApplicationLoader.applicationContext.getCacheDir();
             if (file != null) {

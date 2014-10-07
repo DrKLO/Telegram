@@ -833,7 +833,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 }
                 object = invoke;
             }
-            TLRPC.invokeWithLayer14 invoke = new TLRPC.invokeWithLayer14();
+            TLRPC.invokeWithLayer17 invoke = new TLRPC.invokeWithLayer17();
             invoke.query = object;
             FileLog.d("wrap in layer", "" + object);
             return invoke;
@@ -1604,12 +1604,12 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             TLRPC.TL_protoMessage message = networkMessage.protoMessage;
 
             if (BuildVars.DEBUG_VERSION) {
-                if (message.body instanceof TLRPC.invokeWithLayer14) {
-                    FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + ((TLRPC.invokeWithLayer14)message.body).query);
+                if (message.body instanceof TLRPC.invokeWithLayer17) {
+                    FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + ((TLRPC.invokeWithLayer17)message.body).query);
                 } else if (message.body instanceof TLRPC.initConnection) {
                     TLRPC.initConnection r = (TLRPC.initConnection)message.body;
-                    if (r.query instanceof TLRPC.invokeWithLayer14) {
-                        FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + ((TLRPC.invokeWithLayer14)r.query).query);
+                    if (r.query instanceof TLRPC.invokeWithLayer17) {
+                        FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + ((TLRPC.invokeWithLayer17)r.query).query);
                     } else {
                         FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + r.query);
                     }
@@ -1644,12 +1644,12 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 TLRPC.TL_protoMessage message = networkMessage.protoMessage;
                 containerMessages.add(message);
                 if (BuildVars.DEBUG_VERSION) {
-                    if (message.body instanceof TLRPC.invokeWithLayer14) {
-                        FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + ((TLRPC.invokeWithLayer14)message.body).query);
+                    if (message.body instanceof TLRPC.invokeWithLayer17) {
+                        FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + ((TLRPC.invokeWithLayer17)message.body).query);
                     } else if (message.body instanceof TLRPC.initConnection) {
                         TLRPC.initConnection r = (TLRPC.initConnection)message.body;
-                        if (r.query instanceof TLRPC.invokeWithLayer14) {
-                            FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + ((TLRPC.invokeWithLayer14)r.query).query);
+                        if (r.query instanceof TLRPC.invokeWithLayer17) {
+                            FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + ((TLRPC.invokeWithLayer17)r.query).query);
                         } else {
                             FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + r.query);
                         }

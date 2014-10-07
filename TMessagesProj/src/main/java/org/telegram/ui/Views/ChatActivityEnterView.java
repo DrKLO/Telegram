@@ -9,10 +9,14 @@
 package org.telegram.ui.Views;
 
 import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Rect;
+import android.os.Build;
 import android.os.PowerManager;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -63,6 +67,8 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
     private View slideText;
     private PowerManager.WakeLock mWakeLock = null;
     private SizeNotifierRelativeLayout sizeNotifierRelativeLayout;
+    private Object runningAnimation = null;
+    private int runningAnimationType = 0;
 
     private int keyboardHeight = 0;
     private int keyboardHeightLand = 0;
@@ -124,7 +130,6 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         messsageEditText.setHint(LocaleController.getString("TypeMessage", R.string.TypeMessage));
 
         sendButton = (ImageButton)containerView.findViewById(R.id.chat_send_button);
-        sendButton.setEnabled(false);
         sendButton.setVisibility(View.INVISIBLE);
         emojiButton = (ImageView)containerView.findViewById(R.id.chat_smile_button);
         audioSendButton = (ImageButton)containerView.findViewById(R.id.chat_audio_send_button);
@@ -261,8 +266,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
                 String message = getTrimmedString(charSequence.toString());
-                sendButton.setEnabled(message.length() != 0);
-                checkSendButton();
+                checkSendButton(true);
 
                 if (message.length() != 0 && lastTypingTimeSend < System.currentTimeMillis() - 5000 && !ignoreTextChange) {
                     int currentTime = ConnectionsManager.getInstance().getCurrentTime();
@@ -299,7 +303,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             }
         });
 
-        checkSendButton();
+        checkSendButton(false);
     }
 
     private void sendMessage() {
@@ -339,14 +343,107 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         return src;
     }
 
-    private void checkSendButton() {
+    private void checkSendButton(boolean animated) {
         String message = getTrimmedString(messsageEditText.getText().toString());
         if (message.length() > 0) {
-            sendButton.setVisibility(View.VISIBLE);
-            audioSendButton.setVisibility(View.INVISIBLE);
-        } else {
-            sendButton.setVisibility(View.INVISIBLE);
-            audioSendButton.setVisibility(View.VISIBLE);
+            if (audioSendButton.getVisibility() == View.VISIBLE) {
+                if (Build.VERSION.SDK_INT >= 11 && animated) {
+                    if (runningAnimationType == 1) {
+                        return;
+                    }
+                    if (runningAnimation != null) {
+                        ((AnimatorSet)runningAnimation).cancel();
+                        runningAnimation = null;
+                    }
+
+                    sendButton.setVisibility(View.VISIBLE);
+                    AnimatorSet animatorSet = new AnimatorSet();
+                    runningAnimation = animatorSet;
+                    runningAnimationType = 1;
+                    animatorSet.playTogether(
+                            ObjectAnimator.ofFloat(audioSendButton, "scaleX", 0.1f),
+                            ObjectAnimator.ofFloat(audioSendButton, "scaleY", 0.1f),
+                            ObjectAnimator.ofFloat(audioSendButton, "alpha", 0.0f),
+                            ObjectAnimator.ofFloat(sendButton, "scaleX", 1.0f),
+                            ObjectAnimator.ofFloat(sendButton, "scaleY", 1.0f),
+                            ObjectAnimator.ofFloat(sendButton, "alpha", 1.0f)
+                    );
+
+                    animatorSet.setDuration(200);
+                    animatorSet.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            if (animation == runningAnimation) {
+                                sendButton.setVisibility(View.VISIBLE);
+                                audioSendButton.setVisibility(View.INVISIBLE);
+                                runningAnimation = null;
+                                runningAnimationType = 0;
+                            }
+                        }
+                    });
+                    animatorSet.start();
+                } else {
+                    if (Build.VERSION.SDK_INT >= 11) {
+                        audioSendButton.setScaleX(0.1f);
+                        audioSendButton.setScaleY(0.1f);
+                        audioSendButton.setAlpha(0.0f);
+                        sendButton.setScaleX(1.0f);
+                        sendButton.setScaleY(1.0f);
+                        sendButton.setAlpha(1.0f);
+                    }
+                    sendButton.setVisibility(View.VISIBLE);
+                    audioSendButton.setVisibility(View.INVISIBLE);
+                }
+            }
+        } else if (sendButton.getVisibility() == View.VISIBLE) {
+            if (Build.VERSION.SDK_INT >= 11 && animated) {
+                if (runningAnimationType == 2) {
+                    return;
+                }
+
+                if (runningAnimation != null) {
+                    ((AnimatorSet)runningAnimation).cancel();
+                    runningAnimation = null;
+                }
+
+                audioSendButton.setVisibility(View.VISIBLE);
+                AnimatorSet animatorSet = new AnimatorSet();
+                runningAnimation = animatorSet;
+                runningAnimationType = 2;
+                animatorSet.playTogether(
+                        ObjectAnimator.ofFloat(sendButton, "scaleX", 0.1f),
+                        ObjectAnimator.ofFloat(sendButton, "scaleY", 0.1f),
+                        ObjectAnimator.ofFloat(sendButton, "alpha", 0.0f),
+                        ObjectAnimator.ofFloat(audioSendButton, "scaleX", 1.0f),
+                        ObjectAnimator.ofFloat(audioSendButton, "scaleY", 1.0f),
+                        ObjectAnimator.ofFloat(audioSendButton, "alpha", 1.0f)
+                );
+
+                animatorSet.setDuration(200);
+                animatorSet.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        if (animation == runningAnimation) {
+                            sendButton.setVisibility(View.INVISIBLE);
+                            audioSendButton.setVisibility(View.VISIBLE);
+                            runningAnimation = null;
+                            runningAnimationType = 0;
+                        }
+                    }
+                });
+                animatorSet.start();
+            } else {
+                if (Build.VERSION.SDK_INT >= 11) {
+                    sendButton.setScaleX(0.1f);
+                    sendButton.setScaleY(0.1f);
+                    sendButton.setAlpha(0.0f);
+                    audioSendButton.setScaleX(1.0f);
+                    audioSendButton.setScaleY(1.0f);
+                    audioSendButton.setAlpha(1.0f);
+                }
+                sendButton.setVisibility(View.INVISIBLE);
+                audioSendButton.setVisibility(View.VISIBLE);
+            }
         }
     }
 

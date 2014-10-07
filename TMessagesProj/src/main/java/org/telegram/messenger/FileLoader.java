@@ -593,38 +593,42 @@ public class FileLoader {
     }
 
     public static File getPathToAttach(TLObject attach) {
+        return getPathToAttach(attach, false);
+    }
+
+    public static File getPathToAttach(TLObject attach, boolean forceCache) {
         File dir = null;
         if (attach instanceof TLRPC.Video) {
             TLRPC.Video video = (TLRPC.Video)attach;
-            if (video.key != null) {
+            if (forceCache || video.key != null) {
                 dir = getInstance().getDirectory(MEDIA_DIR_CACHE);
             } else {
                 dir = getInstance().getDirectory(MEDIA_DIR_VIDEO);
             }
         } else if (attach instanceof TLRPC.Document) {
             TLRPC.Document document = (TLRPC.Document)attach;
-            if (document.key != null) {
+            if (forceCache || document.key != null) {
                 dir = getInstance().getDirectory(MEDIA_DIR_CACHE);
             } else {
                 dir = getInstance().getDirectory(MEDIA_DIR_DOCUMENT);
             }
         } else if (attach instanceof TLRPC.PhotoSize) {
             TLRPC.PhotoSize photoSize = (TLRPC.PhotoSize)attach;
-            if (photoSize.location == null || photoSize.location.key != null || photoSize.location.volume_id == Integer.MIN_VALUE && photoSize.location.local_id < 0) {
+            if (forceCache || photoSize.location == null || photoSize.location.key != null || photoSize.location.volume_id == Integer.MIN_VALUE && photoSize.location.local_id < 0) {
                 dir = getInstance().getDirectory(MEDIA_DIR_CACHE);
             } else {
                 dir = getInstance().getDirectory(MEDIA_DIR_IMAGE);
             }
         } else if (attach instanceof TLRPC.Audio) {
             TLRPC.Audio audio = (TLRPC.Audio)attach;
-            if (audio.key != null) {
+            if (forceCache || audio.key != null) {
                 dir = getInstance().getDirectory(MEDIA_DIR_CACHE);
             } else {
                 dir = getInstance().getDirectory(MEDIA_DIR_AUDIO);
             }
         } else if (attach instanceof TLRPC.FileLocation) {
             TLRPC.FileLocation fileLocation = (TLRPC.FileLocation)attach;
-            if (fileLocation.key != null || fileLocation.volume_id == Integer.MIN_VALUE && fileLocation.local_id < 0) {
+            if (forceCache || fileLocation.key != null || fileLocation.volume_id == Integer.MIN_VALUE && fileLocation.local_id < 0) {
                 dir = getInstance().getDirectory(MEDIA_DIR_CACHE);
             } else {
                 dir = getInstance().getDirectory(MEDIA_DIR_IMAGE);

@@ -17,6 +17,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -151,6 +152,12 @@ public class DocumentSelectActivity extends BaseFragment {
             fragmentView = inflater.inflate(R.layout.document_select_layout, container, false);
             listAdapter = new ListAdapter(getParentActivity());
             emptyView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
+            emptyView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    return true;
+                }
+            });
             listView = (ListView)fragmentView.findViewById(R.id.listView);
             listView.setEmptyView(emptyView);
             listView.setAdapter(listAdapter);
@@ -400,10 +407,10 @@ public class DocumentSelectActivity extends BaseFragment {
         items.add(fs);
 
         try {
-            File telegramPath = new File(Environment.getExternalStorageDirectory(), LocaleController.getString("AppName", R.string.AppName));
+            File telegramPath = new File(Environment.getExternalStorageDirectory(), "Telegram");
             if (telegramPath.exists()) {
                 fs = new ListItem();
-                fs.title = LocaleController.getString("AppName", R.string.AppName);
+                fs.title = "Telegram";
                 fs.subtitle = telegramPath.toString();
                 fs.icon = R.drawable.ic_directory;
                 fs.file = telegramPath;

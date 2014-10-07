@@ -13,6 +13,10 @@ import java.util.Locale;
 
 @SuppressWarnings("unchecked")
 public class TLRPC {
+
+    public static int MESSAGE_FLAG_UNREAD = 1;
+    public static int MESSAGE_FLAG_OUT = 2;
+
     public static class ChatPhoto extends TLObject {
         public FileLocation photo_small;
         public FileLocation photo_big;
@@ -815,32 +819,6 @@ public class TLRPC {
         }
     }
 
-    public static class TL_messageService extends Message {
-        public static int constructor = 0x9f8d60bb;
-
-
-        public void readParams(AbsSerializedData stream) {
-            id = stream.readInt32();
-            from_id = stream.readInt32();
-            to_id = (Peer)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
-            out = stream.readBool();
-            unread = stream.readBool();
-            date = stream.readInt32();
-            action = (MessageAction)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
-        }
-
-        public void serializeToStream(AbsSerializedData stream) {
-            stream.writeInt32(constructor);
-            stream.writeInt32(id);
-            stream.writeInt32(from_id);
-            to_id.serializeToStream(stream);
-            stream.writeBool(out);
-            stream.writeBool(unread);
-            stream.writeInt32(date);
-            action.serializeToStream(stream);
-        }
-    }
-
     public static class TL_inputPhoneContact extends TLObject {
         public static int constructor = 0xf392b7f4;
 
@@ -862,6 +840,99 @@ public class TLRPC {
             stream.writeString(phone);
             stream.writeString(first_name);
             stream.writeString(last_name);
+        }
+    }
+
+    public static class SendMessageAction extends TLObject {
+    }
+
+    public static class TL_sendMessageGeoLocationAction extends SendMessageAction {
+        public static int constructor = 0x176f8ba1;
+
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class TL_sendMessageChooseContactAction extends SendMessageAction {
+        public static int constructor = 0x628cbc6f;
+
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class TL_sendMessageTypingAction extends SendMessageAction {
+        public static int constructor = 0x16bf744e;
+
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class TL_sendMessageUploadDocumentAction extends SendMessageAction {
+        public static int constructor = 0x8faee98e;
+
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class TL_sendMessageRecordVideoAction extends SendMessageAction {
+        public static int constructor = 0xa187d66f;
+
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class TL_sendMessageUploadPhotoAction extends SendMessageAction {
+        public static int constructor = 0x990a3c1a;
+
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class TL_sendMessageUploadVideoAction extends SendMessageAction {
+        public static int constructor = 0x92042ff7;
+
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class TL_sendMessageUploadAudioAction extends SendMessageAction {
+        public static int constructor = 0xe6ac8a6f;
+
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class TL_sendMessageCancelAction extends SendMessageAction {
+        public static int constructor = 0xfd5ec8f5;
+
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class TL_sendMessageRecordAudioAction extends SendMessageAction {
+        public static int constructor = 0xd52f73f7;
+
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
         }
     }
 
@@ -1009,13 +1080,36 @@ public class TLRPC {
         }
     }
 
-    public static class TL_auth_sentCode extends TLObject {
-        public static int constructor = 0xefed51d9;
-
+    public static class auth_SentCode extends TLObject {
         public boolean phone_registered;
         public String phone_code_hash;
         public int send_call_timeout;
         public boolean is_password;
+    }
+
+    public static class TL_auth_sentAppCode extends auth_SentCode {
+        public static int constructor = 0xe325edcf;
+
+
+        public void readParams(AbsSerializedData stream) {
+            phone_registered = stream.readBool();
+            phone_code_hash = stream.readString();
+            send_call_timeout = stream.readInt32();
+            is_password = stream.readBool();
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeBool(phone_registered);
+            stream.writeString(phone_code_hash);
+            stream.writeInt32(send_call_timeout);
+            stream.writeBool(is_password);
+        }
+    }
+
+    public static class TL_auth_sentCode extends auth_SentCode {
+        public static int constructor = 0xefed51d9;
+
 
         public void readParams(AbsSerializedData stream) {
             phone_registered = stream.readBool();
@@ -2463,18 +2557,23 @@ public class TLRPC {
     public static class DecryptedMessage extends TLObject {
         public long random_id;
         public byte[] random_bytes;
+        public int in_seq_no;
+        public int out_seq_no;
         public DecryptedMessageAction action;
+        public int ttl;
         public String message;
         public DecryptedMessageMedia media;
     }
 
     public static class TL_decryptedMessageService extends DecryptedMessage {
-        public static int constructor = 0xaa48327d;
+        public static int constructor = 0xda431693;
 
 
         public void readParams(AbsSerializedData stream) {
             random_id = stream.readInt64();
             random_bytes = stream.readByteArray();
+            in_seq_no = stream.readInt32();
+            out_seq_no = stream.readInt32();
             action = (DecryptedMessageAction)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
         }
 
@@ -2482,17 +2581,22 @@ public class TLRPC {
             stream.writeInt32(constructor);
             stream.writeInt64(random_id);
             stream.writeByteArray(random_bytes);
+            stream.writeInt32(in_seq_no);
+            stream.writeInt32(out_seq_no);
             action.serializeToStream(stream);
         }
     }
 
     public static class TL_decryptedMessage extends DecryptedMessage {
-        public static int constructor = 0x1f814f1f;
+        public static int constructor = 0x4e748938;
 
 
         public void readParams(AbsSerializedData stream) {
             random_id = stream.readInt64();
             random_bytes = stream.readByteArray();
+            in_seq_no = stream.readInt32();
+            out_seq_no = stream.readInt32();
+            ttl = stream.readInt32();
             message = stream.readString();
             media = (DecryptedMessageMedia)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
         }
@@ -2501,6 +2605,9 @@ public class TLRPC {
             stream.writeInt32(constructor);
             stream.writeInt64(random_id);
             stream.writeByteArray(random_bytes);
+            stream.writeInt32(in_seq_no);
+            stream.writeInt32(out_seq_no);
+            stream.writeInt32(ttl);
             stream.writeString(message);
             media.serializeToStream(stream);
         }
@@ -3334,6 +3441,7 @@ public class TLRPC {
         public int version;
         public NotifyPeer peer;
         public PeerNotifySettings notify_settings;
+        public SendMessageAction action;
         public String first_name;
         public String last_name;
         public int qts;
@@ -3473,32 +3581,36 @@ public class TLRPC {
     }
 
     public static class TL_updateUserTyping extends Update {
-        public static int constructor = 0x6baa8508;
+        public static int constructor = 0x5c486927;
 
 
         public void readParams(AbsSerializedData stream) {
             user_id = stream.readInt32();
+            action = (SendMessageAction)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
         }
 
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(user_id);
+            action.serializeToStream(stream);
         }
     }
 
     public static class TL_updateChatUserTyping extends Update {
-        public static int constructor = 0x3c46cfe6;
+        public static int constructor = 0x9a65ea1f;
 
 
         public void readParams(AbsSerializedData stream) {
             chat_id = stream.readInt32();
             user_id = stream.readInt32();
+            action = (SendMessageAction)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
         }
 
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(chat_id);
             stream.writeInt32(user_id);
+            action.serializeToStream(stream);
         }
     }
 
@@ -3942,6 +4054,7 @@ public class TLRPC {
         public int layer;
         public int ttl_seconds;
         public ArrayList<Long> random_ids = new ArrayList<Long>();
+        public SendMessageAction action;
     }
 
     public static class TL_decryptedMessageActionSetMessageTTL extends DecryptedMessageAction {
@@ -3999,6 +4112,20 @@ public class TLRPC {
             for (Long random_id : random_ids) {
                 stream.writeInt64(random_id);
             }
+        }
+    }
+
+    public static class TL_decryptedMessageActionTyping extends DecryptedMessageAction {
+        public static int constructor = 0xccb27641;
+
+
+        public void readParams(AbsSerializedData stream) {
+            action = (SendMessageAction)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+            action.serializeToStream(stream);
         }
     }
 
@@ -4410,6 +4537,52 @@ public class TLRPC {
 
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
+        }
+    }
+
+    public static class TL_auth_sendSms extends TLObject {
+        public static int constructor = 0xda9f3e8;
+
+        public String phone_number;
+        public String phone_code_hash;
+
+        public Class responseClass () {
+            return Bool.class;
+        }
+
+        public void readParams(AbsSerializedData stream) {
+            phone_number = stream.readString();
+            phone_code_hash = stream.readString();
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeString(phone_number);
+            stream.writeString(phone_code_hash);
+        }
+    }
+
+    public static class TL_messages_readMessageContents extends TLObject {
+        public static int constructor = 0x354b5bc2;
+
+        public ArrayList<Integer> id = new ArrayList<Integer>();
+
+        public void readParams(AbsSerializedData stream) {
+            stream.readInt32();
+            int count = stream.readInt32();
+            for (int a = 0; a < count; a++) {
+                id.add(stream.readInt32());
+            }
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(0x1cb5c415);
+            int count = id.size();
+            stream.writeInt32(count);
+            for (Integer anId : id) {
+                stream.writeInt32(anId);
+            }
         }
     }
 
@@ -4892,6 +5065,15 @@ public class TLRPC {
         }
     }
 
+    public static class TL_storage_filePdf extends storage_FileType {
+        public static int constructor = 0xae1e508d;
+
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
     public static class TL_storage_fileMov extends storage_FileType {
         public static int constructor = 0x4b09ebbc;
 
@@ -4969,6 +5151,24 @@ public class TLRPC {
 
     public static class TL_inputMessagesFilterPhotoVideo extends MessagesFilter {
         public static int constructor = 0x56e9f0e4;
+
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class TL_inputMessagesFilterDocument extends MessagesFilter {
+        public static int constructor = 0x9eddf188;
+
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class TL_inputMessagesFilterAudio extends MessagesFilter {
+        public static int constructor = 0xcfc87522;
 
 
         public void serializeToStream(AbsSerializedData stream) {
@@ -7058,11 +7258,12 @@ public class TLRPC {
     }
 
     public static class TL_messages_readHistory extends TLObject {
-        public static int constructor = 0xb04f2510;
+        public static int constructor = 0xeed884c6;
 
         public InputPeer peer;
         public int max_id;
         public int offset;
+        public boolean read_contents;
 
         public Class responseClass () {
             return TL_messages_affectedHistory.class;
@@ -7072,6 +7273,7 @@ public class TLRPC {
             peer = (InputPeer)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
             max_id = stream.readInt32();
             offset = stream.readInt32();
+            read_contents = stream.readBool();
         }
 
         public void serializeToStream(AbsSerializedData stream) {
@@ -7079,6 +7281,7 @@ public class TLRPC {
             peer.serializeToStream(stream);
             stream.writeInt32(max_id);
             stream.writeInt32(offset);
+            stream.writeBool(read_contents);
         }
     }
 
@@ -7105,10 +7308,10 @@ public class TLRPC {
     }
 
     public static class TL_messages_setTyping extends TLObject {
-        public static int constructor = 0x719839e9;
+        public static int constructor = 0xa3825e50;
 
         public InputPeer peer;
-        public boolean typing;
+        public SendMessageAction action;
 
         public Class responseClass () {
             return Bool.class;
@@ -7116,13 +7319,13 @@ public class TLRPC {
 
         public void readParams(AbsSerializedData stream) {
             peer = (InputPeer)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
-            typing = stream.readBool();
+            action = (SendMessageAction)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
         }
 
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
             peer.serializeToStream(stream);
-            stream.writeBool(typing);
+            action.serializeToStream(stream);
         }
     }
 
@@ -8225,6 +8428,44 @@ public class TLRPC {
         }
     }
 
+    public static class TL_decryptedMessageService_old extends TL_decryptedMessageService {
+        public static int constructor = 0xaa48327d;
+
+
+        public void readParams(AbsSerializedData stream) {
+            random_id = stream.readInt64();
+            random_bytes = stream.readByteArray();
+            action = (DecryptedMessageAction)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(random_id);
+            stream.writeByteArray(random_bytes);
+            action.serializeToStream(stream);
+        }
+    }
+
+    public static class TL_decryptedMessage_old extends TL_decryptedMessage {
+        public static int constructor = 0x1f814f1f;
+
+
+        public void readParams(AbsSerializedData stream) {
+            random_id = stream.readInt64();
+            random_bytes = stream.readByteArray();
+            message = stream.readString();
+            media = (DecryptedMessageMedia)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(random_id);
+            stream.writeByteArray(random_bytes);
+            stream.writeString(message);
+            media.serializeToStream(stream);
+        }
+    }
+
     public static class TL_messages_sendEncryptedFile extends TLObject {
         public static int constructor = 0x9a901b66;
 
@@ -8522,6 +8763,7 @@ public class TLRPC {
     }
 
     public static class Message extends TLObject {
+        public int flags;
         public int id;
         public int fwd_from_id;
         public int fwd_date;
@@ -8544,6 +8786,140 @@ public class TLRPC {
     }
 
     public static class TL_messageForwarded extends Message {
+        public static int constructor = 0xa367e716;
+
+
+        public void readParams(AbsSerializedData stream) {
+            flags = stream.readInt32();
+            id = stream.readInt32();
+            fwd_from_id = stream.readInt32();
+            fwd_date = stream.readInt32();
+            from_id = stream.readInt32();
+            to_id = (Peer)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+            date = stream.readInt32();
+            message = stream.readString();
+            media = (MessageMedia)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+            out = (flags & MESSAGE_FLAG_OUT) != 0;
+            unread = (flags & MESSAGE_FLAG_UNREAD) != 0;
+            if (id < 0) {
+                fwd_msg_id = stream.readInt32();
+            }
+            if (id < 0 || (media != null && !(media instanceof TL_messageMediaEmpty) && message != null && message.length() != 0 && message.startsWith("-1"))) {
+                attachPath = stream.readString();
+            }
+            if (id < 0 && message.length() > 6 && media instanceof TL_messageMediaVideo) {
+                videoEditedInfo = new VideoEditedInfo();
+                videoEditedInfo.parseString(message);
+            }
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(flags);
+            stream.writeInt32(id);
+            stream.writeInt32(fwd_from_id);
+            stream.writeInt32(fwd_date);
+            stream.writeInt32(from_id);
+            to_id.serializeToStream(stream);
+            stream.writeInt32(date);
+            stream.writeString(message);
+            media.serializeToStream(stream);
+            if (id < 0) {
+                stream.writeInt32(fwd_msg_id);
+            }
+            stream.writeString(attachPath);
+        }
+    }
+
+    public static class TL_message extends Message {
+        public static int constructor = 0x567699b3;
+
+
+        public void readParams(AbsSerializedData stream) {
+            flags = stream.readInt32();
+            id = stream.readInt32();
+            from_id = stream.readInt32();
+            to_id = (Peer)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+            date = stream.readInt32();
+            message = stream.readString();
+            media = (MessageMedia)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+            out = (flags & 2) != 0;
+            unread = (flags & 1) != 0;
+            if (id < 0 || (media != null && !(media instanceof TL_messageMediaEmpty) && message != null && message.length() != 0 && message.startsWith("-1"))) {
+                attachPath = stream.readString();
+            }
+            if (id < 0 && message.length() > 6 && media instanceof TL_messageMediaVideo) {
+                videoEditedInfo = new VideoEditedInfo();
+                videoEditedInfo.parseString(message);
+            }
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(flags);
+            stream.writeInt32(id);
+            stream.writeInt32(from_id);
+            to_id.serializeToStream(stream);
+            stream.writeInt32(date);
+            stream.writeString(message);
+            media.serializeToStream(stream);
+            stream.writeString(attachPath);
+        }
+    }
+
+    public static class TL_messageService extends Message {
+        public static int constructor = 0x1d86f70e;
+
+
+        public void readParams(AbsSerializedData stream) {
+            flags = stream.readInt32();
+            id = stream.readInt32();
+            from_id = stream.readInt32();
+            to_id = (Peer)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+            date = stream.readInt32();
+            action = (MessageAction)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+            out = (flags & 2) != 0;
+            unread = (flags & 1) != 0;
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(flags);
+            stream.writeInt32(id);
+            stream.writeInt32(from_id);
+            to_id.serializeToStream(stream);
+            stream.writeInt32(date);
+            action.serializeToStream(stream);
+        }
+    }
+
+    public static class TL_messageService_old extends TL_messageService {
+        public static int constructor = 0x9f8d60bb;
+
+
+        public void readParams(AbsSerializedData stream) {
+            id = stream.readInt32();
+            from_id = stream.readInt32();
+            to_id = (Peer)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+            out = stream.readBool();
+            unread = stream.readBool();
+            date = stream.readInt32();
+            action = (MessageAction)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(id);
+            stream.writeInt32(from_id);
+            to_id.serializeToStream(stream);
+            stream.writeBool(out);
+            stream.writeBool(unread);
+            stream.writeInt32(date);
+            action.serializeToStream(stream);
+        }
+    }
+
+    public static class TL_messageForwarded_old extends TL_messageForwarded {
         public static int constructor = 0x5f46804;
 
 
@@ -8589,7 +8965,7 @@ public class TLRPC {
         }
     }
 
-    public static class TL_message extends Message {
+    public static class TL_message_old extends TL_message {
         public static int constructor = 0x22eb6aba;
 
         public void readParams(AbsSerializedData stream) {
@@ -9226,8 +9602,8 @@ public class TLRPC {
         }
     }
 
-    public static class invokeWithLayer14 extends TLObject {
-        public static int constructor = 0x2b9b08fa;
+    public static class invokeWithLayer17 extends TLObject {
+        public static int constructor = 0x50858a19;
 
         public TLObject query;
 

@@ -354,9 +354,9 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
                 if (audioUser.photo != null) {
                     currentPhoto = audioUser.photo.photo_small;
                 }
-                avatarImage.setImage(currentPhoto, "50_50", getResources().getDrawable(AndroidUtilities.getUserAvatarForId(uid)));
+                avatarImage.setImage(currentPhoto, "50_50", getResources().getDrawable(AndroidUtilities.getUserAvatarForId(uid)), false);
             } else {
-                avatarImage.setImage((TLRPC.FileLocation)null, "50_50", getResources().getDrawable(AndroidUtilities.getUserAvatarForId(uid)));
+                avatarImage.setImage((TLRPC.FileLocation)null, "50_50", getResources().getDrawable(AndroidUtilities.getUserAvatarForId(uid)), false);
             }
 
             if (messageObject.isOut()) {

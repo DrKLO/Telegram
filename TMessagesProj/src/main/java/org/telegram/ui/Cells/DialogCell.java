@@ -263,7 +263,7 @@ public class DialogCell extends BaseCell {
                 placeHolderId = AndroidUtilities.getBroadcastAvatarForId(chat.id);
             }
         }
-        avatarImage.setImage(photo, "50_50", placeHolderId == 0 ? null : getResources().getDrawable(placeHolderId));
+        avatarImage.setImage(photo, "50_50", placeHolderId == 0 ? null : getResources().getDrawable(placeHolderId), false);
 
         if (getMeasuredWidth() != 0 || getMeasuredHeight() != 0) {
             buildLayout();

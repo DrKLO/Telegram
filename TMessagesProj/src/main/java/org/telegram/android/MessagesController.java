@@ -1241,7 +1241,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     return;
                 }
             }
-            req.typing = true;
+            req.action = new TLRPC.TL_sendMessageTypingAction();
             sendingTypings.put(dialog_id, true);
             long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                 @Override
@@ -1668,6 +1668,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             }
             req.max_id = max_positive_id;
             req.offset = offset;
+            req.read_contents = true;
             if (offset == 0) {
                 MessagesStorage.getInstance().processPendingRead(dialog_id, max_positive_id, max_date, false);
                 MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
@@ -1711,17 +1712,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         }
                     }
                 });
-            }
-
-            if (offset == 0) {
-                TLRPC.TL_messages_receivedMessages req2 = new TLRPC.TL_messages_receivedMessages();
-                req2.max_id = max_positive_id;
-                ConnectionsManager.getInstance().performRpc(req2, new RPCRequest.RPCRequestDelegate() {
-                    @Override
-                    public void run(TLObject response, TLRPC.TL_error error) {
-
-                    }
-                }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
             }
         } else {
             if (max_date == 0) {
@@ -1967,7 +1957,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
     }
 
-    public void deleteUserFromChat(int chat_id, final TLRPC.User user, final TLRPC.ChatParticipants info) {
+    public void deleteUserFromChat(final int chat_id, final TLRPC.User user, final TLRPC.ChatParticipants info) {
         if (user == null) {
             return;
         }
@@ -2008,9 +1998,13 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                     }
                                 }
                                 if (changed) {
-                                    MessagesStorage.getInstance().updateChatInfo(info.chat_id, info, true);
+                                    MessagesStorage.getInstance().updateChatInfo(chat_id, info, true);
                                     NotificationCenter.getInstance().postNotificationName(NotificationCenter.chatInfoDidLoaded, info.chat_id, info);
+                                } else {
+                                    MessagesStorage.getInstance().updateChatInfo(chat_id, user.id, true, 0, 0);
                                 }
+                            } else {
+                                MessagesStorage.getInstance().updateChatInfo(chat_id, user.id, true, 0, 0);
                             }
                         }
                     });
@@ -2575,6 +2569,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     message.to_id.chat_id = updates.chat_id;
                     message.message = updates.message;
                     message.date = updates.date;
+                    message.flags = TLRPC.MESSAGE_FLAG_UNREAD;
                     message.unread = true;
                     message.media = new TLRPC.TL_messageMediaEmpty();
                     MessagesStorage.lastSeqValue = updates.seq;
@@ -2641,6 +2636,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     message.message = updates.message;
                     message.date = updates.date;
                     message.unread = true;
+                    message.flags = TLRPC.MESSAGE_FLAG_UNREAD;
                     message.media = new TLRPC.TL_messageMediaEmpty();
                     MessagesStorage.lastSeqValue = updates.seq;
                     MessagesStorage.lastPtsValue = updates.pts;
@@ -2873,7 +2869,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             } else if (update instanceof TLRPC.TL_updateRestoreMessages) {
                 MessagesStorage.lastPtsValue = update.pts;
             } else if (update instanceof TLRPC.TL_updateUserTyping || update instanceof TLRPC.TL_updateChatUserTyping) {
-                if (update.user_id != UserConfig.getClientUserId()) {
+                if (update.action instanceof TLRPC.TL_sendMessageTypingAction && update.user_id != UserConfig.getClientUserId()) {
                     long uid = -update.chat_id;
                     if (uid == 0) {
                         uid = update.user_id;
@@ -2919,6 +2915,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     newMessage.local_id = newMessage.id = UserConfig.getNewMessageId();
                     UserConfig.saveConfig(false);
                     newMessage.unread = true;
+                    newMessage.flags = TLRPC.MESSAGE_FLAG_UNREAD;
                     newMessage.date = update.date;
                     newMessage.from_id = update.user_id;
                     newMessage.to_id = new TLRPC.TL_peerUser();
@@ -2964,6 +2961,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 newMessage.local_id = newMessage.id = UserConfig.getNewMessageId();
                 UserConfig.saveConfig(false);
                 newMessage.unread = true;
+                newMessage.flags = TLRPC.MESSAGE_FLAG_UNREAD;
                 newMessage.date = update.date;
                 newMessage.from_id = 777000;
                 newMessage.to_id = new TLRPC.TL_peerUser();
@@ -3509,6 +3507,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     newMessage.to_id = new TLRPC.TL_peerUser();
                     newMessage.random_id = message.random_id;
                     newMessage.to_id.user_id = UserConfig.getClientUserId();
+                    newMessage.flags = TLRPC.MESSAGE_FLAG_UNREAD;
                     newMessage.out = false;
                     newMessage.unread = true;
                     newMessage.dialog_id = ((long)chat.id) << 32;
@@ -3657,6 +3656,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         }
                         newMessage.local_id = newMessage.id = UserConfig.getNewMessageId();
                         UserConfig.saveConfig(false);
+                        newMessage.flags = TLRPC.MESSAGE_FLAG_UNREAD;
                         newMessage.unread = true;
                         newMessage.date = message.date;
                         newMessage.from_id = from_id;
