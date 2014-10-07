@@ -486,6 +486,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             }
             newMsg.local_id = newMsg.id = UserConfig.getNewMessageId();
             newMsg.from_id = UserConfig.getClientUserId();
+            newMsg.flags |= TLRPC.MESSAGE_FLAG_OUT;
             newMsg.out = true;
             UserConfig.saveConfig(false);
         }
@@ -493,6 +494,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             newMsg.random_id = getNextRandomId();
         }
         newMsg.date = ConnectionsManager.getInstance().getCurrentTime();
+        newMsg.flags |= TLRPC.MESSAGE_FLAG_UNREAD;
         newMsg.unread = true;
         newMsg.dialog_id = peer;
         int lower_id = (int) peer;
@@ -581,7 +583,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         performSendMessageRequest(reqSend, newMsgObj, null);
                     }
                 } else {
-                    TLRPC.TL_decryptedMessage reqSend = new TLRPC.TL_decryptedMessage();
+                    TLRPC.TL_decryptedMessage_old reqSend = new TLRPC.TL_decryptedMessage_old();
                     reqSend.random_id = newMsg.random_id;
                     reqSend.random_bytes = new byte[Math.max(1, (int) Math.ceil(Utilities.random.nextDouble() * 16))];
                     Utilities.random.nextBytes(reqSend.random_bytes);
@@ -733,7 +735,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         }
                     }
                 } else {
-                    TLRPC.TL_decryptedMessage reqSend = new TLRPC.TL_decryptedMessage();
+                    TLRPC.TL_decryptedMessage_old reqSend = new TLRPC.TL_decryptedMessage_old();
                     reqSend.random_id = newMsg.random_id;
                     reqSend.random_bytes = new byte[Math.max(1, (int) Math.ceil(Utilities.random.nextDouble() * 16))];
                     Utilities.random.nextBytes(reqSend.random_bytes);
@@ -1407,7 +1409,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         if (!(encryptedChat instanceof TLRPC.TL_encryptedChat)) {
             return;
         }
-        TLRPC.TL_decryptedMessageService reqSend = new TLRPC.TL_decryptedMessageService();
+        TLRPC.TL_decryptedMessageService_old reqSend = new TLRPC.TL_decryptedMessageService_old();
         reqSend.random_id = getNextRandomId();
         reqSend.random_bytes = new byte[Math.max(1, (int)Math.ceil(Utilities.random.nextDouble() * 16))];
         Utilities.random.nextBytes(reqSend.random_bytes);
@@ -1420,7 +1422,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         if (!(encryptedChat instanceof TLRPC.TL_encryptedChat)) {
             return;
         }
-        TLRPC.TL_decryptedMessageService reqSend = new TLRPC.TL_decryptedMessageService();
+        TLRPC.TL_decryptedMessageService_old reqSend = new TLRPC.TL_decryptedMessageService_old();
         reqSend.random_id = getNextRandomId();
         reqSend.random_bytes = new byte[Math.max(1, (int)Math.ceil(Utilities.random.nextDouble() * 16))];
         Utilities.random.nextBytes(reqSend.random_bytes);
@@ -1439,6 +1441,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         newMsg.local_id = newMsg.id = UserConfig.getNewMessageId();
         newMsg.from_id = UserConfig.getClientUserId();
         newMsg.unread = true;
+        newMsg.flags = TLRPC.MESSAGE_FLAG_UNREAD | TLRPC.MESSAGE_FLAG_OUT;
         newMsg.dialog_id = ((long)encryptedChat.id) << 32;
         newMsg.to_id = new TLRPC.TL_peerUser();
         if (encryptedChat.participant_id == UserConfig.getClientUserId()) {
@@ -1461,7 +1464,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         MessagesController.getInstance().updateInterfaceWithMessages(newMsg.dialog_id, objArr);
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
 
-        TLRPC.TL_decryptedMessageService reqSend = new TLRPC.TL_decryptedMessageService();
+        TLRPC.TL_decryptedMessageService_old reqSend = new TLRPC.TL_decryptedMessageService_old();
         reqSend.random_id = newMsg.random_id;
         reqSend.random_bytes = new byte[Math.max(1, (int)Math.ceil(Utilities.random.nextDouble() * 16))];
         Utilities.random.nextBytes(reqSend.random_bytes);
@@ -1486,6 +1489,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         newMsg.local_id = newMsg.id = UserConfig.getNewMessageId();
         newMsg.from_id = UserConfig.getClientUserId();
         newMsg.unread = true;
+        newMsg.flags = TLRPC.MESSAGE_FLAG_UNREAD | TLRPC.MESSAGE_FLAG_OUT;
         newMsg.dialog_id = ((long)encryptedChat.id) << 32;
         newMsg.to_id = new TLRPC.TL_peerUser();
         if (encryptedChat.participant_id == UserConfig.getClientUserId()) {
@@ -1508,7 +1512,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         MessagesController.getInstance().updateInterfaceWithMessages(newMsg.dialog_id, objArr);
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
 
-        TLRPC.TL_decryptedMessageService reqSend = new TLRPC.TL_decryptedMessageService();
+        TLRPC.TL_decryptedMessageService_old reqSend = new TLRPC.TL_decryptedMessageService_old();
         reqSend.random_id = newMsg.random_id;
         reqSend.random_bytes = new byte[Math.max(1, (int)Math.ceil(Utilities.random.nextDouble() * 16))];
         Utilities.random.nextBytes(reqSend.random_bytes);

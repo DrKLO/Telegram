@@ -583,6 +583,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             if (PhotoViewer.getInstance().isVisible()) {
                 PhotoViewer.getInstance().closePhoto(false);
             }
+
+            if (AndroidUtilities.isTablet()) {
+                actionBarLayout.showLastFragment();
+                rightActionBarLayout.showLastFragment();
+            }
         }
         if (open_settings != 0) {
             actionBarLayout.presentFragment(new SettingsActivity(), false, true, true);
@@ -745,6 +750,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
                 if (AndroidUtilities.isSmallTablet() && actionBarLayout.fragmentsStack.size() == 2) {
                     BaseFragment chatFragment = actionBarLayout.fragmentsStack.get(1);
+                    chatFragment.onPause();
                     actionBarLayout.fragmentsStack.remove(1);
                     actionBarLayout.showLastFragment();
                     rightActionBarLayout.fragmentsStack.add(chatFragment);
@@ -770,6 +776,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
                 if (rightActionBarLayout.fragmentsStack.size() == 1) {
                     BaseFragment chatFragment = rightActionBarLayout.fragmentsStack.get(0);
+                    chatFragment.onPause();
                     rightActionBarLayout.fragmentsStack.remove(0);
                     actionBarLayout.presentFragment(chatFragment, false, true, false);
                 }

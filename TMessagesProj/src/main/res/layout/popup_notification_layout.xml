@@ -49,7 +49,7 @@
                     android:layout_alignParentRight="true"
                     android:layout_alignBottom="@+id/chat_text_edit"
                     android:enabled="false"
-                    android:src="@drawable/send_button_states"
+                    android:src="@drawable/ic_send"
                     android:background="@android:color/transparent"/>
 
                 <EditText

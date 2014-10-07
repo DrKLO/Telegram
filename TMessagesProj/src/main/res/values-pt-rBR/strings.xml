@@ -443,7 +443,7 @@
     <string name="formatterWeek">EEE</string>
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
-    <string name="formatDateAtTime">%1$s \'às\' %2$s</string>
+    <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--Don't change this! Not for localization!-->
     <string name="CacheTag">CACHE_TAG</string>
 </resources>

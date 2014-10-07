@@ -34,6 +34,7 @@ public class ImageReceiver {
     private Rect drawRegion = new Rect();
     private boolean isVisible = true;
     private boolean isAspectFit = false;
+    private boolean lastCacheOnly = false;
 
     public ImageReceiver() {
 
@@ -43,19 +44,19 @@ public class ImageReceiver {
         parentView = view;
     }
 
-    public void setImage(TLRPC.FileLocation path, String filter, Drawable placeholder) {
-        setImage(path, null, filter, placeholder, 0);
+    public void setImage(TLRPC.FileLocation path, String filter, Drawable placeholder, boolean cacheOnly) {
+        setImage(path, null, filter, placeholder, 0, cacheOnly);
     }
 
-    public void setImage(TLRPC.FileLocation path, String filter, Drawable placeholder, int size) {
-        setImage(path, null, filter, placeholder, size);
+    public void setImage(TLRPC.FileLocation path, String filter, Drawable placeholder, int size, boolean cacheOnly) {
+        setImage(path, null, filter, placeholder, size, cacheOnly);
     }
 
     public void setImage(String path, String filter, Drawable placeholder) {
-        setImage(null, path, filter, placeholder, 0);
+        setImage(null, path, filter, placeholder, 0, true);
     }
 
-    public void setImage(TLRPC.FileLocation fileLocation, String httpUrl, String filter, Drawable placeholder, int size) {
+    public void setImage(TLRPC.FileLocation fileLocation, String httpUrl, String filter, Drawable placeholder, int size, boolean cacheOnly) {
         if ((fileLocation == null && httpUrl == null) || (fileLocation != null && !(fileLocation instanceof TLRPC.TL_fileLocation) && !(fileLocation instanceof TLRPC.TL_fileEncryptedLocation))) {
             recycleBitmap(null);
             currentPath = null;
@@ -63,6 +64,7 @@ public class ImageReceiver {
             last_path = null;
             last_httpUrl = null;
             last_filter = null;
+            lastCacheOnly = false;
             last_placeholder = placeholder;
             last_size = 0;
             currentImage = null;
@@ -101,9 +103,10 @@ public class ImageReceiver {
         last_filter = filter;
         last_placeholder = placeholder;
         last_size = size;
+        lastCacheOnly = cacheOnly;
         if (img == null) {
             isPlaceholder = true;
-            ImageLoader.getInstance().loadImage(fileLocation, httpUrl, this, size);
+            ImageLoader.getInstance().loadImage(fileLocation, httpUrl, this, size, cacheOnly);
         } else {
             setImageBitmap(img, currentPath);
         }
@@ -136,6 +139,7 @@ public class ImageReceiver {
         last_filter = null;
         currentImage = null;
         last_size = 0;
+        lastCacheOnly = false;
         if (parentView != null) {
             parentView.invalidate();
         }
@@ -152,6 +156,7 @@ public class ImageReceiver {
         last_httpUrl = null;
         last_filter = null;
         last_size = 0;
+        lastCacheOnly = false;
         if (parentView != null) {
             parentView.invalidate();
         }
@@ -213,7 +218,7 @@ public class ImageReceiver {
                             ImageLoader.getInstance().removeImage(currentPath);
                             currentPath = null;
                         }
-                        setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size);
+                        setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size, lastCacheOnly);
                         FileLog.e("tmessages", e);
                     }
                     canvas.restore();
@@ -238,7 +243,7 @@ public class ImageReceiver {
                                     ImageLoader.getInstance().removeImage(currentPath);
                                     currentPath = null;
                                 }
-                                setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size);
+                                setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size, lastCacheOnly);
                                 FileLog.e("tmessages", e);
                             }
                         }
@@ -255,7 +260,7 @@ public class ImageReceiver {
                                     ImageLoader.getInstance().removeImage(currentPath);
                                     currentPath = null;
                                 }
-                                setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size);
+                                setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size, lastCacheOnly);
                                 FileLog.e("tmessages", e);
                             }
                         }
@@ -273,7 +278,7 @@ public class ImageReceiver {
                             ImageLoader.getInstance().removeImage(currentPath);
                             currentPath = null;
                         }
-                        setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size);
+                        setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size, lastCacheOnly);
                         FileLog.e("tmessages", e);
                     }
                 }

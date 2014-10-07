@@ -513,7 +513,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (currentMessageObject != null) {
                         f = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
                     } else if (currentFileLocation != null) {
-                        f = FileLoader.getPathToAttach(currentFileLocation);
+                        f = FileLoader.getPathToAttach(currentFileLocation, avatarsUserId != 0);
                     }
 
                     if (f != null && f.exists()) {
@@ -572,7 +572,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         return true;
                     }
                 } else if (currentFileLocation != null) {
-                    File f = FileLoader.getPathToAttach(currentFileLocation);
+                    File f = FileLoader.getPathToAttach(currentFileLocation, avatarsUserId != 0);
                     if (f.exists()) {
                         return true;
                     }
@@ -616,7 +616,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (fileLocation == null) {
                         return;
                     }
-                    File f = FileLoader.getPathToAttach(fileLocation);
+                    File f = FileLoader.getPathToAttach(fileLocation, avatarsUserId != 0);
                     if (f.exists()) {
                         Intent intent = new Intent(Intent.ACTION_SEND);
                         if (f.toString().endsWith("mp4")) {
@@ -1341,7 +1341,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (currentMessageObject != null) {
                 f = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
             } else if (currentFileLocation != null) {
-                f = FileLoader.getPathToAttach(currentFileLocation);
+                f = FileLoader.getPathToAttach(currentFileLocation, avatarsUserId != 0);
             }
             if (f.exists()) {
                 progressBar.setVisibility(View.GONE);
@@ -1399,7 +1399,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         if (currentThumb != null && imageReceiver == centerImage) {
                             placeHolder = currentThumb;
                         }
-                        imageReceiver.setImage(fileLocation, null, placeHolder != null ? new BitmapDrawable(null, placeHolder) : null, 0);
+                        imageReceiver.setImage(fileLocation, null, placeHolder != null ? new BitmapDrawable(null, placeHolder) : null, 0, true);
                     } else {
                         imageReceiver.setImageBitmap(parentActivity.getResources().getDrawable(R.drawable.photoview_placeholder));
                     }
@@ -1414,7 +1414,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (size[0] == 0) {
                         size[0] = -1;
                     }
-                    imageReceiver.setImage(fileLocation, null, placeHolder != null ? new BitmapDrawable(null, placeHolder) : null, size[0]);
+                    imageReceiver.setImage(fileLocation, null, placeHolder != null ? new BitmapDrawable(null, placeHolder) : null, size[0], avatarsUserId != 0);
                 }
             } else {
                 if (size[0] == 0) {

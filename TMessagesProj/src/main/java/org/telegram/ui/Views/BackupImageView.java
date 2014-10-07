@@ -69,7 +69,7 @@ public class BackupImageView extends View {
         } else if (placeholder != 0) {
             placeholderDrawable = getResources().getDrawable(placeholder);
         }
-        imageReceiver.setImage(path, httpUrl, filter, placeholderDrawable, size);
+        imageReceiver.setImage(path, httpUrl, filter, placeholderDrawable, size, false);
     }
 
     public void setImageBitmap(Bitmap bitmap) {

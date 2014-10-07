@@ -24,6 +24,7 @@ import android.text.SpannableStringBuilder;
 import android.text.TextWatcher;
 import android.text.style.ImageSpan;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -175,6 +176,12 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
             emptyTextView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
             emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+            emptyTextView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    return true;
+                }
+            });
             userSelectEditText = (EditText)fragmentView.findViewById(R.id.bubble_input_text);
             userSelectEditText.setHint(LocaleController.getString("SendMessageTo", R.string.SendMessageTo));
             if (Build.VERSION.SDK_INT >= 11) {

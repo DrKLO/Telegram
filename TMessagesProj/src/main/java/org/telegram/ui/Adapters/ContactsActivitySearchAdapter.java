@@ -87,7 +87,8 @@ public class ContactsActivitySearchAdapter extends BaseFragmentAdapter {
 
                         for (TLRPC.TL_contact contact : contactsCopy) {
                             TLRPC.User user = MessagesController.getInstance().getUser(contact.user_id);
-                            if (user.first_name != null && user.first_name.toLowerCase().startsWith(q) || user.last_name != null && user.last_name.toLowerCase().startsWith(q)) {
+                            String name = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
+                            if (name.startsWith(q) || name.contains(" " + q)) {
                                 if (user.id == UserConfig.getClientUserId()) {
                                     continue;
                                 }

@@ -1213,23 +1213,19 @@ public class MessagesStorage {
                     SQLiteCursor cursor = database.queryFinalized("SELECT u.data, u.status, u.name FROM users as u INNER JOIN contacts as c ON u.uid = c.uid");
                     while (cursor.next()) {
                         String name = cursor.stringValue(2);
-                        String[] args = name.split(" ");
-                        for (String str : args) {
-                            if (str.startsWith(q)) {
-                                ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
-                                if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
-                                    TLRPC.User user = (TLRPC.User)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                                    if (user.id != UserConfig.getClientUserId()) {
-                                        if (user.status != null) {
-                                            user.status.expires = cursor.intValue(1);
-                                        }
-                                        resultArrayNames.add(Utilities.generateSearchName(user.first_name, user.last_name, q));
-                                        resultArray.add(user);
+                        if (name.startsWith(q) || name.contains(" " + q)) {
+                            ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
+                            if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
+                                TLRPC.User user = (TLRPC.User)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                                if (user.id != UserConfig.getClientUserId()) {
+                                    if (user.status != null) {
+                                        user.status.expires = cursor.intValue(1);
                                     }
+                                    resultArrayNames.add(Utilities.generateSearchName(user.first_name, user.last_name, q));
+                                    resultArray.add(user);
                                 }
-                                buffersStorage.reuseFreeBuffer(data);
-                                break;
                             }
+                            buffersStorage.reuseFreeBuffer(data);
                         }
                     }
                     cursor.dispose();
@@ -1238,30 +1234,26 @@ public class MessagesStorage {
                         cursor = database.queryFinalized("SELECT q.data, q.name, q.user, q.g, q.authkey, q.ttl, u.data, u.status FROM enc_chats as q INNER JOIN dialogs as d ON (q.uid << 32) = d.did INNER JOIN users as u ON q.user = u.uid");
                         while (cursor.next()) {
                             String name = cursor.stringValue(1);
-                            String[] args = name.split(" ");
-                            for (String arg : args) {
-                                if (arg.startsWith(q)) {
-                                    ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
-                                    ByteBufferDesc data2 = buffersStorage.getFreeBuffer(cursor.byteArrayLength(6));
-                                    if (data != null && cursor.byteBufferValue(0, data.buffer) != 0 && cursor.byteBufferValue(6, data2.buffer) != 0) {
-                                        TLRPC.EncryptedChat chat = (TLRPC.EncryptedChat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                                        chat.user_id = cursor.intValue(2);
-                                        chat.a_or_b = cursor.byteArrayValue(3);
-                                        chat.auth_key = cursor.byteArrayValue(4);
-                                        chat.ttl = cursor.intValue(5);
+                            if (name.startsWith(q) || name.contains(" " + q)) {
+                                ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
+                                ByteBufferDesc data2 = buffersStorage.getFreeBuffer(cursor.byteArrayLength(6));
+                                if (data != null && cursor.byteBufferValue(0, data.buffer) != 0 && cursor.byteBufferValue(6, data2.buffer) != 0) {
+                                    TLRPC.EncryptedChat chat = (TLRPC.EncryptedChat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                                    chat.user_id = cursor.intValue(2);
+                                    chat.a_or_b = cursor.byteArrayValue(3);
+                                    chat.auth_key = cursor.byteArrayValue(4);
+                                    chat.ttl = cursor.intValue(5);
 
-                                        TLRPC.User user = (TLRPC.User)TLClassStore.Instance().TLdeserialize(data2, data2.readInt32());
-                                        if (user.status != null) {
-                                            user.status.expires = cursor.intValue(7);
-                                        }
-                                        resultArrayNames.add(Html.fromHtml("<font color=\"#00a60e\">" + ContactsController.formatName(user.first_name, user.last_name) + "</font>"));
-                                        resultArray.add(chat);
-                                        encUsers.add(user);
+                                    TLRPC.User user = (TLRPC.User)TLClassStore.Instance().TLdeserialize(data2, data2.readInt32());
+                                    if (user.status != null) {
+                                        user.status.expires = cursor.intValue(7);
                                     }
-                                    buffersStorage.reuseFreeBuffer(data);
-                                    buffersStorage.reuseFreeBuffer(data2);
-                                    break;
+                                    resultArrayNames.add(Html.fromHtml("<font color=\"#00a60e\">" + ContactsController.formatName(user.first_name, user.last_name) + "</font>"));
+                                    resultArray.add(chat);
+                                    encUsers.add(user);
                                 }
+                                buffersStorage.reuseFreeBuffer(data);
+                                buffersStorage.reuseFreeBuffer(data2);
                             }
                         }
                         cursor.dispose();
@@ -1271,20 +1263,17 @@ public class MessagesStorage {
                     while (cursor.next()) {
                         String name = cursor.stringValue(1);
                         String[] args = name.split(" ");
-                        for (String arg : args) {
-                            if (arg.startsWith(q)) {
-                                ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
-                                if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
-                                    TLRPC.Chat chat = (TLRPC.Chat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                                    if (!needEncrypted && chat.id < 0) {
-                                        continue;
-                                    }
-                                    resultArrayNames.add(Utilities.generateSearchName(chat.title, null, q));
-                                    resultArray.add(chat);
+                        if (name.startsWith(q) || name.contains(" " + q)) {
+                            ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
+                            if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
+                                TLRPC.Chat chat = (TLRPC.Chat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                                if (!needEncrypted && chat.id < 0) {
+                                    continue;
                                 }
-                                buffersStorage.reuseFreeBuffer(data);
-                                break;
+                                resultArrayNames.add(Utilities.generateSearchName(chat.title, null, q));
+                                resultArray.add(chat);
                             }
+                            buffersStorage.reuseFreeBuffer(data);
                         }
                     }
                     cursor.dispose();

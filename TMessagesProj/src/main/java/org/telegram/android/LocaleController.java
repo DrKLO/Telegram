@@ -216,6 +216,14 @@ public class LocaleController {
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "한국어";
+        localeInfo.nameEnglish = "Korean";
+        localeInfo.shortName = "ko";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
         loadOtherLanguages();
 
         for (LocaleInfo locale : otherLanguages) {
@@ -510,6 +518,19 @@ public class LocaleController {
                 SharedPreferences.Editor editor = preferences.edit();
                 editor.remove("language");
                 editor.commit();
+
+                if (newLocale != null) {
+                    LocaleInfo info = null;
+                    if (newLocale.getLanguage() != null) {
+                        info = languagesDict.get(newLocale.getLanguage());
+                    }
+                    if (info == null) {
+                        info = languagesDict.get(getLocaleString(newLocale));
+                    }
+                    if (info == null) {
+                        newLocale = Locale.US;
+                    }
+                }
             }
             if (newLocale != null) {
                 if (localeInfo.pathToFile == null) {
@@ -672,7 +693,10 @@ public class LocaleController {
     }
 
     public void recreateFormatters() {
-        Locale locale = Locale.getDefault();
+        Locale locale = currentLocale;
+        if (locale == null) {
+            locale = Locale.getDefault();
+        }
         String lang = locale.getLanguage();
         if (lang == null) {
             lang = "en";
@@ -727,7 +751,11 @@ public class LocaleController {
                 formatString = "h:mm a";
             }
         }
-        formatterDay = FastDateFormat.getInstance(formatString, locale);
+        if (lang.toLowerCase().equals("ar") || lang.toLowerCase().equals("ko")) {
+            formatterDay = FastDateFormat.getInstance(formatString, locale);
+        } else {
+            formatterDay = FastDateFormat.getInstance(formatString, Locale.US);
+        }
     }
 
     public static String stringForMessageListDate(long date) {

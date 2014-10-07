@@ -265,9 +265,9 @@ public class ChatBaseCell extends BaseCell {
                 } else {
                     currentPhoto = null;
                 }
-                avatarImage.setImage(currentPhoto, "50_50", getResources().getDrawable(AndroidUtilities.getUserAvatarForId(currentUser.id)));
+                avatarImage.setImage(currentPhoto, "50_50", getResources().getDrawable(AndroidUtilities.getUserAvatarForId(currentUser.id)), false);
             } else {
-                avatarImage.setImage((TLRPC.FileLocation)null, "50_50", null);
+                avatarImage.setImage(null, "50_50", null, false);
             }
         }
 

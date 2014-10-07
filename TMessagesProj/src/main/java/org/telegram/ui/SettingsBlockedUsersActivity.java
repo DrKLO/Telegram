@@ -13,6 +13,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -88,6 +89,12 @@ public class SettingsBlockedUsersActivity extends BaseFragment implements Notifi
             listView = (ListView)fragmentView.findViewById(R.id.listView);
             progressView = fragmentView.findViewById(R.id.progressLayout);
             emptyView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
+            emptyView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    return true;
+                }
+            });
             emptyView.setText(LocaleController.getString("NoBlocked", R.string.NoBlocked));
             if (MessagesController.getInstance().loadingBlockedUsers) {
                 progressView.setVisibility(View.VISIBLE);

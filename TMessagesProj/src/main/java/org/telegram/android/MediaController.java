@@ -144,7 +144,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         }
     }
 
-    private final static String MIME_TYPE = "video/avc";
+    public final static String MIME_TYPE = "video/avc";
     private final static int PROCESSOR_TYPE_OTHER = 0;
     private final static int PROCESSOR_TYPE_QCOM = 1;
     private final static int PROCESSOR_TYPE_INTEL = 2;
@@ -1799,10 +1799,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
     public void checkSaveToGalleryFiles() {
         try {
-            File telegramPath = new File(Environment.getExternalStorageDirectory(), LocaleController.getString("AppName", R.string.AppName));
-            File imagePath = new File(telegramPath, LocaleController.getString("AppName", R.string.AppName) + " Images");
+            File telegramPath = new File(Environment.getExternalStorageDirectory(), "Telegram");
+            File imagePath = new File(telegramPath, "Telegram Images");
             imagePath.mkdir();
-            File videoPath = new File(telegramPath, LocaleController.getString("AppName", R.string.AppName) + " Video");
+            File videoPath = new File(telegramPath, "Telegram Video");
             videoPath.mkdir();
 
             if (saveToGallery) {
@@ -1946,7 +1946,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         }
     }
 
-    private static MediaCodecInfo selectCodec(String mimeType) {
+    public static MediaCodecInfo selectCodec(String mimeType) {
         int numCodecs = MediaCodecList.getCodecCount();
         MediaCodecInfo lastCodecInfo = null;
         for (int i = 0; i < numCodecs; i++) {
@@ -1982,7 +1982,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         }
     }
 
-    private static int selectColorFormat(MediaCodecInfo codecInfo, String mimeType) {
+    public static int selectColorFormat(MediaCodecInfo codecInfo, String mimeType) {
         MediaCodecInfo.CodecCapabilities capabilities = codecInfo.getCapabilitiesForType(mimeType);
         int lastColorFormat = 0;
         for (int i = 0; i < capabilities.colorFormats.length; i++) {

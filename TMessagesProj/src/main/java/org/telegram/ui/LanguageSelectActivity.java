@@ -12,6 +12,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -108,6 +109,12 @@ public class LanguageSelectActivity extends BaseFragment {
             listView.setAdapter(listAdapter);
             emptyTextView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
             listView.setEmptyView(emptyTextView);
+            emptyTextView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    return true;
+                }
+            });
             searchListViewAdapter = new SearchAdapter(getParentActivity());
 
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {

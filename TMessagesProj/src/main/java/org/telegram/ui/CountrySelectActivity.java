@@ -10,6 +10,7 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -193,6 +194,12 @@ public class CountrySelectActivity extends BaseFragment {
 
             listView = (PinnedHeaderListView)fragmentView.findViewById(R.id.listView);
             listView.setEmptyView(emptyTextView);
+            emptyTextView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    return true;
+                }
+            });
             listView.setVerticalScrollBarEnabled(false);
 
             listView.setAdapter(listViewAdapter = new ListAdapter(getParentActivity()));
