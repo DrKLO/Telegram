@@ -29,6 +29,7 @@ import net.hockeyapp.android.CrashManagerListener;
 import net.hockeyapp.android.UpdateManager;
 
 import org.telegram.android.LocaleController;
+import org.telegram.android.NameQuery;
 import org.telegram.ui.ApplicationLoader;
 
 import java.io.ByteArrayInputStream;
@@ -50,6 +51,9 @@ import java.security.spec.RSAPublicKeySpec;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
@@ -73,6 +77,9 @@ public class Utilities {
     public static volatile DispatchQueue photoBookQueue = new DispatchQueue("photoBookQueue");
 
     final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
+    private static Set<Character.UnicodeBlock> CJK_UNICODE_BLOCK = null;
+    private static final char[] KOREAN_CHOSUNG_MAP = { 0x3131, 0x3132, 0x3134, 0x3137, 0x3138, 0x3139, 0x3141, 0x3142,
+            0x3143, 0x3145, 0x3146, 0x3147, 0x3148, 0x3149, 0x314a, 0x314b, 0x314c, 0x314d, 0x314e };
 
     public static ProgressDialog progressDialog;
 
@@ -640,46 +647,21 @@ public class Utilities {
         return null;
     }
 
-    public static CharSequence generateSearchName(String name, String name2, String q) {
-        if (name == null && name2 == null) {
-            return "";
-        }
+    public static CharSequence generateSearchName(String str, List<NameQuery.Range> ranges) {
+        return generateSearchName(str, ranges, null);
+    }
+
+    public static CharSequence generateSearchName(String str, List<NameQuery.Range> ranges, String color) {
+        int start = 0;
         SpannableStringBuilder builder = new SpannableStringBuilder();
-        String wholeString = name;
-        if (wholeString == null || wholeString.length() == 0) {
-            wholeString = name2;
-        } else if (name2 != null && name2.length() != 0) {
-            wholeString += " " + name2;
+        if (color == null || color.length() != 7)
+            color = "#357aa8";
+        for (NameQuery.Range range : ranges) {
+            builder.append(str.substring(start, range.getBegin()));
+            builder.append(Html.fromHtml("<font color=\"" + color + "\">" + str.substring(range.getBegin(), range.getEnd()) + "</font>"));
+            start = range.getEnd();
         }
-        wholeString = wholeString.trim();
-        String lower = " " + wholeString.toLowerCase();
-
-        int index = -1;
-        int lastIndex = 0;
-        while ((index = lower.indexOf(" " + q, lastIndex)) != -1) {
-            int idx = index - (index == 0 ? 0 : 1);
-            int end = q.length() + (index == 0 ? 0 : 1) + idx;
-
-            if (lastIndex != 0 && lastIndex != idx + 1) {
-                builder.append(wholeString.substring(lastIndex, idx));
-            } else if (lastIndex == 0 && idx != 0) {
-                builder.append(wholeString.substring(0, idx));
-            }
-
-            String query = wholeString.substring(idx, end);
-            if (query.startsWith(" ")) {
-                builder.append(" ");
-            }
-            query.trim();
-            builder.append(Html.fromHtml("<font color=\"#357aa8\">" + query + "</font>"));
-
-            lastIndex = end;
-        }
-
-        if (lastIndex != -1 && lastIndex != wholeString.length()) {
-            builder.append(wholeString.substring(lastIndex, wholeString.length()));
-        }
-
+        builder.append(str.substring(start));
         return builder;
     }
 
@@ -742,5 +724,48 @@ public class Utilities {
         if (BuildVars.DEBUG_VERSION) {
             UpdateManager.register(context, BuildVars.HOCKEY_APP_HASH);
         }
+    }
+
+    private static void buildCJKUnicodeBlock() {
+        CJK_UNICODE_BLOCK = new HashSet<Character.UnicodeBlock>() {{
+            add(Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS);
+            add(Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A);
+            add(Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_B);
+            add(Character.UnicodeBlock.CJK_RADICALS_SUPPLEMENT);
+            add(Character.UnicodeBlock.KANGXI_RADICALS);
+            add(Character.UnicodeBlock.IDEOGRAPHIC_DESCRIPTION_CHARACTERS);
+            add(Character.UnicodeBlock.CJK_SYMBOLS_AND_PUNCTUATION);
+            add(Character.UnicodeBlock.ENCLOSED_CJK_LETTERS_AND_MONTHS);
+            add(Character.UnicodeBlock.CJK_COMPATIBILITY);
+            add(Character.UnicodeBlock.CJK_COMPATIBILITY_IDEOGRAPHS);
+            add(Character.UnicodeBlock.CJK_COMPATIBILITY_IDEOGRAPHS);
+            add(Character.UnicodeBlock.CJK_COMPATIBILITY_FORMS);
+            add(Character.UnicodeBlock.CJK_COMPATIBILITY_IDEOGRAPHS_SUPPLEMENT);
+            add(Character.UnicodeBlock.HANGUL_SYLLABLES);
+            add(Character.UnicodeBlock.HANGUL_JAMO);
+            add(Character.UnicodeBlock.HANGUL_COMPATIBILITY_JAMO);
+            add(Character.UnicodeBlock.KATAKANA);
+            add(Character.UnicodeBlock.KATAKANA_PHONETIC_EXTENSIONS);
+            add(Character.UnicodeBlock.HALFWIDTH_AND_FULLWIDTH_FORMS);
+            add(Character.UnicodeBlock.HIRAGANA);
+        }};
+    }
+
+    public static boolean isCJKCharacter(int ch) {
+        if (CJK_UNICODE_BLOCK == null)
+            buildCJKUnicodeBlock();
+        return CJK_UNICODE_BLOCK.contains(Character.UnicodeBlock.of(ch));
+    }
+
+    public static boolean isKoreanCharacter(char ch) {
+        return (ch >= 0xac00 && ch <= 0xd7a3)|| (ch >= 0x3131 && ch <= 0x314e);
+    }
+
+    public static boolean isKoreanChosung(char ch) {
+        return (ch >= 0x3131 && ch <= 0x314e);
+    }
+
+    public static char extractKoreanChosung(char ch) {
+        return (ch >= 0xac00 && ch <= 0xd7a3) ? KOREAN_CHOSUNG_MAP[(ch - 0xac00) / 588] : 0;
     }
 }

@@ -36,6 +36,7 @@ import android.widget.TextView;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.LocaleController;
+import org.telegram.android.NameQuery;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.android.ContactsController;
@@ -54,6 +55,7 @@ import org.telegram.ui.Views.SectionedBaseAdapter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -410,22 +412,23 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 Utilities.searchQueue.postRunnable(new Runnable() {
                     @Override
                     public void run() {
-                        if (query.length() == 0) {
+                        if (query.trim().length() == 0) {
                             updateSearchResults(new ArrayList<TLRPC.User>(), new ArrayList<CharSequence>());
                             return;
                         }
-                        long time = System.currentTimeMillis();
                         ArrayList<TLRPC.User> resultArray = new ArrayList<TLRPC.User>();
                         ArrayList<CharSequence> resultArrayNames = new ArrayList<CharSequence>();
-                        String q = query.toLowerCase();
 
+                        NameQuery nameQuery = new NameQuery(query);
                         for (TLRPC.TL_contact contact : contactsCopy) {
                             TLRPC.User user = MessagesController.getInstance().getUser(contact.user_id);
-                            if (user.first_name.toLowerCase().startsWith(q) || user.last_name.toLowerCase().startsWith(q)) {
+                            String name = ContactsController.formatName(user.first_name, user.last_name);
+                            List<NameQuery.Range> matched = nameQuery.match(name);
+                            if (!matched.isEmpty()) {
                                 if (user.id == UserConfig.getClientUserId()) {
                                     continue;
                                 }
-                                resultArrayNames.add(Utilities.generateSearchName(user.first_name, user.last_name, q));
+                                resultArrayNames.add(Utilities.generateSearchName(name, matched));
                                 resultArray.add(user);
                             }
                         }

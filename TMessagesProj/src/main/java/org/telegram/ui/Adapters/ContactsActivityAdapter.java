@@ -150,13 +150,7 @@ public class ContactsActivityAdapter extends SectionedBaseAdapter {
                 divider.setVisibility(View.VISIBLE);
             }
         }
-        if (contact.first_name != null && contact.last_name != null) {
-            textView.setText(contact.first_name + " " + contact.last_name);
-        } else if (contact.first_name != null && contact.last_name == null) {
-            textView.setText(contact.first_name);
-        } else {
-            textView.setText(contact.last_name);
-        }
+        textView.setText(ContactsController.formatName(contact.first_name, contact.last_name));
         return convertView;
     }
 
