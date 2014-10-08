@@ -73,10 +73,10 @@
     <string name="SdCard">Tarjeta SD</string>
     <!--chat view-->
     <string name="Invisible">invisible</string>
-    <string name="Typing">escribe...</string>
+    <string name="Typing">escribiendo...</string>
     <string name="Attach">Adjuntar</string>
-    <string name="IsTyping">escribe...</string>
-    <string name="AreTyping">escriben...</string>
+    <string name="IsTyping">está escribiendo...</string>
+    <string name="AreTyping">están escribiendo...</string>
     <string name="GotAQuestion">¿Tienes preguntas\nsobre Telegram?</string>
     <string name="ChatTakePhoto">Hacer foto</string>
     <string name="ChatGallery">Galería</string>
@@ -410,12 +410,12 @@
     <string name="Members_few">%1$d miembros</string>
     <string name="Members_many">%1$d miembros</string>
     <string name="Members_other">%1$d miembros</string>
-    <string name="AndMoreTyping_zero">y %1$d personas más escriben</string>
-    <string name="AndMoreTyping_one">y %1$d personas más escriben</string>
-    <string name="AndMoreTyping_two">y %1$d personas más escriben</string>
-    <string name="AndMoreTyping_few">y %1$d personas más escriben</string>
-    <string name="AndMoreTyping_many">y %1$d personas más escriben</string>
-    <string name="AndMoreTyping_other">y %1$d personas más escriben</string>
+    <string name="AndMoreTyping_zero">y %1$d personas más están escribiendo</string>
+    <string name="AndMoreTyping_one">y %1$d persona más está escribiendo</string>
+    <string name="AndMoreTyping_two">y %1$d personas más están escribiendo</string>
+    <string name="AndMoreTyping_few">y %1$d personas más están escribiendo</string>
+    <string name="AndMoreTyping_many">y %1$d personas más están escribiendo</string>
+    <string name="AndMoreTyping_other">y %1$d personas más están escribiendo</string>
     <string name="NewMessages_zero">Sin mensajes nuevos</string>
     <string name="NewMessages_one">%1$d nuevo mensaje</string>
     <string name="NewMessages_two">%1$d nuevos mensajes</string>
