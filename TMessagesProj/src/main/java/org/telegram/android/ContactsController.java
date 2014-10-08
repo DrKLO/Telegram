@@ -17,6 +17,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.provider.BaseColumns;
 import android.provider.ContactsContract;
+import android.text.TextUtils;
 import android.util.SparseArray;
 
 import org.telegram.PhoneFormat.PhoneFormat;
@@ -860,15 +861,9 @@ public class ContactsController {
                             public int compare(TLRPC.TL_contact tl_contact, TLRPC.TL_contact tl_contact2) {
                                 TLRPC.User user1 = usersDict.get(tl_contact.user_id);
                                 TLRPC.User user2 = usersDict.get(tl_contact2.user_id);
-                                String name1 = user1.first_name;
-                                if (name1 == null || name1.length() == 0) {
-                                    name1 = user1.last_name;
-                                }
-                                String name2 = user2.first_name;
-                                if (name2 == null || name2.length() == 0) {
-                                    name2 = user2.last_name;
-                                }
-                                return name1.compareTo(name2);
+
+                                return ContactsController.formatName(user1.first_name, user1.last_name)
+                                        .compareTo(ContactsController.formatName(user2.first_name, user2.last_name));
                             }
                         });
 
@@ -893,9 +888,20 @@ public class ContactsController {
                                 contactsByPhonesDict.put(user.phone, value);
                             }
 
-                            String key = user.first_name;
-                            if (key == null || key.length() == 0) {
+                            String key;
+                            if (!isNameCJK(user.first_name, user.last_name)) {
+                                key = user.first_name;
+                                if (TextUtils.isEmpty(key))
+                                    key = user.last_name;
+                            } else {
                                 key = user.last_name;
+                                if (TextUtils.isEmpty(key))
+                                    key = user.first_name;
+                                if (!TextUtils.isEmpty(key) && Utilities.isKoreanCharacter(key.charAt(0))) {
+                                    char ch = Utilities.extractKoreanChosung(key.charAt(0));
+                                    if (ch > 0)
+                                        key = Character.toString(ch);
+                                }
                             }
                             if (key.length() == 0) {
                                 key = "#";
@@ -1007,9 +1013,20 @@ public class ContactsController {
                 continue;
             }
 
-            String key = value.first_name;
-            if (key.length() == 0) {
+            String key;
+            if (!isNameCJK(value.first_name, value.last_name)) {
+                key = value.first_name;
+                if (TextUtils.isEmpty(key))
+                    key = value.last_name;
+            } else {
                 key = value.last_name;
+                if (TextUtils.isEmpty(key))
+                    key = value.first_name;
+                if (!TextUtils.isEmpty(key) && Utilities.isKoreanCharacter(key.charAt(0))) {
+                    char ch = Utilities.extractKoreanChosung(key.charAt(0));
+                    if (ch > 0)
+                        key = Character.toString(ch);
+                }
             }
             if (key.length() == 0) {
                 key = "#";
@@ -1034,15 +1051,8 @@ public class ContactsController {
             Collections.sort(entry.getValue(), new Comparator<Contact>() {
                 @Override
                 public int compare(Contact contact, Contact contact2) {
-                    String toComapre1 = contact.first_name;
-                    if (toComapre1.length() == 0) {
-                        toComapre1 = contact.last_name;
-                    }
-                    String toComapre2 = contact2.first_name;
-                    if (toComapre2.length() == 0) {
-                        toComapre2 = contact2.last_name;
-                    }
-                    return toComapre1.compareTo(toComapre2);
+                    return ContactsController.formatName(contact.first_name, contact.last_name)
+                            .compareTo(ContactsController.formatName(contact2.first_name, contact2.last_name));
                 }
             });
         }
@@ -1564,23 +1574,37 @@ public class ContactsController {
         }, true, RPCRequest.RPCRequestClassGeneric);
     }
 
-    public static String formatName(String firstName, String lastName) {
-        String result = null;
-        if (LocaleController.nameDisplayOrder == 1) {
-            result = firstName;
-            if (result == null || result.length() == 0) {
-                result = lastName;
-            } else if (result.length() != 0 && lastName != null && lastName.length() != 0) {
-                result += " " + lastName;
-            }
-        } else {
-            result = lastName;
-            if (result == null || result.length() == 0) {
-                result = firstName;
-            } else if (result.length() != 0 && firstName != null && firstName.length() != 0) {
-                result += " " + firstName;
+    private static boolean containsCJK(String str) {
+        if (!TextUtils.isEmpty(str)) {
+            int length = str.length();
+            for (int i = 0; i < length && i < 3; ++i) {
+                if (Utilities.isCJKCharacter(Character.codePointAt(str, i)))
+                    return true;
             }
         }
-        return result.trim();
+        return false;
+    }
+
+    public static boolean isNameCJK(String firstName, String lastName) {
+        return containsCJK(lastName) || containsCJK(firstName);
+    }
+
+    public static String formatName(String firstName, String lastName) {
+        boolean isCJK = isNameCJK(firstName, lastName);
+        if (isCJK) {
+            String temp = firstName;
+            firstName = lastName;
+            lastName = temp;
+        }
+        StringBuilder sb = new StringBuilder();
+        if (!TextUtils.isEmpty(firstName))
+            sb.append(firstName);
+        if (!TextUtils.isEmpty(lastName)) {
+            if (sb.length() > 0 && !isCJK) {
+                sb.append(' ');
+            }
+            sb.append(lastName);
+        }
+        return sb.toString().trim();
     }
 }
