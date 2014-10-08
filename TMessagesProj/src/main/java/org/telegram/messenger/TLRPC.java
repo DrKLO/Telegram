@@ -9000,6 +9000,41 @@ public class TLRPC {
         }
     }
 
+    public static class TL_message_secret extends TL_message {
+        public static int constructor = 0x555555F8;
+
+        public void readParams(AbsSerializedData stream) {
+            id = stream.readInt32();
+            from_id = stream.readInt32();
+            to_id = (Peer)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+            out = stream.readBool();
+            unread = stream.readBool();
+            date = stream.readInt32();
+            message = stream.readString();
+            media = (MessageMedia)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+            if (id < 0 || (media != null && !(media instanceof TL_messageMediaEmpty) && message != null && message.length() != 0 && message.startsWith("-1"))) {
+                attachPath = stream.readString();
+            }
+            if (id < 0 && message.length() > 6 && media instanceof TL_messageMediaVideo) {
+                videoEditedInfo = new VideoEditedInfo();
+                videoEditedInfo.parseString(message);
+            }
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(id);
+            stream.writeInt32(from_id);
+            to_id.serializeToStream(stream);
+            stream.writeBool(out);
+            stream.writeBool(unread);
+            stream.writeInt32(date);
+            stream.writeString(message);
+            media.serializeToStream(stream);
+            stream.writeString(attachPath);
+        }
+    }
+
     public static class TL_messages_deleteMessages extends TLObject {
         public static int constructor = 0x14f2dd0a;
 

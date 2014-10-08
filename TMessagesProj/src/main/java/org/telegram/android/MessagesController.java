@@ -69,7 +69,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
     private boolean gettingNewDeleteTask = false;
     private int currentDeletingTaskTime = 0;
-    private Long currentDeletingTask = null;
     private ArrayList<Integer> currentDeletingTaskMids = null;
 
     public int totalDialogsCount = 0;
@@ -322,7 +321,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         currentDeletingTaskTime = 0;
         currentDeletingTaskMids = null;
         gettingNewDeleteTask = false;
-        currentDeletingTask = null;
         loadingDialogs = false;
         dialogsEndReached = false;
         gettingDifference = false;
@@ -508,14 +506,14 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
-                if (currentDeletingTask == null && !gettingNewDeleteTask || currentDeletingTaskTime != 0 && minDate < currentDeletingTaskTime) {
+                if (currentDeletingTaskMids == null && !gettingNewDeleteTask || currentDeletingTaskTime != 0 && minDate < currentDeletingTaskTime) {
                     getNewDeleteTask(null);
                 }
             }
         });
     }
 
-    public void getNewDeleteTask(final Long oldTask) {
+    public void getNewDeleteTask(final ArrayList<Integer> oldTask) {
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -528,7 +526,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     private void checkDeletingTask() {
         int currentServerTime = ConnectionsManager.getInstance().getCurrentTime();
 
-        if (currentDeletingTask != null && currentDeletingTaskTime != 0 && currentDeletingTaskTime <= currentServerTime) {
+        if (currentDeletingTaskMids != null && currentDeletingTaskTime != 0 && currentDeletingTaskTime <= currentServerTime) {
             currentDeletingTaskTime = 0;
             AndroidUtilities.RunOnUIThread(new Runnable() {
                 @Override
@@ -538,9 +536,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     Utilities.stageQueue.postRunnable(new Runnable() {
                         @Override
                         public void run() {
-                            getNewDeleteTask(currentDeletingTask);
+                            getNewDeleteTask(currentDeletingTaskMids);
                             currentDeletingTaskTime = 0;
-                            currentDeletingTask = null;
+                            currentDeletingTaskMids = null;
                         }
                     });
                 }
@@ -548,20 +546,18 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
     }
 
-    public void processLoadedDeleteTask(final Long taskId, final int taskTime, final ArrayList<Integer> messages) {
+    public void processLoadedDeleteTask(final int taskTime, final ArrayList<Integer> messages) {
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
                 gettingNewDeleteTask = false;
-                if (taskId != null) {
+                if (messages != null) {
                     currentDeletingTaskTime = taskTime;
-                    currentDeletingTask = taskId;
                     currentDeletingTaskMids = messages;
 
                     checkDeletingTask();
                 } else {
                     currentDeletingTaskTime = 0;
-                    currentDeletingTask = null;
                     currentDeletingTaskMids = null;
                 }
             }
@@ -1275,10 +1271,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
     }
 
-    public void loadMessages(final long dialog_id, final int count, final int max_id, boolean fromCache, int midDate, final int classGuid, boolean from_unread, boolean forward) {
+    public void loadMessages(final long dialog_id, final int count, final int max_id, boolean fromCache, int midDate, final int classGuid, boolean from_unread, boolean forward, final Semaphore semaphore) {
         int lower_part = (int)dialog_id;
         if (fromCache || lower_part == 0) {
-            MessagesStorage.getInstance().getMessages(dialog_id, count, max_id, midDate, classGuid, from_unread, forward);
+            MessagesStorage.getInstance().getMessages(dialog_id, count, max_id, midDate, classGuid, from_unread, forward, semaphore);
         } else {
             TLRPC.TL_messages_getHistory req = new TLRPC.TL_messages_getHistory();
             if (lower_part < 0) {
@@ -1303,7 +1299,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 public void run(TLObject response, TLRPC.TL_error error) {
                     if (error == null) {
                         final TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
-                        processLoadedMessages(res, dialog_id, count, max_id, false, classGuid, 0, 0, 0, 0, false);
+                        processLoadedMessages(res, dialog_id, count, max_id, false, classGuid, 0, 0, 0, 0, false, semaphore);
                     }
                 }
             });
@@ -1311,7 +1307,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
     }
 
-    public void processLoadedMessages(final TLRPC.messages_Messages messagesRes, final long dialog_id, final int count, final int max_id, final boolean isCache, final int classGuid, final int first_unread, final int last_unread, final int unread_count, final int last_date, final boolean isForward) {
+    public void processLoadedMessages(final TLRPC.messages_Messages messagesRes, final long dialog_id, final int count, final int max_id, final boolean isCache, final int classGuid, final int first_unread, final int last_unread, final int unread_count, final int last_date, final boolean isForward, final Semaphore semaphore) {
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -1320,10 +1316,13 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     MessagesStorage.getInstance().putMessages(messagesRes, dialog_id);
                 }
                 if (lower_id != 0 && isCache && messagesRes.messages.size() == 0 && !isForward) {
+                    if (semaphore != null) {
+                        semaphore.release();
+                    }
                     AndroidUtilities.RunOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            loadMessages(dialog_id, count, max_id, false, 0, classGuid, false, false);
+                            loadMessages(dialog_id, count, max_id, false, 0, classGuid, false, false, null);
                         }
                     });
                     return;
@@ -1337,14 +1336,21 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     message.dialog_id = dialog_id;
                     objects.add(new MessageObject(message, usersLocal, 2));
                 }
-                AndroidUtilities.RunOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        putUsers(messagesRes.users, isCache);
-                        putChats(messagesRes.chats, isCache);
-                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.messagesDidLoaded, dialog_id, count, objects, isCache, first_unread, last_unread, unread_count, last_date, isForward);
-                    }
-                });
+                if (semaphore != null) {
+                    putUsers(messagesRes.users, isCache);
+                    putChats(messagesRes.chats, isCache);
+                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.messagesDidLoaded, dialog_id, count, objects, isCache, first_unread, last_unread, unread_count, last_date, isForward);
+                    semaphore.release();
+                } else {
+                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            putUsers(messagesRes.users, isCache);
+                            putChats(messagesRes.chats, isCache);
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.messagesDidLoaded, dialog_id, count, objects, isCache, first_unread, last_unread, unread_count, last_date, isForward);
+                        }
+                    });
+                }
             }
         });
     }

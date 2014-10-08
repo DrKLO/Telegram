@@ -236,7 +236,7 @@ public class ContactsController {
             ContentResolver cr = ApplicationLoader.applicationContext.getContentResolver();
 
             HashMap<String, Contact> shortContacts = new HashMap<String, Contact>();
-            String ids = "";
+            StringBuilder ids = new StringBuilder();
             Cursor pCur = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, projectionPhones, null, null, null);
             if (pCur != null) {
                 if (pCur.getCount() > 0) {
@@ -262,9 +262,9 @@ public class ContactsController {
 
                         Integer id = pCur.getInt(0);
                         if (ids.length() != 0) {
-                            ids += ",";
+                            ids.append(",");
                         }
-                        ids += id;
+                        ids.append(id);
 
                         int type = pCur.getInt(2);
                         Contact contact = contactsMap.get(id);
@@ -299,7 +299,7 @@ public class ContactsController {
                 pCur.close();
             }
 
-            pCur = cr.query(ContactsContract.Data.CONTENT_URI, projectionNames, ContactsContract.CommonDataKinds.StructuredName.CONTACT_ID + " IN (" + ids + ") AND " + ContactsContract.Data.MIMETYPE + " = '" + ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE + "'", null, null);
+            pCur = cr.query(ContactsContract.Data.CONTENT_URI, projectionNames, ContactsContract.CommonDataKinds.StructuredName.CONTACT_ID + " IN (" + ids.toString() + ") AND " + ContactsContract.Data.MIMETYPE + " = '" + ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE + "'", null, null);
             if (pCur != null && pCur.getCount() > 0) {
                 while (pCur.moveToNext()) {
                     int id = pCur.getInt(0);
@@ -844,14 +844,14 @@ public class ContactsController {
                                     return 0;
                                 }
                             });
-                            String ids = "";
+                            StringBuilder ids = new StringBuilder();
                             for (TLRPC.TL_contact aContactsArr : contactsArr) {
                                 if (ids.length() != 0) {
-                                    ids += ",";
+                                    ids.append(",");
                                 }
-                                ids += aContactsArr.user_id;
+                                ids.append(aContactsArr.user_id);
                             }
-                            UserConfig.contactsHash = Utilities.MD5(ids);
+                            UserConfig.contactsHash = Utilities.MD5(ids.toString());
                             UserConfig.saveConfig(false);
                         }
 
@@ -1084,7 +1084,7 @@ public class ContactsController {
             });
         }
 
-        String ids = "";
+        StringBuilder ids = new StringBuilder();
         final HashMap<String, ArrayList<TLRPC.TL_contact>> sectionsDict = new HashMap<String, ArrayList<TLRPC.TL_contact>>();
         final ArrayList<String> sortedSectionsArray = new ArrayList<String>();
 
@@ -1114,11 +1114,11 @@ public class ContactsController {
             }
             arr.add(value);
             if (ids.length() != 0) {
-                ids += ",";
+                ids.append(",");
             }
-            ids += value.user_id;
+            ids.append(value.user_id);
         }
-        UserConfig.contactsHash = Utilities.MD5(ids);
+        UserConfig.contactsHash = Utilities.MD5(ids.toString());
         UserConfig.saveConfig(false);
 
         Collections.sort(sortedSectionsArray, new Comparator<String>() {
@@ -1189,8 +1189,8 @@ public class ContactsController {
         }
         FileLog.e("tmessages", "process update - contacts add = " + newC.size() + " delete = " + contactsTD.size());
 
-        String toAdd = "";
-        String toDelete = "";
+        StringBuilder toAdd = new StringBuilder();
+        StringBuilder toDelete = new StringBuilder();
         boolean reloadContacts = false;
 
         for (TLRPC.TL_contact newContact : newC) {
@@ -1216,9 +1216,9 @@ public class ContactsController {
                 }
             }
             if (toAdd.length() != 0) {
-                toAdd += ",";
+                toAdd.append(",");
             }
-            toAdd += user.phone;
+            toAdd.append(user.phone);
         }
 
         for (final Integer uid : contactsTD) {
@@ -1252,14 +1252,14 @@ public class ContactsController {
                     }
                 }
                 if (toDelete.length() != 0) {
-                    toDelete += ",";
+                    toDelete.append(",");
                 }
-                toDelete += user.phone;
+                toDelete.append(user.phone);
             }
         }
 
         if (toAdd.length() != 0 || toDelete.length() != 0) {
-            MessagesStorage.getInstance().applyPhoneBookUpdates(toAdd, toDelete);
+            MessagesStorage.getInstance().applyPhoneBookUpdates(toAdd.toString(), toDelete.toString());
         }
 
         if (reloadContacts) {

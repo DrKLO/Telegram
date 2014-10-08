@@ -117,6 +117,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private TypingDotsDrawable typingDotsDrawable;
     private View emptyViewContainer;
     private ArrayList<View> actionModeViews = new ArrayList<View>();
+    private Semaphore testSemaphore = new Semaphore(0);
 
     private TextView bottomOverlayText;
 
@@ -352,7 +353,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         super.onFragmentCreate();
 
         loading = true;
-        MessagesController.getInstance().loadMessages(dialog_id, 30, 0, true, 0, classGuid, true, false);
+
+        MessagesController.getInstance().loadMessages(dialog_id, AndroidUtilities.isTablet() ? 30 : 20, 0, true, 0, classGuid, true, false, testSemaphore);
+        try {
+            testSemaphore.acquire();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+
         if (currentUser != null) {
             userBlocked = MessagesController.getInstance().blockedUsers.contains(currentUser.id);
         }
@@ -766,16 +774,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (firstVisibleItem <= 4) {
                             if (!endReached && !loading) {
                                 if (messagesByDays.size() != 0) {
-                                    MessagesController.getInstance().loadMessages(dialog_id, 20, maxMessageId, !cacheEndReaced, minDate, classGuid, false, false);
+                                    MessagesController.getInstance().loadMessages(dialog_id, 20, maxMessageId, !cacheEndReaced, minDate, classGuid, false, false, null);
                                 } else {
-                                    MessagesController.getInstance().loadMessages(dialog_id, 20, 0, !cacheEndReaced, minDate, classGuid, false, false);
+                                    MessagesController.getInstance().loadMessages(dialog_id, 20, 0, !cacheEndReaced, minDate, classGuid, false, false, null);
                                 }
                                 loading = true;
                             }
                         }
                         if (firstVisibleItem + visibleItemCount >= totalItemCount - 6) {
                             if (!unread_end_reached && !loadingForward) {
-                                MessagesController.getInstance().loadMessages(dialog_id, 20, minMessageId, true, maxDate, classGuid, false, true);
+                                MessagesController.getInstance().loadMessages(dialog_id, 20, minMessageId, true, maxDate, classGuid, false, true, null);
                                 loadingForward = true;
                             }
                         }
@@ -896,7 +904,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             unread_end_reached = true;
             loading = true;
             chatAdapter.notifyDataSetChanged();
-            MessagesController.getInstance().loadMessages(dialog_id, 30, 0, true, 0, classGuid, true, false);
+            MessagesController.getInstance().loadMessages(dialog_id, 30, 0, true, 0, classGuid, true, false, null);
         }
     }
 
@@ -2249,7 +2257,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                     maxDate = Integer.MIN_VALUE;
                     minDate = 0;
-                    MessagesController.getInstance().loadMessages(dialog_id, 30, 0, !cacheEndReaced, minDate, classGuid, false, false);
+                    MessagesController.getInstance().loadMessages(dialog_id, 30, 0, !cacheEndReaced, minDate, classGuid, false, false, null);
                     loading = true;
                 }
             }
