@@ -102,10 +102,12 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     private Runnable stageRunnable = new Runnable() {
         @Override
         public void run() {
+            int pushInterval = 60000 * 3; // 3 mins
+            if(!ConnectionsManager.isConnectedToWiFi()) pushInterval = 60000 * 30; // 30 mins
             Utilities.stageQueue.handler.removeCallbacks(stageRunnable);
             if (datacenters != null) {
                 Datacenter datacenter = datacenterWithId(currentDatacenterId);
-                if (sendingPushPing && lastPushPingTime < System.currentTimeMillis() - 30000 || Math.abs(lastPushPingTime - System.currentTimeMillis()) > 60000 * 3 + 10000) {
+                if (sendingPushPing && lastPushPingTime < System.currentTimeMillis() - 30000 || Math.abs(lastPushPingTime - System.currentTimeMillis()) > pushInterval + 10000) {
                     lastPushPingTime = 0;
                     sendingPushPing = false;
                     if (datacenter != null && datacenter.pushConnection != null) {
@@ -113,7 +115,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     }
                     FileLog.e("tmessages", "push ping timeout");
                 }
-                if (lastPushPingTime < System.currentTimeMillis() - 60000 * 3) {
+                if (lastPushPingTime < System.currentTimeMillis() - pushInterval) {
                     FileLog.e("tmessages", "time for push ping");
                     lastPushPingTime = System.currentTimeMillis();
                     if (datacenter != null) {
@@ -2351,7 +2353,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         TLRPC.TL_ping_delay_disconnect ping = new TLRPC.TL_ping_delay_disconnect();
         ping.ping_id = nextPingId++;
         if ((connection.transportRequestClass & RPCRequest.RPCRequestClassPush) != 0) {
-            ping.disconnect_delay = 60 * 7;
+            ping.disconnect_delay = 60 * 34; // pushInterval + 4 mins
         } else {
             ping.disconnect_delay = 35;
             pingIdToDate.put(ping.ping_id, (int) (System.currentTimeMillis() / 1000));
