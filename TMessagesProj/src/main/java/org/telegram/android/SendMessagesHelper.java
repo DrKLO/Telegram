@@ -364,6 +364,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
     private int sendMessage(String message, double lat, double lon, TLRPC.TL_photo photo, TLRPC.TL_video video, MessageObject msgObj, TLRPC.User user, TLRPC.TL_document document, TLRPC.TL_audio audio, String originalPath, long peer, boolean retry, String path) {
         TLRPC.Message newMsg = null;
         int type = -1;
+        int lower_id = (int) peer;
+        int high_id = (int) (peer >> 32);
+
         if (retry) {
             newMsg = msgObj.messageOwner;
 
@@ -409,12 +412,20 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             }
         } else {
             if (message != null) {
-                newMsg = new TLRPC.TL_message();
+                if (lower_id != 0) {
+                    newMsg = new TLRPC.TL_message();
+                } else {
+                    newMsg = new TLRPC.TL_message_secret();
+                }
                 newMsg.media = new TLRPC.TL_messageMediaEmpty();
                 type = 0;
                 newMsg.message = message;
             } else if (lat != 0 && lon != 0) {
-                newMsg = new TLRPC.TL_message();
+                if (lower_id != 0) {
+                    newMsg = new TLRPC.TL_message();
+                } else {
+                    newMsg = new TLRPC.TL_message_secret();
+                }
                 newMsg.media = new TLRPC.TL_messageMediaGeo();
                 newMsg.media.geo = new TLRPC.TL_geoPoint();
                 newMsg.media.geo.lat = lat;
@@ -422,7 +433,11 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 newMsg.message = "";
                 type = 1;
             } else if (photo != null) {
-                newMsg = new TLRPC.TL_message();
+                if (lower_id != 0) {
+                    newMsg = new TLRPC.TL_message();
+                } else {
+                    newMsg = new TLRPC.TL_message_secret();
+                }
                 newMsg.media = new TLRPC.TL_messageMediaPhoto();
                 newMsg.media.photo = photo;
                 type = 2;
@@ -430,7 +445,11 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 TLRPC.FileLocation location1 = photo.sizes.get(photo.sizes.size() - 1).location;
                 newMsg.attachPath = FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE) + "/" + location1.volume_id + "_" + location1.local_id + ".jpg";
             } else if (video != null) {
-                newMsg = new TLRPC.TL_message();
+                if (lower_id != 0) {
+                    newMsg = new TLRPC.TL_message();
+                } else {
+                    newMsg = new TLRPC.TL_message_secret();
+                }
                 newMsg.media = new TLRPC.TL_messageMediaVideo();
                 newMsg.media.video = video;
                 newMsg.videoEditedInfo = video.videoEditedInfo;
@@ -461,7 +480,11 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     type = 4;
                 }
             } else if (user != null) {
-                newMsg = new TLRPC.TL_message();
+                if (lower_id != 0) {
+                    newMsg = new TLRPC.TL_message();
+                } else {
+                    newMsg = new TLRPC.TL_message_secret();
+                }
                 newMsg.media = new TLRPC.TL_messageMediaContact();
                 newMsg.media.phone_number = user.phone;
                 newMsg.media.first_name = user.first_name;
@@ -470,14 +493,22 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 newMsg.message = "";
                 type = 6;
             } else if (document != null) {
-                newMsg = new TLRPC.TL_message();
+                if (lower_id != 0) {
+                    newMsg = new TLRPC.TL_message();
+                } else {
+                    newMsg = new TLRPC.TL_message_secret();
+                }
                 newMsg.media = new TLRPC.TL_messageMediaDocument();
                 newMsg.media.document = document;
                 type = 7;
                 newMsg.message = "-1";
                 newMsg.attachPath = path;
             } else if (audio != null) {
-                newMsg = new TLRPC.TL_message();
+                if (lower_id != 0) {
+                    newMsg = new TLRPC.TL_message();
+                } else {
+                    newMsg = new TLRPC.TL_message_secret();
+                }
                 newMsg.media = new TLRPC.TL_messageMediaAudio();
                 newMsg.media.audio = audio;
                 type = 8;
@@ -487,7 +518,6 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             newMsg.local_id = newMsg.id = UserConfig.getNewMessageId();
             newMsg.from_id = UserConfig.getClientUserId();
             newMsg.flags |= TLRPC.MESSAGE_FLAG_OUT;
-            newMsg.out = true;
             UserConfig.saveConfig(false);
         }
         if (newMsg.random_id == 0) {
@@ -495,10 +525,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         }
         newMsg.date = ConnectionsManager.getInstance().getCurrentTime();
         newMsg.flags |= TLRPC.MESSAGE_FLAG_UNREAD;
-        newMsg.unread = true;
         newMsg.dialog_id = peer;
-        int lower_id = (int) peer;
-        int high_id = (int) (peer >> 32);
         TLRPC.EncryptedChat encryptedChat = null;
         TLRPC.InputPeer sendToPeer = null;
         ArrayList<TLRPC.InputUser> sendToPeers = null;
@@ -1405,6 +1432,19 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         }
     }
 
+    public void sendMessagesReadMessage(ArrayList<Long> random_ids, TLRPC.EncryptedChat encryptedChat) {
+        if (!(encryptedChat instanceof TLRPC.TL_encryptedChat)) {
+            return;
+        }
+        TLRPC.TL_decryptedMessageService_old reqSend = new TLRPC.TL_decryptedMessageService_old();
+        reqSend.random_id = getNextRandomId();
+        reqSend.random_bytes = new byte[Math.max(1, (int)Math.ceil(Utilities.random.nextDouble() * 16))];
+        Utilities.random.nextBytes(reqSend.random_bytes);
+        reqSend.action = new TLRPC.TL_decryptedMessageActionReadMessages();
+        reqSend.action.random_ids = random_ids;
+        performSendEncryptedRequest(reqSend, null, encryptedChat, null, null);
+    }
+
     public void sendMessagesDeleteMessage(ArrayList<Long> random_ids, TLRPC.EncryptedChat encryptedChat) {
         if (!(encryptedChat instanceof TLRPC.TL_encryptedChat)) {
             return;
@@ -1440,7 +1480,6 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         newMsg.action.ttl = encryptedChat.ttl;
         newMsg.local_id = newMsg.id = UserConfig.getNewMessageId();
         newMsg.from_id = UserConfig.getClientUserId();
-        newMsg.unread = true;
         newMsg.flags = TLRPC.MESSAGE_FLAG_UNREAD | TLRPC.MESSAGE_FLAG_OUT;
         newMsg.dialog_id = ((long)encryptedChat.id) << 32;
         newMsg.to_id = new TLRPC.TL_peerUser();
@@ -1449,7 +1488,6 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         } else {
             newMsg.to_id.user_id = encryptedChat.participant_id;
         }
-        newMsg.out = true;
         newMsg.date = ConnectionsManager.getInstance().getCurrentTime();
         newMsg.random_id = getNextRandomId();
         UserConfig.saveConfig(false);
@@ -1488,7 +1526,6 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
 
         newMsg.local_id = newMsg.id = UserConfig.getNewMessageId();
         newMsg.from_id = UserConfig.getClientUserId();
-        newMsg.unread = true;
         newMsg.flags = TLRPC.MESSAGE_FLAG_UNREAD | TLRPC.MESSAGE_FLAG_OUT;
         newMsg.dialog_id = ((long)encryptedChat.id) << 32;
         newMsg.to_id = new TLRPC.TL_peerUser();
@@ -1497,7 +1534,6 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         } else {
             newMsg.to_id.user_id = encryptedChat.participant_id;
         }
-        newMsg.out = true;
         newMsg.date = ConnectionsManager.getInstance().getCurrentTime();
         newMsg.random_id = getNextRandomId();
         UserConfig.saveConfig(false);

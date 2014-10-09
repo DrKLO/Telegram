@@ -8769,8 +8769,6 @@ public class TLRPC {
         public int fwd_date;
         public int from_id;
         public Peer to_id;
-        public boolean out;
-        public boolean unread;
         public int date;
         public String message;
         public MessageMedia media;
@@ -8782,6 +8780,7 @@ public class TLRPC {
         public int local_id = 0;
         public long dialog_id;
         public int ttl;
+        public int destroyTime;
         public VideoEditedInfo videoEditedInfo = null;
     }
 
@@ -8799,8 +8798,6 @@ public class TLRPC {
             date = stream.readInt32();
             message = stream.readString();
             media = (MessageMedia)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
-            out = (flags & MESSAGE_FLAG_OUT) != 0;
-            unread = (flags & MESSAGE_FLAG_UNREAD) != 0;
             if (id < 0) {
                 fwd_msg_id = stream.readInt32();
             }
@@ -8843,8 +8840,6 @@ public class TLRPC {
             date = stream.readInt32();
             message = stream.readString();
             media = (MessageMedia)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
-            out = (flags & 2) != 0;
-            unread = (flags & 1) != 0;
             if (id < 0 || (media != null && !(media instanceof TL_messageMediaEmpty) && message != null && message.length() != 0 && message.startsWith("-1"))) {
                 attachPath = stream.readString();
             }
@@ -8878,8 +8873,6 @@ public class TLRPC {
             to_id = (Peer)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
             date = stream.readInt32();
             action = (MessageAction)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
-            out = (flags & 2) != 0;
-            unread = (flags & 1) != 0;
         }
 
         public void serializeToStream(AbsSerializedData stream) {
@@ -8901,8 +8894,8 @@ public class TLRPC {
             id = stream.readInt32();
             from_id = stream.readInt32();
             to_id = (Peer)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
-            out = stream.readBool();
-            unread = stream.readBool();
+            flags |= stream.readBool() ? MESSAGE_FLAG_OUT : 0;
+            flags |= stream.readBool() ? MESSAGE_FLAG_UNREAD : 0;
             date = stream.readInt32();
             action = (MessageAction)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
         }
@@ -8912,8 +8905,8 @@ public class TLRPC {
             stream.writeInt32(id);
             stream.writeInt32(from_id);
             to_id.serializeToStream(stream);
-            stream.writeBool(out);
-            stream.writeBool(unread);
+            stream.writeBool((flags & MESSAGE_FLAG_OUT) != 0);
+            stream.writeBool((flags & MESSAGE_FLAG_UNREAD) != 0);
             stream.writeInt32(date);
             action.serializeToStream(stream);
         }
@@ -8929,8 +8922,8 @@ public class TLRPC {
             fwd_date = stream.readInt32();
             from_id = stream.readInt32();
             to_id = (Peer)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
-            out = stream.readBool();
-            unread = stream.readBool();
+            flags |= stream.readBool() ? MESSAGE_FLAG_OUT : 0;
+            flags |= stream.readBool() ? MESSAGE_FLAG_UNREAD : 0;
             date = stream.readInt32();
             message = stream.readString();
             media = (MessageMedia)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
@@ -8953,8 +8946,8 @@ public class TLRPC {
             stream.writeInt32(fwd_date);
             stream.writeInt32(from_id);
             to_id.serializeToStream(stream);
-            stream.writeBool(out);
-            stream.writeBool(unread);
+            stream.writeBool((flags & MESSAGE_FLAG_OUT) != 0);
+            stream.writeBool((flags & MESSAGE_FLAG_UNREAD) != 0);
             stream.writeInt32(date);
             stream.writeString(message);
             media.serializeToStream(stream);
@@ -8972,8 +8965,8 @@ public class TLRPC {
             id = stream.readInt32();
             from_id = stream.readInt32();
             to_id = (Peer)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
-            out = stream.readBool();
-            unread = stream.readBool();
+            flags |= stream.readBool() ? MESSAGE_FLAG_OUT : 0;
+            flags |= stream.readBool() ? MESSAGE_FLAG_UNREAD : 0;
             date = stream.readInt32();
             message = stream.readString();
             media = (MessageMedia)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
@@ -8991,8 +8984,8 @@ public class TLRPC {
             stream.writeInt32(id);
             stream.writeInt32(from_id);
             to_id.serializeToStream(stream);
-            stream.writeBool(out);
-            stream.writeBool(unread);
+            stream.writeBool((flags & MESSAGE_FLAG_OUT) != 0);
+            stream.writeBool((flags & MESSAGE_FLAG_UNREAD) != 0);
             stream.writeInt32(date);
             stream.writeString(message);
             media.serializeToStream(stream);
@@ -9004,11 +8997,11 @@ public class TLRPC {
         public static int constructor = 0x555555F8;
 
         public void readParams(AbsSerializedData stream) {
+            flags = stream.readInt32();
             id = stream.readInt32();
+            ttl = stream.readInt32();
             from_id = stream.readInt32();
             to_id = (Peer)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
-            out = stream.readBool();
-            unread = stream.readBool();
             date = stream.readInt32();
             message = stream.readString();
             media = (MessageMedia)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
@@ -9023,11 +9016,11 @@ public class TLRPC {
 
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
+            stream.writeInt32(flags);
             stream.writeInt32(id);
+            stream.writeInt32(ttl);
             stream.writeInt32(from_id);
             to_id.serializeToStream(stream);
-            stream.writeBool(out);
-            stream.writeBool(unread);
             stream.writeInt32(date);
             stream.writeString(message);
             media.serializeToStream(stream);
@@ -9773,7 +9766,7 @@ public class TLRPC {
     }
 
     public static class TL_decryptedMessageActionScreenshotMessages extends DecryptedMessageAction {
-        public static int constructor = 0x954bd30;
+        public static int constructor = 0x8ac1f475;
 
 
         public void readParams(AbsSerializedData stream) {

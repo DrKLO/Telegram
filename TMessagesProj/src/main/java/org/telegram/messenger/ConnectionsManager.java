@@ -997,6 +997,10 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         return (int)(System.currentTimeMillis() / 1000) + timeDifference;
     }
 
+    public int getTimeDifference() {
+        return timeDifference;
+    }
+
     private void processRequestQueue(int requestClass, int _datacenterId) {
         boolean haveNetwork = true;//isNetworkOnline();
 

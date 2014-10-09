@@ -21,7 +21,7 @@ public class PhotoObject {
     public TLRPC.PhotoSize photoOwner;
     public Bitmap image;
 
-    public PhotoObject(TLRPC.PhotoSize photo, int preview) {
+    public PhotoObject(TLRPC.PhotoSize photo, int preview, boolean secret) {
         photoOwner = photo;
 
         if (preview != 0 && photo instanceof TLRPC.TL_photoCachedSize) {
@@ -34,7 +34,13 @@ public class PhotoObject {
                 image = BitmapFactory.decodeByteArray(photoOwner.bytes, 0, photoOwner.bytes.length, opts);
                 if (image != null) {
                     if (preview == 2) {
-                        Utilities.blurBitmap(image);
+                        if (secret) {
+                            Utilities.blurBitmap(image, 7);
+                            Utilities.blurBitmap(image, 7);
+                            Utilities.blurBitmap(image, 7);
+                        } else {
+                            Utilities.blurBitmap(image, 3);
+                        }
                     }
                     if (ImageLoader.getInstance().runtimeHack != null) {
                         ImageLoader.getInstance().runtimeHack.trackFree(image.getRowBytes() * image.getHeight());

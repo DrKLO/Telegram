@@ -276,22 +276,27 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             });
 
             if (Build.VERSION.SDK_INT < 18) {
-                MediaCodecInfo codecInfo = MediaController.selectCodec(MediaController.MIME_TYPE);
-                if (codecInfo == null) {
-                    compressVideo.setVisibility(View.GONE);
-                } else {
-                    String name = codecInfo.getName();
-                    if (name.equals("OMX.google.h264.encoder") ||
-                            name.equals("OMX.ST.VFM.H264Enc") ||
-                            name.equals("OMX.Exynos.avc.enc") ||
-                            name.equals("OMX.MARVELL.VIDEO.HW.CODA7542ENCODER") ||
-                            name.equals("OMX.MARVELL.VIDEO.H264ENCODER")) {
+                try {
+                    MediaCodecInfo codecInfo = MediaController.selectCodec(MediaController.MIME_TYPE);
+                    if (codecInfo == null) {
                         compressVideo.setVisibility(View.GONE);
                     } else {
-                        if (MediaController.selectColorFormat(codecInfo, MediaController.MIME_TYPE) == 0) {
+                        String name = codecInfo.getName();
+                        if (name.equals("OMX.google.h264.encoder") ||
+                                name.equals("OMX.ST.VFM.H264Enc") ||
+                                name.equals("OMX.Exynos.avc.enc") ||
+                                name.equals("OMX.MARVELL.VIDEO.HW.CODA7542ENCODER") ||
+                                name.equals("OMX.MARVELL.VIDEO.H264ENCODER")) {
                             compressVideo.setVisibility(View.GONE);
+                        } else {
+                            if (MediaController.selectColorFormat(codecInfo, MediaController.MIME_TYPE) == 0) {
+                                compressVideo.setVisibility(View.GONE);
+                            }
                         }
                     }
+                } catch (Exception e) {
+                    compressVideo.setVisibility(View.GONE);
+                    FileLog.e("tmessages", e);
                 }
             }
 

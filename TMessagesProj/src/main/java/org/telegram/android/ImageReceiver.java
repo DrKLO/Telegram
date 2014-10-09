@@ -35,6 +35,7 @@ public class ImageReceiver {
     private boolean isVisible = true;
     private boolean isAspectFit = false;
     private boolean lastCacheOnly = false;
+    private boolean forcePreview = false;
 
     public ImageReceiver() {
 
@@ -195,7 +196,7 @@ public class ImageReceiver {
     public boolean draw(Canvas canvas, int x, int y, int w, int h) {
         try {
             Drawable bitmapDrawable = currentImage;
-            if (bitmapDrawable == null && last_placeholder != null && last_placeholder instanceof BitmapDrawable) {
+            if (forcePreview || bitmapDrawable == null && last_placeholder != null && last_placeholder instanceof BitmapDrawable) {
                 bitmapDrawable = last_placeholder;
             }
             if (bitmapDrawable != null) {
@@ -370,5 +371,9 @@ public class ImageReceiver {
 
     public String getKey() {
         return currentPath;
+    }
+
+    public void setForcePreview(boolean value) {
+        forcePreview = value;
     }
 }

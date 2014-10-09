@@ -274,6 +274,10 @@ public class AndroidUtilities {
         }
     }
 
+    public static void CancelRunOnUIThread(Runnable runnable) {
+        ApplicationLoader.applicationHandler.removeCallbacks(runnable);
+    }
+
     public static boolean isTablet() {
         if (isTablet == null) {
             isTablet = ApplicationLoader.applicationContext.getResources().getBoolean(R.bool.isTablet);

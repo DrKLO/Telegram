@@ -28,7 +28,6 @@ import android.provider.MediaStore;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -293,7 +292,7 @@ public class ImageLoader {
                             }
                         }
                         if (image != null && blur && bitmapH < 100 && bitmapW < 100) {
-                            Utilities.blurBitmap(image);
+                            Utilities.blurBitmap(image, 3);
                         }
                     }
                     if (runtimeHack != null) {

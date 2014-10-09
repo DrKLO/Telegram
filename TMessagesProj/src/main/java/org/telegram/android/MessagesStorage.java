@@ -282,7 +282,7 @@ public class MessagesStorage {
                         database.executeFast("DROP INDEX IF EXISTS date_idx_enc_tasks;").stepThis().dispose();
                         database.executeFast("DROP TABLE IF EXISTS enc_tasks;").stepThis().dispose();
 
-                        database.executeFast("ALTER TABLE messages ADD COLUMN media INTEGER").stepThis().dispose();
+                        database.executeFast("ALTER TABLE messages ADD COLUMN media INTEGER default 0").stepThis().dispose();
                         database.executeFast("PRAGMA user_version = 6").stepThis().dispose();
                     }
                 } catch (Exception e) {
@@ -428,8 +428,7 @@ public class MessagesStorage {
                             ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(1));
                             if (data != null && cursor.byteBufferValue(1, data.buffer) != 0) {
                                 TLRPC.Message message = (TLRPC.Message)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                                int read_state = cursor.intValue(0);
-                                message.unread = (cursor.intValue(0) != 1);
+                                MessageObject.setIsUnread(message, cursor.intValue(0) != 1);
                                 message.id = cursor.intValue(3);
                                 message.date = cursor.intValue(4);
                                 message.dialog_id = cursor.longValue(5);
@@ -470,7 +469,7 @@ public class MessagesStorage {
                                     userIds.add(message.fwd_from_id);
                                 }
                                 message.send_state = cursor.intValue(2);
-                                if (!message.unread && lower_id != 0 || message.id > 0) {
+                                if (!MessageObject.isUnread(message) && lower_id != 0 || message.id > 0) {
                                     message.send_state = 0;
                                 }
                                 if (lower_id == 0 && !cursor.isNull(5)) {
@@ -836,7 +835,7 @@ public class MessagesStorage {
         });
     }
 
-    public void createTaskForDate(final int chat_id, final int time, final int readTime, final int isOut) {
+    public void createTaskForSecretChat(final int chat_id, final int time, final int readTime, final int isOut, final ArrayList<Long> random_ids) {
         storageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -844,7 +843,13 @@ public class MessagesStorage {
                     int minDate = Integer.MAX_VALUE;
                     SparseArray<ArrayList<Integer>> messages = new SparseArray<ArrayList<Integer>>();
                     StringBuilder mids = new StringBuilder();
-                    SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid, ttl FROM messages WHERE uid = %d AND out = %d AND read_state = 1 AND ttl > 0 AND date <= %d AND send_state = 0 AND media != 1", ((long)chat_id) << 32, isOut, time));
+                    SQLiteCursor cursor = null;
+                    if (random_ids == null) {
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid, ttl FROM messages WHERE uid = %d AND out = %d AND read_state = 1 AND ttl > 0 AND date <= %d AND send_state = 0 AND media != 1", ((long) chat_id) << 32, isOut, time));
+                    } else {
+                        String ids = TextUtils.join(",", random_ids);
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.mid, m.ttl FROM messages as m INNER JOIN randoms as r ON m.mid = r.mid WHERE r.random_id IN (%s)", ids));
+                    }
                     while (cursor.next()) {
                         int mid = cursor.intValue(0);
                         int date = readTime + cursor.intValue(1);
@@ -1640,8 +1645,7 @@ public class MessagesStorage {
                         ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(1));
                         if (data != null && cursor.byteBufferValue(1, data.buffer) != 0) {
                             TLRPC.Message message = (TLRPC.Message)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                            int read_state = cursor.intValue(0);
-                            message.unread = (cursor.intValue(0) != 1);
+                            MessageObject.setIsUnread(message, cursor.intValue(0) != 1);
                             message.id = cursor.intValue(3);
                             message.date = cursor.intValue(4);
                             if (!cursor.isNull(5)) {
@@ -1691,7 +1695,7 @@ public class MessagesStorage {
                                 userIds.add(message.fwd_from_id);
                             }
                             message.send_state = cursor.intValue(2);
-                            if (!message.unread && lower_id != 0 || message.id > 0) {
+                            if (!MessageObject.isUnread(message) && lower_id != 0 || message.id > 0) {
                                 message.send_state = 0;
                             }
                             if (lower_id == 0 && !cursor.isNull(5)) {
@@ -1879,8 +1883,7 @@ public class MessagesStorage {
                         ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(1));
                         if (data != null && cursor.byteBufferValue(1, data.buffer) != 0) {
                             TLRPC.Message message = (TLRPC.Message)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                            int read_state = cursor.intValue(0);
-                            message.unread = (cursor.intValue(0) != 1);
+                            MessageObject.setIsUnread(message, cursor.intValue(0) != 1);
                             message.id = cursor.intValue(3);
                             message.date = cursor.intValue(4);
                             message.dialog_id = dialog_id;
@@ -1899,11 +1902,22 @@ public class MessagesStorage {
                                 fromUser.add(message.fwd_from_id);
                             }
                             message.send_state = cursor.intValue(2);
-                            if (!message.unread && lower_id != 0 || message.id > 0) {
+                            if (!MessageObject.isUnread(message) && lower_id != 0 || message.id > 0) {
                                 message.send_state = 0;
                             }
                             if (lower_id == 0 && !cursor.isNull(5)) {
                                 message.random_id = cursor.longValue(5);
+                            }
+                            if ((int)dialog_id == 0 && message.media != null && message.media.photo != null) {
+                                try {
+                                    SQLiteCursor cursor2 = database.queryFinalized(String.format(Locale.US, "SELECT date FROM enc_tasks_v2 WHERE mid = %d", message.id));
+                                    if (cursor2.next()) {
+                                        message.destroyTime = cursor2.intValue(0);
+                                    }
+                                    cursor2.dispose();
+                                } catch (Exception e) {
+                                    FileLog.e("tmessages", e);
+                                }
                             }
                         }
                         buffersStorage.reuseFreeBuffer(data);
@@ -2456,7 +2470,7 @@ public class MessagesStorage {
                     }
                 }
 
-                if (message.unread && !message.out) {
+                if (MessageObject.isUnread(message) && !MessageObject.isOut(message)) {
                     if (messageIds.length() > 0) {
                         messageIds.append(",");
                     }
@@ -2532,11 +2546,11 @@ public class MessagesStorage {
                 }
                 state.bindInteger(1, messageId);
                 state.bindLong(2, dialog_id);
-                state.bindInteger(3, (message.unread ? 0 : 1));
+                state.bindInteger(3, (MessageObject.isUnread(message) ? 0 : 1));
                 state.bindInteger(4, message.send_state);
                 state.bindInteger(5, message.date);
                 state.bindByteBuffer(6, data.buffer);
-                state.bindInteger(7, (message.out ? 1 : 0));
+                state.bindInteger(7, (MessageObject.isOut(message) ? 1 : 0));
                 state.bindInteger(8, message.ttl);
                 state.bindInteger(9, getMessageMediaType(message));
                 state.step();
@@ -3061,7 +3075,7 @@ public class MessagesStorage {
                 ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(4));
                 if (data != null && cursor.byteBufferValue(4, data.buffer) != 0) {
                     TLRPC.Message message = (TLRPC.Message)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                    message.unread = (cursor.intValue(5) != 1);
+                    MessageObject.setIsUnread(message, cursor.intValue(5) != 1);
                     message.id = cursor.intValue(6);
                     message.send_state = cursor.intValue(7);
                     dialogs.messages.add(message);
@@ -3218,11 +3232,11 @@ public class MessagesStorage {
                             message.serializeToStream(data);
                             state.bindInteger(1, message.id);
                             state.bindLong(2, dialog_id);
-                            state.bindInteger(3, (message.unread ? 0 : 1));
+                            state.bindInteger(3, (MessageObject.isUnread(message) ? 0 : 1));
                             state.bindInteger(4, message.send_state);
                             state.bindInteger(5, message.date);
                             state.bindByteBuffer(6, data.buffer);
-                            state.bindInteger(7, (message.out ? 1 : 0));
+                            state.bindInteger(7, (MessageObject.isOut(message) ? 1 : 0));
                             state.bindInteger(8, 0);
                             state.bindInteger(9, getMessageMediaType(message));
                             state.step();
@@ -3316,7 +3330,7 @@ public class MessagesStorage {
                         if (data != null && cursor.byteBufferValue(4, data.buffer) != 0) {
                             TLRPC.Message message = (TLRPC.Message)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
                             if (message != null) {
-                                message.unread = (cursor.intValue(5) != 1);
+                                MessageObject.setIsUnread(message, cursor.intValue(5) != 1);
                                 message.id = cursor.intValue(6);
                                 message.send_state = cursor.intValue(7);
                                 dialogs.messages.add(message);
@@ -3485,11 +3499,11 @@ public class MessagesStorage {
 
                             state.bindInteger(1, message.id);
                             state.bindInteger(2, uid);
-                            state.bindInteger(3, (message.unread ? 0 : 1));
+                            state.bindInteger(3, (MessageObject.isUnread(message) ? 0 : 1));
                             state.bindInteger(4, message.send_state);
                             state.bindInteger(5, message.date);
                             state.bindByteBuffer(6, data.buffer);
-                            state.bindInteger(7, (message.out ? 1 : 0));
+                            state.bindInteger(7, (MessageObject.isOut(message) ? 1 : 0));
                             state.bindInteger(8, 0);
                             state.bindInteger(9, getMessageMediaType(message));
                             state.step();

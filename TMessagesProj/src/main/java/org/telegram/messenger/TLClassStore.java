@@ -362,6 +362,7 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_messageService_old.constructor, TLRPC.TL_messageService_old.class);
         classStore.put(TLRPC.TL_decryptedMessageService_old.constructor, TLRPC.TL_decryptedMessageService_old.class);
         classStore.put(TLRPC.TL_decryptedMessage_old.constructor, TLRPC.TL_decryptedMessage_old.class);
+        classStore.put(TLRPC.TL_message_secret.constructor, TLRPC.TL_message_secret.class);
     }
 
     static TLClassStore store = null;

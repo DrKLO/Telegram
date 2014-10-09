@@ -318,7 +318,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         return fragmentView;
     }
 
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, final Object... args) {
         if (id == NotificationCenter.updateInterfaces) {
             int mask = (Integer)args[0];
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
@@ -338,11 +338,16 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             }
         } else if (id == NotificationCenter.encryptedChatCreated) {
             if (creatingChat) {
-                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
-                TLRPC.EncryptedChat encryptedChat = (TLRPC.EncryptedChat)args[0];
-                Bundle args2 = new Bundle();
-                args2.putInt("enc_id", encryptedChat.id);
-                presentFragment(new ChatActivity(args2), true);
+                AndroidUtilities.RunOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                        TLRPC.EncryptedChat encryptedChat = (TLRPC.EncryptedChat)args[0];
+                        Bundle args2 = new Bundle();
+                        args2.putInt("enc_id", encryptedChat.id);
+                        presentFragment(new ChatActivity(args2), true);
+                    }
+                });
             }
         } else if (id == NotificationCenter.encryptedChatUpdated) {
             TLRPC.EncryptedChat chat = (TLRPC.EncryptedChat)args[0];

@@ -16,6 +16,7 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.util.Linkify;
 
+import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.TLRPC;
@@ -340,7 +341,7 @@ public class MessageObject {
                 if (!update) {
                     photoThumbs = new ArrayList<PhotoObject>();
                     for (TLRPC.PhotoSize size : messageOwner.action.photo.sizes) {
-                        photoThumbs.add(new PhotoObject(size, preview));
+                        photoThumbs.add(new PhotoObject(size, preview, isSecretMedia()));
                     }
                 } else if (photoThumbs != null && !photoThumbs.isEmpty()) {
                     for (PhotoObject photoObject : photoThumbs) {
@@ -361,7 +362,7 @@ public class MessageObject {
                 if (!update) {
                     photoThumbs = new ArrayList<PhotoObject>();
                     for (TLRPC.PhotoSize size : messageOwner.media.photo.sizes) {
-                        PhotoObject obj = new PhotoObject(size, preview);
+                        PhotoObject obj = new PhotoObject(size, preview, isSecretMedia());
                         photoThumbs.add(obj);
                         if (imagePreview == null && obj.image != null) {
                             imagePreview = obj.image;
@@ -383,7 +384,7 @@ public class MessageObject {
             } else if (messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
                 if (!update) {
                     photoThumbs = new ArrayList<PhotoObject>();
-                    PhotoObject obj = new PhotoObject(messageOwner.media.video.thumb, preview);
+                    PhotoObject obj = new PhotoObject(messageOwner.media.video.thumb, preview, isSecretMedia());
                     photoThumbs.add(obj);
                     if (imagePreview == null && obj.image != null) {
                         imagePreview = obj.image;
@@ -396,7 +397,7 @@ public class MessageObject {
                 if (!(messageOwner.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty)) {
                     if (!update) {
                         photoThumbs = new ArrayList<PhotoObject>();
-                        PhotoObject obj = new PhotoObject(messageOwner.media.document.thumb, preview);
+                        PhotoObject obj = new PhotoObject(messageOwner.media.document.thumb, preview, isSecretMedia());
                         photoThumbs.add(obj);
                     } else if (photoThumbs != null && !photoThumbs.isEmpty() && messageOwner.media.document.thumb != null) {
                         PhotoObject photoObject = photoThumbs.get(0);
@@ -599,15 +600,39 @@ public class MessageObject {
     }
 
     public boolean isOut() {
-        return messageOwner.out;
+        return (messageOwner.flags & TLRPC.MESSAGE_FLAG_OUT) != 0;
     }
 
     public boolean isFromMe() {
         return messageOwner.from_id == UserConfig.getClientUserId();
     }
 
-    public boolean isUnread () {
-        return messageOwner.unread;
+    public boolean isUnread() {
+        return (messageOwner.flags & TLRPC.MESSAGE_FLAG_UNREAD) != 0;
+    }
+
+    public void setIsRead() {
+        messageOwner.flags &=~ TLRPC.MESSAGE_FLAG_UNREAD;
+    }
+
+    public boolean isSecretMedia() {
+        return messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && messageOwner.ttl != 0;
+    }
+
+    public static void setIsUnread(TLRPC.Message message, boolean unread) {
+        if (unread) {
+            message.flags |= TLRPC.MESSAGE_FLAG_UNREAD;
+        } else {
+            message.flags &=~ TLRPC.MESSAGE_FLAG_UNREAD;
+        }
+    }
+
+    public static boolean isUnread(TLRPC.Message message) {
+        return (message.flags & TLRPC.MESSAGE_FLAG_UNREAD) != 0;
+    }
+
+    public static boolean isOut(TLRPC.Message message) {
+        return (message.flags & TLRPC.MESSAGE_FLAG_OUT) != 0;
     }
 
     public long getDialogId() {
@@ -634,5 +659,26 @@ public class MessageObject {
 
     public boolean isSent() {
         return messageOwner.send_state == MESSAGE_SEND_STATE_SENT;
+    }
+
+    public String getSecretTimeString() {
+        if (!isSecretMedia()) {
+            return null;
+        }
+        int secondsLeft = messageOwner.ttl;
+        if (messageOwner.destroyTime != 0) {
+            secondsLeft = Math.max(0, messageOwner.destroyTime - ConnectionsManager.getInstance().getCurrentTime());
+        }
+        String str;
+        if (secondsLeft < 60) {
+            str = secondsLeft + "s";
+        } else if (secondsLeft < 60 * 60) {
+            str = secondsLeft / 60 + "m";
+        } else if (secondsLeft < 60 * 60 * 24) {
+            str = secondsLeft / 60 / 60 + "h";
+        } else {
+            str = secondsLeft / 60 / 60 / 24 + "d";
+        }
+        return str;
     }
 }

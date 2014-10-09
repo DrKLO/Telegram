@@ -117,7 +117,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private TypingDotsDrawable typingDotsDrawable;
     private View emptyViewContainer;
     private ArrayList<View> actionModeViews = new ArrayList<View>();
-    private Semaphore testSemaphore = new Semaphore(0);
 
     private TextView bottomOverlayText;
 
@@ -174,6 +173,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private long chatLeaveTime = 0;
 
     private String startVideoEdit = null;
+
+    private Runnable openSecretPhotoRunnable = null;
 
     private final static int copy = 1;
     private final static int forward = 2;
@@ -354,12 +355,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         loading = true;
 
-        MessagesController.getInstance().loadMessages(dialog_id, AndroidUtilities.isTablet() ? 30 : 20, 0, true, 0, classGuid, true, false, testSemaphore);
-        try {
-            testSemaphore.acquire();
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
+        MessagesController.getInstance().loadMessages(dialog_id, AndroidUtilities.isTablet() ? 30 : 20, 0, true, 0, classGuid, true, false, null);
 
         if (currentUser != null) {
             userBlocked = MessagesController.getInstance().blockedUsers.contains(currentUser.id);
@@ -2143,7 +2139,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         }
                         if (!obj.isOut() && obj.isUnread()) {
                             if (!paused) {
-                                obj.messageOwner.unread = false;
+                                obj.setIsRead();
                             }
                             markAsRead = true;
                         }
@@ -2217,7 +2213,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             for (Integer ids : markAsReadMessages) {
                 MessageObject obj = messagesDict.get(ids);
                 if (obj != null) {
-                    obj.messageOwner.unread = false;
+                    obj.setIsRead();
                     updated = true;
                 }
             }
@@ -2322,11 +2318,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 for (MessageObject obj : messages) {
                     if (!obj.isOut()) {
                         continue;
-                    } else if (obj.isOut() && !obj.messageOwner.unread) {
+                    } else if (obj.isOut() && !obj.isUnread()) {
                         break;
                     }
                     if (obj.messageOwner.date <= date) {
-                        obj.messageOwner.unread = false;
+                        obj.setIsRead();
                     }
                 }
                 updateVisibleRows();
@@ -2539,7 +2535,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     break;
                 }
                 if (!messageObject.isOut()) {
-                    messageObject.messageOwner.unread = false;
+                    messageObject.setIsRead();
                 }
             }
             readWhenResume = false;
@@ -3354,7 +3350,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     return view;
                 }
             }
-            MessageObject message = messages.get(messages.size() - i - offset);
+            final MessageObject message = messages.get(messages.size() - i - offset);
             int type = message.contentType;
             if (view == null) {
                 LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -3427,7 +3423,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (view instanceof ChatMediaCell) {
                     ((ChatMediaCell)view).mediaDelegate = new ChatMediaCell.ChatMediaCellDelegate() {
                         @Override
-                        public void didPressedImage(ChatMediaCell cell) {
+                        public void didClickedImage(ChatMediaCell cell) {
                             MessageObject message = cell.getMessageObject();
                             if (message.isSendError()) {
                                 createMenu(cell, false);
@@ -3508,6 +3504,43 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         @Override
                         public void didPressedOther(ChatMediaCell cell) {
                             createMenu(cell, true);
+                        }
+
+                        @Override
+                        public boolean didPressedImage(final ChatMediaCell cell) {
+                            final MessageObject messageObject = cell.getMessageObject();
+                            if (messageObject == null || !messageObject.isSecretMedia()) {
+                                return false;
+                            }
+                            openSecretPhotoRunnable = new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (openSecretPhotoRunnable == null) {
+                                        return;
+                                    }
+                                    chatListView.requestDisallowInterceptTouchEvent(true);
+                                    openSecretPhotoRunnable = null;
+                                    if (!messageObject.isOut() && messageObject.messageOwner.destroyTime == 0) {
+                                        MessagesController.getInstance().markMessageAsRead(dialog_id, message.messageOwner.random_id);
+                                        messageObject.messageOwner.destroyTime = messageObject.messageOwner.ttl + ConnectionsManager.getInstance().getCurrentTime();
+                                        cell.invalidate();
+                                    }
+                                    SecretPhotoViewer.getInstance().setParentActivity(getParentActivity());
+                                    SecretPhotoViewer.getInstance().openPhoto(messageObject);
+                                }
+                            };
+                            AndroidUtilities.RunOnUIThread(openSecretPhotoRunnable, 100);
+                            return true;
+                        }
+
+                        @Override
+                        public void didUnpressedImage(ChatMediaCell cell) {
+                            if (openSecretPhotoRunnable != null) {
+                                AndroidUtilities.CancelRunOnUIThread(openSecretPhotoRunnable);
+                                openSecretPhotoRunnable = null;
+                            } else {
+                                SecretPhotoViewer.getInstance().closePhoto();
+                            }
                         }
                     };
                 }
@@ -3693,7 +3726,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             checkImage.setVisibility(View.INVISIBLE);
                         }
                     } else if (message.isSent()) {
-                        if (!message.messageOwner.unread) {
+                        if (!message.isUnread()) {
                             halfCheckImage.setVisibility(View.VISIBLE);
                             checkImage.setVisibility(View.VISIBLE);
                             halfCheckImage.setImageResource(R.drawable.msg_halfcheck);
