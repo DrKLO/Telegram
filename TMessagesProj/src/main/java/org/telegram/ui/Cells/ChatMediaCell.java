@@ -42,8 +42,6 @@ import java.util.Locale;
 public class ChatMediaCell extends ChatBaseCell implements MediaController.FileDownloadProgressListener {
 
     public static interface ChatMediaCellDelegate {
-        public abstract boolean didPressedImage(ChatMediaCell cell);
-        public abstract void didUnpressedImage(ChatMediaCell cell);
         public abstract void didClickedImage(ChatMediaCell cell);
         public abstract void didPressedOther(ChatMediaCell cell);
     }
@@ -85,7 +83,6 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     private boolean otherPressed = false;
     private int buttonX;
     private int buttonY;
-    private boolean listenForUnpressed = false;
 
     private StaticLayout infoLayout;
     private int infoWidth;
@@ -212,10 +209,8 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                         }
                     }
                 }
-                listenForUnpressed = false;
-                if (imagePressed && mediaDelegate != null && mediaDelegate.didPressedImage(this)) {
+                if (imagePressed && currentMessageObject.isSecretMedia()) {
                     imagePressed = false;
-                    listenForUnpressed = true;
                 } else if (result) {
                     startCheckLongPress();
                 }
@@ -242,8 +237,10 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             } else if (imagePressed) {
                 if (event.getAction() == MotionEvent.ACTION_UP) {
                     imagePressed = false;
-                    playSoundEffect(SoundEffectConstants.CLICK);
-                    didClickedImage();
+                    if (buttonState == -1 || buttonState == 2 || buttonState == 3) {
+                        playSoundEffect(SoundEffectConstants.CLICK);
+                        didClickedImage();
+                    }
                     invalidate();
                 } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
                     imagePressed = false;
@@ -277,14 +274,6 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                         }
                     }
                 }
-            } else if (listenForUnpressed) {
-                if (event.getAction() == MotionEvent.ACTION_POINTER_UP || event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
-                    if (listenForUnpressed && mediaDelegate != null) {
-                        mediaDelegate.didUnpressedImage(this);
-                    }
-                    listenForUnpressed = false;
-                }
-                result = true;
             }
         }
         if (!result) {
@@ -575,6 +564,10 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                         w = timeWidthTotal;
                     }
 
+                    if (currentMessageObject.isSecretMedia()) {
+                        w = h = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.5f);
+                    }
+
                     photoWidth = w;
                     photoHeight = h;
                     backgroundWidth = w + AndroidUtilities.dp(12);
@@ -785,7 +778,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     }
 
     private void updateSecretTimeText() {
-        if (currentMessageObject == null) {
+        if (currentMessageObject == null || currentMessageObject.isOut()) {
             return;
         }
         String str = currentMessageObject.getSecretTimeString();

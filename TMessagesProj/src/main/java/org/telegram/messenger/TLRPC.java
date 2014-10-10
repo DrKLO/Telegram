@@ -9333,6 +9333,7 @@ public class TLRPC {
         public byte[] auth_key;
         public int user_id;
         public int ttl;
+        public int layer;
     }
 
     public static class FileLocation extends TLObject {

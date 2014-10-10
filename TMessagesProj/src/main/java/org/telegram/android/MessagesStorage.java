@@ -882,7 +882,7 @@ public class MessagesStorage {
                         state.dispose();
                         database.commitTransaction();
                         database.executeFast(String.format(Locale.US, "UPDATE messages SET ttl = 0 WHERE mid IN(%s)", mids.toString())).stepThis().dispose();
-                        MessagesController.getInstance().didAddedNewTask(minDate);
+                        MessagesController.getInstance().didAddedNewTask(minDate, messages);
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -2432,15 +2432,10 @@ public class MessagesStorage {
     }
 
     private int getMessageMediaType(TLRPC.Message message) {
-        if (message.media == null) {
-            return 0;
-        } else if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
+        if (message.media instanceof TLRPC.TL_messageMediaPhoto && message.ttl != 0 && message.ttl <= 60) {
             return 1;
-        } else if (message.media instanceof TLRPC.TL_messageMediaVideo) {
-            return 2;
-        } else {
-            return 0;
         }
+        return 0;
     }
 
     private void putMessagesInternal(final ArrayList<TLRPC.Message> messages, final boolean withTransaction, final boolean isBroadcast, final int downloadMask) {
@@ -2478,7 +2473,7 @@ public class MessagesStorage {
                     messagesIdsMap.put(message.id, dialog_id);
                 }
 
-                if (message.ttl == 0 && (message.media instanceof TLRPC.TL_messageMediaVideo || message.media instanceof TLRPC.TL_messageMediaPhoto)) {
+                if (message.media instanceof TLRPC.TL_messageMediaVideo || message.media instanceof TLRPC.TL_messageMediaPhoto && (message.ttl == 0 || message.ttl > 60)) {
                     if (messageMediaIds.length() > 0) {
                         messageMediaIds.append(",");
                     }
@@ -2562,7 +2557,7 @@ public class MessagesStorage {
                     state3.step();
                 }
 
-                if (message.ttl == 0 && (message.media instanceof TLRPC.TL_messageMediaVideo || message.media instanceof TLRPC.TL_messageMediaPhoto)) {
+                if (message.media instanceof TLRPC.TL_messageMediaVideo || message.media instanceof TLRPC.TL_messageMediaPhoto && (message.ttl == 0 || message.ttl > 60)) {
                     state2.requery();
                     state2.bindInteger(1, messageId);
                     state2.bindLong(2, dialog_id);

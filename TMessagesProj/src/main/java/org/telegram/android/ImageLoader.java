@@ -831,6 +831,10 @@ public class ImageLoader {
         });
     }
 
+    public void putImageToCache(BitmapDrawable bitmap, String key) {
+        memCache.put(key, bitmap);
+    }
+
     public void loadImage(final TLRPC.FileLocation fileLocation, final String httpUrl, final ImageReceiver imageView, final int size, final boolean cacheOnly) {
         if ((fileLocation == null && httpUrl == null) || imageView == null || (fileLocation != null && !(fileLocation instanceof TLRPC.TL_fileLocation) && !(fileLocation instanceof TLRPC.TL_fileEncryptedLocation))) {
             return;

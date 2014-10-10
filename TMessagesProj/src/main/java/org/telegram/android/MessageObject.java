@@ -616,7 +616,7 @@ public class MessageObject {
     }
 
     public boolean isSecretMedia() {
-        return messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && messageOwner.ttl != 0;
+        return messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && messageOwner.ttl != 0 && messageOwner.ttl <= 60;
     }
 
     public static void setIsUnread(TLRPC.Message message, boolean unread) {
@@ -672,12 +672,8 @@ public class MessageObject {
         String str;
         if (secondsLeft < 60) {
             str = secondsLeft + "s";
-        } else if (secondsLeft < 60 * 60) {
-            str = secondsLeft / 60 + "m";
-        } else if (secondsLeft < 60 * 60 * 24) {
-            str = secondsLeft / 60 / 60 + "h";
         } else {
-            str = secondsLeft / 60 / 60 / 24 + "d";
+            str = secondsLeft / 60 + "m";
         }
         return str;
     }

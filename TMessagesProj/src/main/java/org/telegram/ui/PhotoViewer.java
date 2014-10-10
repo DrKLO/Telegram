@@ -234,7 +234,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         public int getSelectedCount();
     }
 
-    private static class FrameLayoutTouchListener extends FrameLayout {
+    private class FrameLayoutTouchListener extends FrameLayout {
         public FrameLayoutTouchListener(Context context) {
             super(context);
         }
@@ -251,7 +251,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
     }
 
-    private static class FrameLayoutDrawer extends FrameLayout {
+    private class FrameLayoutDrawer extends FrameLayout {
         public FrameLayoutDrawer(Context context) {
             super(context);
             setWillNotDraw(false);

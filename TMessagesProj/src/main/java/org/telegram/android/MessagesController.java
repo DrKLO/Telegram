@@ -17,6 +17,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.os.Build;
 import android.text.Html;
+import android.util.SparseArray;
 
 import org.telegram.messenger.BuffersStorage;
 import org.telegram.messenger.ByteBufferDesc;
@@ -502,13 +503,19 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
     }
 
-    public void didAddedNewTask(final int minDate) {
+    public void didAddedNewTask(final int minDate, final SparseArray<ArrayList<Integer>> mids) {
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
                 if (currentDeletingTaskMids == null && !gettingNewDeleteTask || currentDeletingTaskTime != 0 && minDate < currentDeletingTaskTime) {
                     getNewDeleteTask(null);
                 }
+            }
+        });
+        AndroidUtilities.RunOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.didCreatedNewDeleteTask, mids);
             }
         });
     }
@@ -3552,7 +3559,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         newMessage.media.photo.date = newMessage.date;
                         newMessage.media.photo.caption = "";
                         newMessage.media.photo.geo = new TLRPC.TL_geoPointEmpty();
-                        if (decryptedMessage.media.thumb.length != 0 && decryptedMessage.media.thumb.length <= 5000 && decryptedMessage.media.thumb_w < 100 && decryptedMessage.media.thumb_h < 100) {
+                        if (decryptedMessage.media.thumb.length != 0 && decryptedMessage.media.thumb.length <= 6000 && decryptedMessage.media.thumb_w <= 100 && decryptedMessage.media.thumb_h <= 100) {
                             TLRPC.TL_photoCachedSize small = new TLRPC.TL_photoCachedSize();
                             small.w = decryptedMessage.media.thumb_w;
                             small.h = decryptedMessage.media.thumb_h;
@@ -3581,7 +3588,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         }
                         newMessage.media = new TLRPC.TL_messageMediaVideo();
                         newMessage.media.video = new TLRPC.TL_videoEncrypted();
-                        if (decryptedMessage.media.thumb.length != 0 && decryptedMessage.media.thumb.length <= 5000 && decryptedMessage.media.thumb_w < 100 && decryptedMessage.media.thumb_h < 100) {
+                        if (decryptedMessage.media.thumb.length != 0 && decryptedMessage.media.thumb.length <= 6000 && decryptedMessage.media.thumb_w <= 100 && decryptedMessage.media.thumb_h <= 100) {
                             newMessage.media.video.thumb = new TLRPC.TL_photoCachedSize();
                             newMessage.media.video.thumb.bytes = decryptedMessage.media.thumb;
                             newMessage.media.video.thumb.w = decryptedMessage.media.thumb_w;
@@ -3623,7 +3630,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         newMessage.media.document.size = message.file.size;
                         newMessage.media.document.key = decryptedMessage.media.key;
                         newMessage.media.document.iv = decryptedMessage.media.iv;
-                        if (decryptedMessage.media.thumb.length != 0 && decryptedMessage.media.thumb.length <= 5000 && decryptedMessage.media.thumb_w < 100 && decryptedMessage.media.thumb_h < 100) {
+                        if (decryptedMessage.media.thumb.length != 0 && decryptedMessage.media.thumb.length <= 6000 && decryptedMessage.media.thumb_w <= 100 && decryptedMessage.media.thumb_h <= 100) {
                             newMessage.media.document.thumb = new TLRPC.TL_photoCachedSize();
                             newMessage.media.document.thumb.bytes = decryptedMessage.media.thumb;
                             newMessage.media.document.thumb.w = decryptedMessage.media.thumb_w;

@@ -41,6 +41,7 @@ public class NotificationCenter {
     public static final int openedChatChanged = 29;
     public static final int hideEmojiKeyboard = 30;
     public static final int stopEncodingService = 31;
+    public static final int didCreatedNewDeleteTask = 32;
 
     public static final int wallpapersDidLoaded = 171;
     public static final int closeOtherAppActivities = 702;

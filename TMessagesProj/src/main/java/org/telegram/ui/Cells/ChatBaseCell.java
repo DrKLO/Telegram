@@ -118,6 +118,7 @@ public class ChatBaseCell extends BaseCell {
     private CheckForTap pendingCheckForTap = null;
 
     private int last_send_state = 0;
+    private int last_delete_date = 0;
 
     private final class CheckForTap implements Runnable {
         public void run() {
@@ -219,6 +220,9 @@ public class ChatBaseCell extends BaseCell {
         if (last_send_state != currentMessageObject.messageOwner.send_state) {
             return true;
         }
+        if (last_delete_date != currentMessageObject.messageOwner.destroyTime) {
+            return true;
+        }
 
         TLRPC.User newUser = MessagesController.getInstance().getUser(currentMessageObject.messageOwner.from_id);
         TLRPC.FileLocation newPhoto = null;
@@ -251,6 +255,7 @@ public class ChatBaseCell extends BaseCell {
     public void setMessageObject(MessageObject messageObject) {
         currentMessageObject = messageObject;
         last_send_state = messageObject.messageOwner.send_state;
+        last_delete_date = messageObject.messageOwner.destroyTime;
         isPressed = false;
         isCheckPressed = true;
         isAvatarVisible = false;
