@@ -142,8 +142,8 @@
     <string name="NotificationMessageGroupDocument">%1$s sent a document to the group %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s sent an audio to the group %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s invited you to the group %2$s</string>
-    <string name="NotificationEditedGroupName">%1$s edited the group\'s %2$s name</string>
-    <string name="NotificationEditedGroupPhoto">%1$s edited the group\'s %2$s photo</string>
+    <string name="NotificationEditedGroupName">%1$s edited the \"%2$s\" group\'s name</string>
+    <string name="NotificationEditedGroupPhoto">%1$s edited the \"%2$s\" group\'s photo</string>
     <string name="NotificationGroupAddMember">%1$s invited %3$s to the group %2$s</string>
     <string name="NotificationGroupKickMember">%1$s removed %3$s from the group %2$s</string>
     <string name="NotificationGroupKickYou">%1$s removed you from the group %2$s</string>
