@@ -9,6 +9,7 @@
 package org.telegram.android;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
@@ -32,6 +33,9 @@ import java.util.Hashtable;
 import java.util.Locale;
 
 public class AndroidUtilities {
+
+    public static ProgressDialog progressDialog;
+
     private static final Hashtable<String, Typeface> typefaceCache = new Hashtable<String, Typeface>();
     private static int prevOrientation = -10;
     private static boolean waitingForSms = false;
@@ -370,5 +374,33 @@ public class AndroidUtilities {
             }
         }
         return photoSize;
+    }
+
+    public static void ShowProgressDialog(final Activity activity, final String message) {
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if(activity != null && !activity.isFinishing()) {
+                    progressDialog = new ProgressDialog(activity);
+                    if (message != null) {
+                        progressDialog.setMessage(message);
+                    }
+                    progressDialog.setCanceledOnTouchOutside(false);
+                    progressDialog.setCancelable(false);
+                    progressDialog.show();
+                }
+            }
+        });
+    }
+
+    public static void HideProgressDialog() {
+        RunOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                if (progressDialog != null) {
+                    progressDialog.dismiss();
+                }
+            }
+        });
     }
 }

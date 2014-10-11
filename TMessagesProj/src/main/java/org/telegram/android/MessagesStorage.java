@@ -183,7 +183,8 @@ public class MessagesStorage {
             @Override
             public void run() {
                 try {
-                    if (currentVersion < 4) {
+                    int version = currentVersion;
+                    if (version < 4) {
                         database.executeFast("CREATE TABLE IF NOT EXISTS user_photos(uid INTEGER, id INTEGER, data BLOB, PRIMARY KEY (uid, id))").stepThis().dispose();
 
                         database.executeFast("CREATE INDEX IF NOT EXISTS mid_idx_media ON media(mid);").stepThis().dispose();
@@ -254,8 +255,10 @@ public class MessagesStorage {
                                 }
                             }
                         });
+                        database.executeFast("PRAGMA user_version = 4").stepThis().dispose();
+                        version = 4;
                     }
-                    if (currentVersion < 6) {
+                    if (version == 4 && version < 6) {
                         database.executeFast("CREATE TABLE IF NOT EXISTS enc_tasks_v2(mid INTEGER PRIMARY KEY, date INTEGER)").stepThis().dispose();
                         database.executeFast("CREATE INDEX IF NOT EXISTS date_idx_enc_tasks_v2 ON enc_tasks_v2(date);").stepThis().dispose();
                         database.beginTransaction();
@@ -284,6 +287,12 @@ public class MessagesStorage {
 
                         database.executeFast("ALTER TABLE messages ADD COLUMN media INTEGER default 0").stepThis().dispose();
                         database.executeFast("PRAGMA user_version = 6").stepThis().dispose();
+                        version = 6;
+                    }
+                    if (version == 6 && version < 7) {
+                        database.executeFast("ALTER TABLE enc_chats ADD COLUMN layer INTEGER default 0").stepThis().dispose();
+                        database.executeFast("PRAGMA user_version = 6").stepThis().dispose();
+                        version = 7;
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);

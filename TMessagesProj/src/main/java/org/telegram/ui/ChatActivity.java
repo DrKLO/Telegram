@@ -834,35 +834,37 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             chatListView.setOnTouchListener(new View.OnTouchListener() {
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
-                    if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL || event.getAction() == MotionEvent.ACTION_POINTER_UP) {
-                        if (openSecretPhotoRunnable != null) {
-                            AndroidUtilities.CancelRunOnUIThread(openSecretPhotoRunnable);
-                            openSecretPhotoRunnable = null;
-                        } else {
-                            if (SecretPhotoViewer.getInstance().isVisible()) {
-                                AndroidUtilities.RunOnUIThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        chatListView.setOnItemLongClickListener(onItemLongClickListener);
-                                        chatListView.setOnItemClickListener(onItemClickListener);
-                                        chatListView.setLongClickable(true);
-                                    }
-                                });
-                                SecretPhotoViewer.getInstance().closePhoto();
+                    if (openSecretPhotoRunnable != null || SecretPhotoViewer.getInstance().isVisible()) {
+                        if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL || event.getAction() == MotionEvent.ACTION_POINTER_UP) {
+                            if (openSecretPhotoRunnable != null) {
+                                AndroidUtilities.CancelRunOnUIThread(openSecretPhotoRunnable);
+                                openSecretPhotoRunnable = null;
+                            } else {
+                                if (SecretPhotoViewer.getInstance().isVisible()) {
+                                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            chatListView.setOnItemLongClickListener(onItemLongClickListener);
+                                            chatListView.setOnItemClickListener(onItemClickListener);
+                                            chatListView.setLongClickable(true);
+                                        }
+                                    });
+                                    SecretPhotoViewer.getInstance().closePhoto();
+                                }
                             }
-                        }
-                    } else if (event.getAction() != MotionEvent.ACTION_DOWN) {
-                        if (SecretPhotoViewer.getInstance().isVisible()) {
-                            return true;
-                        } else if (openSecretPhotoRunnable != null) {
-                            if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                                if (Math.hypot(startX - event.getX(), startY - event.getY()) > AndroidUtilities.dp(5)) {
+                        } else if (event.getAction() != MotionEvent.ACTION_DOWN) {
+                            if (SecretPhotoViewer.getInstance().isVisible()) {
+                                return true;
+                            } else if (openSecretPhotoRunnable != null) {
+                                if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                                    if (Math.hypot(startX - event.getX(), startY - event.getY()) > AndroidUtilities.dp(5)) {
+                                        AndroidUtilities.CancelRunOnUIThread(openSecretPhotoRunnable);
+                                        openSecretPhotoRunnable = null;
+                                    }
+                                } else {
                                     AndroidUtilities.CancelRunOnUIThread(openSecretPhotoRunnable);
                                     openSecretPhotoRunnable = null;
                                 }
-                            } else {
-                                AndroidUtilities.CancelRunOnUIThread(openSecretPhotoRunnable);
-                                openSecretPhotoRunnable = null;
                             }
                         }
                     }

@@ -94,7 +94,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
-                        if (Build.VERSION.SDK_INT < 11) {
+                        if (Build.VERSION.SDK_INT < 11 && listView != null) {
                             listView.setAdapter(null);
                             listView = null;
                             listAdapter = null;

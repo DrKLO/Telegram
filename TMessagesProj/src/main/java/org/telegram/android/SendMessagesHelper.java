@@ -326,23 +326,23 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
     }
 
     public void sendMessage(TLRPC.User user, long peer) {
-        sendMessage(null, 0, 0, null, null, null, user, null, null, null, peer, false, null);
+        sendMessage(null, null, null, null, null, null, user, null, null, null, peer, false, null);
     }
 
     public void sendMessage(MessageObject message) {
-        sendMessage(null, 0, 0, null, null, message, null, null, null, null, message.getDialogId(), true, message.messageOwner.attachPath);
+        sendMessage(null, null, null, null, null, message, null, null, null, null, message.getDialogId(), true, message.messageOwner.attachPath);
     }
 
     public void sendMessage(MessageObject message, long peer) {
-        sendMessage(null, 0, 0, null, null, message, null, null, null, null, peer, false, message.messageOwner.attachPath);
+        sendMessage(null, null, null, null, null, message, null, null, null, null, peer, false, message.messageOwner.attachPath);
     }
 
     public void sendMessage(TLRPC.TL_document document, String originalPath, String path, long peer) {
-        sendMessage(null, 0, 0, null, null, null, null, document, null, originalPath, peer, false, path);
+        sendMessage(null, null, null, null, null, null, null, document, null, originalPath, peer, false, path);
     }
 
     public void sendMessage(String message, long peer) {
-        sendMessage(message, 0, 0, null, null, null, null, null, null, null, peer, false, null);
+        sendMessage(message, null, null, null, null, null, null, null, null, null, peer, false, null);
     }
 
     public void sendMessage(double lat, double lon, long peer) {
@@ -350,18 +350,18 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
     }
 
     public void sendMessage(TLRPC.TL_photo photo, String originalPath, long peer) {
-        sendMessage(null, 0, 0, photo, null, null, null, null, null, originalPath, peer, false, null);
+        sendMessage(null, null, null, photo, null, null, null, null, null, originalPath, peer, false, null);
     }
 
     public void sendMessage(TLRPC.TL_video video, String originalPath, String path, long peer) {
-        sendMessage(null, 0, 0, null, video, null, null, null, null, originalPath, peer, false, path);
+        sendMessage(null, null, null, null, video, null, null, null, null, originalPath, peer, false, path);
     }
 
     public void sendMessage(TLRPC.TL_audio audio, String path, long peer) {
-        sendMessage(null, 0, 0, null, null, null, null, null, audio, null, peer, false, path);
+        sendMessage(null, null, null, null, null, null, null, null, audio, null, peer, false, path);
     }
 
-    private int sendMessage(String message, double lat, double lon, TLRPC.TL_photo photo, TLRPC.TL_video video, MessageObject msgObj, TLRPC.User user, TLRPC.TL_document document, TLRPC.TL_audio audio, String originalPath, long peer, boolean retry, String path) {
+    private int sendMessage(String message, Double lat, Double lon, TLRPC.TL_photo photo, TLRPC.TL_video video, MessageObject msgObj, TLRPC.User user, TLRPC.TL_document document, TLRPC.TL_audio audio, String originalPath, long peer, boolean retry, String path) {
         TLRPC.Message newMsg = null;
         int type = -1;
         int lower_id = (int) peer;
@@ -420,7 +420,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 newMsg.media = new TLRPC.TL_messageMediaEmpty();
                 type = 0;
                 newMsg.message = message;
-            } else if (lat != 0 && lon != 0) {
+            } else if (lat != null && lon != null) {
                 if (lower_id != 0) {
                     newMsg = new TLRPC.TL_message();
                 } else {

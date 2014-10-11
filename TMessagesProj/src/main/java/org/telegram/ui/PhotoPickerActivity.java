@@ -341,7 +341,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     @Override
     public void sendButtonPressed(int index) {
         if (selectedPhotos.isEmpty()) {
-            if (index < 0 || index >= selectedAlbum.photos.size()) {
+            if (selectedAlbum == null || index < 0 || index >= selectedAlbum.photos.size()) {
                 return;
             }
             MediaController.PhotoEntry photoEntry = selectedAlbum.photos.get(index);

@@ -42,7 +42,7 @@ public class LayoutListView extends ListView {
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         if (onInterceptTouchEventListener != null) {
-            return onInterceptTouchEventListener.onInterceptTouchEvent(ev);
+            return onInterceptTouchEventListener.onInterceptTouchEvent(ev) || super.onInterceptTouchEvent(ev);
         }
         return super.onInterceptTouchEvent(ev);
     }

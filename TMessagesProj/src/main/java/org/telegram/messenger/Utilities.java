@@ -9,7 +9,6 @@
 package org.telegram.messenger;
 
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
@@ -72,8 +71,6 @@ public class Utilities {
     public static volatile DispatchQueue photoBookQueue = new DispatchQueue("photoBookQueue");
 
     final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
-
-    public static ProgressDialog progressDialog;
 
     static {
         try {
@@ -424,34 +421,6 @@ public class Utilities {
             FileLog.e("tmessages", e);
         }
         return packedData;
-    }
-
-    public static void ShowProgressDialog(final Activity activity, final String message) {
-        activity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if(!activity.isFinishing()) {
-                    progressDialog = new ProgressDialog(activity);
-                    if (message != null) {
-                        progressDialog.setMessage(message);
-                    }
-                    progressDialog.setCanceledOnTouchOutside(false);
-                    progressDialog.setCancelable(false);
-                    progressDialog.show();
-                }
-            }
-        });
-    }
-
-    public static void HideProgressDialog(Activity activity) {
-        activity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (progressDialog != null) {
-                    progressDialog.dismiss();
-                }
-            }
-        });
     }
 
     public static boolean copyFile(InputStream sourceFile, File destFile) throws IOException {
