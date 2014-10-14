@@ -616,7 +616,7 @@ public class MessageObject {
     }
 
     public boolean isSecretMedia() {
-        return messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && messageOwner.ttl != 0 && messageOwner.ttl <= 60;
+        return messageOwner instanceof TLRPC.TL_message_secret && messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && messageOwner.ttl != 0 && messageOwner.ttl <= 60;
     }
 
     public static void setIsUnread(TLRPC.Message message, boolean unread) {

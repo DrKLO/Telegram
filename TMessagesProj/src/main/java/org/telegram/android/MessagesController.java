@@ -71,6 +71,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     private boolean gettingNewDeleteTask = false;
     private int currentDeletingTaskTime = 0;
     private ArrayList<Integer> currentDeletingTaskMids = null;
+    private Runnable currentDeleteTaskRunnable = null;
 
     public int totalDialogsCount = 0;
     public boolean loadingDialogs = false;
@@ -336,6 +337,12 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         startingSecretChat = false;
         statusRequest = 0;
         statusSettingState = 0;
+
+        if (currentDeleteTaskRunnable != null) {
+            Utilities.stageQueue.cancelRunnable(currentDeleteTaskRunnable);
+            currentDeleteTaskRunnable = null;
+        }
+
         addSupportUser();
     }
 
@@ -530,11 +537,15 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         });
     }
 
-    private void checkDeletingTask() {
+    private boolean checkDeletingTask(boolean runnable) {
         int currentServerTime = ConnectionsManager.getInstance().getCurrentTime();
 
-        if (currentDeletingTaskMids != null && currentDeletingTaskTime != 0 && currentDeletingTaskTime <= currentServerTime) {
+        if (currentDeletingTaskMids != null && (runnable || currentDeletingTaskTime != 0 && currentDeletingTaskTime <= currentServerTime)) {
             currentDeletingTaskTime = 0;
+            if (currentDeleteTaskRunnable != null && !runnable) {
+                Utilities.stageQueue.cancelRunnable(currentDeleteTaskRunnable);
+            }
+            currentDeleteTaskRunnable = null;
             AndroidUtilities.RunOnUIThread(new Runnable() {
                 @Override
                 public void run() {
@@ -550,7 +561,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     });
                 }
             });
+            return true;
         }
+        return false;
     }
 
     public void processLoadedDeleteTask(final int taskTime, final ArrayList<Integer> messages) {
@@ -562,7 +575,21 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     currentDeletingTaskTime = taskTime;
                     currentDeletingTaskMids = messages;
 
-                    checkDeletingTask();
+                    if (currentDeleteTaskRunnable != null) {
+                        Utilities.stageQueue.cancelRunnable(currentDeleteTaskRunnable);
+                        currentDeleteTaskRunnable = null;
+                    }
+
+                    if (!checkDeletingTask(false)) {
+                        currentDeleteTaskRunnable = new Runnable() {
+                            @Override
+                            public void run() {
+                                checkDeletingTask(true);
+                            }
+                        };
+                        int currentServerTime = ConnectionsManager.getInstance().getCurrentTime();
+                        Utilities.stageQueue.postRunnable(currentDeleteTaskRunnable, (long)Math.abs(currentServerTime - currentDeletingTaskTime) * 1000);
+                    }
                 } else {
                     currentDeletingTaskTime = 0;
                     currentDeletingTaskMids = null;
@@ -1069,7 +1096,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     public void updateTimerProc() {
         long currentTime = System.currentTimeMillis();
 
-        checkDeletingTask();
+        checkDeletingTask(false);
 
         if (UserConfig.isClientActivated()) {
             if (ConnectionsManager.getInstance().getPauseTime() == 0 && ApplicationLoader.isScreenOn && !ApplicationLoader.mainInterfacePaused) {
@@ -3499,7 +3526,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     public TLRPC.Message decryptMessage(TLRPC.EncryptedMessage message) {
-        TLRPC.EncryptedChat chat = getEncryptedChatDB(message.chat_id);
+        final TLRPC.EncryptedChat chat = getEncryptedChatDB(message.chat_id);
         if (chat == null) {
             return null;
         }
@@ -3522,9 +3549,18 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     from_id = chat.participant_id;
                 }
 
+                if (object instanceof TLRPC.TL_decryptedMessageLayer) {
+                    object = ((TLRPC.TL_decryptedMessageLayer) object).message;
+                }
+
                 if (object instanceof TLRPC.TL_decryptedMessage) {
                     TLRPC.TL_decryptedMessage decryptedMessage = (TLRPC.TL_decryptedMessage)object;
-                    TLRPC.TL_message_secret newMessage = new TLRPC.TL_message_secret();
+                    TLRPC.TL_message newMessage = null;
+                    if (AndroidUtilities.getPeerLayerVersion(chat.layer) >= 17) {
+                        newMessage = new TLRPC.TL_message_secret();
+                    } else {
+                        newMessage = new TLRPC.TL_message();
+                    }
                     newMessage.message = decryptedMessage.message;
                     newMessage.date = message.date;
                     newMessage.local_id = newMessage.id = UserConfig.getNewMessageId();
@@ -3666,7 +3702,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     }
                     return newMessage;
                 } else if (object instanceof TLRPC.TL_decryptedMessageService) {
-                    TLRPC.TL_decryptedMessageService serviceMessage = (TLRPC.TL_decryptedMessageService)object;
+                    final TLRPC.TL_decryptedMessageService serviceMessage = (TLRPC.TL_decryptedMessageService)object;
                     if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionSetMessageTTL || serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionScreenshotMessages) {
                         TLRPC.TL_messageService newMessage = new TLRPC.TL_messageService();
                         if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionSetMessageTTL) {
@@ -3727,6 +3763,19 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         if (!serviceMessage.action.random_ids.isEmpty()) {
                             MessagesStorage.getInstance().createTaskForSecretChat(chat.id, 0, message.date, 1, serviceMessage.action.random_ids);
                         }
+                    } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionNotifyLayer) {
+                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                int currentPeerLayer = AndroidUtilities.getPeerLayerVersion(chat.layer);
+                                chat.layer = 0;
+                                chat.layer = AndroidUtilities.setPeerLayerVersion(chat.layer, serviceMessage.action.layer);
+                                MessagesStorage.getInstance().updateEncryptedChatLayer(chat);
+                                if (currentPeerLayer < 17) {
+                                    SendMessagesHelper.getInstance().sendNotifyLayerMessage(chat);
+                                }
+                            }
+                        });
                     } else {
                         return null;
                     }

@@ -2557,8 +2557,6 @@ public class TLRPC {
     public static class DecryptedMessage extends TLObject {
         public long random_id;
         public byte[] random_bytes;
-        public int in_seq_no;
-        public int out_seq_no;
         public DecryptedMessageAction action;
         public int ttl;
         public String message;
@@ -2566,36 +2564,27 @@ public class TLRPC {
     }
 
     public static class TL_decryptedMessageService extends DecryptedMessage {
-        public static int constructor = 0xda431693;
+        public static int constructor = 0x73164160;
 
 
         public void readParams(AbsSerializedData stream) {
             random_id = stream.readInt64();
-            random_bytes = stream.readByteArray();
-            in_seq_no = stream.readInt32();
-            out_seq_no = stream.readInt32();
             action = (DecryptedMessageAction)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
         }
 
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt64(random_id);
-            stream.writeByteArray(random_bytes);
-            stream.writeInt32(in_seq_no);
-            stream.writeInt32(out_seq_no);
             action.serializeToStream(stream);
         }
     }
 
     public static class TL_decryptedMessage extends DecryptedMessage {
-        public static int constructor = 0x4e748938;
+        public static int constructor = 0x204d3878;
 
 
         public void readParams(AbsSerializedData stream) {
             random_id = stream.readInt64();
-            random_bytes = stream.readByteArray();
-            in_seq_no = stream.readInt32();
-            out_seq_no = stream.readInt32();
             ttl = stream.readInt32();
             message = stream.readString();
             media = (DecryptedMessageMedia)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
@@ -2604,9 +2593,6 @@ public class TLRPC {
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt64(random_id);
-            stream.writeByteArray(random_bytes);
-            stream.writeInt32(in_seq_no);
-            stream.writeInt32(out_seq_no);
             stream.writeInt32(ttl);
             stream.writeString(message);
             media.serializeToStream(stream);
@@ -6281,19 +6267,28 @@ public class TLRPC {
     }
 
     public static class TL_decryptedMessageLayer extends TLObject {
-        public static int constructor = 0x99a438cf;
+        public static int constructor = 0x1be31789;
 
+        public byte[] random_bytes;
         public int layer;
+        public int in_seq_no;
+        public int out_seq_no;
         public DecryptedMessage message;
 
         public void readParams(AbsSerializedData stream) {
+            random_bytes = stream.readByteArray();
             layer = stream.readInt32();
+            in_seq_no = stream.readInt32();
+            out_seq_no = stream.readInt32();
             message = (DecryptedMessage)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
         }
 
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
+            stream.writeByteArray(random_bytes);
             stream.writeInt32(layer);
+            stream.writeInt32(in_seq_no);
+            stream.writeInt32(out_seq_no);
             message.serializeToStream(stream);
         }
     }
@@ -8781,6 +8776,7 @@ public class TLRPC {
         public long dialog_id;
         public int ttl;
         public int destroyTime;
+        public int layer;
         public VideoEditedInfo videoEditedInfo = null;
     }
 
@@ -9660,24 +9656,6 @@ public class TLRPC {
             stream.writeString(app_version);
             stream.writeString(lang_code);
             query.serializeToStream(stream);
-        }
-    }
-
-    public static class decryptedMessageLayer extends TLObject {
-        public static int constructor = 0x99a438cf;
-
-        public int layer;
-        public TLObject message;
-
-        public void readParams(AbsSerializedData stream) {
-            layer = stream.readInt32();
-            message = TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
-        }
-
-        public void serializeToStream(AbsSerializedData stream) {
-            stream.writeInt32(constructor);
-            stream.writeInt32(layer);
-            message.serializeToStream(stream);
         }
     }
 

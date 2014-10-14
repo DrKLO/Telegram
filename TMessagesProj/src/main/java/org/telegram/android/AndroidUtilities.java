@@ -9,7 +9,6 @@
 package org.telegram.android;
 
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
@@ -33,8 +32,6 @@ import java.util.Hashtable;
 import java.util.Locale;
 
 public class AndroidUtilities {
-
-    public static ProgressDialog progressDialog;
 
     private static final Hashtable<String, Typeface> typefaceCache = new Hashtable<String, Typeface>();
     private static int prevOrientation = -10;
@@ -266,6 +263,22 @@ public class AndroidUtilities {
         return 0x0000000100000000L | ((long)id & 0x00000000FFFFFFFFL);
     }
 
+    public static int getMyLayerVersion(int layer) {
+        return layer & 0xffff;
+    }
+
+    public static int getPeerLayerVersion(int layer) {
+        return (layer >> 16) & 0xffff;
+    }
+
+    public static int setMyLayerVersion(int layer, int version) {
+        return layer & 0xffff0000 | version;
+    }
+
+    public static int setPeerLayerVersion(int layer, int version) {
+        return layer & 0x0000ffff | (version << 16);
+    }
+
     public static void RunOnUIThread(Runnable runnable) {
         RunOnUIThread(runnable, 0);
     }
@@ -374,33 +387,5 @@ public class AndroidUtilities {
             }
         }
         return photoSize;
-    }
-
-    public static void ShowProgressDialog(final Activity activity, final String message) {
-        activity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if(activity != null && !activity.isFinishing()) {
-                    progressDialog = new ProgressDialog(activity);
-                    if (message != null) {
-                        progressDialog.setMessage(message);
-                    }
-                    progressDialog.setCanceledOnTouchOutside(false);
-                    progressDialog.setCancelable(false);
-                    progressDialog.show();
-                }
-            }
-        });
-    }
-
-    public static void HideProgressDialog() {
-        RunOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                if (progressDialog != null) {
-                    progressDialog.dismiss();
-                }
-            }
-        });
     }
 }
