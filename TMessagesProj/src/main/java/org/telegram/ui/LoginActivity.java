@@ -60,6 +60,7 @@ public class LoginActivity extends BaseFragment implements SlideView.SlideViewDe
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
+            progressDialog = null;
         }
     }
 
@@ -260,6 +261,7 @@ public class LoginActivity extends BaseFragment implements SlideView.SlideViewDe
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
+        progressDialog = null;
     }
 
     public void setPage(int page, boolean animated, Bundle params, boolean back) {

@@ -118,12 +118,6 @@
     <string name="MessageLifetimeChangedOutgoing">Activaste la autodestrucción en %1$s</string>
     <string name="MessageLifetimeRemoved">%1$s desactivó la autodestrucción</string>
     <string name="MessageLifetimeYouRemoved">Desactivaste la autodestrucción</string>
-    <string name="MessageLifetime2s">2 segundos</string>
-    <string name="MessageLifetime5s">5 segundos</string>
-    <string name="MessageLifetime1m">1 minuto</string>
-    <string name="MessageLifetime1h">1 hora</string>
-    <string name="MessageLifetime1d">1 día</string>
-    <string name="MessageLifetime1w">1 semana</string>
     <string name="YouHaveNewMessage">Tienes un nuevo mensaje</string>
     <string name="NotificationMessageText">%1$s: %2$s</string>
     <string name="NotificationMessageNoText">%1$s te envió un mensaje</string>
@@ -175,7 +169,7 @@
     <!--group info view-->
     <string name="EnterGroupNameTitle">PON EL NOMBRE DEL GRUPO</string>
     <string name="SharedMedia">Fotos y vídeos</string>
-    <string name="GroupInfo">Información </string>
+    <string name="GroupInfo">Información</string>
     <string name="SHAREDMEDIA">FOTOS Y VÍDEOS</string>
     <string name="SETTINGS">AJUSTES</string>
     <string name="AddMember">Añadir miembro</string>
@@ -202,12 +196,6 @@
     <string name="EncryptionKey">Clave de cifrado</string>
     <string name="MessageLifetime">Autodestrucción</string>
     <string name="ShortMessageLifetimeForever">Apagada</string>
-    <string name="ShortMessageLifetime2s">2s</string>
-    <string name="ShortMessageLifetime5s">5s</string>
-    <string name="ShortMessageLifetime1m">1m</string>
-    <string name="ShortMessageLifetime1h">1h</string>
-    <string name="ShortMessageLifetime1d">1d</string>
-    <string name="ShortMessageLifetime1w">1S</string>
     <string name="EncryptionKeyDescription">Esta imagen es una visualización de la clave de cifrado para el chat secreto con <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Si esta imagen se ve igual en el teléfono de <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, tu chat es seguro en un 200%%.<![CDATA[<br><br>]]>Aprende más en telegram.org</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Restablecer las notificaciones</string>
@@ -267,7 +255,7 @@
     <string name="NoPopup">Desactivadas</string>
     <string name="OnlyWhenScreenOn">Con pantalla encendida</string>
     <string name="OnlyWhenScreenOff">Con pantalla apagada</string>
-    <string name="AlwaysShowPopup">Mostrar siempre </string>
+    <string name="AlwaysShowPopup">Mostrar siempre</string>
     <string name="BadgeNumber">Globo en el ícono</string>
     <string name="Short">Corto</string>
     <string name="Long">Largo</string>
@@ -434,6 +422,36 @@
     <string name="FromContacts_few">de %1$d contactos</string>
     <string name="FromContacts_many">de %1$d contactos</string>
     <string name="FromContacts_other">de %1$d contactos</string>
+    <string name="Seconds_zero">%1$d seconds</string>
+    <string name="Seconds_one">%1$d second</string>
+    <string name="Seconds_two">%1$d seconds</string>
+    <string name="Seconds_few">%1$d seconds</string>
+    <string name="Seconds_many">%1$d seconds</string>
+    <string name="Seconds_other">%1$d seconds</string>
+    <string name="Minutes_zero">%1$d minutes</string>
+    <string name="Minutes_one">%1$d minute</string>
+    <string name="Minutes_two">%1$d minutes</string>
+    <string name="Minutes_few">%1$d minutes</string>
+    <string name="Minutes_many">%1$d minutes</string>
+    <string name="Minutes_other">%1$d minutes</string>
+    <string name="Hours_zero">%1$d hours</string>
+    <string name="Hours_one">%1$d hour</string>
+    <string name="Hours_two">%1$d hours</string>
+    <string name="Hours_few">%1$d hours</string>
+    <string name="Hours_many">%1$d hours</string>
+    <string name="Hours_other">%1$d hours</string>
+    <string name="Days_zero">%1$d days</string>
+    <string name="Days_one">%1$d day</string>
+    <string name="Days_two">%1$d days</string>
+    <string name="Days_few">%1$d days</string>
+    <string name="Days_many">%1$d days</string>
+    <string name="Days_other">%1$d days</string>
+    <string name="Weeks_zero">%1$d weeks</string>
+    <string name="Weeks_one">%1$d week</string>
+    <string name="Weeks_two">%1$d weeks</string>
+    <string name="Weeks_few">%1$d weeks</string>
+    <string name="Weeks_many">%1$d weeks</string>
+    <string name="Weeks_other">%1$d weeks</string>
     <!--date formatters-->
     <string name="formatterMonth">dd \'de\' MMM</string>
     <string name="formatterYear">dd.MM.yy</string>
@@ -444,6 +462,4 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s a las %2$s</string>
-    <!--Don't change this! Not for localization!-->
-    <string name="CacheTag">CACHE_TAG</string>
 </resources>

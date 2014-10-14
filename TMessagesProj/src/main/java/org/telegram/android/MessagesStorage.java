@@ -862,7 +862,7 @@ public class MessagesStorage {
                     }
                     while (cursor.next()) {
                         int mid = cursor.intValue(0);
-                        int date = readTime + cursor.intValue(1);
+                        int date = Math.min(readTime, time) + cursor.intValue(1);
                         minDate = Math.min(minDate, date);
                         ArrayList<Integer> arr = messages.get(date);
                         if (arr == null) {
@@ -2198,8 +2198,8 @@ public class MessagesStorage {
                     state.bindByteBuffer(2, data2.buffer);
                     state.bindByteBuffer(3, data3.buffer);
                     state.bindInteger(4, chat.ttl);
-                    state.bindInteger(5, chat.id);
-                    state.bindInteger(6, chat.layer);
+                    state.bindInteger(5, chat.layer);
+                    state.bindInteger(6, chat.id);
                     state.step();
                     buffersStorage.reuseFreeBuffer(data);
                     buffersStorage.reuseFreeBuffer(data2);
@@ -2473,8 +2473,10 @@ public class MessagesStorage {
     private int getMessageMediaType(TLRPC.Message message) {
         if (message instanceof TLRPC.TL_message_secret && message.media instanceof TLRPC.TL_messageMediaPhoto && message.ttl != 0 && message.ttl <= 60) {
             return 1;
+        } else if (message.media instanceof TLRPC.TL_messageMediaPhoto || message.media instanceof TLRPC.TL_messageMediaVideo) {
+            return 0;
         }
-        return 0;
+        return -1;
     }
 
     private void putMessagesInternal(final ArrayList<TLRPC.Message> messages, final boolean withTransaction, final boolean isBroadcast, final int downloadMask) {

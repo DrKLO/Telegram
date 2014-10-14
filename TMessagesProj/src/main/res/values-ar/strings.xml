@@ -118,12 +118,6 @@
     <string name="MessageLifetimeChangedOutgoing">لقد قمت بتعيين التدمير الذاتي إلى %1$s</string>
     <string name="MessageLifetimeRemoved">%1$s قام بإيقاف عداد التدمير الذاتي</string>
     <string name="MessageLifetimeYouRemoved">لقد قمت بتعطيل عداد التدمير الذاتي</string>
-    <string name="MessageLifetime2s">ثانيتان</string>
-    <string name="MessageLifetime5s">٥ ثوانٍ</string>
-    <string name="MessageLifetime1m">دقيقة</string>
-    <string name="MessageLifetime1h">ساعة</string>
-    <string name="MessageLifetime1d">يوم</string>
-    <string name="MessageLifetime1w">أسبوع</string>
     <string name="YouHaveNewMessage">لديك رسالة جديدة</string>
     <string name="NotificationMessageText">%1$s: %2$s</string>
     <string name="NotificationMessageNoText">%1$s قام بإرسال رسالة لك</string>
@@ -202,12 +196,6 @@
     <string name="EncryptionKey">مفتاح التشفير</string>
     <string name="MessageLifetime">عداد التدمير الذاتي</string>
     <string name="ShortMessageLifetimeForever">إيقاف</string>
-    <string name="ShortMessageLifetime2s">ثانيتان</string>
-    <string name="ShortMessageLifetime5s">٥ ثوانٍ</string>
-    <string name="ShortMessageLifetime1m">دقيقة</string>
-    <string name="ShortMessageLifetime1h">ساعة</string>
-    <string name="ShortMessageLifetime1d">يوم</string>
-    <string name="ShortMessageLifetime1w">أسبوع</string>
     <string name="EncryptionKeyDescription">هذه الصورة هي تصور لمفتاح التشفير لهذه المحادثة السرية مع <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>إذا كانت مطابقة للصورة التي في جهاز <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, فمحادثتكم آمنة ٢٠٠٪.<![CDATA[<br><br>]]>للمزيد نرجو الذهاب إلى telegram.org</string>
     <!--settings view-->
     <string name="ResetNotificationsText">تم تعيين كافة الإشعارات افتراضيا</string>
@@ -434,6 +422,36 @@
     <string name="FromContacts_few">من %1$d جهات اتصال</string>
     <string name="FromContacts_many">من %1$d جهة اتصال</string>
     <string name="FromContacts_other">من %1$d جهة اتصال</string>
+    <string name="Seconds_zero">%1$d seconds</string>
+    <string name="Seconds_one">%1$d second</string>
+    <string name="Seconds_two">%1$d seconds</string>
+    <string name="Seconds_few">%1$d seconds</string>
+    <string name="Seconds_many">%1$d seconds</string>
+    <string name="Seconds_other">%1$d seconds</string>
+    <string name="Minutes_zero">%1$d minutes</string>
+    <string name="Minutes_one">%1$d minute</string>
+    <string name="Minutes_two">%1$d minutes</string>
+    <string name="Minutes_few">%1$d minutes</string>
+    <string name="Minutes_many">%1$d minutes</string>
+    <string name="Minutes_other">%1$d minutes</string>
+    <string name="Hours_zero">%1$d hours</string>
+    <string name="Hours_one">%1$d hour</string>
+    <string name="Hours_two">%1$d hours</string>
+    <string name="Hours_few">%1$d hours</string>
+    <string name="Hours_many">%1$d hours</string>
+    <string name="Hours_other">%1$d hours</string>
+    <string name="Days_zero">%1$d days</string>
+    <string name="Days_one">%1$d day</string>
+    <string name="Days_two">%1$d days</string>
+    <string name="Days_few">%1$d days</string>
+    <string name="Days_many">%1$d days</string>
+    <string name="Days_other">%1$d days</string>
+    <string name="Weeks_zero">%1$d weeks</string>
+    <string name="Weeks_one">%1$d week</string>
+    <string name="Weeks_two">%1$d weeks</string>
+    <string name="Weeks_few">%1$d weeks</string>
+    <string name="Weeks_many">%1$d weeks</string>
+    <string name="Weeks_other">%1$d weeks</string>
     <!--date formatters-->
     <string name="formatterMonth">dd MMM</string>
     <string name="formatterYear">dd.MM.yy</string>
@@ -444,6 +462,4 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
-    <!--Don't change this! Not for localization!-->
-    <string name="CacheTag">CACHE_TAG</string>
 </resources>

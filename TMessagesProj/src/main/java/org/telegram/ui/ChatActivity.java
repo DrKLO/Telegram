@@ -72,6 +72,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
+import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatAudioCell;
 import org.telegram.ui.Cells.ChatBaseCell;
 import org.telegram.ui.Cells.ChatMediaCell;
@@ -392,6 +393,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         typingDotsDrawable = new TypingDotsDrawable();
         typingDotsDrawable.setIsChat(currentChat != null);
+
+        if (currentEncryptedChat != null && AndroidUtilities.getMyLayerVersion(currentEncryptedChat.layer) != SendMessagesHelper.CURRENT_SECRET_CHAT_LAYER) {
+            SendMessagesHelper.getInstance().sendNotifyLayerMessage(currentEncryptedChat);
+        }
 
         return true;
     }
@@ -801,6 +806,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             if (messageObject == null || !messageObject.isSecretMedia() || !cell.getPhotoImage().isInsideImage(x, y - top)) {
                                 break;
                             }
+                            File file = FileLoader.getPathToMessage(messageObject.messageOwner);
+                            if (!file.exists()) {
+                                break;
+                            }
                             startX = x;
                             startY = y;
                             openSecretPhotoRunnable = new Runnable() {
@@ -1113,44 +1122,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (getParentActivity() == null) {
                         return;
                     }
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setTitle(LocaleController.getString("MessageLifetime", R.string.MessageLifetime));
-                    builder.setItems(new CharSequence[]{
-                            LocaleController.getString("ShortMessageLifetimeForever", R.string.ShortMessageLifetimeForever),
-                            LocaleController.getString("ShortMessageLifetime2s", R.string.ShortMessageLifetime2s),
-                            LocaleController.getString("ShortMessageLifetime5s", R.string.ShortMessageLifetime5s),
-                            LocaleController.getString("ShortMessageLifetime1m", R.string.ShortMessageLifetime1m),
-                            LocaleController.getString("ShortMessageLifetime1h", R.string.ShortMessageLifetime1h),
-                            LocaleController.getString("ShortMessageLifetime1d", R.string.ShortMessageLifetime1d),
-                            LocaleController.getString("ShortMessageLifetime1w", R.string.ShortMessageLifetime1w)
-
-                    }, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            int oldValue = currentEncryptedChat.ttl;
-                            if (which == 0) {
-                                currentEncryptedChat.ttl = 0;
-                            } else if (which == 1) {
-                                currentEncryptedChat.ttl = 2;
-                            } else if (which == 2) {
-                                currentEncryptedChat.ttl = 5;
-                            } else if (which == 3) {
-                                currentEncryptedChat.ttl = 60;
-                            } else if (which == 4) {
-                                currentEncryptedChat.ttl = 60 * 60;
-                            } else if (which == 5) {
-                                currentEncryptedChat.ttl = 60 * 60 * 24;
-                            } else if (which == 6) {
-                                currentEncryptedChat.ttl = 60 * 60 * 24 * 7;
-                            }
-                            if (oldValue != currentEncryptedChat.ttl) {
-                                SendMessagesHelper.getInstance().sendTTLMessage(currentEncryptedChat);
-                                MessagesStorage.getInstance().updateEncryptedChat(currentEncryptedChat);
-                            }
-                        }
-                    });
-                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showAlertDialog(AndroidUtilities.buildTTLAlert(getParentActivity(), currentEncryptedChat));
                 }
             });
             timerButton.setTime(currentEncryptedChat.ttl);
@@ -3460,41 +3432,48 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     offset = 0;
                 }
                 if (i == 0 && !endReached || !unread_end_reached && i == (messages.size() + 1 - offset)) {
+                    View progressBar = null;
                     if (view == null) {
                         LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                         view = li.inflate(R.layout.chat_loading_layout, viewGroup, false);
-                        View progressBar = view.findViewById(R.id.progressLayout);
+                        progressBar = view.findViewById(R.id.progressLayout);
                         if (isCustomTheme) {
                             progressBar.setBackgroundResource(R.drawable.system_loader2);
                         } else {
                             progressBar.setBackgroundResource(R.drawable.system_loader1);
                         }
-                        progressBar.setVisibility(loadsCount > 1 ? View.VISIBLE : View.INVISIBLE);
+                    } else {
+                        progressBar = view.findViewById(R.id.progressLayout);
                     }
+                    progressBar.setVisibility(loadsCount > 1 ? View.VISIBLE : View.INVISIBLE);
+
                     return view;
                 }
             }
             final MessageObject message = messages.get(messages.size() - i - offset);
             int type = message.contentType;
             if (view == null) {
-                LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                 if (type == 0) {
                     view = new ChatMessageCell(mContext);
                 } if (type == 1) {
                     view = new ChatMediaCell(mContext);
                 } else if (type == 7) {
-                    view = li.inflate(R.layout.chat_action_message_layout, viewGroup, false);
+                    view = new ChatActionCell(mContext);
                 } else if (type == 8) {
+                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.chat_action_change_photo_layout, viewGroup, false);
                 } else if (type == 3) {
+                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.chat_outgoing_contact_layout, viewGroup, false);
                 } else if (type == 4) {
+                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     if (currentChat != null) {
                         view = li.inflate(R.layout.chat_group_incoming_contact_layout, viewGroup, false);
                     } else {
                         view = li.inflate(R.layout.chat_incoming_contact_layout, viewGroup, false);
                     }
                 } else if (type == 6) {
+                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.chat_unread_layout, viewGroup, false);
                 } else if (type == 2) {
                     view = new ChatAudioCell(mContext);
@@ -3638,6 +3617,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (view instanceof ChatAudioCell && MediaController.getInstance().canDownloadMedia(MediaController.AUTODOWNLOAD_MASK_AUDIO)) {
                     ((ChatAudioCell)view).downloadAudioIfNeed();
                 }
+            } else if (view instanceof ChatActionCell) {
+                ((ChatActionCell)view).setMessageObject(message);
+                ((ChatActionCell)view).setUseBlackBackground(isCustomTheme);
             } else {
                 ChatListRowHolderEx holder = (ChatListRowHolderEx)view.getTag();
                 if (holder == null) {

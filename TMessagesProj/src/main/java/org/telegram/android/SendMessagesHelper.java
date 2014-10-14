@@ -1542,7 +1542,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     @Override
                     public void run() {
                         TLRPC.EncryptedChat chat = MessagesController.getInstance().getEncryptedChat(encryptedChat.id);
-                        sendingNotifyLayer.remove(chat.id);
+                        sendingNotifyLayer.remove((Integer)chat.id);
                         chat.layer = AndroidUtilities.setMyLayerVersion(chat.layer, CURRENT_SECRET_CHAT_LAYER);
                         MessagesStorage.getInstance().updateEncryptedChatLayer(chat);
                     }

@@ -611,12 +611,14 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     return;
                 }
                 try {
-                    int size[] = new int[1];
-                    TLRPC.FileLocation fileLocation = getFileLocation(currentIndex, size);
-                    if (fileLocation == null) {
-                        return;
+                    File f = null;
+
+                    if (currentMessageObject != null) {
+                        f = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
+                    } else if (currentFileLocation != null) {
+                        f = FileLoader.getPathToAttach(currentFileLocation, avatarsUserId != 0);
                     }
-                    File f = FileLoader.getPathToAttach(fileLocation, avatarsUserId != 0);
+
                     if (f.exists()) {
                         Intent intent = new Intent(Intent.ACTION_SEND);
                         if (f.toString().endsWith("mp4")) {

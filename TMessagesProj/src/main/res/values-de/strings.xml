@@ -118,12 +118,6 @@
     <string name="MessageLifetimeChangedOutgoing">Du hast den Selbstzerstörungs-Timer auf %1$s gesetzt</string>
     <string name="MessageLifetimeRemoved">%1$s hat den Selbstzerstörungs-Timer deaktivert</string>
     <string name="MessageLifetimeYouRemoved">Du hast den Selbstzerstörungs-Timer deaktivert</string>
-    <string name="MessageLifetime2s">2 Sekunden</string>
-    <string name="MessageLifetime5s">5 Sekunden</string>
-    <string name="MessageLifetime1m">1 Minute</string>
-    <string name="MessageLifetime1h">1 Stunde</string>
-    <string name="MessageLifetime1d">1 Tag</string>
-    <string name="MessageLifetime1w">1 Woche</string>
     <string name="YouHaveNewMessage">Du hast eine neue Nachricht</string>
     <string name="NotificationMessageText">%1$s: %2$s</string>
     <string name="NotificationMessageNoText">%1$s hat dir eine Nachricht gesendet</string>
@@ -202,12 +196,6 @@
     <string name="EncryptionKey">Geheimer Schlüssel</string>
     <string name="MessageLifetime">Selbstzerstörungs-Timer</string>
     <string name="ShortMessageLifetimeForever">Aus</string>
-    <string name="ShortMessageLifetime2s">2 Sek.</string>
-    <string name="ShortMessageLifetime5s">5 Sek.</string>
-    <string name="ShortMessageLifetime1m">1 Min.</string>
-    <string name="ShortMessageLifetime1h">1 Std.</string>
-    <string name="ShortMessageLifetime1d">1 Tag</string>
-    <string name="ShortMessageLifetime1w">1 Woche</string>
     <string name="EncryptionKeyDescription">Das ist eine Darstellung des Schlüssels für den Geheimen Chat mit <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Wenn dieses Bild auf <![CDATA[<b>]]>%2$s\s<![CDATA[</b>]]>s Telefon genau so aussieht, ist euer Chat zu 200%% sicher.<![CDATA[<br><br>]]>Erfahre mehr auf telegram.org</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Alle Einstellungen für Mitteilungen zurücksetzen</string>
@@ -434,6 +422,36 @@
     <string name="FromContacts_few">von %1$d Kontakten</string>
     <string name="FromContacts_many">von %1$d Kontakten</string>
     <string name="FromContacts_other">von %1$d Kontakten</string>
+    <string name="Seconds_zero">%1$d seconds</string>
+    <string name="Seconds_one">%1$d second</string>
+    <string name="Seconds_two">%1$d seconds</string>
+    <string name="Seconds_few">%1$d seconds</string>
+    <string name="Seconds_many">%1$d seconds</string>
+    <string name="Seconds_other">%1$d seconds</string>
+    <string name="Minutes_zero">%1$d minutes</string>
+    <string name="Minutes_one">%1$d minute</string>
+    <string name="Minutes_two">%1$d minutes</string>
+    <string name="Minutes_few">%1$d minutes</string>
+    <string name="Minutes_many">%1$d minutes</string>
+    <string name="Minutes_other">%1$d minutes</string>
+    <string name="Hours_zero">%1$d hours</string>
+    <string name="Hours_one">%1$d hour</string>
+    <string name="Hours_two">%1$d hours</string>
+    <string name="Hours_few">%1$d hours</string>
+    <string name="Hours_many">%1$d hours</string>
+    <string name="Hours_other">%1$d hours</string>
+    <string name="Days_zero">%1$d days</string>
+    <string name="Days_one">%1$d day</string>
+    <string name="Days_two">%1$d days</string>
+    <string name="Days_few">%1$d days</string>
+    <string name="Days_many">%1$d days</string>
+    <string name="Days_other">%1$d days</string>
+    <string name="Weeks_zero">%1$d weeks</string>
+    <string name="Weeks_one">%1$d week</string>
+    <string name="Weeks_two">%1$d weeks</string>
+    <string name="Weeks_few">%1$d weeks</string>
+    <string name="Weeks_many">%1$d weeks</string>
+    <string name="Weeks_other">%1$d weeks</string>
     <!--date formatters-->
     <string name="formatterMonth">dd MMM</string>
     <string name="formatterYear">dd.MM.yy</string>
@@ -444,6 +462,4 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s um %2$s</string>
-    <!--Don't change this! Not for localization!-->
-    <string name="CacheTag">CACHE_TAG</string>
 </resources>

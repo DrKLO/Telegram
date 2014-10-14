@@ -59,6 +59,7 @@ import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.AvatarUpdater;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.Views.NumberPicker;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -245,39 +246,24 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("TextSize", R.string.TextSize));
-                        builder.setItems(new CharSequence[] {
-                                String.format("%d", 12),
-                                String.format("%d", 13),
-                                String.format("%d", 14),
-                                String.format("%d", 15),
-                                String.format("%d", 16),
-                                String.format("%d", 17),
-                                String.format("%d", 18),
-                                String.format("%d", 19),
-                                String.format("%d", 20),
-                                String.format("%d", 21),
-                                String.format("%d", 22),
-                                String.format("%d", 23),
-                                String.format("%d", 24),
-                                String.format("%d", 25),
-                                String.format("%d", 26),
-                                String.format("%d", 27),
-                                String.format("%d", 28),
-                                String.format("%d", 29),
-                                String.format("%d", 30)}, new DialogInterface.OnClickListener() {
+                        final NumberPicker numberPicker = new NumberPicker(getParentActivity());
+                        numberPicker.setMinValue(12);
+                        numberPicker.setMaxValue(30);
+                        numberPicker.setValue(MessagesController.getInstance().fontSize);
+                        builder.setView(numberPicker);
+                        builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                                 SharedPreferences.Editor editor = preferences.edit();
-                                editor.putInt("fons_size", 12 + which);
-                                MessagesController.getInstance().fontSize = 12 + which;
+                                editor.putInt("fons_size", numberPicker.getValue());
+                                MessagesController.getInstance().fontSize = numberPicker.getValue();
                                 editor.commit();
                                 if (listView != null) {
                                     listView.invalidateViews();
                                 }
                             }
                         });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         showAlertDialog(builder);
                     } else if (i == enableAnimationsRow) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);

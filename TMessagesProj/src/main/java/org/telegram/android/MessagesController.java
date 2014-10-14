@@ -1700,7 +1700,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         random_ids.add(random_id);
         SendMessagesHelper.getInstance().sendMessagesReadMessage(random_ids, chat);
         if (chat.ttl > 0) {
-            MessagesStorage.getInstance().createTaskForSecretChat(chat.id, 0, ConnectionsManager.getInstance().getCurrentTime(), 0, random_ids);
+            int time = ConnectionsManager.getInstance().getCurrentTime();
+            MessagesStorage.getInstance().createTaskForSecretChat(chat.id, time, time, 0, random_ids);
         }
         //TODO resend request
     }
@@ -3707,12 +3708,13 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         TLRPC.TL_messageService newMessage = new TLRPC.TL_messageService();
                         if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionSetMessageTTL) {
                             newMessage.action = new TLRPC.TL_messageActionTTLChange();
+                            if (serviceMessage.action.ttl_seconds < 0 || serviceMessage.action.ttl_seconds > 60 * 60 * 24 * 365) {
+                                serviceMessage.action.ttl_seconds = 60 * 60 * 24 * 365;
+                            }
                             newMessage.action.ttl = chat.ttl = serviceMessage.action.ttl_seconds;
                         } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionScreenshotMessages) {
                             newMessage.action = new TLRPC.TL_messageEcryptedAction();
                             newMessage.action.encryptedAction = serviceMessage.action;
-                        } else {
-                            return null;
                         }
                         newMessage.local_id = newMessage.id = UserConfig.getNewMessageId();
                         UserConfig.saveConfig(false);
@@ -3761,7 +3763,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         return null;
                     } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionReadMessages) {
                         if (!serviceMessage.action.random_ids.isEmpty()) {
-                            MessagesStorage.getInstance().createTaskForSecretChat(chat.id, 0, message.date, 1, serviceMessage.action.random_ids);
+                            MessagesStorage.getInstance().createTaskForSecretChat(chat.id, ConnectionsManager.getInstance().getCurrentTime(), message.date, 1, serviceMessage.action.random_ids);
                         }
                     } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionNotifyLayer) {
                         AndroidUtilities.RunOnUIThread(new Runnable() {

@@ -31,7 +31,6 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.MessagesController;
-import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.android.MessageObject;
@@ -256,47 +255,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         if (getParentActivity() == null) {
                             return;
                         }
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setTitle(LocaleController.getString("MessageLifetime", R.string.MessageLifetime));
-                        builder.setItems(new CharSequence[]{
-                                LocaleController.getString("ShortMessageLifetimeForever", R.string.ShortMessageLifetimeForever),
-                                LocaleController.getString("ShortMessageLifetime2s", R.string.ShortMessageLifetime2s),
-                                LocaleController.getString("ShortMessageLifetime5s", R.string.ShortMessageLifetime5s),
-                                LocaleController.getString("ShortMessageLifetime1m", R.string.ShortMessageLifetime1m),
-                                LocaleController.getString("ShortMessageLifetime1h", R.string.ShortMessageLifetime1h),
-                                LocaleController.getString("ShortMessageLifetime1d", R.string.ShortMessageLifetime1d),
-                                LocaleController.getString("ShortMessageLifetime1w", R.string.ShortMessageLifetime1w)
-
-                        }, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                int oldValue = currentEncryptedChat.ttl;
-                                if (which == 0) {
-                                    currentEncryptedChat.ttl = 0;
-                                } else if (which == 1) {
-                                    currentEncryptedChat.ttl = 2;
-                                } else if (which == 2) {
-                                    currentEncryptedChat.ttl = 5;
-                                } else if (which == 3) {
-                                    currentEncryptedChat.ttl = 60;
-                                } else if (which == 4) {
-                                    currentEncryptedChat.ttl = 60 * 60;
-                                } else if (which == 5) {
-                                    currentEncryptedChat.ttl = 60 * 60 * 24;
-                                } else if (which == 6) {
-                                    currentEncryptedChat.ttl = 60 * 60 * 24 * 7;
-                                }
-                                if (oldValue != currentEncryptedChat.ttl) {
-                                    if (listView != null) {
-                                        listView.invalidateViews();
-                                    }
-                                    SendMessagesHelper.getInstance().sendTTLMessage(currentEncryptedChat);
-                                    MessagesStorage.getInstance().updateEncryptedChat(currentEncryptedChat);
-                                }
-                            }
-                        });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        showAlertDialog(builder);
+                        showAlertDialog(AndroidUtilities.buildTTLAlert(getParentActivity(), currentEncryptedChat));
                     } else if (i == settingsNotificationsRow) {
                         Bundle args = new Bundle();
                         args.putLong("dialog_id", dialog_id == 0 ? user_id : dialog_id);
@@ -451,6 +410,13 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BlockContact", R.string.BlockContact) : LocaleController.getString("Unblock", R.string.Unblock), 0);
             item.addSubItem(edit_contact, LocaleController.getString("EditContact", R.string.EditContact), 0);
             item.addSubItem(delete_contact, LocaleController.getString("DeleteContact", R.string.DeleteContact), 0);
+        }
+    }
+
+    @Override
+    protected void onDialogDismiss() {
+        if (listView != null) {
+            listView.invalidateViews();
         }
     }
 
@@ -670,20 +636,8 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     divider.setVisibility(View.VISIBLE);
                     if (encryptedChat.ttl == 0) {
                         detailTextView.setText(LocaleController.getString("ShortMessageLifetimeForever", R.string.ShortMessageLifetimeForever));
-                    } else if (encryptedChat.ttl == 2) {
-                        detailTextView.setText(LocaleController.getString("ShortMessageLifetime2s", R.string.ShortMessageLifetime2s));
-                    } else if (encryptedChat.ttl == 5) {
-                        detailTextView.setText(LocaleController.getString("ShortMessageLifetime5s", R.string.ShortMessageLifetime5s));
-                    } else if (encryptedChat.ttl == 60) {
-                        detailTextView.setText(LocaleController.getString("ShortMessageLifetime1m", R.string.ShortMessageLifetime1m));
-                    } else if (encryptedChat.ttl == 60 * 60) {
-                        detailTextView.setText(LocaleController.getString("ShortMessageLifetime1h", R.string.ShortMessageLifetime1h));
-                    } else if (encryptedChat.ttl == 60 * 60 * 24) {
-                        detailTextView.setText(LocaleController.getString("ShortMessageLifetime1d", R.string.ShortMessageLifetime1d));
-                    } else if (encryptedChat.ttl == 60 * 60 * 24 * 7) {
-                        detailTextView.setText(LocaleController.getString("ShortMessageLifetime1w", R.string.ShortMessageLifetime1w));
                     } else {
-                        detailTextView.setText(String.format("%d", encryptedChat.ttl));
+                        detailTextView.setText(AndroidUtilities.formatTTLString(encryptedChat.ttl));
                     }
                 }
             } else if (type == 4) {

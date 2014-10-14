@@ -9,7 +9,9 @@
 package org.telegram.android;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Point;
@@ -24,8 +26,10 @@ import android.view.inputmethod.InputMethodManager;
 
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ApplicationLoader;
+import org.telegram.ui.Views.NumberPicker;
 
 import java.io.File;
 import java.util.Hashtable;
@@ -240,6 +244,10 @@ public class AndroidUtilities {
         return (int)Math.ceil(density * value);
     }
 
+    public static float dpf2(float value) {
+        return density * value;
+    }
+
     public static void checkDisplaySize() {
         try {
             WindowManager manager = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
@@ -387,5 +395,92 @@ public class AndroidUtilities {
             }
         }
         return photoSize;
+    }
+
+    public static String formatTTLString(int ttl) {
+        if (ttl < 60) {
+            return LocaleController.formatPluralString("Seconds", ttl);
+        } else if (ttl < 60 * 60) {
+            return LocaleController.formatPluralString("Minutes", ttl / 60);
+        } else if (ttl < 60 * 60 * 24) {
+            return LocaleController.formatPluralString("Hours", ttl / 60 / 60);
+        } else if (ttl < 60 * 60 * 24 * 7) {
+            return LocaleController.formatPluralString("Days", ttl / 60 / 60 / 24);
+        } else {
+            int days = ttl / 60 / 60 / 24;
+            if (ttl % 7 == 0) {
+                return LocaleController.formatPluralString("Weeks", days / 7);
+            } else {
+                return String.format("%s %s", LocaleController.formatPluralString("Weeks", days / 7), LocaleController.formatPluralString("Days", days % 7));
+            }
+        }
+    }
+
+    public static AlertDialog.Builder buildTTLAlert(Context context, final TLRPC.EncryptedChat encryptedChat) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle(LocaleController.getString("MessageLifetime", R.string.MessageLifetime));
+        final NumberPicker numberPicker = new NumberPicker(context);
+        numberPicker.setMinValue(0);
+        numberPicker.setMaxValue(20);
+        if (encryptedChat.ttl >= 0 && encryptedChat.ttl < 16) {
+            numberPicker.setValue(encryptedChat.ttl);
+        } else if (encryptedChat.ttl == 30) {
+            numberPicker.setValue(16);
+        } else if (encryptedChat.ttl == 60) {
+            numberPicker.setValue(17);
+        } else if (encryptedChat.ttl == 60 * 60) {
+            numberPicker.setValue(18);
+        } else if (encryptedChat.ttl == 60 * 60 * 24) {
+            numberPicker.setValue(19);
+        } else if (encryptedChat.ttl == 60 * 60 * 24 * 7) {
+            numberPicker.setValue(20);
+        }
+        numberPicker.setFormatter(new NumberPicker.Formatter() {
+            @Override
+            public String format(int value) {
+                if (value == 0) {
+                    return LocaleController.getString("ShortMessageLifetimeForever", R.string.ShortMessageLifetimeForever);
+                } else if (value >= 1 && value < 16) {
+                    return AndroidUtilities.formatTTLString(value);
+                } else if (value == 16) {
+                    return AndroidUtilities.formatTTLString(30);
+                } else if (value == 17) {
+                    return AndroidUtilities.formatTTLString(60);
+                } else if (value == 18) {
+                    return AndroidUtilities.formatTTLString(60 * 60);
+                } else if (value == 19) {
+                    return AndroidUtilities.formatTTLString(60 * 60 * 24);
+                } else if (value == 20) {
+                    return AndroidUtilities.formatTTLString(60 * 60 * 24 * 7);
+                }
+                return "";
+            }
+        });
+        builder.setView(numberPicker);
+        builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                int oldValue = encryptedChat.ttl;
+                which = numberPicker.getValue();
+                if (which >= 0 && which < 16) {
+                    encryptedChat.ttl = which;
+                } else if (which == 16) {
+                    encryptedChat.ttl = 30;
+                } else if (which == 17) {
+                    encryptedChat.ttl = 60;
+                } else if (which == 18) {
+                    encryptedChat.ttl = 60 * 60;
+                } else if (which == 19) {
+                    encryptedChat.ttl = 60 * 60 * 24;
+                } else if (which == 20) {
+                    encryptedChat.ttl = 60 * 60 * 24 * 7;
+                }
+                if (oldValue != encryptedChat.ttl) {
+                    SendMessagesHelper.getInstance().sendTTLMessage(encryptedChat);
+                    MessagesStorage.getInstance().updateEncryptedChatTTL(encryptedChat);
+                }
+            }
+        });
+        return builder;
     }
 }

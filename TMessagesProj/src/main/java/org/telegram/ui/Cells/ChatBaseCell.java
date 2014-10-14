@@ -149,18 +149,6 @@ public class ChatBaseCell extends BaseCell {
 
     public ChatBaseCell(Context context) {
         super(context);
-        init();
-        avatarImage = new ImageReceiver(this);
-    }
-
-    @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-        avatarImage.clearImage();
-        currentPhoto = null;
-    }
-
-    private void init() {
         if (backgroundDrawableIn == null) {
             backgroundDrawableIn = getResources().getDrawable(R.drawable.msg_in);
             backgroundDrawableInSelected = getResources().getDrawable(R.drawable.msg_in_selected);
@@ -199,6 +187,14 @@ public class ChatBaseCell extends BaseCell {
             forwardNamePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             forwardNamePaint.setTextSize(AndroidUtilities.dp(14));
         }
+        avatarImage = new ImageReceiver(this);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        avatarImage.clearImage();
+        currentPhoto = null;
     }
 
     @Override
@@ -465,7 +461,6 @@ public class ChatBaseCell extends BaseCell {
     protected void onAfterBackgroundDraw(Canvas canvas) {
 
     }
-
 
     @Override
     protected void onDraw(Canvas canvas) {

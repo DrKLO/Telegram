@@ -178,29 +178,13 @@ public class MessageObject {
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionTTLChange) {
                     if (message.action.ttl != 0) {
-                        String timeString;
-                        if (message.action.ttl == 2) {
-                            timeString = LocaleController.getString("MessageLifetime2s", R.string.MessageLifetime2s);
-                        } else if (message.action.ttl == 5) {
-                            timeString = LocaleController.getString("MessageLifetime5s", R.string.MessageLifetime5s);
-                        } else if (message.action.ttl == 60) {
-                            timeString = LocaleController.getString("MessageLifetime1m", R.string.MessageLifetime1m);
-                        } else if (message.action.ttl == 60 * 60) {
-                            timeString = LocaleController.getString("MessageLifetime1h", R.string.MessageLifetime1h);
-                        } else if (message.action.ttl == 60 * 60 * 24) {
-                            timeString = LocaleController.getString("MessageLifetime1d", R.string.MessageLifetime1d);
-                        } else if (message.action.ttl == 60 * 60 * 24 * 7) {
-                            timeString = LocaleController.getString("MessageLifetime1w", R.string.MessageLifetime1w);
-                        } else {
-                            timeString = String.format("%d", message.action.ttl);
-                        }
                         if (isFromMe()) {
-                            messageText = LocaleController.formatString("MessageLifetimeChangedOutgoing", R.string.MessageLifetimeChangedOutgoing, timeString);
+                            messageText = LocaleController.formatString("MessageLifetimeChangedOutgoing", R.string.MessageLifetimeChangedOutgoing, AndroidUtilities.formatTTLString(message.action.ttl));
                         } else {
                             if (fromUser != null) {
-                                messageText = LocaleController.formatString("MessageLifetimeChanged", R.string.MessageLifetimeChanged, fromUser.first_name, timeString);
+                                messageText = LocaleController.formatString("MessageLifetimeChanged", R.string.MessageLifetimeChanged, fromUser.first_name, AndroidUtilities.formatTTLString(message.action.ttl));
                             } else {
-                                messageText = LocaleController.formatString("MessageLifetimeChanged", R.string.MessageLifetimeChanged, "", timeString);
+                                messageText = LocaleController.formatString("MessageLifetimeChanged", R.string.MessageLifetimeChanged, "", AndroidUtilities.formatTTLString(message.action.ttl));
                             }
                         }
                     } else {
