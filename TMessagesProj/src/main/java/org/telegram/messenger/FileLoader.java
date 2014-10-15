@@ -564,18 +564,30 @@ public class FileLoader {
         if (message == null) {
             return new File("");
         }
-        if (message.media instanceof TLRPC.TL_messageMediaVideo) {
-            return getPathToAttach(message.media.video);
-        } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
-            return getPathToAttach(message.media.document);
-        } else if (message.media instanceof TLRPC.TL_messageMediaAudio) {
-            return getPathToAttach(message.media.audio);
-        } else if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
-            ArrayList<TLRPC.PhotoSize> sizes = message.media.photo.sizes;
-            if (sizes.size() > 0) {
-                TLRPC.PhotoSize sizeFull = getClosestPhotoSizeWithSize(sizes, AndroidUtilities.getPhotoSize());
-                if (sizeFull != null) {
-                    return getPathToAttach(sizeFull);
+        if (message instanceof TLRPC.TL_messageService) {
+            if (message.action.photo != null) {
+                ArrayList<TLRPC.PhotoSize> sizes = message.action.photo.sizes;
+                if (sizes.size() > 0) {
+                    TLRPC.PhotoSize sizeFull = getClosestPhotoSizeWithSize(sizes, AndroidUtilities.getPhotoSize());
+                    if (sizeFull != null) {
+                        return getPathToAttach(sizeFull);
+                    }
+                }
+            }
+        } else {
+            if (message.media instanceof TLRPC.TL_messageMediaVideo) {
+                return getPathToAttach(message.media.video);
+            } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
+                return getPathToAttach(message.media.document);
+            } else if (message.media instanceof TLRPC.TL_messageMediaAudio) {
+                return getPathToAttach(message.media.audio);
+            } else if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
+                ArrayList<TLRPC.PhotoSize> sizes = message.media.photo.sizes;
+                if (sizes.size() > 0) {
+                    TLRPC.PhotoSize sizeFull = getClosestPhotoSizeWithSize(sizes, AndroidUtilities.getPhotoSize());
+                    if (sizeFull != null) {
+                        return getPathToAttach(sizeFull);
+                    }
                 }
             }
         }

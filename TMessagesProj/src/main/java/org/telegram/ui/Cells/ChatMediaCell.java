@@ -93,7 +93,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     private int nameWidth = 0;
     private String currentNameString;
 
-    public ChatMediaCellDelegate mediaDelegate = null;
+    private ChatMediaCellDelegate mediaDelegate = null;
 
     private float currentProgress = 0;
     private RectF progressRect = new RectF();
@@ -163,6 +163,10 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             buttonState = 2;
             invalidate();
         }
+    }
+
+    public void setMediaDelegate(ChatMediaCellDelegate delegate) {
+        this.mediaDelegate = delegate;
     }
 
     @Override

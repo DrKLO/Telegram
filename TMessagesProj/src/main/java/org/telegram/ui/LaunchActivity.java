@@ -661,12 +661,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         actionBarLayout.presentFragment(fragment, false, true, true);
                     }
 
-                    Bundle args2 = new Bundle();
-                    args2.putString("videoPath", videoPath);
-                    VideoEditorActivity fragment2 = new VideoEditorActivity(args2);
-                    fragment2.setDelegate(fragment);
-                    presentFragment(fragment2, true, true);
-                    if (!AndroidUtilities.isTablet()) {
+                    if (!fragment.openVideoEditor(videoPath, true, actionBarLayout)) {
+                        if (!AndroidUtilities.isTablet()) {
+                            actionBarLayout.presentFragment(fragment, true);
+                        }
+                    } else if (!AndroidUtilities.isTablet()) {
                         actionBarLayout.addFragmentToStack(fragment, actionBarLayout.fragmentsStack.size() - 1);
                     }
                 } else {

@@ -12,8 +12,11 @@ import android.graphics.Bitmap;
 import android.graphics.Paint;
 import android.text.Layout;
 import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import android.text.TextUtils;
 import android.text.util.Linkify;
 
 import org.telegram.messenger.ConnectionsManager;
@@ -22,6 +25,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.ui.Views.URLSpanNoUnderline;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -91,7 +95,7 @@ public class MessageObject {
                         messageText = LocaleController.getString("ActionYouCreateGroup", R.string.ActionYouCreateGroup);
                     } else {
                         if (fromUser != null) {
-                            messageText = LocaleController.getString("ActionCreateGroup", R.string.ActionCreateGroup).replace("un1", ContactsController.formatName(fromUser.first_name, fromUser.last_name));
+                            messageText = replaceWithLink(LocaleController.getString("ActionCreateGroup", R.string.ActionCreateGroup), "un1", fromUser);
                         } else {
                             messageText = LocaleController.getString("ActionCreateGroup", R.string.ActionCreateGroup).replace("un1", "");
                         }
@@ -102,26 +106,27 @@ public class MessageObject {
                             messageText = LocaleController.getString("ActionYouLeftUser", R.string.ActionYouLeftUser);
                         } else {
                             if (fromUser != null) {
-                                messageText = LocaleController.getString("ActionLeftUser", R.string.ActionLeftUser).replace("un1", ContactsController.formatName(fromUser.first_name, fromUser.last_name));
+                                messageText = replaceWithLink(LocaleController.getString("ActionLeftUser", R.string.ActionLeftUser), "un1", fromUser);
                             } else {
                                 messageText = LocaleController.getString("ActionLeftUser", R.string.ActionLeftUser).replace("un1", "");
                             }
                         }
                     } else {
-                        TLRPC.User who = null;
+                        TLRPC.User whoUser = null;
                         if (users != null) {
-                            who = users.get(message.action.user_id);
+                            whoUser = users.get(message.action.user_id);
                         }
-                        if (who == null) {
-                            who = MessagesController.getInstance().getUser(message.action.user_id);
+                        if (whoUser == null) {
+                            whoUser = MessagesController.getInstance().getUser(message.action.user_id);
                         }
-                        if (who != null && fromUser != null) {
+                        if (whoUser != null && fromUser != null) {
                             if (isFromMe()) {
-                                messageText = LocaleController.getString("ActionYouKickUser", R.string.ActionYouKickUser).replace("un2", ContactsController.formatName(who.first_name, who.last_name));
+                                messageText = replaceWithLink(LocaleController.getString("ActionYouKickUser", R.string.ActionYouKickUser), "un2", whoUser);
                             } else if (message.action.user_id == UserConfig.getClientUserId()) {
-                                messageText = LocaleController.getString("ActionKickUserYou", R.string.ActionKickUserYou).replace("un1", ContactsController.formatName(fromUser.first_name, fromUser.last_name));
+                                messageText = replaceWithLink(LocaleController.getString("ActionKickUserYou", R.string.ActionKickUserYou), "un1", fromUser);
                             } else {
-                                messageText = LocaleController.getString("ActionKickUser", R.string.ActionKickUser).replace("un2", ContactsController.formatName(who.first_name, who.last_name)).replace("un1", ContactsController.formatName(fromUser.first_name, fromUser.last_name));
+                                messageText = replaceWithLink(LocaleController.getString("ActionKickUser", R.string.ActionKickUser), "un2", whoUser);
+                                messageText = replaceWithLink(messageText, "un1", fromUser);
                             }
                         } else {
                             messageText = LocaleController.getString("ActionKickUser", R.string.ActionKickUser).replace("un2", "").replace("un1", "");
@@ -137,11 +142,12 @@ public class MessageObject {
                     }
                     if (whoUser != null && fromUser != null) {
                         if (isFromMe()) {
-                            messageText = LocaleController.getString("ActionYouAddUser", R.string.ActionYouAddUser).replace("un2", ContactsController.formatName(whoUser.first_name, whoUser.last_name));
+                            messageText = replaceWithLink(LocaleController.getString("ActionYouAddUser", R.string.ActionYouAddUser), "un2", whoUser);
                         } else if (message.action.user_id == UserConfig.getClientUserId()) {
-                            messageText = LocaleController.getString("ActionAddUserYou", R.string.ActionAddUserYou).replace("un1", ContactsController.formatName(fromUser.first_name, fromUser.last_name));
+                            messageText = replaceWithLink(LocaleController.getString("ActionAddUserYou", R.string.ActionAddUserYou), "un1", fromUser);
                         } else {
-                            messageText = LocaleController.getString("ActionAddUser", R.string.ActionAddUser).replace("un2", ContactsController.formatName(whoUser.first_name, whoUser.last_name)).replace("un1", ContactsController.formatName(fromUser.first_name, fromUser.last_name));
+                            messageText = replaceWithLink(LocaleController.getString("ActionAddUser", R.string.ActionAddUser), "un2", whoUser);
+                            messageText = replaceWithLink(messageText, "un1", fromUser);
                         }
                     } else {
                         messageText = LocaleController.getString("ActionAddUser", R.string.ActionAddUser).replace("un2", "").replace("un1", "");
@@ -151,7 +157,7 @@ public class MessageObject {
                         messageText = LocaleController.getString("ActionYouChangedPhoto", R.string.ActionYouChangedPhoto);
                     } else {
                         if (fromUser != null) {
-                            messageText = LocaleController.getString("ActionChangedPhoto", R.string.ActionChangedPhoto).replace("un1", ContactsController.formatName(fromUser.first_name, fromUser.last_name));
+                            messageText = replaceWithLink(LocaleController.getString("ActionChangedPhoto", R.string.ActionChangedPhoto), "un1", fromUser);
                         } else {
                             messageText = LocaleController.getString("ActionChangedPhoto", R.string.ActionChangedPhoto).replace("un1", "");
                         }
@@ -161,7 +167,7 @@ public class MessageObject {
                         messageText = LocaleController.getString("ActionYouChangedTitle", R.string.ActionYouChangedTitle).replace("un2", message.action.title);
                     } else {
                         if (fromUser != null) {
-                            messageText = LocaleController.getString("ActionChangedTitle", R.string.ActionChangedTitle).replace("un1", ContactsController.formatName(fromUser.first_name, fromUser.last_name)).replace("un2", message.action.title);
+                            messageText = replaceWithLink(LocaleController.getString("ActionChangedTitle", R.string.ActionChangedTitle).replace("un2", message.action.title), "un1", fromUser);
                         } else {
                             messageText = LocaleController.getString("ActionChangedTitle", R.string.ActionChangedTitle).replace("un1", "").replace("un2", message.action.title);
                         }
@@ -171,7 +177,7 @@ public class MessageObject {
                         messageText = LocaleController.getString("ActionYouRemovedPhoto", R.string.ActionYouRemovedPhoto);
                     } else {
                         if (fromUser != null) {
-                            messageText = LocaleController.getString("ActionRemovedPhoto", R.string.ActionRemovedPhoto).replace("un1", ContactsController.formatName(fromUser.first_name, fromUser.last_name));
+                            messageText = replaceWithLink(LocaleController.getString("ActionRemovedPhoto", R.string.ActionRemovedPhoto), "un1", fromUser);
                         } else {
                             messageText = LocaleController.getString("ActionRemovedPhoto", R.string.ActionRemovedPhoto).replace("un1", "");
                         }
@@ -232,7 +238,7 @@ public class MessageObject {
                             messageText = LocaleController.formatString("ActionTakeScreenshootYou", R.string.ActionTakeScreenshootYou);
                         } else {
                             if (fromUser != null) {
-                                messageText = LocaleController.formatString("ActionTakeScreenshoot", R.string.ActionTakeScreenshoot).replace("un1", fromUser.first_name);
+                                messageText = replaceWithLink(LocaleController.getString("ActionTakeScreenshoot", R.string.ActionTakeScreenshoot), "un1", fromUser);
                             } else {
                                 messageText = LocaleController.formatString("ActionTakeScreenshoot", R.string.ActionTakeScreenshoot).replace("un1", "");
                             }
@@ -263,7 +269,7 @@ public class MessageObject {
         }
         messageText = Emoji.replaceEmoji(messageText, textPaint.getFontMetricsInt(), AndroidUtilities.dp(20));
 
-        if (message instanceof TLRPC.TL_message || (message instanceof TLRPC.TL_messageForwarded && (message.media == null || !(message.media instanceof TLRPC.TL_messageMediaEmpty)))) {
+        if (message instanceof TLRPC.TL_message || message instanceof TLRPC.TL_messageForwarded) {
             if (message.media == null || message.media instanceof TLRPC.TL_messageMediaEmpty) {
                 contentType = type = 0;
             } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaPhoto) {
@@ -275,13 +281,8 @@ public class MessageObject {
                 contentType = 1;
                 type = 3;
             } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaContact) {
-                if (isFromMe()) {
-                    contentType = 3;
-                    type = 12;
-                } else {
-                    contentType = 4;
-                    type = 13;
-                }
+                contentType = 3;
+                type = 12;
             } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaUnsupported) {
                 contentType = type = 0;
             } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaDocument) {
@@ -298,14 +299,12 @@ public class MessageObject {
             if (message.action instanceof TLRPC.TL_messageActionLoginUnknownLocation) {
                 contentType = type = 0;
             } else if (message.action instanceof TLRPC.TL_messageActionChatEditPhoto || message.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
-                contentType = 8;
+                contentType = 4;
                 type = 11;
             } else {
-                contentType = 7;
+                contentType = 4;
                 type = 10;
             }
-        } else if (message instanceof TLRPC.TL_messageForwarded) {
-            contentType = type = 0;
         }
 
         Calendar rightNow = new GregorianCalendar();
@@ -317,6 +316,15 @@ public class MessageObject {
 
         generateLayout();
         generateThumbs(false, preview);
+    }
+
+    public CharSequence replaceWithLink(CharSequence source, String param, TLRPC.User user) {
+        String name = ContactsController.formatName(user.first_name, user.last_name);
+        int start = TextUtils.indexOf(source, param);
+        URLSpanNoUnderline span = new URLSpanNoUnderline("" + user.id);
+        SpannableStringBuilder builder = new SpannableStringBuilder(TextUtils.replace(source, new String[]{param}, new String[]{name}));
+        builder.setSpan(span, start, start + name.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return builder;
     }
 
     public void generateThumbs(boolean update, int preview) {
