@@ -569,7 +569,11 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     }
 
                     if (currentMessageObject.isSecretMedia()) {
-                        w = h = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.5f);
+                        if (AndroidUtilities.isTablet()) {
+                            w = h = (int) (AndroidUtilities.getMinTabletSide() * 0.5f);
+                        } else {
+                            w = h = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.5f);
+                        }
                     }
 
                     photoWidth = w;

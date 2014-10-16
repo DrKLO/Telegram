@@ -9,263 +9,280 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.drawable.Drawable;
+import android.text.Layout;
+import android.text.StaticLayout;
+import android.text.TextPaint;
+import android.text.TextUtils;
+import android.view.MotionEvent;
+import android.view.SoundEffectConstants;
+
+import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.ContactsController;
+import org.telegram.android.ImageReceiver;
+import org.telegram.android.LocaleController;
+import org.telegram.android.MessageObject;
+import org.telegram.android.MessagesController;
+import org.telegram.messenger.R;
+import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.UserConfig;
 
 public class ChatContactCell extends ChatBaseCell {
 
+    public static interface ChatContactCellDelegate {
+        public abstract void didClickAddButton(ChatContactCell cell, TLRPC.User user);
+        public abstract void didClickPhone(ChatContactCell cell);
+    }
+
+    private static TextPaint namePaint;
+    private static TextPaint phonePaint;
+    private static Drawable addContactDrawable;
+    private static Paint linePaint;
+
+    private ImageReceiver avatarImage;
+
+    private StaticLayout nameLayout;
+    private StaticLayout phoneLayout;
+
+    private TLRPC.User contactUser;
+    private TLRPC.FileLocation currentPhoto;
+
+    private boolean avatarPressed = false;
+    private boolean buttonPressed = false;
+    private boolean drawAddButton = false;
+    private int namesWidth = 0;
+
+    private ChatContactCellDelegate contactDelegate = null;
+
     public ChatContactCell(Context context) {
         super(context);
+        if (namePaint == null) {
+            namePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+            namePaint.setTextSize(AndroidUtilities.dp(15));
+
+            phonePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+            phonePaint.setTextSize(AndroidUtilities.dp(15));
+            phonePaint.setColor(0xff000000);
+
+            addContactDrawable = getResources().getDrawable(R.drawable.ic_ab_add_member);
+
+            linePaint = new Paint();
+            linePaint.setStrokeWidth(AndroidUtilities.dp(1));
+        }
+        avatarImage = new ImageReceiver(this);
     }
 
-    /*
-    public class ChatListRowHolderEx {
-        public BackupImageView avatarImageView;
-        public TextView nameTextView;
-        public TextView messageTextView;
-        public TextView timeTextView;
-        public ImageView halfCheckImage;
-        public ImageView checkImage;
-        public MessageObject message;
-        public TextView phoneTextView;
-        public BackupImageView contactAvatar;
-        public View contactView;
-        public ImageView addContactButton;
-        public View addContactView;
-        public View chatBubbleView;
+    public void setContactDelegate(ChatContactCellDelegate delegate) {
+        this.contactDelegate = delegate;
+    }
 
-        public void update() {
-            TLRPC.User fromUser = MessagesController.getInstance().getUser(message.messageOwner.from_id);
+    @Override
+    protected boolean isUserDataChanged() {
+        if (currentMessageObject == null) {
+            return false;
+        }
 
-            int type = message.type;
+        contactUser = MessagesController.getInstance().getUser(currentMessageObject.messageOwner.media.user_id);
 
-            if (timeTextView != null) {
-                timeTextView.setText(LocaleController.formatterDay.format((long) (message.messageOwner.date) * 1000));
+        TLRPC.FileLocation newPhoto = null;
+        if (contactUser != null && contactUser.photo != null) {
+            newPhoto = contactUser.photo.photo_small;
+        }
+
+        return currentPhoto == null && newPhoto != null || currentPhoto != null && newPhoto == null || currentPhoto != null && newPhoto != null && (currentPhoto.local_id != newPhoto.local_id || currentPhoto.volume_id != newPhoto.volume_id) || super.isUserDataChanged();
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        float x = event.getX();
+        float y = event.getY();
+
+        boolean result = false;
+        int side = AndroidUtilities.dp(36);
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            if (x >= avatarImage.getImageX() && x <= avatarImage.getImageX() + namesWidth && y >= avatarImage.getImageY() && y <= avatarImage.getImageY() + avatarImage.getImageHeight()) {
+                avatarPressed = true;
+                result = true;
+            } else if (x >= avatarImage.getImageX() - AndroidUtilities.dp(44) && y >= AndroidUtilities.dp(20) && x <= avatarImage.getImageX() - AndroidUtilities.dp(10) && y <= AndroidUtilities.dp(52)) {
+                buttonPressed = true;
+                result = true;
             }
-
-            if (avatarImageView != null && fromUser != null) {
-                TLRPC.FileLocation photo = null;
-                if (fromUser.photo != null) {
-                    photo = fromUser.photo.photo_small;
+            if (result) {
+                startCheckLongPress();
+            }
+        } else {
+            if (event.getAction() != MotionEvent.ACTION_MOVE) {
+                cancelCheckLongPress();
+            }
+            if (avatarPressed) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    avatarPressed = false;
+                    playSoundEffect(SoundEffectConstants.CLICK);
+                    if (contactUser != null) {
+                        if (delegate != null) {
+                            delegate.didPressedUserAvatar(this, contactUser);
+                        }
+                    } else {
+                        if (contactDelegate != null) {
+                            contactDelegate.didClickPhone(this);
+                        }
+                    }
+                } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    avatarPressed = false;
+                } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                    if (!avatarImage.isInsideImage(x, y)) {
+                        avatarPressed = false;
+                    }
                 }
-                int placeHolderId = AndroidUtilities.getUserAvatarForId(fromUser.id);
-                avatarImageView.setImage(photo, "50_50", placeHolderId);
-            }
-
-            if (type != 12 && type != 13 && nameTextView != null && fromUser != null && type != 8 && type != 9) {
-                nameTextView.setText(ContactsController.formatName(fromUser.first_name, fromUser.last_name));
-                nameTextView.setTextColor(AndroidUtilities.getColorForId(message.messageOwner.from_id));
-            }
-
-            if (type == 12 || type == 13) {
-                TLRPC.User contactUser = MessagesController.getInstance().getUser(message.messageOwner.media.user_id);
-                if (contactUser != null) {
-                    nameTextView.setText(ContactsController.formatName(message.messageOwner.media.first_name, message.messageOwner.media.last_name));
-                    nameTextView.setTextColor(AndroidUtilities.getColorForId(contactUser.id));
-                    String phone = message.messageOwner.media.phone_number;
-                    if (phone != null && phone.length() != 0) {
-                        if (!phone.startsWith("+")) {
-                            phone = "+" + phone;
-                        }
-                        phoneTextView.setText(PhoneFormat.getInstance().format(phone));
-                    } else {
-                        phoneTextView.setText("Unknown");
+            } else if (buttonPressed) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    buttonPressed = false;
+                    playSoundEffect(SoundEffectConstants.CLICK);
+                    if (contactUser != null && contactDelegate != null) {
+                        contactDelegate.didClickAddButton(this, contactUser);
                     }
-                    TLRPC.FileLocation photo = null;
-                    if (contactUser.photo != null) {
-                        photo = contactUser.photo.photo_small;
-                    }
-                    int placeHolderId = AndroidUtilities.getUserAvatarForId(contactUser.id);
-                    contactAvatar.setImage(photo, "50_50", placeHolderId);
-                    if (contactUser.id != UserConfig.getClientUserId() && ContactsController.getInstance().contactsDict.get(contactUser.id) == null) {
-                        addContactView.setVisibility(View.VISIBLE);
-                    } else {
-                        addContactView.setVisibility(View.GONE);
-                    }
-                } else {
-                    nameTextView.setText(ContactsController.formatName(message.messageOwner.media.first_name, message.messageOwner.media.last_name));
-                    nameTextView.setTextColor(AndroidUtilities.getColorForId(message.messageOwner.media.user_id));
-                    String phone = message.messageOwner.media.phone_number;
-                    if (phone != null && phone.length() != 0) {
-                        if (message.messageOwner.media.user_id != 0 && !phone.startsWith("+")) {
-                            phone = "+" + phone;
-                        }
-                        phoneTextView.setText(PhoneFormat.getInstance().format(phone));
-                    } else {
-                        phoneTextView.setText("Unknown");
-                    }
-                    contactAvatar.setImageResource(AndroidUtilities.getUserAvatarForId(message.messageOwner.media.user_id));
-                    addContactView.setVisibility(View.GONE);
-                }
-            } else if (type == 6) {
-                messageTextView.setTextSize(16);
-                messageTextView.setText(LocaleController.formatPluralString("NewMessages", unread_to_load));
-            }
-
-            if (message.isFromMe()) {
-                if (halfCheckImage != null) {
-                    if (message.isSending()) {
-                        checkImage.setVisibility(View.INVISIBLE);
-                        halfCheckImage.setImageResource(R.drawable.msg_clock);
-                        halfCheckImage.setVisibility(View.VISIBLE);
-                    } else if (message.isSendError()) {
-                        halfCheckImage.setVisibility(View.VISIBLE);
-                        halfCheckImage.setImageResource(R.drawable.msg_warning);
-                        if (checkImage != null) {
-                            checkImage.setVisibility(View.INVISIBLE);
-                        }
-                    } else if (message.isSent()) {
-                        if (!message.isUnread()) {
-                            halfCheckImage.setVisibility(View.VISIBLE);
-                            checkImage.setVisibility(View.VISIBLE);
-                            halfCheckImage.setImageResource(R.drawable.msg_halfcheck);
-                        } else {
-                            halfCheckImage.setVisibility(View.VISIBLE);
-                            checkImage.setVisibility(View.INVISIBLE);
-                            halfCheckImage.setImageResource(R.drawable.msg_check);
-                        }
+                } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    buttonPressed = false;
+                } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                    if (!(x >= avatarImage.getImageX() - AndroidUtilities.dp(44) && y >= AndroidUtilities.dp(20) && x <= avatarImage.getImageX() - AndroidUtilities.dp(10) && y <= AndroidUtilities.dp(52))) {
+                        buttonPressed = false;
                     }
                 }
             }
         }
-
-        public ChatListRowHolderEx(View view, int type) {
-            avatarImageView = (BackupImageView)view.findViewById(R.id.chat_group_avatar_image);
-            nameTextView = (TextView)view.findViewById(R.id.chat_user_group_name);
-            timeTextView = (TextView)view.findViewById(R.id.chat_time_text);
-            halfCheckImage = (ImageView)view.findViewById(R.id.chat_row_halfcheck);
-            checkImage = (ImageView)view.findViewById(R.id.chat_row_check);
-            messageTextView = (TextView)view.findViewById(R.id.chat_message_text);
-            phoneTextView = (TextView)view.findViewById(R.id.phone_text_view);
-            contactAvatar = (BackupImageView)view.findViewById(R.id.contact_avatar);
-            contactView = view.findViewById(R.id.shared_layout);
-            addContactButton = (ImageView)view.findViewById(R.id.add_contact_button);
-            addContactView = view.findViewById(R.id.add_contact_view);
-            chatBubbleView = view.findViewById(R.id.chat_bubble_layout);
-            if (messageTextView != null) {
-                messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, MessagesController.getInstance().fontSize);
-            }
-
-            if (addContactButton != null) {
-                addContactButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        if (actionBarLayer.isActionModeShowed()) {
-                            processRowSelect(view);
-                            return;
-                        }
-                        Bundle args = new Bundle();
-                        args.putInt("user_id", message.messageOwner.media.user_id);
-                        args.putString("phone", message.messageOwner.media.phone_number);
-                        presentFragment(new ContactAddActivity(args));
-                    }
-                });
-
-                addContactButton.setOnLongClickListener(new View.OnLongClickListener() {
-                    @Override
-                    public boolean onLongClick(View v) {
-                        createMenu(v, false);
-                        return true;
-                    }
-                });
-            }
-
-            if (contactView != null) {
-                contactView.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        if (message.type == 12 || message.type == 13) {
-                            if (actionBarLayer.isActionModeShowed()) {
-                                processRowSelect(view);
-                                return;
-                            }
-                            if (message.messageOwner.media.user_id != UserConfig.getClientUserId()) {
-                                TLRPC.User user = null;
-                                if (message.messageOwner.media.user_id != 0) {
-                                    user = MessagesController.getInstance().getUser(message.messageOwner.media.user_id);
-                                }
-                                if (user != null) {
-                                    Bundle args = new Bundle();
-                                    args.putInt("user_id", message.messageOwner.media.user_id);
-                                    presentFragment(new UserProfileActivity(args));
-                                } else {
-                                    if (message.messageOwner.media.phone_number == null || message.messageOwner.media.phone_number.length() == 0) {
-                                        return;
-                                    }
-                                    if (getParentActivity() == null) {
-                                        return;
-                                    }
-                                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                                    builder.setItems(new CharSequence[] {LocaleController.getString("Copy", R.string.Copy), LocaleController.getString("Call", R.string.Call)}, new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialogInterface, int i) {
-                                                    if (i == 1) {
-                                                        try {
-                                                            Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + message.messageOwner.media.phone_number));
-                                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                                            getParentActivity().startActivity(intent);
-                                                        } catch (Exception e) {
-                                                            FileLog.e("tmessages", e);
-                                                        }
-                                                    } else if (i == 0) {
-                                                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-                                                            android.text.ClipboardManager clipboard = (android.text.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                                                            clipboard.setText(message.messageOwner.media.phone_number);
-                                                        } else {
-                                                            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                                                            android.content.ClipData clip = android.content.ClipData.newPlainText("label", message.messageOwner.media.phone_number);
-                                                            clipboard.setPrimaryClip(clip);
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                    );
-                                    showAlertDialog(builder);
-                                }
-                            }
-                        }
-                    }
-                });
-
-                contactView.setOnLongClickListener(new View.OnLongClickListener() {
-                    @Override
-                    public boolean onLongClick(View v) {
-                        createMenu(v, false);
-                        return true;
-                    }
-                });
-            }
-
-            if (contactAvatar != null) {
-                contactAvatar.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-
-                    }
-                });
-            }
-
-            if (avatarImageView != null) {
-                avatarImageView.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        if (actionBarLayer.isActionModeShowed()) {
-                            processRowSelect(view);
-                            return;
-                        }
-                        if (message != null) {
-                            Bundle args = new Bundle();
-                            args.putInt("user_id", message.messageOwner.from_id);
-                            presentFragment(new UserProfileActivity(args));
-                        }
-                    }
-                });
-            }
+        if (!result) {
+            result = super.onTouchEvent(event);
         }
 
-        private void processOnClick(View view) {
-            if (actionBarLayer.isActionModeShowed()) {
-                processRowSelect(view);
+        return result;
+    }
+
+    @Override
+    public void setMessageObject(MessageObject messageObject) {
+        if (currentMessageObject != messageObject || isUserDataChanged()) {
+
+            int uid = messageObject.messageOwner.media.user_id;
+            contactUser = MessagesController.getInstance().getUser(uid);
+
+            drawAddButton = contactUser != null && uid != UserConfig.getClientUserId() && ContactsController.getInstance().contactsDict.get(uid) == null;
+
+            int maxWidth;
+            if (AndroidUtilities.isTablet()) {
+                maxWidth = (int) (AndroidUtilities.getMinTabletSide() * 0.7f);
+            } else {
+                maxWidth = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.7f);
             }
+            maxWidth -= AndroidUtilities.dp(58 + (drawAddButton ? 52 : 0));
+
+            if (contactUser != null) {
+                if (contactUser.photo != null) {
+                    currentPhoto = contactUser.photo.photo_small;
+                }
+                avatarImage.setImage(currentPhoto, "50_50", getResources().getDrawable(AndroidUtilities.getUserAvatarForId(uid)), false);
+            } else {
+                avatarImage.setImage(null, "50_50", getResources().getDrawable(AndroidUtilities.getUserAvatarForId(uid)), false);
+            }
+
+            String currentNameString = ContactsController.formatName(messageObject.messageOwner.media.first_name, messageObject.messageOwner.media.last_name);
+            int nameWidth = Math.min((int) Math.ceil(namePaint.measureText(currentNameString)), maxWidth);
+
+            CharSequence stringFinal = TextUtils.ellipsize(currentNameString.replace("\n", " "), namePaint, nameWidth, TextUtils.TruncateAt.END);
+            nameLayout = new StaticLayout(stringFinal, namePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            if (nameLayout.getLineCount() > 0) {
+                nameWidth = (int)Math.ceil(nameLayout.getLineWidth(0));
+            } else {
+                nameWidth = 0;
+            }
+
+            String phone = messageObject.messageOwner.media.phone_number;
+            if (phone != null && phone.length() != 0) {
+                if (!phone.startsWith("+")) {
+                    phone = "+" + phone;
+                }
+                phone = PhoneFormat.getInstance().format(phone);
+            } else {
+                phone = LocaleController.getString("Unknown", R.string.Unknown);
+            }
+            int phoneWidth = Math.min((int) Math.ceil(phonePaint.measureText(phone)), maxWidth);
+            stringFinal = TextUtils.ellipsize(phone.replace("\n", " "), phonePaint, phoneWidth, TextUtils.TruncateAt.END);
+            phoneLayout = new StaticLayout(stringFinal, phonePaint, phoneWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            if (phoneLayout.getLineCount() > 0) {
+                phoneWidth = (int)Math.ceil(phoneLayout.getLineWidth(0));
+            } else {
+                phoneWidth = 0;
+            }
+
+            namesWidth = Math.max(nameWidth, phoneWidth);
+            backgroundWidth = AndroidUtilities.dp(75 + (drawAddButton ? 52 : 0)) + namesWidth;
+
+            super.setMessageObject(messageObject);
         }
     }
-     */
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(71));
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+
+        if (currentMessageObject == null) {
+            return;
+        }
+
+        int x;
+
+        if (currentMessageObject.isOut()) {
+            x = layoutWidth - backgroundWidth + AndroidUtilities.dp(6);
+        } else {
+            if (isChat) {
+                x = AndroidUtilities.dp(67);
+            } else {
+                x = AndroidUtilities.dp(14);
+            }
+        }
+        avatarImage.setImageCoords(x + (drawAddButton ? AndroidUtilities.dp(52) : 0), AndroidUtilities.dp(7), AndroidUtilities.dp(42), AndroidUtilities.dp(42));
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+
+        if (currentMessageObject == null) {
+            return;
+        }
+
+        avatarImage.draw(canvas, avatarImage.getImageX(), avatarImage.getImageY(), avatarImage.getImageWidth(), avatarImage.getImageWidth());
+
+        if (nameLayout != null) {
+            canvas.save();
+            canvas.translate(avatarImage.getImageX() + avatarImage.getImageWidth() + AndroidUtilities.dp(9), AndroidUtilities.dp(8));
+            namePaint.setColor(AndroidUtilities.getColorForId(currentMessageObject.messageOwner.media.user_id));
+            nameLayout.draw(canvas);
+            canvas.restore();
+        }
+        if (phoneLayout != null) {
+            canvas.save();
+            canvas.translate(avatarImage.getImageX() + avatarImage.getImageWidth() + AndroidUtilities.dp(9), AndroidUtilities.dp(29));
+            phoneLayout.draw(canvas);
+            canvas.restore();
+        }
+
+        if (drawAddButton) {
+            if (currentMessageObject.isOut()) {
+                linePaint.setColor(0x9670b15c);
+            } else {
+                linePaint.setColor(0xffe8e8e8);
+            }
+            canvas.drawLine(avatarImage.getImageX() - AndroidUtilities.dp(4), avatarImage.getImageY(), avatarImage.getImageX() - AndroidUtilities.dp(4), AndroidUtilities.dp(62), linePaint);
+
+            setDrawableBounds(addContactDrawable, avatarImage.getImageX() - AndroidUtilities.dp(44), AndroidUtilities.dp(20));
+            addContactDrawable.draw(canvas);
+        }
+    }
 }

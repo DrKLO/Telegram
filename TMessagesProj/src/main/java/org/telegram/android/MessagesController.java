@@ -3551,7 +3551,15 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
 
                 if (object instanceof TLRPC.TL_decryptedMessageLayer) {
-                    object = ((TLRPC.TL_decryptedMessageLayer) object).message;
+                    final TLRPC.TL_decryptedMessageLayer layer = (TLRPC.TL_decryptedMessageLayer)object;
+                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            chat.seq_in = layer.out_seq_no;
+                            MessagesStorage.getInstance().updateEncryptedChatSeq(chat);
+                        }
+                    });
+                    object = layer.message;
                 }
 
                 if (object instanceof TLRPC.TL_decryptedMessage) {
@@ -3890,6 +3898,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         salt[a] = (byte) ((byte) (Utilities.random.nextDouble() * 256) ^ res.random[a]);
                     }
                     encryptedChat.a_or_b = salt;
+                    encryptedChat.seq_in = 1;
+                    encryptedChat.seq_out = 0;
                     BigInteger p = new BigInteger(1, MessagesStorage.secretPBytes);
                     BigInteger g_b = BigInteger.valueOf(MessagesStorage.secretG);
                     g_b = g_b.modPow(new BigInteger(1, salt), p);
@@ -4033,8 +4043,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                         }
                                         TLRPC.EncryptedChat chat = (TLRPC.EncryptedChat) response;
                                         chat.user_id = chat.participant_id;
-                                        putEncryptedChat(chat, false);
+                                        chat.seq_in = 0;
+                                        chat.seq_out = 1;
                                         chat.a_or_b = salt;
+                                        putEncryptedChat(chat, false);
                                         TLRPC.TL_dialog dialog = new TLRPC.TL_dialog();
                                         dialog.id = ((long) chat.id) << 32;
                                         dialog.unread_count = 0;

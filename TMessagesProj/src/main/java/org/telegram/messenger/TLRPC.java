@@ -9330,6 +9330,8 @@ public class TLRPC {
         public int user_id;
         public int ttl;
         public int layer;
+        public int seq_in;
+        public int seq_out;
     }
 
     public static class FileLocation extends TLObject {

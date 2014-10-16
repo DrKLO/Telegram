@@ -608,7 +608,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     if (user.phone != null && user.phone.length() != 0) {
                         textView.setText(PhoneFormat.getInstance().format("+" + user.phone));
                     } else {
-                        textView.setText("Unknown");
+                        textView.setText(LocaleController.getString("Unknown", R.string.Unknown));
                     }
                     divider.setVisibility(View.INVISIBLE);
                     detailTextView.setText(LocaleController.getString("PhoneMobile", R.string.PhoneMobile));

@@ -94,7 +94,7 @@ public class ChatBaseCell extends BaseCell {
 
     private StaticLayout timeLayout;
     protected int timeWidth;
-    protected int timeX;
+    private int timeX;
     private TextPaint currentTimePaint;
     private String currentTimeString;
     protected boolean drawTime = true;

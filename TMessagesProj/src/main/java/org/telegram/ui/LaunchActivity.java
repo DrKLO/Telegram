@@ -670,7 +670,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     }
                 } else {
                     actionBarLayout.presentFragment(fragment, true);
-                    fragment.processSendingVideo(videoPath, 0, 0, 0, 0, null);
+                    SendMessagesHelper.prepareSendingVideo(videoPath, 0, 0, 0, 0, null, dialog_id);
                 }
             } else {
                 actionBarLayout.presentFragment(fragment, true);
@@ -678,10 +678,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     fragment.processSendingText(sendingText);
                 }
                 if (photoPathsArray != null) {
-                    fragment.processSendingPhotos(null, photoPathsArray);
+                    SendMessagesHelper.prepareSendingPhotos(null, photoPathsArray, dialog_id);
                 }
                 if (documentsPathsArray != null) {
-                    fragment.processSendingDocuments(documentsPathsArray, documentsOriginalPathsArray);
+                    SendMessagesHelper.prepareSendingDocuments(documentsPathsArray, documentsOriginalPathsArray, dialog_id);
                 }
                 if (contactsToSend != null && !contactsToSend.isEmpty()) {
                     for (TLRPC.User user : contactsToSend) {
@@ -1190,7 +1190,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     buttonLayoutTablet.setVisibility(View.VISIBLE);
                     backgroundTablet.setVisibility(View.VISIBLE);
                 }
-            } else if (layout == layersActionBarLayout && actionBarLayout.fragmentsStack.isEmpty()) {
+            } else if (layout == layersActionBarLayout && actionBarLayout.fragmentsStack.isEmpty() && layersActionBarLayout.fragmentsStack.size() == 1) {
                 onFinish();
                 finish();
                 return false;

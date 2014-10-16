@@ -93,7 +93,7 @@ public class MessagesStorage {
                 database.executeFast("CREATE TABLE users(uid INTEGER PRIMARY KEY, name TEXT, status INTEGER, data BLOB)").stepThis().dispose();
                 database.executeFast("CREATE TABLE messages(mid INTEGER PRIMARY KEY, uid INTEGER, read_state INTEGER, send_state INTEGER, date INTEGER, data BLOB, out INTEGER, ttl INTEGER, media INTEGER)").stepThis().dispose();
                 database.executeFast("CREATE TABLE chats(uid INTEGER PRIMARY KEY, name TEXT, data BLOB)").stepThis().dispose();
-                database.executeFast("CREATE TABLE enc_chats(uid INTEGER PRIMARY KEY, user INTEGER, name TEXT, data BLOB, g BLOB, authkey BLOB, ttl INTEGER, layer INTEGER)").stepThis().dispose();
+                database.executeFast("CREATE TABLE enc_chats(uid INTEGER PRIMARY KEY, user INTEGER, name TEXT, data BLOB, g BLOB, authkey BLOB, ttl INTEGER, layer INTEGER, seq_in INTEGER, seq_out INTEGER)").stepThis().dispose();
                 database.executeFast("CREATE TABLE dialogs(did INTEGER PRIMARY KEY, date INTEGER, unread_count INTEGER, last_mid INTEGER)").stepThis().dispose();
                 database.executeFast("CREATE TABLE chat_settings(uid INTEGER PRIMARY KEY, participants BLOB)").stepThis().dispose();
                 database.executeFast("CREATE TABLE contacts(uid INTEGER PRIMARY KEY, mutual INTEGER)").stepThis().dispose();
@@ -291,6 +291,8 @@ public class MessagesStorage {
                     }
                     if (version == 6 && version < 7) {
                         database.executeFast("ALTER TABLE enc_chats ADD COLUMN layer INTEGER default 0").stepThis().dispose();
+                        database.executeFast("ALTER TABLE enc_chats ADD COLUMN seq_in INTEGER default 0").stepThis().dispose();
+                        database.executeFast("ALTER TABLE enc_chats ADD COLUMN seq_out INTEGER default 0").stepThis().dispose();
                         database.executeFast("PRAGMA user_version = 7").stepThis().dispose();
                         version = 7;
                     }
@@ -491,7 +493,7 @@ public class MessagesStorage {
 
                         if (!encryptedChatIds.isEmpty()) {
                             String stringToLoad = TextUtils.join(",", encryptedChatIds);
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, user, g, authkey, ttl, layer FROM enc_chats WHERE uid IN(%s)", stringToLoad));
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, user, g, authkey, ttl, layer, seq_in, seq_out FROM enc_chats WHERE uid IN(%s)", stringToLoad));
                             while (cursor.next()) {
                                 ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
                                 if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
@@ -505,6 +507,8 @@ public class MessagesStorage {
                                     chat.auth_key = cursor.byteArrayValue(3);
                                     chat.ttl = cursor.intValue(4);
                                     chat.layer = cursor.intValue(5);
+                                    chat.seq_in = cursor.intValue(6);
+                                    chat.seq_out = cursor.intValue(7);
                                 }
                                 buffersStorage.reuseFreeBuffer(data);
                             }
@@ -1232,7 +1236,7 @@ public class MessagesStorage {
                     cursor.dispose();
 
                     if (needEncrypted) {
-                        cursor = database.queryFinalized("SELECT q.data, u.name, q.user, q.g, q.authkey, q.ttl, u.data, u.status, q.layer FROM enc_chats as q INNER JOIN dialogs as d ON (q.uid << 32) = d.did INNER JOIN users as u ON q.user = u.uid");
+                        cursor = database.queryFinalized("SELECT q.data, u.name, q.user, q.g, q.authkey, q.ttl, u.data, u.status, q.layer, q.seq_in, q.seq_out FROM enc_chats as q INNER JOIN dialogs as d ON (q.uid << 32) = d.did INNER JOIN users as u ON q.user = u.uid");
                         while (cursor.next()) {
                             String name = cursor.stringValue(1);
                             if (name.startsWith(q) || name.contains(" " + q)) {
@@ -1245,6 +1249,8 @@ public class MessagesStorage {
                                     chat.auth_key = cursor.byteArrayValue(4);
                                     chat.ttl = cursor.intValue(5);
                                     chat.layer = cursor.intValue(8);
+                                    chat.seq_in = cursor.intValue(9);
+                                    chat.seq_out = cursor.intValue(10);
 
                                     TLRPC.User user = (TLRPC.User)TLClassStore.Instance().TLdeserialize(data2, data2.readInt32());
                                     if (user.status != null) {
@@ -1720,7 +1726,7 @@ public class MessagesStorage {
 
                     if (!encryptedChatIds.isEmpty()) {
                         String stringToLoad = TextUtils.join(",", encryptedChatIds);
-                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, user, g, authkey, ttl, layer FROM enc_chats WHERE uid IN(%s)", stringToLoad));
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, user, g, authkey, ttl, layer, seq_in, seq_out FROM enc_chats WHERE uid IN(%s)", stringToLoad));
                         while (cursor.next()) {
                             ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
                             if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
@@ -1734,6 +1740,8 @@ public class MessagesStorage {
                                 chat.auth_key = cursor.byteArrayValue(3);
                                 chat.ttl = cursor.intValue(4);
                                 chat.layer = cursor.intValue(5);
+                                chat.seq_in = cursor.intValue(6);
+                                chat.seq_out = cursor.intValue(7);
                             }
                             buffersStorage.reuseFreeBuffer(data);
                         }
@@ -2126,6 +2134,31 @@ public class MessagesStorage {
         });
     }
 
+    public void updateEncryptedChatSeq(final TLRPC.EncryptedChat chat) {
+        if (chat == null) {
+            return;
+        }
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                SQLitePreparedStatement state = null;
+                try {
+                    state = database.executeFast("UPDATE enc_chats SET seq_in = ?, seq_out = ? WHERE uid = ?");
+                    state.bindInteger(1, chat.seq_in);
+                    state.bindInteger(2, chat.seq_out);
+                    state.bindInteger(3, chat.id);
+                    state.step();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                } finally {
+                    if (state != null) {
+                        state.dispose();
+                    }
+                }
+            }
+        });
+    }
+
     public void updateEncryptedChatTTL(final TLRPC.EncryptedChat chat) {
         if (chat == null) {
             return;
@@ -2183,7 +2216,7 @@ public class MessagesStorage {
             public void run() {
                 SQLitePreparedStatement state = null;
                 try {
-                    state = database.executeFast("UPDATE enc_chats SET data = ?, g = ?, authkey = ?, ttl = ?, layer = ? WHERE uid = ?");
+                    state = database.executeFast("UPDATE enc_chats SET data = ?, g = ?, authkey = ?, ttl = ?, layer = ?, seq_in = ?, seq_out = ? WHERE uid = ?");
                     ByteBufferDesc data = buffersStorage.getFreeBuffer(chat.getObjectSize());
                     ByteBufferDesc data2 = buffersStorage.getFreeBuffer(chat.a_or_b != null ? chat.a_or_b.length : 1);
                     ByteBufferDesc data3 = buffersStorage.getFreeBuffer(chat.auth_key != null ? chat.auth_key.length : 1);
@@ -2199,7 +2232,9 @@ public class MessagesStorage {
                     state.bindByteBuffer(3, data3.buffer);
                     state.bindInteger(4, chat.ttl);
                     state.bindInteger(5, chat.layer);
-                    state.bindInteger(6, chat.id);
+                    state.bindInteger(6, chat.seq_in);
+                    state.bindInteger(7, chat.seq_out);
+                    state.bindInteger(8, chat.id);
                     state.step();
                     buffersStorage.reuseFreeBuffer(data);
                     buffersStorage.reuseFreeBuffer(data2);
@@ -2224,7 +2259,7 @@ public class MessagesStorage {
             public void run() {
                 try {
                     int userToLoad = 0;
-                    SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, user, g, authkey, ttl, layer FROM enc_chats WHERE uid = %d", chat_id));
+                    SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, user, g, authkey, ttl, layer, seq_in, seq_out FROM enc_chats WHERE uid = %d", chat_id));
                     if (cursor.next()) {
                         ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
                         if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
@@ -2236,6 +2271,8 @@ public class MessagesStorage {
                             chat.auth_key = cursor.byteArrayValue(3);
                             chat.ttl = cursor.intValue(4);
                             chat.layer = cursor.intValue(5);
+                            chat.seq_in = cursor.intValue(6);
+                            chat.seq_out = cursor.intValue(7);
                         }
                         buffersStorage.reuseFreeBuffer(data);
                     }
@@ -2276,7 +2313,7 @@ public class MessagesStorage {
             @Override
             public void run() {
                 try {
-                    SQLitePreparedStatement state = database.executeFast("REPLACE INTO enc_chats VALUES(?, ?, ?, ?, ?, ?, ?, ?)");
+                    SQLitePreparedStatement state = database.executeFast("REPLACE INTO enc_chats VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                     ByteBufferDesc data = buffersStorage.getFreeBuffer(chat.getObjectSize());
                     ByteBufferDesc data2 = buffersStorage.getFreeBuffer(chat.a_or_b != null ? chat.a_or_b.length : 1);
                     ByteBufferDesc data3 = buffersStorage.getFreeBuffer(chat.auth_key != null ? chat.auth_key.length : 1);
@@ -2301,6 +2338,8 @@ public class MessagesStorage {
                     state.bindByteBuffer(6, data3.buffer);
                     state.bindInteger(7, chat.ttl);
                     state.bindInteger(8, chat.layer);
+                    state.bindInteger(9, chat.seq_in);
+                    state.bindInteger(10, chat.seq_out);
                     state.step();
                     state.dispose();
                     buffersStorage.reuseFreeBuffer(data);
@@ -3160,7 +3199,7 @@ public class MessagesStorage {
 
             if (!encryptedToLoad.isEmpty()) {
                 String toLoad = TextUtils.join(",", encryptedToLoad);
-                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, user, g, authkey, ttl, layer FROM enc_chats WHERE uid IN(%s)", toLoad));
+                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, user, g, authkey, ttl, layer, seq_in, seq_out FROM enc_chats WHERE uid IN(%s)", toLoad));
                 while (cursor.next()) {
                     ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
                     if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
@@ -3174,6 +3213,8 @@ public class MessagesStorage {
                         chat.auth_key = cursor.byteArrayValue(3);
                         chat.ttl = cursor.intValue(4);
                         chat.layer = cursor.intValue(5);
+                        chat.seq_in = cursor.intValue(6);
+                        chat.seq_out = cursor.intValue(7);
                     }
                     buffersStorage.reuseFreeBuffer(data);
                 }
@@ -3417,7 +3458,7 @@ public class MessagesStorage {
 
                     if (!encryptedToLoad.isEmpty()) {
                         String toLoad = TextUtils.join(",", encryptedToLoad);
-                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, user, g, authkey, ttl, layer FROM enc_chats WHERE uid IN(%s)", toLoad));
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, user, g, authkey, ttl, layer, seq_in, seq_out FROM enc_chats WHERE uid IN(%s)", toLoad));
                         while (cursor.next()) {
                             try {
                                 ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
@@ -3433,6 +3474,8 @@ public class MessagesStorage {
                                         chat.auth_key = cursor.byteArrayValue(3);
                                         chat.ttl = cursor.intValue(4);
                                         chat.layer = cursor.intValue(5);
+                                        chat.seq_in = cursor.intValue(6);
+                                        chat.seq_out = cursor.intValue(7);
                                     }
                                 }
                                 buffersStorage.reuseFreeBuffer(data);
@@ -3706,7 +3749,7 @@ public class MessagesStorage {
     public TLRPC.EncryptedChat getEncryptedChat(final int chat_id) {
         TLRPC.EncryptedChat chat = null;
         try {
-            SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, user, g, authkey, ttl, layer FROM enc_chats WHERE uid = %d", chat_id));
+            SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, user, g, authkey, ttl, layer, seq_in, seq_out FROM enc_chats WHERE uid = %d", chat_id));
             if (cursor.next()) {
                 ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
                 if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
@@ -3717,6 +3760,8 @@ public class MessagesStorage {
                         chat.auth_key = cursor.byteArrayValue(3);
                         chat.ttl = cursor.intValue(4);
                         chat.layer = cursor.intValue(5);
+                        chat.seq_in = cursor.intValue(6);
+                        chat.seq_out = cursor.intValue(7);
                     }
                 }
                 buffersStorage.reuseFreeBuffer(data);

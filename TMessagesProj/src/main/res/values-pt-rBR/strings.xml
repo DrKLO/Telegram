@@ -197,6 +197,7 @@
     <string name="MessageLifetime">Tempo de autodestruição</string>
     <string name="ShortMessageLifetimeForever">Desativado</string>
     <string name="EncryptionKeyDescription">Esta imagem é uma visualização da chave criptográfica para esta conversa secreta com <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Se esta imagem aparecer da mesma forma no telefone de <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]>, sua conversa é 200%% segura.<![CDATA[<br><br>]]>Saiba mais em telegram.org</string>
+    <string name="Unknown">Unknown</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Restaurar todas as configurações de notificação</string>
     <string name="TextSize">Tamanho do texto nas mensagens</string>

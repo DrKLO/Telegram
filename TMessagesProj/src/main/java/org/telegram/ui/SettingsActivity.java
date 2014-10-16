@@ -853,7 +853,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     if (user != null && user.phone != null && user.phone.length() != 0) {
                         textView.setText(PhoneFormat.getInstance().format("+" + user.phone));
                     } else {
-                        textView.setText("Unknown");
+                        textView.setText(LocaleController.getString("Unknown", R.string.Unknown));
                     }
                     divider.setVisibility(View.INVISIBLE);
                 } else if (i == notificationRow) {
