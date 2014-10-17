@@ -926,7 +926,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 @Override
                 public void onScroll(AbsListView absListView, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
                     if (visibleItemCount > 0) {
-                        if (firstVisibleItem <= 4) {
+                        if (firstVisibleItem <= 10) {
                             if (!endReached && !loading) {
                                 if (messagesByDays.size() != 0) {
                                     MessagesController.getInstance().loadMessages(dialog_id, 20, maxMessageId, !cacheEndReaced, minDate, classGuid, false, false, null);

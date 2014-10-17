@@ -2081,12 +2081,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                         if (end < 0 || info.presentationTimeUs < end) {
                             info.offset = 0;
                             info.flags = extractor.getSampleFlags();
-                            if (!isAudio) {
-                                buffer.limit(info.offset + info.size);
-                                buffer.position(info.offset);
-                                buffer.putInt(info.size - 4);
-                            }
-                            if (mediaMuxer.writeSampleData(muxerTrackIndex, buffer, info)) {
+                            if (mediaMuxer.writeSampleData(muxerTrackIndex, buffer, info, isAudio)) {
                                 didWriteData(messageObject, file, false, false);
                             }
                             extractor.advance();
@@ -2168,6 +2163,23 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             resultWidth = temp;
             rotationValue = 90;
             rotateRender = 270;
+        } else if (Build.VERSION.SDK_INT > 20) {
+            if (rotationValue == 90) {
+                int temp = resultHeight;
+                resultHeight = resultWidth;
+                resultWidth = temp;
+                rotationValue = 0;
+                rotateRender = 270;
+            } else if (rotationValue == 180) {
+                rotateRender = 180;
+                rotationValue = 0;
+            } else if (rotationValue == 270) {
+                int temp = resultHeight;
+                resultHeight = resultWidth;
+                resultWidth = temp;
+                rotationValue = 0;
+                rotateRender = 90;
+            }
         }
 
         File inputFile = new File(videoPath);
@@ -2374,10 +2386,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                                         }
                                         if (info.size > 1) {
                                             if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
-                                                encodedData.limit(info.offset + info.size);
-                                                encodedData.position(info.offset);
-                                                encodedData.putInt(Integer.reverseBytes(info.size - 4));
-                                                if (mediaMuxer.writeSampleData(videoTrackIndex, encodedData, info)) {
+                                                if (mediaMuxer.writeSampleData(videoTrackIndex, encodedData, info, false)) {
                                                     didWriteData(messageObject, cacheFile, false, false);
                                                 }
                                             } else if (videoTrackIndex == -5) {

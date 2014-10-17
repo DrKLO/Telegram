@@ -108,6 +108,9 @@ public class ImageReceiver {
         if (img == null) {
             isPlaceholder = true;
             ImageLoader.getInstance().loadImage(fileLocation, httpUrl, this, size, cacheOnly);
+            if (parentView != null) {
+                parentView.invalidate();
+            }
         } else {
             setImageBitmap(img, currentPath);
         }

@@ -54,12 +54,13 @@ public class MP4Builder {
 
     private InterleaveChunkMdat mdat = null;
     private Mp4Movie currentMp4Movie = null;
-    FileOutputStream fos = null;
+    private FileOutputStream fos = null;
     private FileChannel fc = null;
     private long dataOffset = 0;
     private long writedSinceLastMdat = 0;
     private boolean writeNewMdat = true;
-    HashMap<Track, long[]> track2SampleSizes = new HashMap<Track, long[]>();
+    private HashMap<Track, long[]> track2SampleSizes = new HashMap<Track, long[]>();
+    private ByteBuffer sizeBuffer = null;
 
     public MP4Builder createMovie(Mp4Movie mp4Movie) throws Exception {
         currentMp4Movie = mp4Movie;
@@ -74,6 +75,8 @@ public class MP4Builder {
 
         mdat = new InterleaveChunkMdat();
 
+        sizeBuffer = ByteBuffer.allocateDirect(4);
+
         return this;
     }
 
@@ -87,7 +90,7 @@ public class MP4Builder {
         fos.flush();
     }
 
-    public boolean writeSampleData(int trackIndex, ByteBuffer byteBuf, MediaCodec.BufferInfo bufferInfo) throws Exception {
+    public boolean writeSampleData(int trackIndex, ByteBuffer byteBuf, MediaCodec.BufferInfo bufferInfo, boolean isAudio) throws Exception {
         if (writeNewMdat) {
             mdat.setContentSize(0);
             mdat.getBox(fc);
@@ -109,8 +112,15 @@ public class MP4Builder {
         }
 
         currentMp4Movie.addSample(trackIndex, dataOffset, bufferInfo);
-        byteBuf.position(bufferInfo.offset);
+        byteBuf.position(bufferInfo.offset + (isAudio ? 0 : 4));
         byteBuf.limit(bufferInfo.offset + bufferInfo.size);
+
+        if (!isAudio) {
+            sizeBuffer.position(0);
+            sizeBuffer.putInt(bufferInfo.size - 4);
+            sizeBuffer.position(0);
+            fc.write(sizeBuffer);
+        }
 
         fc.write(byteBuf);
         dataOffset += bufferInfo.size;
