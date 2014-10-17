@@ -160,6 +160,7 @@
     <string name="LastSeen">last seen</string>
     <string name="LastSeenDate">last seen</string>
     <string name="InviteFriends">Invite Friends</string>
+    <string name="GlobalSearch">GLOBAL SEARCH</string>
     <!--group create view-->
     <string name="SendMessageTo">Send message to...</string>
     <string name="EnterGroupNamePlaceholder">Enter group name</string>
@@ -198,6 +199,11 @@
     <string name="ShortMessageLifetimeForever">Off</string>
     <string name="EncryptionKeyDescription">This image is a visualization of the encryption key for this secret chat with <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>If this image looks the same on <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> phone, your chat is 200%% secure.<![CDATA[<br><br>]]>Learn more at telegram.org</string>
     <string name="Unknown">Unknown</string>
+    <string name="Info">INFO</string>
+    <string name="Phone">Phone</string>
+    <string name="Username">Username</string>
+    <string name="UsernameInUse">Username already in use</string>
+    <string name="UsernameInvalid">Username invalid</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Reset all notification settings to default</string>
     <string name="TextSize">Messages Text Size</string>
@@ -206,7 +212,6 @@
     <string name="Unblock">Unblock</string>
     <string name="UnblockText">Tap and hold on user to unblock.</string>
     <string name="NoBlocked">No blocked users yet</string>
-    <string name="YourPhoneNumber">YOUR PHONE NUMBER</string>
     <string name="MessageNotifications">MESSAGE NOTIFICATIONS</string>
     <string name="Alert">Alert</string>
     <string name="MessagePreview">Message Preview</string>

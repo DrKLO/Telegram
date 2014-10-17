@@ -160,6 +160,7 @@
     <string name="LastSeen">ultimo accesso</string>
     <string name="LastSeenDate">ultimo accesso</string>
     <string name="InviteFriends">Invita amici</string>
+    <string name="GlobalSearch">GLOBAL SEARCH</string>
     <!--group create view-->
     <string name="SendMessageTo">Invia messaggio a...</string>
     <string name="EnterGroupNamePlaceholder">Immetti il nome del gruppo</string>
@@ -198,6 +199,11 @@
     <string name="ShortMessageLifetimeForever">Spento</string>
     <string name="EncryptionKeyDescription">Questa immagine è una visualizzazione della chiave di cifratura per questa chat segreta con <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Se questa immagine è uguale sul telefono di <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, la chat è sicura al 200%%.<![CDATA[<br><br>]]>Per saperne di più, visita Telegram.org</string>
     <string name="Unknown">Unknown</string>
+    <string name="Info">INFO</string>
+    <string name="Phone">Telefono</string>
+    <string name="Username">Username</string>
+    <string name="UsernameInUse">Username already in use</string>
+    <string name="UsernameInvalid">Username invalid</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Ripristina tutte le impostazioni di notifica predefinite</string>
     <string name="TextSize">Dimensione testo messaggi</string>
@@ -206,7 +212,6 @@
     <string name="Unblock">Sblocca</string>
     <string name="UnblockText">Tieni premuto sull’utente per sbloccarlo.</string>
     <string name="NoBlocked">Ancora nessun utente bloccato</string>
-    <string name="YourPhoneNumber">IL TUO NUMERO DI TELEFONO</string>
     <string name="MessageNotifications">NOTIFICHE MESSAGGI</string>
     <string name="Alert">Avviso</string>
     <string name="MessagePreview">Anteprima messaggio</string>

@@ -30,6 +30,7 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.android.MessagesStorage;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
@@ -220,6 +221,12 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         TLRPC.User user = searchListViewAdapter.getItem(i);
                         if (user == null || user.id == UserConfig.getClientUserId()) {
                             return;
+                        }
+                        if (searchListViewAdapter.isGlobalSearch(i)) {
+                            ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+                            users.add(user);
+                            MessagesController.getInstance().putUsers(users, false);
+                            MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);
                         }
                         if (returnAsResult) {
                             if (ignoreUsers != null && ignoreUsers.containsKey(user.id)) {

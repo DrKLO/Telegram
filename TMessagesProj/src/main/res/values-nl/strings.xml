@@ -160,6 +160,7 @@
     <string name="LastSeen">gezien</string>
     <string name="LastSeenDate">gezien</string>
     <string name="InviteFriends">Vrienden uitnodigen</string>
+    <string name="GlobalSearch">GLOBAL SEARCH</string>
     <!--group create view-->
     <string name="SendMessageTo">Bericht verzenden naar…</string>
     <string name="EnterGroupNamePlaceholder">Groepsnaam...</string>
@@ -198,6 +199,11 @@
     <string name="ShortMessageLifetimeForever">Uit</string>
     <string name="EncryptionKeyDescription">Dit is een weergave van de encryptiesleutel voor deze geheime chat met <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Als deze afbeelding er bij <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> hetzelfde uitziet, is jullie gesprek 200%% beveiligd.<![CDATA[<br><br>]]>Lees meer op telegram.org.</string>
     <string name="Unknown">Unknown</string>
+    <string name="Info">INFO</string>
+    <string name="Phone">Telefoon</string>
+    <string name="Username">Username</string>
+    <string name="UsernameInUse">Username already in use</string>
+    <string name="UsernameInvalid">Username invalid</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Alle meldingsinstellingen herstellen</string>
     <string name="TextSize">Tekstgrootte berichten</string>
@@ -206,7 +212,6 @@
     <string name="Unblock">Deblokkeren</string>
     <string name="UnblockText">Houd een gebruiker ingedrukt om hem/haar te deblokkeren.</string>
     <string name="NoBlocked">Geen geblokkeerde gebruikers</string>
-    <string name="YourPhoneNumber">JE TELEFOONNUMMER</string>
     <string name="MessageNotifications">BERICHTMELDINGEN</string>
     <string name="Alert">Waarschuwing</string>
     <string name="MessagePreview">Voorvertoning</string>

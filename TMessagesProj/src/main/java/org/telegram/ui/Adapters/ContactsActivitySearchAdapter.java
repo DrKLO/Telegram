@@ -9,10 +9,17 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.android.LocaleController;
+import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.R;
+import org.telegram.messenger.RPCRequest;
+import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
@@ -32,6 +39,9 @@ public class ContactsActivitySearchAdapter extends BaseFragmentAdapter {
     private ArrayList<TLRPC.User> searchResult;
     private ArrayList<CharSequence> searchResultNames;
     private Timer searchTimer;
+    private ArrayList<TLRPC.User> globalSearch;
+    private long reqId = 0;
+    private int lastReqId;
 
     public ContactsActivitySearchAdapter(Context context, HashMap<Integer, TLRPC.User> arg1) {
         mContext = context;
@@ -42,6 +52,8 @@ public class ContactsActivitySearchAdapter extends BaseFragmentAdapter {
         if (query == null) {
             searchResult = null;
             searchResultNames = null;
+            globalSearch = null;
+            queryServerSearch(null);
             notifyDataSetChanged();
         } else {
             try {
@@ -63,14 +75,50 @@ public class ContactsActivitySearchAdapter extends BaseFragmentAdapter {
                     }
                     processSearch(query);
                 }
-            }, 100, 300);
+            }, 200, 300);
         }
+    }
+
+    private void queryServerSearch(String query) {
+        if (query == null || query.length() < 5) {
+            if (reqId != 0) {
+                ConnectionsManager.getInstance().cancelRpc(reqId, true);
+                reqId = 0;
+            }
+            globalSearch = null;
+            lastReqId = 0;
+            notifyDataSetChanged();
+            return;
+        }
+        TLRPC.TL_contacts_search req = new TLRPC.TL_contacts_search();
+        req.q = query;
+        req.limit = 50;
+        final int currentReqId = ++lastReqId;
+        reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            @Override
+            public void run(final TLObject response, final TLRPC.TL_error error) {
+                AndroidUtilities.RunOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (currentReqId == lastReqId) {
+                            if (error == null) {
+                                TLRPC.TL_contacts_found res = (TLRPC.TL_contacts_found) response;
+                                globalSearch = res.users;
+                                notifyDataSetChanged();
+                            }
+                        }
+                        reqId = 0;
+                    }
+                });
+            }
+        }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
     }
 
     private void processSearch(final String query) {
         AndroidUtilities.RunOnUIThread(new Runnable() {
             @Override
             public void run() {
+                queryServerSearch(query);
                 final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<TLRPC.TL_contact>();
                 contactsCopy.addAll(ContactsController.getInstance().contacts);
                 Utilities.searchQueue.postRunnable(new Runnable() {
@@ -117,28 +165,43 @@ public class ContactsActivitySearchAdapter extends BaseFragmentAdapter {
 
     @Override
     public boolean areAllItemsEnabled() {
-        return true;
+        return false;
     }
 
     @Override
     public boolean isEnabled(int i) {
-        return true;
+        return i != (searchResult == null ? 0 : searchResult.size());
     }
 
     @Override
     public int getCount() {
-        if (searchResult == null) {
-            return 0;
+        int count = searchResult == null ? 0 : searchResult.size();
+        int globalCount = globalSearch == null ? 0 : globalSearch.size();
+        if (globalCount != 0) {
+            count += globalCount + 1;
         }
-        return searchResult.size();
+        return count;
+    }
+
+    public boolean isGlobalSearch(int i) {
+        int localCount = searchResult == null ? 0 : searchResult.size();
+        int globalCount = globalSearch == null ? 0 : globalSearch.size();
+        if (i >= 0 && i < localCount) {
+            return false;
+        } else if (i > localCount && i <= globalCount + localCount) {
+            return true;
+        }
+        return false;
     }
 
     @Override
     public TLRPC.User getItem(int i) {
-        if (searchResult != null) {
-            if (i >= 0 && i < searchResult.size()) {
-                return searchResult.get(i);
-            }
+        int localCount = searchResult == null ? 0 : searchResult.size();
+        int globalCount = globalSearch == null ? 0 : globalSearch.size();
+        if (i >= 0 && i < localCount) {
+            return searchResult.get(i);
+        } else if (i > localCount && i <= globalCount + localCount) {
+            return globalSearch.get(i - localCount - 1);
         }
         return null;
     }
@@ -155,24 +218,30 @@ public class ContactsActivitySearchAdapter extends BaseFragmentAdapter {
 
     @Override
     public View getView(int i, View view, ViewGroup viewGroup) {
-        if (view == null) {
-            view = new ChatOrUserCell(mContext);
-            ((ChatOrUserCell)view).usePadding = false;
-        }
+        if (i == (searchResult == null ? 0 : searchResult.size())) {
+            if (view == null) {
+                LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                view = li.inflate(R.layout.settings_section_layout, viewGroup, false);
+                TextView textView = (TextView)view.findViewById(R.id.settings_section_text);
+                textView.setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
+            }
+        } else {
+            if (view == null) {
+                view = new ChatOrUserCell(mContext);
+                ((ChatOrUserCell) view).usePadding = false;
+            }
 
-        ((ChatOrUserCell) view).useSeparator = i != searchResult.size() - 1;
+            ((ChatOrUserCell) view).useSeparator = (i != getCount() - 1 && i != searchResult.size() - 1);
+            TLRPC.User user = getItem(i);
+            if (user != null) {
+                ((ChatOrUserCell) view).setData(user, null, null, i < searchResult.size() ? searchResultNames.get(i) : null, i > searchResult.size() ? "@" + user.username : null);
 
-        Object obj = searchResult.get(i);
-        TLRPC.User user = MessagesController.getInstance().getUser(((TLRPC.User)obj).id);
-
-        if (user != null) {
-            ((ChatOrUserCell)view).setData(user, null, null, searchResultNames.get(i), null);
-
-            if (ignoreUsers != null) {
-                if (ignoreUsers.containsKey(user.id)) {
-                    ((ChatOrUserCell)view).drawAlpha = 0.5f;
-                } else {
-                    ((ChatOrUserCell)view).drawAlpha = 1.0f;
+                if (ignoreUsers != null) {
+                    if (ignoreUsers.containsKey(user.id)) {
+                        ((ChatOrUserCell) view).drawAlpha = 0.5f;
+                    } else {
+                        ((ChatOrUserCell) view).drawAlpha = 1.0f;
+                    }
                 }
             }
         }
@@ -181,16 +250,19 @@ public class ContactsActivitySearchAdapter extends BaseFragmentAdapter {
 
     @Override
     public int getItemViewType(int i) {
+        if (i == (searchResult == null ? 0 : searchResult.size())) {
+            return 1;
+        }
         return 0;
     }
 
     @Override
     public int getViewTypeCount() {
-        return 1;
+        return 2;
     }
 
     @Override
     public boolean isEmpty() {
-        return searchResult == null || searchResult.size() == 0;
+        return (searchResult == null || searchResult.size() == 0) && (globalSearch == null || globalSearch.isEmpty());
     }
 }

@@ -160,6 +160,7 @@
     <string name="LastSeen">últ. vez</string>
     <string name="LastSeenDate">últ. vez el</string>
     <string name="InviteFriends">Invitar a amigos</string>
+    <string name="GlobalSearch">GLOBAL SEARCH</string>
     <!--group create view-->
     <string name="SendMessageTo">Enviar mensaje a...</string>
     <string name="EnterGroupNamePlaceholder">Nombre del grupo</string>
@@ -198,6 +199,11 @@
     <string name="ShortMessageLifetimeForever">Apagada</string>
     <string name="EncryptionKeyDescription">Esta imagen es una visualización de la clave de cifrado para el chat secreto con <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Si esta imagen se ve igual en el teléfono de <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, tu chat es seguro en un 200%%.<![CDATA[<br><br>]]>Aprende más en telegram.org</string>
     <string name="Unknown">Unknown</string>
+    <string name="Info">INFO</string>
+    <string name="Phone">Teléfono</string>
+    <string name="Username">Username</string>
+    <string name="UsernameInUse">Username already in use</string>
+    <string name="UsernameInvalid">Username invalid</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Restablecer las notificaciones</string>
     <string name="TextSize">Tamaño del texto</string>
@@ -206,7 +212,6 @@
     <string name="Unblock">Desbloquear</string>
     <string name="UnblockText">Para desbloquear, mantén pulsado sobre un usuario.</string>
     <string name="NoBlocked">Sin usuarios bloqueados</string>
-    <string name="YourPhoneNumber">TU NÚMERO DE TELÉFONO</string>
     <string name="MessageNotifications">NOTIFICACIONES DE MENSAJES</string>
     <string name="Alert">Alerta</string>
     <string name="MessagePreview">Vista previa del mensaje</string>

@@ -125,12 +125,13 @@ public class SettingsChangeNameActivity extends BaseFragment {
     }
 
     private void saveName() {
-        TLRPC.TL_account_updateProfile req = new TLRPC.TL_account_updateProfile();
-        if (UserConfig.getCurrentUser() == null || lastNameField.getText() == null || firstNameField.getText() == null) {
+        TLRPC.User currentUser = UserConfig.getCurrentUser();
+        if (currentUser == null || lastNameField.getText() == null || firstNameField.getText() == null) {
             return;
         }
-        UserConfig.getCurrentUser().first_name = req.first_name = firstNameField.getText().toString();
-        UserConfig.getCurrentUser().last_name = req.last_name = lastNameField.getText().toString();
+        TLRPC.TL_account_updateProfile req = new TLRPC.TL_account_updateProfile();
+        currentUser.first_name = req.first_name = firstNameField.getText().toString();
+        currentUser.last_name = req.last_name = lastNameField.getText().toString();
         TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
         if (user != null) {
             user.first_name = req.first_name;

@@ -176,7 +176,7 @@ public class FileLoader {
                                 }
                                 if (small) {
                                     currentUploadSmallOperationsCount--;
-                                    if (currentUploadSmallOperationsCount < 2) {
+                                    if (currentUploadSmallOperationsCount < 1) {
                                         FileUploadOperation operation = uploadSmallOperationQueue.poll();
                                         if (operation != null) {
                                             currentUploadSmallOperationsCount++;
@@ -185,7 +185,7 @@ public class FileLoader {
                                     }
                                 } else {
                                     currentUploadOperationsCount--;
-                                    if (currentUploadOperationsCount < 2) {
+                                    if (currentUploadOperationsCount < 1) {
                                         FileUploadOperation operation = uploadOperationQueue.poll();
                                         if (operation != null) {
                                             currentUploadOperationsCount++;
@@ -227,7 +227,7 @@ public class FileLoader {
                                 });
                                 if (small) {
                                     currentUploadSmallOperationsCount--;
-                                    if (currentUploadSmallOperationsCount < 2) {
+                                    if (currentUploadSmallOperationsCount < 1) {
                                         FileUploadOperation operation = uploadSmallOperationQueue.poll();
                                         if (operation != null) {
                                             currentUploadSmallOperationsCount++;
@@ -236,7 +236,7 @@ public class FileLoader {
                                     }
                                 } else {
                                     currentUploadOperationsCount--;
-                                    if (currentUploadOperationsCount < 2) {
+                                    if (currentUploadOperationsCount < 1) {
                                         FileUploadOperation operation = uploadOperationQueue.poll();
                                         if (operation != null) {
                                             currentUploadOperationsCount++;
@@ -259,14 +259,14 @@ public class FileLoader {
                     }
                 };
                 if (small) {
-                    if (currentUploadSmallOperationsCount < 2) {
+                    if (currentUploadSmallOperationsCount < 1) {
                         currentUploadSmallOperationsCount++;
                         operation.start();
                     } else {
                         uploadSmallOperationQueue.add(operation);
                     }
                 } else {
-                    if (currentUploadOperationsCount < 2) {
+                    if (currentUploadOperationsCount < 1) {
                         currentUploadOperationsCount++;
                         operation.start();
                     } else {

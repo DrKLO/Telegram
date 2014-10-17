@@ -160,6 +160,7 @@
     <string name="LastSeen">마지막 접속: </string>
     <string name="LastSeenDate">마지막 접속: </string>
     <string name="InviteFriends">친구 초대</string>
+    <string name="GlobalSearch">GLOBAL SEARCH</string>
     <!--group create view-->
     <string name="SendMessageTo">메시지 보내기...</string>
     <string name="EnterGroupNamePlaceholder">그룹 이름 입력</string>
@@ -198,6 +199,11 @@
     <string name="ShortMessageLifetimeForever">해제</string>
     <string name="EncryptionKeyDescription">이 이미지는 <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>님과의 비밀대화에 사용 중인 암호화 키의 모습입니다.<![CDATA[<br><br>]]>이 이미지가 <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>님의 암호화 키와 똑같다면 대화는 200%% 안전합니다.<![CDATA[<br><br>]]>더 자세한 사항은 telegram.org 를 참고해 주세요.</string>
     <string name="Unknown">Unknown</string>
+    <string name="Info">INFO</string>
+    <string name="Phone">전화번호</string>
+    <string name="Username">Username</string>
+    <string name="UsernameInUse">Username already in use</string>
+    <string name="UsernameInvalid">Username invalid</string>
     <!--settings view-->
     <string name="ResetNotificationsText">모든 알림 설정이 초기화되었습니다</string>
     <string name="TextSize">채팅 글자 크기</string>
@@ -206,7 +212,6 @@
     <string name="Unblock">차단 해제</string>
     <string name="UnblockText">차단을 해제하려면 대화상대를 길게 누르세요.</string>
     <string name="NoBlocked">차단한 친구가 없습니다</string>
-    <string name="YourPhoneNumber">전화번호</string>
     <string name="MessageNotifications">메시지 알림</string>
     <string name="Alert">알림 사용</string>
     <string name="MessagePreview">메시지 미리보기</string>

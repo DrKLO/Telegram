@@ -10,7 +10,6 @@ package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.StaticLayout;
@@ -39,8 +38,8 @@ public class ChatContactCell extends ChatBaseCell {
 
     private static TextPaint namePaint;
     private static TextPaint phonePaint;
-    private static Drawable addContactDrawable;
-    private static Paint linePaint;
+    private static Drawable addContactDrawableIn;
+    private static Drawable addContactDrawableOut;
 
     private ImageReceiver avatarImage;
 
@@ -67,10 +66,8 @@ public class ChatContactCell extends ChatBaseCell {
             phonePaint.setTextSize(AndroidUtilities.dp(15));
             phonePaint.setColor(0xff000000);
 
-            addContactDrawable = getResources().getDrawable(R.drawable.ic_ab_add_member);
-
-            linePaint = new Paint();
-            linePaint.setStrokeWidth(AndroidUtilities.dp(1));
+            addContactDrawableIn = getResources().getDrawable(R.drawable.addcontact_blue);
+            addContactDrawableOut = getResources().getDrawable(R.drawable.addcontact_green);
         }
         avatarImage = new ImageReceiver(this);
     }
@@ -83,6 +80,12 @@ public class ChatContactCell extends ChatBaseCell {
     protected boolean isUserDataChanged() {
         if (currentMessageObject == null) {
             return false;
+        }
+
+        int uid = currentMessageObject.messageOwner.media.user_id;
+        boolean newDrawAdd = contactUser != null && uid != UserConfig.getClientUserId() && ContactsController.getInstance().contactsDict.get(uid) == null;
+        if (newDrawAdd != drawAddButton) {
+            return true;
         }
 
         contactUser = MessagesController.getInstance().getUser(currentMessageObject.messageOwner.media.user_id);
@@ -103,10 +106,10 @@ public class ChatContactCell extends ChatBaseCell {
         boolean result = false;
         int side = AndroidUtilities.dp(36);
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            if (x >= avatarImage.getImageX() && x <= avatarImage.getImageX() + namesWidth && y >= avatarImage.getImageY() && y <= avatarImage.getImageY() + avatarImage.getImageHeight()) {
+            if (x >= avatarImage.getImageX() && x <= avatarImage.getImageX() + namesWidth + AndroidUtilities.dp(42) && y >= avatarImage.getImageY() && y <= avatarImage.getImageY() + avatarImage.getImageHeight()) {
                 avatarPressed = true;
                 result = true;
-            } else if (x >= avatarImage.getImageX() - AndroidUtilities.dp(44) && y >= AndroidUtilities.dp(20) && x <= avatarImage.getImageX() - AndroidUtilities.dp(10) && y <= AndroidUtilities.dp(52)) {
+            } else if (x >= avatarImage.getImageX() + namesWidth + AndroidUtilities.dp(52) && y >= AndroidUtilities.dp(13) && x <= avatarImage.getImageX() + namesWidth + AndroidUtilities.dp(92) && y <= AndroidUtilities.dp(52)) {
                 buttonPressed = true;
                 result = true;
             }
@@ -133,7 +136,7 @@ public class ChatContactCell extends ChatBaseCell {
                 } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
                     avatarPressed = false;
                 } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                    if (!avatarImage.isInsideImage(x, y)) {
+                    if (!(x >= avatarImage.getImageX() && x <= avatarImage.getImageX() + namesWidth + AndroidUtilities.dp(42) && y >= avatarImage.getImageY() && y <= avatarImage.getImageY() + avatarImage.getImageHeight())) {
                         avatarPressed = false;
                     }
                 }
@@ -147,7 +150,7 @@ public class ChatContactCell extends ChatBaseCell {
                 } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
                     buttonPressed = false;
                 } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                    if (!(x >= avatarImage.getImageX() - AndroidUtilities.dp(44) && y >= AndroidUtilities.dp(20) && x <= avatarImage.getImageX() - AndroidUtilities.dp(10) && y <= AndroidUtilities.dp(52))) {
+                    if (!(x >= avatarImage.getImageX() + namesWidth + AndroidUtilities.dp(52) && y >= AndroidUtilities.dp(13) && x <= avatarImage.getImageX() + namesWidth + AndroidUtilities.dp(92) && y <= AndroidUtilities.dp(52))) {
                         buttonPressed = false;
                     }
                 }
@@ -175,7 +178,7 @@ public class ChatContactCell extends ChatBaseCell {
             } else {
                 maxWidth = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.7f);
             }
-            maxWidth -= AndroidUtilities.dp(58 + (drawAddButton ? 52 : 0));
+            maxWidth -= AndroidUtilities.dp(58 + (drawAddButton ? 42 : 0));
 
             if (contactUser != null) {
                 if (contactUser.photo != null) {
@@ -216,7 +219,7 @@ public class ChatContactCell extends ChatBaseCell {
             }
 
             namesWidth = Math.max(nameWidth, phoneWidth);
-            backgroundWidth = AndroidUtilities.dp(75 + (drawAddButton ? 52 : 0)) + namesWidth;
+            backgroundWidth = AndroidUtilities.dp(77 + (drawAddButton ? 42 : 0)) + namesWidth;
 
             super.setMessageObject(messageObject);
         }
@@ -238,15 +241,15 @@ public class ChatContactCell extends ChatBaseCell {
         int x;
 
         if (currentMessageObject.isOut()) {
-            x = layoutWidth - backgroundWidth + AndroidUtilities.dp(6);
+            x = layoutWidth - backgroundWidth + AndroidUtilities.dp(8);
         } else {
             if (isChat) {
-                x = AndroidUtilities.dp(67);
+                x = AndroidUtilities.dp(69);
             } else {
-                x = AndroidUtilities.dp(14);
+                x = AndroidUtilities.dp(16);
             }
         }
-        avatarImage.setImageCoords(x + (drawAddButton ? AndroidUtilities.dp(52) : 0), AndroidUtilities.dp(7), AndroidUtilities.dp(42), AndroidUtilities.dp(42));
+        avatarImage.setImageCoords(x, AndroidUtilities.dp(9), AndroidUtilities.dp(42), AndroidUtilities.dp(42));
     }
 
     @Override
@@ -261,27 +264,26 @@ public class ChatContactCell extends ChatBaseCell {
 
         if (nameLayout != null) {
             canvas.save();
-            canvas.translate(avatarImage.getImageX() + avatarImage.getImageWidth() + AndroidUtilities.dp(9), AndroidUtilities.dp(8));
+            canvas.translate(avatarImage.getImageX() + avatarImage.getImageWidth() + AndroidUtilities.dp(9), AndroidUtilities.dp(10));
             namePaint.setColor(AndroidUtilities.getColorForId(currentMessageObject.messageOwner.media.user_id));
             nameLayout.draw(canvas);
             canvas.restore();
         }
         if (phoneLayout != null) {
             canvas.save();
-            canvas.translate(avatarImage.getImageX() + avatarImage.getImageWidth() + AndroidUtilities.dp(9), AndroidUtilities.dp(29));
+            canvas.translate(avatarImage.getImageX() + avatarImage.getImageWidth() + AndroidUtilities.dp(9), AndroidUtilities.dp(31));
             phoneLayout.draw(canvas);
             canvas.restore();
         }
 
         if (drawAddButton) {
+            Drawable addContactDrawable;
             if (currentMessageObject.isOut()) {
-                linePaint.setColor(0x9670b15c);
+                addContactDrawable = addContactDrawableOut;
             } else {
-                linePaint.setColor(0xffe8e8e8);
+                addContactDrawable = addContactDrawableIn;
             }
-            canvas.drawLine(avatarImage.getImageX() - AndroidUtilities.dp(4), avatarImage.getImageY(), avatarImage.getImageX() - AndroidUtilities.dp(4), AndroidUtilities.dp(62), linePaint);
-
-            setDrawableBounds(addContactDrawable, avatarImage.getImageX() - AndroidUtilities.dp(44), AndroidUtilities.dp(20));
+            setDrawableBounds(addContactDrawable, avatarImage.getImageX() + namesWidth + AndroidUtilities.dp(78), AndroidUtilities.dp(13));
             addContactDrawable.draw(canvas);
         }
     }
