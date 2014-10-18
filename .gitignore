@@ -6,5 +6,5 @@ obj/
 local.properties
 *.keystore
 gradle.properties
-build.gradle
-BuildVars.java
+
+TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
