@@ -1213,7 +1213,7 @@ public class MessagesStorage {
                     SQLiteCursor cursor = database.queryFinalized("SELECT u.data, u.status, u.name FROM users as u INNER JOIN contacts as c ON u.uid = c.uid");
                     while (cursor.next()) {
                         String name = cursor.stringValue(2);
-                        if (name.startsWith(q) || name.contains(" " + q)) {
+                        if (name.contains(q)) {
                             ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
                             if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
                                 TLRPC.User user = (TLRPC.User)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
@@ -1234,7 +1234,7 @@ public class MessagesStorage {
                         cursor = database.queryFinalized("SELECT q.data, q.name, q.user, q.g, q.authkey, q.ttl, u.data, u.status FROM enc_chats as q INNER JOIN dialogs as d ON (q.uid << 32) = d.did INNER JOIN users as u ON q.user = u.uid");
                         while (cursor.next()) {
                             String name = cursor.stringValue(1);
-                            if (name.startsWith(q) || name.contains(" " + q)) {
+                            if (name.contains(q)) {
                                 ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
                                 ByteBufferDesc data2 = buffersStorage.getFreeBuffer(cursor.byteArrayLength(6));
                                 if (data != null && cursor.byteBufferValue(0, data.buffer) != 0 && cursor.byteBufferValue(6, data2.buffer) != 0) {
@@ -1263,7 +1263,7 @@ public class MessagesStorage {
                     while (cursor.next()) {
                         String name = cursor.stringValue(1);
                         String[] args = name.split(" ");
-                        if (name.startsWith(q) || name.contains(" " + q)) {
+                        if (name.contains(q)) {
                             ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
                             if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
                                 TLRPC.Chat chat = (TLRPC.Chat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
@@ -1277,7 +1277,6 @@ public class MessagesStorage {
                         }
                     }
                     cursor.dispose();
-
                     NotificationCenter.getInstance().postNotificationName(NotificationCenter.reloadSearchResults, token, resultArray, resultArrayNames, encUsers);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
