@@ -395,7 +395,8 @@ public class NotificationsController {
                     .setNumber(total_unread_count)
                     .setContentIntent(contentIntent)
                     .setGroup("messages")
-                    .setGroupSummary(true);
+                    .setGroupSummary(true)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH);
 
             String lastMessage = null;
             String lastMessageFull = null;
