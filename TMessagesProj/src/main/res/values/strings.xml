@@ -242,6 +242,7 @@
     <string name="ChatBackground">Chat Background</string>
     <string name="MessagesSettings">MESSAGES</string>
     <string name="SendByEnter">Send by Enter</string>
+    <string name="SystemEmoji">System emoji</string>
     <string name="TerminateAllSessions">Terminate All Other Sessions</string>
     <string name="Events">EVENTS</string>
     <string name="ContactJoined">Contact joined Telegram</string>
