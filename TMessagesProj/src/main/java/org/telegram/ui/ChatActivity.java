@@ -71,7 +71,6 @@ import org.telegram.ui.Cells.ChatContactCell;
 import org.telegram.ui.Cells.ChatMediaCell;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
-import org.telegram.ui.Views.ActionBar.ActionBarLayout;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.BackupImageView;
@@ -131,7 +130,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private View pagedownButton;
     private TextView topPanelText;
     private long dialog_id;
-    private boolean isBraodcast = false;
+    private boolean isBroadcast = false;
     private HashMap<Integer, MessageObject> selectedMessagesIds = new HashMap<Integer, MessageObject>();
     private HashMap<Integer, MessageObject> selectedMessagesCanCopyIds = new HashMap<Integer, MessageObject>();
 
@@ -241,15 +240,15 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (chatId > 0) {
                 dialog_id = -chatId;
             } else {
-                isBraodcast = true;
+                isBroadcast = true;
                 dialog_id = AndroidUtilities.makeBroadcastId(chatId);
             }
             Semaphore semaphore = null;
-            if (isBraodcast) {
+            if (isBroadcast) {
                 semaphore = new Semaphore(0);
             }
             MessagesController.getInstance().loadChatInfo(currentChat.id, semaphore);
-            if (isBraodcast) {
+            if (isBroadcast) {
                 try {
                     semaphore.acquire();
                 } catch (Exception e) {
@@ -1176,7 +1175,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (currentChat.photo != null) {
                     photo = currentChat.photo.photo_small;
                 }
-                if (isBraodcast) {
+                if (isBroadcast) {
                     placeHolderId = AndroidUtilities.getBroadcastAvatarForId(currentChat.id);
                 } else {
                     placeHolderId = AndroidUtilities.getGroupAvatarForId(currentChat.id);
@@ -1203,9 +1202,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private int getMessageType(MessageObject messageObject) {
+        if (messageObject == null) {
+            return -1;
+        }
         if (currentEncryptedChat == null) {
-            boolean isBroadcastError = isBraodcast && messageObject.messageOwner.id <= 0 && messageObject.isSendError();
-            if (!isBraodcast && messageObject.messageOwner.id <= 0 && messageObject.isOut() || isBroadcastError) {
+            boolean isBroadcastError = isBroadcast && messageObject.messageOwner.id <= 0 && messageObject.isSendError();
+            if (!isBroadcast && messageObject.messageOwner.id <= 0 && messageObject.isOut() || isBroadcastError) {
                 if (messageObject.isSendError()) {
                     if (!(messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
                         return 0;
@@ -1447,7 +1449,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (currentChat.photo != null) {
                 newPhoto = currentChat.photo.photo_small;
             }
-            if (isBraodcast) {
+            if (isBroadcast) {
                 placeHolderId = AndroidUtilities.getBroadcastAvatarForId(currentChat.id);
             } else {
                 placeHolderId = AndroidUtilities.getGroupAvatarForId(currentChat.id);
@@ -1458,7 +1460,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
     }
 
-    public boolean openVideoEditor(String videoPath, boolean removeLast, ActionBarLayout parentLayout) {
+    public boolean openVideoEditor(String videoPath, boolean removeLast) {
         Bundle args = new Bundle();
         args.putString("videoPath", videoPath);
         VideoEditorActivity fragment = new VideoEditorActivity(args);
@@ -1543,7 +1545,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (paused) {
                         startVideoEdit = videoPath;
                     } else {
-                        openVideoEditor(videoPath, false, parentLayout);
+                        openVideoEditor(videoPath, false);
                     }
                 } else {
                     SendMessagesHelper.prepareSendingVideo(videoPath, 0, 0, 0, 0, null, dialog_id);
@@ -1735,7 +1737,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (messArr.size() != count) {
                         if (isCache) {
                             cacheEndReaced = true;
-                            if (currentEncryptedChat != null || isBraodcast) {
+                            if (currentEncryptedChat != null || isBroadcast) {
                                 endReached = true;
                             }
                         } else {
@@ -2102,7 +2104,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (currentChat != null && chatId == currentChat.id) {
                 info = (TLRPC.ChatParticipants)args[1];
                 updateOnlineCount();
-                if (isBraodcast) {
+                if (isBroadcast) {
                     SendMessagesHelper.getInstance().setCurrentChatInfo(info);
                 }
             }
@@ -2386,7 +2388,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             AndroidUtilities.RunOnUIThread(new Runnable() {
                 @Override
                 public void run() {
-                    openVideoEditor(startVideoEdit, false, parentLayout);
+                    openVideoEditor(startVideoEdit, false);
                     startVideoEdit = null;
                 }
             });
@@ -2500,6 +2502,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             message = ((ChatBaseCell)v).getMessageObject();
         } else if (v instanceof ChatActionCell) {
             message = ((ChatActionCell)v).getMessageObject();
+        }
+        if (message == null) {
+            return;
         }
         final int type = getMessageType(message);
 
@@ -2774,7 +2779,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     @Override
     public void didSelectDialog(MessagesActivity activity, long did, boolean param) {
         if (dialog_id != 0 && (forwaringMessage != null || !selectedMessagesIds.isEmpty())) {
-            if (isBraodcast) {
+            if (isBroadcast) {
                 param = true;
             }
             if (did != dialog_id) {
@@ -3178,9 +3183,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     processRowSelect(cell);
                                     return;
                                 }
+                                MessageObject messageObject = cell.getMessageObject();
                                 Bundle args = new Bundle();
-                                args.putInt("user_id", message.messageOwner.media.user_id);
-                                args.putString("phone", message.messageOwner.media.phone_number);
+                                args.putInt("user_id", messageObject.messageOwner.media.user_id);
+                                args.putString("phone", messageObject.messageOwner.media.phone_number);
                                 presentFragment(new ContactAddActivity(args));
                             }
 

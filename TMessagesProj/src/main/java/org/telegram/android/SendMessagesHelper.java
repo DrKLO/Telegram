@@ -373,7 +373,11 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         sendMessage(null, null, null, null, null, null, null, null, audio, null, peer, false, path);
     }
 
-    private int sendMessage(String message, Double lat, Double lon, TLRPC.TL_photo photo, TLRPC.TL_video video, MessageObject msgObj, TLRPC.User user, TLRPC.TL_document document, TLRPC.TL_audio audio, String originalPath, long peer, boolean retry, String path) {
+    private void sendMessage(String message, Double lat, Double lon, TLRPC.TL_photo photo, TLRPC.TL_video video, MessageObject msgObj, TLRPC.User user, TLRPC.TL_document document, TLRPC.TL_audio audio, String originalPath, long peer, boolean retry, String path) {
+        if (peer == 0) {
+            return;
+        }
+
         TLRPC.Message newMsg = null;
         int type = -1;
         int lower_id = (int) peer;
@@ -548,7 +552,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             if (high_id == 1) {
                 if (currentChatInfo == null) {
                     processSentMessage(newMsg.id);
-                    return 0;
+                    return;
                 }
                 sendToPeers = new ArrayList<TLRPC.InputUser>();
                 for (TLRPC.TL_chatParticipant participant : currentChatInfo.participants) {
@@ -573,7 +577,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     TLRPC.User sendToUser = MessagesController.getInstance().getUser(lower_id);
                     if (sendToUser == null) {
                         processSentMessage(newMsg.id);
-                        return 0;
+                        return;
                     }
                     if (sendToUser instanceof TLRPC.TL_userForeign || sendToUser instanceof TLRPC.TL_userRequest) {
                         sendToPeer = new TLRPC.TL_inputPeerForeign();
@@ -929,9 +933,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
             NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, newMsgObj.messageOwner.id);
             processSentMessage(newMsgObj.messageOwner.id);
-            return 0;
         }
-        return newMsg != null ? newMsg.id : 0;
     }
 
     private void performSendDelayedMessage(final DelayedMessage message) {

@@ -166,7 +166,7 @@ public class NumberPicker extends LinearLayout {
         mInputText.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         mInputText.setGravity(Gravity.CENTER);
         mInputText.setSingleLine(true);
-        mInputText.setBackground(null);
+        mInputText.setBackgroundResource(0);
         mInputText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
 
         ViewConfiguration configuration = ViewConfiguration.get(context);
