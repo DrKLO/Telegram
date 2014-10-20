@@ -194,7 +194,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         messagesSectionRow = rowCount++;
         textSizeRow = rowCount++;
         sendByEnterRow = rowCount++;
-        systemEmojiRow = rowCount++;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            systemEmojiRow = rowCount++;
+        }
         //contactsSectionRow = rowCount++;
         //contactsSortRow = rowCount++;
         //contactsReimportRow = rowCount++;
