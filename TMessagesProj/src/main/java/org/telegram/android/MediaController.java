@@ -18,6 +18,8 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.ContentObserver;
 import android.database.Cursor;
+import android.graphics.BitmapFactory;
+import android.graphics.Point;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
@@ -36,7 +38,10 @@ import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.os.Vibrator;
 import android.provider.MediaStore;
+import android.util.DisplayMetrics;
+import android.view.Display;
 import android.view.View;
+import android.view.WindowManager;
 
 import org.telegram.android.video.InputSurface;
 import org.telegram.android.video.MP4Builder;
@@ -58,6 +63,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -340,13 +346,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             }
         }
     }
-    private String[] mediaProjections = new String[] {
-            MediaStore.Images.ImageColumns.DATA,
-            MediaStore.Images.ImageColumns.DISPLAY_NAME,
-            MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME,
-            MediaStore.Images.ImageColumns.DATE_TAKEN,
-            MediaStore.Images.ImageColumns.TITLE
-    };
+    private String[] mediaProjections = null;
 
     private static volatile MediaController Instance = null;
     public static MediaController getInstance() {
@@ -412,6 +412,26 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
         if (UserConfig.isClientActivated()) {
             checkAutodownloadSettings();
+        }
+
+        if (Build.VERSION.SDK_INT >= 16) {
+            mediaProjections = new String[] {
+                    MediaStore.Images.ImageColumns.DATA,
+                    MediaStore.Images.ImageColumns.DISPLAY_NAME,
+                    MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME,
+                    MediaStore.Images.ImageColumns.DATE_TAKEN,
+                    MediaStore.Images.ImageColumns.TITLE,
+                    MediaStore.Images.ImageColumns.WIDTH,
+                    MediaStore.Images.ImageColumns.HEIGHT
+            };
+        } else {
+            mediaProjections = new String[] {
+                    MediaStore.Images.ImageColumns.DATA,
+                    MediaStore.Images.ImageColumns.DISPLAY_NAME,
+                    MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME,
+                    MediaStore.Images.ImageColumns.DATE_TAKEN,
+                    MediaStore.Images.ImageColumns.TITLE
+            };
         }
     }
 
@@ -684,7 +704,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     }
 
     public void startMediaObserver() {
-        if (android.os.Build.VERSION.SDK_INT > 0) { //disable while it's not perferct
+        if (android.os.Build.VERSION.SDK_INT < 14) {
             return;
         }
         ApplicationLoader.applicationHandler.removeCallbacks(stopMediaObserverRunnable);
@@ -706,7 +726,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     }
 
     public void stopMediaObserver() {
-        if (android.os.Build.VERSION.SDK_INT > 0) { //disable while it's not perferct
+        if (android.os.Build.VERSION.SDK_INT < 14) {
             return;
         }
         if (stopMediaObserverRunnable == null) {
@@ -718,6 +738,30 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
     public void processMediaObserver(Uri uri) {
         try {
+            int width = 0;
+            int height = 0;
+
+            try {
+                WindowManager windowManager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                    Point size = new Point();
+                    windowManager.getDefaultDisplay().getRealSize(size);
+                    width = size.x;
+                    height = size.y;
+                } else {
+                    try {
+                        Method mGetRawW = Display.class.getMethod("getRawWidth");
+                        Method mGetRawH = Display.class.getMethod("getRawHeight");
+                        width = (Integer) mGetRawW.invoke(windowManager.getDefaultDisplay());
+                        height = (Integer) mGetRawH.invoke(windowManager.getDefaultDisplay());
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+
             Cursor cursor = ApplicationLoader.applicationContext.getContentResolver().query(uri, mediaProjections, null, null, "date_added DESC LIMIT 1");
             final ArrayList<Long> screenshotDates = new ArrayList<Long>();
             if (cursor != null) {
@@ -726,75 +770,33 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     String data = cursor.getString(0);
                     String display_name = cursor.getString(1);
                     String album_name = cursor.getString(2);
-                    String title = cursor.getString(4);
                     long date = cursor.getLong(3);
+                    String title = cursor.getString(4);
+                    int photoW = 0;
+                    int photoH = 0;
+                    if (Build.VERSION.SDK_INT >= 16) {
+                        photoW = cursor.getInt(5);
+                        photoH = cursor.getInt(6);
+                    }
                     if (data != null && data.toLowerCase().contains("screenshot") ||
                             display_name != null && display_name.toLowerCase().contains("screenshot") ||
                             album_name != null && album_name.toLowerCase().contains("screenshot") ||
                             title != null && title.toLowerCase().contains("screenshot")) {
-                        /*BitmapRegionDecoder bitmapRegionDecoder = null;
-                        boolean added = false;
                         try {
-                            int waitCount = 0;
-                            while (waitCount < 5 && bitmapRegionDecoder == null) {
-                                try {
-                                    bitmapRegionDecoder = BitmapRegionDecoder.newInstance(data, true);
-                                    if (bitmapRegionDecoder != null) {
-                                        break;
-                                    }
-                                } catch (Exception e) {
-                                    FileLog.e("tmessages", e);
-                                }
-                                Thread.sleep(1000);
+                            if (photoW == 0 || photoH == 0) {
+                                BitmapFactory.Options bmOptions = new BitmapFactory.Options();
+                                bmOptions.inJustDecodeBounds = true;
+                                BitmapFactory.decodeFile(data, bmOptions);
+                                photoW = bmOptions.outWidth;
+                                photoH = bmOptions.outHeight;
                             }
-                            if (bitmapRegionDecoder != null) {
-                                Bitmap bitmap = bitmapRegionDecoder.decodeRegion(new Rect(0, 0, AndroidUtilities.dp(44), AndroidUtilities.dp(44)), null);
-                                int w = bitmap.getWidth();
-                                int h = bitmap.getHeight();
-                                for (int y = 0; y < h; y++) {
-                                    int rowCount = 0;
-                                    for (int x = 0; x < w; x++) {
-                                        int px = bitmap.getPixel(x, y);
-                                        if (px == 0xffffffff) {
-                                            rowCount++;
-                                        } else {
-                                            rowCount = 0;
-                                        }
-                                        if (rowCount > 8) {
-                                            break;
-                                        }
-                                    }
-                                    if (rowCount > 8) {
-                                        screenshotDates.add(date);
-                                        added = true;
-                                        break;
-                                    }
-                                }
-                                bitmapRegionDecoder.recycle();
-                                try {
-                                    if (bitmap != null) {
-                                        bitmap.recycle();
-                                    }
-                                } catch (Exception e) {
-                                    FileLog.e("tmessages", e);
-                                }
-                            }
-                        } catch (Exception e) {
-                            FileLog.e("tmessages", e);
-                            try {
-                                if (bitmapRegionDecoder != null) {
-                                    bitmapRegionDecoder.recycle();
-                                }
-                            } catch (Exception e2) {
-                                FileLog.e("tmessages", e2);
-                            }
-                            if (!added) {
+                            if (photoW == 0 || photoH == 0 || (photoW == width && photoH == height || photoH == width && photoW == height)) {
                                 screenshotDates.add(date);
                             }
-                        }*/
-                        screenshotDates.add(date);
+                        } catch (Exception e) {
+                            screenshotDates.add(date);
+                        }
                     }
-                    FileLog.e("tmessages", "screenshot!");
                 }
                 cursor.close();
             }
@@ -1205,7 +1207,6 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
                     audioTrackPlayer = new AudioTrack(AudioManager.STREAM_MUSIC, 48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT, playerBufferSize, AudioTrack.MODE_STREAM);
                     audioTrackPlayer.setStereoVolume(1.0f, 1.0f);
-                    //audioTrackPlayer.setNotificationMarkerPosition((int)currentTotalPcmDuration);
                     audioTrackPlayer.setPlaybackPositionUpdateListener(new AudioTrack.OnPlaybackPositionUpdateListener() {
                         @Override
                         public void onMarkerReached(AudioTrack audioTrack) {

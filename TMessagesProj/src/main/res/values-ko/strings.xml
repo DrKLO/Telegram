@@ -202,8 +202,12 @@
     <string name="Info">INFO</string>
     <string name="Phone">전화번호</string>
     <string name="Username">Username</string>
-    <string name="UsernameInUse">Username already in use</string>
-    <string name="UsernameInvalid">Username invalid</string>
+    <string name="UsernamePlaceholder">Your Username</string>
+    <string name="UsernameInUse">Sorry, this username is already taken.</string>
+    <string name="UsernameInvalid">Sorry, this username is invalid.</string>
+    <string name="UsernameInvalidShort">A username must have at least 5 characters.</string>
+    <string name="UsernameInvalidStartNumber">Sorry, a username can't start with a number.</string>
+    <string name="Usernamehelp">You can choose a username on <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. If you do, other people will be able to find you by this username and contact you without knowing your phone number.\n\nYou can use <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> and underscores. Minimum length is <![CDATA[<b>]]>5<![CDATA[</b>]]> characters.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">모든 알림 설정이 초기화되었습니다</string>
     <string name="TextSize">채팅 글자 크기</string>

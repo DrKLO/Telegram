@@ -2424,10 +2424,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         chatActivityEnterView.setFieldFocused(false);
         MessagesController.getInstance().cancelTyping(dialog_id);
 
-        /*if (currentEncryptedChat != null) { disabled
+        if (currentEncryptedChat != null) {
             chatLeaveTime = System.currentTimeMillis();
             updateInformationForScreenshotDetector();
-        }*/
+        }
     }
 
     private void updateInformationForScreenshotDetector() {

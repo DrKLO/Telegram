@@ -202,8 +202,12 @@
     <string name="Info">INFO</string>
     <string name="Phone">Phone</string>
     <string name="Username">Username</string>
-    <string name="UsernameInUse">Username already in use</string>
-    <string name="UsernameInvalid">Username invalid</string>
+    <string name="UsernamePlaceholder">Your Username</string>
+    <string name="UsernameInUse">Sorry, this username is already taken.</string>
+    <string name="UsernameInvalid">Sorry, this username is invalid.</string>
+    <string name="UsernameInvalidShort">A username must have at least 5 characters.</string>
+    <string name="UsernameInvalidStartNumber">Sorry, a username can't start with a number.</string>
+    <string name="Usernamehelp">You can choose a username on <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. If you do, other people will be able to find you by this username and contact you without knowing your phone number.\n\nYou can use <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> and underscores. Minimum length is <![CDATA[<b>]]>5<![CDATA[</b>]]> characters.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Reset all notification settings to default</string>
     <string name="TextSize">Messages Text Size</string>
