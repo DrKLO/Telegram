@@ -252,7 +252,7 @@
     <string name="AskAQuestionInfo">Bedenke bitte, dass der Telegram Support von einem ehrenamtlichen Team betreut wird. Wir versuchen so schnell wie möglich zu antworten, dies kann jedoch manchmal ein bisschen dauern.<![CDATA[<br><br>]]>Bitte schau auch in den <![CDATA[<a href=\"http://telegram.org/faq/de\">Fragen und Antworten </a>]]> nach. Dort findest du Antworten auf die meisten Fragen und wichtige Tipps zur <![CDATA[<a href=\"https://telegram.org/faq/de#problembehandlung\">Problembehandlung</a>]]>.</string>
     <string name="AskButton">Frage einen Freiwilligen</string>
     <string name="TelegramFaq">Fragen und Antworten</string>
-    <string name="TelegramFaqUrl">https://telegram.org/faq/ko</string>
+    <string name="TelegramFaqUrl">https://telegram.org/faq/de</string>
     <string name="DeleteLocalization">Lokalisierung löschen?</string>
     <string name="IncorrectLocalization">Falsche Sprachdatei</string>
     <string name="Enabled">Aktiviert</string>
