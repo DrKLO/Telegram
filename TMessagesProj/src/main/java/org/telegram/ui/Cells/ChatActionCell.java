@@ -275,7 +275,7 @@ public class ChatActionCell extends BaseCell {
         backgroundDrawable.draw(canvas);
 
         if (currentMessageObject.type == 11) {
-            imageReceiver.draw(canvas, imageReceiver.getImageX(), imageReceiver.getImageY(), imageReceiver.getImageWidth(), imageReceiver.getImageHeight());
+            imageReceiver.draw(canvas);
         }
 
         if (textLayout != null) {

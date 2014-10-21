@@ -198,7 +198,7 @@
     <string name="MessageLifetime">자동삭제 타이머</string>
     <string name="ShortMessageLifetimeForever">해제</string>
     <string name="EncryptionKeyDescription">이 이미지는 <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>님과의 비밀대화에 사용 중인 암호화 키의 모습입니다.<![CDATA[<br><br>]]>이 이미지가 <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>님의 암호화 키와 똑같다면 대화는 200%% 안전합니다.<![CDATA[<br><br>]]>더 자세한 사항은 telegram.org 를 참고해 주세요.</string>
-    <string name="Unknown">Unknown</string>
+    <string name="NumberUnknown">Unknown</string>
     <string name="Info">INFO</string>
     <string name="Phone">전화번호</string>
     <string name="Username">Username</string>
@@ -206,8 +206,11 @@
     <string name="UsernameInUse">Sorry, this username is already taken.</string>
     <string name="UsernameInvalid">Sorry, this username is invalid.</string>
     <string name="UsernameInvalidShort">A username must have at least 5 characters.</string>
-    <string name="UsernameInvalidStartNumber">Sorry, a username can't start with a number.</string>
-    <string name="Usernamehelp">You can choose a username on <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. If you do, other people will be able to find you by this username and contact you without knowing your phone number.\n\nYou can use <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> and underscores. Minimum length is <![CDATA[<b>]]>5<![CDATA[</b>]]> characters.</string>
+    <string name="UsernameInvalidLong">A username must have maximum 32 characters.</string>
+    <string name="UsernameInvalidStartNumber">Sorry, a username can\'t start with a number.</string>
+    <string name="UsernameHelp">You can choose a username on <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. If you do, other people will be able to find you by this username and contact you without knowing your phone number.<![CDATA[<br><br>]]>You can use <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> and underscores. Minimum length is <![CDATA[<b>]]>5<![CDATA[</b>]]> characters.</string>
+    <string name="UsernameChecking">Checking username...</string>
+    <string name="UsernameAvailable">%1$s is available.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">모든 알림 설정이 초기화되었습니다</string>
     <string name="TextSize">채팅 글자 크기</string>

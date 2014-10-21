@@ -207,7 +207,7 @@ public class ChatContactCell extends ChatBaseCell {
                 }
                 phone = PhoneFormat.getInstance().format(phone);
             } else {
-                phone = LocaleController.getString("Unknown", R.string.Unknown);
+                phone = LocaleController.getString("NumberUnknown", R.string.NumberUnknown);
             }
             int phoneWidth = Math.min((int) Math.ceil(phonePaint.measureText(phone)), maxWidth);
             stringFinal = TextUtils.ellipsize(phone.replace("\n", " "), phonePaint, phoneWidth, TextUtils.TruncateAt.END);
@@ -260,7 +260,7 @@ public class ChatContactCell extends ChatBaseCell {
             return;
         }
 
-        avatarImage.draw(canvas, avatarImage.getImageX(), avatarImage.getImageY(), avatarImage.getImageWidth(), avatarImage.getImageWidth());
+        avatarImage.draw(canvas);
 
         if (nameLayout != null) {
             canvas.save();

@@ -607,8 +607,15 @@ public class MessageObject {
         messageOwner.flags &=~ TLRPC.MESSAGE_FLAG_UNREAD;
     }
 
-    public boolean isSecretMedia() {
+    public boolean isSecretPhoto() {
         return messageOwner instanceof TLRPC.TL_message_secret && messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && messageOwner.ttl != 0 && messageOwner.ttl <= 60;
+    }
+
+    public boolean isSecretMedia() {
+        return messageOwner instanceof TLRPC.TL_message_secret &&
+                (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && messageOwner.ttl != 0 && messageOwner.ttl <= 60 ||
+                messageOwner.media instanceof TLRPC.TL_messageMediaAudio ||
+                messageOwner.media instanceof TLRPC.TL_messageMediaVideo);
     }
 
     public static void setIsUnread(TLRPC.Message message, boolean unread) {

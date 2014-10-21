@@ -597,6 +597,11 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 newMsg.to_id.user_id = encryptedChat.participant_id;
             }
             newMsg.ttl = encryptedChat.ttl;
+            if (newMsg.media instanceof TLRPC.TL_messageMediaAudio) {
+                newMsg.ttl = Math.max(encryptedChat.ttl, newMsg.media.audio.duration + 1);
+            } else if (newMsg.media instanceof TLRPC.TL_messageMediaVideo) {
+                newMsg.ttl = Math.max(encryptedChat.ttl, newMsg.media.video.duration + 1);
+            }
         }
 
         MessageObject newMsgObj = new MessageObject(newMsg, null, 2);
@@ -630,7 +635,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     TLRPC.TL_decryptedMessage reqSend;
                     if (AndroidUtilities.getPeerLayerVersion(encryptedChat.layer) >= 17) {
                         reqSend = new TLRPC.TL_decryptedMessage();
-                        reqSend.ttl = encryptedChat.ttl;
+                        reqSend.ttl = newMsg.ttl;
                     } else {
                         reqSend = new TLRPC.TL_decryptedMessage_old();
                         reqSend.random_bytes = new byte[Math.max(1, (int) Math.ceil(Utilities.random.nextDouble() * 16))];
@@ -788,7 +793,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     TLRPC.TL_decryptedMessage reqSend;
                     if (AndroidUtilities.getPeerLayerVersion(encryptedChat.layer) >= 17) {
                         reqSend = new TLRPC.TL_decryptedMessage();
-                        reqSend.ttl = encryptedChat.ttl;
+                        reqSend.ttl = newMsg.ttl;
                     } else {
                         reqSend = new TLRPC.TL_decryptedMessage_old();
                         reqSend.random_bytes = new byte[Math.max(1, (int) Math.ceil(Utilities.random.nextDouble() * 16))];

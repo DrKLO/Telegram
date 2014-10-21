@@ -365,7 +365,7 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
             int height = (int) (bitmapHeight * scale);
 
             centerImage.setImageCoords(-width / 2, -height / 2, width, height);
-            centerImage.draw(canvas, -width / 2, -height / 2, width, height);
+            centerImage.draw(canvas);
         }
         canvas.restore();
     }

@@ -3687,6 +3687,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         newMessage.media.video.key = decryptedMessage.media.key;
                         newMessage.media.video.iv = decryptedMessage.media.iv;
                         newMessage.media.video.mime_type = decryptedMessage.media.mime_type;
+                        if (newMessage.ttl != 0) {
+                            newMessage.ttl = Math.max(newMessage.media.video.duration + 1, newMessage.ttl);
+                        }
                         if (newMessage.media.video.mime_type == null) {
                             newMessage.media.video.mime_type = "video/mp4";
                         }
@@ -3733,6 +3736,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         newMessage.media.audio.dc_id = message.file.dc_id;
                         newMessage.media.audio.duration = decryptedMessage.media.duration;
                         newMessage.media.audio.mime_type = decryptedMessage.media.mime_type;
+                        if (newMessage.ttl != 0) {
+                            newMessage.ttl = Math.max(newMessage.media.audio.duration + 1, newMessage.ttl);
+                        }
                         if (newMessage.media.audio.mime_type == null) {
                             newMessage.media.audio.mime_type = "audio/ogg";
                         }
@@ -3801,7 +3807,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         return null;
                     } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionReadMessages) {
                         if (!serviceMessage.action.random_ids.isEmpty()) {
-                            MessagesStorage.getInstance().createTaskForSecretChat(chat.id, ConnectionsManager.getInstance().getCurrentTime(), message.date, 1, serviceMessage.action.random_ids);
+                            MessagesStorage.getInstance().createTaskForSecretChat(chat.id, ConnectionsManager.getInstance().getCurrentTime(), ConnectionsManager.getInstance().getCurrentTime(), 1, serviceMessage.action.random_ids);
                         }
                     } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionNotifyLayer) {
                         AndroidUtilities.RunOnUIThread(new Runnable() {

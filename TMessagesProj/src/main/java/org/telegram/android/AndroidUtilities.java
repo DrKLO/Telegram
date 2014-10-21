@@ -23,6 +23,8 @@ import android.view.Surface;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
+import android.widget.TextView;
 
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
@@ -32,6 +34,7 @@ import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Views.NumberPicker;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.util.Hashtable;
 import java.util.Locale;
 
@@ -416,7 +419,7 @@ public class AndroidUtilities {
         }
     }
 
-    public static AlertDialog.Builder buildTTLAlert(Context context, final TLRPC.EncryptedChat encryptedChat) {
+    public static AlertDialog.Builder buildTTLAlert(final Context context, final TLRPC.EncryptedChat encryptedChat) {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle(LocaleController.getString("MessageLifetime", R.string.MessageLifetime));
         final NumberPicker numberPicker = new NumberPicker(context);
@@ -482,5 +485,18 @@ public class AndroidUtilities {
             }
         });
         return builder;
+    }
+
+    public static void clearCursorDrawable(EditText editText) {
+        if (editText == null || Build.VERSION.SDK_INT < 12) {
+            return;
+        }
+        try {
+            Field mCursorDrawableRes = TextView.class.getDeclaredField("mCursorDrawableRes");
+            mCursorDrawableRes.setAccessible(true);
+            mCursorDrawableRes.setInt(editText, 0);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 }

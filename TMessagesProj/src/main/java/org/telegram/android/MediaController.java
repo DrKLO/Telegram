@@ -38,7 +38,6 @@ import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.os.Vibrator;
 import android.provider.MediaStore;
-import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.View;
 import android.view.WindowManager;
@@ -400,6 +399,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileDidLoaded);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileLoadProgressChanged);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileUploadProgressChanged);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagesDeleted);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.removeAllMessagesFromDialog);
 
         BroadcastReceiver networkStateReceiver = new BroadcastReceiver() {
             @Override
@@ -900,6 +901,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         deleteLaterArray.clear();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.FileDidFailedLoad) {
@@ -963,6 +965,18 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             }
             listenerInProgress = false;
             processLaterArrays();
+        } else if (id == NotificationCenter.messagesDeleted) {
+            if (playingMessageObject != null) {
+                ArrayList<Integer> markAsDeletedMessages = (ArrayList<Integer>)args[0];
+                if (markAsDeletedMessages.contains(playingMessageObject.messageOwner.id)) {
+                    clenupPlayer(false);
+                }
+            }
+        } else if (id == NotificationCenter.removeAllMessagesFromDialog) {
+            long did = (Long)args[0];
+            if (playingMessageObject != null && playingMessageObject.getDialogId() == did) {
+                clenupPlayer(false);
+            }
         }
     }
 
@@ -1182,6 +1196,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             }
             return true;
         }
+        NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioDidStarted, messageObject);
         clenupPlayer(true);
         final File cacheFile = FileLoader.getPathToMessage(messageObject.messageOwner);
 

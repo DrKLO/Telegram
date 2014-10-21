@@ -13,6 +13,12 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.text.Editable;
+import android.text.Html;
+import android.text.InputType;
+import android.text.TextWatcher;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,6 +26,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
@@ -35,13 +42,19 @@ import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.Views.SettingsSectionLayout;
 
 import java.util.ArrayList;
 
 public class SettingsChangeUsernameActivity extends BaseFragment {
+
     private EditText firstNameField;
-    private View headerLabelView;
     private View doneButton;
+    private TextView checkTextView;
+    private long checkReqId = 0;
+    private String lastCheckName = null;
+    private Runnable checkRunnable = null;
+    private boolean lastNameAvailable = false;
 
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
@@ -68,18 +81,37 @@ public class SettingsChangeUsernameActivity extends BaseFragment {
             TextView textView = (TextView)doneButton.findViewById(R.id.done_button_text);
             textView.setText(LocaleController.getString("Done", R.string.Done).toUpperCase());
 
-            fragmentView = inflater.inflate(R.layout.chat_profile_change_name_layout, container, false);
-
             TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
             if (user == null) {
                 user = UserConfig.getCurrentUser();
             }
 
-            firstNameField = (EditText)fragmentView.findViewById(R.id.first_name_field);
+            fragmentView = new LinearLayout(inflater.getContext());
+            fragmentView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            fragmentView.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(8), AndroidUtilities.dp(16), 0);
+            ((LinearLayout) fragmentView).setOrientation(LinearLayout.VERTICAL);
+
+            SettingsSectionLayout settingsSectionLayout = new SettingsSectionLayout(inflater.getContext());
+            ((LinearLayout) fragmentView).addView(settingsSectionLayout);
+            settingsSectionLayout.setText(LocaleController.getString("Username", R.string.Username).toUpperCase());
+
+            firstNameField = new EditText(inflater.getContext());
+            firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 19);
+            firstNameField.setHintTextColor(0xffa3a3a3);
+            firstNameField.setTextColor(0xff000000);
+            firstNameField.setPadding(AndroidUtilities.dp(15), 0, AndroidUtilities.dp(15), AndroidUtilities.dp(15));
+            firstNameField.setMaxLines(1);
+            firstNameField.setLines(1);
+            firstNameField.setSingleLine(true);
+            firstNameField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            firstNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
+            firstNameField.setImeOptions(EditorInfo.IME_ACTION_DONE);
+            firstNameField.setHint(LocaleController.getString("UsernamePlaceholder", R.string.UsernamePlaceholder));
+            AndroidUtilities.clearCursorDrawable(firstNameField);
             firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                    if (i == EditorInfo.IME_ACTION_DONE) {
+                    if (i == EditorInfo.IME_ACTION_DONE && doneButton != null) {
                         doneButton.performClick();
                         return true;
                     }
@@ -87,13 +119,62 @@ public class SettingsChangeUsernameActivity extends BaseFragment {
                 }
             });
 
+            ((LinearLayout) fragmentView).addView(firstNameField);
+            LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)firstNameField.getLayoutParams();
+            layoutParams.topMargin = AndroidUtilities.dp(15);
+            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+            firstNameField.setLayoutParams(layoutParams);
+
             if (user != null && user.username != null && user.username.length() > 0) {
                 firstNameField.setText(user.username);
                 firstNameField.setSelection(firstNameField.length());
             }
 
-            TextView headerLabel = (TextView)fragmentView.findViewById(R.id.settings_section_text);
-            headerLabel.setText(LocaleController.getString("Username", R.string.Username).toUpperCase());
+            checkTextView = new TextView(inflater.getContext());
+            checkTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            checkTextView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
+            checkTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            ((LinearLayout) fragmentView).addView(checkTextView);
+            layoutParams = (LinearLayout.LayoutParams)checkTextView.getLayoutParams();
+            layoutParams.topMargin = AndroidUtilities.dp(12);
+            layoutParams.width = LinearLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
+            checkTextView.setLayoutParams(layoutParams);
+
+            TextView helpTextView = new TextView(inflater.getContext());
+            helpTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            helpTextView.setTextColor(0xff6d6d72);
+            helpTextView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
+            helpTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            helpTextView.setText(Html.fromHtml(LocaleController.getString("UsernameHelp", R.string.UsernameHelp)));
+            ((LinearLayout) fragmentView).addView(helpTextView);
+            layoutParams = (LinearLayout.LayoutParams)helpTextView.getLayoutParams();
+            layoutParams.topMargin = AndroidUtilities.dp(10);
+            layoutParams.width = LinearLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
+            helpTextView.setLayoutParams(layoutParams);
+
+            firstNameField.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+
+                }
+
+                @Override
+                public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+                    checkUserName(firstNameField.getText().toString(), false);
+                }
+
+                @Override
+                public void afterTextChanged(Editable editable) {
+
+                }
+            });
+
+            checkTextView.setVisibility(View.GONE);
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
             if (parent != null) {
@@ -128,7 +209,118 @@ public class SettingsChangeUsernameActivity extends BaseFragment {
         showAlertDialog(builder);
     }
 
+    private boolean checkUserName(final String name, boolean alert) {
+        if (name != null && name.length() > 0) {
+            checkTextView.setVisibility(View.VISIBLE);
+        } else {
+            checkTextView.setVisibility(View.GONE);
+        }
+        if (alert && name.length() == 0) {
+            return true;
+        }
+        if (checkRunnable != null) {
+            AndroidUtilities.CancelRunOnUIThread(checkRunnable);
+            checkRunnable = null;
+            lastCheckName = null;
+            if (checkReqId != 0) {
+                ConnectionsManager.getInstance().cancelRpc(checkReqId, true);
+            }
+        }
+        lastNameAvailable = false;
+        if (name != null) {
+            for (int a = 0; a < name.length(); a++) {
+                char ch = name.charAt(a);
+                if (a == 0 && ch >= '0' && ch <= '9') {
+                    if (alert) {
+                        showErrorAlert(LocaleController.getString("UsernameInvalidStartNumber", R.string.UsernameInvalidStartNumber));
+                    } else {
+                        checkTextView.setText(LocaleController.getString("UsernameInvalidStartNumber", R.string.UsernameInvalidStartNumber));
+                        checkTextView.setTextColor(0xffcf3030);
+                    }
+                    return false;
+                }
+                if (!(ch >= '0' && ch <= '9' || ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || a == '_')) {
+                    if (alert) {
+                        showErrorAlert(LocaleController.getString("UsernameInvalid", R.string.UsernameInvalid));
+                    } else {
+                        checkTextView.setText(LocaleController.getString("UsernameInvalid", R.string.UsernameInvalid));
+                        checkTextView.setTextColor(0xffcf3030);
+                    }
+                    return false;
+                }
+            }
+        }
+        if (name == null || name.length() < 5) {
+            if (alert) {
+                showErrorAlert(LocaleController.getString("UsernameInvalidShort", R.string.UsernameInvalidShort));
+            } else {
+                checkTextView.setText(LocaleController.getString("UsernameInvalidShort", R.string.UsernameInvalidShort));
+                checkTextView.setTextColor(0xffcf3030);
+            }
+            return false;
+        }
+        if (name.length() > 32) {
+            if (alert) {
+                showErrorAlert(LocaleController.getString("UsernameInvalidLong", R.string.UsernameInvalidLong));
+            } else {
+                checkTextView.setText(LocaleController.getString("UsernameInvalidLong", R.string.UsernameInvalidLong));
+                checkTextView.setTextColor(0xffcf3030);
+            }
+            return false;
+        }
+
+        if (!alert) {
+            String currentName = UserConfig.getCurrentUser().username;
+            if (currentName == null) {
+                currentName = "";
+            }
+            if (name.equals(currentName)) {
+                checkTextView.setText(LocaleController.formatString("UsernameAvailable", R.string.UsernameAvailable, name));
+                checkTextView.setTextColor(0xff26972c);
+                return true;
+            }
+
+            checkTextView.setText(LocaleController.getString("UsernameChecking", R.string.UsernameChecking));
+            checkTextView.setTextColor(0xff6d6d72);
+            lastCheckName = name;
+            checkRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    TLRPC.TL_account_checkUsername req = new TLRPC.TL_account_checkUsername();
+                    req.username = name;
+                    checkReqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                        @Override
+                        public void run(final TLObject response, final TLRPC.TL_error error) {
+                            AndroidUtilities.RunOnUIThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    checkReqId = 0;
+                                    if (lastCheckName != null && lastCheckName.equals(name)) {
+                                        if (error == null && response instanceof TLRPC.TL_boolTrue) {
+                                            checkTextView.setText(LocaleController.formatString("UsernameAvailable", R.string.UsernameAvailable, name));
+                                            checkTextView.setTextColor(0xff26972c);
+                                            lastNameAvailable = true;
+                                        } else {
+                                            checkTextView.setText(LocaleController.getString("UsernameInUse", R.string.UsernameInUse));
+                                            checkTextView.setTextColor(0xffcf3030);
+                                            lastNameAvailable = false;
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
+                }
+            };
+            AndroidUtilities.RunOnUIThread(checkRunnable, 300);
+        }
+        return true;
+    }
+
     private void saveName() {
+        if (!checkUserName(firstNameField.getText().toString(), true)) {
+            return;
+        }
         TLRPC.User user = UserConfig.getCurrentUser();
         if (getParentActivity() == null || user == null) {
             return;
@@ -140,10 +332,6 @@ public class SettingsChangeUsernameActivity extends BaseFragment {
         String newName = firstNameField.getText().toString();
         if (currentName.equals(newName)) {
             finishFragment();
-            return;
-        }
-        if (newName.length() > 32 || newName.length() > 0 && newName.length() < 5) {
-            showErrorAlert("USERNAME_INVALID");
             return;
         }
 

@@ -430,7 +430,7 @@ public class ChatBaseCell extends BaseCell {
         }
 
         if (isAvatarVisible) {
-            avatarImage.draw(canvas, AndroidUtilities.dp(6), layoutHeight - AndroidUtilities.dp(45), AndroidUtilities.dp(42), AndroidUtilities.dp(42));
+            avatarImage.draw(canvas);
         }
 
         Drawable currentBackgroundDrawable = null;

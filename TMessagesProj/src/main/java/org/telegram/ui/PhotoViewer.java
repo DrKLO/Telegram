@@ -2140,7 +2140,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         float ai = -1;
         if (System.currentTimeMillis() - animationStartTime < animationDuration) {
             ai = interpolator.getInterpolation((float)(System.currentTimeMillis() - animationStartTime) / animationDuration);
-            if (ai >= 0.999f) {
+            if (ai >= 0.95f) {
                 ai = -1;
             }
         }
@@ -2221,7 +2221,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             int height = (int) (bitmapHeight * scale);
 
             centerImage.setImageCoords(-width / 2, -height / 2, width, height);
-            centerImage.draw(canvas, -width / 2, -height / 2, width, height);
+            centerImage.draw(canvas);
         }
 
         if (scale >= 1.0f) {
@@ -2252,7 +2252,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     int height = (int) (bitmapHeight * scale);
 
                     sideImage.setImageCoords(-width / 2, -height / 2, width, height);
-                    sideImage.draw(canvas, -width / 2, -height / 2, width, height);
+                    sideImage.draw(canvas);
                 }
             } else {
                 changingPage = false;

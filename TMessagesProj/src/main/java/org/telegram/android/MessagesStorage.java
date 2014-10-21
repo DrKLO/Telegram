@@ -2511,8 +2511,20 @@ public class MessagesStorage {
         });
     }
 
-    private int getMessageMediaType(TLRPC.Message message) {
+    private boolean canAddMessageToMedia(TLRPC.Message message) {
         if (message instanceof TLRPC.TL_message_secret && message.media instanceof TLRPC.TL_messageMediaPhoto && message.ttl != 0 && message.ttl <= 60) {
+            return false;
+        } else if (message.media instanceof TLRPC.TL_messageMediaPhoto || message.media instanceof TLRPC.TL_messageMediaVideo) {
+            return true;
+        }
+        return false;
+    }
+
+    private int getMessageMediaType(TLRPC.Message message) {
+        if (message instanceof TLRPC.TL_message_secret && (
+                message.media instanceof TLRPC.TL_messageMediaPhoto && message.ttl != 0 && message.ttl <= 60 ||
+                message.media instanceof TLRPC.TL_messageMediaAudio ||
+                message.media instanceof TLRPC.TL_messageMediaVideo)) {
             return 1;
         } else if (message.media instanceof TLRPC.TL_messageMediaPhoto || message.media instanceof TLRPC.TL_messageMediaVideo) {
             return 0;
@@ -2555,7 +2567,7 @@ public class MessagesStorage {
                     messagesIdsMap.put(message.id, dialog_id);
                 }
 
-                if (getMessageMediaType(message) == 0) {
+                if (canAddMessageToMedia(message)) {
                     if (messageMediaIds.length() > 0) {
                         messageMediaIds.append(",");
                     }
@@ -2639,7 +2651,7 @@ public class MessagesStorage {
                     state3.step();
                 }
 
-                if (getMessageMediaType(message) == 0) {
+                if (canAddMessageToMedia(message)) {
                     state2.requery();
                     state2.bindInteger(1, messageId);
                     state2.bindLong(2, dialog_id);

@@ -68,6 +68,7 @@ public class NotificationCenter {
     public final static int screenshotTook = 50007;
     public final static int albumsDidLoaded = 50008;
     public final static int audioDidSent = 50009;
+    public final static int audioDidStarted = 50010;
 
     final private HashMap<Integer, ArrayList<Object>> observers = new HashMap<Integer, ArrayList<Object>>();
 

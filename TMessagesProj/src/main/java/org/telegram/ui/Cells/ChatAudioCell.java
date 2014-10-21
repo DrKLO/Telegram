@@ -393,7 +393,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         }
 
         if (needAvatarImage) {
-            avatarImage.draw(canvas, avatarImage.getImageX(), avatarImage.getImageY(), avatarImage.getImageHeight(), avatarImage.getImageHeight());
+            avatarImage.draw(canvas);
         }
 
         canvas.save();

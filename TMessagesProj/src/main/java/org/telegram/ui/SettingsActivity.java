@@ -60,6 +60,7 @@ import org.telegram.ui.Views.AvatarUpdater;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.NumberPicker;
+import org.telegram.ui.Views.SettingsSectionLayout;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -831,22 +832,20 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return view;
             } else if (type == 1) {
                 if (view == null) {
-                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = li.inflate(R.layout.settings_section_layout, viewGroup, false);
+                    view = new SettingsSectionLayout(mContext);
                 }
-                TextView textView = (TextView)view.findViewById(R.id.settings_section_text);
                 if (i == numberSectionRow) {
-                    textView.setText(LocaleController.getString("Info", R.string.Info));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("Info", R.string.Info));
                 } else if (i == settingsSectionRow) {
-                    textView.setText(LocaleController.getString("SETTINGS", R.string.SETTINGS));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("SETTINGS", R.string.SETTINGS));
                 } else if (i == supportSectionRow) {
-                    textView.setText(LocaleController.getString("Support", R.string.Support));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("Support", R.string.Support));
                 } else if (i == messagesSectionRow) {
-                    textView.setText(LocaleController.getString("MessagesSettings", R.string.MessagesSettings));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("MessagesSettings", R.string.MessagesSettings));
                 } else if (i == mediaDownloadSection) {
-                    textView.setText(LocaleController.getString("AutomaticMediaDownload", R.string.AutomaticMediaDownload));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("AutomaticMediaDownload", R.string.AutomaticMediaDownload));
                 } else if (i == contactsSectionRow) {
-                    textView.setText(LocaleController.getString("Contacts", R.string.Contacts).toUpperCase());
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("Contacts", R.string.Contacts).toUpperCase());
                 }
             } else if (type == 2) {
                 if (view == null) {
@@ -971,7 +970,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     if (user != null && user.phone != null && user.phone.length() != 0) {
                         detailTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
                     } else {
-                        detailTextView.setText(LocaleController.getString("Unknown", R.string.Unknown));
+                        detailTextView.setText(LocaleController.getString("NumberUnknown", R.string.NumberUnknown));
                     }
                     divider.setVisibility(View.VISIBLE);
                 } else if (i == textSizeRow) {
