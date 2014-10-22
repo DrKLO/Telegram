@@ -167,7 +167,7 @@
     <string name="LastSeenDate">마지막 접속: </string>
     <string name="InviteFriends">친구 초대</string>
     <!--group create view-->
-    <string name="SendMessageTo">메시지 보내기...</string>
+    <string name="SendMessageTo">이름 검색</string>
     <string name="EnterGroupNamePlaceholder">그룹 이름 입력</string>
     <string name="GroupName">그룹 이름</string>
     <string name="AllContacts">모든 대화상대</string>
