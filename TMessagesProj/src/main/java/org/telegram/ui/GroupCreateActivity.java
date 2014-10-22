@@ -422,7 +422,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
                         for (TLRPC.TL_contact contact : contactsCopy) {
                             TLRPC.User user = MessagesController.getInstance().getUser(contact.user_id);
-                            if (user.first_name.toLowerCase().startsWith(q) || user.last_name.toLowerCase().startsWith(q)) {
+                            if (user.username.contains(q)) {
                                 if (user.id == UserConfig.getClientUserId()) {
                                     continue;
                                 }

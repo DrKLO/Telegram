@@ -620,13 +620,13 @@ public class Utilities {
             wholeString += " " + name2;
         }
         wholeString = wholeString.trim();
-        String lower = " " + wholeString.toLowerCase();
+        String lower = wholeString.toLowerCase();
 
         int index = -1;
         int lastIndex = 0;
-        while ((index = lower.indexOf(" " + q, lastIndex)) != -1) {
-            int idx = index - (index == 0 ? 0 : 1);
-            int end = q.length() + (index == 0 ? 0 : 1) + idx;
+        while ((index = lower.indexOf(q, lastIndex)) != -1) {
+            int idx = index;
+            int end = q.length() + idx;
 
             if (lastIndex != 0 && lastIndex != idx + 1) {
                 builder.append(wholeString.substring(lastIndex, idx));
