@@ -193,7 +193,6 @@
     <string name="PHONE">الهاتف</string>
     <string name="StartEncryptedChat">إبدأ محادثة سرية</string>
     <string name="CreateEncryptedChatError">حدث خطأ.</string>
-    <string name="CreateEncryptedChatOutdatedError">لا يمكن إنشاء محادثة سرية مع  %1$s.\n\n%2$s  يستخدم إصدار قديم من تيليجرام ولا بد أن يقوم بالتحديث أولًا.</string>
     <string name="SecretTitle">محادثة سرية</string>
     <string name="EncryptionKey">مفتاح التشفير</string>
     <string name="MessageLifetime">عداد التدمير الذاتي</string>
@@ -212,6 +211,8 @@
     <string name="UsernameHelp">يمكنك اختيار اسم مستخدم في <![CDATA[<b>]]>تيليجرام<![CDATA[</b>]]>. إذا قمت بذلك، سيستطيع الناس إيجادك باستخدام الاسم المستخدم والتواصل معك من دون معرفة رقمك.<![CDATA[<br><br>]]>يمكنك استخدام <![CDATA[<b>]]>حروف اللغة الإنجليزية<![CDATA[</b>]]>, <![CDATA[<b>]]>وأرقامها<![CDATA[</b>]]> و كذلك الخط. لا بد من استخدام <![CDATA[<b>]]>٥<![CDATA[</b>]]> حروف على الأقل.</string>
     <string name="UsernameChecking">جاري مراجعة اسم المستخدم...</string>
     <string name="UsernameAvailable">%1$s متاح.</string>
+    <string name="UsernameEmpty">None</string>
+    <string name="ErrorOccurred">An error occurred</string>
     <!--settings view-->
     <string name="ResetNotificationsText">تم تعيين كافة الإشعارات افتراضيا</string>
     <string name="TextSize">حجم نص الرسائل</string>

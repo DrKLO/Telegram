@@ -202,8 +202,10 @@ public class SettingsChangeUsernameActivity extends BaseFragment {
             builder.setMessage(LocaleController.getString("UsernameInvalid", R.string.UsernameInvalid));
         } else if (error.equals("USERNAME_OCCUPIED")) {
             builder.setMessage(LocaleController.getString("UsernameInUse", R.string.UsernameInUse));
+        } else if (error.equals("USERNAMES_UNAVAILABLE")) {
+            builder.setMessage(LocaleController.getString("FeatureUnavailable", R.string.FeatureUnavailable));
         } else {
-            builder.setMessage(error);
+            builder.setMessage(LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred));
         }
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
         showAlertDialog(builder);

@@ -4147,7 +4147,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                             }
                                             AlertDialog.Builder builder = new AlertDialog.Builder(context);
                                             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                                            builder.setMessage(LocaleController.formatString("CreateEncryptedChatOutdatedError", R.string.CreateEncryptedChatOutdatedError, user.first_name, user.first_name));
+                                            builder.setMessage(LocaleController.getString("CreateEncryptedChatError", R.string.CreateEncryptedChatError));
                                             builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
                                             builder.show().setCanceledOnTouchOutside(true);
                                         }

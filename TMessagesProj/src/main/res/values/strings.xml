@@ -51,6 +51,7 @@
     <string name="DeleteChat">Delete and exit</string>
     <string name="HiddenName">Hidden Name</string>
     <string name="SelectChat">Select Chat</string>
+    <string name="PhotoTip">Tap and hold to view</string>
     <string name="CompatibilityChat">%1$s is using an older version of Telegram, so secret photos will be shown in compatibility mode.\n\nOnce %2$s updates Telegram, photos with timers for 1 minute or less will start working in \'Tap and hold to view\' mode, and you will be notified whenever the other party takes a screenshot.</string>
     <!--broadcasts-->
     <string name="BroadcastList">Broadcast List</string>
@@ -193,7 +194,6 @@
     <string name="PHONE">PHONE</string>
     <string name="StartEncryptedChat">Start Secret Chat</string>
     <string name="CreateEncryptedChatError">An error occurred.</string>
-    <string name="CreateEncryptedChatOutdatedError">Cannot create a secret chat with %1$s.\n\n%2$s is using an older version of Telegram and needs to update first.</string>
     <string name="SecretTitle">Secret Chat</string>
     <string name="EncryptionKey">Encryption Key</string>
     <string name="MessageLifetime">Self-Destruct Timer</string>
@@ -202,6 +202,7 @@
     <string name="NumberUnknown">Unknown</string>
     <string name="Info">INFO</string>
     <string name="Phone">Phone</string>
+    <!--usernames-->
     <string name="Username">Username</string>
     <string name="UsernamePlaceholder">Your Username</string>
     <string name="UsernameInUse">Sorry, this username is already taken.</string>
@@ -212,6 +213,8 @@
     <string name="UsernameHelp">You can choose a username on <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. If you do, other people will be able to find you by this username and contact you without knowing your phone number.<![CDATA[<br><br>]]>You can use <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> and underscores. Minimum length is <![CDATA[<b>]]>5<![CDATA[</b>]]> characters.</string>
     <string name="UsernameChecking">Checking username...</string>
     <string name="UsernameAvailable">%1$s is available.</string>
+    <string name="UsernameEmpty">None</string>
+    <string name="ErrorOccurred">An error occurred.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Reset all notification settings to default</string>
     <string name="TextSize">Messages Text Size</string>
@@ -383,6 +386,7 @@
     <string name="ForwardFromMyName">forward from my name</string>
     <string name="SendMessagesToGroup">Send messages to %1$s?</string>
     <string name="ForwardMessagesToGroup">Forward messages to %1$s?</string>
+    <string name="FeatureUnavailable">Sorry, this feature is currently not available in your country.</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Fast</string>

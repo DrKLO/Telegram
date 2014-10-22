@@ -193,7 +193,6 @@
     <string name="PHONE">TELEFONO</string>
     <string name="StartEncryptedChat">Inizia chat segreta</string>
     <string name="CreateEncryptedChatError">Si è verificato un errore.</string>
-    <string name="CreateEncryptedChatOutdatedError">Impossibile creare una chat segreta con %1$s.\n\n%2$s sta usando una vecchia versione di Telegram e deve prima aggiornarla.</string>
     <string name="SecretTitle">Chat segreta</string>
     <string name="EncryptionKey">Chiave di cifratura</string>
     <string name="MessageLifetime">Timer di autodistruzione</string>
@@ -212,6 +211,8 @@
     <string name="UsernameHelp">Puoi scegliere un nome utente su <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. Se lo fai, le altre persone potranno trovarti tramite questo nome utente e contattarti senza conoscere il tuo numero di telefono.<![CDATA[<br><br>]]>Puoi usare <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> e underscore. La lunghezza minima è di <![CDATA[<b>]]>5<![CDATA[</b>]]>  caratteri.</string>
     <string name="UsernameChecking">Controllando il nome utente...</string>
     <string name="UsernameAvailable">%1$s è disponibile.</string>
+    <string name="UsernameEmpty">None</string>
+    <string name="ErrorOccurred">An error occurred</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Ripristina tutte le impostazioni di notifica predefinite</string>
     <string name="TextSize">Dimensione testo messaggi</string>

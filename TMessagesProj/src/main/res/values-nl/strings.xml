@@ -193,7 +193,6 @@
     <string name="PHONE">TELEFOON</string>
     <string name="StartEncryptedChat">Geheime chat starten</string>
     <string name="CreateEncryptedChatError">Er is een fout opgetreden.</string>
-    <string name="CreateEncryptedChatOutdatedError">Kan geen geheime chat starten met %1$s.\n\n%2$s gebruikt een oudere versie van Telegram en moet eerst een update installeren.</string>
     <string name="SecretTitle">Geheime chat</string>
     <string name="EncryptionKey">Encryptiesleutel</string>
     <string name="MessageLifetime">Zelfvernietigingstimer</string>
@@ -212,6 +211,8 @@
     <string name="UsernameHelp">Je kan een gebruikersnaam kiezen voor <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. Hiermee kunnen anderen je vinden  en contact met je opnemen zonder je telefoonnummer te weten.<![CDATA[<br><br>]]>Je mag <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> en liggend streepje gebruiken. De minimale lengte is <![CDATA[<b>]]>5<![CDATA[</b>]]> tekens.</string>
     <string name="UsernameChecking">Gebruikersnaam controleren.</string>
     <string name="UsernameAvailable">%1$s is beschikbaar.</string>
+    <string name="UsernameEmpty">None</string>
+    <string name="ErrorOccurred">An error occurred</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Alle meldingsinstellingen herstellen</string>
     <string name="TextSize">Tekstgrootte berichten</string>

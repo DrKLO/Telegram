@@ -101,6 +101,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private View pickerView;
     private TextView doneButtonTextView;
     private TextView doneButtonBadgeTextView;
+    private ImageView shareButton;
     private boolean canShowBottom = true;
     private boolean overlayViewVisible = true;
 
@@ -595,7 +596,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         bottomLayout.setLayoutParams(layoutParams);
         bottomLayout.setBackgroundColor(0x7F000000);
 
-        ImageView shareButton = new ImageView(containerView.getContext());
+        shareButton = new ImageView(containerView.getContext());
         shareButton.setImageResource(R.drawable.ic_ab_share_white);
         shareButton.setScaleType(ImageView.ScaleType.CENTER);
         shareButton.setBackgroundResource(R.drawable.bar_selector_white);
@@ -1159,6 +1160,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             } else {
                 menuItem.hideSubItem(gallery_menu_showall);
             }
+            if ((int) currentDialogId == 0) {
+                menuItem.hideSubItem(gallery_menu_save);
+                shareButton.setVisibility(View.GONE);
+            } else {
+                shareButton.setVisibility(View.VISIBLE);
+            }
             setImageIndex(0, true);
         } else if (fileLocation != null) {
             avatarsUserId = object.user_id;
@@ -1166,6 +1173,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             imagesArrLocationsSizes.add(object.size);
             avatarsArr.add(new TLRPC.TL_photoEmpty());
             bottomLayout.setVisibility(View.GONE);
+            shareButton.setVisibility(View.VISIBLE);
             menuItem.hideSubItem(gallery_menu_showall);
             setImageIndex(0, true);
             currentUserAvatarLocation = fileLocation;
@@ -1194,6 +1202,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                 }
             }
+            if ((int) currentDialogId == 0) {
+                menuItem.hideSubItem(gallery_menu_save);
+                shareButton.setVisibility(View.GONE);
+            } else {
+                shareButton.setVisibility(View.VISIBLE);
+            }
             opennedFromMedia = true;
             setImageIndex(index, true);
         } else if (photos != null) {
@@ -1203,6 +1217,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             setImageIndex(index, true);
             pickerView.setVisibility(View.VISIBLE);
             bottomLayout.setVisibility(View.GONE);
+            shareButton.setVisibility(View.VISIBLE);
             canShowBottom = false;
             updateSelectedCount();
         }

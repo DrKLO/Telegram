@@ -849,6 +849,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             }
                             startX = x;
                             startY = y;
+                            chatListView.setOnItemClickListener(null);
                             openSecretPhotoRunnable = new Runnable() {
                                 @Override
                                 public void run() {
@@ -857,7 +858,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     }
                                     chatListView.requestDisallowInterceptTouchEvent(true);
                                     chatListView.setOnItemLongClickListener(null);
-                                    chatListView.setOnItemClickListener(null);
                                     chatListView.setLongClickable(false);
                                     openSecretPhotoRunnable = null;
                                     if (sendSecretMessageRead(messageObject)) {
@@ -882,18 +882,31 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL || event.getAction() == MotionEvent.ACTION_POINTER_UP) {
                             if (openSecretPhotoRunnable != null) {
                                 AndroidUtilities.CancelRunOnUIThread(openSecretPhotoRunnable);
+                                AndroidUtilities.RunOnUIThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        chatListView.setOnItemClickListener(onItemClickListener);
+                                    }
+                                }, 150);
                                 openSecretPhotoRunnable = null;
+                                try {
+                                    Toast.makeText(v.getContext(), LocaleController.getString("PhotoTip", R.string.PhotoTip), Toast.LENGTH_SHORT).show();
+                                } catch (Exception e) {
+                                    FileLog.e("tmessages", e);
+                                }
                             } else {
                                 if (SecretPhotoViewer.getInstance().isVisible()) {
                                     AndroidUtilities.RunOnUIThread(new Runnable() {
                                         @Override
                                         public void run() {
-                                            chatListView.setOnItemLongClickListener(onItemLongClickListener);
                                             chatListView.setOnItemClickListener(onItemClickListener);
+                                            chatListView.setOnItemLongClickListener(onItemLongClickListener);
                                             chatListView.setLongClickable(true);
                                         }
                                     });
                                     SecretPhotoViewer.getInstance().closePhoto();
+                                } else {
+                                    chatListView.setOnItemClickListener(onItemClickListener);
                                 }
                             }
                         } else if (event.getAction() != MotionEvent.ACTION_DOWN) {

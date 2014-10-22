@@ -57,14 +57,14 @@ public class NumberPicker extends LinearLayout {
     private static final int DEFAULT_LAYOUT_RESOURCE_ID = 0;
     private static final int SIZE_UNSPECIFIED = -1;
 
-    private final TextView mInputText;
-    private final int mSelectionDividersDistance;
-    private final int mMinHeight;
-    private final int mMaxHeight;
-    private final int mMinWidth;
+    private TextView mInputText;
+    private int mSelectionDividersDistance;
+    private int mMinHeight;
+    private int mMaxHeight;
+    private int mMinWidth;
     private int mMaxWidth;
-    private final boolean mComputeMaxWidth;
-    private final int mTextSize;
+    private boolean mComputeMaxWidth;
+    private int mTextSize;
     private int mSelectorTextGapHeight;
     private String[] mDisplayedValues;
     private int mMinValue;
@@ -76,13 +76,13 @@ public class NumberPicker extends LinearLayout {
     private long mLongPressUpdateInterval = DEFAULT_LONG_PRESS_UPDATE_INTERVAL;
     private final SparseArray<String> mSelectorIndexToStringCache = new SparseArray<String>();
     private final int[] mSelectorIndices = new int[SELECTOR_WHEEL_ITEM_COUNT];
-    private final Paint mSelectorWheelPaint;
-    private final Drawable mVirtualButtonPressedDrawable;
+    private Paint mSelectorWheelPaint;
+    private Drawable mVirtualButtonPressedDrawable;
     private int mSelectorElementHeight;
     private int mInitialScrollOffset = Integer.MIN_VALUE;
     private int mCurrentScrollOffset;
-    private final Scroller mFlingScroller;
-    private final Scroller mAdjustScroller;
+    private Scroller mFlingScroller;
+    private Scroller mAdjustScroller;
     private int mPreviousScrollerY;
     private ChangeCurrentByOneFromLongPressCommand mChangeCurrentByOneFromLongPressCommand;
     private float mLastDownEventY;
@@ -93,9 +93,9 @@ public class NumberPicker extends LinearLayout {
     private int mMinimumFlingVelocity;
     private int mMaximumFlingVelocity;
     private boolean mWrapSelectorWheel;
-    private final int mSolidColor;
-    private final Drawable mSelectionDivider;
-    private final int mSelectionDividerHeight;
+    private int mSolidColor;
+    private Drawable mSelectionDivider;
+    private int mSelectionDividerHeight;
     private int mScrollState = OnScrollListener.SCROLL_STATE_IDLE;
     private boolean mIngonreMoveEvents;
     private int mTopSelectionDividerTop;
@@ -103,7 +103,7 @@ public class NumberPicker extends LinearLayout {
     private int mLastHoveredChildVirtualViewId;
     private boolean mIncrementVirtualButtonPressed;
     private boolean mDecrementVirtualButtonPressed;
-    private final PressedStateHelper mPressedStateHelper;
+    private PressedStateHelper mPressedStateHelper;
     private int mLastHandledDownDpadKeyCode = -1;
 
     public interface OnValueChangeListener {
@@ -122,17 +122,7 @@ public class NumberPicker extends LinearLayout {
         public String format(int value);
     }
 
-    public NumberPicker(Context context) {
-        this(context, null);
-    }
-
-    public NumberPicker(Context context, AttributeSet attrs) {
-        this(context, attrs, 0);
-    }
-
-    public NumberPicker(Context context, AttributeSet attrs, int defStyle) {
-        super(context, attrs, defStyle);
-
+    private void init() {
         mSolidColor = 0;
         mSelectionDivider = getResources().getDrawable(R.drawable.numberpicker_selection_divider);
 
@@ -169,7 +159,7 @@ public class NumberPicker extends LinearLayout {
         mInputText.setBackgroundResource(0);
         mInputText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
 
-        ViewConfiguration configuration = ViewConfiguration.get(context);
+        ViewConfiguration configuration = ViewConfiguration.get(getContext());
         mTouchSlop = configuration.getScaledTouchSlop();
         mMinimumFlingVelocity = configuration.getScaledMinimumFlingVelocity();
         mMaximumFlingVelocity = configuration.getScaledMaximumFlingVelocity() / SELECTOR_MAX_FLING_VELOCITY_ADJUSTMENT;
@@ -189,6 +179,21 @@ public class NumberPicker extends LinearLayout {
         mAdjustScroller = new Scroller(getContext(), new DecelerateInterpolator(2.5f));
 
         updateInputTextView();
+    }
+
+    public NumberPicker(Context context) {
+        super(context);
+        init();
+    }
+
+    public NumberPicker(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        init();
+    }
+
+    public NumberPicker(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
+        init();
     }
 
     @Override

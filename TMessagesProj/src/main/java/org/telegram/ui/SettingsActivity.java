@@ -1001,7 +1001,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     if (user != null && user.username != null && user.username.length() != 0) {
                         detailTextView.setText("@" + user.username);
                     } else {
-                        detailTextView.setText("-");
+                        detailTextView.setText(LocaleController.getString("UsernameEmpty", R.string.UsernameEmpty));
                     }
                     divider.setVisibility(View.INVISIBLE);
                 }
