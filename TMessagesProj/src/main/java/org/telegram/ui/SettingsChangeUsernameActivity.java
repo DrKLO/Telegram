@@ -71,9 +71,7 @@ public class SettingsChangeUsernameActivity extends BaseFragment {
             doneButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    if (firstNameField.getText().length() != 0) {
-                        saveName();
-                    }
+                    saveName();
                 }
             });
 

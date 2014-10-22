@@ -58,6 +58,7 @@ import java.util.List;
 @TargetApi(16)
 public class VideoEditorActivity extends BaseFragment implements TextureView.SurfaceTextureListener {
 
+    private boolean created = false;
     private MediaPlayer videoPlayer = null;
     private VideoTimelineView videoTimelineView = null;
     private View videoContainerView = null;
@@ -161,6 +162,9 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
 
     @Override
     public boolean onFragmentCreate() {
+        if (created) {
+            return true;
+        }
         if (videoPath == null || !processOpenVideo()) {
             return false;
         }
@@ -190,6 +194,8 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             FileLog.e("tmessages", e);
             return false;
         }
+
+        created = true;
 
         return super.onFragmentCreate();
     }

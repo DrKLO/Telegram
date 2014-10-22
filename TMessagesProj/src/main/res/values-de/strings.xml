@@ -51,6 +51,7 @@
     <string name="DeleteChat">Löschen und beenden</string>
     <string name="HiddenName">Versteckter Name</string>
     <string name="SelectChat">Chat auswählen</string>
+    <string name="PhotoTip">Tippen und Halten</string>
     <string name="CompatibilityChat">%1$s benutzt eine ältere Version von Telegram, sodass Fotos in Geheimen Chats im Kompatibilitätsmodus angezeigt werden.\n\nSobald %2$s Telegram aktualisiert, werden Fotos mit Timern von 1 Minute und kürzer per \"Tippen und Halten\" angezeigt. Du wirst benachrichtigt, sobald dein Chatpartner ein Bildschirmfoto macht.</string>
     <!--broadcasts-->
     <string name="BroadcastList">Broadcast Liste</string>
@@ -201,6 +202,7 @@
     <string name="NumberUnknown">Unbekannt</string>
     <string name="Info">INFO</string>
     <string name="Phone">Telefon</string>
+    <!--usernames-->
     <string name="Username">Benutzername</string>
     <string name="UsernamePlaceholder">Dein Benutzername</string>
     <string name="UsernameInUse">Leider ist dieser Benutzername vergeben.</string>
@@ -208,11 +210,11 @@
     <string name="UsernameInvalidShort">Ein Benutzername benötigt mindestens 5 Zeichen.</string>
     <string name="UsernameInvalidLong">Ein Benutzername darf maximal 32 Zeichen haben.</string>
     <string name="UsernameInvalidStartNumber">Benutzernamen dürfen leider nicht mit einer Zahl anfangen.</string>
-    <string name="UsernameHelp">Wähle einen Benutzernamen, wenn du von anderen bei<![CDATA[<b>]]>Telegram<![CDATA[</b>]]>gefunden werden willst – ohne, dass sie deine Nummer kennen müssen.<![CDATA[<br><br>]]>Erlaubt sind <![CDATA[<b>]]>a–z<![CDATA[<b>]]>, <![CDATA[<b>]]>0–9<![CDATA[<b>]]> und Unterstriche. Die Mindestlänge beträgt <![CDATA[<b>]]>5<![CDATA[<b>]]> Zeichen.</string>
+    <string name="UsernameHelp">Wähle einen Benutzernamen, wenn du von anderen bei<![CDATA[<b>]]>Telegram<![CDATA[</b>]]>gefunden werden willst — ohne, dass sie deine Nummer kennen müssen.<![CDATA[<br><br>]]>Erlaubt sind <![CDATA[<b>]]>a-z<![CDATA[<b>]]>, <![CDATA[<b>]]>0-9<![CDATA[<b>]]> und Unterstriche. Die Mindestlänge beträgt <![CDATA[<b>]]>5<![CDATA[<b>]]> Zeichen.</string>
     <string name="UsernameChecking">Prüfe Benutzername...</string>
     <string name="UsernameAvailable">%1$s ist verfügbar.</string>
-    <string name="UsernameEmpty">None</string>
-    <string name="ErrorOccurred">An error occurred</string>
+    <string name="UsernameEmpty">Keiner</string>
+    <string name="ErrorOccurred">Es ist ein Fehler aufgetreten.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Alle Einstellungen für Mitteilungen zurücksetzen</string>
     <string name="TextSize">Textgröße für Nachrichten</string>
@@ -384,6 +386,7 @@
     <string name="ForwardFromMyName">mit meinem Namen weiterleiten</string>
     <string name="SendMessagesToGroup">Nachricht an %1$s senden?</string>
     <string name="ForwardMessagesToGroup">Weiterleiten an %1$s?</string>
+    <string name="FeatureUnavailable">Sorry, this feature is currently not available in your country.</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Schnell</string>

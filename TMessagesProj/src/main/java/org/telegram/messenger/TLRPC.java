@@ -8429,32 +8429,37 @@ public class TLRPC {
         }
     }
 
+    //manually created
+
     public static class TL_messages_sendEncryptedService extends TLObject {
         public static int constructor = 0x32d439a4;
 
         public TL_inputEncryptedChat peer;
         public long random_id;
-        public byte[] data;
+        public ByteBufferDesc data;
 
         public Class responseClass () {
             return messages_SentEncryptedMessage.class;
-        }
-
-        public void readParams(AbsSerializedData stream) {
-            peer = (TL_inputEncryptedChat)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
-            random_id = stream.readInt64();
-            data = stream.readByteArray();
         }
 
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
             peer.serializeToStream(stream);
             stream.writeInt64(random_id);
-            stream.writeByteArray(data);
+            stream.writeByteBuffer(data);
+        }
+
+        @Override
+        public void freeResources() {
+            if (disableFree) {
+                return;
+            }
+            if (data != null) {
+                BuffersStorage.getInstance().reuseFreeBuffer(data);
+                data = null;
+            }
         }
     }
-
-    //manually created
 
     public static class TL_userDeleted_old extends TL_userDeleted {
         public static int constructor = 0xb29ad7cc;
@@ -8990,6 +8995,8 @@ public class TLRPC {
         public int ttl;
         public int destroyTime;
         public int layer;
+        public int seq_in;
+        public int seq_out;
         public VideoEditedInfo videoEditedInfo = null;
     }
 
@@ -9993,7 +10000,7 @@ public class TLRPC {
         }
     }
 
-    public static class TL_messageEcryptedAction extends MessageAction {
+    public static class TL_messageEncryptedAction extends MessageAction {
         public static int constructor = 0x555555F7;
 
         public void readParams(AbsSerializedData stream) {

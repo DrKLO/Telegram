@@ -704,4 +704,26 @@ public class FileLoader {
         }
         return "";
     }
+
+    public void deleteFiles(final ArrayList<File> files) {
+        if (files == null || files.isEmpty()) {
+            return;
+        }
+        fileLoaderQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                for (File file : files) {
+                    if (file.exists()) {
+                        try {
+                            if (!file.delete()) {
+                                file.deleteOnExit();
+                            }
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
+                    }
+                }
+            }
+        });
+    }
 }

@@ -791,7 +791,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                                 photoW = bmOptions.outWidth;
                                 photoH = bmOptions.outHeight;
                             }
-                            if (photoW == 0 || photoH == 0 || (photoW == width && photoH == height || photoH == width && photoW == height)) {
+                            if (photoW <= 0 || photoH <= 0 || (photoW == width && photoH == height || photoH == width && photoW == height)) {
                                 screenshotDates.add(date);
                             }
                         } catch (Exception e) {
@@ -834,7 +834,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             }
         }
         if (send) {
-            SendMessagesHelper.getInstance().sendScreenshotMessage(lastSecretChat, lastSecretChatVisibleMessages);
+            SendMessagesHelper.getInstance().sendScreenshotMessage(lastSecretChat, lastSecretChatVisibleMessages, null);
         }
     }
 
@@ -2200,6 +2200,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
         File inputFile = new File(videoPath);
         if (!inputFile.canRead()) {
+            didWriteData(messageObject, cacheFile, true, true);
             return false;
         }
 
@@ -2577,6 +2578,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 FileLog.e("tmessages", "time = " + (System.currentTimeMillis() - time));
             }
         } else {
+            didWriteData(messageObject, cacheFile, true, true);
             return false;
         }
         didWriteData(messageObject, cacheFile, true, error);

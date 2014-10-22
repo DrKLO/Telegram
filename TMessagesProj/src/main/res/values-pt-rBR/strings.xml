@@ -51,6 +51,7 @@
     <string name="DeleteChat">Apagar e sair</string>
     <string name="HiddenName">Nome oculto</string>
     <string name="SelectChat">Selecione uma Conversa</string>
+    <string name="PhotoTip">Toque e segure para ver</string>
     <string name="CompatibilityChat">%1$s está usando uma versão mais antiga do Telegram, por isso fotos secretas serão mostradas em modo de compatibilidade.\n\nAssim que %2$s atualize o Telegram, fotos com timers de 1 minuto ou menos passarão a funcionar no modo ‘Toque e segure para ver’, e você será notificado caso a outra pessoa salve a tela.</string>
     <!--broadcasts-->
     <string name="BroadcastList">Lista de Broadcast</string>
@@ -201,6 +202,7 @@
     <string name="NumberUnknown">Desconhecido</string>
     <string name="Info">INFO</string>
     <string name="Phone">Telefone</string>
+    <!--usernames-->
     <string name="Username">Nome de Usuário</string>
     <string name="UsernamePlaceholder">Seu nome de usuário</string>
     <string name="UsernameInUse">Desculpe, este usuário já existe.</string>
@@ -211,8 +213,8 @@
     <string name="UsernameHelp">Você pode escolher um nome de usuário no <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. Assim, outras pessoas poderão te encontrar pelo nome de usuário e entrar em contato sem precisar saber seu telefone. <![CDATA[<br><br>]]>Você pode usar <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> e underline. O tamanho mínimo é <![CDATA[<b>]]>5<![CDATA[</b>]]> caracteres.</string>
     <string name="UsernameChecking">Verificando nome de usuário...</string>
     <string name="UsernameAvailable">%1$s está disponível.</string>
-    <string name="UsernameEmpty">None</string>
-    <string name="ErrorOccurred">An error occurred</string>
+    <string name="UsernameEmpty">Nenhum</string>
+    <string name="ErrorOccurred">Ocorreu um erro.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Restaurar todas as configurações de notificação</string>
     <string name="TextSize">Tamanho do texto nas mensagens</string>
@@ -384,6 +386,7 @@
     <string name="ForwardFromMyName">encaminhar pelo meu nome</string>
     <string name="SendMessagesToGroup">Enviar mensagens para %1$s?</string>
     <string name="ForwardMessagesToGroup">Encaminhar mensagem para %1$s?</string>
+    <string name="FeatureUnavailable">Sorry, this feature is currently not available in your country.</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Rápido</string>

@@ -657,7 +657,16 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (obj.isSent()) {
                         ArrayList<Integer> arr = new ArrayList<Integer>();
                         arr.add(obj.messageOwner.id);
-                        MessagesController.getInstance().deleteMessages(arr, null, null);
+
+                        ArrayList<Long> random_ids = null;
+                        TLRPC.EncryptedChat encryptedChat = null;
+                        if ((int)obj.getDialogId() == 0 && obj.messageOwner.random_id != 0) {
+                            random_ids = new ArrayList<Long>();
+                            random_ids.add(obj.messageOwner.random_id);
+                            encryptedChat = MessagesController.getInstance().getEncryptedChat((int)(obj.getDialogId() >> 32));
+                        }
+
+                        MessagesController.getInstance().deleteMessages(arr, random_ids, encryptedChat);
                         closePhoto(false);
                     }
                 } else if (!avatarsArr.isEmpty()) {

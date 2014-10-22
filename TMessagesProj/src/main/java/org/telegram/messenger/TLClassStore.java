@@ -370,7 +370,7 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_userRequest_old.constructor, TLRPC.TL_userRequest_old.class);
         classStore.put(TLRPC.TL_userForeign_old.constructor, TLRPC.TL_userForeign_old.class);
         classStore.put(TLRPC.TL_userDeleted_old.constructor, TLRPC.TL_userDeleted_old.class);
-        classStore.put(TLRPC.TL_messageEcryptedAction.constructor, TLRPC.TL_messageEcryptedAction.class);
+        classStore.put(TLRPC.TL_messageEncryptedAction.constructor, TLRPC.TL_messageEncryptedAction.class);
     }
 
     static TLClassStore store = null;

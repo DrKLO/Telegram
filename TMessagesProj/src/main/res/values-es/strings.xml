@@ -22,10 +22,10 @@
     <string name="DidNotGetTheCode">¿No recibiste el código?</string>
     <!--signup view-->
     <string name="YourName">Tu nombre</string>
-    <string name="RegisterText">Ingresa tu nombre y apellido</string>
+    <string name="RegisterText">Ingresa tu nombre y apellidos</string>
     <!--<string name="RegisterText">Set up your name and picture</string>-->
     <string name="FirstName">Nombre (requerido)</string>
-    <string name="LastName">Apellido (opcional)</string>
+    <string name="LastName">Apellidos (opcional)</string>
     <string name="CancelRegistration">Cancelar registro</string>
     <!--chats view-->
     <string name="Chats">Chats</string>
@@ -51,6 +51,7 @@
     <string name="DeleteChat">Eliminar y salir</string>
     <string name="HiddenName">Nombre oculto</string>
     <string name="SelectChat">Elige el chat</string>
+    <string name="PhotoTip">Mantén pulsado para ver</string>
     <string name="CompatibilityChat">%1$s usa una versión antigua de Telegram, así que las fotos secretas serán mostradas en un modo de compatibilidad.\n\nCuando %2$s actualice Telegram, las fotos con autodestrucción de 1 minuto o menos funcionarán con el modo \'Mantén pulsado para ver\', y te notificaremos siempre que la otra parte haga una captura de pantalla.</string>
     <!--broadcasts-->
     <string name="BroadcastList">Lista de difusión</string>
@@ -201,6 +202,7 @@
     <string name="NumberUnknown">Desconocido</string>
     <string name="Info">INFORMACIÓN</string>
     <string name="Phone">Teléfono</string>
+    <!--usernames-->
     <string name="Username">Apodo</string>
     <string name="UsernamePlaceholder">Tu apodo</string>
     <string name="UsernameInUse">Lo siento, este apodo ya está ocupado.</string>
@@ -211,8 +213,8 @@
     <string name="UsernameHelp">Puedes elegir un apodo en <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. Si lo haces, otras personas te podrán encontrar por ese apodo y contactarte sin saber tu número de teléfono.<![CDATA[<br><br>]]>Puedes usar <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> y guiones bajos. La longitud mínima es de <![CDATA[<b>]]>5<![CDATA[</b>]]> caracteres.</string>
     <string name="UsernameChecking">Verificando apodo...</string>
     <string name="UsernameAvailable">%1$s está disponible.</string>
-    <string name="UsernameEmpty">None</string>
-    <string name="ErrorOccurred">An error occurred</string>
+    <string name="UsernameEmpty">Ninguno</string>
+    <string name="ErrorOccurred">Ocurrió un error.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Restablecer las notificaciones</string>
     <string name="TextSize">Tamaño del texto</string>
@@ -238,7 +240,7 @@
     <string name="BlockedUsers">Usuarios bloqueados</string>
     <string name="SaveIncomingPhotos">Guardar fotos entrantes</string>
     <string name="LogOut">Cerrar sesión</string>
-    <string name="YourFirstNameAndLastName">TU NOMBRE Y APELLIDO</string>
+    <string name="YourFirstNameAndLastName">TU NOMBRE Y APELLIDOS</string>
     <string name="NoSound">Sin sonido</string>
     <string name="Default">Por defecto</string>
     <string name="Support">SOPORTE</string>
@@ -264,7 +266,7 @@
     <string name="ImportContacts">Importar contactos</string>
     <string name="WiFiOnly">Sólo vía Wi-Fi</string>
     <string name="SortFirstName">Nombre</string>
-    <string name="SortLastName">Apellido</string>
+    <string name="SortLastName">Apellidos</string>
     <string name="LedColor">Color del LED</string>
     <string name="PopupNotification">Notificaciones emergentes</string>
     <string name="NoPopup">Desactivadas</string>
@@ -360,7 +362,7 @@
     <string name="FloodWait">Muchos intentos. Por favor, inténtalo más tarde.</string>
     <string name="InvalidCode">Código inválido</string>
     <string name="InvalidFirstName">Nombre inválido</string>
-    <string name="InvalidLastName">Apellido inválido</string>
+    <string name="InvalidLastName">Apellidos inválidos</string>
     <string name="Loading">Cargando...</string>
     <string name="NoPlayerInstalled">No tienes reproductor de vídeo. Por favor, instala uno para continuar.</string>
     <string name="NoMailInstalled">Por favor, envíanos un correo electrónico a sms@telegram.org y cuéntanos tu problema.</string>
@@ -384,6 +386,7 @@
     <string name="ForwardFromMyName">reenviar desde mi nombre</string>
     <string name="SendMessagesToGroup">¿Enviar mensajes a %1$s?</string>
     <string name="ForwardMessagesToGroup">¿Reenviar mensajes a %1$s?</string>
+    <string name="FeatureUnavailable">Sorry, this feature is currently not available in your country.</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Rápida</string>

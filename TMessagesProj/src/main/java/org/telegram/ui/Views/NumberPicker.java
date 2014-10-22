@@ -36,7 +36,6 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.LinearLayout;
-import android.widget.Scroller;
 import android.widget.TextView;
 
 import org.telegram.messenger.R;
@@ -724,6 +723,28 @@ public class NumberPicker extends LinearLayout {
         } else {
             return measuredSize;
         }
+    }
+
+    public static int resolveSizeAndState(int size, int measureSpec, int childMeasuredState) {
+        int result = size;
+        int specMode = MeasureSpec.getMode(measureSpec);
+        int specSize =  MeasureSpec.getSize(measureSpec);
+        switch (specMode) {
+            case MeasureSpec.UNSPECIFIED:
+                result = size;
+                break;
+            case MeasureSpec.AT_MOST:
+                if (specSize < size) {
+                    result = specSize | 16777216;
+                } else {
+                    result = size;
+                }
+                break;
+            case MeasureSpec.EXACTLY:
+                result = specSize;
+                break;
+        }
+        return result | (childMeasuredState & (-16777216));
     }
 
     private void initializeSelectorWheelIndices() {

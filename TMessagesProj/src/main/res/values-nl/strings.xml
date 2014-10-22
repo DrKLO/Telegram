@@ -51,7 +51,8 @@
     <string name="DeleteChat">Verwijderen en verlaten</string>
     <string name="HiddenName">Verborgen naam</string>
     <string name="SelectChat">Kies een gesprek</string>
-    <string name="CompatibilityChat">%1$s gebruikt een oudere versie van Telegram, dus worden geheime foto\'s weergegeven in de compatibiliteitsmodus.\n\nZodra %2$s Telegram update werken foto\'s met timers voor 1 minuut of minder in de \'Houd ingedrukt om te bekijken\'-modus en krijg je een bericht wanneer de andere partij een schermafbeelding maakt.</string>
+    <string name="PhotoTip">Druk en houd ingedrukt</string>
+    <string name="CompatibilityChat">%1$s gebruikt een oudere versie van Telegram, dus worden geheime foto\'s weergegeven in de compatibiliteitsmodus.\n\nZodra %2$s Telegram updatet werken foto\'s met timers voor 1 minuut of minder in de \'Druk en houd ingedrukt\'-modus en krijg je een bericht wanneer de andere partij een schermafbeelding maakt.</string>
     <!--broadcasts-->
     <string name="BroadcastList">Verzendlijst</string>
     <string name="NewBroadcastList">Nieuwe verzendlijst</string>
@@ -201,6 +202,7 @@
     <string name="NumberUnknown">Onbekend</string>
     <string name="Info">INFORMATIE</string>
     <string name="Phone">Telefoon</string>
+    <!--usernames-->
     <string name="Username">Gebruikersnaam</string>
     <string name="UsernamePlaceholder">Kies een naam</string>
     <string name="UsernameInUse">Sorry, deze gebruikersnaam is al bezet.</string>
@@ -211,8 +213,8 @@
     <string name="UsernameHelp">Je kan een gebruikersnaam kiezen voor <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. Hiermee kunnen anderen je vinden  en contact met je opnemen zonder je telefoonnummer te weten.<![CDATA[<br><br>]]>Je mag <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> en liggend streepje gebruiken. De minimale lengte is <![CDATA[<b>]]>5<![CDATA[</b>]]> tekens.</string>
     <string name="UsernameChecking">Gebruikersnaam controleren.</string>
     <string name="UsernameAvailable">%1$s is beschikbaar.</string>
-    <string name="UsernameEmpty">None</string>
-    <string name="ErrorOccurred">An error occurred</string>
+    <string name="UsernameEmpty">Geen</string>
+    <string name="ErrorOccurred">Er is een fout opgetreden.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Alle meldingsinstellingen herstellen</string>
     <string name="TextSize">Tekstgrootte berichten</string>
@@ -384,6 +386,7 @@
     <string name="ForwardFromMyName">doorsturen via mijn eigen naam</string>
     <string name="SendMessagesToGroup">Berichten naar %1$s verzenden?</string>
     <string name="ForwardMessagesToGroup">Berichten naar %1$s doorsturen?</string>
+    <string name="FeatureUnavailable">Sorry, deze functie is momenteel niet beschikbaar in jouw land.</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Snel</string>
