@@ -239,7 +239,7 @@ public class SettingsChangeUsernameActivity extends BaseFragment {
                     }
                     return false;
                 }
-                if (!(ch >= '0' && ch <= '9' || ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || a == '_')) {
+                if (!(ch >= '0' && ch <= '9' || ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch == '_')) {
                     if (alert) {
                         showErrorAlert(LocaleController.getString("UsernameInvalid", R.string.UsernameInvalid));
                     } else {

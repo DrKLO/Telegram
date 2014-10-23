@@ -18,7 +18,7 @@ import java.util.ArrayList;
 
 public class BaseContactsSearchAdapter extends BaseFragmentAdapter {
 
-    protected ArrayList<TLRPC.User> globalSearch;
+    protected ArrayList<TLRPC.User> globalSearch = new ArrayList<TLRPC.User>();
     private long reqId = 0;
     private int lastReqId;
     protected String lastFoundUsername = null;
@@ -29,7 +29,7 @@ public class BaseContactsSearchAdapter extends BaseFragmentAdapter {
                 ConnectionsManager.getInstance().cancelRpc(reqId, true);
                 reqId = 0;
             }
-            globalSearch = null;
+            globalSearch.clear();
             lastReqId = 0;
             notifyDataSetChanged();
             return;

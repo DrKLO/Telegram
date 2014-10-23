@@ -279,6 +279,9 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         int count = listView.getChildCount();
         for (int a = 0; a < count; a++) {
             View view = listView.getChildAt(a);
+            if (view.getTag() == null) {
+                continue;
+            }
             int num = (Integer)view.getTag();
             if (num < 0 || num >= selectedAlbum.photos.size()) {
                 continue;

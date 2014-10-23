@@ -619,8 +619,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
         private Context mContext;
         private Timer searchTimer;
-        private ArrayList<TLObject> searchResult;
-        private ArrayList<CharSequence> searchResultNames;
+        private ArrayList<TLObject> searchResult = new ArrayList<TLObject>();
+        private ArrayList<CharSequence> searchResultNames = new ArrayList<CharSequence>();
 
         public MessagesAdapter(Context context) {
             mContext = context;
@@ -656,8 +656,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
         public boolean isGlobalSearch(int i) {
             if (searching && searchWas) {
-                int localCount = searchResult == null ? 0 : searchResult.size();
-                int globalCount = globalSearch == null ? 0 : globalSearch.size();
+                int localCount = searchResult.size();
+                int globalCount = globalSearch.size();
                 if (i >= 0 && i < localCount) {
                     return false;
                 } else if (i > localCount && i <= globalCount + localCount) {
@@ -669,8 +669,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
         public void searchDialogs(final String query) {
             if (query == null) {
-                searchResult = null;
-                searchResultNames = null;
+                searchResult.clear();
+                searchResultNames.clear();
                 queryServerSearch(null);
                 notifyDataSetChanged();
             } else {
@@ -710,14 +710,14 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public boolean isEnabled(int i) {
-            return !(searching && searchWas) || i != (searchResult == null ? 0 : searchResult.size());
+            return !(searching && searchWas) || i != searchResult.size();
         }
 
         @Override
         public int getCount() {
             if (searching && searchWas) {
-                int count = searchResult == null ? 0 : searchResult.size();
-                int globalCount = globalSearch == null ? 0 : globalSearch.size();
+                int count = searchResult.size();
+                int globalCount = globalSearch.size();
                 if (globalCount != 0) {
                     count += globalCount + 1;
                 }
@@ -741,8 +741,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         @Override
         public TLObject getItem(int i) {
             if (searching && searchWas) {
-                int localCount = searchResult == null ? 0 : searchResult.size();
-                int globalCount = globalSearch == null ? 0 : globalSearch.size();
+                int localCount = searchResult.size();
+                int globalCount = globalSearch.size();
                 if (i >= 0 && i < localCount) {
                     return searchResult.get(i);
                 } else if (i > localCount && i <= globalCount + localCount) {
@@ -776,7 +776,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
             if (searching && searchWas) {
-                if (i == (searchResult == null ? 0 : searchResult.size())) {
+                if (i == searchResult.size()) {
                     if (view == null) {
                         view = new SettingsSectionLayout(mContext);
                         ((SettingsSectionLayout) view).setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
@@ -805,8 +805,13 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     }
 
                     CharSequence username = null;
-                    if (i > searchResult.size() && user.username != null) {
-                        username = Html.fromHtml(String.format("<font color=\"#357aa8\">@%s</font>%s", user.username.substring(0, lastFoundUsername.length()), user.username.substring(lastFoundUsername.length())));
+                    if (i > searchResult.size() && user != null && user.username != null) {
+                        try {
+                            username = Html.fromHtml(String.format("<font color=\"#357aa8\">@%s</font>%s", user.username.substring(0, lastFoundUsername.length()), user.username.substring(lastFoundUsername.length())));
+                        } catch (Exception e) {
+                            username = user.username;
+                            FileLog.e("tmessages", e);
+                        }
                     }
 
                     ((ChatOrUserCell) view).setData(user, chat, encryptedChat, i < searchResult.size() ? searchResultNames.get(i) : null, username);
@@ -847,7 +852,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         @Override
         public int getItemViewType(int i) {
             if (searching && searchWas) {
-                if (i == (searchResult == null ? 0 : searchResult.size())) {
+                if (i == searchResult.size()) {
                     return 3;
                 }
                 return 2;
@@ -866,7 +871,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         @Override
         public boolean isEmpty() {
             if (searching && searchWas) {
-                return (searchResult == null || searchResult.size() == 0) && (globalSearch == null || globalSearch.isEmpty());
+                return searchResult.size() == 0 && globalSearch.isEmpty();
             }
             if (MessagesController.getInstance().loadingDialogs && MessagesController.getInstance().dialogs.isEmpty()) {
                 return false;

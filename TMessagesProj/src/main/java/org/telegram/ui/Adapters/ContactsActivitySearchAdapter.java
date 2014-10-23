@@ -36,17 +36,21 @@ public class ContactsActivitySearchAdapter extends BaseContactsSearchAdapter {
     private ArrayList<TLRPC.User> searchResult;
     private ArrayList<CharSequence> searchResultNames;
     private Timer searchTimer;
+    private boolean allowUsernameSearch;
 
-    public ContactsActivitySearchAdapter(Context context, HashMap<Integer, TLRPC.User> arg1) {
+    public ContactsActivitySearchAdapter(Context context, HashMap<Integer, TLRPC.User> arg1, boolean usernameSearch) {
         mContext = context;
         ignoreUsers = arg1;
+        allowUsernameSearch = usernameSearch;
     }
 
     public void searchDialogs(final String query) {
         if (query == null) {
-            searchResult = null;
-            searchResultNames = null;
-            queryServerSearch(null);
+            searchResult.clear();
+            searchResultNames.clear();
+            if (allowUsernameSearch) {
+                queryServerSearch(null);
+            }
             notifyDataSetChanged();
         } else {
             try {
@@ -76,7 +80,9 @@ public class ContactsActivitySearchAdapter extends BaseContactsSearchAdapter {
         AndroidUtilities.RunOnUIThread(new Runnable() {
             @Override
             public void run() {
-                queryServerSearch(query);
+                if (allowUsernameSearch) {
+                    queryServerSearch(query);
+                }
                 final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<TLRPC.TL_contact>();
                 contactsCopy.addAll(ContactsController.getInstance().contacts);
                 Utilities.searchQueue.postRunnable(new Runnable() {
@@ -128,13 +134,13 @@ public class ContactsActivitySearchAdapter extends BaseContactsSearchAdapter {
 
     @Override
     public boolean isEnabled(int i) {
-        return i != (searchResult == null ? 0 : searchResult.size());
+        return i != searchResult.size();
     }
 
     @Override
     public int getCount() {
-        int count = searchResult == null ? 0 : searchResult.size();
-        int globalCount = globalSearch == null ? 0 : globalSearch.size();
+        int count = searchResult.size();
+        int globalCount = globalSearch.size();
         if (globalCount != 0) {
             count += globalCount + 1;
         }
@@ -142,8 +148,8 @@ public class ContactsActivitySearchAdapter extends BaseContactsSearchAdapter {
     }
 
     public boolean isGlobalSearch(int i) {
-        int localCount = searchResult == null ? 0 : searchResult.size();
-        int globalCount = globalSearch == null ? 0 : globalSearch.size();
+        int localCount = searchResult.size();
+        int globalCount = globalSearch.size();
         if (i >= 0 && i < localCount) {
             return false;
         } else if (i > localCount && i <= globalCount + localCount) {
@@ -154,8 +160,8 @@ public class ContactsActivitySearchAdapter extends BaseContactsSearchAdapter {
 
     @Override
     public TLRPC.User getItem(int i) {
-        int localCount = searchResult == null ? 0 : searchResult.size();
-        int globalCount = globalSearch == null ? 0 : globalSearch.size();
+        int localCount = searchResult.size();
+        int globalCount = globalSearch.size();
         if (i >= 0 && i < localCount) {
             return searchResult.get(i);
         } else if (i > localCount && i <= globalCount + localCount) {
@@ -176,7 +182,7 @@ public class ContactsActivitySearchAdapter extends BaseContactsSearchAdapter {
 
     @Override
     public View getView(int i, View view, ViewGroup viewGroup) {
-        if (i == (searchResult == null ? 0 : searchResult.size())) {
+        if (i == searchResult.size()) {
             if (view == null) {
                 view = new SettingsSectionLayout(mContext);
                 ((SettingsSectionLayout) view).setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
@@ -192,7 +198,12 @@ public class ContactsActivitySearchAdapter extends BaseContactsSearchAdapter {
             if (user != null) {
                 CharSequence username = null;
                 if (i > searchResult.size() && user.username != null) {
-                    username = Html.fromHtml(String.format("<font color=\"#357aa8\">@%s</font>%s", user.username.substring(0, lastFoundUsername.length()), user.username.substring(lastFoundUsername.length())));
+                    try {
+                        username = Html.fromHtml(String.format("<font color=\"#357aa8\">@%s</font>%s", user.username.substring(0, lastFoundUsername.length()), user.username.substring(lastFoundUsername.length())));
+                    } catch (Exception e) {
+                        username = user.username;
+                        FileLog.e("tmessages", e);
+                    }
                 }
 
                 ((ChatOrUserCell) view).setData(user, null, null, i < searchResult.size() ? searchResultNames.get(i) : null, username);
@@ -211,7 +222,7 @@ public class ContactsActivitySearchAdapter extends BaseContactsSearchAdapter {
 
     @Override
     public int getItemViewType(int i) {
-        if (i == (searchResult == null ? 0 : searchResult.size())) {
+        if (i == searchResult.size()) {
             return 1;
         }
         return 0;
@@ -224,6 +235,6 @@ public class ContactsActivitySearchAdapter extends BaseContactsSearchAdapter {
 
     @Override
     public boolean isEmpty() {
-        return (searchResult == null || searchResult.size() == 0) && (globalSearch == null || globalSearch.isEmpty());
+        return searchResult.isEmpty() && globalSearch.isEmpty();
     }
 }

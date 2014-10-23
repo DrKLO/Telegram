@@ -73,6 +73,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
     private String inviteText;
     private boolean updatingInviteText = false;
+    private boolean allowUsernameSearch = true;
     private ContactsActivityDelegate delegate;
 
     public static interface ContactsActivityDelegate {
@@ -92,11 +93,12 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.encryptedChatCreated);
         if (arguments != null) {
             onlyUsers = getArguments().getBoolean("onlyUsers", false);
-            destroyAfterSelect = getArguments().getBoolean("destroyAfterSelect", false);
-            usersAsSections = getArguments().getBoolean("usersAsSections", false);
-            returnAsResult = getArguments().getBoolean("returnAsResult", false);
-            createSecretChat = getArguments().getBoolean("createSecretChat", false);
+            destroyAfterSelect = arguments.getBoolean("destroyAfterSelect", false);
+            usersAsSections = arguments.getBoolean("usersAsSections", false);
+            returnAsResult = arguments.getBoolean("returnAsResult", false);
+            createSecretChat = arguments.getBoolean("createSecretChat", false);
             selectAlertString = arguments.getString("selectAlertString");
+            allowUsernameSearch = arguments.getBoolean("allowUsernameSearch", true);
         }
 
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
@@ -200,7 +202,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
             emptyTextView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
             emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
-            searchListViewAdapter = new ContactsActivitySearchAdapter(getParentActivity(), ignoreUsers);
+            searchListViewAdapter = new ContactsActivitySearchAdapter(getParentActivity(), ignoreUsers, allowUsernameSearch);
 
             listView = (PinnedHeaderListView)fragmentView.findViewById(R.id.listView);
             listView.setEmptyView(emptyTextView);

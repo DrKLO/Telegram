@@ -787,6 +787,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     public void fixLayout() {
         if (AndroidUtilities.isTablet()) {
+            if (actionBarLayout == null) {
+                return;
+            }
             actionBarLayout.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                 @Override
                 public void onGlobalLayout() {
