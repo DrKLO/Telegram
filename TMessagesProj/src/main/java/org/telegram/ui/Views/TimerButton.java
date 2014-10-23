@@ -65,20 +65,33 @@ public class TimerButton extends View {
         time = value;
 
         String timeString = null;
-        if (time == 2) {
-            timeString = "2s";
-        } else if (time == 5) {
-            timeString = "5s";
-        } else if (time == 60) {
-            timeString = "1m";
-        } else if (time == 60 * 60) {
-            timeString = "1h";
-        } else if (time == 60 * 60 * 24) {
-            timeString = "1d";
-        } else if (time == 60 * 60 * 24 * 7) {
-            timeString = "1w";
+        if (time >= 1 && time < 60) {
+            timeString = "" + value;
+            if (timeString.length() < 2) {
+                timeString += "s";
+            }
+        } else if (time >= 60 && time < 60 * 60) {
+            timeString = "" + value / 60;
+            if (timeString.length() < 2) {
+                timeString += "m";
+            }
+        } else if (time >= 60 * 60 && time < 60 * 60 * 24) {
+            timeString = "" + value / 60 / 60;
+            if (timeString.length() < 2) {
+                timeString += "h";
+            }
+        } else if (time >= 60 * 60 * 24 && time < 60 * 60 * 24 * 7) {
+            timeString = "" + value / 60 / 60 / 24;
+            if (timeString.length() < 2) {
+                timeString += "d";
+            }
         } else {
-            timeString = "c";
+            timeString = "" + value / 60 / 60 / 24 / 7;
+            if (timeString.length() < 2) {
+                timeString += "w";
+            } else if (timeString.length() > 2) {
+                timeString = "c";
+            }
         }
 
         timeWidth = timePaint.measureText(timeString);
@@ -110,7 +123,7 @@ public class TimerButton extends View {
         drawable.draw(canvas);
 
         if (time != 0 && timeLayout != null) {
-            canvas.translate((width - timeWidth) / 2, (height - timeHeight) / 2 + AndroidUtilities.dp(1));
+            canvas.translate((int)(width / 2 - Math.ceil(timeWidth / 2)), (height - timeHeight) / 2 + AndroidUtilities.dpf2(1.5f));
             timeLayout.draw(canvas);
         }
     }

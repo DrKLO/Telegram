@@ -23,8 +23,6 @@ import android.widget.AdapterView;
 import android.widget.ListAdapter;
 import android.widget.Scroller;
 
-import org.telegram.messenger.R;
-
 public class HorizontalListView extends AdapterView<ListAdapter> {
 
     public boolean mAlwaysOverrideTouch = true;
@@ -209,7 +207,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
                 v = list.poll();
             }
             View child = mAdapter.getView(mRightViewIndex, v, this);
-            child.setTag(R.string.CacheTag, type);
+            child.setTag(type);
 
             addAndMeasureChild(child, -1);
             rightEdge += child.getMeasuredWidth();
@@ -236,7 +234,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
                 v = list.poll();
             }
             View child = mAdapter.getView(mLeftViewIndex, v, this);
-            child.setTag(R.string.CacheTag, type);
+            child.setTag(type);
 
             addAndMeasureChild(child, 0);
             leftEdge -= child.getMeasuredWidth();
@@ -250,7 +248,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
         while (child != null && child.getRight() + dx <= 0) {
             mDisplayOffset += child.getMeasuredWidth();
 
-            int type = (Integer) child.getTag(R.string.CacheTag);
+            int type = (Integer) child.getTag();
             LinkedList<View> list = mRemovedViewQueue.get(type);
             if (list == null) {
                 list = new LinkedList<View>();
@@ -265,7 +263,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
 
         child = getChildAt(getChildCount() - 1);
         while (child != null && child.getLeft() + dx >= getWidth()) {
-            int type = (Integer) child.getTag(R.string.CacheTag);
+            int type = (Integer) child.getTag();
             LinkedList<View> list = mRemovedViewQueue.get(type);
             if (list == null) {
                 list = new LinkedList<View>();

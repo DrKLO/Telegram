@@ -59,6 +59,8 @@ import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.AvatarUpdater;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.Views.NumberPicker;
+import org.telegram.ui.Views.SettingsSectionLayout;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -72,6 +74,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int profileRow;
     private int numberSectionRow;
     private int numberRow;
+    private int usernameRow;
     private int settingsSectionRow;
     private int textSizeRow;
     private int enableAnimationsRow;
@@ -178,6 +181,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         profileRow = rowCount++;
         numberSectionRow = rowCount++;
         numberRow = rowCount++;
+        usernameRow = rowCount++;
         settingsSectionRow = rowCount++;
         enableAnimationsRow = rowCount++;
         languageRow = rowCount++;
@@ -207,12 +211,15 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         logoutRow = rowCount++;
         versionRow = rowCount++;
 
+        MessagesController.getInstance().loadFullUser(UserConfig.getCurrentUser(), classGuid);
+
         return true;
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
+        MessagesController.getInstance().cancelLoadFullUser(UserConfig.getClientUserId());
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
         avatarUpdater.clear();
     }
@@ -245,39 +252,24 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("TextSize", R.string.TextSize));
-                        builder.setItems(new CharSequence[] {
-                                String.format("%d", 12),
-                                String.format("%d", 13),
-                                String.format("%d", 14),
-                                String.format("%d", 15),
-                                String.format("%d", 16),
-                                String.format("%d", 17),
-                                String.format("%d", 18),
-                                String.format("%d", 19),
-                                String.format("%d", 20),
-                                String.format("%d", 21),
-                                String.format("%d", 22),
-                                String.format("%d", 23),
-                                String.format("%d", 24),
-                                String.format("%d", 25),
-                                String.format("%d", 26),
-                                String.format("%d", 27),
-                                String.format("%d", 28),
-                                String.format("%d", 29),
-                                String.format("%d", 30)}, new DialogInterface.OnClickListener() {
+                        final NumberPicker numberPicker = new NumberPicker(getParentActivity());
+                        numberPicker.setMinValue(12);
+                        numberPicker.setMaxValue(30);
+                        numberPicker.setValue(MessagesController.getInstance().fontSize);
+                        builder.setView(numberPicker);
+                        builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                                 SharedPreferences.Editor editor = preferences.edit();
-                                editor.putInt("fons_size", 12 + which);
-                                MessagesController.getInstance().fontSize = 12 + which;
+                                editor.putInt("fons_size", numberPicker.getValue());
+                                MessagesController.getInstance().fontSize = numberPicker.getValue();
                                 editor.commit();
                                 if (listView != null) {
                                     listView.invalidateViews();
                                 }
                             }
                         });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         showAlertDialog(builder);
                     } else if (i == enableAnimationsRow) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
@@ -491,6 +483,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 });
                         builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), null);
                         showAlertDialog(builder);
+                    } else if (i == usernameRow) {
+                        presentFragment(new SettingsChangeUsernameActivity());
                     }
                 }
             });
@@ -723,7 +717,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         public boolean isEnabled(int i) {
             return i == textSizeRow || i == enableAnimationsRow || i == blockedRow || i == notificationRow || i == backgroundRow ||
                     i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == terminateSessionsRow || i == wifiDownloadRow ||
-                    i == mobileDownloadRow || i == clearLogsRow || i == roamingDownloadRow || i == languageRow ||
+                    i == mobileDownloadRow || i == clearLogsRow || i == roamingDownloadRow || i == languageRow || i == usernameRow ||
                     i == switchBackendButtonRow || i == telegramFaqRow || i == contactsSortRow || i == contactsReimportRow || i == saveToGalleryRow;
         }
 
@@ -838,22 +832,20 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return view;
             } else if (type == 1) {
                 if (view == null) {
-                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = li.inflate(R.layout.settings_section_layout, viewGroup, false);
+                    view = new SettingsSectionLayout(mContext);
                 }
-                TextView textView = (TextView)view.findViewById(R.id.settings_section_text);
                 if (i == numberSectionRow) {
-                    textView.setText(LocaleController.getString("YourPhoneNumber", R.string.YourPhoneNumber));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("Info", R.string.Info));
                 } else if (i == settingsSectionRow) {
-                    textView.setText(LocaleController.getString("SETTINGS", R.string.SETTINGS));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("SETTINGS", R.string.SETTINGS));
                 } else if (i == supportSectionRow) {
-                    textView.setText(LocaleController.getString("Support", R.string.Support));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("Support", R.string.Support));
                 } else if (i == messagesSectionRow) {
-                    textView.setText(LocaleController.getString("MessagesSettings", R.string.MessagesSettings));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("MessagesSettings", R.string.MessagesSettings));
                 } else if (i == mediaDownloadSection) {
-                    textView.setText(LocaleController.getString("AutomaticMediaDownload", R.string.AutomaticMediaDownload));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("AutomaticMediaDownload", R.string.AutomaticMediaDownload));
                 } else if (i == contactsSectionRow) {
-                    textView.setText(LocaleController.getString("Contacts", R.string.Contacts).toUpperCase());
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("Contacts", R.string.Contacts).toUpperCase());
                 }
             } else if (type == 2) {
                 if (view == null) {
@@ -862,15 +854,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 }
                 TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
                 View divider = view.findViewById(R.id.settings_row_divider);
-                if (i == numberRow) {
-                    TLRPC.User user = UserConfig.getCurrentUser();
-                    if (user != null && user.phone != null && user.phone.length() != 0) {
-                        textView.setText(PhoneFormat.getInstance().format("+" + user.phone));
-                    } else {
-                        textView.setText("Unknown");
-                    }
-                    divider.setVisibility(View.INVISIBLE);
-                } else if (i == notificationRow) {
+                if (i == notificationRow) {
                     textView.setText(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds));
                     divider.setVisibility(View.VISIBLE);
                 } else if (i == blockedRow) {
@@ -980,7 +964,16 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
                 TextView detailTextView = (TextView)view.findViewById(R.id.settings_row_text_detail);
                 View divider = view.findViewById(R.id.settings_row_divider);
-                if (i == textSizeRow) {
+                if (i == numberRow) {
+                    TLRPC.User user = UserConfig.getCurrentUser();
+                    textView.setText(LocaleController.getString("Phone", R.string.Phone));
+                    if (user != null && user.phone != null && user.phone.length() != 0) {
+                        detailTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
+                    } else {
+                        detailTextView.setText(LocaleController.getString("NumberUnknown", R.string.NumberUnknown));
+                    }
+                    divider.setVisibility(View.VISIBLE);
+                } else if (i == textSizeRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                     int size = preferences.getInt("fons_size", AndroidUtilities.isTablet() ? 18 : 16);
                     detailTextView.setText(String.format("%d", size));
@@ -1002,6 +995,15 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else if (sort == 2) {
                         detailTextView.setText(LocaleController.getString("LastName", R.string.SortLastName));
                     }
+                } else if (i == usernameRow) {
+                    TLRPC.User user = UserConfig.getCurrentUser();
+                    textView.setText(LocaleController.getString("Username", R.string.Username));
+                    if (user != null && user.username != null && user.username.length() != 0) {
+                        detailTextView.setText("@" + user.username);
+                    } else {
+                        detailTextView.setText(LocaleController.getString("UsernameEmpty", R.string.UsernameEmpty));
+                    }
+                    divider.setVisibility(View.INVISIBLE);
                 }
             } else if (type == 6) {
                 if (view == null) {
@@ -1075,11 +1077,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 0;
             } else if (i == numberSectionRow || i == settingsSectionRow || i == supportSectionRow || i == messagesSectionRow || i == mediaDownloadSection || i == contactsSectionRow) {
                 return 1;
-            } else if (i == textSizeRow || i == languageRow || i == contactsSortRow) {
+            } else if (i == textSizeRow || i == languageRow || i == contactsSortRow || i == numberRow || i == usernameRow) {
                 return 5;
             } else if (i == enableAnimationsRow || i == sendByEnterRow || i == saveToGalleryRow) {
                 return 3;
-            } else if (i == numberRow || i == notificationRow || i == blockedRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == terminateSessionsRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == contactsReimportRow) {
+            } else if (i == notificationRow || i == blockedRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == terminateSessionsRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == contactsReimportRow) {
                 return 2;
             } else if (i == logoutRow) {
                 return 4;

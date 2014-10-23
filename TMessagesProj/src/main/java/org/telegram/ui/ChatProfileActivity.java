@@ -42,6 +42,7 @@ import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.AvatarUpdater;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.Views.SettingsSectionLayout;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -476,6 +477,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         args.putBoolean("destroyAfterSelect", true);
         args.putBoolean("usersAsSections", true);
         args.putBoolean("returnAsResult", true);
+        //args.putBoolean("allowUsernameSearch", false);
         if (chat_id > 0) {
             args.putString("selectAlertString", LocaleController.getString("AddToTheGroup", R.string.AddToTheGroup));
         }
@@ -646,21 +648,19 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 return view;
             } else if (type == 1) {
                 if (view == null) {
-                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = li.inflate(R.layout.settings_section_layout, viewGroup, false);
+                    view = new SettingsSectionLayout(mContext);
                 }
-                TextView textView = (TextView)view.findViewById(R.id.settings_section_text);
                 if (i == settingsSectionRow) {
-                    textView.setText(LocaleController.getString("SETTINGS", R.string.SETTINGS));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("SETTINGS", R.string.SETTINGS));
                 } else if (i == sharedMediaSectionRow) {
-                    textView.setText(LocaleController.getString("SHAREDMEDIA", R.string.SHAREDMEDIA));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("SHAREDMEDIA", R.string.SHAREDMEDIA));
                 } else if (i == membersSectionRow) {
                     TLRPC.Chat chat = MessagesController.getInstance().getChat(chat_id);
                     int count = chat.participants_count;
                     if (info != null) {
                         count = info.participants.size();
                     }
-                    textView.setText(LocaleController.formatPluralString("Members", count).toUpperCase());
+                    ((SettingsSectionLayout) view).setText(LocaleController.formatPluralString("Members", count).toUpperCase());
                 }
             } else if (type == 2) {
                 if (view == null) {

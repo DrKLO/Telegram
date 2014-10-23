@@ -42,6 +42,7 @@ import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.ColorPickerView;
+import org.telegram.ui.Views.SettingsSectionLayout;
 
 public class SettingsNotificationsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private ListView listView;
@@ -541,22 +542,20 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
             int type = getItemViewType(i);
             if (type == 0) {
                 if (view == null) {
-                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = li.inflate(R.layout.settings_section_layout, viewGroup, false);
+                    view = new SettingsSectionLayout(mContext);
                 }
-                TextView textView = (TextView)view.findViewById(R.id.settings_section_text);
                 if (i == messageSectionRow) {
-                    textView.setText(LocaleController.getString("MessageNotifications", R.string.MessageNotifications));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("MessageNotifications", R.string.MessageNotifications));
                 } else if (i == groupSectionRow) {
-                    textView.setText(LocaleController.getString("GroupNotifications", R.string.GroupNotifications));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("GroupNotifications", R.string.GroupNotifications));
                 } else if (i == inappSectionRow) {
-                    textView.setText(LocaleController.getString("InAppNotifications", R.string.InAppNotifications));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("InAppNotifications", R.string.InAppNotifications));
                 } else if (i == eventsSectionRow) {
-                    textView.setText(LocaleController.getString("Events", R.string.Events));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("Events", R.string.Events));
                 } else if (i == otherSectionRow) {
-                    textView.setText(LocaleController.getString("PhoneOther", R.string.PhoneOther));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("PhoneOther", R.string.PhoneOther));
                 } else if (i == resetSectionRow) {
-                    textView.setText(LocaleController.getString("Reset", R.string.Reset));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("Reset", R.string.Reset));
                 }
             } if (type == 1) {
                 if (view == null) {

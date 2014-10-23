@@ -31,7 +31,6 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.MessagesController;
-import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.android.MessageObject;
@@ -42,6 +41,7 @@ import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.IdenticonView;
+import org.telegram.ui.Views.SettingsSectionLayout;
 
 import java.util.ArrayList;
 
@@ -64,6 +64,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     private int avatarRow;
     private int phoneSectionRow;
     private int phoneRow;
+    private int usernameRow;
     private int settingsSectionRow;
     private int settingsTimerRow;
     private int settingsKeyRow;
@@ -94,6 +95,9 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.encryptedChatUpdated);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.blockedUsersDidLoaded);
         userBlocked = MessagesController.getInstance().blockedUsers.contains(user_id);
+
+        MessagesController.getInstance().loadFullUser(MessagesController.getInstance().getUser(user_id), classGuid);
+
         return true;
     }
 
@@ -106,6 +110,8 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.encryptedChatCreated);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.encryptedChatUpdated);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.blockedUsersDidLoaded);
+
+        MessagesController.getInstance().cancelLoadFullUser(user_id);
     }
 
     private void updateRowsIds() {
@@ -113,6 +119,12 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         avatarRow = rowCount++;
         phoneSectionRow = rowCount++;
         phoneRow = rowCount++;
+        TLRPC.User user = MessagesController.getInstance().getUser(user_id);
+        if (user != null && user.username != null && user.username.length() > 0) {
+            usernameRow = rowCount++;
+        } else {
+            usernameRow = -1;
+        }
         settingsSectionRow = rowCount++;
         if (currentEncryptedChat instanceof TLRPC.TL_encryptedChat) {
             settingsTimerRow = rowCount++;
@@ -256,47 +268,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                         if (getParentActivity() == null) {
                             return;
                         }
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setTitle(LocaleController.getString("MessageLifetime", R.string.MessageLifetime));
-                        builder.setItems(new CharSequence[]{
-                                LocaleController.getString("ShortMessageLifetimeForever", R.string.ShortMessageLifetimeForever),
-                                LocaleController.getString("ShortMessageLifetime2s", R.string.ShortMessageLifetime2s),
-                                LocaleController.getString("ShortMessageLifetime5s", R.string.ShortMessageLifetime5s),
-                                LocaleController.getString("ShortMessageLifetime1m", R.string.ShortMessageLifetime1m),
-                                LocaleController.getString("ShortMessageLifetime1h", R.string.ShortMessageLifetime1h),
-                                LocaleController.getString("ShortMessageLifetime1d", R.string.ShortMessageLifetime1d),
-                                LocaleController.getString("ShortMessageLifetime1w", R.string.ShortMessageLifetime1w)
-
-                        }, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                int oldValue = currentEncryptedChat.ttl;
-                                if (which == 0) {
-                                    currentEncryptedChat.ttl = 0;
-                                } else if (which == 1) {
-                                    currentEncryptedChat.ttl = 2;
-                                } else if (which == 2) {
-                                    currentEncryptedChat.ttl = 5;
-                                } else if (which == 3) {
-                                    currentEncryptedChat.ttl = 60;
-                                } else if (which == 4) {
-                                    currentEncryptedChat.ttl = 60 * 60;
-                                } else if (which == 5) {
-                                    currentEncryptedChat.ttl = 60 * 60 * 24;
-                                } else if (which == 6) {
-                                    currentEncryptedChat.ttl = 60 * 60 * 24 * 7;
-                                }
-                                if (oldValue != currentEncryptedChat.ttl) {
-                                    if (listView != null) {
-                                        listView.invalidateViews();
-                                    }
-                                    SendMessagesHelper.getInstance().sendTTLMessage(currentEncryptedChat);
-                                    MessagesStorage.getInstance().updateEncryptedChat(currentEncryptedChat);
-                                }
-                            }
-                        });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        showAlertDialog(builder);
+                        showAlertDialog(AndroidUtilities.buildTTLAlert(getParentActivity(), currentEncryptedChat));
                     } else if (i == settingsNotificationsRow) {
                         Bundle args = new Bundle();
                         args.putLong("dialog_id", dialog_id == 0 ? user_id : dialog_id);
@@ -318,10 +290,11 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
         return fragmentView;
     }
 
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, final Object... args) {
         if (id == NotificationCenter.updateInterfaces) {
             int mask = (Integer)args[0];
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
+                updateRowsIds();
                 if (listView != null) {
                     listView.invalidateViews();
                 }
@@ -338,11 +311,16 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             }
         } else if (id == NotificationCenter.encryptedChatCreated) {
             if (creatingChat) {
-                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
-                TLRPC.EncryptedChat encryptedChat = (TLRPC.EncryptedChat)args[0];
-                Bundle args2 = new Bundle();
-                args2.putInt("enc_id", encryptedChat.id);
-                presentFragment(new ChatActivity(args2), true);
+                AndroidUtilities.RunOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                        TLRPC.EncryptedChat encryptedChat = (TLRPC.EncryptedChat)args[0];
+                        Bundle args2 = new Bundle();
+                        args2.putInt("enc_id", encryptedChat.id);
+                        presentFragment(new ChatActivity(args2), true);
+                    }
+                });
             }
         } else if (id == NotificationCenter.encryptedChatUpdated) {
             TLRPC.EncryptedChat chat = (TLRPC.EncryptedChat)args[0];
@@ -446,6 +424,13 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BlockContact", R.string.BlockContact) : LocaleController.getString("Unblock", R.string.Unblock), 0);
             item.addSubItem(edit_contact, LocaleController.getString("EditContact", R.string.EditContact), 0);
             item.addSubItem(delete_contact, LocaleController.getString("DeleteContact", R.string.DeleteContact), 0);
+        }
+    }
+
+    @Override
+    protected void onDialogDismiss() {
+        if (listView != null) {
+            listView.invalidateViews();
         }
     }
 
@@ -555,16 +540,14 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 return view;
             } else if (type == 1) {
                 if (view == null) {
-                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = li.inflate(R.layout.settings_section_layout, viewGroup, false);
+                    view = new SettingsSectionLayout(mContext);
                 }
-                TextView textView = (TextView)view.findViewById(R.id.settings_section_text);
                 if (i == phoneSectionRow) {
-                    textView.setText(LocaleController.getString("PHONE", R.string.PHONE));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("Info", R.string.Info));
                 } else if (i == settingsSectionRow) {
-                    textView.setText(LocaleController.getString("SETTINGS", R.string.SETTINGS));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("SETTINGS", R.string.SETTINGS));
                 } else if (i == sharedMediaSectionRow) {
-                    textView.setText(LocaleController.getString("SHAREDMEDIA", R.string.SHAREDMEDIA));
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("SHAREDMEDIA", R.string.SHAREDMEDIA));
                 }
             } else if (type == 2) {
                 final TLRPC.User user = MessagesController.getInstance().getUser(user_id);
@@ -637,9 +620,9 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     if (user.phone != null && user.phone.length() != 0) {
                         textView.setText(PhoneFormat.getInstance().format("+" + user.phone));
                     } else {
-                        textView.setText("Unknown");
+                        textView.setText(LocaleController.getString("NumberUnknown", R.string.NumberUnknown));
                     }
-                    divider.setVisibility(View.INVISIBLE);
+                    divider.setVisibility(usernameRow != -1 ? View.VISIBLE : View.INVISIBLE);
                     detailTextView.setText(LocaleController.getString("PhoneMobile", R.string.PhoneMobile));
                 }
             } else if (type == 3) {
@@ -665,21 +648,18 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     divider.setVisibility(View.VISIBLE);
                     if (encryptedChat.ttl == 0) {
                         detailTextView.setText(LocaleController.getString("ShortMessageLifetimeForever", R.string.ShortMessageLifetimeForever));
-                    } else if (encryptedChat.ttl == 2) {
-                        detailTextView.setText(LocaleController.getString("ShortMessageLifetime2s", R.string.ShortMessageLifetime2s));
-                    } else if (encryptedChat.ttl == 5) {
-                        detailTextView.setText(LocaleController.getString("ShortMessageLifetime5s", R.string.ShortMessageLifetime5s));
-                    } else if (encryptedChat.ttl == 60) {
-                        detailTextView.setText(LocaleController.getString("ShortMessageLifetime1m", R.string.ShortMessageLifetime1m));
-                    } else if (encryptedChat.ttl == 60 * 60) {
-                        detailTextView.setText(LocaleController.getString("ShortMessageLifetime1h", R.string.ShortMessageLifetime1h));
-                    } else if (encryptedChat.ttl == 60 * 60 * 24) {
-                        detailTextView.setText(LocaleController.getString("ShortMessageLifetime1d", R.string.ShortMessageLifetime1d));
-                    } else if (encryptedChat.ttl == 60 * 60 * 24 * 7) {
-                        detailTextView.setText(LocaleController.getString("ShortMessageLifetime1w", R.string.ShortMessageLifetime1w));
                     } else {
-                        detailTextView.setText(String.format("%d", encryptedChat.ttl));
+                        detailTextView.setText(AndroidUtilities.formatTTLString(encryptedChat.ttl));
                     }
+                } else if (i == usernameRow) {
+                    TLRPC.User user = MessagesController.getInstance().getUser(user_id);
+                    textView.setText(LocaleController.getString("Username", R.string.Username));
+                    if (user != null && user.username != null && user.username.length() != 0) {
+                        detailTextView.setText("@" + user.username);
+                    } else {
+                        detailTextView.setText("-");
+                    }
+                    divider.setVisibility(View.INVISIBLE);
                 }
             } else if (type == 4) {
                 if (view == null) {
@@ -716,7 +696,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                 return 1;
             } else if (i == phoneRow) {
                 return 2;
-            } else if (i == sharedMediaRow || i == settingsTimerRow) {
+            } else if (i == sharedMediaRow || i == settingsTimerRow || i == usernameRow) {
                 return 3;
             } else if (i == settingsKeyRow) {
                 return 4;

@@ -45,7 +45,7 @@ public class VideoEncodingService extends Service implements NotificationCenter.
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.FileUploadProgressChanged) {
             String fileName = (String)args[0];
-            if (path.equals(fileName)) {
+            if (path != null && path.equals(fileName)) {
                 Float progress = (Float) args[1];
                 Boolean enc = (Boolean) args[2];
                 currentProgress = (int)(progress * 100);

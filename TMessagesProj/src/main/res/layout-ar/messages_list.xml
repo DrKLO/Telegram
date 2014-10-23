@@ -11,8 +11,8 @@
         android:layout_alignParentBottom="true"
         android:clipToPadding="false"
         android:fadingEdge="none"
-        android:divider="@drawable/messages_list_divider"
-        android:dividerHeight="1px"
+        android:divider="@null"
+        android:dividerHeight="0px"
         android:fadingEdgeLength="0dp"
         android:verticalScrollbarPosition="left"/>
 

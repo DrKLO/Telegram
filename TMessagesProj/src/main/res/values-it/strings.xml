@@ -51,6 +51,8 @@
     <string name="DeleteChat">Elimina ed esci</string>
     <string name="HiddenName">Nome nascosto</string>
     <string name="SelectChat">Seleziona chat</string>
+    <string name="PhotoTip">Tieni premuto per vedere</string>
+    <string name="CompatibilityChat">%1$s sta usando una versione vecchia di Telegram, quindi le foto segrete verranno visualizzate in modalità di compatibilità.\n\nUna volta che %2$s avrà aggiornato Telegram, le foto con il timer minore di 1 minuto funzioneranno in modalità \'Tieni premuto per vedere\' , e verrai notificato ogni volta che l\'altro esegue uno screenshot.</string>
     <!--broadcasts-->
     <string name="BroadcastList">Lista broadcast</string>
     <string name="NewBroadcastList">Nuova lista broadcast</string>
@@ -118,12 +120,6 @@
     <string name="MessageLifetimeChangedOutgoing">Hai impostato il timer di autodistruzione a %1$s</string>
     <string name="MessageLifetimeRemoved">%1$s ha disabilitato il timer di autodistruzione</string>
     <string name="MessageLifetimeYouRemoved">Hai disabilitato il timer di autodistruzione</string>
-    <string name="MessageLifetime2s">2 secondi</string>
-    <string name="MessageLifetime5s">5 secondi</string>
-    <string name="MessageLifetime1m">1 minuto</string>
-    <string name="MessageLifetime1h">1 ora</string>
-    <string name="MessageLifetime1d">1 giorno</string>
-    <string name="MessageLifetime1w">1 settimana</string>
     <string name="YouHaveNewMessage">Hai un nuovo messaggio</string>
     <string name="NotificationMessageText">%1$s: %2$s</string>
     <string name="NotificationMessageNoText">%1$s ti ha inviato un messaggio</string>
@@ -158,7 +154,7 @@
     <!--contacts view-->
     <string name="SelectContact">Seleziona contatto</string>
     <string name="NoContacts">Ancora nessun contatto</string>
-    <string name="InviteText">Ciao, passa a Telegram: http://telegram.org/dl2</string>
+    <string name="InviteText">Ehi, è il momento di passare a Telegram: http://telegram.org/dl2</string>
     <string name="TodayAt">oggi alle</string>
     <string name="YesterdayAt">ieri alle</string>
     <string name="Online">in linea</string>
@@ -166,6 +162,7 @@
     <string name="LastSeen">ultimo accesso</string>
     <string name="LastSeenDate">ultimo accesso</string>
     <string name="InviteFriends">Invita amici</string>
+    <string name="GlobalSearch">RICERCA GLOBALE</string>
     <!--group create view-->
     <string name="SendMessageTo">Invia messaggio a...</string>
     <string name="EnterGroupNamePlaceholder">Immetti il nome del gruppo</string>
@@ -197,18 +194,27 @@
     <string name="PHONE">TELEFONO</string>
     <string name="StartEncryptedChat">Inizia chat segreta</string>
     <string name="CreateEncryptedChatError">Si è verificato un errore.</string>
-    <string name="CreateEncryptedChatOutdatedError">Impossibile creare una chat segreta con %1$s.\n\n%2$s sta usando una vecchia versione di Telegram e deve prima aggiornarla.</string>
     <string name="SecretTitle">Chat segreta</string>
     <string name="EncryptionKey">Chiave di cifratura</string>
     <string name="MessageLifetime">Timer di autodistruzione</string>
     <string name="ShortMessageLifetimeForever">Spento</string>
-    <string name="ShortMessageLifetime2s">2s</string>
-    <string name="ShortMessageLifetime5s">5s</string>
-    <string name="ShortMessageLifetime1m">1m</string>
-    <string name="ShortMessageLifetime1h">1h</string>
-    <string name="ShortMessageLifetime1d">1g</string>
-    <string name="ShortMessageLifetime1w">1sett</string>
     <string name="EncryptionKeyDescription">Questa immagine è una visualizzazione della chiave di cifratura per questa chat segreta con <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Se questa immagine è uguale sul telefono di <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, la chat è sicura al 200%%.<![CDATA[<br><br>]]>Per saperne di più, visita Telegram.org</string>
+    <string name="NumberUnknown">Sconosciuto</string>
+    <string name="Info">INFO</string>
+    <string name="Phone">Telefono</string>
+    <!--usernames-->
+    <string name="Username">Nome utente</string>
+    <string name="UsernamePlaceholder">Il tuo Nome Utente</string>
+    <string name="UsernameInUse">Nome utente già preso.</string>
+    <string name="UsernameInvalid">Nome utente non valido.</string>
+    <string name="UsernameInvalidShort">Il minimo per un nome utente è 5 caratteri.</string>
+    <string name="UsernameInvalidLong">Il massimo per un nome utente è 32 caratteri.</string>
+    <string name="UsernameInvalidStartNumber">Un nome utente non può iniziare con numeri.</string>
+    <string name="UsernameHelp">Puoi scegliere un nome utente su <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. Se lo fai, le altre persone potranno trovarti tramite questo nome utente e contattarti senza conoscere il tuo numero di telefono.<![CDATA[<br><br>]]>Puoi usare <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> e underscore. La lunghezza minima è di <![CDATA[<b>]]>5<![CDATA[</b>]]>  caratteri.</string>
+    <string name="UsernameChecking">Controllando il nome utente...</string>
+    <string name="UsernameAvailable">%1$s è disponibile.</string>
+    <string name="UsernameEmpty">Nessuno</string>
+    <string name="ErrorOccurred">Si è verificato un errore.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Ripristina tutte le impostazioni di notifica predefinite</string>
     <string name="TextSize">Dimensione testo messaggi</string>
@@ -217,7 +223,6 @@
     <string name="Unblock">Sblocca</string>
     <string name="UnblockText">Tieni premuto sull’utente per sbloccarlo.</string>
     <string name="NoBlocked">Ancora nessun utente bloccato</string>
-    <string name="YourPhoneNumber">IL TUO NUMERO DI TELEFONO</string>
     <string name="MessageNotifications">NOTIFICHE MESSAGGI</string>
     <string name="Alert">Avviso</string>
     <string name="MessagePreview">Anteprima messaggio</string>
@@ -381,6 +386,7 @@
     <string name="ForwardFromMyName">inoltra dal mio nome</string>
     <string name="SendMessagesToGroup">Inviare messaggi a %1$s?</string>
     <string name="ForwardMessagesToGroup">Inoltra messaggi a %1$s?</string>
+    <string name="FeatureUnavailable">Ci spiace, questa funzione non è disponibile nel tuo paese.</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Veloce</string>
@@ -389,7 +395,7 @@
     <string name="Page5Title">Potente</string>
     <string name="Page6Title">Basato sul cloud</string>
     <string name="Page7Title">Privato</string>
-    <string name="Page1Message">L\'app di messaggi <![CDATA[<b>più veloce</b>]]>al mondo.<![CDATA[<br/>]]>È <![CDATA[<b>gratuita</b>]]> e <![CDATA[<b>sicura</b>]]>.</string>
+    <string name="Page1Message">L\'app di messaggi <![CDATA[<b>più veloce</b>]]> al mondo.<![CDATA[<br/>]]>È <![CDATA[<b>gratuita</b>]]> e <![CDATA[<b>sicura</b>]]>.</string>
     <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> consegna i messaggi più<![CDATA[<br/>]]>velocemente di qualsiasi altra app.</string>
     <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> sarà sempre gratuito.<![CDATA[<br/>]]>Nessuna pubblicità. Nessun abbonamento.</string>
     <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> protegge i tuoi messaggi<![CDATA[<br/>]]>dagli attacchi degli hacker.</string>
@@ -434,6 +440,36 @@
     <string name="FromContacts_few">da %1$d contatti</string>
     <string name="FromContacts_many">da %1$d contatti</string>
     <string name="FromContacts_other">da %1$d contatti</string>
+    <string name="Seconds_zero">%1$d secondi</string>
+    <string name="Seconds_one">%1$d secondo</string>
+    <string name="Seconds_two">%1$d secondi</string>
+    <string name="Seconds_few">%1$d secondi</string>
+    <string name="Seconds_many">%1$d secondi</string>
+    <string name="Seconds_other">%1$d secondi</string>
+    <string name="Minutes_zero">%1$d minuti</string>
+    <string name="Minutes_one">%1$d minuto</string>
+    <string name="Minutes_two">%1$d minuti</string>
+    <string name="Minutes_few">%1$d minuti</string>
+    <string name="Minutes_many">%1$d minuti</string>
+    <string name="Minutes_other">%1$d minuti</string>
+    <string name="Hours_zero">%1$d ore</string>
+    <string name="Hours_one">%1$d ora</string>
+    <string name="Hours_two">%1$d ore</string>
+    <string name="Hours_few">%1$d ore</string>
+    <string name="Hours_many">%1$d ore</string>
+    <string name="Hours_other">%1$d ore</string>
+    <string name="Days_zero">%1$d giorni</string>
+    <string name="Days_one">%1$d giorno</string>
+    <string name="Days_two">%1$d giorni</string>
+    <string name="Days_few">%1$d giorni</string>
+    <string name="Days_many">%1$d giorni</string>
+    <string name="Days_other">%1$d giorni</string>
+    <string name="Weeks_zero">%1$d settimane</string>
+    <string name="Weeks_one">%1$d settimana</string>
+    <string name="Weeks_two">%1$d settimane</string>
+    <string name="Weeks_few">%1$d settimane</string>
+    <string name="Weeks_many">%1$d settimane</string>
+    <string name="Weeks_other">%1$d settimane</string>
     <!--date formatters-->
     <string name="formatterMonth">dd MMM</string>
     <string name="formatterYear">dd.MM.yy</string>
@@ -444,6 +480,4 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s alle %2$s</string>
-    <!--Don't change this! Not for localization!-->
-    <string name="CacheTag">CACHE_TAG</string>
 </resources>

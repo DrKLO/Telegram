@@ -26,7 +26,6 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
@@ -55,7 +54,14 @@ public class LoginActivity extends BaseFragment implements SlideView.SlideViewDe
                 v.onDestroyActivity();
             }
         }
-        Utilities.HideProgressDialog(getParentActivity());
+        if (progressDialog != null) {
+            try {
+                progressDialog.dismiss();
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+            progressDialog = null;
+        }
     }
 
     @Override
@@ -255,6 +261,7 @@ public class LoginActivity extends BaseFragment implements SlideView.SlideViewDe
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
+        progressDialog = null;
     }
 
     public void setPage(int page, boolean animated, Bundle params, boolean back) {

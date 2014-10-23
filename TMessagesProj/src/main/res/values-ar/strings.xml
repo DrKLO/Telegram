@@ -51,9 +51,11 @@
     <string name="DeleteChat">حذف وخروج</string>
     <string name="HiddenName">الاسم مخفي</string>
     <string name="SelectChat">اختر محادثة</string>
+    <string name="PhotoTip">إضغط بإستمرار على المستخدم العرض</string>
+    <string name="CompatibilityChat">%1$s يستخدم إصدار قديم من تيليجرام، لذلك، الصور السرية ستظهر في وضع الموافقة.\n\nعندما يقوم %2$s بتحديث تيليجرام، الصور التي بها عداد دقيقة أو أقل ستعمل بطريقة \"الاستمرار بالضغط للإستعراض\"، وسيتم إخبارك عندما يلتقط المستقبل صورة من شاشته.</string>
     <!--broadcasts-->
     <string name="BroadcastList">قائمة الرسالة الجماعية</string>
-    <string name="NewBroadcastList">قائمة رسالة جماعية جديدة</string>
+    <string name="NewBroadcastList">رسالة جماعية جديدة</string>
     <string name="EnterListName">أدخل اسم القائمة</string>
     <string name="YouCreatedBroadcastList">أنت قمت بإنشاء قائمة رسالة جماعية</string>
     <string name="AddRecipient">إضافة مستلم</string>
@@ -118,12 +120,6 @@
     <string name="MessageLifetimeChangedOutgoing">لقد قمت بتعيين التدمير الذاتي إلى %1$s</string>
     <string name="MessageLifetimeRemoved">%1$s قام بإيقاف عداد التدمير الذاتي</string>
     <string name="MessageLifetimeYouRemoved">لقد قمت بتعطيل عداد التدمير الذاتي</string>
-    <string name="MessageLifetime2s">ثانيتان</string>
-    <string name="MessageLifetime5s">٥ ثوانٍ</string>
-    <string name="MessageLifetime1m">دقيقة</string>
-    <string name="MessageLifetime1h">ساعة</string>
-    <string name="MessageLifetime1d">يوم</string>
-    <string name="MessageLifetime1w">أسبوع</string>
     <string name="YouHaveNewMessage">لديك رسالة جديدة</string>
     <string name="NotificationMessageText">%1$s: %2$s</string>
     <string name="NotificationMessageNoText">%1$s قام بإرسال رسالة لك</string>
@@ -152,8 +148,8 @@
     <string name="NotificationUnrecognizedDevice">%1$s,\nتم تسجيل الدخول لحسابك من جهاز جديد يوم %2$s\n\nالجهاز: %3$s\nالموقع: %4$s\n\nإذا لم يكن أنت من سجل الدخول، يمكنك الذهاب للإعدادات ثم تسجيل الخروج من كافة الأجهزة الأخرى.\n\nشكرًا,\nفريق عمل تيليجرام</string>
     <string name="NotificationContactNewPhoto">%1$s قام بتغيير صورته الشخصية</string>
     <string name="Reply">الرد</string>
-    <string name="ReplyToGroup">Reply to %1$s</string>
-    <string name="ReplyToUser">Reply to %1$s</string>
+    <string name="ReplyToGroup">الرد على %1$s</string>
+    <string name="ReplyToUser">الرد على %1$s</string>
     <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
     <!--contacts view-->
     <string name="SelectContact">اختر جهة اتصال</string>
@@ -166,6 +162,7 @@
     <string name="LastSeen">آخر ظهور</string>
     <string name="LastSeenDate">آخر ظهور</string>
     <string name="InviteFriends">قم بدعوة صديق</string>
+    <string name="GlobalSearch">بحث شامل</string>
     <!--group create view-->
     <string name="SendMessageTo">إرسال الرسالة إلى...</string>
     <string name="EnterGroupNamePlaceholder">أدخل اسم للمجموعة</string>
@@ -197,18 +194,27 @@
     <string name="PHONE">الهاتف</string>
     <string name="StartEncryptedChat">إبدأ محادثة سرية</string>
     <string name="CreateEncryptedChatError">حدث خطأ.</string>
-    <string name="CreateEncryptedChatOutdatedError">لا يمكن إنشاء محادثة سرية مع  %1$s.\n\n%2$s  يستخدم إصدار قديم من تيليجرام ولا بد أن يقوم بالتحديث أولًا.</string>
     <string name="SecretTitle">محادثة سرية</string>
     <string name="EncryptionKey">مفتاح التشفير</string>
     <string name="MessageLifetime">عداد التدمير الذاتي</string>
     <string name="ShortMessageLifetimeForever">إيقاف</string>
-    <string name="ShortMessageLifetime2s">ثانيتان</string>
-    <string name="ShortMessageLifetime5s">٥ ثوانٍ</string>
-    <string name="ShortMessageLifetime1m">دقيقة</string>
-    <string name="ShortMessageLifetime1h">ساعة</string>
-    <string name="ShortMessageLifetime1d">يوم</string>
-    <string name="ShortMessageLifetime1w">أسبوع</string>
     <string name="EncryptionKeyDescription">هذه الصورة هي تصور لمفتاح التشفير لهذه المحادثة السرية مع <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>إذا كانت مطابقة للصورة التي في جهاز <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, فمحادثتكم آمنة ٢٠٠٪.<![CDATA[<br><br>]]>للمزيد نرجو الذهاب إلى telegram.org</string>
+    <string name="NumberUnknown">غير معروف</string>
+    <string name="Info">معلومات</string>
+    <string name="Phone">هاتف</string>
+    <!--usernames-->
+    <string name="Username">اسم مستخدم</string>
+    <string name="UsernamePlaceholder">معرّفك</string>
+    <string name="UsernameInUse">المعذرة، اسم المستخدم تم اختياره مسبقًا.</string>
+    <string name="UsernameInvalid">المعذرة، اسم المستخدم غير مقبول.</string>
+    <string name="UsernameInvalidShort">سم المستخدم يجب أن يتكوّن من ٥ حروف على الأقل.</string>
+    <string name="UsernameInvalidLong">اسم المستخدم يجب ألا يتخطى ٣٢ حرف كحد أقصى.</string>
+    <string name="UsernameInvalidStartNumber">المعذرة، اسم المستخدم لا يمكن أن يبدأ برقم.</string>
+    <string name="UsernameHelp">يمكنك اختيار اسم مستخدم في <![CDATA[<b>]]>تيليجرام<![CDATA[</b>]]>. إذا قمت بذلك، سيستطيع الناس إيجادك باستخدام الاسم المستخدم والتواصل معك من دون معرفة رقمك.<![CDATA[<br><br>]]>يمكنك استخدام <![CDATA[<b>]]>حروف اللغة الإنجليزية<![CDATA[</b>]]>, <![CDATA[<b>]]>وأرقامها<![CDATA[</b>]]> و كذلك الخط. لا بد من استخدام <![CDATA[<b>]]>٥<![CDATA[</b>]]> حروف على الأقل.</string>
+    <string name="UsernameChecking">جاري مراجعة اسم المستخدم...</string>
+    <string name="UsernameAvailable">%1$s متاح.</string>
+    <string name="UsernameEmpty">لا يوجد</string>
+    <string name="ErrorOccurred">حدث خطأ.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">تم تعيين كافة الإشعارات افتراضيا</string>
     <string name="TextSize">حجم نص الرسائل</string>
@@ -217,7 +223,6 @@
     <string name="Unblock">إلغاء الحظر</string>
     <string name="UnblockText">إضغط بإستمرار على المستخدم لإلغاء الحظر</string>
     <string name="NoBlocked">لا توجد جهات اتصال محظورة</string>
-    <string name="YourPhoneNumber">رقم هاتفك</string>
     <string name="MessageNotifications">إشعارات الرسائل</string>
     <string name="Alert">التنبيه</string>
     <string name="MessagePreview">معاينة الرسالة</string>
@@ -381,6 +386,7 @@
     <string name="ForwardFromMyName">أعد الإرسال باستخدام اسمي</string>
     <string name="SendMessagesToGroup">هل ترغب في إرسال رسالة إلى %1$s؟</string>
     <string name="ForwardMessagesToGroup">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
+    <string name="FeatureUnavailable">.Sorry, this feature is currently not available in your country</string>
     <!--Intro view-->
     <string name="Page1Title">تيليجرام</string>
     <string name="Page2Title">سريع</string>
@@ -389,7 +395,7 @@
     <string name="Page5Title">قوي</string>
     <string name="Page6Title">مرتبط بالسحاب</string>
     <string name="Page7Title">خصوصي</string>
-    <string name="Page1Message">أسرع تطبيق مراسلة في العالم.<![CDATA[<br/>]]>كما أنه مجاني و آمن.</string>
+    <string name="Page1Message">أسرع تطبيق مراسلة في العالم. <![CDATA[<br/>]]>كما أنه مجاني و آمن.</string>
     <string name="Page2Message"><![CDATA[<b>تيليجرام</b>]]> يوصل الرسائل أسرع من أي تطبيق آخر.</string>
     <string name="Page3Message"><![CDATA[<b>تيليجرام</b>]]> مجاني للأبد. بدون أية إعلانات. وبدون رسوم إشتراك.</string>
     <string name="Page4Message"><![CDATA[<b>تيليجرام</b>]]>  يحمي الرسائل الخاصة بك من هجمات المخترقين.</string>
@@ -397,7 +403,7 @@
     <string name="Page6Message"><![CDATA[<b>تيليجرام</b>]]> يمكنك الوصول إلى الرسائل الخاصة بك من أجهزة متعددة.</string>
     <string name="Page7Message"><![CDATA[<b>تيليجرام</b>]]> الرسائل مشفرة بشكل قوي وتستطيع تدمير ذاتها</string>
     <string name="StartMessaging">إبدأ المراسلة</string>
-    <!--plurals-->
+    <!--plural-->
     <string name="Online_zero">%1$d متصل</string>
     <string name="Online_one">%1$d متصل</string>
     <string name="Online_two">%1$d متصل</string>
@@ -434,16 +440,44 @@
     <string name="FromContacts_few">من %1$d جهات اتصال</string>
     <string name="FromContacts_many">من %1$d جهة اتصال</string>
     <string name="FromContacts_other">من %1$d جهة اتصال</string>
+    <string name="Seconds_zero">%1$d ثانية</string>
+    <string name="Seconds_one">%1$d ثانية</string>
+    <string name="Seconds_two">%1$d ثانيتان</string>
+    <string name="Seconds_few">%1$d ثوانٍ</string>
+    <string name="Seconds_many">%1$d ثانية</string>
+    <string name="Seconds_other">%1$d ثانية</string>
+    <string name="Minutes_zero">%1$d دقيقة</string>
+    <string name="Minutes_one">%1$d دقيقة</string>
+    <string name="Minutes_two">%1$d دقيقتان</string>
+    <string name="Minutes_few">%1$d دقائق</string>
+    <string name="Minutes_many">%1$d دقيقة</string>
+    <string name="Minutes_other">%1$d دقيقة</string>
+    <string name="Hours_zero">%1$d ساعة</string>
+    <string name="Hours_one">%1$d ساعة</string>
+    <string name="Hours_two">%1$d ساعتان</string>
+    <string name="Hours_few">%1$d ساعات</string>
+    <string name="Hours_many">%1$d ساعة</string>
+    <string name="Hours_other">%1$d ساعة</string>
+    <string name="Days_zero">%1$d يوم</string>
+    <string name="Days_one">%1$d يوم</string>
+    <string name="Days_two">%1$d يومان</string>
+    <string name="Days_few">%1$d أيام</string>
+    <string name="Days_many">%1$d يوم</string>
+    <string name="Days_other">%1$d يوم</string>
+    <string name="Weeks_zero">%1$d أسبوع</string>
+    <string name="Weeks_one">%1$d أسبوع</string>
+    <string name="Weeks_two">%1$d أسبوعان</string>
+    <string name="Weeks_few">%1$d أسابيع</string>
+    <string name="Weeks_many">%1$d أسبوع</string>
+    <string name="Weeks_other">%1$d أسبوع</string>
     <!--date formatters-->
-    <string name="formatterMonth">dd MMM</string>
+    <string name="formatterMonth">MMM dd</string>
     <string name="formatterYear">dd.MM.yy</string>
     <string name="formatterYearMax">dd.MM.yyyy</string>
-    <string name="chatDate">d MMMM</string>
-    <string name="chatFullDate">d MMMM yyyy</string>
+    <string name="chatDate">MMMM d</string>
+    <string name="chatFullDate">MMMM d, yyyy</string>
     <string name="formatterWeek">EEE</string>
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
-    <!--Don't change this! Not for localization!-->
-    <string name="CacheTag">CACHE_TAG</string>
 </resources>

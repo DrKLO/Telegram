@@ -21,6 +21,7 @@ import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Cells.ChatOrUserCell;
 import org.telegram.ui.Views.SectionedBaseAdapter;
+import org.telegram.ui.Views.SettingsSectionLayout;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -202,12 +203,10 @@ public class ContactsActivityAdapter extends SectionedBaseAdapter {
         if (usersAsSections) {
             if (section < ContactsController.getInstance().sortedUsersSectionsArray.size()) {
                 if (convertView == null) {
-                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    convertView = li.inflate(R.layout.settings_section_layout, parent, false);
+                    convertView = new SettingsSectionLayout(mContext);
                     convertView.setBackgroundColor(0xffffffff);
                 }
-                TextView textView = (TextView)convertView.findViewById(R.id.settings_section_text);
-                textView.setText(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
+                ((SettingsSectionLayout) convertView).setText(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
                 return convertView;
             }
         } else {
@@ -221,12 +220,10 @@ public class ContactsActivityAdapter extends SectionedBaseAdapter {
         }
 
         if (convertView == null) {
-            LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            convertView = li.inflate(R.layout.settings_section_layout, parent, false);
+            convertView = new SettingsSectionLayout(mContext);
             convertView.setBackgroundColor(0xffffffff);
         }
-        TextView textView = (TextView)convertView.findViewById(R.id.settings_section_text);
-        textView.setText(ContactsController.getInstance().sortedContactsSectionsArray.get(section - 1));
+        ((SettingsSectionLayout) convertView).setText(ContactsController.getInstance().sortedContactsSectionsArray.get(section - 1));
         return convertView;
     }
 }

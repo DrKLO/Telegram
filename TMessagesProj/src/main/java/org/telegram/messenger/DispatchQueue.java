@@ -63,7 +63,7 @@ public class DispatchQueue extends Thread {
         postRunnable(runnable, 0);
     }
 
-    public void postRunnable(Runnable runnable, int delay) {
+    public void postRunnable(Runnable runnable, long delay) {
         if (handler == null) {
             synchronized (handlerSyncObject) {
                 if (handler == null) {

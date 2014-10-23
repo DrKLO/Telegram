@@ -54,7 +54,11 @@ public class BaseFragment {
             if (fragmentView != null) {
                 ViewGroup parent = (ViewGroup) fragmentView.getParent();
                 if (parent != null) {
-                    parent.removeView(fragmentView);
+                    try {
+                        parent.removeView(fragmentView);
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
                 }
                 fragmentView = null;
             }

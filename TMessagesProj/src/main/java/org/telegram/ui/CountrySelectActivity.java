@@ -31,6 +31,7 @@ import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.PinnedHeaderListView;
 import org.telegram.ui.Views.SectionedBaseAdapter;
+import org.telegram.ui.Views.SettingsSectionLayout;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -484,12 +485,10 @@ public class CountrySelectActivity extends BaseFragment {
         @Override
         public View getSectionHeaderView(int section, View convertView, ViewGroup parent) {
             if (convertView == null) {
-                LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                convertView = li.inflate(R.layout.settings_section_layout, parent, false);
+                convertView = new SettingsSectionLayout(mContext);
                 convertView.setBackgroundColor(0xfffafafa);
             }
-            TextView textView = (TextView)convertView.findViewById(R.id.settings_section_text);
-            textView.setText(sortedCountries.get(section).toUpperCase());
+            ((SettingsSectionLayout) convertView).setText(sortedCountries.get(section).toUpperCase());
             return convertView;
         }
     }

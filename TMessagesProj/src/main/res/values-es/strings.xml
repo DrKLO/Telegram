@@ -22,10 +22,10 @@
     <string name="DidNotGetTheCode">¿No recibiste el código?</string>
     <!--signup view-->
     <string name="YourName">Tu nombre</string>
-    <string name="RegisterText">Ingresa tu nombre y apellido</string>
+    <string name="RegisterText">Ingresa tu nombre y apellidos</string>
     <!--<string name="RegisterText">Set up your name and picture</string>-->
     <string name="FirstName">Nombre (requerido)</string>
-    <string name="LastName">Apellido (opcional)</string>
+    <string name="LastName">Apellidos (opcional)</string>
     <string name="CancelRegistration">Cancelar registro</string>
     <!--chats view-->
     <string name="Chats">Chats</string>
@@ -51,6 +51,8 @@
     <string name="DeleteChat">Eliminar y salir</string>
     <string name="HiddenName">Nombre oculto</string>
     <string name="SelectChat">Elige el chat</string>
+    <string name="PhotoTip">Mantén pulsado para ver</string>
+    <string name="CompatibilityChat">%1$s usa una versión antigua de Telegram, así que las fotos secretas serán mostradas en un modo de compatibilidad.\n\nCuando %2$s actualice Telegram, las fotos con autodestrucción de 1 minuto o menos funcionarán con el modo \'Mantén pulsado para ver\', y te notificaremos siempre que la otra parte haga una captura de pantalla.</string>
     <!--broadcasts-->
     <string name="BroadcastList">Lista de difusión</string>
     <string name="NewBroadcastList">Nueva difusión</string>
@@ -73,10 +75,10 @@
     <string name="SdCard">Tarjeta SD</string>
     <!--chat view-->
     <string name="Invisible">invisible</string>
-    <string name="Typing">escribe...</string>
+    <string name="Typing">escribiendo...</string>
     <string name="Attach">Adjuntar</string>
-    <string name="IsTyping">escribe...</string>
-    <string name="AreTyping">escriben...</string>
+    <string name="IsTyping">está escribiendo...</string>
+    <string name="AreTyping">están escribiendo...</string>
     <string name="GotAQuestion">¿Tienes preguntas\nsobre Telegram?</string>
     <string name="ChatTakePhoto">Hacer foto</string>
     <string name="ChatGallery">Galería</string>
@@ -118,12 +120,6 @@
     <string name="MessageLifetimeChangedOutgoing">Activaste la autodestrucción en %1$s</string>
     <string name="MessageLifetimeRemoved">%1$s desactivó la autodestrucción</string>
     <string name="MessageLifetimeYouRemoved">Desactivaste la autodestrucción</string>
-    <string name="MessageLifetime2s">2 segundos</string>
-    <string name="MessageLifetime5s">5 segundos</string>
-    <string name="MessageLifetime1m">1 minuto</string>
-    <string name="MessageLifetime1h">1 hora</string>
-    <string name="MessageLifetime1d">1 día</string>
-    <string name="MessageLifetime1w">1 semana</string>
     <string name="YouHaveNewMessage">Tienes un nuevo mensaje</string>
     <string name="NotificationMessageText">%1$s: %2$s</string>
     <string name="NotificationMessageNoText">%1$s te envió un mensaje</string>
@@ -166,6 +162,7 @@
     <string name="LastSeen">últ. vez</string>
     <string name="LastSeenDate">últ. vez el</string>
     <string name="InviteFriends">Invitar a amigos</string>
+    <string name="GlobalSearch">BÚSQUEDA GLOBAL</string>
     <!--group create view-->
     <string name="SendMessageTo">Enviar mensaje a...</string>
     <string name="EnterGroupNamePlaceholder">Nombre del grupo</string>
@@ -197,18 +194,27 @@
     <string name="PHONE">TELÉFONO</string>
     <string name="StartEncryptedChat">Iniciar chat secreto</string>
     <string name="CreateEncryptedChatError">Ocurrió un error.</string>
-    <string name="CreateEncryptedChatOutdatedError">No podemos crear un chat secreto con %1$s.\n\n%2$s está usando una versión antigua de Telegram y debe actualizarla.</string>
     <string name="SecretTitle">Chat secreto</string>
     <string name="EncryptionKey">Clave de cifrado</string>
     <string name="MessageLifetime">Autodestrucción</string>
     <string name="ShortMessageLifetimeForever">Apagada</string>
-    <string name="ShortMessageLifetime2s">2s</string>
-    <string name="ShortMessageLifetime5s">5s</string>
-    <string name="ShortMessageLifetime1m">1m</string>
-    <string name="ShortMessageLifetime1h">1h</string>
-    <string name="ShortMessageLifetime1d">1d</string>
-    <string name="ShortMessageLifetime1w">1S</string>
     <string name="EncryptionKeyDescription">Esta imagen es una visualización de la clave de cifrado para el chat secreto con <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Si esta imagen se ve igual en el teléfono de <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, tu chat es seguro en un 200%%.<![CDATA[<br><br>]]>Aprende más en telegram.org</string>
+    <string name="NumberUnknown">Desconocido</string>
+    <string name="Info">INFORMACIÓN</string>
+    <string name="Phone">Teléfono</string>
+    <!--usernames-->
+    <string name="Username">Apodo</string>
+    <string name="UsernamePlaceholder">Tu apodo</string>
+    <string name="UsernameInUse">Lo siento, este apodo ya está ocupado.</string>
+    <string name="UsernameInvalid">Lo siento, este apodo es inválido.</string>
+    <string name="UsernameInvalidShort">Un apodo debe tener al menos 5 caracteres.</string>
+    <string name="UsernameInvalidLong">El apodo no debe exceder los 32 caracteres.</string>
+    <string name="UsernameInvalidStartNumber">Lo siento, un apodo no puede comenzar con un número.</string>
+    <string name="UsernameHelp">Puedes elegir un apodo en <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. Si lo haces, otras personas te podrán encontrar por ese apodo y contactarte sin saber tu número de teléfono.<![CDATA[<br><br>]]>Puedes usar <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> y guiones bajos. La longitud mínima es de <![CDATA[<b>]]>5<![CDATA[</b>]]> caracteres.</string>
+    <string name="UsernameChecking">Verificando apodo...</string>
+    <string name="UsernameAvailable">%1$s está disponible.</string>
+    <string name="UsernameEmpty">Ninguno</string>
+    <string name="ErrorOccurred">Ocurrió un error.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Restablecer las notificaciones</string>
     <string name="TextSize">Tamaño del texto</string>
@@ -217,7 +223,6 @@
     <string name="Unblock">Desbloquear</string>
     <string name="UnblockText">Para desbloquear, mantén pulsado sobre un usuario.</string>
     <string name="NoBlocked">Sin usuarios bloqueados</string>
-    <string name="YourPhoneNumber">TU NÚMERO DE TELÉFONO</string>
     <string name="MessageNotifications">NOTIFICACIONES DE MENSAJES</string>
     <string name="Alert">Alerta</string>
     <string name="MessagePreview">Vista previa del mensaje</string>
@@ -235,7 +240,7 @@
     <string name="BlockedUsers">Usuarios bloqueados</string>
     <string name="SaveIncomingPhotos">Guardar fotos entrantes</string>
     <string name="LogOut">Cerrar sesión</string>
-    <string name="YourFirstNameAndLastName">TU NOMBRE Y APELLIDO</string>
+    <string name="YourFirstNameAndLastName">TU NOMBRE Y APELLIDOS</string>
     <string name="NoSound">Sin sonido</string>
     <string name="Default">Por defecto</string>
     <string name="Support">SOPORTE</string>
@@ -261,7 +266,7 @@
     <string name="ImportContacts">Importar contactos</string>
     <string name="WiFiOnly">Sólo vía Wi-Fi</string>
     <string name="SortFirstName">Nombre</string>
-    <string name="SortLastName">Apellido</string>
+    <string name="SortLastName">Apellidos</string>
     <string name="LedColor">Color del LED</string>
     <string name="PopupNotification">Notificaciones emergentes</string>
     <string name="NoPopup">Desactivadas</string>
@@ -292,7 +297,7 @@
     <string name="SendLocation">Enviar ubicación</string>
     <string name="ShareLocation">Compartir ubicación</string>
     <!--photo gallery view-->
-    <string name="ShowAllMedia">Mostrar todas las fotos y vídeos</string>
+    <string name="ShowAllMedia">Ir a Fotos y vídeos</string>
     <string name="SaveToGallery">Guardar en galería</string>
     <string name="Of">%1$d de %2$d</string>
     <string name="Gallery">Galería</string>
@@ -357,7 +362,7 @@
     <string name="FloodWait">Muchos intentos. Por favor, inténtalo más tarde.</string>
     <string name="InvalidCode">Código inválido</string>
     <string name="InvalidFirstName">Nombre inválido</string>
-    <string name="InvalidLastName">Apellido inválido</string>
+    <string name="InvalidLastName">Apellidos inválidos</string>
     <string name="Loading">Cargando...</string>
     <string name="NoPlayerInstalled">No tienes reproductor de vídeo. Por favor, instala uno para continuar.</string>
     <string name="NoMailInstalled">Por favor, envíanos un correo electrónico a sms@telegram.org y cuéntanos tu problema.</string>
@@ -381,6 +386,7 @@
     <string name="ForwardFromMyName">reenviar desde mi nombre</string>
     <string name="SendMessagesToGroup">¿Enviar mensajes a %1$s?</string>
     <string name="ForwardMessagesToGroup">¿Reenviar mensajes a %1$s?</string>
+    <string name="FeatureUnavailable">Sorry, this feature is currently not available in your country.</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Rápida</string>
@@ -410,12 +416,12 @@
     <string name="Members_few">%1$d miembros</string>
     <string name="Members_many">%1$d miembros</string>
     <string name="Members_other">%1$d miembros</string>
-    <string name="AndMoreTyping_zero">y %1$d personas más escriben</string>
-    <string name="AndMoreTyping_one">y %1$d personas más escriben</string>
-    <string name="AndMoreTyping_two">y %1$d personas más escriben</string>
-    <string name="AndMoreTyping_few">y %1$d personas más escriben</string>
-    <string name="AndMoreTyping_many">y %1$d personas más escriben</string>
-    <string name="AndMoreTyping_other">y %1$d personas más escriben</string>
+    <string name="AndMoreTyping_zero">y %1$d personas más están escribiendo</string>
+    <string name="AndMoreTyping_one">y %1$d persona más están escribiendo</string>
+    <string name="AndMoreTyping_two">y %1$d personas más están escribiendo</string>
+    <string name="AndMoreTyping_few">y %1$d personas más están escribiendo</string>
+    <string name="AndMoreTyping_many">y %1$d personas más están escribiendo</string>
+    <string name="AndMoreTyping_other">y %1$d personas más están escribiendo</string>
     <string name="NewMessages_zero">Sin mensajes nuevos</string>
     <string name="NewMessages_one">%1$d nuevo mensaje</string>
     <string name="NewMessages_two">%1$d nuevos mensajes</string>
@@ -434,6 +440,36 @@
     <string name="FromContacts_few">de %1$d contactos</string>
     <string name="FromContacts_many">de %1$d contactos</string>
     <string name="FromContacts_other">de %1$d contactos</string>
+    <string name="Seconds_zero">%1$d segundos</string>
+    <string name="Seconds_one">%1$d segundo</string>
+    <string name="Seconds_two">%1$d segundos</string>
+    <string name="Seconds_few">%1$d segundos</string>
+    <string name="Seconds_many">%1$d segundos</string>
+    <string name="Seconds_other">%1$d segundos</string>
+    <string name="Minutes_zero">%1$d minutos</string>
+    <string name="Minutes_one">%1$d minuto</string>
+    <string name="Minutes_two">%1$d minutos</string>
+    <string name="Minutes_few">%1$d minutos</string>
+    <string name="Minutes_many">%1$d minutos</string>
+    <string name="Minutes_other">%1$d minutos</string>
+    <string name="Hours_zero">%1$d horas</string>
+    <string name="Hours_one">%1$d hora</string>
+    <string name="Hours_two">%1$d horas</string>
+    <string name="Hours_few">%1$d horas</string>
+    <string name="Hours_many">%1$d horas</string>
+    <string name="Hours_other">%1$d horas</string>
+    <string name="Days_zero">%1$d días</string>
+    <string name="Days_one">%1$d día</string>
+    <string name="Days_two">%1$d días</string>
+    <string name="Days_few">%1$d días</string>
+    <string name="Days_many">%1$d días</string>
+    <string name="Days_other">%1$d días</string>
+    <string name="Weeks_zero">%1$d semanas</string>
+    <string name="Weeks_one">%1$d semana</string>
+    <string name="Weeks_two">%1$d semanas</string>
+    <string name="Weeks_few">%1$d semanas</string>
+    <string name="Weeks_many">%1$d semanas</string>
+    <string name="Weeks_other">%1$d semanas</string>
     <!--date formatters-->
     <string name="formatterMonth">dd \'de\' MMM</string>
     <string name="formatterYear">dd.MM.yy</string>
@@ -444,6 +480,4 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s a las %2$s</string>
-    <!--Don't change this! Not for localization!-->
-    <string name="CacheTag">CACHE_TAG</string>
 </resources>

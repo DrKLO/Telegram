@@ -51,6 +51,8 @@
     <string name="DeleteChat">Delete and exit</string>
     <string name="HiddenName">Hidden Name</string>
     <string name="SelectChat">Select Chat</string>
+    <string name="PhotoTip">Tap and hold to view</string>
+    <string name="CompatibilityChat">%1$s is using an older version of Telegram, so secret photos will be shown in compatibility mode.\n\nOnce %2$s updates Telegram, photos with timers for 1 minute or less will start working in \'Tap and hold to view\' mode, and you will be notified whenever the other party takes a screenshot.</string>
     <!--broadcasts-->
     <string name="BroadcastList">Broadcast List</string>
     <string name="NewBroadcastList">New Broadcast List</string>
@@ -118,12 +120,6 @@
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
     <string name="MessageLifetimeRemoved">%1$s disabled the self-destruct timer</string>
     <string name="MessageLifetimeYouRemoved">You disabled the self-destruct timer</string>
-    <string name="MessageLifetime2s">2 seconds</string>
-    <string name="MessageLifetime5s">5 seconds</string>
-    <string name="MessageLifetime1m">1 minute</string>
-    <string name="MessageLifetime1h">1 hour</string>
-    <string name="MessageLifetime1d">1 day</string>
-    <string name="MessageLifetime1w">1 week</string>
     <string name="YouHaveNewMessage">You have a new message</string>
     <string name="NotificationMessageText">%1$s: %2$s</string>
     <string name="NotificationMessageNoText">%1$s sent you a message</string>
@@ -166,6 +162,7 @@
     <string name="LastSeen">last seen</string>
     <string name="LastSeenDate">last seen</string>
     <string name="InviteFriends">Invite Friends</string>
+    <string name="GlobalSearch">GLOBAL SEARCH</string>
     <!--group create view-->
     <string name="SendMessageTo">Send message to...</string>
     <string name="EnterGroupNamePlaceholder">Enter group name</string>
@@ -197,18 +194,27 @@
     <string name="PHONE">PHONE</string>
     <string name="StartEncryptedChat">Start Secret Chat</string>
     <string name="CreateEncryptedChatError">An error occurred.</string>
-    <string name="CreateEncryptedChatOutdatedError">Cannot create a secret chat with %1$s.\n\n%2$s is using an older version of Telegram and needs to update first.</string>
     <string name="SecretTitle">Secret Chat</string>
     <string name="EncryptionKey">Encryption Key</string>
     <string name="MessageLifetime">Self-Destruct Timer</string>
     <string name="ShortMessageLifetimeForever">Off</string>
-    <string name="ShortMessageLifetime2s">2s</string>
-    <string name="ShortMessageLifetime5s">5s</string>
-    <string name="ShortMessageLifetime1m">1m</string>
-    <string name="ShortMessageLifetime1h">1h</string>
-    <string name="ShortMessageLifetime1d">1d</string>
-    <string name="ShortMessageLifetime1w">1w</string>
     <string name="EncryptionKeyDescription">This image is a visualization of the encryption key for this secret chat with <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>If this image looks the same on <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> phone, your chat is 200%% secure.<![CDATA[<br><br>]]>Learn more at telegram.org</string>
+    <string name="NumberUnknown">Unknown</string>
+    <string name="Info">INFO</string>
+    <string name="Phone">Phone</string>
+    <!--usernames-->
+    <string name="Username">Username</string>
+    <string name="UsernamePlaceholder">Your Username</string>
+    <string name="UsernameInUse">Sorry, this username is already taken.</string>
+    <string name="UsernameInvalid">Sorry, this username is invalid.</string>
+    <string name="UsernameInvalidShort">A username must have at least 5 characters.</string>
+    <string name="UsernameInvalidLong">The username must not exceed 32 characters.</string>
+    <string name="UsernameInvalidStartNumber">Sorry, a username can\'t start with a number.</string>
+    <string name="UsernameHelp">You can choose a username on <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. If you do, other people will be able to find you by this username and contact you without knowing your phone number.<![CDATA[<br><br>]]>You can use <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> and underscores. Minimum length is <![CDATA[<b>]]>5<![CDATA[</b>]]> characters.</string>
+    <string name="UsernameChecking">Checking username...</string>
+    <string name="UsernameAvailable">%1$s is available.</string>
+    <string name="UsernameEmpty">None</string>
+    <string name="ErrorOccurred">An error occurred.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Reset all notification settings to default</string>
     <string name="TextSize">Messages Text Size</string>
@@ -217,7 +223,6 @@
     <string name="Unblock">Unblock</string>
     <string name="UnblockText">Tap and hold on user to unblock.</string>
     <string name="NoBlocked">No blocked users yet</string>
-    <string name="YourPhoneNumber">YOUR PHONE NUMBER</string>
     <string name="MessageNotifications">MESSAGE NOTIFICATIONS</string>
     <string name="Alert">Alert</string>
     <string name="MessagePreview">Message Preview</string>
@@ -381,6 +386,7 @@
     <string name="ForwardFromMyName">forward from my name</string>
     <string name="SendMessagesToGroup">Send messages to %1$s?</string>
     <string name="ForwardMessagesToGroup">Forward messages to %1$s?</string>
+    <string name="FeatureUnavailable">Sorry, this feature is currently not available in your country.</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Fast</string>
@@ -434,6 +440,36 @@
     <string name="FromContacts_few">from %1$d contacts</string>
     <string name="FromContacts_many">from %1$d contacts</string>
     <string name="FromContacts_other">from %1$d contacts</string>
+    <string name="Seconds_zero">%1$d seconds</string>
+    <string name="Seconds_one">%1$d second</string>
+    <string name="Seconds_two">%1$d seconds</string>
+    <string name="Seconds_few">%1$d seconds</string>
+    <string name="Seconds_many">%1$d seconds</string>
+    <string name="Seconds_other">%1$d seconds</string>
+    <string name="Minutes_zero">%1$d minutes</string>
+    <string name="Minutes_one">%1$d minute</string>
+    <string name="Minutes_two">%1$d minutes</string>
+    <string name="Minutes_few">%1$d minutes</string>
+    <string name="Minutes_many">%1$d minutes</string>
+    <string name="Minutes_other">%1$d minutes</string>
+    <string name="Hours_zero">%1$d hours</string>
+    <string name="Hours_one">%1$d hour</string>
+    <string name="Hours_two">%1$d hours</string>
+    <string name="Hours_few">%1$d hours</string>
+    <string name="Hours_many">%1$d hours</string>
+    <string name="Hours_other">%1$d hours</string>
+    <string name="Days_zero">%1$d days</string>
+    <string name="Days_one">%1$d day</string>
+    <string name="Days_two">%1$d days</string>
+    <string name="Days_few">%1$d days</string>
+    <string name="Days_many">%1$d days</string>
+    <string name="Days_other">%1$d days</string>
+    <string name="Weeks_zero">%1$d weeks</string>
+    <string name="Weeks_one">%1$d week</string>
+    <string name="Weeks_two">%1$d weeks</string>
+    <string name="Weeks_few">%1$d weeks</string>
+    <string name="Weeks_many">%1$d weeks</string>
+    <string name="Weeks_other">%1$d weeks</string>
     <!--date formatters-->
     <string name="formatterMonth">MMM dd</string>
     <string name="formatterYear">dd.MM.yy</string>
@@ -444,6 +480,4 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s at %2$s</string>
-    <!--Don't change this! Not for localization!-->
-    <string name="CacheTag">CACHE_TAG</string>
 </resources>

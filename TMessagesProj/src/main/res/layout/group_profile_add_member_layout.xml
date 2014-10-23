@@ -15,7 +15,6 @@
         android:id="@+id/done_button"
         android:paddingRight="16dp"
         android:paddingLeft="16dp"
-        android:background="@drawable/bar_selector"
         android:minHeight="60dp"/>
 
 </FrameLayout>

@@ -661,17 +661,18 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         actionBarLayout.presentFragment(fragment, false, true, true);
                     }
 
-                    Bundle args2 = new Bundle();
-                    args2.putString("videoPath", videoPath);
-                    VideoEditorActivity fragment2 = new VideoEditorActivity(args2);
-                    fragment2.setDelegate(fragment);
-                    presentFragment(fragment2, true, true);
                     if (!AndroidUtilities.isTablet()) {
                         actionBarLayout.addFragmentToStack(fragment, actionBarLayout.fragmentsStack.size() - 1);
                     }
+
+                    if (!fragment.openVideoEditor(videoPath, true)) {
+                        if (!AndroidUtilities.isTablet()) {
+                            messageFragment.finishFragment(true);
+                        }
+                    }
                 } else {
                     actionBarLayout.presentFragment(fragment, true);
-                    fragment.processSendingVideo(videoPath, 0, 0, 0, 0, null);
+                    SendMessagesHelper.prepareSendingVideo(videoPath, 0, 0, 0, 0, null, dialog_id);
                 }
             } else {
                 actionBarLayout.presentFragment(fragment, true);
@@ -679,10 +680,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     fragment.processSendingText(sendingText);
                 }
                 if (photoPathsArray != null) {
-                    fragment.processSendingPhotos(null, photoPathsArray);
+                    SendMessagesHelper.prepareSendingPhotos(null, photoPathsArray, dialog_id);
                 }
                 if (documentsPathsArray != null) {
-                    fragment.processSendingDocuments(documentsPathsArray, documentsOriginalPathsArray);
+                    SendMessagesHelper.prepareSendingDocuments(documentsPathsArray, documentsOriginalPathsArray, dialog_id);
                 }
                 if (contactsToSend != null && !contactsToSend.isEmpty()) {
                     for (TLRPC.User user : contactsToSend) {
@@ -786,6 +787,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     public void fixLayout() {
         if (AndroidUtilities.isTablet()) {
+            if (actionBarLayout == null) {
+                return;
+            }
             actionBarLayout.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                 @Override
                 public void onGlobalLayout() {
@@ -836,6 +840,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     protected void onDestroy() {
         PhotoViewer.getInstance().destroyPhotoViewer();
+        SecretPhotoViewer.getInstance().destroyPhotoViewer();
         super.onDestroy();
         onFinish();
     }
@@ -1190,7 +1195,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     buttonLayoutTablet.setVisibility(View.VISIBLE);
                     backgroundTablet.setVisibility(View.VISIBLE);
                 }
-            } else if (layout == layersActionBarLayout && actionBarLayout.fragmentsStack.isEmpty()) {
+            } else if (layout == layersActionBarLayout && actionBarLayout.fragmentsStack.isEmpty() && layersActionBarLayout.fragmentsStack.size() == 1) {
                 onFinish();
                 finish();
                 return false;

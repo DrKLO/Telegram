@@ -9,11 +9,10 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentBottom="true"
-        android:clipToPadding="false"
         android:fadingEdge="none"
         android:fadingEdgeLength="0dp"
-        android:divider="@drawable/messages_list_divider"
-        android:dividerHeight="1px"
+        android:divider="@null"
+        android:dividerHeight="0px"
         android:animationCache="false"/>
 
     <TextView android:layout_width="match_parent"

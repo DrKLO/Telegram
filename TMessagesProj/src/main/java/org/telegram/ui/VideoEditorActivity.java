@@ -58,6 +58,7 @@ import java.util.List;
 @TargetApi(16)
 public class VideoEditorActivity extends BaseFragment implements TextureView.SurfaceTextureListener {
 
+    private boolean created = false;
     private MediaPlayer videoPlayer = null;
     private VideoTimelineView videoTimelineView = null;
     private View videoContainerView = null;
@@ -161,6 +162,9 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
 
     @Override
     public boolean onFragmentCreate() {
+        if (created) {
+            return true;
+        }
         if (videoPath == null || !processOpenVideo()) {
             return false;
         }
@@ -190,6 +194,8 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             FileLog.e("tmessages", e);
             return false;
         }
+
+        created = true;
 
         return super.onFragmentCreate();
     }
@@ -276,22 +282,27 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             });
 
             if (Build.VERSION.SDK_INT < 18) {
-                MediaCodecInfo codecInfo = MediaController.selectCodec(MediaController.MIME_TYPE);
-                if (codecInfo == null) {
-                    compressVideo.setVisibility(View.GONE);
-                } else {
-                    String name = codecInfo.getName();
-                    if (name.equals("OMX.google.h264.encoder") ||
-                            name.equals("OMX.ST.VFM.H264Enc") ||
-                            name.equals("OMX.Exynos.avc.enc") ||
-                            name.equals("OMX.MARVELL.VIDEO.HW.CODA7542ENCODER") ||
-                            name.equals("OMX.MARVELL.VIDEO.H264ENCODER")) {
+                try {
+                    MediaCodecInfo codecInfo = MediaController.selectCodec(MediaController.MIME_TYPE);
+                    if (codecInfo == null) {
                         compressVideo.setVisibility(View.GONE);
                     } else {
-                        if (MediaController.selectColorFormat(codecInfo, MediaController.MIME_TYPE) == 0) {
+                        String name = codecInfo.getName();
+                        if (name.equals("OMX.google.h264.encoder") ||
+                                name.equals("OMX.ST.VFM.H264Enc") ||
+                                name.equals("OMX.Exynos.avc.enc") ||
+                                name.equals("OMX.MARVELL.VIDEO.HW.CODA7542ENCODER") ||
+                                name.equals("OMX.MARVELL.VIDEO.H264ENCODER")) {
                             compressVideo.setVisibility(View.GONE);
+                        } else {
+                            if (MediaController.selectColorFormat(codecInfo, MediaController.MIME_TYPE) == 0) {
+                                compressVideo.setVisibility(View.GONE);
+                            }
                         }
                     }
+                } catch (Exception e) {
+                    compressVideo.setVisibility(View.GONE);
+                    FileLog.e("tmessages", e);
                 }
             }
 
@@ -446,11 +457,17 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
     }
 
     private void onPlayComplete() {
-        playButton.setImageResource(R.drawable.video_play);
-        videoSeekBarView.setProgress(videoTimelineView.getLeftProgress());
+        if (playButton != null) {
+            playButton.setImageResource(R.drawable.video_play);
+        }
+        if (videoSeekBarView != null && videoTimelineView != null) {
+            videoSeekBarView.setProgress(videoTimelineView.getLeftProgress());
+        }
         try {
             if (videoPlayer != null) {
-                videoPlayer.seekTo((int) (videoTimelineView.getLeftProgress() * videoDuration));
+                if (videoTimelineView != null) {
+                    videoPlayer.seekTo((int) (videoTimelineView.getLeftProgress() * videoDuration));
+                }
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);

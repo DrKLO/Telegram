@@ -198,6 +198,7 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_updateReadMessages.constructor, TLRPC.TL_updateReadMessages.class);
         classStore.put(TLRPC.TL_updateChatParticipantDelete.constructor, TLRPC.TL_updateChatParticipantDelete.class);
         classStore.put(TLRPC.TL_updateRestoreMessages.constructor, TLRPC.TL_updateRestoreMessages.class);
+        classStore.put(TLRPC.TL_updateServiceNotification.constructor, TLRPC.TL_updateServiceNotification.class);
         classStore.put(TLRPC.TL_updateNotifySettings.constructor, TLRPC.TL_updateNotifySettings.class);
         classStore.put(TLRPC.TL_updateUserTyping.constructor, TLRPC.TL_updateUserTyping.class);
         classStore.put(TLRPC.TL_updateChatUserTyping.constructor, TLRPC.TL_updateChatUserTyping.class);
@@ -226,6 +227,7 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_inputEncryptedFileEmpty.constructor, TLRPC.TL_inputEncryptedFileEmpty.class);
         classStore.put(TLRPC.TL_inputEncryptedFileUploaded.constructor, TLRPC.TL_inputEncryptedFileUploaded.class);
         classStore.put(TLRPC.TL_decryptedMessageActionFlushHistory.constructor, TLRPC.TL_decryptedMessageActionFlushHistory.class);
+        classStore.put(TLRPC.TL_decryptedMessageActionResend.constructor, TLRPC.TL_decryptedMessageActionResend.class);
         classStore.put(TLRPC.TL_decryptedMessageActionNotifyLayer.constructor, TLRPC.TL_decryptedMessageActionNotifyLayer.class);
         classStore.put(TLRPC.TL_decryptedMessageActionSetMessageTTL.constructor, TLRPC.TL_decryptedMessageActionSetMessageTTL.class);
         classStore.put(TLRPC.TL_decryptedMessageActionDeleteMessages.constructor, TLRPC.TL_decryptedMessageActionDeleteMessages.class);
@@ -362,6 +364,13 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_messageService_old.constructor, TLRPC.TL_messageService_old.class);
         classStore.put(TLRPC.TL_decryptedMessageService_old.constructor, TLRPC.TL_decryptedMessageService_old.class);
         classStore.put(TLRPC.TL_decryptedMessage_old.constructor, TLRPC.TL_decryptedMessage_old.class);
+        classStore.put(TLRPC.TL_message_secret.constructor, TLRPC.TL_message_secret.class);
+        classStore.put(TLRPC.TL_userSelf_old.constructor, TLRPC.TL_userSelf_old.class);
+        classStore.put(TLRPC.TL_userContact_old.constructor, TLRPC.TL_userContact_old.class);
+        classStore.put(TLRPC.TL_userRequest_old.constructor, TLRPC.TL_userRequest_old.class);
+        classStore.put(TLRPC.TL_userForeign_old.constructor, TLRPC.TL_userForeign_old.class);
+        classStore.put(TLRPC.TL_userDeleted_old.constructor, TLRPC.TL_userDeleted_old.class);
+        classStore.put(TLRPC.TL_messageEncryptedAction.constructor, TLRPC.TL_messageEncryptedAction.class);
     }
 
     static TLClassStore store = null;

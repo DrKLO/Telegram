@@ -9,8 +9,13 @@
 package org.telegram.android;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapShader;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.view.View;
@@ -35,6 +40,13 @@ public class ImageReceiver {
     private boolean isVisible = true;
     private boolean isAspectFit = false;
     private boolean lastCacheOnly = false;
+    private boolean forcePreview = false;
+    private int roundRadius = 0;
+    private BitmapShader bitmapShader = null;
+    private Paint roundPaint = null;
+    private RectF roundRect = null;
+    private RectF bitmapRect = null;
+    private Matrix shaderMatrix = null;
 
     public ImageReceiver() {
 
@@ -65,6 +77,7 @@ public class ImageReceiver {
             last_httpUrl = null;
             last_filter = null;
             lastCacheOnly = false;
+            bitmapShader = null;
             last_placeholder = placeholder;
             last_size = 0;
             currentImage = null;
@@ -104,9 +117,13 @@ public class ImageReceiver {
         last_placeholder = placeholder;
         last_size = size;
         lastCacheOnly = cacheOnly;
+        bitmapShader = null;
         if (img == null) {
             isPlaceholder = true;
             ImageLoader.getInstance().loadImage(fileLocation, httpUrl, this, size, cacheOnly);
+            if (parentView != null) {
+                parentView.invalidate();
+            }
         } else {
             setImageBitmap(img, currentPath);
         }
@@ -119,6 +136,11 @@ public class ImageReceiver {
         isPlaceholder = false;
         ImageLoader.getInstance().incrementUseCount(currentPath);
         currentImage = bitmap;
+        if (roundRadius != 0) {
+            bitmapShader = new BitmapShader(bitmap.getBitmap(), Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+            roundPaint.setShader(bitmapShader);
+            bitmapRect.set(0, 0, bitmap.getIntrinsicWidth(), bitmap.getIntrinsicHeight());
+        }
         if (parentView != null) {
             parentView.invalidate();
         }
@@ -138,6 +160,7 @@ public class ImageReceiver {
         last_httpUrl = null;
         last_filter = null;
         currentImage = null;
+        bitmapShader = null;
         last_size = 0;
         lastCacheOnly = false;
         if (parentView != null) {
@@ -155,6 +178,7 @@ public class ImageReceiver {
         last_path = null;
         last_httpUrl = null;
         last_filter = null;
+        bitmapShader = null;
         last_size = 0;
         lastCacheOnly = false;
         if (parentView != null) {
@@ -192,83 +216,92 @@ public class ImageReceiver {
         }
     }
 
-    public boolean draw(Canvas canvas, int x, int y, int w, int h) {
+    public boolean draw(Canvas canvas) {
         try {
             Drawable bitmapDrawable = currentImage;
-            if (bitmapDrawable == null && last_placeholder != null && last_placeholder instanceof BitmapDrawable) {
+            if (forcePreview || bitmapDrawable == null && last_placeholder != null && last_placeholder instanceof BitmapDrawable) {
                 bitmapDrawable = last_placeholder;
             }
             if (bitmapDrawable != null) {
-                int bitmapW = bitmapDrawable.getIntrinsicWidth();
-                int bitmapH = bitmapDrawable.getIntrinsicHeight();
-                float scaleW = bitmapW / (float)w;
-                float scaleH = bitmapH / (float)h;
-
-                if (isAspectFit) {
-                    float scale = Math.max(scaleW, scaleH);
-                    canvas.save();
-                    bitmapW /= scale;
-                    bitmapH /= scale;
-                    drawRegion.set(x + (w - bitmapW) / 2, y + (h - bitmapH) / 2, x + (w + bitmapW) / 2, y + (h + bitmapH) / 2);
-                    bitmapDrawable.setBounds(drawRegion);
-                    try {
-                        bitmapDrawable.draw(canvas);
-                    } catch (Exception e) {
-                        if (currentPath != null) {
-                            ImageLoader.getInstance().removeImage(currentPath);
-                            currentPath = null;
-                        }
-                        setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size, lastCacheOnly);
-                        FileLog.e("tmessages", e);
-                    }
-                    canvas.restore();
+                if (bitmapShader != null) {
+                    drawRegion.set(imageX, imageY, imageX + imageW, imageY + imageH);
+                    roundRect.set(imageX, imageY, imageX + imageW, imageY + imageH);
+                    shaderMatrix.reset();
+                    shaderMatrix.setScale(1.5f, 1.5f);
+                    bitmapShader.setLocalMatrix(shaderMatrix);
+                    canvas.drawRoundRect(roundRect, roundRadius, roundRadius, roundPaint);
                 } else {
-                    if (Math.abs(scaleW - scaleH) > 0.00001f) {
+                    int bitmapW = bitmapDrawable.getIntrinsicWidth();
+                    int bitmapH = bitmapDrawable.getIntrinsicHeight();
+                    float scaleW = bitmapW / (float) imageW;
+                    float scaleH = bitmapH / (float) imageH;
+
+                    if (isAspectFit) {
+                        float scale = Math.max(scaleW, scaleH);
                         canvas.save();
-                        canvas.clipRect(x, y, x + w, y + h);
-
-                        if (bitmapW / scaleH > w) {
-                            bitmapW /= scaleH;
-                            drawRegion.set(x - (bitmapW - w) / 2, y, x + (bitmapW + w) / 2, y + h);
-                        } else {
-                            bitmapH /= scaleW;
-                            drawRegion.set(x, y - (bitmapH - h) / 2, x + w, y + (bitmapH + h) / 2);
-                        }
+                        bitmapW /= scale;
+                        bitmapH /= scale;
+                        drawRegion.set(imageX + (imageW - bitmapW) / 2, imageY + (imageH - bitmapH) / 2, imageX + (imageW + bitmapW) / 2, imageY + (imageH + bitmapH) / 2);
                         bitmapDrawable.setBounds(drawRegion);
-                        if (isVisible) {
-                            try {
-                                bitmapDrawable.draw(canvas);
-                            } catch (Exception e) {
-                                if (currentPath != null) {
-                                    ImageLoader.getInstance().removeImage(currentPath);
-                                    currentPath = null;
-                                }
-                                setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size, lastCacheOnly);
-                                FileLog.e("tmessages", e);
+                        try {
+                            bitmapDrawable.draw(canvas);
+                        } catch (Exception e) {
+                            if (currentPath != null) {
+                                ImageLoader.getInstance().removeImage(currentPath);
+                                currentPath = null;
                             }
+                            setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size, lastCacheOnly);
+                            FileLog.e("tmessages", e);
                         }
-
                         canvas.restore();
                     } else {
-                        drawRegion.set(x, y, x + w, y + h);
-                        bitmapDrawable.setBounds(drawRegion);
-                        if (isVisible) {
-                            try {
-                                bitmapDrawable.draw(canvas);
-                            } catch (Exception e) {
-                                if (currentPath != null) {
-                                    ImageLoader.getInstance().removeImage(currentPath);
-                                    currentPath = null;
+                        if (Math.abs(scaleW - scaleH) > 0.00001f) {
+                            canvas.save();
+                            canvas.clipRect(imageX, imageY, imageX + imageW, imageY + imageH);
+
+                            if (bitmapW / scaleH > imageW) {
+                                bitmapW /= scaleH;
+                                drawRegion.set(imageX - (bitmapW - imageW) / 2, imageY, imageX + (bitmapW + imageW) / 2, imageY + imageH);
+                            } else {
+                                bitmapH /= scaleW;
+                                drawRegion.set(imageX, imageY - (bitmapH - imageH) / 2, imageX + imageW, imageY + (bitmapH + imageH) / 2);
+                            }
+                            bitmapDrawable.setBounds(drawRegion);
+                            if (isVisible) {
+                                try {
+                                    bitmapDrawable.draw(canvas);
+                                } catch (Exception e) {
+                                    if (currentPath != null) {
+                                        ImageLoader.getInstance().removeImage(currentPath);
+                                        currentPath = null;
+                                    }
+                                    setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size, lastCacheOnly);
+                                    FileLog.e("tmessages", e);
                                 }
-                                setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size, lastCacheOnly);
-                                FileLog.e("tmessages", e);
+                            }
+
+                            canvas.restore();
+                        } else {
+                            drawRegion.set(imageX, imageY, imageX + imageW, imageY + imageH);
+                            bitmapDrawable.setBounds(drawRegion);
+                            if (isVisible) {
+                                try {
+                                    bitmapDrawable.draw(canvas);
+                                } catch (Exception e) {
+                                    if (currentPath != null) {
+                                        ImageLoader.getInstance().removeImage(currentPath);
+                                        currentPath = null;
+                                    }
+                                    setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size, lastCacheOnly);
+                                    FileLog.e("tmessages", e);
+                                }
                             }
                         }
                     }
                 }
                 return true;
             } else if (last_placeholder != null) {
-                drawRegion.set(x, y, x + w, y + h);
+                drawRegion.set(imageX, imageY, imageX + imageW, imageY + imageH);
                 last_placeholder.setBounds(drawRegion);
                 if (isVisible) {
                     try {
@@ -370,5 +403,24 @@ public class ImageReceiver {
 
     public String getKey() {
         return currentPath;
+    }
+
+    public void setForcePreview(boolean value) {
+        forcePreview = value;
+    }
+
+    public void setRoundRadius(int value) {
+        roundRadius = value;
+        if (roundRadius != 0) {
+            roundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            roundRect = new RectF();
+            shaderMatrix = new Matrix();
+            bitmapRect = new RectF();
+        } else {
+            roundPaint = null;
+            roundRect = null;
+            shaderMatrix = null;
+            bitmapRect = null;
+        }
     }
 }

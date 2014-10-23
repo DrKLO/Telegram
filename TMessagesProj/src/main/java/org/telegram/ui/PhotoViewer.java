@@ -101,6 +101,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private View pickerView;
     private TextView doneButtonTextView;
     private TextView doneButtonBadgeTextView;
+    private ImageView shareButton;
     private boolean canShowBottom = true;
     private boolean overlayViewVisible = true;
 
@@ -234,7 +235,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         public int getSelectedCount();
     }
 
-    private static class FrameLayoutTouchListener extends FrameLayout {
+    private class FrameLayoutTouchListener extends FrameLayout {
         public FrameLayoutTouchListener(Context context) {
             super(context);
         }
@@ -251,7 +252,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
     }
 
-    private static class FrameLayoutDrawer extends FrameLayout {
+    private class FrameLayoutDrawer extends FrameLayout {
         public FrameLayoutDrawer(Context context) {
             super(context);
             setWillNotDraw(false);
@@ -595,7 +596,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         bottomLayout.setLayoutParams(layoutParams);
         bottomLayout.setBackgroundColor(0x7F000000);
 
-        ImageView shareButton = new ImageView(containerView.getContext());
+        shareButton = new ImageView(containerView.getContext());
         shareButton.setImageResource(R.drawable.ic_ab_share_white);
         shareButton.setScaleType(ImageView.ScaleType.CENTER);
         shareButton.setBackgroundResource(R.drawable.bar_selector_white);
@@ -611,12 +612,14 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     return;
                 }
                 try {
-                    int size[] = new int[1];
-                    TLRPC.FileLocation fileLocation = getFileLocation(currentIndex, size);
-                    if (fileLocation == null) {
-                        return;
+                    File f = null;
+
+                    if (currentMessageObject != null) {
+                        f = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
+                    } else if (currentFileLocation != null) {
+                        f = FileLoader.getPathToAttach(currentFileLocation, avatarsUserId != 0);
                     }
-                    File f = FileLoader.getPathToAttach(fileLocation, avatarsUserId != 0);
+
                     if (f.exists()) {
                         Intent intent = new Intent(Intent.ACTION_SEND);
                         if (f.toString().endsWith("mp4")) {
@@ -654,7 +657,16 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (obj.isSent()) {
                         ArrayList<Integer> arr = new ArrayList<Integer>();
                         arr.add(obj.messageOwner.id);
-                        MessagesController.getInstance().deleteMessages(arr, null, null);
+
+                        ArrayList<Long> random_ids = null;
+                        TLRPC.EncryptedChat encryptedChat = null;
+                        if ((int)obj.getDialogId() == 0 && obj.messageOwner.random_id != 0) {
+                            random_ids = new ArrayList<Long>();
+                            random_ids.add(obj.messageOwner.random_id);
+                            encryptedChat = MessagesController.getInstance().getEncryptedChat((int)(obj.getDialogId() >> 32));
+                        }
+
+                        MessagesController.getInstance().deleteMessages(arr, random_ids, encryptedChat);
                         closePhoto(false);
                     }
                 } else if (!avatarsArr.isEmpty()) {
@@ -1157,6 +1169,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             } else {
                 menuItem.hideSubItem(gallery_menu_showall);
             }
+            if ((int) currentDialogId == 0) {
+                menuItem.hideSubItem(gallery_menu_save);
+                shareButton.setVisibility(View.GONE);
+            } else {
+                menuItem.showSubItem(gallery_menu_save);
+                shareButton.setVisibility(View.VISIBLE);
+            }
             setImageIndex(0, true);
         } else if (fileLocation != null) {
             avatarsUserId = object.user_id;
@@ -1164,6 +1183,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             imagesArrLocationsSizes.add(object.size);
             avatarsArr.add(new TLRPC.TL_photoEmpty());
             bottomLayout.setVisibility(View.GONE);
+            shareButton.setVisibility(View.VISIBLE);
             menuItem.hideSubItem(gallery_menu_showall);
             setImageIndex(0, true);
             currentUserAvatarLocation = fileLocation;
@@ -1192,6 +1212,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                 }
             }
+            if ((int) currentDialogId == 0) {
+                menuItem.hideSubItem(gallery_menu_save);
+                shareButton.setVisibility(View.GONE);
+            } else {
+                menuItem.showSubItem(gallery_menu_save);
+                shareButton.setVisibility(View.VISIBLE);
+            }
             opennedFromMedia = true;
             setImageIndex(index, true);
         } else if (photos != null) {
@@ -1201,6 +1228,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             setImageIndex(index, true);
             pickerView.setVisibility(View.VISIBLE);
             bottomLayout.setVisibility(View.GONE);
+            shareButton.setVisibility(View.VISIBLE);
             canShowBottom = false;
             updateSelectedCount();
         }
@@ -2138,7 +2166,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         float ai = -1;
         if (System.currentTimeMillis() - animationStartTime < animationDuration) {
             ai = interpolator.getInterpolation((float)(System.currentTimeMillis() - animationStartTime) / animationDuration);
-            if (ai >= 0.95) {
+            if (ai >= 0.95f) {
                 ai = -1;
             }
         }
@@ -2219,7 +2247,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             int height = (int) (bitmapHeight * scale);
 
             centerImage.setImageCoords(-width / 2, -height / 2, width, height);
-            centerImage.draw(canvas, -width / 2, -height / 2, width, height);
+            centerImage.draw(canvas);
         }
 
         if (scale >= 1.0f) {
@@ -2250,7 +2278,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     int height = (int) (bitmapHeight * scale);
 
                     sideImage.setImageCoords(-width / 2, -height / 2, width, height);
-                    sideImage.draw(canvas, -width / 2, -height / 2, width, height);
+                    sideImage.draw(canvas);
                 }
             } else {
                 changingPage = false;

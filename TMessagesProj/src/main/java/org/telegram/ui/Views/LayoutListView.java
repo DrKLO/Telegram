@@ -10,11 +10,17 @@ package org.telegram.ui.Views;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ListView;
 
 public class LayoutListView extends ListView {
 
+    public static interface OnInterceptTouchEventListener {
+        public abstract boolean onInterceptTouchEvent(MotionEvent event);
+    }
+
+    private OnInterceptTouchEventListener onInterceptTouchEventListener;
     private int height = -1;
 
     public LayoutListView(Context context) {
@@ -27,6 +33,18 @@ public class LayoutListView extends ListView {
 
     public LayoutListView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+    }
+
+    public void setOnInterceptTouchEventListener(OnInterceptTouchEventListener listener) {
+        onInterceptTouchEventListener = listener;
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        if (onInterceptTouchEventListener != null) {
+            return onInterceptTouchEventListener.onInterceptTouchEvent(ev) || super.onInterceptTouchEvent(ev);
+        }
+        return super.onInterceptTouchEvent(ev);
     }
 
     @Override

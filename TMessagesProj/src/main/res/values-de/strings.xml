@@ -51,6 +51,8 @@
     <string name="DeleteChat">Löschen und beenden</string>
     <string name="HiddenName">Versteckter Name</string>
     <string name="SelectChat">Chat auswählen</string>
+    <string name="PhotoTip">Tippen und Halten</string>
+    <string name="CompatibilityChat">%1$s benutzt eine ältere Version von Telegram, sodass Fotos in Geheimen Chats im Kompatibilitätsmodus angezeigt werden.\n\nSobald %2$s Telegram aktualisiert, werden Fotos mit Timern von 1 Minute und kürzer per \"Tippen und Halten\" angezeigt. Du wirst benachrichtigt, sobald dein Chatpartner ein Bildschirmfoto macht.</string>
     <!--broadcasts-->
     <string name="BroadcastList">Broadcast Liste</string>
     <string name="NewBroadcastList">Neue Broadcast Liste</string>
@@ -118,12 +120,6 @@
     <string name="MessageLifetimeChangedOutgoing">Du hast den Selbstzerstörungs-Timer auf %1$s gesetzt</string>
     <string name="MessageLifetimeRemoved">%1$s hat den Selbstzerstörungs-Timer deaktivert</string>
     <string name="MessageLifetimeYouRemoved">Du hast den Selbstzerstörungs-Timer deaktivert</string>
-    <string name="MessageLifetime2s">2 Sekunden</string>
-    <string name="MessageLifetime5s">5 Sekunden</string>
-    <string name="MessageLifetime1m">1 Minute</string>
-    <string name="MessageLifetime1h">1 Stunde</string>
-    <string name="MessageLifetime1d">1 Tag</string>
-    <string name="MessageLifetime1w">1 Woche</string>
     <string name="YouHaveNewMessage">Du hast eine neue Nachricht</string>
     <string name="NotificationMessageText">%1$s: %2$s</string>
     <string name="NotificationMessageNoText">%1$s hat dir eine Nachricht gesendet</string>
@@ -166,6 +162,7 @@
     <string name="LastSeen">zul. online</string>
     <string name="LastSeenDate">zul. online</string>
     <string name="InviteFriends">Freunde einladen</string>
+    <string name="GlobalSearch">GLOBALE SUCHE</string>
     <!--group create view-->
     <string name="SendMessageTo">Sende Nachricht an…</string>
     <string name="EnterGroupNamePlaceholder">Gruppenname</string>
@@ -197,18 +194,27 @@
     <string name="PHONE">TELEFON</string>
     <string name="StartEncryptedChat">Geheimen Chat starten</string>
     <string name="CreateEncryptedChatError">Es ist ein Fehler aufgetreten.</string>
-    <string name="CreateEncryptedChatOutdatedError">Geheimer Chat konnte mit %1$s nicht gestartet werden.\n\n%2$s benutzt eine ältere Version von Telegram und muss diese erst aktualisieren.</string>
     <string name="SecretTitle">Geheimer Chat</string>
     <string name="EncryptionKey">Geheimer Schlüssel</string>
     <string name="MessageLifetime">Selbstzerstörungs-Timer</string>
     <string name="ShortMessageLifetimeForever">Aus</string>
-    <string name="ShortMessageLifetime2s">2 Sek.</string>
-    <string name="ShortMessageLifetime5s">5 Sek.</string>
-    <string name="ShortMessageLifetime1m">1 Min.</string>
-    <string name="ShortMessageLifetime1h">1 Std.</string>
-    <string name="ShortMessageLifetime1d">1 Tag</string>
-    <string name="ShortMessageLifetime1w">1 Woche</string>
     <string name="EncryptionKeyDescription">Das ist eine Darstellung des Schlüssels für den Geheimen Chat mit <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Wenn dieses Bild auf <![CDATA[<b>]]>%2$s\s<![CDATA[</b>]]>s Telefon genau so aussieht, ist euer Chat zu 200%% sicher.<![CDATA[<br><br>]]>Erfahre mehr auf telegram.org</string>
+    <string name="NumberUnknown">Unbekannt</string>
+    <string name="Info">INFO</string>
+    <string name="Phone">Telefon</string>
+    <!--usernames-->
+    <string name="Username">Benutzername</string>
+    <string name="UsernamePlaceholder">Dein Benutzername</string>
+    <string name="UsernameInUse">Leider ist dieser Benutzername vergeben.</string>
+    <string name="UsernameInvalid">Benutzername leider nicht erlaubt.</string>
+    <string name="UsernameInvalidShort">Ein Benutzername benötigt mindestens 5 Zeichen.</string>
+    <string name="UsernameInvalidLong">Ein Benutzername darf maximal 32 Zeichen haben.</string>
+    <string name="UsernameInvalidStartNumber">Benutzernamen dürfen leider nicht mit einer Zahl anfangen.</string>
+    <string name="UsernameHelp">Wähle einen Benutzernamen, wenn du von anderen bei<![CDATA[<b>]]>Telegram<![CDATA[</b>]]>gefunden werden willst — ohne, dass sie deine Nummer kennen müssen.<![CDATA[<br><br>]]>Erlaubt sind <![CDATA[<b>]]>a-z<![CDATA[<b>]]>, <![CDATA[<b>]]>0-9<![CDATA[<b>]]> und Unterstriche. Die Mindestlänge beträgt <![CDATA[<b>]]>5<![CDATA[<b>]]> Zeichen.</string>
+    <string name="UsernameChecking">Prüfe Benutzername...</string>
+    <string name="UsernameAvailable">%1$s ist verfügbar.</string>
+    <string name="UsernameEmpty">Keiner</string>
+    <string name="ErrorOccurred">Es ist ein Fehler aufgetreten.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Alle Einstellungen für Mitteilungen zurücksetzen</string>
     <string name="TextSize">Textgröße für Nachrichten</string>
@@ -217,7 +223,6 @@
     <string name="Unblock">Freigeben</string>
     <string name="UnblockText">Gedrückt halten um freizugeben.</string>
     <string name="NoBlocked">Keine blockierten Benutzer</string>
-    <string name="YourPhoneNumber">DEINE TELEFONNUMMER</string>
     <string name="MessageNotifications">NACHRICHTEN</string>
     <string name="Alert">Benachrichtigung</string>
     <string name="MessagePreview">Vorschau</string>
@@ -249,8 +254,8 @@
     <string name="Language">Sprache</string>
     <string name="AskAQuestionInfo">Bedenke bitte, dass der Telegram Support von einem ehrenamtlichen Team betreut wird. Wir versuchen so schnell wie möglich zu antworten, dies kann jedoch manchmal ein bisschen dauern.<![CDATA[<br><br>]]>Bitte schau auch in den <![CDATA[<a href=\"http://telegram.org/faq/de\">Fragen und Antworten </a>]]> nach. Dort findest du Antworten auf die meisten Fragen und wichtige Tipps zur <![CDATA[<a href=\"https://telegram.org/faq/de#problembehandlung\">Problembehandlung</a>]]>.</string>
     <string name="AskButton">Frage einen Freiwilligen</string>
-    <string name="TelegramFaq">Fragen und Antworten zu Telegram</string>
-    <string name="TelegramFaqUrl">https://telegram.org/faq</string>
+    <string name="TelegramFaq">Fragen und Antworten</string>
+    <string name="TelegramFaqUrl">https://telegram.org/faq/de</string>
     <string name="DeleteLocalization">Lokalisierung löschen?</string>
     <string name="IncorrectLocalization">Falsche Sprachdatei</string>
     <string name="Enabled">Aktiviert</string>
@@ -381,6 +386,7 @@
     <string name="ForwardFromMyName">mit meinem Namen weiterleiten</string>
     <string name="SendMessagesToGroup">Nachricht an %1$s senden?</string>
     <string name="ForwardMessagesToGroup">Weiterleiten an %1$s?</string>
+    <string name="FeatureUnavailable">Sorry, this feature is currently not available in your country.</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Schnell</string>
@@ -434,6 +440,36 @@
     <string name="FromContacts_few">von %1$d Kontakten</string>
     <string name="FromContacts_many">von %1$d Kontakten</string>
     <string name="FromContacts_other">von %1$d Kontakten</string>
+    <string name="Seconds_zero">%1$d Sekunden</string>
+    <string name="Seconds_one">%1$d Sekunde</string>
+    <string name="Seconds_two">%1$d Sekunden</string>
+    <string name="Seconds_few">%1$d Sekunden</string>
+    <string name="Seconds_many">%1$d Sekunden</string>
+    <string name="Seconds_other">%1$d Sekunden</string>
+    <string name="Minutes_zero">%1$d Minuten</string>
+    <string name="Minutes_one">%1$d Minute</string>
+    <string name="Minutes_two">%1$d Minuten</string>
+    <string name="Minutes_few">%1$d Minuten</string>
+    <string name="Minutes_many">%1$d Minuten</string>
+    <string name="Minutes_other">%1$d Minuten</string>
+    <string name="Hours_zero">%1$d Stunden</string>
+    <string name="Hours_one">%1$d Stunde</string>
+    <string name="Hours_two">%1$d Stunden</string>
+    <string name="Hours_few">%1$d Stunden</string>
+    <string name="Hours_many">%1$d Stunden</string>
+    <string name="Hours_other">%1$d Stunden</string>
+    <string name="Days_zero">%1$d Tage</string>
+    <string name="Days_one">%1$d Tag</string>
+    <string name="Days_two">%1$d Tage</string>
+    <string name="Days_few">%1$d Tage</string>
+    <string name="Days_many">%1$d Tage</string>
+    <string name="Days_other">%1$d Tage</string>
+    <string name="Weeks_zero">%1$d Wochen</string>
+    <string name="Weeks_one">%1$d Woche</string>
+    <string name="Weeks_two">%1$d Wochen</string>
+    <string name="Weeks_few">%1$d Wochen</string>
+    <string name="Weeks_many">%1$d Wochen</string>
+    <string name="Weeks_other">%1$d Wochen</string>
     <!--date formatters-->
     <string name="formatterMonth">dd MMM</string>
     <string name="formatterYear">dd.MM.yy</string>
@@ -444,6 +480,4 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s um %2$s</string>
-    <!--Don't change this! Not for localization!-->
-    <string name="CacheTag">CACHE_TAG</string>
 </resources>

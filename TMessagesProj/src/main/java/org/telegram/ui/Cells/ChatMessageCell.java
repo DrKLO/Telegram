@@ -43,36 +43,41 @@ public class ChatMessageCell extends ChatBaseCell {
                     y -= textY;
                     int blockNum = Math.max(0, y / currentMessageObject.blockHeight);
                     if (blockNum < currentMessageObject.textLayoutBlocks.size()) {
-                        MessageObject.TextLayoutBlock block = currentMessageObject.textLayoutBlocks.get(blockNum);
-                        x -= textX - (int)Math.ceil(block.textXOffset);
-                        y -= block.textYOffset;
-                        final int line = block.textLayout.getLineForVertical(y);
-                        final int off = block.textLayout.getOffsetForHorizontal(line, x) + block.charactersOffset;
+                        try {
+                            MessageObject.TextLayoutBlock block = currentMessageObject.textLayoutBlocks.get(blockNum);
+                            x -= textX - (int)Math.ceil(block.textXOffset);
+                            y -= block.textYOffset;
+                            final int line = block.textLayout.getLineForVertical(y);
+                            final int off = block.textLayout.getOffsetForHorizontal(line, x) + block.charactersOffset;
 
-                        final float left = block.textLayout.getLineLeft(line);
-                        if (left <= x && left + block.textLayout.getLineWidth(line) >= x) {
-                            Spannable buffer = (Spannable)currentMessageObject.messageText;
-                            ClickableSpan[] link = buffer.getSpans(off, off, ClickableSpan.class);
+                            final float left = block.textLayout.getLineLeft(line);
+                            if (left <= x && left + block.textLayout.getLineWidth(line) >= x) {
+                                Spannable buffer = (Spannable)currentMessageObject.messageText;
+                                ClickableSpan[] link = buffer.getSpans(off, off, ClickableSpan.class);
 
-                            if (link.length != 0) {
-                                if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                                    pressedLink = link[0];
-                                    return true;
-                                } else {
-                                    if (link[0] == pressedLink) {
-                                        try {
-                                            pressedLink.onClick(this);
-                                        } catch (Exception e) {
-                                            FileLog.e("tmessages", e);
-                                        }
+                                if (link.length != 0) {
+                                    if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                                        pressedLink = link[0];
                                         return true;
+                                    } else {
+                                        if (link[0] == pressedLink) {
+                                            try {
+                                                pressedLink.onClick(this);
+                                            } catch (Exception e) {
+                                                FileLog.e("tmessages", e);
+                                            }
+                                            return true;
+                                        }
                                     }
+                                } else {
+                                    pressedLink = null;
                                 }
                             } else {
                                 pressedLink = null;
                             }
-                        } else {
+                        } catch (Exception e) {
                             pressedLink = null;
+                            FileLog.e("tmessages", e);
                         }
                     } else {
                         pressedLink = null;

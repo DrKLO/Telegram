@@ -171,9 +171,9 @@ public class ActionBarLayer extends FrameLayout {
             x = AndroidUtilities.dp(16 + leftMargin);
         } else {
             if (!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                x = AndroidUtilities.dp(22 + leftMargin) + (int)(logoImageView.getDrawable().getIntrinsicWidth() / 1.3f);
+                x = AndroidUtilities.dp(22 + leftMargin) + (logoImageView.getDrawable() != null ? (int)(logoImageView.getDrawable().getIntrinsicWidth() / 1.3f) : 0);
             } else {
-                x = AndroidUtilities.dp(22 + leftMargin) + logoImageView.getDrawable().getIntrinsicWidth();
+                x = AndroidUtilities.dp(22 + leftMargin) + (logoImageView.getDrawable() != null ? logoImageView.getDrawable().getIntrinsicWidth() : 0);
             }
         }
 

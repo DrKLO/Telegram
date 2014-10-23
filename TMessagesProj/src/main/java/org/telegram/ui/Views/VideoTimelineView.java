@@ -153,9 +153,13 @@ public class VideoTimelineView extends View {
 
     public void setVideoPath(String path) {
         mediaMetadataRetriever = new MediaMetadataRetriever();
-        mediaMetadataRetriever.setDataSource(path);
-        String duration = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
-        videoLength = Long.parseLong(duration);
+        try {
+            mediaMetadataRetriever.setDataSource(path);
+            String duration = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+            videoLength = Long.parseLong(duration);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     public void setDelegate(VideoTimelineViewDelegate delegate) {

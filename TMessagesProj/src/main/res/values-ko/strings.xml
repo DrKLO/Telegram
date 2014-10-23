@@ -38,7 +38,7 @@
     <string name="NoResult">결과 없음</string>
     <string name="NoChats">채팅방이 없습니다...</string>
     <string name="NoChatsHelp">대화를 시작하려면 우측 상단의\n초대하기 버튼을 누르거나\n메뉴 버튼을 눌러 보세요.</string>
-    <string name="WaitingForNetwork">네트워크 연결을 기다리는 중...</string>
+    <string name="WaitingForNetwork">대기 중...</string>
     <string name="Connecting">연결 중...</string>
     <string name="Updating">업데이트 중...</string>
     <string name="NewSecretChat">비밀대화 시작</string>
@@ -51,6 +51,8 @@
     <string name="DeleteChat">채팅방 나가기</string>
     <string name="HiddenName">숨긴 이름</string>
     <string name="SelectChat">채팅방 선택</string>
+    <string name="PhotoTip">꾹 눌러서 보기</string>
+    <string name="CompatibilityChat">%1$s님의 텔레그램 버전이 낮아 비밀 사진을 호환성 모드로 표시합니다.\n\n%2$s님이 텔레그램을 업데이트하고 나면, 자동삭제 시간이 1분 이하인 사진은 \"탭하고 누르고 있어야 보임\" 상태가 되며, 상대방이 화면을 캡처할 때 마다 알림을 받습니다.</string>
     <!--broadcasts-->
     <string name="BroadcastList">단체 메시지 리스트</string>
     <string name="NewBroadcastList">새 단체 메시지 리스트</string>
@@ -118,12 +120,6 @@
     <string name="MessageLifetimeChangedOutgoing">자동삭제를 %1$s 후로 설정했습니다</string>
     <string name="MessageLifetimeRemoved">%1$s님이 자동삭제를 해제했습니다</string>
     <string name="MessageLifetimeYouRemoved">자동삭제를 해제했습니다</string>
-    <string name="MessageLifetime2s">2초</string>
-    <string name="MessageLifetime5s">5초</string>
-    <string name="MessageLifetime1m">1분</string>
-    <string name="MessageLifetime1h">1시간</string>
-    <string name="MessageLifetime1d">하루</string>
-    <string name="MessageLifetime1w">일주일</string>
     <string name="YouHaveNewMessage">새 메시지가 있습니다</string>
     <string name="NotificationMessageText">%1$s: %2$s</string>
     <string name="NotificationMessageNoText">%1$s님이 메시지를 보냈습니다</string>
@@ -166,6 +162,7 @@
     <string name="LastSeen">마지막 접속: </string>
     <string name="LastSeenDate">마지막 접속: </string>
     <string name="InviteFriends">친구 초대</string>
+    <string name="GlobalSearch">전체 검색</string>
     <!--group create view-->
     <string name="SendMessageTo">메시지 보내기...</string>
     <string name="EnterGroupNamePlaceholder">그룹 이름 입력</string>
@@ -197,18 +194,27 @@
     <string name="PHONE">전화번호</string>
     <string name="StartEncryptedChat">비밀대화 시작</string>
     <string name="CreateEncryptedChatError">오류가 발생했습니다.</string>
-    <string name="CreateEncryptedChatOutdatedError">%1$s님의 텔레그램 버전이 낮아 비밀대화를 시작할 수 없습니다.\n\n비밀대화를 시작하려면 %2$s님이 텔레그램을 업데이트해야 합니다.</string>
     <string name="SecretTitle">비밀대화</string>
     <string name="EncryptionKey">암호화 키</string>
     <string name="MessageLifetime">자동삭제 타이머</string>
     <string name="ShortMessageLifetimeForever">해제</string>
-    <string name="ShortMessageLifetime2s">2초</string>
-    <string name="ShortMessageLifetime5s">5초</string>
-    <string name="ShortMessageLifetime1m">1분</string>
-    <string name="ShortMessageLifetime1h">1시간</string>
-    <string name="ShortMessageLifetime1d">하루</string>
-    <string name="ShortMessageLifetime1w">일주일</string>
     <string name="EncryptionKeyDescription">이 이미지는 <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>님과의 비밀대화에 사용 중인 암호화 키의 모습입니다.<![CDATA[<br><br>]]>이 이미지가 <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>님의 암호화 키와 똑같다면 대화는 200%% 안전합니다.<![CDATA[<br><br>]]>더 자세한 사항은 telegram.org 를 참고해 주세요.</string>
+    <string name="NumberUnknown">알 수 없음</string>
+    <string name="Info">정보</string>
+    <string name="Phone">전화번호</string>
+    <!--usernames-->
+    <string name="Username">아이디</string>
+    <string name="UsernamePlaceholder">아이디</string>
+    <string name="UsernameInUse">이미 사용 중인 아이디입니다.</string>
+    <string name="UsernameInvalid">올바른 아이디를 입력하세요.</string>
+    <string name="UsernameInvalidShort">아이디는 최소 다섯 글자 이상 입력해야 합니다.</string>
+    <string name="UsernameInvalidLong">아이디는 최대 32자까지만 가능합니다.</string>
+    <string name="UsernameInvalidStartNumber">아이디는 숫자로 시작할 수 없습니다.</string>
+    <string name="UsernameHelp">텔레그램 아이디를 설정할 수 있습니다. 아이디를 설정하면 회원님의 전화번호를 몰라도 아이디로 회원님을 찾아 대화를 나눌 수 있습니다.<![CDATA[<br><br>]]>아이디는 영문, 밑줄, 숫자로 (<![CDATA[<b>]]>a~z<![CDATA[</b>]]>, <![CDATA[<b>]]>_<![CDATA[</b>]]>, <![CDATA[<b>]]>0~9<![CDATA[</b>]]>) <![CDATA[<b>]]>다섯 글자<![CDATA[</b>]]> 이상으로 설정해 주세요.</string>
+    <string name="UsernameChecking">아이디 확인 중...</string>
+    <string name="UsernameAvailable">%1$s: 사용 가능합니다.</string>
+    <string name="UsernameEmpty">없음</string>
+    <string name="ErrorOccurred">오류가 발생했습니다.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">모든 알림 설정이 초기화되었습니다</string>
     <string name="TextSize">채팅 글자 크기</string>
@@ -217,7 +223,6 @@
     <string name="Unblock">차단 해제</string>
     <string name="UnblockText">차단을 해제하려면 대화상대를 길게 누르세요.</string>
     <string name="NoBlocked">차단한 친구가 없습니다</string>
-    <string name="YourPhoneNumber">전화번호</string>
     <string name="MessageNotifications">메시지 알림</string>
     <string name="Alert">알림 사용</string>
     <string name="MessagePreview">메시지 미리보기</string>
@@ -381,6 +386,7 @@
     <string name="ForwardFromMyName">내 이름으로 전달</string>
     <string name="SendMessagesToGroup">%1$s 그룹에 메시지를 보낼까요?</string>
     <string name="ForwardMessagesToGroup">%1$s 그룹에 메시지를 전달할까요?</string>
+    <string name="FeatureUnavailable">이 기능은 회원님의 국가에서는 사용할 수 없습니다.</string>
     <!--Intro view-->
     <string name="Page1Title">텔레그램</string>
     <string name="Page2Title">눈부신 속도</string>
@@ -434,6 +440,36 @@
     <string name="FromContacts_few">채팅방 %1$d개에서</string>
     <string name="FromContacts_many">채팅방 %1$d개에서</string>
     <string name="FromContacts_other">채팅방 %1$d개에서</string>
+    <string name="Seconds_zero">%1$d초</string>
+    <string name="Seconds_one">%1$d초</string>
+    <string name="Seconds_two">%1$d초</string>
+    <string name="Seconds_few">%1$d초</string>
+    <string name="Seconds_many">%1$d초</string>
+    <string name="Seconds_other">%1$d초</string>
+    <string name="Minutes_zero">%1$d분</string>
+    <string name="Minutes_one">%1$d분</string>
+    <string name="Minutes_two">%1$d분</string>
+    <string name="Minutes_few">%1$d분</string>
+    <string name="Minutes_many">%1$d분</string>
+    <string name="Minutes_other">%1$d분</string>
+    <string name="Hours_zero">%1$d시간</string>
+    <string name="Hours_one">%1$d시간</string>
+    <string name="Hours_two">%1$d시간</string>
+    <string name="Hours_few">%1$d시간</string>
+    <string name="Hours_many">%1$d시간</string>
+    <string name="Hours_other">%1$d시간</string>
+    <string name="Days_zero">%1$d일</string>
+    <string name="Days_one">%1$d일</string>
+    <string name="Days_two">%1$d일</string>
+    <string name="Days_few">%1$d일</string>
+    <string name="Days_many">%1$d일</string>
+    <string name="Days_other">%1$d일</string>
+    <string name="Weeks_zero">%1$d주</string>
+    <string name="Weeks_one">%1$d주</string>
+    <string name="Weeks_two">%1$d주</string>
+    <string name="Weeks_few">%1$d주</string>
+    <string name="Weeks_many">%1$d주</string>
+    <string name="Weeks_other">%1$d주</string>
     <!--date formatters-->
     <string name="formatterMonth">M\'월\' d\'일\'</string>
     <string name="formatterYear">yyyy.MM.dd.</string>
@@ -444,6 +480,4 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">a h:mm</string>
     <string name="formatDateAtTime">%1$s %2$s</string>
-    <!--Don't change this! Not for localization!-->
-    <string name="CacheTag">CACHE_TAG</string>
 </resources>

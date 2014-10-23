@@ -9,7 +9,6 @@
 package org.telegram.messenger;
 
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
@@ -28,7 +27,6 @@ import net.hockeyapp.android.CrashManager;
 import net.hockeyapp.android.CrashManagerListener;
 import net.hockeyapp.android.UpdateManager;
 
-import org.telegram.android.LocaleController;
 import org.telegram.ui.ApplicationLoader;
 
 import java.io.ByteArrayInputStream;
@@ -74,8 +72,6 @@ public class Utilities {
 
     final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
-    public static ProgressDialog progressDialog;
-
     static {
         try {
             File URANDOM_FILE = new File("/dev/urandom");
@@ -112,7 +108,7 @@ public class Utilities {
 
     public native static long doPQNative(long _what);
     public native static void loadBitmap(String path, int[] bitmap, int scale, int format, int width, int height);
-    public native static void blurBitmap(Object bitmap);
+    public native static void blurBitmap(Object bitmap, int radius);
     public native static int convertVideoFrame(ByteBuffer src, ByteBuffer dest, int destFormat, int width, int height, int padding, int swap);
     private native static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, int offset, int length);
 
@@ -425,34 +421,6 @@ public class Utilities {
             FileLog.e("tmessages", e);
         }
         return packedData;
-    }
-
-    public static void ShowProgressDialog(final Activity activity, final String message) {
-        activity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if(!activity.isFinishing()) {
-                    progressDialog = new ProgressDialog(activity);
-                    if (message != null) {
-                        progressDialog.setMessage(message);
-                    }
-                    progressDialog.setCanceledOnTouchOutside(false);
-                    progressDialog.setCancelable(false);
-                    progressDialog.show();
-                }
-            }
-        });
-    }
-
-    public static void HideProgressDialog(Activity activity) {
-        activity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (progressDialog != null) {
-                    progressDialog.dismiss();
-                }
-            }
-        });
     }
 
     public static boolean copyFile(InputStream sourceFile, File destFile) throws IOException {

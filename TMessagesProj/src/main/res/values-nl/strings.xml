@@ -51,6 +51,8 @@
     <string name="DeleteChat">Verwijderen en verlaten</string>
     <string name="HiddenName">Verborgen naam</string>
     <string name="SelectChat">Kies een gesprek</string>
+    <string name="PhotoTip">Druk en houd ingedrukt</string>
+    <string name="CompatibilityChat">%1$s gebruikt een oudere versie van Telegram, dus worden geheime foto\'s weergegeven in de compatibiliteitsmodus.\n\nZodra %2$s Telegram updatet werken foto\'s met timers voor 1 minuut of minder in de \'Druk en houd ingedrukt\'-modus en krijg je een bericht wanneer de andere partij een schermafbeelding maakt.</string>
     <!--broadcasts-->
     <string name="BroadcastList">Verzendlijst</string>
     <string name="NewBroadcastList">Nieuwe verzendlijst</string>
@@ -118,12 +120,6 @@
     <string name="MessageLifetimeChangedOutgoing">Je hebt de zelfvernietigingstimer ingesteld op %1$s</string>
     <string name="MessageLifetimeRemoved">%1$s heeft de zelfvernietigingstimer uitgeschakeld</string>
     <string name="MessageLifetimeYouRemoved">Je hebt de zelfvernietigingstimer uitgeschakeld</string>
-    <string name="MessageLifetime2s">2 seconden</string>
-    <string name="MessageLifetime5s">5 seconden</string>
-    <string name="MessageLifetime1m">1 minuut</string>
-    <string name="MessageLifetime1h">1 uur</string>
-    <string name="MessageLifetime1d">1 dag</string>
-    <string name="MessageLifetime1w">1 week</string>
     <string name="YouHaveNewMessage">Je hebt een nieuw bericht</string>
     <string name="NotificationMessageText">%1$s: %2$s</string>
     <string name="NotificationMessageNoText">%1$s heeft je een bericht gestuurd</string>
@@ -166,6 +162,7 @@
     <string name="LastSeen">gezien</string>
     <string name="LastSeenDate">gezien</string>
     <string name="InviteFriends">Vrienden uitnodigen</string>
+    <string name="GlobalSearch">WERELDWIJD ZOEKEN</string>
     <!--group create view-->
     <string name="SendMessageTo">Bericht verzenden naar…</string>
     <string name="EnterGroupNamePlaceholder">Groepsnaam...</string>
@@ -197,18 +194,27 @@
     <string name="PHONE">TELEFOON</string>
     <string name="StartEncryptedChat">Geheime chat starten</string>
     <string name="CreateEncryptedChatError">Er is een fout opgetreden.</string>
-    <string name="CreateEncryptedChatOutdatedError">Kan geen geheime chat starten met %1$s.\n\n%2$s gebruikt een oudere versie van Telegram en moet eerst een update installeren.</string>
     <string name="SecretTitle">Geheime chat</string>
     <string name="EncryptionKey">Encryptiesleutel</string>
     <string name="MessageLifetime">Zelfvernietigingstimer</string>
     <string name="ShortMessageLifetimeForever">Uit</string>
-    <string name="ShortMessageLifetime2s">2s</string>
-    <string name="ShortMessageLifetime5s">5s</string>
-    <string name="ShortMessageLifetime1m">1m</string>
-    <string name="ShortMessageLifetime1h">1u</string>
-    <string name="ShortMessageLifetime1d">1d</string>
-    <string name="ShortMessageLifetime1w">1w</string>
     <string name="EncryptionKeyDescription">Dit is een weergave van de encryptiesleutel voor deze geheime chat met <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Als deze afbeelding er bij <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> hetzelfde uitziet, is jullie gesprek 200%% beveiligd.<![CDATA[<br><br>]]>Lees meer op telegram.org.</string>
+    <string name="NumberUnknown">Onbekend</string>
+    <string name="Info">INFORMATIE</string>
+    <string name="Phone">Telefoon</string>
+    <!--usernames-->
+    <string name="Username">Gebruikersnaam</string>
+    <string name="UsernamePlaceholder">Kies een naam</string>
+    <string name="UsernameInUse">Sorry, deze gebruikersnaam is al bezet.</string>
+    <string name="UsernameInvalid">Sorry, deze gebruikersnaam is ongeldig.</string>
+    <string name="UsernameInvalidShort">Je naam moet minimaal 5 tekens hebben.</string>
+    <string name="UsernameInvalidLong">Je naam mag niet langer zijn dan 32 tekens.</string>
+    <string name="UsernameInvalidStartNumber">Sorry, begincijfers zijn niet toegestaan.</string>
+    <string name="UsernameHelp">Je kan een gebruikersnaam kiezen voor <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. Hiermee kunnen anderen je vinden  en contact met je opnemen zonder je telefoonnummer te weten.<![CDATA[<br><br>]]>Je mag <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> en liggend streepje gebruiken. De minimale lengte is <![CDATA[<b>]]>5<![CDATA[</b>]]> tekens.</string>
+    <string name="UsernameChecking">Gebruikersnaam controleren.</string>
+    <string name="UsernameAvailable">%1$s is beschikbaar.</string>
+    <string name="UsernameEmpty">Geen</string>
+    <string name="ErrorOccurred">Er is een fout opgetreden.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Alle meldingsinstellingen herstellen</string>
     <string name="TextSize">Tekstgrootte berichten</string>
@@ -217,7 +223,6 @@
     <string name="Unblock">Deblokkeren</string>
     <string name="UnblockText">Houd een gebruiker ingedrukt om hem/haar te deblokkeren.</string>
     <string name="NoBlocked">Geen geblokkeerde gebruikers</string>
-    <string name="YourPhoneNumber">JE TELEFOONNUMMER</string>
     <string name="MessageNotifications">BERICHTMELDINGEN</string>
     <string name="Alert">Waarschuwing</string>
     <string name="MessagePreview">Voorvertoning</string>
@@ -381,6 +386,7 @@
     <string name="ForwardFromMyName">doorsturen via mijn eigen naam</string>
     <string name="SendMessagesToGroup">Berichten naar %1$s verzenden?</string>
     <string name="ForwardMessagesToGroup">Berichten naar %1$s doorsturen?</string>
+    <string name="FeatureUnavailable">Sorry, deze functie is momenteel niet beschikbaar in jouw land.</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Snel</string>
@@ -434,6 +440,36 @@
     <string name="FromContacts_few">van %1$d contactpersonen</string>
     <string name="FromContacts_many">van %1$d contactpersonen</string>
     <string name="FromContacts_other">van %1$d contactpersonen</string>
+    <string name="Seconds_zero">%1$d seconden</string>
+    <string name="Seconds_one">%1$d seconde</string>
+    <string name="Seconds_two">%1$d seconden</string>
+    <string name="Seconds_few">%1$d seconden</string>
+    <string name="Seconds_many">%1$d seconden</string>
+    <string name="Seconds_other">%1$d seconden</string>
+    <string name="Minutes_zero">%1$d minuten</string>
+    <string name="Minutes_one">%1$d minuut</string>
+    <string name="Minutes_two">%1$d minuten</string>
+    <string name="Minutes_few">%1$d minuten</string>
+    <string name="Minutes_many">%1$d minuten</string>
+    <string name="Minutes_other">%1$d minuten</string>
+    <string name="Hours_zero">%1$d uren</string>
+    <string name="Hours_one">%1$d uur</string>
+    <string name="Hours_two">%1$d uren</string>
+    <string name="Hours_few">%1$d uren</string>
+    <string name="Hours_many">%1$d uren</string>
+    <string name="Hours_other">%1$d uren</string>
+    <string name="Days_zero">%1$d dagen</string>
+    <string name="Days_one">%1$d dag</string>
+    <string name="Days_two">%1$d dagen</string>
+    <string name="Days_few">%1$d dagen</string>
+    <string name="Days_many">%1$d dagen</string>
+    <string name="Days_other">%1$d dagen</string>
+    <string name="Weeks_zero">%1$d weken</string>
+    <string name="Weeks_one">%1$d week</string>
+    <string name="Weeks_two">%1$d weken</string>
+    <string name="Weeks_few">%1$d weken</string>
+    <string name="Weeks_many">%1$d weken</string>
+    <string name="Weeks_other">%1$d weken</string>
     <!--date formatters-->
     <string name="formatterMonth">dd MMM</string>
     <string name="formatterYear">dd-MM-yy</string>
@@ -444,6 +480,4 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s om %2$s</string>
-    <!--Don't change this! Not for localization!-->
-    <string name="CacheTag">CACHE_TAG</string>
 </resources>

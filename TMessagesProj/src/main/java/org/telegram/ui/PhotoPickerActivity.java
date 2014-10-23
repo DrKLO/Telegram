@@ -279,6 +279,9 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         int count = listView.getChildCount();
         for (int a = 0; a < count; a++) {
             View view = listView.getChildAt(a);
+            if (view.getTag() == null) {
+                continue;
+            }
             int num = (Integer)view.getTag();
             if (num < 0 || num >= selectedAlbum.photos.size()) {
                 continue;
@@ -341,7 +344,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     @Override
     public void sendButtonPressed(int index) {
         if (selectedPhotos.isEmpty()) {
-            if (index < 0 || index >= selectedAlbum.photos.size()) {
+            if (selectedAlbum == null || index < 0 || index >= selectedAlbum.photos.size()) {
                 return;
             }
             MediaController.PhotoEntry photoEntry = selectedAlbum.photos.get(index);
