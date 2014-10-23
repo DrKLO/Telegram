@@ -775,17 +775,19 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
-            if (searching && searchWas) {
-                if (i == searchResult.size()) {
-                    if (view == null) {
-                        view = new SettingsSectionLayout(mContext);
-                        ((SettingsSectionLayout) view).setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
-                        view.setPadding(AndroidUtilities.dp(11), 0, AndroidUtilities.dp(11), 0);
-                    }
-                } else {
-                    if (view == null) {
-                        view = new ChatOrUserCell(mContext);
-                    }
+            int type = getItemViewType(i);
+
+            if (type == 3) {
+                if (view == null) {
+                    view = new SettingsSectionLayout(mContext);
+                    ((SettingsSectionLayout) view).setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
+                    view.setPadding(AndroidUtilities.dp(11), 0, AndroidUtilities.dp(11), 0);
+                }
+            } else if (type == 2) {
+                if (view == null) {
+                    view = new ChatOrUserCell(mContext);
+                }
+                if (searching && searchWas) {
                     TLRPC.User user = null;
                     TLRPC.Chat chat = null;
                     TLRPC.EncryptedChat encryptedChat = null;
@@ -795,7 +797,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     if (obj instanceof TLRPC.User) {
                         user = MessagesController.getInstance().getUser(((TLRPC.User) obj).id);
                         if (user == null) {
-                            user = (TLRPC.User)obj;
+                            user = (TLRPC.User) obj;
                         }
                     } else if (obj instanceof TLRPC.Chat) {
                         chat = MessagesController.getInstance().getChat(((TLRPC.Chat) obj).id);
@@ -805,7 +807,16 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     }
 
                     CharSequence username = null;
-                    if (i > searchResult.size() && user != null && user.username != null) {
+                    CharSequence name = null;
+                    if (i < searchResult.size()) {
+                        name = searchResultNames.get(i);
+                        if (name != null && user != null && user.username != null && user.username.length() > 0) {
+                            if (name.toString().startsWith("@" + user.username)) {
+                                username = name;
+                                name = null;
+                            }
+                        }
+                    } else if (i > searchResult.size() && user != null && user.username != null) {
                         try {
                             username = Html.fromHtml(String.format("<font color=\"#357aa8\">@%s</font>%s", user.username.substring(0, lastFoundUsername.length()), user.username.substring(lastFoundUsername.length())));
                         } catch (Exception e) {
@@ -814,36 +825,31 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                         }
                     }
 
-                    ((ChatOrUserCell) view).setData(user, chat, encryptedChat, i < searchResult.size() ? searchResultNames.get(i) : null, username);
+                    ((ChatOrUserCell) view).setData(user, chat, encryptedChat, name, username);
                 }
-
-                return view;
-            }
-            int type = getItemViewType(i);
-            if (type == 1) {
+            } else if (type == 1) {
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = li.inflate(R.layout.loading_more_layout, viewGroup, false);
                 }
-                return view;
-            }
-
-            if (view == null) {
-                view = new DialogCell(mContext);
-            }
-            ((DialogCell) view).useSeparator = (i != getCount() - 1);
-            if (serverOnly) {
-                ((DialogCell)view).setDialog(MessagesController.getInstance().dialogsServerOnly.get(i));
-            } else {
-                TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs.get(i);
-                if (AndroidUtilities.isTablet()) {
-                    if (dialog.id == openedDialogId) {
-                        view.setBackgroundColor(0x0f000000);
-                    } else {
-                        view.setBackgroundColor(0);
-                    }
+            } else if (type == 0) {
+                if (view == null) {
+                    view = new DialogCell(mContext);
                 }
-                ((DialogCell)view).setDialog(dialog);
+                ((DialogCell) view).useSeparator = (i != getCount() - 1);
+                if (serverOnly) {
+                    ((DialogCell) view).setDialog(MessagesController.getInstance().dialogsServerOnly.get(i));
+                } else {
+                    TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs.get(i);
+                    if (AndroidUtilities.isTablet()) {
+                        if (dialog.id == openedDialogId) {
+                            view.setBackgroundColor(0x0f000000);
+                        } else {
+                            view.setBackgroundColor(0);
+                        }
+                    }
+                    ((DialogCell) view).setDialog(dialog);
+                }
             }
 
             return view;

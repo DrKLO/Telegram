@@ -20,12 +20,12 @@
         android:fromAlpha="0.0"
         android:toAlpha="1.0"
         android:interpolator="@anim/decelerate_cubic"
-        android:duration="220"/>
+        android:duration="150"/>
 
     <scale
         android:fromXScale=".8" android:toXScale="1.0"
         android:fromYScale=".8" android:toYScale="1.0"
         android:pivotX="50%p" android:pivotY="50%p"
         android:interpolator="@anim/decelerate_cubic"
-        android:duration="220"/>
+        android:duration="150"/>
 </set>

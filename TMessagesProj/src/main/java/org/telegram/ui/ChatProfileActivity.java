@@ -477,7 +477,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         args.putBoolean("destroyAfterSelect", true);
         args.putBoolean("usersAsSections", true);
         args.putBoolean("returnAsResult", true);
-        args.putBoolean("allowUsernameSearch", false);
+        //args.putBoolean("allowUsernameSearch", false);
         if (chat_id > 0) {
             args.putString("selectAlertString", LocaleController.getString("AddToTheGroup", R.string.AddToTheGroup));
         }

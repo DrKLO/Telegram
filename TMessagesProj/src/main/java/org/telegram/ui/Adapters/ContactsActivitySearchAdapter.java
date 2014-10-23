@@ -99,12 +99,25 @@ public class ContactsActivitySearchAdapter extends BaseContactsSearchAdapter {
 
                         for (TLRPC.TL_contact contact : contactsCopy) {
                             TLRPC.User user = MessagesController.getInstance().getUser(contact.user_id);
+                            if (user.id == UserConfig.getClientUserId()) {
+                                continue;
+                            }
+
                             String name = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
+
+                            int found = 0;
                             if (name.startsWith(q) || name.contains(" " + q)) {
-                                if (user.id == UserConfig.getClientUserId()) {
-                                    continue;
+                                found = 1;
+                            } else if (user.username != null && user.username.startsWith(q)) {
+                                found = 2;
+                            }
+
+                            if (found != 0) {
+                                if (found == 1) {
+                                    resultArrayNames.add(Utilities.generateSearchName(user.first_name, user.last_name, q));
+                                } else {
+                                    resultArrayNames.add(Utilities.generateSearchName("@" + user.username, null, "@" + q));
                                 }
-                                resultArrayNames.add(Utilities.generateSearchName(user.first_name, user.last_name, q));
                                 resultArray.add(user);
                             }
                         }
@@ -197,7 +210,16 @@ public class ContactsActivitySearchAdapter extends BaseContactsSearchAdapter {
             TLRPC.User user = getItem(i);
             if (user != null) {
                 CharSequence username = null;
-                if (i > searchResult.size() && user.username != null) {
+                CharSequence name = null;
+                if (i < searchResult.size()) {
+                    name = searchResultNames.get(i);
+                    if (name != null && user != null && user.username != null && user.username.length() > 0) {
+                        if (name.toString().startsWith("@" + user.username)) {
+                            username = name;
+                            name = null;
+                        }
+                    }
+                } else if (i > searchResult.size() && user.username != null) {
                     try {
                         username = Html.fromHtml(String.format("<font color=\"#357aa8\">@%s</font>%s", user.username.substring(0, lastFoundUsername.length()), user.username.substring(lastFoundUsername.length())));
                     } catch (Exception e) {
@@ -206,7 +228,7 @@ public class ContactsActivitySearchAdapter extends BaseContactsSearchAdapter {
                     }
                 }
 
-                ((ChatOrUserCell) view).setData(user, null, null, i < searchResult.size() ? searchResultNames.get(i) : null, username);
+                ((ChatOrUserCell) view).setData(user, null, null, name, username);
 
                 if (ignoreUsers != null) {
                     if (ignoreUsers.containsKey(user.id)) {

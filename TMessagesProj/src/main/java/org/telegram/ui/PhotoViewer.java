@@ -1173,6 +1173,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 menuItem.hideSubItem(gallery_menu_save);
                 shareButton.setVisibility(View.GONE);
             } else {
+                menuItem.showSubItem(gallery_menu_save);
                 shareButton.setVisibility(View.VISIBLE);
             }
             setImageIndex(0, true);
@@ -1215,6 +1216,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 menuItem.hideSubItem(gallery_menu_save);
                 shareButton.setVisibility(View.GONE);
             } else {
+                menuItem.showSubItem(gallery_menu_save);
                 shareButton.setVisibility(View.VISIBLE);
             }
             opennedFromMedia = true;

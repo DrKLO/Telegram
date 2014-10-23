@@ -626,10 +626,12 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 newMsg.to_id.user_id = encryptedChat.participant_id;
             }
             newMsg.ttl = encryptedChat.ttl;
-            if (newMsg.media instanceof TLRPC.TL_messageMediaAudio) {
-                newMsg.ttl = Math.max(encryptedChat.ttl, newMsg.media.audio.duration + 1);
-            } else if (newMsg.media instanceof TLRPC.TL_messageMediaVideo) {
-                newMsg.ttl = Math.max(encryptedChat.ttl, newMsg.media.video.duration + 1);
+            if (newMsg.ttl != 0) {
+                if (newMsg.media instanceof TLRPC.TL_messageMediaAudio) {
+                    newMsg.ttl = Math.max(encryptedChat.ttl, newMsg.media.audio.duration + 1);
+                } else if (newMsg.media instanceof TLRPC.TL_messageMediaVideo) {
+                    newMsg.ttl = Math.max(encryptedChat.ttl, newMsg.media.video.duration + 1);
+                }
             }
         }
 

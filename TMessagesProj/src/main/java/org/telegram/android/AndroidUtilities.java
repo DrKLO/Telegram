@@ -218,7 +218,7 @@ public class AndroidUtilities {
     }
 
     public static File getCacheDir() {
-        if (Environment.getExternalStorageState().startsWith(Environment.MEDIA_MOUNTED)) {
+        if (Environment.getExternalStorageState() == null || Environment.getExternalStorageState().startsWith(Environment.MEDIA_MOUNTED)) {
             try {
                 File file = ApplicationLoader.applicationContext.getExternalCacheDir();
                 if (file != null) {

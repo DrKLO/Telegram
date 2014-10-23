@@ -20,7 +20,7 @@
         android:fromAlpha="1.0"
         android:toAlpha="0.0"
         android:interpolator="@anim/decelerate_cubic"
-        android:duration="220"/>
+        android:duration="150"/>
 
     <scale
         android:fromXScale="1.0"
@@ -30,5 +30,5 @@
         android:pivotX="50%p"
         android:pivotY="50%p"
         android:interpolator="@anim/decelerate_cubic"
-        android:duration="220"/>
+        android:duration="150"/>
 </set>

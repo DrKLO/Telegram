@@ -82,11 +82,10 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         if (!usersToLoad.isEmpty()) {
             final Semaphore semaphore = new Semaphore(0);
             final ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
-            final boolean[] error = new boolean[1];
             MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
-                    users.addAll(MessagesStorage.getInstance().getUsers(usersToLoad, error));
+                    users.addAll(MessagesStorage.getInstance().getUsers(usersToLoad));
                     semaphore.release();
                 }
             });
@@ -95,7 +94,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
-            if (error[0]) {
+            if (usersToLoad.size() != users.size()) {
                 return false;
             }
             if (!users.isEmpty()) {

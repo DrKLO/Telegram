@@ -1040,7 +1040,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private boolean sendSecretMessageRead(MessageObject messageObject) {
-        if (messageObject == null || messageObject.isOut() || !messageObject.isSecretMedia() || messageObject.messageOwner.destroyTime != 0) {
+        if (messageObject == null || messageObject.isOut() || !messageObject.isSecretMedia() || messageObject.messageOwner.destroyTime != 0 || messageObject.messageOwner.ttl <= 0) {
             return false;
         }
         MessagesController.getInstance().markMessageAsRead(dialog_id, messageObject.messageOwner.random_id, messageObject.messageOwner.ttl);

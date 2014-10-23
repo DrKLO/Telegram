@@ -597,24 +597,22 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 messsageEditText.dispatchKeyEvent(new KeyEvent(0, 67));
             }
 
-            public void onEmojiSelected(String paramAnonymousString) {
+            public void onEmojiSelected(String symbol) {
                 int i = messsageEditText.getSelectionEnd();
-                CharSequence localCharSequence = Emoji.replaceEmoji(paramAnonymousString, messsageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20));
-                messsageEditText.setText(messsageEditText.getText().insert(i, localCharSequence));
-                int j = i + localCharSequence.length();
-                messsageEditText.setSelection(j, j);
+                if (i < 0) {
+                    i = 0;
+                }
+                try {
+                    CharSequence localCharSequence = Emoji.replaceEmoji(symbol, messsageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20));
+                    messsageEditText.setText(messsageEditText.getText().insert(i, localCharSequence));
+                    int j = i + localCharSequence.length();
+                    messsageEditText.setSelection(j, j);
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
             }
         });
         emojiPopup = new PopupWindow(emojiView);
-
-        /*try {
-            Method method = emojiPopup.getClass().getMethod("setWindowLayoutType", int.class);
-            if (method != null) {
-                method.invoke(emojiPopup, WindowManager.LayoutParams.LAST_SUB_WINDOW);
-            }
-        } catch (Exception e) {
-            //don't promt
-        }*/
     }
 
     public void setDelegate(ChatActivityEnterViewDelegate delegate) {

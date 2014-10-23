@@ -1711,7 +1711,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     public void markMessageAsRead(final long dialog_id, final long random_id, int ttl) {
-        if (random_id == 0 || dialog_id == 0) {
+        if (random_id == 0 || dialog_id == 0 || ttl <= 0) {
             return;
         }
         int lower_part = (int)dialog_id;
@@ -1726,10 +1726,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         ArrayList<Long> random_ids = new ArrayList<Long>();
         random_ids.add(random_id);
         SendMessagesHelper.getInstance().sendMessagesReadMessage(chat, random_ids, null);
-        if (ttl > 0) {
-            int time = ConnectionsManager.getInstance().getCurrentTime();
-            MessagesStorage.getInstance().createTaskForSecretChat(chat.id, time, time, 0, random_ids);
-        }
+        int time = ConnectionsManager.getInstance().getCurrentTime();
+        MessagesStorage.getInstance().createTaskForSecretChat(chat.id, time, time, 0, random_ids);
     }
 
     public void markDialogAsRead(final long dialog_id, final int max_id, final int max_positive_id, final int offset, final int max_date, final boolean was, final boolean popup) {

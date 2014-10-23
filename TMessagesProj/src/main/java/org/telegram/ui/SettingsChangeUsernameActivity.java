@@ -194,6 +194,9 @@ public class SettingsChangeUsernameActivity extends BaseFragment {
     }
 
     private void showErrorAlert(String error) {
+        if (getParentActivity() == null) {
+            return;
+        }
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
         if (error.equals("USERNAME_INVALID")) {
