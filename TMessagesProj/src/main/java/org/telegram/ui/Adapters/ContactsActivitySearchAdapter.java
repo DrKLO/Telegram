@@ -33,8 +33,8 @@ import java.util.TimerTask;
 public class ContactsActivitySearchAdapter extends BaseContactsSearchAdapter {
     private Context mContext;
     private HashMap<Integer, TLRPC.User> ignoreUsers;
-    private ArrayList<TLRPC.User> searchResult;
-    private ArrayList<CharSequence> searchResultNames;
+    private ArrayList<TLRPC.User> searchResult = new ArrayList<TLRPC.User>();
+    private ArrayList<CharSequence> searchResultNames = new ArrayList<CharSequence>();
     private Timer searchTimer;
     private boolean allowUsernameSearch;
 

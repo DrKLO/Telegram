@@ -9,6 +9,7 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
@@ -46,8 +47,6 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         public abstract void didPressedOther(ChatMediaCell cell);
     }
 
-    private static Drawable placeholderInDrawable;
-    private static Drawable placeholderOutDrawable;
     private static Drawable placeholderDocInDrawable;
     private static Drawable placeholderDocOutDrawable;
     private static Drawable videoIconDrawable;
@@ -109,9 +108,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     public ChatMediaCell(Context context) {
         super(context);
 
-        if (placeholderInDrawable == null) {
-            placeholderInDrawable = getResources().getDrawable(R.drawable.photo_placeholder_in);
-            placeholderOutDrawable = getResources().getDrawable(R.drawable.photo_placeholder_out);
+        if (placeholderDocInDrawable == null) {
             placeholderDocInDrawable = getResources().getDrawable(R.drawable.doc_blue);
             placeholderDocOutDrawable = getResources().getDrawable(R.drawable.doc_green);
             buttonStatesDrawables[0] = getResources().getDrawable(R.drawable.photoload);
@@ -330,7 +327,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 if (currentMessageObject.imagePreview != null) {
                     photoImage.setImage(currentPhotoObject.photoOwner.location, currentPhotoFilter, new BitmapDrawable(currentMessageObject.imagePreview), currentPhotoObject.photoOwner.size, false);
                 } else {
-                    photoImage.setImage(currentPhotoObject.photoOwner.location, currentPhotoFilter, currentMessageObject.isOut() ? placeholderOutDrawable : placeholderInDrawable, currentPhotoObject.photoOwner.size, false);
+                    photoImage.setImage(currentPhotoObject.photoOwner.location, currentPhotoFilter, null, currentPhotoObject.photoOwner.size, false);
                 }
             } else if (currentMessageObject.type == 8 || currentMessageObject.type == 9) {
                 FileLoader.getInstance().loadFile(currentMessageObject.messageOwner.media.document, true);
@@ -511,7 +508,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 double lat = messageObject.messageOwner.media.geo.lat;
                 double lon = messageObject.messageOwner.media.geo._long;
                 currentUrl = String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=13&size=100x100&maptype=roadmap&scale=%d&markers=color:red|size:big|%f,%f&sensor=false", lat, lon, Math.min(2, (int)Math.ceil(AndroidUtilities.density)), lat, lon);
-                photoImage.setImage(currentUrl, null, messageObject.isOut() ? placeholderOutDrawable : placeholderInDrawable);
+                photoImage.setImage(currentUrl, null, null);
             } else {
                 if (AndroidUtilities.isTablet()) {
                     photoWidth = (int) (AndroidUtilities.getMinTabletSide() * 0.7f);
@@ -601,19 +598,19 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                             if (messageObject.imagePreview != null) {
                                 photoImage.setImage(currentPhotoObject.photoOwner.location, currentPhotoFilter, new BitmapDrawable(messageObject.imagePreview), noSize ? 0 : currentPhotoObject.photoOwner.size, false);
                             } else {
-                                photoImage.setImage(currentPhotoObject.photoOwner.location, currentPhotoFilter, messageObject.isOut() ? placeholderOutDrawable : placeholderInDrawable, noSize ? 0 : currentPhotoObject.photoOwner.size, false);
+                                photoImage.setImage(currentPhotoObject.photoOwner.location, currentPhotoFilter, null, noSize ? 0 : currentPhotoObject.photoOwner.size, false);
                             }
                         } else {
                             photoNotSet = true;
                             if (messageObject.imagePreview != null) {
                                 photoImage.setImageBitmap(messageObject.imagePreview);
                             } else {
-                                photoImage.setImageBitmap(messageObject.isOut() ? placeholderOutDrawable : placeholderInDrawable);
+                                photoImage.setImageBitmap((Bitmap)null);
                             }
                         }
                     }
                 } else {
-                    photoImage.setImageBitmap(messageObject.isOut() ? placeholderOutDrawable : placeholderInDrawable);
+                    photoImage.setImageBitmap((Bitmap)null);
                 }
             }
             photoImage.setForcePreview(messageObject.isSecretPhoto());
