@@ -87,7 +87,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int switchBackendButtonRow;
     private int messagesSectionRow;
     private int sendByEnterRow;
-    private int systemEmojiRow;
     private int terminateSessionsRow;
     private int mediaDownloadSection;
     private int mobileDownloadRow;
@@ -195,9 +194,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         messagesSectionRow = rowCount++;
         textSizeRow = rowCount++;
         sendByEnterRow = rowCount++;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            systemEmojiRow = rowCount++;
-        }
         //contactsSectionRow = rowCount++;
         //contactsSortRow = rowCount++;
         //contactsReimportRow = rowCount++;
@@ -328,15 +324,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         boolean send = preferences.getBoolean("send_by_enter", false);
                         SharedPreferences.Editor editor = preferences.edit();
                         editor.putBoolean("send_by_enter", !send);
-                        editor.commit();
-                        if (listView != null) {
-                            listView.invalidateViews();
-                        }
-                    } else if (i == systemEmojiRow) {
-                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                        boolean emoji = preferences.getBoolean("system_emoji", false);
-                        SharedPreferences.Editor editor = preferences.edit();
-                        editor.putBoolean("system_emoji", !emoji);
                         editor.commit();
                         if (listView != null) {
                             listView.invalidateViews();
@@ -736,8 +723,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         @Override
         public boolean isEnabled(int i) {
             return i == textSizeRow || i == enableAnimationsRow || i == blockedRow || i == notificationRow || i == backgroundRow ||
-                    i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == systemEmojiRow || i == terminateSessionsRow ||
-                    i == wifiDownloadRow || i == mobileDownloadRow || i == clearLogsRow || i == roamingDownloadRow || i == languageRow ||
+                    i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == terminateSessionsRow || i == wifiDownloadRow ||
+                    i == mobileDownloadRow || i == clearLogsRow || i == roamingDownloadRow || i == languageRow ||
                     i == switchBackendButtonRow || i == telegramFaqRow || i == contactsSortRow || i == contactsReimportRow || i == saveToGalleryRow;
         }
 
@@ -942,15 +929,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else {
                         checkButton.setImageResource(R.drawable.btn_check_off);
                     }
-                } else if (i == systemEmojiRow) {
-                    textView.setText(LocaleController.getString("SystemEmoji", R.string.SystemEmoji));
-                    divider.setVisibility(View.INVISIBLE);
-                    boolean enabled = preferences.getBoolean("system_emoji", false);
-                    if (enabled) {
-                        checkButton.setImageResource(R.drawable.btn_check_on);
-                    } else {
-                        checkButton.setImageResource(R.drawable.btn_check_off);
-                    }
                 } else if (i == saveToGalleryRow) {
                     textView.setText(LocaleController.getString("SaveToGallerySettings", R.string.SaveToGallerySettings));
                     divider.setVisibility(View.INVISIBLE);
@@ -1100,7 +1078,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 1;
             } else if (i == textSizeRow || i == languageRow || i == contactsSortRow) {
                 return 5;
-            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == systemEmojiRow || i == saveToGalleryRow) {
+            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == saveToGalleryRow) {
                 return 3;
             } else if (i == numberRow || i == notificationRow || i == blockedRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == terminateSessionsRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == contactsReimportRow) {
                 return 2;
