@@ -13,13 +13,13 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Locale;
 
-import android.content.SharedPreferences;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.text.Spannable;
 import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
