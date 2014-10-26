@@ -39,7 +39,6 @@ public class Emoji {
     private static EmojiBitmap emojiBmp[] = new EmojiBitmap[5];
     private static boolean loadingEmoji[] = new boolean[5];
     private static int emojiFullSize;
-    private boolean systemEmoji = false;
 
     private static class EmojiBitmap {
         public int[] colors;
@@ -230,9 +229,6 @@ public class Emoji {
         }
         placeholderPaint = new Paint();
         placeholderPaint.setColor(0x00000000);
-
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-        systemEmoji = preferences.getBoolean("system_emoji", false);
     }
 
     private static void loadEmoji(final int page) {
@@ -409,7 +405,7 @@ public class Emoji {
     }
 
     public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, int size) {
-        if (cs == null || cs.length() == 0 || systemEmoji) {
+        if (cs == null || cs.length() == 0 || Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             return cs;
         }
         Spannable s;
