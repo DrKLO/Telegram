@@ -207,8 +207,11 @@ public class CountrySelectActivity extends BaseFragment {
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                    if (i < 0) {
+                        return;
+                    }
                     if (searching && searchWas) {
-                        if (i < searchResult.size()) {
+                        if (i >= 0 && i < searchResult.size()) {
                             Country c = searchResult.get(i);
                             if (delegate != null) {
                                 delegate.didSelectCountry(c.name);
@@ -218,10 +221,10 @@ public class CountrySelectActivity extends BaseFragment {
                     } else {
                         int section = listViewAdapter.getSectionForPosition(i);
                         int row = listViewAdapter.getPositionInSectionForPosition(i);
-                        if (section < sortedCountries.size()) {
+                        if (section >= 0 && section < sortedCountries.size()) {
                             String n = sortedCountries.get(section);
                             ArrayList<Country> arr = countries.get(n);
-                            if (row < arr.size()) {
+                            if (row >= 0 && row < arr.size()) {
                                 Country c = arr.get(row);
                                 if (delegate != null) {
                                     delegate.didSelectCountry(c.name);

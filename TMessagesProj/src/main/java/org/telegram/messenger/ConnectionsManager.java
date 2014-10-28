@@ -14,7 +14,6 @@ import android.content.pm.PackageInfo;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
-import android.os.PowerManager;
 import android.util.Base64;
 
 import org.telegram.android.AndroidUtilities;
@@ -82,8 +81,6 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     private boolean appPaused = true;
 
     private volatile long nextCallToken = 1;
-
-    private PowerManager.WakeLock wakeLock = null;
 
     private static volatile ConnectionsManager Instance = null;
     public static ConnectionsManager getInstance() {
@@ -217,10 +214,6 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         }
 
         Utilities.stageQueue.postRunnable(stageRunnable, 1000);
-
-        PowerManager pm = (PowerManager)ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
-        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "lock");
-        wakeLock.setReferenceCounted(false);
     }
 
     public int getConnectionState() {
@@ -2139,14 +2132,6 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                 } else {
                                     if (resultContainer.result instanceof TLRPC.updates_Difference) {
                                         pushMessagesReceived = true;
-                                        AndroidUtilities.RunOnUIThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                if (wakeLock.isHeld()) {
-                                                    wakeLock.release();
-                                                }
-                                            }
-                                        });
                                     }
                                     request.completionBlock.run(resultContainer.result, null);
                                 }
@@ -2317,23 +2302,9 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 if (paused) {
                     pushMessagesReceived = false;
                 }
-                AndroidUtilities.RunOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        wakeLock.acquire(20000);
-                    }
-                });
                 resumeNetworkInternal();
             } else {
                 pushMessagesReceived = true;
-                AndroidUtilities.RunOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (wakeLock.isHeld()) {
-                            wakeLock.release();
-                        }
-                    }
-                });
                 MessagesController.getInstance().processUpdates((TLRPC.Updates) message, false);
             }
         } else {

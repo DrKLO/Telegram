@@ -1685,9 +1685,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         maxMessageId = Math.max(obj.messageOwner.id, maxMessageId);
                         minMessageId = Math.min(obj.messageOwner.id, minMessageId);
                     }
-                    maxDate = Math.max(maxDate, obj.messageOwner.date);
-                    if (minDate == 0 || obj.messageOwner.date < minDate) {
-                        minDate = obj.messageOwner.date;
+                    if (obj.messageOwner.date != 0) {
+                        maxDate = Math.max(maxDate, obj.messageOwner.date);
+                        if (minDate == 0 || obj.messageOwner.date < minDate) {
+                            minDate = obj.messageOwner.date;
+                        }
                     }
 
                     if (obj.type < 0) {

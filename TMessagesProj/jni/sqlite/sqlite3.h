@@ -107,9 +107,9 @@ extern "C" {
 ** [sqlite3_libversion_number()], [sqlite3_sourceid()],
 ** [sqlite_version()] and [sqlite_source_id()].
 */
-#define SQLITE_VERSION        "3.8.6"
-#define SQLITE_VERSION_NUMBER 3008006
-#define SQLITE_SOURCE_ID      "2014-08-15 11:46:33 9491ba7d738528f168657adb43a198238abde19e"
+#define SQLITE_VERSION        "3.8.7"
+#define SQLITE_VERSION_NUMBER 3008007
+#define SQLITE_SOURCE_ID      "2014-10-17 11:24:17 e4ab094f8afce0817f4074e823fabe59fc29ebb4"
 
 /*
 ** CAPI3REF: Run-Time Library Version Numbers
@@ -497,6 +497,7 @@ SQLITE_API int sqlite3_exec(
 #define SQLITE_NOTICE_RECOVER_WAL      (SQLITE_NOTICE | (1<<8))
 #define SQLITE_NOTICE_RECOVER_ROLLBACK (SQLITE_NOTICE | (2<<8))
 #define SQLITE_WARNING_AUTOINDEX       (SQLITE_WARNING | (1<<8))
+#define SQLITE_AUTH_USER               (SQLITE_AUTH | (1<<8))
 
 /*
 ** CAPI3REF: Flags For File Open Operations
@@ -2099,7 +2100,7 @@ SQLITE_API int sqlite3_busy_handler(sqlite3*, int(*)(void*,int), void*);
 ** turns off all busy handlers.
 **
 ** ^(There can only be a single busy handler for a particular
-** [database connection] any any given moment.  If another busy handler
+** [database connection] at any given moment.  If another busy handler
 ** was defined  (using [sqlite3_busy_handler()]) prior to calling
 ** this routine, that other busy handler is cleared.)^
 **
@@ -2303,6 +2304,10 @@ SQLITE_API char *sqlite3_vsnprintf(int,char*,const char*, va_list);
 ** sqlite3_malloc() is zero or negative then sqlite3_malloc() returns
 ** a NULL pointer.
 **
+** ^The sqlite3_malloc64(N) routine works just like
+** sqlite3_malloc(N) except that N is an unsigned 64-bit integer instead
+** of a signed 32-bit integer.
+**
 ** ^Calling sqlite3_free() with a pointer previously returned
 ** by sqlite3_malloc() or sqlite3_realloc() releases that memory so
 ** that it might be reused.  ^The sqlite3_free() routine is
@@ -2314,24 +2319,38 @@ SQLITE_API char *sqlite3_vsnprintf(int,char*,const char*, va_list);
 ** might result if sqlite3_free() is called with a non-NULL pointer that
 ** was not obtained from sqlite3_malloc() or sqlite3_realloc().
 **
-** ^(The sqlite3_realloc() interface attempts to resize a
-** prior memory allocation to be at least N bytes, where N is the
-** second parameter.  The memory allocation to be resized is the first
-** parameter.)^ ^ If the first parameter to sqlite3_realloc()
+** ^The sqlite3_realloc(X,N) interface attempts to resize a
+** prior memory allocation X to be at least N bytes.
+** ^If the X parameter to sqlite3_realloc(X,N)
 ** is a NULL pointer then its behavior is identical to calling
-** sqlite3_malloc(N) where N is the second parameter to sqlite3_realloc().
-** ^If the second parameter to sqlite3_realloc() is zero or
+** sqlite3_malloc(N).
+** ^If the N parameter to sqlite3_realloc(X,N) is zero or
 ** negative then the behavior is exactly the same as calling
-** sqlite3_free(P) where P is the first parameter to sqlite3_realloc().
-** ^sqlite3_realloc() returns a pointer to a memory allocation
-** of at least N bytes in size or NULL if sufficient memory is unavailable.
+** sqlite3_free(X).
+** ^sqlite3_realloc(X,N) returns a pointer to a memory allocation
+** of at least N bytes in size or NULL if insufficient memory is available.
 ** ^If M is the size of the prior allocation, then min(N,M) bytes
 ** of the prior allocation are copied into the beginning of buffer returned
-** by sqlite3_realloc() and the prior allocation is freed.
-** ^If sqlite3_realloc() returns NULL, then the prior allocation
-** is not freed.
+** by sqlite3_realloc(X,N) and the prior allocation is freed.
+** ^If sqlite3_realloc(X,N) returns NULL and N is positive, then the
+** prior allocation is not freed.
 **
-** ^The memory returned by sqlite3_malloc() and sqlite3_realloc()
+** ^The sqlite3_realloc64(X,N) interfaces works the same as
+** sqlite3_realloc(X,N) except that N is a 64-bit unsigned integer instead
+** of a 32-bit signed integer.
+**
+** ^If X is a memory allocation previously obtained from sqlite3_malloc(),
+** sqlite3_malloc64(), sqlite3_realloc(), or sqlite3_realloc64(), then
+** sqlite3_msize(X) returns the size of that memory allocation in bytes.
+** ^The value returned by sqlite3_msize(X) might be larger than the number
+** of bytes requested when X was allocated.  ^If X is a NULL pointer then
+** sqlite3_msize(X) returns zero.  If X points to something that is not
+** the beginning of memory allocation, or if it points to a formerly
+** valid memory allocation that has now been freed, then the behavior
+** of sqlite3_msize(X) is undefined and possibly harmful.
+**
+** ^The memory returned by sqlite3_malloc(), sqlite3_realloc(),
+** sqlite3_malloc64(), and sqlite3_realloc64()
 ** is always aligned to at least an 8 byte boundary, or to a
 ** 4 byte boundary if the [SQLITE_4_BYTE_ALIGNED_MALLOC] compile-time
 ** option is used.
@@ -2359,8 +2378,11 @@ SQLITE_API char *sqlite3_vsnprintf(int,char*,const char*, va_list);
 ** [sqlite3_free()] or [sqlite3_realloc()].
 */
 SQLITE_API void *sqlite3_malloc(int);
+SQLITE_API void *sqlite3_malloc64(sqlite3_uint64);
 SQLITE_API void *sqlite3_realloc(void*, int);
+SQLITE_API void *sqlite3_realloc64(void*, sqlite3_uint64);
 SQLITE_API void sqlite3_free(void*);
+SQLITE_API sqlite3_uint64 sqlite3_msize(void*);
 
 /*
 ** CAPI3REF: Memory Allocator Statistics
@@ -2647,9 +2669,9 @@ SQLITE_API void sqlite3_progress_handler(sqlite3*, int, int(*)(void*), void*);
 ** an English language description of the error following a failure of any
 ** of the sqlite3_open() routines.
 **
-** ^The default encoding for the database will be UTF-8 if
-** sqlite3_open() or sqlite3_open_v2() is called and
-** UTF-16 in the native byte order if sqlite3_open16() is used.
+** ^The default encoding will be UTF-8 for databases created using
+** sqlite3_open() or sqlite3_open_v2().  ^The default encoding for databases
+** created using sqlite3_open16() will be UTF-16 in the native byte order.
 **
 ** Whether or not an error occurs when it is opened, resources
 ** associated with the [database connection] handle should be released by
@@ -2737,13 +2759,14 @@ SQLITE_API void sqlite3_progress_handler(sqlite3*, int, int(*)(void*), void*);
 ** then it is interpreted as an absolute path. ^If the path does not begin 
 ** with a '/' (meaning that the authority section is omitted from the URI)
 ** then the path is interpreted as a relative path. 
-** ^On windows, the first component of an absolute path 
-** is a drive specification (e.g. "C:").
+** ^(On windows, the first component of an absolute path 
+** is a drive specification (e.g. "C:").)^
 **
 ** [[core URI query parameters]]
 ** The query component of a URI may contain parameters that are interpreted
 ** either by SQLite itself, or by a [VFS | custom VFS implementation].
-** SQLite interprets the following three query parameters:
+** SQLite and its built-in [VFSes] interpret the
+** following query parameters:
 **
 ** <ul>
 **   <li> <b>vfs</b>: ^The "vfs" parameter may be used to specify the name of
@@ -2778,11 +2801,9 @@ SQLITE_API void sqlite3_progress_handler(sqlite3*, int, int(*)(void*), void*);
 **     a URI filename, its value overrides any behavior requested by setting
 **     SQLITE_OPEN_PRIVATECACHE or SQLITE_OPEN_SHAREDCACHE flag.
 **
-**  <li> <b>psow</b>: ^The psow parameter may be "true" (or "on" or "yes" or
-**     "1") or "false" (or "off" or "no" or "0") to indicate that the
+**  <li> <b>psow</b>: ^The psow parameter indicates whether or not the
 **     [powersafe overwrite] property does or does not apply to the
-**     storage media on which the database file resides.  ^The psow query
-**     parameter only works for the built-in unix and Windows VFSes.
+**     storage media on which the database file resides.
 **
 **  <li> <b>nolock</b>: ^The nolock parameter is a boolean query parameter
 **     which if set disables file locking in rollback journal modes.  This
@@ -3078,6 +3099,10 @@ SQLITE_API int sqlite3_limit(sqlite3*, int id, int newVal);
 **
 ** [[SQLITE_LIMIT_TRIGGER_DEPTH]] ^(<dt>SQLITE_LIMIT_TRIGGER_DEPTH</dt>
 ** <dd>The maximum depth of recursion for triggers.</dd>)^
+**
+** [[SQLITE_LIMIT_WORKER_THREADS]] ^(<dt>SQLITE_LIMIT_WORKER_THREADS</dt>
+** <dd>The maximum number of auxiliary worker threads that a single
+** [prepared statement] may start.</dd>)^
 ** </dl>
 */
 #define SQLITE_LIMIT_LENGTH                    0
@@ -3091,6 +3116,7 @@ SQLITE_API int sqlite3_limit(sqlite3*, int id, int newVal);
 #define SQLITE_LIMIT_LIKE_PATTERN_LENGTH       8
 #define SQLITE_LIMIT_VARIABLE_NUMBER           9
 #define SQLITE_LIMIT_TRIGGER_DEPTH            10
+#define SQLITE_LIMIT_WORKER_THREADS           11
 
 /*
 ** CAPI3REF: Compiling An SQL Statement
@@ -3364,24 +3390,32 @@ typedef struct sqlite3_context sqlite3_context;
 ** If the fourth parameter to sqlite3_bind_blob() is negative, then
 ** the behavior is undefined.
 ** If a non-negative fourth parameter is provided to sqlite3_bind_text()
-** or sqlite3_bind_text16() then that parameter must be the byte offset
+** or sqlite3_bind_text16() or sqlite3_bind_text64() then
+** that parameter must be the byte offset
 ** where the NUL terminator would occur assuming the string were NUL
 ** terminated.  If any NUL characters occur at byte offsets less than 
 ** the value of the fourth parameter then the resulting string value will
 ** contain embedded NULs.  The result of expressions involving strings
 ** with embedded NULs is undefined.
 **
-** ^The fifth argument to sqlite3_bind_blob(), sqlite3_bind_text(), and
-** sqlite3_bind_text16() is a destructor used to dispose of the BLOB or
+** ^The fifth argument to the BLOB and string binding interfaces
+** is a destructor used to dispose of the BLOB or
 ** string after SQLite has finished with it.  ^The destructor is called
-** to dispose of the BLOB or string even if the call to sqlite3_bind_blob(),
-** sqlite3_bind_text(), or sqlite3_bind_text16() fails.  
+** to dispose of the BLOB or string even if the call to bind API fails.
 ** ^If the fifth argument is
 ** the special value [SQLITE_STATIC], then SQLite assumes that the
 ** information is in static, unmanaged space and does not need to be freed.
 ** ^If the fifth argument has the value [SQLITE_TRANSIENT], then
 ** SQLite makes its own private copy of the data immediately, before
 ** the sqlite3_bind_*() routine returns.
+**
+** ^The sixth argument to sqlite3_bind_text64() must be one of
+** [SQLITE_UTF8], [SQLITE_UTF16], [SQLITE_UTF16BE], or [SQLITE_UTF16LE]
+** to specify the encoding of the text in the third parameter.  If
+** the sixth argument to sqlite3_bind_text64() is not one of the
+** allowed values shown above, or if the text encoding is different
+** from the encoding specified by the sixth parameter, then the behavior
+** is undefined.
 **
 ** ^The sqlite3_bind_zeroblob() routine binds a BLOB of length N that
 ** is filled with zeroes.  ^A zeroblob uses a fixed amount of memory
@@ -3403,6 +3437,9 @@ typedef struct sqlite3_context sqlite3_context;
 **
 ** ^The sqlite3_bind_* routines return [SQLITE_OK] on success or an
 ** [error code] if anything goes wrong.
+** ^[SQLITE_TOOBIG] might be returned if the size of a string or BLOB
+** exceeds limits imposed by [sqlite3_limit]([SQLITE_LIMIT_LENGTH]) or
+** [SQLITE_MAX_LENGTH].
 ** ^[SQLITE_RANGE] is returned if the parameter
 ** index is out of range.  ^[SQLITE_NOMEM] is returned if malloc() fails.
 **
@@ -3410,12 +3447,16 @@ typedef struct sqlite3_context sqlite3_context;
 ** [sqlite3_bind_parameter_name()], and [sqlite3_bind_parameter_index()].
 */
 SQLITE_API int sqlite3_bind_blob(sqlite3_stmt*, int, const void*, int n, void(*)(void*));
+SQLITE_API int sqlite3_bind_blob64(sqlite3_stmt*, int, const void*, sqlite3_uint64,
+                        void(*)(void*));
 SQLITE_API int sqlite3_bind_double(sqlite3_stmt*, int, double);
 SQLITE_API int sqlite3_bind_int(sqlite3_stmt*, int, int);
 SQLITE_API int sqlite3_bind_int64(sqlite3_stmt*, int, sqlite3_int64);
 SQLITE_API int sqlite3_bind_null(sqlite3_stmt*, int);
-SQLITE_API int sqlite3_bind_text(sqlite3_stmt*, int, const char*, int n, void(*)(void*));
+SQLITE_API int sqlite3_bind_text(sqlite3_stmt*,int,const char*,int,void(*)(void*));
 SQLITE_API int sqlite3_bind_text16(sqlite3_stmt*, int, const void*, int, void(*)(void*));
+SQLITE_API int sqlite3_bind_text64(sqlite3_stmt*, int, const char*, sqlite3_uint64,
+                         void(*)(void*), unsigned char encoding);
 SQLITE_API int sqlite3_bind_value(sqlite3_stmt*, int, const sqlite3_value*);
 SQLITE_API int sqlite3_bind_zeroblob(sqlite3_stmt*, int, int n);
 
@@ -4164,7 +4205,7 @@ SQLITE_API SQLITE_DEPRECATED int sqlite3_memory_alarm(void(*)(void*,sqlite3_int6
 ** object results in undefined behavior.
 **
 ** ^These routines work just like the corresponding [column access functions]
-** except that  these routines take a single [protected sqlite3_value] object
+** except that these routines take a single [protected sqlite3_value] object
 ** pointer instead of a [sqlite3_stmt*] pointer and an integer column number.
 **
 ** ^The sqlite3_value_text16() interface extracts a UTF-16 string
@@ -4411,6 +4452,10 @@ typedef void (*sqlite3_destructor_type)(void*);
 ** set the return value of the application-defined function to be
 ** a text string which is represented as UTF-8, UTF-16 native byte order,
 ** UTF-16 little endian, or UTF-16 big endian, respectively.
+** ^The sqlite3_result_text64() interface sets the return value of an
+** application-defined function to be a text string in an encoding
+** specified by the fifth (and last) parameter, which must be one
+** of [SQLITE_UTF8], [SQLITE_UTF16], [SQLITE_UTF16BE], or [SQLITE_UTF16LE].
 ** ^SQLite takes the text result from the application from
 ** the 2nd parameter of the sqlite3_result_text* interfaces.
 ** ^If the 3rd parameter to the sqlite3_result_text* interfaces
@@ -4454,6 +4499,7 @@ typedef void (*sqlite3_destructor_type)(void*);
 ** the [sqlite3_context] pointer, the results are undefined.
 */
 SQLITE_API void sqlite3_result_blob(sqlite3_context*, const void*, int, void(*)(void*));
+SQLITE_API void sqlite3_result_blob64(sqlite3_context*,const void*,sqlite3_uint64,void(*)(void*));
 SQLITE_API void sqlite3_result_double(sqlite3_context*, double);
 SQLITE_API void sqlite3_result_error(sqlite3_context*, const char*, int);
 SQLITE_API void sqlite3_result_error16(sqlite3_context*, const void*, int);
@@ -4464,6 +4510,8 @@ SQLITE_API void sqlite3_result_int(sqlite3_context*, int);
 SQLITE_API void sqlite3_result_int64(sqlite3_context*, sqlite3_int64);
 SQLITE_API void sqlite3_result_null(sqlite3_context*);
 SQLITE_API void sqlite3_result_text(sqlite3_context*, const char*, int, void(*)(void*));
+SQLITE_API void sqlite3_result_text64(sqlite3_context*, const char*,sqlite3_uint64,
+                           void(*)(void*), unsigned char encoding);
 SQLITE_API void sqlite3_result_text16(sqlite3_context*, const void*, int, void(*)(void*));
 SQLITE_API void sqlite3_result_text16le(sqlite3_context*, const void*, int,void(*)(void*));
 SQLITE_API void sqlite3_result_text16be(sqlite3_context*, const void*, int,void(*)(void*));
@@ -6160,12 +6208,13 @@ SQLITE_API int sqlite3_test_control(int op, ...);
 #define SQLITE_TESTCTRL_ISKEYWORD               16
 #define SQLITE_TESTCTRL_SCRATCHMALLOC           17
 #define SQLITE_TESTCTRL_LOCALTIME_FAULT         18
-#define SQLITE_TESTCTRL_EXPLAIN_STMT            19
+#define SQLITE_TESTCTRL_EXPLAIN_STMT            19  /* NOT USED */
 #define SQLITE_TESTCTRL_NEVER_CORRUPT           20
 #define SQLITE_TESTCTRL_VDBE_COVERAGE           21
 #define SQLITE_TESTCTRL_BYTEORDER               22
 #define SQLITE_TESTCTRL_ISINIT                  23
-#define SQLITE_TESTCTRL_LAST                    23
+#define SQLITE_TESTCTRL_SORTER_MMAP             24
+#define SQLITE_TESTCTRL_LAST                    24
 
 /*
 ** CAPI3REF: SQLite Runtime Status
@@ -6356,12 +6405,12 @@ SQLITE_API int sqlite3_db_status(sqlite3*, int op, int *pCur, int *pHiwtr, int r
 ** the current value is always zero.)^
 **
 ** [[SQLITE_DBSTATUS_CACHE_USED]] ^(<dt>SQLITE_DBSTATUS_CACHE_USED</dt>
-** <dd>This parameter returns the approximate number of of bytes of heap
+** <dd>This parameter returns the approximate number of bytes of heap
 ** memory used by all pager caches associated with the database connection.)^
 ** ^The highwater mark associated with SQLITE_DBSTATUS_CACHE_USED is always 0.
 **
 ** [[SQLITE_DBSTATUS_SCHEMA_USED]] ^(<dt>SQLITE_DBSTATUS_SCHEMA_USED</dt>
-** <dd>This parameter returns the approximate number of of bytes of heap
+** <dd>This parameter returns the approximate number of bytes of heap
 ** memory used to store the schema for all databases associated
 ** with the connection - main, temp, and any [ATTACH]-ed databases.)^ 
 ** ^The full amount of memory used by the schemas is reported, even if the
@@ -6370,7 +6419,7 @@ SQLITE_API int sqlite3_db_status(sqlite3*, int op, int *pCur, int *pHiwtr, int r
 ** ^The highwater mark associated with SQLITE_DBSTATUS_SCHEMA_USED is always 0.
 **
 ** [[SQLITE_DBSTATUS_STMT_USED]] ^(<dt>SQLITE_DBSTATUS_STMT_USED</dt>
-** <dd>This parameter returns the approximate number of of bytes of heap
+** <dd>This parameter returns the approximate number of bytes of heap
 ** and lookaside memory used by all prepared statements associated with
 ** the database connection.)^
 ** ^The highwater mark associated with SQLITE_DBSTATUS_STMT_USED is always 0.

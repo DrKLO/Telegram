@@ -70,6 +70,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     private ArrayList<Integer> loadingFullUsers = new ArrayList<Integer>();
     private ArrayList<Integer> loadedFullUsers = new ArrayList<Integer>();
 
+    private HashMap<Integer, ArrayList<TLRPC.TL_decryptedMessageHolder>> secretHolesQueue = new HashMap<Integer, ArrayList<TLRPC.TL_decryptedMessageHolder>>();
+
     private boolean gettingNewDeleteTask = false;
     private int currentDeletingTaskTime = 0;
     private ArrayList<Integer> currentDeletingTaskMids = null;
@@ -322,6 +324,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         sendingTypings.clear();
         loadingFullUsers.clear();
         loadedFullUsers.clear();
+        secretHolesQueue.clear();
 
         updatesStartWaitTime = 0;
         currentDeletingTaskTime = 0;
@@ -3170,15 +3173,17 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     }
                 } else {
                     final TLRPC.EncryptedChat exist = existingChat;
+                    if (exist != null) {
+                        newChat.user_id = exist.user_id;
+                        newChat.auth_key = exist.auth_key;
+                        newChat.ttl = exist.ttl;
+                        newChat.seq_in = exist.seq_in;
+                        newChat.seq_out = exist.seq_out;
+                    }
                     AndroidUtilities.RunOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             if (exist != null) {
-                                newChat.user_id = exist.user_id;
-                                newChat.auth_key = exist.auth_key;
-                                newChat.ttl = exist.ttl;
-                                newChat.seq_in = exist.seq_in;
-                                newChat.seq_out = exist.seq_out;
                                 putEncryptedChat(newChat, false);
                             }
                             MessagesStorage.getInstance().updateEncryptedChat(newChat);
@@ -3556,6 +3561,307 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
     }
 
+    public TLRPC.Message processDecryptedObject(final TLRPC.EncryptedChat chat, final TLRPC.EncryptedFile file, int date, long random_id, TLObject object) {
+        if (object != null) {
+            int from_id = chat.admin_id;
+            if (from_id == UserConfig.getClientUserId()) {
+                from_id = chat.participant_id;
+            }
+
+            if (object instanceof TLRPC.TL_decryptedMessage) {
+                TLRPC.TL_decryptedMessage decryptedMessage = (TLRPC.TL_decryptedMessage)object;
+                TLRPC.TL_message newMessage = null;
+                if (AndroidUtilities.getPeerLayerVersion(chat.layer) >= 17) {
+                    newMessage = new TLRPC.TL_message_secret();
+                    newMessage.ttl = decryptedMessage.ttl;
+                } else {
+                    newMessage = new TLRPC.TL_message();
+                    newMessage.ttl = chat.ttl;
+                }
+                newMessage.message = decryptedMessage.message;
+                newMessage.date = date;
+                newMessage.local_id = newMessage.id = UserConfig.getNewMessageId();
+                UserConfig.saveConfig(false);
+                newMessage.from_id = from_id;
+                newMessage.to_id = new TLRPC.TL_peerUser();
+                newMessage.random_id = random_id;
+                newMessage.to_id.user_id = UserConfig.getClientUserId();
+                newMessage.flags = TLRPC.MESSAGE_FLAG_UNREAD;
+                newMessage.dialog_id = ((long)chat.id) << 32;
+                if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaEmpty) {
+                    newMessage.media = new TLRPC.TL_messageMediaEmpty();
+                } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaContact) {
+                    newMessage.media = new TLRPC.TL_messageMediaContact();
+                    newMessage.media.last_name = decryptedMessage.media.last_name;
+                    newMessage.media.first_name = decryptedMessage.media.first_name;
+                    newMessage.media.phone_number = decryptedMessage.media.phone_number;
+                    newMessage.media.user_id = decryptedMessage.media.user_id;
+                } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaGeoPoint) {
+                    newMessage.media = new TLRPC.TL_messageMediaGeo();
+                    newMessage.media.geo = new TLRPC.TL_geoPoint();
+                    newMessage.media.geo.lat = decryptedMessage.media.lat;
+                    newMessage.media.geo._long = decryptedMessage.media._long;
+                } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaPhoto) {
+                    if (decryptedMessage.media.key == null || decryptedMessage.media.key.length != 32 || decryptedMessage.media.iv == null || decryptedMessage.media.iv.length != 32) {
+                        return null;
+                    }
+                    newMessage.media = new TLRPC.TL_messageMediaPhoto();
+                    newMessage.media.photo = new TLRPC.TL_photo();
+                    newMessage.media.photo.user_id = newMessage.from_id;
+                    newMessage.media.photo.date = newMessage.date;
+                    newMessage.media.photo.caption = "";
+                    newMessage.media.photo.geo = new TLRPC.TL_geoPointEmpty();
+                    if (decryptedMessage.media.thumb.length != 0 && decryptedMessage.media.thumb.length <= 6000 && decryptedMessage.media.thumb_w <= 100 && decryptedMessage.media.thumb_h <= 100) {
+                        TLRPC.TL_photoCachedSize small = new TLRPC.TL_photoCachedSize();
+                        small.w = decryptedMessage.media.thumb_w;
+                        small.h = decryptedMessage.media.thumb_h;
+                        small.bytes = decryptedMessage.media.thumb;
+                        small.type = "s";
+                        small.location = new TLRPC.TL_fileLocationUnavailable();
+                        newMessage.media.photo.sizes.add(small);
+                    }
+
+                    TLRPC.TL_photoSize big = new TLRPC.TL_photoSize();
+                    big.w = decryptedMessage.media.w;
+                    big.h = decryptedMessage.media.h;
+                    big.type = "x";
+                    big.size = file.size;
+                    big.location = new TLRPC.TL_fileEncryptedLocation();
+                    big.location.key = decryptedMessage.media.key;
+                    big.location.iv = decryptedMessage.media.iv;
+                    big.location.dc_id = file.dc_id;
+                    big.location.volume_id = file.id;
+                    big.location.secret = file.access_hash;
+                    big.location.local_id = file.key_fingerprint;
+                    newMessage.media.photo.sizes.add(big);
+                } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaVideo) {
+                    if (decryptedMessage.media.key == null || decryptedMessage.media.key.length != 32 || decryptedMessage.media.iv == null || decryptedMessage.media.iv.length != 32) {
+                        return null;
+                    }
+                    newMessage.media = new TLRPC.TL_messageMediaVideo();
+                    newMessage.media.video = new TLRPC.TL_videoEncrypted();
+                    if (decryptedMessage.media.thumb.length != 0 && decryptedMessage.media.thumb.length <= 6000 && decryptedMessage.media.thumb_w <= 100 && decryptedMessage.media.thumb_h <= 100) {
+                        newMessage.media.video.thumb = new TLRPC.TL_photoCachedSize();
+                        newMessage.media.video.thumb.bytes = decryptedMessage.media.thumb;
+                        newMessage.media.video.thumb.w = decryptedMessage.media.thumb_w;
+                        newMessage.media.video.thumb.h = decryptedMessage.media.thumb_h;
+                        newMessage.media.video.thumb.type = "s";
+                        newMessage.media.video.thumb.location = new TLRPC.TL_fileLocationUnavailable();
+                    } else {
+                        newMessage.media.video.thumb = new TLRPC.TL_photoSizeEmpty();
+                        newMessage.media.video.thumb.type = "s";
+                    }
+                    newMessage.media.video.duration = decryptedMessage.media.duration;
+                    newMessage.media.video.dc_id = file.dc_id;
+                    newMessage.media.video.w = decryptedMessage.media.w;
+                    newMessage.media.video.h = decryptedMessage.media.h;
+                    newMessage.media.video.date = date;
+                    newMessage.media.video.caption = "";
+                    newMessage.media.video.user_id = from_id;
+                    newMessage.media.video.size = file.size;
+                    newMessage.media.video.id = file.id;
+                    newMessage.media.video.access_hash = file.access_hash;
+                    newMessage.media.video.key = decryptedMessage.media.key;
+                    newMessage.media.video.iv = decryptedMessage.media.iv;
+                    newMessage.media.video.mime_type = decryptedMessage.media.mime_type;
+                    if (newMessage.ttl != 0) {
+                        newMessage.ttl = Math.max(newMessage.media.video.duration + 1, newMessage.ttl);
+                    }
+                    if (newMessage.media.video.mime_type == null) {
+                        newMessage.media.video.mime_type = "video/mp4";
+                    }
+                } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaDocument) {
+                    if (decryptedMessage.media.key == null || decryptedMessage.media.key.length != 32 || decryptedMessage.media.iv == null || decryptedMessage.media.iv.length != 32) {
+                        return null;
+                    }
+                    newMessage.media = new TLRPC.TL_messageMediaDocument();
+                    newMessage.media.document = new TLRPC.TL_documentEncrypted();
+                    newMessage.media.document.id = file.id;
+                    newMessage.media.document.access_hash = file.access_hash;
+                    newMessage.media.document.user_id = decryptedMessage.media.user_id;
+                    newMessage.media.document.date = date;
+                    newMessage.media.document.file_name = decryptedMessage.media.file_name;
+                    newMessage.media.document.mime_type = decryptedMessage.media.mime_type;
+                    newMessage.media.document.size = file.size;
+                    newMessage.media.document.key = decryptedMessage.media.key;
+                    newMessage.media.document.iv = decryptedMessage.media.iv;
+                    if (decryptedMessage.media.thumb.length != 0 && decryptedMessage.media.thumb.length <= 6000 && decryptedMessage.media.thumb_w <= 100 && decryptedMessage.media.thumb_h <= 100) {
+                        newMessage.media.document.thumb = new TLRPC.TL_photoCachedSize();
+                        newMessage.media.document.thumb.bytes = decryptedMessage.media.thumb;
+                        newMessage.media.document.thumb.w = decryptedMessage.media.thumb_w;
+                        newMessage.media.document.thumb.h = decryptedMessage.media.thumb_h;
+                        newMessage.media.document.thumb.type = "s";
+                        newMessage.media.document.thumb.location = new TLRPC.TL_fileLocationUnavailable();
+                    } else {
+                        newMessage.media.document.thumb = new TLRPC.TL_photoSizeEmpty();
+                        newMessage.media.document.thumb.type = "s";
+                    }
+                    newMessage.media.document.dc_id = file.dc_id;
+                } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaAudio) {
+                    if (decryptedMessage.media.key == null || decryptedMessage.media.key.length != 32 || decryptedMessage.media.iv == null || decryptedMessage.media.iv.length != 32) {
+                        return null;
+                    }
+                    newMessage.media = new TLRPC.TL_messageMediaAudio();
+                    newMessage.media.audio = new TLRPC.TL_audioEncrypted();
+                    newMessage.media.audio.id = file.id;
+                    newMessage.media.audio.access_hash = file.access_hash;
+                    newMessage.media.audio.user_id = from_id;
+                    newMessage.media.audio.date = date;
+                    newMessage.media.audio.size = file.size;
+                    newMessage.media.audio.key = decryptedMessage.media.key;
+                    newMessage.media.audio.iv = decryptedMessage.media.iv;
+                    newMessage.media.audio.dc_id = file.dc_id;
+                    newMessage.media.audio.duration = decryptedMessage.media.duration;
+                    newMessage.media.audio.mime_type = decryptedMessage.media.mime_type;
+                    if (newMessage.ttl != 0) {
+                        newMessage.ttl = Math.max(newMessage.media.audio.duration + 1, newMessage.ttl);
+                    }
+                    if (newMessage.media.audio.mime_type == null) {
+                        newMessage.media.audio.mime_type = "audio/ogg";
+                    }
+                } else {
+                    return null;
+                }
+                return newMessage;
+            } else if (object instanceof TLRPC.TL_decryptedMessageService) {
+                final TLRPC.TL_decryptedMessageService serviceMessage = (TLRPC.TL_decryptedMessageService)object;
+                if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionSetMessageTTL || serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionScreenshotMessages) {
+                    TLRPC.TL_messageService newMessage = new TLRPC.TL_messageService();
+                    if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionSetMessageTTL) {
+                        newMessage.action = new TLRPC.TL_messageEncryptedAction();
+                        if (serviceMessage.action.ttl_seconds < 0 || serviceMessage.action.ttl_seconds > 60 * 60 * 24 * 365) {
+                            serviceMessage.action.ttl_seconds = 60 * 60 * 24 * 365;
+                        }
+                        chat.ttl = serviceMessage.action.ttl_seconds;
+                        newMessage.action.encryptedAction = serviceMessage.action;
+                        MessagesStorage.getInstance().updateEncryptedChatTTL(chat);
+                    } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionScreenshotMessages) {
+                        newMessage.action = new TLRPC.TL_messageEncryptedAction();
+                        newMessage.action.encryptedAction = serviceMessage.action;
+                    }
+                    newMessage.local_id = newMessage.id = UserConfig.getNewMessageId();
+                    UserConfig.saveConfig(false);
+                    newMessage.flags = TLRPC.MESSAGE_FLAG_UNREAD;
+                    newMessage.date = date;
+                    newMessage.from_id = from_id;
+                    newMessage.to_id = new TLRPC.TL_peerUser();
+                    newMessage.to_id.user_id = UserConfig.getClientUserId();
+                    newMessage.dialog_id = ((long)chat.id) << 32;
+                    return newMessage;
+                } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionFlushHistory) {
+                    final long did = ((long)chat.id) << 32;
+                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            TLRPC.TL_dialog dialog = dialogs_dict.get(did);
+                            if (dialog != null) {
+                                dialog.unread_count = 0;
+                                dialogMessage.remove(dialog.top_message);
+                            }
+                            MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
+                                @Override
+                                public void run() {
+                                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            NotificationsController.getInstance().processReadMessages(null, did, 0, Integer.MAX_VALUE, false);
+                                            HashMap<Long, Integer> dialogsToUpdate = new HashMap<Long, Integer>();
+                                            dialogsToUpdate.put(did, 0);
+                                            NotificationsController.getInstance().processDialogsUpdateRead(dialogsToUpdate);
+                                        }
+                                    });
+                                }
+                            });
+                            MessagesStorage.getInstance().deleteDialog(did, true);
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.removeAllMessagesFromDialog, did);
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
+                        }
+                    });
+                    return null;
+                } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionDeleteMessages) {
+                    if (!serviceMessage.action.random_ids.isEmpty()) {
+                        pendingEncMessagesToDelete.addAll(serviceMessage.action.random_ids);
+                    }
+                    return null;
+                } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionReadMessages) {
+                    if (!serviceMessage.action.random_ids.isEmpty()) {
+                        MessagesStorage.getInstance().createTaskForSecretChat(chat.id, ConnectionsManager.getInstance().getCurrentTime(), ConnectionsManager.getInstance().getCurrentTime(), 1, serviceMessage.action.random_ids);
+                    }
+                } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionNotifyLayer) {
+                    int currentPeerLayer = AndroidUtilities.getPeerLayerVersion(chat.layer);
+                    chat.layer = 0;
+                    chat.layer = AndroidUtilities.setPeerLayerVersion(chat.layer, serviceMessage.action.layer);
+                    MessagesStorage.getInstance().updateEncryptedChatLayer(chat);
+                    if (currentPeerLayer < 17) {
+                        SendMessagesHelper.getInstance().sendNotifyLayerMessage(chat, null);
+                    }
+                } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionResend) {
+
+                } else {
+                    return null;
+                }
+            } else {
+                FileLog.e("tmessages", "unkown message " + object);
+            }
+        } else {
+            FileLog.e("tmessages", "unkown TLObject");
+        }
+        return null;
+    }
+
+    public ArrayList<TLRPC.Message> checkSecretHoles(int enc_id) {
+        ArrayList<TLRPC.TL_decryptedMessageHolder> holes = secretHolesQueue.get(enc_id);
+        if (holes == null) {
+            return null;
+        }
+        TLRPC.EncryptedChat chat = getEncryptedChatDB(enc_id);
+        if (chat == null) {
+            return null;
+        }
+        Collections.sort(holes, new Comparator<TLRPC.TL_decryptedMessageHolder>() {
+            @Override
+            public int compare(TLRPC.TL_decryptedMessageHolder lhs, TLRPC.TL_decryptedMessageHolder rhs) {
+                if (lhs.layer.out_seq_no < rhs.layer.out_seq_no) {
+                    return 1;
+                } else if (lhs.layer.out_seq_no > rhs.layer.out_seq_no) {
+                    return -1;
+                }
+                return 0;
+            }
+        });
+
+        final ArrayList<TLRPC.Message> messagesArr = new ArrayList<TLRPC.Message>();
+
+        boolean update = false;
+        for (int a = 0; a < holes.size(); a++) {
+            TLRPC.TL_decryptedMessageHolder holder = holes.get(a);
+            if (holder.layer.out_seq_no == chat.seq_in || chat.seq_in != holder.layer.out_seq_no - 2) {
+                chat.seq_in = holder.layer.out_seq_no;
+                holes.remove(a);
+                a--;
+                update = true;
+
+                TLRPC.Message message = processDecryptedObject(chat, holder.file, holder.date, holder.random_id, holder.layer.message);
+                if (message != null) {
+                    messagesArr.add(message);
+                }
+            } else {
+                break;
+            }
+        }
+        if (!messagesArr.isEmpty()) {
+            MessagesStorage.getInstance().putMessages(messagesArr, true, true, false, MediaController.getInstance().getAutodownloadMask());
+        }
+        if (holes.isEmpty()) {
+            secretHolesQueue.remove(enc_id);
+        }
+        if (update) {
+            MessagesStorage.getInstance().updateEncryptedChatSeq(chat);
+            return messagesArr;
+        }
+        return null;
+    }
+
     public TLRPC.Message decryptMessage(TLRPC.EncryptedMessage message) {
         final TLRPC.EncryptedChat chat = getEncryptedChatDB(message.chat_id);
         if (chat == null || chat instanceof TLRPC.TL_encryptedChatDiscarded) {
@@ -3574,292 +3880,55 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             int len = is.readInt32();
             TLObject object = TLClassStore.Instance().TLdeserialize(is, is.readInt32());
             BuffersStorage.getInstance().reuseFreeBuffer(is);
-            if (object != null) {
-                int from_id = chat.admin_id;
-                if (from_id == UserConfig.getClientUserId()) {
-                    from_id = chat.participant_id;
-                }
-
-                if (object instanceof TLRPC.TL_decryptedMessageLayer) {
-                    final TLRPC.TL_decryptedMessageLayer layer = (TLRPC.TL_decryptedMessageLayer)object;
-                    if (chat.seq_in == 0 && chat.seq_out == 0) {
-                        if (chat.admin_id == UserConfig.getClientUserId()) {
-                            chat.seq_out = 1;
-                        } else {
-                            chat.seq_in = 1;
-                        }
+            if (object instanceof TLRPC.TL_decryptedMessageLayer) {
+                final TLRPC.TL_decryptedMessageLayer layer = (TLRPC.TL_decryptedMessageLayer)object;
+                if (chat.seq_in == 0 && chat.seq_out == 0) {
+                    if (chat.admin_id == UserConfig.getClientUserId()) {
+                        chat.seq_out = 1;
+                    } else {
+                        chat.seq_in = 1;
                     }
-                    if (chat.seq_in != layer.out_seq_no && chat.seq_in != layer.out_seq_no - 2) {
+                }
+                if (layer.out_seq_no < chat.seq_in) {
+                    return null;
+                }
+                if (chat.seq_in != layer.out_seq_no && chat.seq_in != layer.out_seq_no - 2) {
+                    /*TLRPC.Message decryptedMessage = processDecryptedObject(chat, message, layer.message);
+                    if (decryptedMessage == null) {
+                        final TLRPC.TL_encryptedChatDiscarded newChat = new TLRPC.TL_encryptedChatDiscarded();
+                        newChat.id = chat.id;
+                        newChat.user_id = chat.user_id;
+                        newChat.auth_key = chat.auth_key;
+                        newChat.seq_in = chat.seq_in;
+                        newChat.seq_out = chat.seq_out;
                         AndroidUtilities.RunOnUIThread(new Runnable() {
                             @Override
                             public void run() {
-                                final TLRPC.TL_encryptedChatDiscarded newChat = new TLRPC.TL_encryptedChatDiscarded();
-                                newChat.id = chat.id;
-                                newChat.user_id = chat.user_id;
-                                newChat.auth_key = chat.auth_key;
-                                newChat.seq_in = chat.seq_in;
-                                newChat.seq_out = chat.seq_out;
+                                putEncryptedChat(newChat, false);
                                 MessagesStorage.getInstance().updateEncryptedChat(newChat);
-                                AndroidUtilities.RunOnUIThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        putEncryptedChat(newChat, false);
-                                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.encryptedChatUpdated, newChat);
-                                    }
-                                });
-                                declineSecretChat(chat.id);
+                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.encryptedChatUpdated, newChat);
                             }
                         });
-                        return null;
+                        declineSecretChat(chat.id);
+                    }*/
+                    ArrayList<TLRPC.TL_decryptedMessageHolder> arr = secretHolesQueue.get(chat.id);
+                    if (arr == null) {
+                        arr = new ArrayList<TLRPC.TL_decryptedMessageHolder>();
+                        secretHolesQueue.put(chat.id, arr);
                     }
-                    chat.seq_in = layer.out_seq_no;
-                    MessagesStorage.getInstance().updateEncryptedChatSeq(chat);
-                    object = layer.message;
+                    TLRPC.TL_decryptedMessageHolder holder = new TLRPC.TL_decryptedMessageHolder();
+                    holder.layer = layer;
+                    holder.file = message.file;
+                    holder.random_id = message.random_id;
+                    holder.date = message.date;
+                    arr.add(holder);
+                    return null;
                 }
-
-                if (object instanceof TLRPC.TL_decryptedMessage) {
-                    TLRPC.TL_decryptedMessage decryptedMessage = (TLRPC.TL_decryptedMessage)object;
-                    TLRPC.TL_message newMessage = null;
-                    if (AndroidUtilities.getPeerLayerVersion(chat.layer) >= 17) {
-                        newMessage = new TLRPC.TL_message_secret();
-                        newMessage.ttl = decryptedMessage.ttl;
-                    } else {
-                        newMessage = new TLRPC.TL_message();
-                        newMessage.ttl = chat.ttl;
-                    }
-                    newMessage.message = decryptedMessage.message;
-                    newMessage.date = message.date;
-                    newMessage.local_id = newMessage.id = UserConfig.getNewMessageId();
-                    UserConfig.saveConfig(false);
-                    newMessage.from_id = from_id;
-                    newMessage.to_id = new TLRPC.TL_peerUser();
-                    newMessage.random_id = message.random_id;
-                    newMessage.to_id.user_id = UserConfig.getClientUserId();
-                    newMessage.flags = TLRPC.MESSAGE_FLAG_UNREAD;
-                    newMessage.dialog_id = ((long)chat.id) << 32;
-                    if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaEmpty) {
-                        newMessage.media = new TLRPC.TL_messageMediaEmpty();
-                    } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaContact) {
-                        newMessage.media = new TLRPC.TL_messageMediaContact();
-                        newMessage.media.last_name = decryptedMessage.media.last_name;
-                        newMessage.media.first_name = decryptedMessage.media.first_name;
-                        newMessage.media.phone_number = decryptedMessage.media.phone_number;
-                        newMessage.media.user_id = decryptedMessage.media.user_id;
-                    } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaGeoPoint) {
-                        newMessage.media = new TLRPC.TL_messageMediaGeo();
-                        newMessage.media.geo = new TLRPC.TL_geoPoint();
-                        newMessage.media.geo.lat = decryptedMessage.media.lat;
-                        newMessage.media.geo._long = decryptedMessage.media._long;
-                    } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaPhoto) {
-                        if (decryptedMessage.media.key == null || decryptedMessage.media.key.length != 32 || decryptedMessage.media.iv == null || decryptedMessage.media.iv.length != 32) {
-                            return null;
-                        }
-                        newMessage.media = new TLRPC.TL_messageMediaPhoto();
-                        newMessage.media.photo = new TLRPC.TL_photo();
-                        newMessage.media.photo.user_id = newMessage.from_id;
-                        newMessage.media.photo.date = newMessage.date;
-                        newMessage.media.photo.caption = "";
-                        newMessage.media.photo.geo = new TLRPC.TL_geoPointEmpty();
-                        if (decryptedMessage.media.thumb.length != 0 && decryptedMessage.media.thumb.length <= 6000 && decryptedMessage.media.thumb_w <= 100 && decryptedMessage.media.thumb_h <= 100) {
-                            TLRPC.TL_photoCachedSize small = new TLRPC.TL_photoCachedSize();
-                            small.w = decryptedMessage.media.thumb_w;
-                            small.h = decryptedMessage.media.thumb_h;
-                            small.bytes = decryptedMessage.media.thumb;
-                            small.type = "s";
-                            small.location = new TLRPC.TL_fileLocationUnavailable();
-                            newMessage.media.photo.sizes.add(small);
-                        }
-
-                        TLRPC.TL_photoSize big = new TLRPC.TL_photoSize();
-                        big.w = decryptedMessage.media.w;
-                        big.h = decryptedMessage.media.h;
-                        big.type = "x";
-                        big.size = message.file.size;
-                        big.location = new TLRPC.TL_fileEncryptedLocation();
-                        big.location.key = decryptedMessage.media.key;
-                        big.location.iv = decryptedMessage.media.iv;
-                        big.location.dc_id = message.file.dc_id;
-                        big.location.volume_id = message.file.id;
-                        big.location.secret = message.file.access_hash;
-                        big.location.local_id = message.file.key_fingerprint;
-                        newMessage.media.photo.sizes.add(big);
-                    } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaVideo) {
-                        if (decryptedMessage.media.key == null || decryptedMessage.media.key.length != 32 || decryptedMessage.media.iv == null || decryptedMessage.media.iv.length != 32) {
-                            return null;
-                        }
-                        newMessage.media = new TLRPC.TL_messageMediaVideo();
-                        newMessage.media.video = new TLRPC.TL_videoEncrypted();
-                        if (decryptedMessage.media.thumb.length != 0 && decryptedMessage.media.thumb.length <= 6000 && decryptedMessage.media.thumb_w <= 100 && decryptedMessage.media.thumb_h <= 100) {
-                            newMessage.media.video.thumb = new TLRPC.TL_photoCachedSize();
-                            newMessage.media.video.thumb.bytes = decryptedMessage.media.thumb;
-                            newMessage.media.video.thumb.w = decryptedMessage.media.thumb_w;
-                            newMessage.media.video.thumb.h = decryptedMessage.media.thumb_h;
-                            newMessage.media.video.thumb.type = "s";
-                            newMessage.media.video.thumb.location = new TLRPC.TL_fileLocationUnavailable();
-                        } else {
-                            newMessage.media.video.thumb = new TLRPC.TL_photoSizeEmpty();
-                            newMessage.media.video.thumb.type = "s";
-                        }
-                        newMessage.media.video.duration = decryptedMessage.media.duration;
-                        newMessage.media.video.dc_id = message.file.dc_id;
-                        newMessage.media.video.w = decryptedMessage.media.w;
-                        newMessage.media.video.h = decryptedMessage.media.h;
-                        newMessage.media.video.date = message.date;
-                        newMessage.media.video.caption = "";
-                        newMessage.media.video.user_id = from_id;
-                        newMessage.media.video.size = message.file.size;
-                        newMessage.media.video.id = message.file.id;
-                        newMessage.media.video.access_hash = message.file.access_hash;
-                        newMessage.media.video.key = decryptedMessage.media.key;
-                        newMessage.media.video.iv = decryptedMessage.media.iv;
-                        newMessage.media.video.mime_type = decryptedMessage.media.mime_type;
-                        if (newMessage.ttl != 0) {
-                            newMessage.ttl = Math.max(newMessage.media.video.duration + 1, newMessage.ttl);
-                        }
-                        if (newMessage.media.video.mime_type == null) {
-                            newMessage.media.video.mime_type = "video/mp4";
-                        }
-                    } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaDocument) {
-                        if (decryptedMessage.media.key == null || decryptedMessage.media.key.length != 32 || decryptedMessage.media.iv == null || decryptedMessage.media.iv.length != 32) {
-                            return null;
-                        }
-                        newMessage.media = new TLRPC.TL_messageMediaDocument();
-                        newMessage.media.document = new TLRPC.TL_documentEncrypted();
-                        newMessage.media.document.id = message.file.id;
-                        newMessage.media.document.access_hash = message.file.access_hash;
-                        newMessage.media.document.user_id = decryptedMessage.media.user_id;
-                        newMessage.media.document.date = message.date;
-                        newMessage.media.document.file_name = decryptedMessage.media.file_name;
-                        newMessage.media.document.mime_type = decryptedMessage.media.mime_type;
-                        newMessage.media.document.size = message.file.size;
-                        newMessage.media.document.key = decryptedMessage.media.key;
-                        newMessage.media.document.iv = decryptedMessage.media.iv;
-                        if (decryptedMessage.media.thumb.length != 0 && decryptedMessage.media.thumb.length <= 6000 && decryptedMessage.media.thumb_w <= 100 && decryptedMessage.media.thumb_h <= 100) {
-                            newMessage.media.document.thumb = new TLRPC.TL_photoCachedSize();
-                            newMessage.media.document.thumb.bytes = decryptedMessage.media.thumb;
-                            newMessage.media.document.thumb.w = decryptedMessage.media.thumb_w;
-                            newMessage.media.document.thumb.h = decryptedMessage.media.thumb_h;
-                            newMessage.media.document.thumb.type = "s";
-                            newMessage.media.document.thumb.location = new TLRPC.TL_fileLocationUnavailable();
-                        } else {
-                            newMessage.media.document.thumb = new TLRPC.TL_photoSizeEmpty();
-                            newMessage.media.document.thumb.type = "s";
-                        }
-                        newMessage.media.document.dc_id = message.file.dc_id;
-                    } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaAudio) {
-                        if (decryptedMessage.media.key == null || decryptedMessage.media.key.length != 32 || decryptedMessage.media.iv == null || decryptedMessage.media.iv.length != 32) {
-                            return null;
-                        }
-                        newMessage.media = new TLRPC.TL_messageMediaAudio();
-                        newMessage.media.audio = new TLRPC.TL_audioEncrypted();
-                        newMessage.media.audio.id = message.file.id;
-                        newMessage.media.audio.access_hash = message.file.access_hash;
-                        newMessage.media.audio.user_id = from_id;
-                        newMessage.media.audio.date = message.date;
-                        newMessage.media.audio.size = message.file.size;
-                        newMessage.media.audio.key = decryptedMessage.media.key;
-                        newMessage.media.audio.iv = decryptedMessage.media.iv;
-                        newMessage.media.audio.dc_id = message.file.dc_id;
-                        newMessage.media.audio.duration = decryptedMessage.media.duration;
-                        newMessage.media.audio.mime_type = decryptedMessage.media.mime_type;
-                        if (newMessage.ttl != 0) {
-                            newMessage.ttl = Math.max(newMessage.media.audio.duration + 1, newMessage.ttl);
-                        }
-                        if (newMessage.media.audio.mime_type == null) {
-                            newMessage.media.audio.mime_type = "audio/ogg";
-                        }
-                    } else {
-                        return null;
-                    }
-                    return newMessage;
-                } else if (object instanceof TLRPC.TL_decryptedMessageService) {
-                    final TLRPC.TL_decryptedMessageService serviceMessage = (TLRPC.TL_decryptedMessageService)object;
-                    if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionSetMessageTTL || serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionScreenshotMessages) {
-                        TLRPC.TL_messageService newMessage = new TLRPC.TL_messageService();
-                        if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionSetMessageTTL) {
-                            newMessage.action = new TLRPC.TL_messageEncryptedAction();
-                            if (serviceMessage.action.ttl_seconds < 0 || serviceMessage.action.ttl_seconds > 60 * 60 * 24 * 365) {
-                                serviceMessage.action.ttl_seconds = 60 * 60 * 24 * 365;
-                            }
-                            chat.ttl = serviceMessage.action.ttl_seconds;
-                            newMessage.action.encryptedAction = serviceMessage.action;
-                            MessagesStorage.getInstance().updateEncryptedChatTTL(chat);
-                        } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionScreenshotMessages) {
-                            newMessage.action = new TLRPC.TL_messageEncryptedAction();
-                            newMessage.action.encryptedAction = serviceMessage.action;
-                        }
-                        newMessage.local_id = newMessage.id = UserConfig.getNewMessageId();
-                        UserConfig.saveConfig(false);
-                        newMessage.flags = TLRPC.MESSAGE_FLAG_UNREAD;
-                        newMessage.date = message.date;
-                        newMessage.from_id = from_id;
-                        newMessage.to_id = new TLRPC.TL_peerUser();
-                        newMessage.to_id.user_id = UserConfig.getClientUserId();
-                        newMessage.dialog_id = ((long)chat.id) << 32;
-                        return newMessage;
-                    } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionFlushHistory) {
-                        final long did = ((long)chat.id) << 32;
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                TLRPC.TL_dialog dialog = dialogs_dict.get(did);
-                                if (dialog != null) {
-                                    dialog.unread_count = 0;
-                                    dialogMessage.remove(dialog.top_message);
-                                }
-                                MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        AndroidUtilities.RunOnUIThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                NotificationsController.getInstance().processReadMessages(null, did, 0, Integer.MAX_VALUE, false);
-                                                HashMap<Long, Integer> dialogsToUpdate = new HashMap<Long, Integer>();
-                                                dialogsToUpdate.put(did, 0);
-                                                NotificationsController.getInstance().processDialogsUpdateRead(dialogsToUpdate);
-                                            }
-                                        });
-                                    }
-                                });
-                                MessagesStorage.getInstance().deleteDialog(did, true);
-                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.removeAllMessagesFromDialog, did);
-                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
-                            }
-                        });
-                        return null;
-                    } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionDeleteMessages) {
-                        if (!serviceMessage.action.random_ids.isEmpty()) {
-                            pendingEncMessagesToDelete.addAll(serviceMessage.action.random_ids);
-                        }
-                        return null;
-                    } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionReadMessages) {
-                        if (!serviceMessage.action.random_ids.isEmpty()) {
-                            MessagesStorage.getInstance().createTaskForSecretChat(chat.id, ConnectionsManager.getInstance().getCurrentTime(), ConnectionsManager.getInstance().getCurrentTime(), 1, serviceMessage.action.random_ids);
-                        }
-                    } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionNotifyLayer) {
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                int currentPeerLayer = AndroidUtilities.getPeerLayerVersion(chat.layer);
-                                chat.layer = 0;
-                                chat.layer = AndroidUtilities.setPeerLayerVersion(chat.layer, serviceMessage.action.layer);
-                                MessagesStorage.getInstance().updateEncryptedChatLayer(chat);
-                                if (currentPeerLayer < 17) {
-                                    SendMessagesHelper.getInstance().sendNotifyLayerMessage(chat, null);
-                                }
-                            }
-                        });
-                    } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionResend) {
-
-                    } else {
-                        return null;
-                    }
-                } else {
-                    FileLog.e("tmessages", "unkown message " + object);
-                }
-            } else {
-                FileLog.e("tmessages", "unkown TLObject");
+                chat.seq_in = layer.out_seq_no;
+                MessagesStorage.getInstance().updateEncryptedChatSeq(chat);
+                object = layer.message;
             }
+            return processDecryptedObject(chat, message.file, message.date, message.random_id, object);
         } else {
             BuffersStorage.getInstance().reuseFreeBuffer(is);
             FileLog.e("tmessages", "fingerprint mismatch");

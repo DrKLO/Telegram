@@ -110,6 +110,7 @@ public class MessagesStorage {
                 database.executeFast("CREATE TABLE download_queue(uid INTEGER, type INTEGER, date INTEGER, data BLOB, PRIMARY KEY (uid, type));").stepThis().dispose();
                 database.executeFast("CREATE TABLE dialog_settings(did INTEGER PRIMARY KEY, flags INTEGER);").stepThis().dispose();
                 database.executeFast("CREATE TABLE messages_seq(mid INTEGER PRIMARY KEY, seq_in INTEGER, seq_out INTEGER);").stepThis().dispose();
+                database.executeFast("CREATE TABLE secret_holes(uid INTEGER, seq_in INTEGER, seq_out INTEGER, data BLOB, PRIMARY KEY (uid, seq_in, seq_out));").stepThis().dispose();
 
                 //database.executeFast("CREATE TABLE attach_data(uid INTEGER, id INTEGER, data BLOB, PRIMARY KEY (uid, id))").stepThis().dispose();
 
@@ -141,7 +142,7 @@ public class MessagesStorage {
 
                 database.executeFast("CREATE INDEX IF NOT EXISTS seq_idx_messages_seq ON messages_seq(seq_in, seq_out);").stepThis().dispose();
 
-                database.executeFast("PRAGMA user_version = 7").stepThis().dispose();
+                database.executeFast("PRAGMA user_version = 8").stepThis().dispose();
             } else {
                 try {
                     SQLiteCursor cursor = database.queryFinalized("SELECT seq, pts, date, qts, lsv, sg, pbytes FROM params WHERE id = 1");
@@ -173,7 +174,7 @@ public class MessagesStorage {
                 }
 
                 int version = database.executeInt("PRAGMA user_version");
-                if (version < 7) {
+                if (version < 8) {
                     updateDbToLastVersion(version);
                 }
             }
@@ -302,6 +303,11 @@ public class MessagesStorage {
                         database.executeFast("ALTER TABLE enc_chats ADD COLUMN seq_out INTEGER default 0").stepThis().dispose();
                         database.executeFast("PRAGMA user_version = 7").stepThis().dispose();
                         version = 7;
+                    }
+                    if (version == 7 && version < 8) {
+                        database.executeFast("CREATE TABLE IF NOT EXISTS secret_holes(uid INTEGER, seq_in INTEGER, seq_out INTEGER, data BLOB, PRIMARY KEY (uid, seq_in, seq_out));").stepThis().dispose();
+                        database.executeFast("PRAGMA user_version = 8").stepThis().dispose();
+                        version = 8;
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -665,6 +671,7 @@ public class MessagesStorage {
                             }
                         } else {
                             database.executeFast("DELETE FROM enc_chats WHERE uid = " + high_id).stepThis().dispose();
+                            database.executeFast("DELETE FROM secret_holes WHERE uid = " + high_id).stepThis().dispose();
                         }
                     }
                     database.executeFast("UPDATE dialogs SET unread_count = 0 WHERE did = " + did).stepThis().dispose();
@@ -2791,6 +2798,60 @@ public class MessagesStorage {
             public void run() {
                 try {
                     database.executeFast("UPDATE messages SET send_state = 2 WHERE mid = " + mid).stepThis().dispose();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        });
+    }
+
+    public void getHoleMessages() {
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        });
+    }
+
+    public void clearHoleMessages(final int enc_id) {
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    database.executeFast("DELETE FROM secret_holes WHERE uid = " + enc_id).stepThis().dispose();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        });
+    }
+
+    public void putHoleMessage(final int enc_id, final TLRPC.Message message) {
+        if (message == null) {
+            return;
+        }
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    SQLitePreparedStatement state = database.executeFast("REPLACE INTO secret_holes VALUES(?, ?, ?, ?)");
+
+                    state.requery();
+                    ByteBufferDesc data = buffersStorage.getFreeBuffer(message.getObjectSize());
+                    message.serializeToStream(data);
+                    state.bindInteger(1, enc_id);
+                    state.bindInteger(2, message.seq_in);
+                    state.bindInteger(3, message.seq_out);
+                    state.bindByteBuffer(4, data.buffer);
+                    state.step();
+                    buffersStorage.reuseFreeBuffer(data);
+
+                    state.dispose();
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }

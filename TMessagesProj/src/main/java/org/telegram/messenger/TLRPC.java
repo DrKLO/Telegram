@@ -8431,6 +8431,35 @@ public class TLRPC {
 
     //manually created
 
+    public static class TL_decryptedMessageHolder extends TLObject {
+        public static int constructor = 0x555555F9;
+
+        public long random_id;
+        public int date;
+        public TL_decryptedMessageLayer layer;
+        public EncryptedFile file;
+
+        public void readParams(AbsSerializedData stream) {
+            random_id = stream.readInt64();
+            date = stream.readInt32();
+            layer = (TL_decryptedMessageLayer)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+            if (stream.readBool()) {
+                file = (EncryptedFile) TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
+            }
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(random_id);
+            stream.writeInt32(date);
+            layer.serializeToStream(stream);
+            stream.writeBool(file != null);
+            if (file != null) {
+                file.serializeToStream(stream);
+            }
+        }
+    }
+
     public static class TL_messages_sendEncryptedService extends TLObject {
         public static int constructor = 0x32d439a4;
 
