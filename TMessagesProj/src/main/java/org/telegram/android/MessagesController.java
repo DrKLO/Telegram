@@ -2513,9 +2513,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                     if (!res.new_messages.isEmpty() || !res.new_encrypted_messages.isEmpty()) {
                                         final HashMap<Long, ArrayList<MessageObject>> messages = new HashMap<Long, ArrayList<MessageObject>>();
                                         for (TLRPC.EncryptedMessage encryptedMessage : res.new_encrypted_messages) {
-                                            TLRPC.Message message = decryptMessage(encryptedMessage);
-                                            if (message != null) {
-                                                res.new_messages.add(message);
+                                            ArrayList<TLRPC.Message> decryptedMessages = decryptMessage(encryptedMessage);
+                                            if (decryptedMessages != null && !decryptedMessages.isEmpty()) {
+                                                for (TLRPC.Message message : decryptedMessages) {
+                                                    res.new_messages.add(message);
+                                                }
                                             }
                                         }
 
@@ -3063,19 +3065,21 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 //DEPRECATED
             } else if (update instanceof TLRPC.TL_updateNewEncryptedMessage) {
                 MessagesStorage.lastQtsValue = update.qts;
-                TLRPC.Message message = decryptMessage(((TLRPC.TL_updateNewEncryptedMessage)update).message);
-                if (message != null) {
+                ArrayList<TLRPC.Message> decryptedMessages = decryptMessage(((TLRPC.TL_updateNewEncryptedMessage)update).message);
+                if (decryptedMessages != null && !decryptedMessages.isEmpty()) {
                     int cid = ((TLRPC.TL_updateNewEncryptedMessage)update).message.chat_id;
-                    messagesArr.add(message);
-                    MessageObject obj = new MessageObject(message, usersDict, 2);
-                    long uid = ((long)cid) << 32;
+                    long uid = ((long) cid) << 32;
                     ArrayList<MessageObject> arr = messages.get(uid);
                     if (arr == null) {
                         arr = new ArrayList<MessageObject>();
                         messages.put(uid, arr);
                     }
-                    arr.add(obj);
-                    pushMessages.add(obj);
+                    for (TLRPC.Message message : decryptedMessages) {
+                        messagesArr.add(message);
+                        MessageObject obj = new MessageObject(message, usersDict, 2);
+                        arr.add(obj);
+                        pushMessages.add(obj);
+                    }
                 }
             } else if (update instanceof TLRPC.TL_updateEncryptedChatTyping) {
                 TLRPC.EncryptedChat encryptedChat = getEncryptedChatDB(update.chat_id);
@@ -3809,33 +3813,27 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         return null;
     }
 
-    public ArrayList<TLRPC.Message> checkSecretHoles(int enc_id) {
-        ArrayList<TLRPC.TL_decryptedMessageHolder> holes = secretHolesQueue.get(enc_id);
+    public void checkSecretHoles(TLRPC.EncryptedChat chat, ArrayList<TLRPC.Message> messages) {
+        ArrayList<TLRPC.TL_decryptedMessageHolder> holes = secretHolesQueue.get(chat.id);
         if (holes == null) {
-            return null;
-        }
-        TLRPC.EncryptedChat chat = getEncryptedChatDB(enc_id);
-        if (chat == null) {
-            return null;
+            return;
         }
         Collections.sort(holes, new Comparator<TLRPC.TL_decryptedMessageHolder>() {
             @Override
             public int compare(TLRPC.TL_decryptedMessageHolder lhs, TLRPC.TL_decryptedMessageHolder rhs) {
-                if (lhs.layer.out_seq_no < rhs.layer.out_seq_no) {
+                if (lhs.layer.out_seq_no > rhs.layer.out_seq_no) {
                     return 1;
-                } else if (lhs.layer.out_seq_no > rhs.layer.out_seq_no) {
+                } else if (lhs.layer.out_seq_no < rhs.layer.out_seq_no) {
                     return -1;
                 }
                 return 0;
             }
         });
 
-        final ArrayList<TLRPC.Message> messagesArr = new ArrayList<TLRPC.Message>();
-
         boolean update = false;
         for (int a = 0; a < holes.size(); a++) {
             TLRPC.TL_decryptedMessageHolder holder = holes.get(a);
-            if (holder.layer.out_seq_no == chat.seq_in || chat.seq_in != holder.layer.out_seq_no - 2) {
+            if (holder.layer.out_seq_no == chat.seq_in || chat.seq_in == holder.layer.out_seq_no - 2) {
                 chat.seq_in = holder.layer.out_seq_no;
                 holes.remove(a);
                 a--;
@@ -3843,26 +3841,21 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
                 TLRPC.Message message = processDecryptedObject(chat, holder.file, holder.date, holder.random_id, holder.layer.message);
                 if (message != null) {
-                    messagesArr.add(message);
+                    messages.add(message);
                 }
             } else {
                 break;
             }
         }
-        if (!messagesArr.isEmpty()) {
-            MessagesStorage.getInstance().putMessages(messagesArr, true, true, false, MediaController.getInstance().getAutodownloadMask());
-        }
         if (holes.isEmpty()) {
-            secretHolesQueue.remove(enc_id);
+            secretHolesQueue.remove(chat.id);
         }
         if (update) {
             MessagesStorage.getInstance().updateEncryptedChatSeq(chat);
-            return messagesArr;
         }
-        return null;
     }
 
-    public TLRPC.Message decryptMessage(TLRPC.EncryptedMessage message) {
+    public ArrayList<TLRPC.Message> decryptMessage(TLRPC.EncryptedMessage message) {
         final TLRPC.EncryptedChat chat = getEncryptedChatDB(message.chat_id);
         if (chat == null || chat instanceof TLRPC.TL_encryptedChatDiscarded) {
             return null;
@@ -3928,7 +3921,13 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 MessagesStorage.getInstance().updateEncryptedChatSeq(chat);
                 object = layer.message;
             }
-            return processDecryptedObject(chat, message.file, message.date, message.random_id, object);
+            ArrayList<TLRPC.Message> messages = new ArrayList<TLRPC.Message>();
+            TLRPC.Message decryptedMessage = processDecryptedObject(chat, message.file, message.date, message.random_id, object);
+            if (decryptedMessage != null) {
+                messages.add(decryptedMessage);
+            }
+            checkSecretHoles(chat, messages);
+            return messages;
         } else {
             BuffersStorage.getInstance().reuseFreeBuffer(is);
             FileLog.e("tmessages", "fingerprint mismatch");
