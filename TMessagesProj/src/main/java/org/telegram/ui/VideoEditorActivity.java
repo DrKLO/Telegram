@@ -89,8 +89,8 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
     private float videoDuration = 0;
     private long startTime = 0;
     private long endTime = 0;
-    private int audioFramesSize = 0;
-    private int videoFramesSize = 0;
+    private long audioFramesSize = 0;
+    private long videoFramesSize = 0;
     private int estimatedSize = 0;
     private long esimatedDuration = 0;
     private long originalSize = 0;
@@ -292,7 +292,9 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                                 name.equals("OMX.ST.VFM.H264Enc") ||
                                 name.equals("OMX.Exynos.avc.enc") ||
                                 name.equals("OMX.MARVELL.VIDEO.HW.CODA7542ENCODER") ||
-                                name.equals("OMX.MARVELL.VIDEO.H264ENCODER")) {
+                                name.equals("OMX.MARVELL.VIDEO.H264ENCODER") ||
+                                name.equals("OMX.k3.video.encoder.avc") || //fix this later
+                                name.equals("OMX.TI.DUCATI1.VIDEO.H264E")) { //fix this later
                             compressVideo.setVisibility(View.GONE);
                         } else {
                             if (MediaController.selectColorFormat(codecInfo, MediaController.MIME_TYPE) == 0) {
@@ -721,8 +723,8 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
 
             for (Box box : boxes) {
                 TrackBox trackBox = (TrackBox)box;
-                int sampleSizes = 0;
-                int trackBitrate = 0;
+                long sampleSizes = 0;
+                long trackBitrate = 0;
                 try {
                     MediaBox mediaBox = trackBox.getMediaBox();
                     MediaHeaderBox mediaHeaderBox = mediaBox.getMediaHeaderBox();
@@ -738,7 +740,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                 TrackHeaderBox headerBox = trackBox.getTrackHeaderBox();
                 if (headerBox.getWidth() != 0 && headerBox.getHeight() != 0) {
                     trackHeaderBox = headerBox;
-                    bitrate = trackBitrate / 100000 * 100000;
+                    bitrate = (int)(trackBitrate / 100000 * 100000);
                     if (bitrate > 900000) {
                         bitrate = 900000;
                     }
@@ -768,7 +770,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                 resultHeight *= scale;
                 if (bitrate != 0) {
                     bitrate *= Math.max(0.5f, scale);
-                    videoFramesSize = (int)(bitrate / 8 * videoDuration);
+                    videoFramesSize = (long)(bitrate / 8 * videoDuration);
                 }
             }
 

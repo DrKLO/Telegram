@@ -3886,8 +3886,13 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     return null;
                 }
                 if (chat.seq_in != layer.out_seq_no && chat.seq_in != layer.out_seq_no - 2) {
-                    /*TLRPC.Message decryptedMessage = processDecryptedObject(chat, message, layer.message);
-                    if (decryptedMessage == null) {
+                    ArrayList<TLRPC.TL_decryptedMessageHolder> arr = secretHolesQueue.get(chat.id);
+                    if (arr == null) {
+                        arr = new ArrayList<TLRPC.TL_decryptedMessageHolder>();
+                        secretHolesQueue.put(chat.id, arr);
+                    }
+                    if (arr.size() >= 10) {
+                        secretHolesQueue.remove(chat.id);
                         final TLRPC.TL_encryptedChatDiscarded newChat = new TLRPC.TL_encryptedChatDiscarded();
                         newChat.id = chat.id;
                         newChat.user_id = chat.user_id;
@@ -3903,12 +3908,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             }
                         });
                         declineSecretChat(chat.id);
-                    }*/
-                    ArrayList<TLRPC.TL_decryptedMessageHolder> arr = secretHolesQueue.get(chat.id);
-                    if (arr == null) {
-                        arr = new ArrayList<TLRPC.TL_decryptedMessageHolder>();
-                        secretHolesQueue.put(chat.id, arr);
+                        return null;
                     }
+
                     TLRPC.TL_decryptedMessageHolder holder = new TLRPC.TL_decryptedMessageHolder();
                     holder.layer = layer;
                     holder.file = message.file;

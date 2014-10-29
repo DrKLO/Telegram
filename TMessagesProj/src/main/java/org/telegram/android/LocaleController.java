@@ -18,6 +18,7 @@ import android.content.res.Configuration;
 import android.text.format.DateFormat;
 import android.util.Xml;
 
+import org.telegram.android.time.FastDateFormat;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;

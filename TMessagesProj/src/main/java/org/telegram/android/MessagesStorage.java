@@ -110,7 +110,7 @@ public class MessagesStorage {
                 database.executeFast("CREATE TABLE download_queue(uid INTEGER, type INTEGER, date INTEGER, data BLOB, PRIMARY KEY (uid, type));").stepThis().dispose();
                 database.executeFast("CREATE TABLE dialog_settings(did INTEGER PRIMARY KEY, flags INTEGER);").stepThis().dispose();
                 database.executeFast("CREATE TABLE messages_seq(mid INTEGER PRIMARY KEY, seq_in INTEGER, seq_out INTEGER);").stepThis().dispose();
-                database.executeFast("CREATE TABLE secret_holes(uid INTEGER, seq_in INTEGER, seq_out INTEGER, data BLOB, PRIMARY KEY (uid, seq_in, seq_out));").stepThis().dispose();
+                //database.executeFast("CREATE TABLE secret_holes(uid INTEGER, seq_in INTEGER, seq_out INTEGER, data BLOB, PRIMARY KEY (uid, seq_in, seq_out));").stepThis().dispose();
 
                 //database.executeFast("CREATE TABLE attach_data(uid INTEGER, id INTEGER, data BLOB, PRIMARY KEY (uid, id))").stepThis().dispose();
 
@@ -142,7 +142,7 @@ public class MessagesStorage {
 
                 database.executeFast("CREATE INDEX IF NOT EXISTS seq_idx_messages_seq ON messages_seq(seq_in, seq_out);").stepThis().dispose();
 
-                database.executeFast("PRAGMA user_version = 8").stepThis().dispose();
+                database.executeFast("PRAGMA user_version = 7").stepThis().dispose();
             } else {
                 try {
                     SQLiteCursor cursor = database.queryFinalized("SELECT seq, pts, date, qts, lsv, sg, pbytes FROM params WHERE id = 1");
@@ -174,7 +174,7 @@ public class MessagesStorage {
                 }
 
                 int version = database.executeInt("PRAGMA user_version");
-                if (version < 8) {
+                if (version < 7) {
                     updateDbToLastVersion(version);
                 }
             }
@@ -304,11 +304,11 @@ public class MessagesStorage {
                         database.executeFast("PRAGMA user_version = 7").stepThis().dispose();
                         version = 7;
                     }
-                    if (version == 7 && version < 8) {
+                    /*if (version == 7 && version < 8) {
                         database.executeFast("CREATE TABLE IF NOT EXISTS secret_holes(uid INTEGER, seq_in INTEGER, seq_out INTEGER, data BLOB, PRIMARY KEY (uid, seq_in, seq_out));").stepThis().dispose();
                         database.executeFast("PRAGMA user_version = 8").stepThis().dispose();
                         version = 8;
-                    }
+                    }*/
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
@@ -671,7 +671,7 @@ public class MessagesStorage {
                             }
                         } else {
                             database.executeFast("DELETE FROM enc_chats WHERE uid = " + high_id).stepThis().dispose();
-                            database.executeFast("DELETE FROM secret_holes WHERE uid = " + high_id).stepThis().dispose();
+                            //database.executeFast("DELETE FROM secret_holes WHERE uid = " + high_id).stepThis().dispose();
                         }
                     }
                     database.executeFast("UPDATE dialogs SET unread_count = 0 WHERE did = " + did).stepThis().dispose();
@@ -2805,7 +2805,7 @@ public class MessagesStorage {
         });
     }
 
-    public void getHoleMessages() {
+    /*public void getHoleMessages() {
         storageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -2857,7 +2857,7 @@ public class MessagesStorage {
                 }
             }
         });
-    }
+    }*/
 
     public void setMessageSeq(final int mid, final int seq_in, final int seq_out) {
         storageQueue.postRunnable(new Runnable() {
