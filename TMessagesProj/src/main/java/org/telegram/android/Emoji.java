@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Locale;
 
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
@@ -35,21 +36,8 @@ public class Emoji {
 	private static int drawImgSize, bigImgSize;
 	private static boolean inited = false;
 	private static Paint placeholderPaint;
-	private static EmojiBitmap emojiBmp[] = new EmojiBitmap[5];
+	private static Bitmap emojiBmp[] = new Bitmap[5];
 	private static boolean loadingEmoji[] = new boolean[5];
-    private static int emojiFullSize;
-
-    private static class EmojiBitmap {
-        public int[] colors;
-        public int width;
-        public int height;
-
-        public EmojiBitmap(int[] colors, int width, int height) {
-            this.colors = colors;
-            this.width = width;
-            this.height = height;
-        }
-    }
 
     private static final int[] cols = {
             13, 10, 15, 10, 14
@@ -125,8 +113,8 @@ public class Emoji {
                     0x00000000D83CDF8BL, 0x00000000D83CDF89L, 0x00000000D83CDF8AL, 0x00000000D83CDF88L, 0x00000000D83CDF8CL, 0x00000000D83DDD2EL, 0x00000000D83CDFA5L,
                     0x00000000D83DDCF7L, 0x00000000D83DDCF9L, 0x00000000D83DDCFCL, 0x00000000D83DDCBFL, 0x00000000D83DDCC0L, 0x00000000D83DDCBDL, 0x00000000D83DDCBEL,
                     0x00000000D83DDCBBL, 0x00000000D83DDCF1L, 0x000000000000260EL, 0x00000000D83DDCDEL, 0x00000000D83DDCDFL, 0x00000000D83DDCE0L, 0x00000000D83DDCE1L,
-                    0x00000000D83DDCFAL, 0x00000000D83DDCFBL, 0x00000000D83DDD0AL, 0x00000000D83DDD09L, 0x00000000D83DDD08L, 0x00000000D83DDD07L, 0x00000000D83DDD14L, 0x00000000D83DDD15L,
-                    0x00000000D83DDCE2L, 0x00000000D83DDCE3L, 0x00000000000023F3L, 0x000000000000231BL, 0x00000000000023F0L, 0x000000000000231AL,
+                    0x00000000D83DDCFAL, 0x00000000D83DDCFBL, 0x00000000D83DDD0AL, 0x00000000D83DDD09L, 0x00000000D83DDD08L, 0x00000000D83DDD07L, 0x00000000D83DDD14L,
+                    0x00000000D83DDD15L, 0x00000000D83DDCE2L, 0x00000000D83DDCE3L, 0x00000000000023F3L, 0x000000000000231BL, 0x00000000000023F0L, 0x000000000000231AL,
                     0x00000000D83DDD13L, 0x00000000D83DDD12L, 0x00000000D83DDD0FL, 0x00000000D83DDD10L, 0x00000000D83DDD11L, 0x00000000D83DDD0EL, 0x00000000D83DDCA1L,
                     0x00000000D83DDD26L, 0x00000000D83DDD06L, 0x00000000D83DDD05L, 0x00000000D83DDD0CL, 0x00000000D83DDD0BL, 0x00000000D83DDD0DL, 0x00000000D83DDEC1L, 0x00000000D83DDEC0L,
                     0x00000000D83DDEBFL, 0x00000000D83DDEBDL, 0x00000000D83DDD27L, 0x00000000D83DDD29L, 0x00000000D83DDD28L, 0x00000000D83DDEAAL, 0x00000000D83DDEACL,
@@ -170,20 +158,19 @@ public class Emoji {
                     0xD83CDDF0D83CDDF7L, 0xD83CDDE9D83CDDEAL, 0xD83CDDE8D83CDDF3L, 0xD83CDDFAD83CDDF8L, 0xD83CDDEBD83CDDF7L, 0xD83CDDEAD83CDDF8L, 0xD83CDDEED83CDDF9L,
                     0xD83CDDF7D83CDDFAL, 0xD83CDDECD83CDDE7L},
             new long[]//209
-                    {0x00000000003120E3L, 0x00000000003220E3L, 0x00000000003320E3L, 0x00000000003420E3L, 0x00000000003520E3L, 0x00000000003620E3L, 0x00000000003720E3L, 0x00000000003820E3L,
-                    0x00000000003920E3L, 0x00000000003020E3L, 0x00000000D83DDD1FL, 0x00000000D83DDD22L, 0x00000000002320E3L, 0x00000000D83DDD23L, 0x0000000000002B06L,
-                    0x0000000000002B07L, 0x0000000000002B05L, 0x00000000000027A1L, 0x00000000D83DDD20L, 0x00000000D83DDD21L, 0x00000000D83DDD24L, 0x0000000000002197L,
-                    0x0000000000002196L, 0x0000000000002198L, 0x0000000000002199L, 0x0000000000002194L, 0x0000000000002195L, 0x00000000D83DDD04L, 0x00000000000025C0L,
-                    0x00000000000025B6L, 0x00000000D83DDD3CL, 0x00000000D83DDD3DL, 0x00000000000021A9L, 0x00000000000021AAL, 0x0000000000002139L, 0x00000000000023EAL,
-                    0x00000000000023E9L, 0x00000000000023EBL, 0x00000000000023ECL, 0x0000000000002935L, 0x0000000000002934L, 0x00000000D83CDD97L, 0x00000000D83DDD00L,
-                    0x00000000D83DDD01L, 0x00000000D83DDD02L, 0x00000000D83CDD95L, 0x00000000D83CDD99L, 0x00000000D83CDD92L, 0x00000000D83CDD93L, 0x00000000D83CDD96L,
-                    0x00000000D83DDCF6L, 0x00000000D83CDFA6L, 0x00000000D83CDE01L, 0x00000000D83CDE2FL, 0x00000000D83CDE33L, 0x00000000D83CDE35L, 0x00000000D83CDE32L,
-                    0x00000000D83CDE34L, 0x00000000D83CDE50L, 0x00000000D83CDE39L, 0x00000000D83CDE3AL, 0x00000000D83CDE36L, 0x00000000D83CDE1AL,
+                    {0x00000000003120E3L, 0x00000000003220E3L, 0x00000000003320E3L, 0x00000000003420E3L, 0x00000000003520E3L, 0x00000000003620E3L, 0x00000000003720E3L,
+                    0x00000000003820E3L, 0x00000000003920E3L, 0x00000000003020E3L, 0x00000000D83DDD1FL, 0x00000000D83DDD22L, 0x00000000002320E3L, 0x00000000D83DDD23L,
+                    0x0000000000002B06L, 0x0000000000002B07L, 0x0000000000002B05L, 0x00000000000027A1L, 0x00000000D83DDD20L, 0x00000000D83DDD21L, 0x00000000D83DDD24L,
+                    0x0000000000002197L, 0x0000000000002196L, 0x0000000000002198L, 0x0000000000002199L, 0x0000000000002194L, 0x0000000000002195L, 0x00000000D83DDD04L,
+                    0x00000000000025C0L, 0x00000000000025B6L, 0x00000000D83DDD3CL, 0x00000000D83DDD3DL, 0x00000000000021A9L, 0x00000000000021AAL, 0x0000000000002139L,
+                    0x00000000000023EAL, 0x00000000000023E9L, 0x00000000000023EBL, 0x00000000000023ECL, 0x0000000000002935L, 0x0000000000002934L, 0x00000000D83CDD97L,
+                    0x00000000D83DDD00L, 0x00000000D83DDD01L, 0x00000000D83DDD02L, 0x00000000D83CDD95L, 0x00000000D83CDD99L, 0x00000000D83CDD92L, 0x00000000D83CDD93L,
+                    0x00000000D83CDD96L, 0x00000000D83DDCF6L, 0x00000000D83CDFA6L, 0x00000000D83CDE01L, 0x00000000D83CDE2FL, 0x00000000D83CDE33L, 0x00000000D83CDE35L,
+                    0x00000000D83CDE32L, 0x00000000D83CDE34L, 0x00000000D83CDE50L, 0x00000000D83CDE39L, 0x00000000D83CDE3AL, 0x00000000D83CDE36L, 0x00000000D83CDE1AL,
                     0x00000000D83DDEBBL, 0x00000000D83DDEB9L, 0x00000000D83DDEBAL, 0x00000000D83DDEBCL, 0x00000000D83DDEBEL, 0x00000000D83DDEB0L, 0x00000000D83DDEAEL,
                     0x00000000D83CDD7FL, 0x000000000000267FL, 0x00000000D83DDEADL, 0x00000000D83CDE37L, 0x00000000D83CDE38L, 0x00000000D83CDE02L, 0x00000000000024C2L,
-                    0x00000000D83DDEC2L, 0x00000000D83DDEC4L, 0x00000000D83DDEC5L, 0x00000000D83DDEC3L,
-
-                    0x00000000D83CDE51L, 0x0000000000003299L, 0x0000000000003297L, 0x00000000D83CDD91L, 0x00000000D83CDD98L, 0x00000000D83CDD94L, 0x00000000D83DDEABL,
+                    0x00000000D83DDEC2L, 0x00000000D83DDEC4L, 0x00000000D83DDEC5L, 0x00000000D83DDEC3L, 0x00000000D83CDE51L, 0x0000000000003299L, 0x0000000000003297L,
+                    0x00000000D83CDD91L, 0x00000000D83CDD98L, 0x00000000D83CDD94L, 0x00000000D83DDEABL,
                     0x00000000D83DDD1EL, 0x00000000D83DDCF5L, 0x00000000D83DDEAFL, 0x00000000D83DDEB1L, 0x00000000D83DDEB3L, 0x00000000D83DDEB7L, 0x00000000D83DDEB8L,
                     0x00000000000026D4L, 0x0000000000002733L, 0x0000000000002747L, 0x000000000000274EL, 0x0000000000002705L, 0x0000000000002734L, 0x00000000D83DDC9FL,
                     0x00000000D83CDD9AL, 0x00000000D83DDCF3L, 0x00000000D83DDCF4L, 0x00000000D83CDD70L, 0x00000000D83CDD71L, 0x00000000D83CDD8EL, 0x00000000D83CDD7EL,
@@ -192,7 +179,7 @@ public class Emoji {
                     0x0000000000002653L, 0x00000000000026CEL, 0x00000000D83DDD2FL, 0x00000000D83CDFE7L, 0x00000000D83DDCB9L, 0x00000000D83DDCB2L, 0x00000000D83DDCB1L,
                     0x00000000000000A9L, 0x00000000000000AEL, 0x0000000000002122L, 0x000000000000303DL, 0x0000000000003030L, 0x00000000D83DDD1DL, 0x00000000D83DDD1AL,
                     0x00000000D83DDD19L, 0x00000000D83DDD1BL, 0x00000000D83DDD1CL, 0x000000000000274CL, 0x0000000000002B55L, 0x0000000000002757L, 0x000000000000203CL,
-    0x0000000000002049L, 0x0000000000002753L,
+                    0x0000000000002049L, 0x0000000000002753L,
                     0x0000000000002755L, 0x0000000000002754L, 0x00000000D83DDD03L, 0x00000000D83DDD5BL, 0x00000000D83DDD67L, 0x00000000D83DDD50L, 0x00000000D83DDD5CL,
                     0x00000000D83DDD51L, 0x00000000D83DDD5DL, 0x00000000D83DDD52L, 0x00000000D83DDD5EL, 0x00000000D83DDD53L, 0x00000000D83DDD5FL, 0x00000000D83DDD54L,
                     0x00000000D83DDD60L, 0x00000000D83DDD55L, 0x00000000D83DDD56L, 0x00000000D83DDD57L, 0x00000000D83DDD58L, 0x00000000D83DDD59L, 0x00000000D83DDD5AL,
@@ -204,6 +191,7 @@ public class Emoji {
                     0x00000000D83DDD34L, 0x00000000D83DDD35L, 0x00000000D83DDD3BL, 0x00000000D83DDD36L, 0x00000000D83DDD37L, 0x00000000D83DDD38L, 0x00000000D83DDD39L}};
 	
 	static {
+        int emojiFullSize;
         if (AndroidUtilities.density <= 1.0f) {
             emojiFullSize = 30;
         } else if (AndroidUtilities.density <= 1.5f) {
@@ -222,7 +210,7 @@ public class Emoji {
 
 		for (int j = 1; j < data.length; j++) {
 			for (int i = 0; i < data[j].length; i++) {
-				Rect rect = new Rect((i % cols[j - 1]) * emojiFullSize, (i / cols[j - 1]) * emojiFullSize, emojiFullSize, emojiFullSize);
+                Rect rect = new Rect((i % cols[j - 1]) * emojiFullSize, (i / cols[j - 1]) * emojiFullSize, (i % cols[j - 1] + 1) * emojiFullSize, (i / cols[j - 1] + 1) * emojiFullSize);
 				rects.put(data[j][i], new DrawableInfo(rect, (byte)(j - 1)));
 			}
 		}
@@ -258,10 +246,8 @@ public class Emoji {
             opts.inJustDecodeBounds = true;
             BitmapFactory.decodeFile(imageFile.getAbsolutePath(), opts);
 
-            int width = opts.outWidth / imageResize;
-            int height = opts.outHeight / imageResize;
-            int[] bitmap = new int[width * height];
-            Utilities.loadBitmap(imageFile.getAbsolutePath(), bitmap, imageResize, 0, width, height);
+            final Bitmap bitmap = Bitmap.createBitmap(opts.outWidth / imageResize, opts.outHeight / imageResize, Bitmap.Config.ARGB_8888);
+            Utilities.loadBitmap(imageFile.getAbsolutePath(), bitmap, imageResize);
 
             imageName = String.format(Locale.US, "emoji%.01fx_a_%d.jpg", scale, page);
             imageFile = ApplicationLoader.applicationContext.getFileStreamPath(imageName);
@@ -271,13 +257,12 @@ public class Emoji {
                 is.close();
             }
 
-            Utilities.loadBitmap(imageFile.getAbsolutePath(), bitmap, imageResize, 0, width, height);
+            Utilities.loadBitmap(imageFile.getAbsolutePath(), bitmap, imageResize);
 
-            final EmojiBitmap emojiBitmap = new EmojiBitmap(bitmap, width, height);
             AndroidUtilities.RunOnUIThread(new Runnable() {
                 @Override
                 public void run() {
-                    emojiBmp[page] = emojiBitmap;
+                    emojiBmp[page] = bitmap;
                     NotificationCenter.getInstance().postNotificationName(NotificationCenter.emojiDidLoaded);
                 }
             });
@@ -310,7 +295,7 @@ public class Emoji {
 		}
 	}
 	
-	public static Drawable getEmojiDrawable(long code) {
+	public static EmojiDrawable getEmojiDrawable(long code) {
 		DrawableInfo info = rects.get(code);
 		if (info == null) {
             FileLog.e("tmessages", "No emoji drawable for code " + String.format("%016X", code));
@@ -322,7 +307,7 @@ public class Emoji {
 	}
 	
 	public static Drawable getEmojiBigDrawable(long code) {
-		EmojiDrawable ed = (EmojiDrawable)getEmojiDrawable(code);
+		EmojiDrawable ed = getEmojiDrawable(code);
 		if (ed == null) {
             return null;
         }
@@ -333,39 +318,38 @@ public class Emoji {
 	
 	public static class EmojiDrawable extends Drawable {
         private DrawableInfo info;
-		boolean fullSize = false;
-		private static Paint paint;
-
-		static {
-			paint = new Paint();
-            paint.setFlags(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
-		}
+		private boolean fullSize = false;
+		private static Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
 		
 		public EmojiDrawable(DrawableInfo i) {
 			info = i;
 		}
-		
-		@Override
+
+        public DrawableInfo getDrawableInfo() {
+            return info;
+        }
+
+        public Rect getDrawRect() {
+            Rect b = copyBounds();
+            int cX = b.centerX(), cY = b.centerY();
+            b.left = cX - (fullSize ? bigImgSize : drawImgSize) / 2;
+            b.right = cX + (fullSize ? bigImgSize : drawImgSize) / 2;
+            b.top = cY - (fullSize ? bigImgSize : drawImgSize) / 2;
+            b.bottom = cY + (fullSize ? bigImgSize : drawImgSize) / 2;
+            return b;
+        }
+
+        @Override
 		public void draw(Canvas canvas) {
-            EmojiBitmap bitmap = emojiBmp[info.page];
-			if (bitmap == null) {
+			if (emojiBmp[info.page] == null) {
                 loadEmojiAsync(info.page);
 				canvas.drawRect(getBounds(), placeholderPaint);
 				return;
 			}
-            float scale = 1;
-            int offset = 0;
-            if (fullSize) {
-                scale = (float) bigImgSize / (float) emojiFullSize;
-                offset = (getBounds().width() - bigImgSize) / 2;
-            } else {
-                scale = (float) getBounds().width() / (float) emojiFullSize;
+            Rect b = getDrawRect();
+            if (!canvas.quickReject(b.left, b.top, b.right, b.bottom, Canvas.EdgeType.AA)) {
+                canvas.drawBitmap(emojiBmp[info.page], info.rect, b, paint);
             }
-
-            canvas.save();
-            canvas.scale(scale, scale);
-            canvas.drawBitmap(bitmap.colors, info.rect.top * bitmap.width + info.rect.left, bitmap.width, offset, offset, info.rect.right, info.rect.bottom, true, paint);
-            canvas.restore();
 		}
 
 		@Override
@@ -424,7 +408,7 @@ public class Emoji {
                 } else if (buf > 0 && (c & 0xF000) == 0xD000) {
                     buf <<= 16;
                     buf |= c;
-                    Drawable d = Emoji.getEmojiDrawable(buf);
+                    EmojiDrawable d = Emoji.getEmojiDrawable(buf);
                     if (d != null) {
                         EmojiSpan span = new EmojiSpan(d, DynamicDrawableSpan.ALIGN_BOTTOM, size, fontMetrics);
                         emojiCount++;
@@ -442,7 +426,7 @@ public class Emoji {
                             buf = c2;
                             buf <<= 16;
                             buf |= c;
-                            Drawable d = Emoji.getEmojiDrawable(buf);
+                            EmojiDrawable d = Emoji.getEmojiDrawable(buf);
                             if (d != null) {
                                 EmojiSpan span = new EmojiSpan(d, DynamicDrawableSpan.ALIGN_BOTTOM, size, fontMetrics);
                                 emojiCount++;
@@ -452,7 +436,7 @@ public class Emoji {
                         }
                     }
                 } else if (inArray(c, emojiChars)) {
-                    Drawable d = Emoji.getEmojiDrawable(c);
+                    EmojiDrawable d = Emoji.getEmojiDrawable(c);
                     if (d != null) {
                         EmojiSpan span = new EmojiSpan(d, DynamicDrawableSpan.ALIGN_BOTTOM, size, fontMetrics);
                         emojiCount++;
@@ -472,9 +456,9 @@ public class Emoji {
 
     public static class EmojiSpan extends ImageSpan {
         private Paint.FontMetricsInt fontMetrics = null;
-        int size = AndroidUtilities.dp(20);
+        private int size = AndroidUtilities.dp(20);
 
-        public EmojiSpan(Drawable d, int verticalAlignment, int s, Paint.FontMetricsInt original) {
+        public EmojiSpan(EmojiDrawable d, int verticalAlignment, int s, Paint.FontMetricsInt original) {
             super(d, verticalAlignment);
             fontMetrics = original;
             if (original != null) {

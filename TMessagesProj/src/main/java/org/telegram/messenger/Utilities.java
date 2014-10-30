@@ -14,6 +14,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -107,7 +108,7 @@ public class Utilities {
     }
 
     public native static long doPQNative(long _what);
-    public native static void loadBitmap(String path, int[] bitmap, int scale, int format, int width, int height);
+    public native static void loadBitmap(String path, Bitmap bitmap, int scale);
     public native static void blurBitmap(Object bitmap, int radius);
     public native static int convertVideoFrame(ByteBuffer src, ByteBuffer dest, int destFormat, int width, int height, int padding, int swap);
     private native static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, int offset, int length);

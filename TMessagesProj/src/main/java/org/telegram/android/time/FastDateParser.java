@@ -25,6 +25,7 @@ import java.text.ParsePosition;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -371,6 +372,38 @@ public class FastDateParser implements DateParser, Serializable {
         return regex;
     }
 
+    private static String[] getDisplayNameArray(int field, boolean isLong, Locale locale) {
+        DateFormatSymbols dfs = new DateFormatSymbols(locale);
+        switch (field) {
+            case Calendar.AM_PM:
+                return dfs.getAmPmStrings();
+            case Calendar.DAY_OF_WEEK:
+                return isLong ? dfs.getWeekdays() : dfs.getShortWeekdays();
+            case Calendar.ERA:
+                return dfs.getEras();
+            case Calendar.MONTH:
+                return isLong ? dfs.getMonths() : dfs.getShortMonths();
+        }
+        return null;
+    }
+
+    private static void insertValuesInMap(Map<String, Integer> map, String[] values) {
+        if (values == null) {
+            return;
+        }
+        for (int i = 0; i < values.length; ++i) {
+            if (values[i] != null && values[i].length() > 0) {
+                map.put(values[i], i);
+            }
+        }
+    }
+
+    private static Map<String, Integer> getDisplayNames(int field, Locale locale) {
+        Map<String, Integer> result = new HashMap<String, Integer>();
+        insertValuesInMap(result, getDisplayNameArray(field, false, locale));
+        insertValuesInMap(result, getDisplayNameArray(field, true, locale));
+        return result.isEmpty() ? null : result;
+    }
 
     /**
      * Get the short and long values displayed for a field
@@ -381,7 +414,7 @@ public class FastDateParser implements DateParser, Serializable {
      * @return A Map of the field key / value pairs
      */
     private static Map<String, Integer> getDisplayNames(final int field, final Calendar definingCalendar, final Locale locale) {
-        return definingCalendar.getDisplayNames(field, Calendar.ALL_STYLES, locale);
+        return getDisplayNames(field, locale);
     }
 
     /**
