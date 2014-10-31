@@ -53,6 +53,8 @@
     <string name="SelectChat">채팅방 선택</string>
     <string name="PhotoTip">꾹 눌러서 보기</string>
     <string name="CompatibilityChat">%1$s님의 텔레그램 버전이 낮아 비밀 사진을 호환성 모드로 표시합니다.\n\n%2$s님이 텔레그램을 업데이트하고 나면, 자동삭제 시간이 1분 이하인 사진은 \"탭하고 누르고 있어야 보임\" 상태가 되며, 상대방이 화면을 캡처할 때 마다 알림을 받습니다.</string>
+    <string name="SearchConversations">Conversations</string>
+    <string name="SearchMessages">Messages</string>
     <!--broadcasts-->
     <string name="BroadcastList">단체 메시지 리스트</string>
     <string name="NewBroadcastList">새 단체 메시지 리스트</string>

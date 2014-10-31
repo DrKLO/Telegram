@@ -14,6 +14,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.Gravity;
@@ -26,6 +27,7 @@ import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
@@ -155,11 +157,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     ViewGroup group = (ViewGroup) listView.getParent();
                     listView.setAdapter(listViewAdapter);
                     listViewAdapter.notifyDataSetChanged();
-                    if (!LocaleController.isRTL) {
-                        listView.setPadding(AndroidUtilities.dp(16), listView.getPaddingTop(), AndroidUtilities.dp(30), listView.getPaddingBottom());
-                    } else {
-                        listView.setPadding(AndroidUtilities.dp(30), listView.getPaddingTop(), AndroidUtilities.dp(16), listView.getPaddingBottom());
-                    }
+                    listView.setPadding(AndroidUtilities.dp(LocaleController.isRTL ? 30 : 16), listView.getPaddingTop(), AndroidUtilities.dp(LocaleController.isRTL ? 16 : 30), listView.getPaddingBottom());
                     if (android.os.Build.VERSION.SDK_INT >= 11) {
                         listView.setFastScrollAlwaysVisible(true);
                     }
@@ -206,6 +204,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
             listView = (PinnedHeaderListView)fragmentView.findViewById(R.id.listView);
             listView.setEmptyView(emptyTextView);
+            listView.setPadding(AndroidUtilities.dp(LocaleController.isRTL ? 30 : 16), listView.getPaddingTop(), AndroidUtilities.dp(LocaleController.isRTL ? 16 : 30), listView.getPaddingBottom());
+            if (Build.VERSION.SDK_INT >= 11) {
+                listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
+            }
             emptyTextView.setOnTouchListener(new View.OnTouchListener() {
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {

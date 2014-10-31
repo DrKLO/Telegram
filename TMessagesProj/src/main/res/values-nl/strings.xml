@@ -53,6 +53,8 @@
     <string name="SelectChat">Kies een gesprek</string>
     <string name="PhotoTip">Druk en houd ingedrukt</string>
     <string name="CompatibilityChat">%1$s gebruikt een oudere versie van Telegram, dus worden geheime foto\'s weergegeven in de compatibiliteitsmodus.\n\nZodra %2$s Telegram updatet werken foto\'s met timers voor 1 minuut of minder in de \'Druk en houd ingedrukt\'-modus en krijg je een bericht wanneer de andere partij een schermafbeelding maakt.</string>
+    <string name="SearchConversations">Conversations</string>
+    <string name="SearchMessages">Messages</string>
     <!--broadcasts-->
     <string name="BroadcastList">Verzendlijst</string>
     <string name="NewBroadcastList">Nieuwe verzendlijst</string>

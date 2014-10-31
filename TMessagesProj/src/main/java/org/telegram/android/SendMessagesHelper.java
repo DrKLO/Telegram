@@ -1064,7 +1064,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
     }
 
     private void stopVideoService(final String path) {
-        MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
+        MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
             @Override
             public void run() {
                 AndroidUtilities.RunOnUIThread(new Runnable() {
@@ -1110,7 +1110,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         }
                         MessagesController.getInstance().processNewDifferenceParams(res.seq, res.pts, -1);
                     }
-                    MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
+                    MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
                         @Override
                         public void run() {
                             MessagesStorage.getInstance().updateMessageStateAndId(newMsgObj.random_id, oldId, (isBroadcast ? oldId : newMsgObj.id), 0, false);
@@ -1301,7 +1301,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                 if (res.file instanceof TLRPC.TL_encryptedFile) {
                                     processSentMessage(newMsgObj, null, res.file, req, originalPath);
                                 }
-                                MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
+                                MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
                                     @Override
                                     public void run() {
                                         if (newMsgObj.action instanceof TLRPC.TL_messageEncryptedAction) {

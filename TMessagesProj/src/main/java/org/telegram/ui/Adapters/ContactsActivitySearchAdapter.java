@@ -45,6 +45,13 @@ public class ContactsActivitySearchAdapter extends BaseContactsSearchAdapter {
     }
 
     public void searchDialogs(final String query) {
+        try {
+            if (searchTimer != null) {
+                searchTimer.cancel();
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
         if (query == null) {
             searchResult.clear();
             searchResultNames.clear();
@@ -53,13 +60,6 @@ public class ContactsActivitySearchAdapter extends BaseContactsSearchAdapter {
             }
             notifyDataSetChanged();
         } else {
-            try {
-                if (searchTimer != null) {
-                    searchTimer.cancel();
-                }
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
-            }
             searchTimer = new Timer();
             searchTimer.schedule(new TimerTask() {
                 @Override

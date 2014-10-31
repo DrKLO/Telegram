@@ -53,6 +53,8 @@
     <string name="SelectChat">Seleziona chat</string>
     <string name="PhotoTip">Tieni premuto per vedere</string>
     <string name="CompatibilityChat">%1$s sta usando una versione vecchia di Telegram, quindi le foto segrete verranno visualizzate in modalità di compatibilità.\n\nUna volta che %2$s avrà aggiornato Telegram, le foto con il timer minore di 1 minuto funzioneranno in modalità \'Tieni premuto per vedere\' , e verrai notificato ogni volta che l\'altro esegue uno screenshot.</string>
+    <string name="SearchConversations">Conversations</string>
+    <string name="SearchMessages">Messages</string>
     <!--broadcasts-->
     <string name="BroadcastList">Lista broadcast</string>
     <string name="NewBroadcastList">Nuova lista broadcast</string>

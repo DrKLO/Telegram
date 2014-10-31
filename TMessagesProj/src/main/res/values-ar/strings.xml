@@ -53,6 +53,8 @@
     <string name="SelectChat">اختر محادثة</string>
     <string name="PhotoTip">إضغط بإستمرار على المستخدم العرض</string>
     <string name="CompatibilityChat">%1$s يستخدم إصدار قديم من تيليجرام، لذلك، الصور السرية ستظهر في وضع الموافقة.\n\nعندما يقوم %2$s بتحديث تيليجرام، الصور التي بها عداد دقيقة أو أقل ستعمل بطريقة \"الاستمرار بالضغط للإستعراض\"، وسيتم إخبارك عندما يلتقط المستقبل صورة من شاشته.</string>
+    <string name="SearchConversations">Conversations</string>
+    <string name="SearchMessages">Messages</string>
     <!--broadcasts-->
     <string name="BroadcastList">قائمة الرسالة الجماعية</string>
     <string name="NewBroadcastList">رسالة جماعية جديدة</string>

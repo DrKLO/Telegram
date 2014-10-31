@@ -24,11 +24,11 @@ public class BaseContactsSearchAdapter extends BaseFragmentAdapter {
     protected String lastFoundUsername = null;
 
     public void queryServerSearch(final String query) {
+        if (reqId != 0) {
+            ConnectionsManager.getInstance().cancelRpc(reqId, true);
+            reqId = 0;
+        }
         if (query == null || query.length() < 5) {
-            if (reqId != 0) {
-                ConnectionsManager.getInstance().cancelRpc(reqId, true);
-                reqId = 0;
-            }
             globalSearch.clear();
             lastReqId = 0;
             notifyDataSetChanged();

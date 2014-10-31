@@ -346,7 +346,13 @@ public class Emoji {
 				canvas.drawRect(getBounds(), placeholderPaint);
 				return;
 			}
-            Rect b = getDrawRect();
+            Rect b;
+            if (fullSize) {
+                b = getDrawRect();
+            } else {
+                b = getBounds();
+            }
+
             if (!canvas.quickReject(b.left, b.top, b.right, b.bottom, Canvas.EdgeType.AA)) {
                 canvas.drawBitmap(emojiBmp[info.page], info.rect, b, paint);
             }

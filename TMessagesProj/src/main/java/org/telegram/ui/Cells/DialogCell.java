@@ -21,6 +21,7 @@ import android.text.TextUtils;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.LocaleController;
+import org.telegram.android.MessageObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.ContactsController;
@@ -28,7 +29,6 @@ import org.telegram.android.Emoji;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.android.MessageObject;
 import org.telegram.android.ImageReceiver;
 
 public class DialogCell extends BaseCell {
@@ -51,7 +51,12 @@ public class DialogCell extends BaseCell {
 
     private static Paint linePaint;
 
-    private TLRPC.TL_dialog currentDialog;
+    private long currentDialogId;
+    private boolean allowPrintStrings;
+    private int lastMessageDate;
+    private int unreadCount;
+    private MessageObject message;
+
     private ImageReceiver avatarImage;
 
     private DialogCellLayout cellLayout;
@@ -159,13 +164,17 @@ public class DialogCell extends BaseCell {
         init();
     }
 
-    public void setDialog(TLRPC.TL_dialog dialog) {
-        currentDialog = dialog;
+    public void setDialog(long dialog_id, MessageObject messageObject, boolean usePrintStrings, int date, int unread) {
+        currentDialogId = dialog_id;
+        message = messageObject;
+        allowPrintStrings = usePrintStrings;
+        lastMessageDate = date;
+        unreadCount = unread;
         update(0);
     }
 
-    public TLRPC.TL_dialog getDialog() {
-        return currentDialog;
+    public long getDialogId() {
+        return currentDialogId;
     }
 
     @Override
@@ -183,7 +192,7 @@ public class DialogCell extends BaseCell {
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        if (currentDialog == null) {
+        if (currentDialogId == 0) {
             super.onLayout(changed, left, top, right, bottom);
             return;
         }
@@ -199,8 +208,8 @@ public class DialogCell extends BaseCell {
     public void update(int mask) {
         if (mask != 0) {
             boolean continueUpdate = false;
-            if ((mask & MessagesController.UPDATE_MASK_USER_PRINT) != 0) {
-                CharSequence printString = MessagesController.getInstance().printingStrings.get(currentDialog.id);
+            if (allowPrintStrings && (mask & MessagesController.UPDATE_MASK_USER_PRINT) != 0) {
+                CharSequence printString = MessagesController.getInstance().printingStrings.get(currentDialogId);
                 if (lastPrintString != null && printString == null || lastPrintString == null && printString != null || lastPrintString != null && printString != null && !lastPrintString.equals(printString)) {
                     continueUpdate = true;
                 }
@@ -237,8 +246,8 @@ public class DialogCell extends BaseCell {
         chat = null;
         encryptedChat = null;
 
-        int lower_id = (int)currentDialog.id;
-        int high_id = (int)(currentDialog.id >> 32);
+        int lower_id = (int)currentDialogId;
+        int high_id = (int)(currentDialogId >> 32);
         if (lower_id != 0) {
             if (high_id == 1) {
                 chat = MessagesController.getInstance().getChat(lower_id);
@@ -286,7 +295,7 @@ public class DialogCell extends BaseCell {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (currentDialog == null) {
+        if (currentDialogId == 0) {
             return;
         }
 
@@ -404,12 +413,14 @@ public class DialogCell extends BaseCell {
         private int avatarLeft;
 
         public void build(int width, int height) {
-            MessageObject message = MessagesController.getInstance().dialogMessage.get(currentDialog.top_message);
             String nameString = "";
             String timeString = "";
             String countString = null;
             CharSequence messageString = "";
-            CharSequence printingString = MessagesController.getInstance().printingStrings.get(currentDialog.id);
+            CharSequence printingString = null;
+            if (allowPrintStrings) {
+                printingString = MessagesController.getInstance().printingStrings.get(currentDialogId);
+            }
             TextPaint currentNamePaint = namePaint;
             TextPaint currentMessagePaint = messagePaint;
             boolean checkMessage = true;
@@ -483,8 +494,8 @@ public class DialogCell extends BaseCell {
                         }
                     }
                 }
-                if (currentDialog.last_message_date != 0) {
-                    timeString = LocaleController.stringForMessageListDate(currentDialog.last_message_date);
+                if (lastMessageDate != 0) {
+                    timeString = LocaleController.stringForMessageListDate(lastMessageDate);
                 }
                 drawCheck1 = false;
                 drawCheck2 = false;
@@ -494,8 +505,8 @@ public class DialogCell extends BaseCell {
             } else {
                 TLRPC.User fromUser = MessagesController.getInstance().getUser(message.messageOwner.from_id);
 
-                if (currentDialog.last_message_date != 0) {
-                    timeString = LocaleController.stringForMessageListDate(currentDialog.last_message_date);
+                if (lastMessageDate != 0) {
+                    timeString = LocaleController.stringForMessageListDate(lastMessageDate);
                 } else {
                     timeString = LocaleController.stringForMessageListDate(message.messageOwner.date);
                 }
@@ -539,9 +550,9 @@ public class DialogCell extends BaseCell {
                     }
                 }
 
-                if (currentDialog.unread_count != 0) {
+                if (unreadCount != 0) {
                     drawCount = true;
-                    countString = String.format("%d", currentDialog.unread_count);
+                    countString = String.format("%d", unreadCount);
                 } else {
                     drawCount = false;
                 }

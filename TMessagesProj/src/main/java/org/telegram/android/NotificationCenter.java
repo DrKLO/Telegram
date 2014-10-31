@@ -23,7 +23,6 @@ public class NotificationCenter {
     public static final int messageReceivedByAck = 9;
     public static final int messageReceivedByServer = 10;
     public static final int messageSendError = 11;
-    public static final int reloadSearchResults = 12;
     public static final int contactsDidLoaded = 13;
     public static final int chatDidCreated = 15;
     public static final int chatDidFailCreate = 16;

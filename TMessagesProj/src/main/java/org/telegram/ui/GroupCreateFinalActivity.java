@@ -82,7 +82,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         if (!usersToLoad.isEmpty()) {
             final Semaphore semaphore = new Semaphore(0);
             final ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
-            MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
+            MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
                 @Override
                 public void run() {
                     users.addAll(MessagesStorage.getInstance().getUsers(usersToLoad));

@@ -1,33 +1,38 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <org.telegram.ui.Views.SlidingTabView
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:visibility="gone"
+        android:id="@+id/searchPanelView"/>
 
     <ListView
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:id="@+id/messages_list_view"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentBottom="true"
         android:fadingEdge="none"
         android:fadingEdgeLength="0dp"
         android:divider="@null"
         android:dividerHeight="0px"
         android:animationCache="false"/>
 
-    <TextView android:layout_width="match_parent"
+    <TextView
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:textColor="#808080"
         android:gravity="center"
         android:textSize="24dp"
         android:id="@+id/searchEmptyView"
-        android:visibility="invisible"/>
+        android:visibility="gone"/>
 
     <LinearLayout
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/list_empty_view"
-        android:layout_centerInParent="true"
         android:orientation="vertical"
         android:gravity="center"
         android:visibility="gone">
@@ -40,7 +45,8 @@
             android:textSize="24dp"
             android:id="@+id/list_empty_view_text1"/>
 
-        <TextView android:layout_width="wrap_content"
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:textColor="#959595"
             android:gravity="center"
@@ -53,15 +59,17 @@
 
     <LinearLayout
         android:id="@+id/progressLayout"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:gravity="center"
         android:orientation="vertical"
-        android:visibility="gone" >
+        android:visibility="gone">
 
         <ProgressBar
             android:layout_width="wrap_content"
             android:layout_height="wrap_content">
         </ProgressBar>
+
     </LinearLayout>
-</RelativeLayout>
+
+</LinearLayout>

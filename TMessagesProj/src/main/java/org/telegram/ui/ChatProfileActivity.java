@@ -88,7 +88,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         currentChat = MessagesController.getInstance().getChat(chat_id);
         if (currentChat == null) {
             final Semaphore semaphore = new Semaphore(0);
-            MessagesStorage.getInstance().storageQueue.postRunnable(new Runnable() {
+            MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
                 @Override
                 public void run() {
                     currentChat = MessagesStorage.getInstance().getChat(chat_id);
