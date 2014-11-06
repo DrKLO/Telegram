@@ -116,7 +116,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                 if (!playerCheck) {
                     break;
                 }
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if (videoPlayer != null && videoPlayer.isPlaying()) {
@@ -172,7 +172,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
         videoPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mp) {
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         onPlayComplete();
@@ -222,7 +222,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
         if (fragmentView == null) {
             actionBarLayer.setBackgroundColor(0xff333333);
             actionBarLayer.setItemsBackground(R.drawable.bar_selector_white);
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.photo_back);
+            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
             actionBarLayer.setTitle(LocaleController.getString("EditVideo", R.string.EditVideo));
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
@@ -535,11 +535,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
         if (AndroidUtilities.isTablet()) {
             viewHeight = AndroidUtilities.dp(472);
         } else {
-            if (!AndroidUtilities.isTablet() && getParentActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                viewHeight = AndroidUtilities.displaySize.y - AndroidUtilities.statusBarHeight - AndroidUtilities.dp(40);
-            } else {
-                viewHeight = AndroidUtilities.displaySize.y - AndroidUtilities.statusBarHeight - AndroidUtilities.dp(48);
-            }
+            viewHeight = AndroidUtilities.displaySize.y - AndroidUtilities.statusBarHeight - AndroidUtilities.getCurrentActionBarHeight();
         }
 
         int width = 0;

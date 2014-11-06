@@ -38,6 +38,7 @@ import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.IdenticonView;
@@ -141,7 +142,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
             actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             if (dialog_id != 0) {
                 actionBarLayer.setTitle(LocaleController.getString("SecretTitle", R.string.SecretTitle));
@@ -311,11 +312,11 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
             }
         } else if (id == NotificationCenter.encryptedChatCreated) {
             if (creatingChat) {
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
-                        TLRPC.EncryptedChat encryptedChat = (TLRPC.EncryptedChat)args[0];
+                        TLRPC.EncryptedChat encryptedChat = (TLRPC.EncryptedChat) args[0];
                         Bundle args2 = new Bundle();
                         args2.putInt("enc_id", encryptedChat.id);
                         presentFragment(new ChatActivity(args2), true);
@@ -535,7 +536,7 @@ public class UserProfileActivity extends BaseFragment implements NotificationCen
                     photo = user.photo.photo_small;
                     photoBig = user.photo.photo_big;
                 }
-                avatarImage.setImage(photo, "50_50", AndroidUtilities.getUserAvatarForId(user.id));
+                avatarImage.setImage(photo, "50_50", new AvatarDrawable(user));
                 avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
                 return view;
             } else if (type == 1) {

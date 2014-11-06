@@ -1,0 +1,81 @@
+/*
+ * This is the source code of Telegram for Android v. 1.7.x.
+ * It is licensed under GNU GPL v. 2 or later.
+ * You should have received a copy of the license in this archive (see LICENSE).
+ *
+ * Copyright Nikolai Kudashov, 2013-2014.
+ */
+
+package org.telegram.ui.AnimationCompat;
+
+import android.animation.ObjectAnimator;
+import android.view.animation.Interpolator;
+
+import org.telegram.ui.Animation.ObjectAnimator10;
+import org.telegram.ui.Animation.View10;
+
+public class ObjectAnimatorProxy {
+
+    private Object objectAnimator;
+
+    public ObjectAnimatorProxy(Object animator) {
+        objectAnimator = animator;
+    }
+
+    public static Object ofFloat(Object target, String propertyName, float... values) {
+        if (View10.NEED_PROXY) {
+            return ObjectAnimator10.ofFloat(target, propertyName, values);
+        } else {
+            return ObjectAnimator.ofFloat(target, propertyName, values);
+        }
+    }
+
+    public static Object ofInt(Object target, String propertyName, int... values) {
+        if (View10.NEED_PROXY) {
+            return ObjectAnimator10.ofInt(target, propertyName, values);
+        } else {
+            return ObjectAnimator.ofInt(target, propertyName, values);
+        }
+    }
+
+    public static ObjectAnimatorProxy ofFloatProxy(Object target, String propertyName, float... values) {
+        if (View10.NEED_PROXY) {
+            return new ObjectAnimatorProxy(ObjectAnimator10.ofFloat(target, propertyName, values));
+        } else {
+            return new ObjectAnimatorProxy(ObjectAnimator.ofFloat(target, propertyName, values));
+        }
+    }
+
+    public static ObjectAnimatorProxy ofIntProxy(Object target, String propertyName, int... values) {
+        if (View10.NEED_PROXY) {
+            return new ObjectAnimatorProxy(ObjectAnimator10.ofInt(target, propertyName, values));
+        } else {
+            return new ObjectAnimatorProxy(ObjectAnimator.ofInt(target, propertyName, values));
+        }
+    }
+
+    public ObjectAnimatorProxy setDuration(long duration) {
+        if (View10.NEED_PROXY) {
+            ((ObjectAnimator10) objectAnimator).setDuration(duration);
+        } else {
+            ((ObjectAnimator) objectAnimator).setDuration(duration);
+        }
+        return this;
+    }
+
+    public void setInterpolator(Interpolator value) {
+        if (View10.NEED_PROXY) {
+            ((ObjectAnimator10) objectAnimator).setInterpolator(value);
+        } else {
+            ((ObjectAnimator) objectAnimator).setInterpolator(value);
+        }
+    }
+
+    public void start() {
+        if (View10.NEED_PROXY) {
+            ((ObjectAnimator10) objectAnimator).start();
+        } else {
+            ((ObjectAnimator) objectAnimator).start();
+        }
+    }
+}

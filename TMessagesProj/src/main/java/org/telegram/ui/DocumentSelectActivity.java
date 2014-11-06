@@ -130,7 +130,7 @@ public class DocumentSelectActivity extends BaseFragment {
         }
 
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
             actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             actionBarLayer.setTitle(LocaleController.getString("SelectFile", R.string.SelectFile));
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
@@ -481,7 +481,7 @@ public class DocumentSelectActivity extends BaseFragment {
             if (item.thumb != null) {
                 imageView.setImageBitmap(null);
                 typeTextView.setText(item.ext.toUpperCase().substring(0, Math.min(item.ext.length(), 4)));
-                imageView.setImage(item.thumb, "55_42", 0);
+                imageView.setImage(item.thumb, "55_42", null);
                 imageView.setVisibility(View.VISIBLE);
                 typeTextView.setVisibility(View.VISIBLE);
             } else if (item.icon != 0) {

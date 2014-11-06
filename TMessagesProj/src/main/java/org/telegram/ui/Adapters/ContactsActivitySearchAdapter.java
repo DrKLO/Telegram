@@ -77,7 +77,7 @@ public class ContactsActivitySearchAdapter extends BaseContactsSearchAdapter {
     }
 
     private void processSearch(final String query) {
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 if (allowUsernameSearch) {
@@ -130,7 +130,7 @@ public class ContactsActivitySearchAdapter extends BaseContactsSearchAdapter {
     }
 
     private void updateSearchResults(final ArrayList<TLRPC.User> users, final ArrayList<CharSequence> names) {
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 searchResult = users;

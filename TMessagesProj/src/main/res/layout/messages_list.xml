@@ -1,14 +1,8 @@
-<LinearLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
-
-    <org.telegram.ui.Views.SlidingTabView
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:visibility="gone"
-        android:id="@+id/searchPanelView"/>
 
     <ListView
         android:layout_width="match_parent"
@@ -67,9 +61,17 @@
 
         <ProgressBar
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
-        </ProgressBar>
+            android:layout_height="wrap_content"/>
 
     </LinearLayout>
 
-</LinearLayout>
+    <ImageView
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:src="@drawable/floating_states"
+        android:layout_gravity="bottom|right"
+        android:layout_marginRight="14dp"
+        android:layout_marginBottom="14dp"
+        android:id="@+id/floating_button"/>
+
+</FrameLayout>

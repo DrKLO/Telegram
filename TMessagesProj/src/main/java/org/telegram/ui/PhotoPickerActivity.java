@@ -86,8 +86,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         if (fragmentView == null) {
             actionBarLayer.setBackgroundColor(0xff333333);
             actionBarLayer.setItemsBackground(R.drawable.bar_selector_picker);
-            actionBarLayer.setDisplayUseLogoEnabled(true, R.drawable.gallery);
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.photo_back);
+            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
             actionBarLayer.setTitle(LocaleController.getString("Gallery", R.string.Gallery));
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
@@ -115,7 +114,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             });
 
             ActionBarMenu menu = actionBarLayer.createMenu();
-            menu.addItem(1, R.drawable.ic_ab_other_white2);
+            menu.addItem(1, R.drawable.ic_ab_other);
 
             fragmentView = inflater.inflate(R.layout.photo_picker_layout, container, false);
 
@@ -515,7 +514,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 MediaController.AlbumEntry albumEntry = albumsSorted.get(i);
                 BackupImageView imageView = (BackupImageView)view.findViewById(R.id.media_photo_image);
                 if (albumEntry.coverPhoto != null && albumEntry.coverPhoto.path != null) {
-                    imageView.setImage("thumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, R.drawable.nophotos);
+                    imageView.setImage("thumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, mContext.getResources().getDrawable(R.drawable.nophotos));
                 } else {
                     imageView.setImageResource(R.drawable.nophotos);
                 }
@@ -557,7 +556,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 imageView.setTag(i);
                 view.setTag(i);
                 if (photoEntry.path != null) {
-                    imageView.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, null, R.drawable.nophotos);
+                    imageView.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, null, mContext.getResources().getDrawable(R.drawable.nophotos));
                 } else {
                     imageView.setImageResource(R.drawable.nophotos);
                 }

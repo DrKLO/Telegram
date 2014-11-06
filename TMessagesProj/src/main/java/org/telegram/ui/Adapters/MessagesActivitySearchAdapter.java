@@ -44,9 +44,7 @@ public class MessagesActivitySearchAdapter extends BaseContactsSearchAdapter {
     private ArrayList<TLObject> searchResult = new ArrayList<TLObject>();
     private ArrayList<CharSequence> searchResultNames = new ArrayList<CharSequence>();
     private ArrayList<MessageObject> searchResultMessages = new ArrayList<MessageObject>();
-    private String lastSearchTextDialogs;
-    private String lastSearchTextMessages;
-    private int currentSearchType;
+    private String lastSearchText;
     private long reqId = 0;
     private int lastReqId;
     private MessagesActivitySearchAdapterDelegate delegate;
@@ -89,7 +87,7 @@ public class MessagesActivitySearchAdapter extends BaseContactsSearchAdapter {
         reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(final TLObject response, final TLRPC.TL_error error) {
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if (currentReqId == lastReqId) {
@@ -240,7 +238,7 @@ public class MessagesActivitySearchAdapter extends BaseContactsSearchAdapter {
     }
 
     private void updateSearchResults(final ArrayList<TLObject> result, final ArrayList<CharSequence> names, final ArrayList<TLRPC.User> encUsers) {
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 for (TLObject obj : result) {
@@ -266,45 +264,16 @@ public class MessagesActivitySearchAdapter extends BaseContactsSearchAdapter {
     }
 
     public String getLastSearchText() {
-        if (currentSearchType == 2) {
-            return lastSearchTextMessages;
-        } else {
-            return lastSearchTextDialogs;
-        }
+        return lastSearchText;
     }
 
     public boolean isGlobalSearch(int i) {
-        if (currentSearchType != 2) {
-            int localCount = searchResult.size();
-            int globalCount = globalSearch.size();
-            if (i >= 0 && i < localCount) {
-                return false;
-            } else if (i > localCount && i <= globalCount + localCount) {
-                return true;
-            }
-        }
-        return false;
+        return i > searchResult.size() && i <= globalSearch.size() + searchResult.size();
     }
 
-    public void searchDialogs(final String query, final int type) {
-        String lastSearchText;
-        if (type == 2) {
-            lastSearchText = lastSearchTextMessages;
-        } else {
-            lastSearchText = lastSearchTextDialogs;
-        }
-        boolean typeChanged = currentSearchType != type;
-        currentSearchType = type;
+    public void searchDialogs(final String query, final boolean serverOnly) {
         if (query == null && lastSearchText == null || query != null && lastSearchText != null && query.equals(lastSearchText)) {
-            if (typeChanged) {
-                notifyDataSetChanged();
-            }
             return;
-        }
-        if (type == 2) {
-            lastSearchTextMessages = query;
-        } else {
-            lastSearchTextDialogs = query;
         }
         try {
             if (searchTimer != null) {
@@ -314,13 +283,10 @@ public class MessagesActivitySearchAdapter extends BaseContactsSearchAdapter {
             FileLog.e("tmessages", e);
         }
         if (query == null || query.length() == 0) {
-            if (currentSearchType == 2) {
-                searchMessagesInternal(null);
-            } else {
-                searchResult.clear();
-                searchResultNames.clear();
-                queryServerSearch(null);
-            }
+            searchResult.clear();
+            searchResultNames.clear();
+            searchMessagesInternal(null);
+            queryServerSearch(null);
             notifyDataSetChanged();
         } else {
             searchTimer = new Timer();
@@ -333,22 +299,14 @@ public class MessagesActivitySearchAdapter extends BaseContactsSearchAdapter {
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
                     }
-                    if (type != 2) {
-                        searchDialogsInternal(query, type == 0);
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                queryServerSearch(query);
-                            }
-                        });
-                    } else {
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                searchMessagesInternal(query);
-                            }
-                        });
-                    }
+                    searchDialogsInternal(query, serverOnly);
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            queryServerSearch(query);
+                            searchMessagesInternal(query);
+                        }
+                    });
                 }
             }, 200, 300);
         }
@@ -361,38 +319,34 @@ public class MessagesActivitySearchAdapter extends BaseContactsSearchAdapter {
 
     @Override
     public boolean isEnabled(int i) {
-        return currentSearchType == 2 || i != searchResult.size();
+        return i != searchResult.size() && i != searchResult.size() + (globalSearch.isEmpty() ? 0 : globalSearch.size() + 1);
     }
 
     @Override
     public int getCount() {
-        if (currentSearchType == 2) {
-            return searchResultMessages.size();
-        } else {
-            int count = searchResult.size();
-            int globalCount = globalSearch.size();
-            if (globalCount != 0) {
-                count += globalCount + 1;
-            }
-            return count;
+        int count = searchResult.size();
+        int globalCount = globalSearch.size();
+        int messagesCount = searchResultMessages.size();
+        if (globalCount != 0) {
+            count += globalCount + 1;
         }
+        if (messagesCount != 0) {
+            count += messagesCount + 1;
+        }
+        return count;
     }
 
     @Override
     public Object getItem(int i) {
-        if (currentSearchType == 2) {
-            if (i < 0 || i >= searchResultMessages.size()) {
-                return null;
-            }
-            return searchResultMessages.get(i);
-        } else {
-            int localCount = searchResult.size();
-            int globalCount = globalSearch.size();
-            if (i >= 0 && i < localCount) {
-                return searchResult.get(i);
-            } else if (i > localCount && i <= globalCount + localCount) {
-                return globalSearch.get(i - localCount - 1);
-            }
+        int localCount = searchResult.size();
+        int globalCount = globalSearch.isEmpty() ? 0 : globalSearch.size() + 1;
+        int messagesCount = searchResultMessages.isEmpty() ? 0 : searchResultMessages.size() + 1;
+        if (i >= 0 && i < localCount) {
+            return searchResult.get(i);
+        } else if (i > localCount && i < globalCount + localCount) {
+            return globalSearch.get(i - localCount - 1);
+        } else if (i > globalCount + localCount && i < globalCount + localCount + messagesCount) {
+            return searchResultMessages.get(i - localCount - globalCount - 1);
         }
         return null;
     }
@@ -414,8 +368,12 @@ public class MessagesActivitySearchAdapter extends BaseContactsSearchAdapter {
         if (type == 1) {
             if (view == null) {
                 view = new SettingsSectionLayout(mContext);
-                ((SettingsSectionLayout) view).setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
                 view.setPadding(AndroidUtilities.dp(11), 0, AndroidUtilities.dp(11), 0);
+            }
+            if (!globalSearch.isEmpty() && i == searchResult.size()) {
+                ((SettingsSectionLayout) view).setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
+            } else {
+                ((SettingsSectionLayout) view).setText(LocaleController.getString("SearchMessages", R.string.SearchMessages));
             }
         } else if (type == 0) {
             if (view == null) {
@@ -426,7 +384,10 @@ public class MessagesActivitySearchAdapter extends BaseContactsSearchAdapter {
             TLRPC.Chat chat = null;
             TLRPC.EncryptedChat encryptedChat = null;
 
-            ((ChatOrUserCell) view).useSeparator = (i != getCount() - 1 && i != searchResult.size() - 1);
+            int localCount = searchResult.size();
+            int globalCount = globalSearch.isEmpty() ? -1 : globalSearch.size() + 1;
+
+            ((ChatOrUserCell) view).useSeparator = (i != getCount() - 1 && i != localCount - 1 && i != localCount + globalCount - 1);
             Object obj = getItem(i);
             if (obj instanceof TLRPC.User) {
                 user = MessagesController.getInstance().getUser(((TLRPC.User) obj).id);
@@ -465,7 +426,7 @@ public class MessagesActivitySearchAdapter extends BaseContactsSearchAdapter {
                 view = new DialogCell(mContext);
             }
             ((DialogCell) view).useSeparator = (i != getCount() - 1);
-            MessageObject messageObject = searchResultMessages.get(i);
+            MessageObject messageObject = (MessageObject)getItem(i);
             ((DialogCell) view).setDialog(messageObject.getDialogId(), messageObject, false, messageObject.messageOwner.date, 0);
         }
 
@@ -474,14 +435,15 @@ public class MessagesActivitySearchAdapter extends BaseContactsSearchAdapter {
 
     @Override
     public int getItemViewType(int i) {
-        if (currentSearchType == 2) {
-            return 2;
-        } else {
-            if (i == searchResult.size()) {
-                return 1;
-            }
+        int localCount = searchResult.size();
+        int globalCount = globalSearch.isEmpty() ? 0 : globalSearch.size() + 1;
+        int messagesCount = searchResultMessages.isEmpty() ? 0 : searchResultMessages.size() + 1;
+        if (i >= 0 && i < localCount || i > localCount && i < globalCount + localCount) {
             return 0;
+        } else if (i > globalCount + localCount && i < globalCount + localCount + messagesCount) {
+            return 2;
         }
+        return 1;
     }
 
     @Override
@@ -491,9 +453,6 @@ public class MessagesActivitySearchAdapter extends BaseContactsSearchAdapter {
 
     @Override
     public boolean isEmpty() {
-        if (currentSearchType == 2) {
-            return searchResultMessages.isEmpty();
-        }
-        return searchResult.isEmpty() && globalSearch.isEmpty();
+        return searchResult.isEmpty() && globalSearch.isEmpty() && searchResultMessages.isEmpty();
     }
 }

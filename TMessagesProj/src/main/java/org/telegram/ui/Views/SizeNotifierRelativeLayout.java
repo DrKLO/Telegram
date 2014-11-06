@@ -12,6 +12,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.view.View;
 import android.widget.RelativeLayout;
 
 import org.telegram.android.AndroidUtilities;
@@ -55,7 +56,8 @@ public class SizeNotifierRelativeLayout extends RelativeLayout {
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
         if (delegate != null) {
-            int usableViewHeight = this.getRootView().getHeight() - AndroidUtilities.statusBarHeight;
+            View rootView = this.getRootView();
+            int usableViewHeight = rootView.getHeight() - AndroidUtilities.statusBarHeight - AndroidUtilities.getViewInset(rootView);
             this.getWindowVisibleDisplayFrame(rect);
             int keyboardHeight = usableViewHeight - (rect.bottom - rect.top);
             delegate.onSizeChanged(keyboardHeight);

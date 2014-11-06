@@ -186,7 +186,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                 double diff = currentTime - lastCodeTime;
                 codeTime -= diff;
                 lastCodeTime = currentTime;
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if (codeTime <= 1000) {
@@ -224,7 +224,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                 double diff = currentTime - lastCurrentTime;
                 time -= diff;
                 lastCurrentTime = currentTime;
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if (time >= 1000) {
@@ -242,7 +242,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
                                 @Override
                                 public void run(TLObject response, final TLRPC.TL_error error) {
                                     if (error != null && error.text != null) {
-                                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                                        AndroidUtilities.runOnUIThread(new Runnable() {
                                             @Override
                                             public void run() {
                                                 lastError = error.text;
@@ -291,7 +291,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(final TLObject response, final TLRPC.TL_error error) {
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if (delegate == null) {
@@ -379,7 +379,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     @Override
     public void didReceivedNotification(int id, final Object... args) {
         if (id == 998) {
-            AndroidUtilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     if (!waitingForSms) {

@@ -8,11 +8,7 @@
 
 package org.telegram.ui.Views.ActionBar;
 
-import android.animation.Animator;
-import android.animation.ObjectAnimator;
 import android.content.Context;
-import android.content.res.Configuration;
-import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.View;
@@ -21,15 +17,13 @@ import android.widget.FrameLayout;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.R;
-
-import java.util.ArrayList;
+import org.telegram.ui.AnimationCompat.ViewProxy;
 
 public class ActionBar extends FrameLayout {
 
-    private static Drawable logoDrawable;
     protected ActionBarLayer currentLayer = null;
-    private ActionBarLayer previousLayer = null;
-    private View shadowView = null;
+    protected ActionBarLayer previousLayer = null;
+    protected View shadowView = null;
     private boolean isBackOverlayVisible;
 
     public ActionBar(Context context) {
@@ -87,9 +81,7 @@ public class ActionBar extends FrameLayout {
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         layer.setLayoutParams(layoutParams);
         currentLayer.setBackOverlayVisible(isBackOverlayVisible);
-        if(android.os.Build.VERSION.SDK_INT >= 11) {
-            layer.setAlpha(1);
-        }
+        layer.setAlphaEx(1);
     }
 
     public void setBackOverlayVisible(boolean visible) {
@@ -116,7 +108,7 @@ public class ActionBar extends FrameLayout {
         layoutParams.width = LayoutParams.MATCH_PARENT;
         layoutParams.height = LayoutParams.MATCH_PARENT;
         layer.setLayoutParams(layoutParams);
-        shadowView.setX(-AndroidUtilities.dp(2));
+        ViewProxy.setX(shadowView, -AndroidUtilities.dp(2));
         shadowView.setVisibility(VISIBLE);
         previousLayer.setBackOverlayVisible(isBackOverlayVisible);
     }
@@ -125,56 +117,41 @@ public class ActionBar extends FrameLayout {
         if (currentLayer == null) {
             return;
         }
-        currentLayer.setX(0);
+
         if (!backAnimation) {
             removeView(currentLayer);
             currentLayer = previousLayer;
-            currentLayer.setAlpha(1);
+            currentLayer.setAlphaEx(1);
             previousLayer = null;
         } else {
             removeView(previousLayer);
             previousLayer = null;
         }
         shadowView.setVisibility(INVISIBLE);
+        ViewProxy.setX(currentLayer, 0);
     }
 
     public void moveActionBarByX(int dx) {
         if (currentLayer == null) {
             return;
         }
-        currentLayer.setX(dx);
-        shadowView.setX(dx - AndroidUtilities.dp(2));
+        ViewProxy.setX(currentLayer, dx);
+        ViewProxy.setX(shadowView, dx - AndroidUtilities.dp(2));
         if (dx != 0) {
             if (previousLayer != null) {
-                previousLayer.setAlpha(Math.min(1, (float) dx / (float) currentLayer.getMeasuredWidth()));
+                previousLayer.setAlphaEx(Math.min(1, (float) dx / (float) currentLayer.getMeasuredWidth()));
             }
         } else {
             if (previousLayer != null) {
-                previousLayer.setAlpha(0);
+                previousLayer.setAlphaEx(0);
             }
-            currentLayer.setAlpha(1);
-        }
-    }
-
-    public void setupAnimations(ArrayList<Animator> animators, boolean back) {
-        if (back) {
-            animators.add(ObjectAnimator.ofFloat(currentLayer, "x", 0));
-            animators.add(ObjectAnimator.ofFloat(shadowView, "x", -AndroidUtilities.dp(2)));
-            animators.add(ObjectAnimator.ofFloat(previousLayer, "alpha", 0));
-        } else {
-            animators.add(ObjectAnimator.ofFloat(currentLayer, "x", getMeasuredWidth()));
-            animators.add(ObjectAnimator.ofFloat(shadowView, "x", getMeasuredWidth() - AndroidUtilities.dp(2)));
-            animators.add(ObjectAnimator.ofFloat(previousLayer, "alpha", 1.0f));
+            currentLayer.setAlphaEx(1);
         }
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        if (!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(40), MeasureSpec.EXACTLY));
-        } else {
-            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
-        }
+        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.getCurrentActionBarHeight(), MeasureSpec.EXACTLY));
     }
 
     public void onMenuButtonPressed() {

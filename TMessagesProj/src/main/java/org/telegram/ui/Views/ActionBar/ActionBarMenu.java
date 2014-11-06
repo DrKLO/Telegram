@@ -72,7 +72,7 @@ public class ActionBarMenu extends LinearLayout {
         addView(menuItem);
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)menuItem.getLayoutParams();
         layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.width = AndroidUtilities.dp(56);
+        layoutParams.width = AndroidUtilities.dp(48);
         menuItem.setLayoutParams(layoutParams);
         menuItem.setOnClickListener(new OnClickListener() {
             @Override

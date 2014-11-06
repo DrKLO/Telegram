@@ -273,7 +273,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                         });
                     }
                     recordQueue.postRunnable(recordRunnable);
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.recordProgressChanged, System.currentTimeMillis() - recordStartTime);
@@ -451,7 +451,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 @Override
                 public void run() {
                     synchronized (sync) {
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 if (playingMessageObject != null && (audioPlayer != null || audioTrackPlayer != null) && !isPaused) {
@@ -802,7 +802,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 cursor.close();
             }
             if (!screenshotDates.isEmpty()) {
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.screenshotTook);
@@ -1060,7 +1060,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     if (count > 0) {
                         final long pcm = buffer.pcmOffset;
                         final int marker = buffer.finished == 1 ? buffer.size : -1;
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 lastPlayPcm = pcm;
@@ -1149,7 +1149,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     freePlayerBuffers.addAll(usedPlayerBuffers);
                     usedPlayerBuffers.clear();
                 }
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if (!isPaused) {
@@ -1404,7 +1404,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             @Override
             public void run() {
                 if (audioRecorder != null) {
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.recordStartError);
@@ -1425,7 +1425,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
                 try {
                     if (startRecord(recordingAudioFile.getAbsolutePath()) == 0) {
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.recordStartError);
@@ -1453,7 +1453,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                         FileLog.e("tmessages", e2);
                     }
 
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.recordStartError);
@@ -1463,7 +1463,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 }
 
                 recordQueue.postRunnable(recordRunnable);
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.recordStarted);
@@ -1481,7 +1481,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 @Override
                 public void run() {
                     stopRecord();
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             audioToSend.date = ConnectionsManager.getInstance().getCurrentTime();
@@ -1536,7 +1536,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.recordStopped);
@@ -1609,7 +1609,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                                     if (lastProgress <= System.currentTimeMillis() - 500) {
                                         lastProgress = System.currentTimeMillis();
                                         final int progress = (int) ((float) a / (float) size * 100);
-                                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                                        AndroidUtilities.runOnUIThread(new Runnable() {
                                             @Override
                                             public void run() {
                                                 try {
@@ -1641,7 +1641,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                         FileLog.e("tmessages", e);
                     }
                     if (finalProgress != null) {
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 try {
@@ -1915,7 +1915,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     }
                 }
                 final Integer cameraAlbumIdFinal = cameraAlbumId;
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.albumsDidLoaded, guid, albumsSorted, cameraAlbumIdFinal);
@@ -2037,7 +2037,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         if (firstWrite) {
             videoConvertFirstWrite = false;
         }
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 if (error) {

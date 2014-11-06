@@ -32,6 +32,7 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 
 import java.lang.reflect.Field;
@@ -51,9 +52,10 @@ public class ActionBarMenuItem extends ImageView {
     private EditText searchField;
     private boolean isSearchField = false;
     private ActionBarMenuItemSearchListener listener;
-    private Rect rect = null;
-    private int[] location = null;
-    private View selectedMenuView = null;
+    private Rect rect;
+    private int[] location;
+    private View selectedMenuView;
+    private Runnable showMenuRunnable;
 
     public ActionBarMenuItem(Context context, ActionBarMenu menu, ActionBar actionBar, int background) {
         super(context);
@@ -76,7 +78,20 @@ public class ActionBarMenuItem extends ImageView {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
+        if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+            if (hasSubMenu() && (popupWindow == null || popupWindow != null && !popupWindow.isShowing())) {
+                showMenuRunnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        if (getParent() != null) {
+                            getParent().requestDisallowInterceptTouchEvent(true);
+                        }
+                        toggleSubMenu();
+                    }
+                };
+                AndroidUtilities.runOnUIThread(showMenuRunnable, 200);
+            }
+        } else if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
             if (hasSubMenu() && (popupWindow == null || popupWindow != null && !popupWindow.isShowing())) {
                 if (event.getY() > getHeight()) {
                     if (getParent() != null) {
@@ -98,9 +113,18 @@ public class ActionBarMenuItem extends ImageView {
                     child.getHitRect(rect);
                     if ((Integer)child.getTag() < 100) {
                         if (!rect.contains((int)x, (int)y)) {
+                            child.setPressed(false);
                             child.setSelected(false);
+                            if (Build.VERSION.SDK_INT >= 21) {
+                                child.getBackground().setVisible(false, false);
+                            }
                         } else {
+                            child.setPressed(true);
                             child.setSelected(true);
+                            if (Build.VERSION.SDK_INT >= 21) {
+                                child.getBackground().setVisible(true, false);
+                                child.drawableHotspotChanged(x, y - child.getTop());
+                            }
                             selectedMenuView = child;
                         }
                     }
@@ -151,16 +175,6 @@ public class ActionBarMenuItem extends ImageView {
                 }
             });
         }
-        if (popupLayout.getChildCount() != 0) {
-            View delimeter = new View(getContext());
-            delimeter.setBackgroundColor(0xffdcdcdc);
-            popupLayout.addView(delimeter);
-            LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)delimeter.getLayoutParams();
-            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = AndroidUtilities.density >= 3 ? 2 : 1;
-            delimeter.setLayoutParams(layoutParams);
-            delimeter.setTag(100 + id);
-        }
         TextView textView = new TextView(getContext());
         textView.setTextColor(0xff000000);
         textView.setBackgroundResource(R.drawable.list_selector);
@@ -206,6 +220,13 @@ public class ActionBarMenuItem extends ImageView {
     }
 
     public void toggleSubMenu() {
+        if (popupLayout == null) {
+            return;
+        }
+        if (showMenuRunnable != null) {
+            AndroidUtilities.cancelRunOnUIThread(showMenuRunnable);
+            showMenuRunnable = null;
+        }
         if (popupWindow != null && popupWindow.isShowing()) {
             popupWindow.dismiss();
             return;
@@ -213,6 +234,7 @@ public class ActionBarMenuItem extends ImageView {
         if (popupWindow == null) {
             popupWindow = new ActionBarPopupWindow(popupLayout, FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
             //popupWindow.setBackgroundDrawable(new BitmapDrawable());
+            popupWindow.setAnimationStyle(R.style.PopupAnimation);
             popupWindow.setOutsideTouchable(true);
             popupWindow.setClippingEnabled(true);
             popupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
@@ -232,10 +254,10 @@ public class ActionBarMenuItem extends ImageView {
         }
         popupWindow.setFocusable(true);
         if (popupLayout.getMeasuredWidth() == 0) {
-            popupWindow.showAsDropDown(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), 0);
-            popupWindow.update(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), 0, -1, -1);
+            popupWindow.showAsDropDown(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight());
+            popupWindow.update(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight(), -1, -1);
         } else {
-            popupWindow.showAsDropDown(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), 0);
+            popupWindow.showAsDropDown(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight());
         }
     }
 
@@ -377,10 +399,13 @@ public class ActionBarMenuItem extends ImageView {
     }
 
     @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
         if (popupWindow != null && popupWindow.isShowing()) {
-            popupWindow.update(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), 0, -1, -1);
+            int x = parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft();
+            int y = -getMeasuredHeight();
+            FileLog.e("tmessages", "x = " + x + " y = " + y);
+            popupWindow.update(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight(), -1, -1);
         }
     }
 

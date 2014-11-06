@@ -29,6 +29,7 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 
@@ -164,7 +165,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         if (user.photo != null) {
             photo = user.photo.photo_small;
         }
-        avatarImage.setImage(photo, "50_50", AndroidUtilities.getUserAvatarForId(user.id));
+        avatarImage.setImage(photo, "50_50", new AvatarDrawable(user));
     }
 
     public void didReceivedNotification(int id, Object... args) {

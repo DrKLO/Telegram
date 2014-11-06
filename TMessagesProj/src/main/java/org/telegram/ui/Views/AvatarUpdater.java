@@ -146,7 +146,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
         if (id == NotificationCenter.FileDidUpload) {
             String location = (String)args[0];
             if (uploadingAvatar != null && location.equals(uploadingAvatar)) {
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         NotificationCenter.getInstance().removeObserver(AvatarUpdater.this, NotificationCenter.FileDidUpload);
@@ -165,7 +165,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
         } else if (id == NotificationCenter.FileDidFailUpload) {
             String location = (String)args[0];
             if (uploadingAvatar != null && location.equals(uploadingAvatar)) {
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         NotificationCenter.getInstance().removeObserver(AvatarUpdater.this, NotificationCenter.FileDidUpload);

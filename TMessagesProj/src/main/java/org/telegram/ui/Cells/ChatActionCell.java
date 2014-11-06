@@ -31,6 +31,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.PhotoViewer;
+import org.telegram.ui.Views.AvatarDrawable;
 
 public class ChatActionCell extends BaseCell {
 
@@ -47,6 +48,7 @@ public class ChatActionCell extends BaseCell {
     private URLSpan pressedLink;
 
     private ImageReceiver imageReceiver;
+    private AvatarDrawable avatarDrawable;
     private StaticLayout textLayout;
     private int textWidth = 0;
     private int textHeight = 0;
@@ -72,6 +74,7 @@ public class ChatActionCell extends BaseCell {
             textPaint.linkColor = 0xffffffff;
         }
         imageReceiver = new ImageReceiver(this);
+        avatarDrawable = new AvatarDrawable();
         textPaint.setTextSize(AndroidUtilities.dp(MessagesController.getInstance().fontSize));
     }
 
@@ -97,18 +100,19 @@ public class ChatActionCell extends BaseCell {
                     }
                 }
             }
+            avatarDrawable.setInfo(id, null, null, false);
             if (currentMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
-                imageReceiver.setImage(currentMessageObject.messageOwner.action.newUserPhoto.photo_small, "50_50", getResources().getDrawable(AndroidUtilities.getUserAvatarForId(id)), false);
+                imageReceiver.setImage(currentMessageObject.messageOwner.action.newUserPhoto.photo_small, "50_50", avatarDrawable, false);
             } else {
                 PhotoObject photo = PhotoObject.getClosestImageWithSize(currentMessageObject.photoThumbs, AndroidUtilities.dp(64));
                 if (photo != null) {
                     if (photo.image != null) {
                         imageReceiver.setImageBitmap(photo.image);
                     } else {
-                        imageReceiver.setImage(photo.photoOwner.location, "50_50", getResources().getDrawable(AndroidUtilities.getGroupAvatarForId(id)), false);
+                        imageReceiver.setImage(photo.photoOwner.location, "50_50", avatarDrawable, false);
                     }
                 } else {
-                    imageReceiver.setImageBitmap(getResources().getDrawable(AndroidUtilities.getGroupAvatarForId(id)));
+                    imageReceiver.setImageBitmap(avatarDrawable);
                 }
             }
             imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(currentMessageObject), false);

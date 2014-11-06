@@ -119,7 +119,7 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
             actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             actionBarLayer.setTitle(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds));
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
@@ -214,7 +214,7 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
                         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                             @Override
                             public void run(TLObject response, TLRPC.TL_error error) {
-                                AndroidUtilities.RunOnUIThread(new Runnable() {
+                                AndroidUtilities.runOnUIThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         MessagesController.getInstance().enableJoined = true;

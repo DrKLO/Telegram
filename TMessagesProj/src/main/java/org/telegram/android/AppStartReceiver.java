@@ -16,7 +16,7 @@ import org.telegram.ui.ApplicationLoader;
 
 public class AppStartReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 ApplicationLoader.startPushService();

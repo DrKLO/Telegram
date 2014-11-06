@@ -314,7 +314,7 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
         currentMessageObject = null;
         isVisible = false;
         AndroidUtilities.unlockOrientation(parentActivity);
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 centerImage.setImageBitmap((Bitmap)null);

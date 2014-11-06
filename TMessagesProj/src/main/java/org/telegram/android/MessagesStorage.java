@@ -528,7 +528,7 @@ public class MessagesStorage {
                         }
                     }
                     Collections.reverse(messages);
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             NotificationsController.getInstance().processLoadedUnreadMessages(pushDialogs, messages, users, chats, encryptedChats);
@@ -1034,7 +1034,7 @@ public class MessagesStorage {
                         info.version = version;
 
                         final TLRPC.ChatParticipants finalInfo = info;
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.chatInfoDidLoaded, finalInfo.chat_id, finalInfo);
@@ -2385,7 +2385,7 @@ public class MessagesStorage {
                     }
                     cursor.dispose();
 
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             MediaController.getInstance().processDownloadObjects(type, objects);
@@ -2675,7 +2675,7 @@ public class MessagesStorage {
 
             if (downloadMediaMask != 0) {
                 final int downloadMediaMaskFinal = downloadMediaMask;
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         MediaController.getInstance().newDownloadObjectsAvailable(downloadMediaMaskFinal);
@@ -3030,7 +3030,7 @@ public class MessagesStorage {
                     }
                     cursor.dispose();
                     if (!mids.isEmpty()) {
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 for (Integer id : mids) {

@@ -47,6 +47,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
+import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.PinnedHeaderListView;
@@ -138,7 +139,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
             actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             if (isBroadcast) {
                 actionBarLayer.setTitle(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList));
@@ -403,7 +404,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     }
 
     private void processSearch(final String query) {
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<TLRPC.TL_contact>();
@@ -439,7 +440,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     }
 
     private void updateSearchResults(final ArrayList<TLRPC.User> users, final ArrayList<CharSequence> names) {
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 searchResult = users;
@@ -463,7 +464,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 }
             }
         } else if (id == NotificationCenter.chatDidCreated) {
-            AndroidUtilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     removeSelfFromStack();
@@ -562,8 +563,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             if (user.photo != null) {
                 photo = user.photo.photo_small;
             }
-            int placeHolderId = AndroidUtilities.getUserAvatarForId(user.id);
-            holder.avatarImage.setImage(photo, "50_50", placeHolderId);
+            holder.avatarDrawable.setInfo(user.id, user.first_name, user.last_name, false);
+            holder.avatarImage.setImage(photo, "50_50", holder.avatarDrawable);
 
             holder.messageTextView.setText(LocaleController.formatUserStatus(user));
             if (user.status != null && user.status.expires > ConnectionsManager.getInstance().getCurrentTime()) {
@@ -614,6 +615,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         public BackupImageView avatarImage;
         public TextView messageTextView;
         public TextView nameTextView;
+        public AvatarDrawable avatarDrawable = new AvatarDrawable();
 
         public ContactListRowHolder(View view) {
             messageTextView = (TextView)view.findViewById(R.id.messages_list_row_message);

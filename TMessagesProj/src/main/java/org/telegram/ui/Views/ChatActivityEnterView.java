@@ -21,6 +21,7 @@ import android.os.PowerManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.style.ImageSpan;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.Surface;
@@ -28,7 +29,6 @@ import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -529,7 +529,6 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
     }
 
     private void showEmojiPopup(boolean show) {
-        InputMethodManager localInputMethodManager = (InputMethodManager)ApplicationLoader.applicationContext.getSystemService(Context.INPUT_METHOD_SERVICE);
         if (show) {
             if (emojiPopup == null) {
                 createEmojiPopup();
@@ -553,7 +552,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 emojiPopup.setWidth(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, View.MeasureSpec.EXACTLY));
             }
 
-            emojiPopup.showAtLocation(parentActivity.getWindow().getDecorView(), 83, 0, 0);
+            emojiPopup.showAtLocation(parentActivity.getWindow().getDecorView(), Gravity.BOTTOM | Gravity.LEFT, 0, 0);
             if (!keyboardVisible) {
                 if (sizeNotifierRelativeLayout != null) {
                     sizeNotifierRelativeLayout.setPadding(0, 0, 0, currentHeight);

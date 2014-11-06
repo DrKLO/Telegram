@@ -16,6 +16,7 @@ import android.graphics.Rect;
 import android.view.View;
 
 import org.telegram.messenger.FileLog;
+import org.telegram.ui.AnimationCompat.ViewProxy;
 
 public class ClippingImageView extends View {
     private int clipBottom;
@@ -59,12 +60,16 @@ public class ClippingImageView extends View {
     }
 
     public void onDraw(Canvas canvas) {
+        if (getVisibility() == GONE || getVisibility() == INVISIBLE) {
+            return;
+        }
         if (bmp != null) {
-            if (drawListener != null && getScaleY() != 1) {
+            float scaleY = ViewProxy.getScaleY(this);
+            if (drawListener != null && scaleY != 1) {
                 drawListener.onDraw();
             }
             canvas.save();
-            canvas.clipRect(clipLeft / getScaleY(), clipTop / getScaleY(), getWidth() - clipRight / getScaleY(), getHeight() - clipBottom / getScaleY());
+            canvas.clipRect(clipLeft / scaleY, clipTop / scaleY, getWidth() - clipRight / scaleY, getHeight() - clipBottom / scaleY);
             drawRect.set(0, 0, getWidth(), getHeight());
             try {
                 canvas.drawBitmap(this.bmp, null, drawRect, this.paint);

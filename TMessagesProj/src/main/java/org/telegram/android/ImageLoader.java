@@ -307,7 +307,7 @@ public class ImageLoader {
         }
 
         private void onPostExecute(final BitmapDrawable bitmapDrawable) {
-            AndroidUtilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     if (bitmapDrawable != null && memCache.get(cacheImage.key) == null) {
@@ -518,7 +518,7 @@ public class ImageLoader {
                 if (lastProgressUpdateTime == 0 || lastProgressUpdateTime < currentTime - 500) {
                     lastProgressUpdateTime = currentTime;
 
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.FileUploadProgressChanged, location, progress, isEncrypted);
@@ -549,7 +549,7 @@ public class ImageLoader {
 
             @Override
             public void fileDidLoaded(final String location, final File finalFile, final File tempFile) {
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if (location != null) {
@@ -567,7 +567,7 @@ public class ImageLoader {
 
             @Override
             public void fileDidFailedLoad(final String location, final int state) {
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         ImageLoader.this.fileDidFailedLoad(location);
@@ -581,7 +581,7 @@ public class ImageLoader {
                 long currentTime = System.currentTimeMillis();
                 if (lastProgressUpdateTime == 0 || lastProgressUpdateTime < currentTime - 500) {
                     lastProgressUpdateTime = currentTime;
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.FileLoadProgressChanged, location, progress);
@@ -601,7 +601,7 @@ public class ImageLoader {
                     }
                 };
                 if (Intent.ACTION_MEDIA_UNMOUNTED.equals(intent.getAction())) {
-                    AndroidUtilities.RunOnUIThread(r, 1000);
+                    AndroidUtilities.runOnUIThread(r, 1000);
                 } else {
                     r.run();
                 }
@@ -816,7 +816,7 @@ public class ImageLoader {
     }
 
     public void replaceImageInCache(final String oldKey, final String newKey) {
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 ArrayList<String> arr = memCache.getFilterKeys(oldKey);

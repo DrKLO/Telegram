@@ -124,8 +124,8 @@ public class EmojiView extends LinearLayout {
         tabs.setViewPager(pager);
         tabs.setShouldExpand(true);
         tabs.setIndicatorColor(0xff33b5e5);
-        tabs.setIndicatorHeight(AndroidUtilities.dpf(2.0f));
-        tabs.setUnderlineHeight(AndroidUtilities.dpf(2.0f));
+        tabs.setIndicatorHeight(AndroidUtilities.dp(2.0f));
+        tabs.setUnderlineHeight(AndroidUtilities.dp(2.0f));
         tabs.setUnderlineColor(0x66000000);
         tabs.setTabBackground(0);
         LinearLayout localLinearLayout = new LinearLayout(getContext());
@@ -152,7 +152,7 @@ public class EmojiView extends LinearLayout {
         localTextView.setGravity(17);
         recentsWrap.addView(localTextView);
         views.get(0).setEmptyView(localTextView);
-        addView(localLinearLayout, new LinearLayout.LayoutParams(-1, AndroidUtilities.dpf(48.0f)));
+        addView(localLinearLayout, new LinearLayout.LayoutParams(-1, AndroidUtilities.dp(48.0f)));
         addView(pager);
         loadRecents();
         if (Emoji.data[0] == null || Emoji.data[0].length == 0) {

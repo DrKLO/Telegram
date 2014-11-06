@@ -150,7 +150,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     public void updateConfig(final TLRPC.TL_config config) {
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 maxBroadcastCount = config.broadcast_size_max;
@@ -247,7 +247,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
                             users.add(user);
                             MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);
-                            AndroidUtilities.RunOnUIThread(new Runnable() {
+                            AndroidUtilities.runOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateInterfaces, UPDATE_MASK_AVATAR);
@@ -418,7 +418,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             }
         }
         if (updateStatus) {
-            AndroidUtilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateInterfaces, UPDATE_MASK_STATUS);
@@ -482,7 +482,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             @Override
             public void run(final TLObject response, TLRPC.TL_error error) {
                 if (error == null) {
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             loadingFullUsers.remove((Integer)user.id);
@@ -499,7 +499,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         }
                     });
                 } else {
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             loadingFullUsers.remove((Integer)user.id);
@@ -546,7 +546,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
             }
         });
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.didCreatedNewDeleteTask, mids);
@@ -573,7 +573,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 Utilities.stageQueue.cancelRunnable(currentDeleteTaskRunnable);
             }
             currentDeleteTaskRunnable = null;
-            AndroidUtilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     deleteMessages(currentDeletingTaskMids, null, null);
@@ -721,7 +721,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     public void processLoadedBlockedUsers(final ArrayList<Integer> ids, final ArrayList<TLRPC.User> users, final boolean cache) {
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 if (users != null) {
@@ -777,7 +777,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         users.add(user);
                         MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);
                         user.photo = (TLRPC.UserProfilePhoto)response;
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_ALL);
@@ -807,7 +807,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             loadUserPhotos(uid, offset, count, max_id, false, classGuid);
             return;
         }
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 putUsers(res.users, fromCache);
@@ -835,7 +835,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 objects.add(new MessageObject(message, usersLocal));
             }
 
-            AndroidUtilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     int totalCount;
@@ -892,7 +892,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     public void processLoadedMediaCount(final int count, final long uid, final int classGuid, final boolean fromCache) {
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 int lower_part = (int)uid;
@@ -939,7 +939,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         final TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
                         MessagesStorage.getInstance().putUsersAndChats(res.users, res.chats, true, true);
 
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 putUsers(res.users, false);
@@ -1024,7 +1024,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
                     @Override
                     public void run() {
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 NotificationsController.getInstance().processReadMessages(null, did, 0, Integer.MAX_VALUE, false);
@@ -1099,7 +1099,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     final TLRPC.TL_messages_chatFull res = (TLRPC.TL_messages_chatFull) response;
                     MessagesStorage.getInstance().putUsersAndChats(res.users, res.chats, true, true);
                     MessagesStorage.getInstance().updateChatInfo(chat_id, res.full_chat.participants, false);
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             putUsers(res.users, false);
@@ -1110,7 +1110,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
             });
         } else {
-            AndroidUtilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     putUsers(usersArr, fromCache);
@@ -1203,7 +1203,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             updatePrintingStrings();
 
             if (updated) {
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateInterfaces, UPDATE_MASK_USER_PRINT);
@@ -1253,7 +1253,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
         lastPrintingStringCount = newPrintingStrings.size();
 
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 printingStrings = newPrintingStrings;
@@ -1303,7 +1303,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                 @Override
                 public void run(TLObject response, TLRPC.TL_error error) {
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             sendingTypings.remove(dialog_id);
@@ -1377,7 +1377,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     MessagesStorage.getInstance().putMessages(messagesRes, dialog_id);
                 }
                 if (lower_id != 0 && isCache && messagesRes.messages.size() == 0 && (load_type == 0 || load_type == 3)) {
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             loadMessages(dialog_id, count, max_id, false, 0, classGuid, load_type);
@@ -1394,7 +1394,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     message.dialog_id = dialog_id;
                     objects.add(new MessageObject(message, usersLocal, 2));
                 }
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         putUsers(messagesRes.users, isCache);
@@ -1453,7 +1453,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     public void processDialogsUpdateRead(final HashMap<Long, Integer> dialogsToUpdate) {
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 for (HashMap.Entry<Long, Integer> entry : dialogsToUpdate.entrySet()) {
@@ -1502,7 +1502,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     dialogsToUpdate.put(d.id, d.unread_count);
                 }
 
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         putUsers(dialogsRes.users, true);
@@ -1571,7 +1571,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             @Override
             public void run() {
                 if (isCache && dialogsRes.dialogs.size() == 0) {
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             putUsers(dialogsRes.users, isCache);
@@ -1626,7 +1626,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
 
                 final int arg1 = new_totalDialogsCount;
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if (!isCache) {
@@ -1754,7 +1754,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
                     @Override
                     public void run() {
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 TLRPC.TL_dialog dialog = dialogs_dict.get(dialog_id);
@@ -1817,7 +1817,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
                 @Override
                 public void run() {
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             NotificationsController.getInstance().processReadMessages(null, dialog_id, max_date, 0, popup);
@@ -1915,7 +1915,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 @Override
                 public void run(TLObject response, TLRPC.TL_error error) {
                     if (error != null) {
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.chatDidFailCreate);
@@ -1926,7 +1926,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     final TLRPC.messages_StatedMessage res = (TLRPC.messages_StatedMessage) response;
                     MessagesStorage.getInstance().putUsersAndChats(res.users, res.chats, true, true);
 
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             putUsers(res.users, false);
@@ -1973,7 +1973,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     final TLRPC.messages_StatedMessage res = (TLRPC.messages_StatedMessage) response;
                     MessagesStorage.getInstance().putUsersAndChats(res.users, res.chats, true, true);
 
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             putUsers(res.users, false);
@@ -2051,7 +2051,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     final TLRPC.messages_StatedMessage res = (TLRPC.messages_StatedMessage) response;
                     MessagesStorage.getInstance().putUsersAndChats(res.users, res.chats, true, true);
 
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             putUsers(res.users, false);
@@ -2136,7 +2136,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     final TLRPC.messages_StatedMessage res = (TLRPC.messages_StatedMessage) response;
                     MessagesStorage.getInstance().putUsersAndChats(res.users, res.chats, true, true);
 
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             putUsers(res.users, false);
@@ -2186,7 +2186,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 final TLRPC.messages_StatedMessage res = (TLRPC.messages_StatedMessage) response;
                 MessagesStorage.getInstance().putUsersAndChats(res.users, res.chats, true, true);
 
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         putUsers(res.users, false);
@@ -2288,7 +2288,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         UserConfig.pushString = regid;
                         UserConfig.saveConfig(false);
                     }
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             registeringForPush = false;
@@ -2386,7 +2386,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             updatesStartWaitTime = 0;
             if (state == 1) {
                 final int stateCopy = ConnectionsManager.getInstance().getConnectionState();
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.didUpdatedConnectionState, stateCopy);
@@ -2396,7 +2396,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         } else {
             if (state == 1) {
                 final int stateCopy = ConnectionsManager.getInstance().getConnectionState();
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.didUpdatedConnectionState, stateCopy);
@@ -2430,7 +2430,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         if (ConnectionsManager.getInstance().getConnectionState() == 0) {
             ConnectionsManager.getInstance().setConnectionState(3);
             final int stateCopy = ConnectionsManager.getInstance().getConnectionState();
-            AndroidUtilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     NotificationCenter.getInstance().postNotificationName(NotificationCenter.didUpdatedConnectionState, stateCopy);
@@ -2462,7 +2462,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         }
                     }
 
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             putUsers(res.users, false);
@@ -2483,7 +2483,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                 }
 
                                 if (!corrected.isEmpty()) {
-                                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                                    AndroidUtilities.runOnUIThread(new Runnable() {
                                         @Override
                                         public void run() {
                                             for (HashMap.Entry<Integer, Integer> entry : corrected.entrySet()) {
@@ -2551,7 +2551,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
                                         processPendingEncMessages();
 
-                                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                                        AndroidUtilities.runOnUIThread(new Runnable() {
                                             @Override
                                             public void run() {
                                                 for (HashMap.Entry<Long, ArrayList<MessageObject>> pair : messages.entrySet()) {
@@ -2566,7 +2566,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                             @Override
                                             public void run() {
                                                 if (!pushMessages.isEmpty()) {
-                                                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                                                    AndroidUtilities.runOnUIThread(new Runnable() {
                                                         @Override
                                                         public void run() {
                                                             NotificationsController.getInstance().processNewMessages(pushMessages, !(res instanceof TLRPC.TL_updates_differenceSlice));
@@ -2616,7 +2616,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     gettingDifference = false;
                     ConnectionsManager.getInstance().setConnectionState(0);
                     final int stateCopy = ConnectionsManager.getInstance().getConnectionState();
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.didUpdatedConnectionState, stateCopy);
@@ -2661,7 +2661,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     if (printUpdate) {
                         updatePrintingStrings();
                     }
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             if (printUpdate) {
@@ -2675,7 +2675,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
                         @Override
                         public void run() {
-                            AndroidUtilities.RunOnUIThread(new Runnable() {
+                            AndroidUtilities.runOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     if (!obj.isFromMe() && obj.isUnread()) {
@@ -2727,7 +2727,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     if (printUpdate) {
                         updatePrintingStrings();
                     }
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             if (printUpdate) {
@@ -2740,7 +2740,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
                         @Override
                         public void run() {
-                            AndroidUtilities.RunOnUIThread(new Runnable() {
+                            AndroidUtilities.runOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     if (!obj.isFromMe() && obj.isUnread()) {
@@ -2892,7 +2892,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
 
         if (usersArr != null || chatsArr != null) {
-            AndroidUtilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     putUsers(usersArr, false);
@@ -3127,7 +3127,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     dialog.top_message = 0;
                     dialog.last_message_date = update.date;
 
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             dialogs_dict.put(dialog.id, dialog);
@@ -3174,7 +3174,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         newChat.seq_in = exist.seq_in;
                         newChat.seq_out = exist.seq_out;
                     }
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             if (exist != null) {
@@ -3197,7 +3197,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
                     @Override
                     public void run() {
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 if (finalUpdate.blocked) {
@@ -3264,7 +3264,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
             @Override
             public void run() {
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if (!pushMessages.isEmpty()) {
@@ -3279,7 +3279,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             MessagesStorage.getInstance().putMessages(messagesArr, true, true, false, MediaController.getInstance().getAutodownloadMask());
         }
 
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 int updateMask = interfaceUpdateMaskFinal;
@@ -3387,7 +3387,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
             @Override
             public void run() {
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         int updateMask = 0;
@@ -3764,7 +3764,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     return newMessage;
                 } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionFlushHistory) {
                     final long did = ((long)chat.id) << 32;
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             TLRPC.TL_dialog dialog = dialogs_dict.get(did);
@@ -3775,7 +3775,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
                                 @Override
                                 public void run() {
-                                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                                    AndroidUtilities.runOnUIThread(new Runnable() {
                                         @Override
                                         public void run() {
                                             NotificationsController.getInstance().processReadMessages(null, did, 0, Integer.MAX_VALUE, false);
@@ -3909,7 +3909,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         newChat.auth_key = chat.auth_key;
                         newChat.seq_in = chat.seq_in;
                         newChat.seq_out = chat.seq_out;
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 putEncryptedChat(newChat, false);
@@ -3980,7 +3980,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             encryptedChat.seq_in = 0;
             encryptedChat.seq_out = 1;
             MessagesStorage.getInstance().updateEncryptedChat(encryptedChat);
-            AndroidUtilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     putEncryptedChat(encryptedChat, false);
@@ -3996,7 +3996,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             newChat.seq_in = encryptedChat.seq_in;
             newChat.seq_out = encryptedChat.seq_out;
             MessagesStorage.getInstance().updateEncryptedChat(newChat);
-            AndroidUtilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     putEncryptedChat(newChat, false);
@@ -4105,7 +4105,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                 newChat.seq_in = encryptedChat.seq_in;
                                 newChat.seq_out = encryptedChat.seq_out;
                                 MessagesStorage.getInstance().updateEncryptedChat(newChat);
-                                AndroidUtilities.RunOnUIThread(new Runnable() {
+                                AndroidUtilities.runOnUIThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         putEncryptedChat(newChat, false);
@@ -4142,7 +4142,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     TLRPC.messages_DhConfig res = (TLRPC.messages_DhConfig) response;
                     if (response instanceof TLRPC.TL_messages_dhConfig) {
                         if (!Utilities.isGoodPrime(res.p, res.g)) {
-                            AndroidUtilities.RunOnUIThread(new Runnable() {
+                            AndroidUtilities.runOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     try {
@@ -4183,7 +4183,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         @Override
                         public void run(final TLObject response, TLRPC.TL_error error) {
                             if (error == null) {
-                                AndroidUtilities.RunOnUIThread(new Runnable() {
+                                AndroidUtilities.runOnUIThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         startingSecretChat = false;
@@ -4242,7 +4242,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                 });
                             } else {
                                 delayedEncryptedChatUpdates.clear();
-                                AndroidUtilities.RunOnUIThread(new Runnable() {
+                                AndroidUtilities.runOnUIThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         if (!((Activity) context).isFinishing()) {
@@ -4265,7 +4265,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
                 } else {
                     delayedEncryptedChatUpdates.clear();
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             startingSecretChat = false;

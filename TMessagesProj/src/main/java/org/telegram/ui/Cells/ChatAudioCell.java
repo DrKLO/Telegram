@@ -25,6 +25,7 @@ import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.android.MessageObject;
 import org.telegram.android.ImageReceiver;
+import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.ProgressView;
 import org.telegram.ui.Views.SeekBar;
 
@@ -36,6 +37,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     private static TextPaint timePaint;
 
     private ImageReceiver avatarImage;
+    private AvatarDrawable avatarDrawable;
     private boolean needAvatarImage = false;
     private SeekBar seekBar;
     private ProgressView progressView;
@@ -66,6 +68,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         seekBar = new SeekBar(context);
         seekBar.delegate = this;
         progressView = new ProgressView();
+        avatarDrawable = new AvatarDrawable();
 
         if (timePaint == null) {
             statesDrawable[0][0] = getResources().getDrawable(R.drawable.play1);
@@ -364,11 +367,15 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
                 if (audioUser != null) {
                     if (audioUser.photo != null) {
                         currentPhoto = audioUser.photo.photo_small;
+                    } else {
+                        currentPhoto = null;
                     }
-                    avatarImage.setImage(currentPhoto, "50_50", getResources().getDrawable(AndroidUtilities.getUserAvatarForId(uid)), false);
+                    avatarDrawable.setInfo(audioUser);
                 } else {
-                    avatarImage.setImage(null, "50_50", getResources().getDrawable(AndroidUtilities.getUserAvatarForId(uid)), false);
+                    avatarDrawable.setInfo(uid, null, null, false);
+                    currentPhoto = null;
                 }
+                avatarImage.setImage(currentPhoto, "50_50", avatarDrawable, false);
             }
 
             if (messageObject.isOut()) {

@@ -222,7 +222,7 @@ public class SettingsChangeUsernameActivity extends BaseFragment {
             return true;
         }
         if (checkRunnable != null) {
-            AndroidUtilities.CancelRunOnUIThread(checkRunnable);
+            AndroidUtilities.cancelRunOnUIThread(checkRunnable);
             checkRunnable = null;
             lastCheckName = null;
             if (checkReqId != 0) {
@@ -294,7 +294,7 @@ public class SettingsChangeUsernameActivity extends BaseFragment {
                     checkReqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                         @Override
                         public void run(final TLObject response, final TLRPC.TL_error error) {
-                            AndroidUtilities.RunOnUIThread(new Runnable() {
+                            AndroidUtilities.runOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     checkReqId = 0;
@@ -315,7 +315,7 @@ public class SettingsChangeUsernameActivity extends BaseFragment {
                     }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
                 }
             };
-            AndroidUtilities.RunOnUIThread(checkRunnable, 300);
+            AndroidUtilities.runOnUIThread(checkRunnable, 300);
         }
         return true;
     }
@@ -352,7 +352,7 @@ public class SettingsChangeUsernameActivity extends BaseFragment {
             public void run(TLObject response, final TLRPC.TL_error error) {
                 if (error == null) {
                     final TLRPC.User user = (TLRPC.User)response;
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             try {
@@ -369,7 +369,7 @@ public class SettingsChangeUsernameActivity extends BaseFragment {
                         }
                     });
                 } else {
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             try {

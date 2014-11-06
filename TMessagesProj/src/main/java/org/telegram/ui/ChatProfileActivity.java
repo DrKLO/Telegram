@@ -39,6 +39,7 @@ import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.ChatOrUserCell;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
+import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.AvatarUpdater;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
@@ -172,7 +173,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
             actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             if (chat_id > 0) {
                 actionBarLayer.setTitle(LocaleController.getString("GroupInfo", R.string.GroupInfo));
@@ -643,7 +644,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     photo = chat.photo.photo_small;
                     photoBig = chat.photo.photo_big;
                 }
-                avatarImage.setImage(photo, "50_50", chat_id > 0 ? AndroidUtilities.getGroupAvatarForId(chat.id) : AndroidUtilities.getBroadcastAvatarForId(chat.id));
+                avatarImage.setImage(photo, "50_50", new AvatarDrawable(chat));
                 avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
                 return view;
             } else if (type == 1) {

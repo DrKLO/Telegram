@@ -47,6 +47,7 @@ import org.telegram.android.PhotoObject;
 import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
+import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ChatActivityEnterView;
 import org.telegram.ui.Views.FrameLayoutFixed;
@@ -188,7 +189,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         actionBar.setLayoutParams(layoutParams);
 
         actionBarLayer = actionBar.createLayer();
-        actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+        actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
         actionBarLayer.setBackgroundResource(R.color.header);
         actionBarLayer.setItemsBackground(R.drawable.bar_selector);
         actionBar.setCurrentActionBarLayer(actionBarLayer);
@@ -625,11 +626,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 messageContainer.getViewTreeObserver().removeOnPreDrawListener(this);
                 if (!checkTransitionAnimation() && !startedMoving) {
                     ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams)messageContainer.getLayoutParams();
-                    if (!AndroidUtilities.isTablet() && PopupNotificationActivity.this.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                        layoutParams.topMargin = AndroidUtilities.dp(40);
-                    } else {
-                        layoutParams.topMargin = AndroidUtilities.dp(48);
-                    }
+                    layoutParams.topMargin = AndroidUtilities.getCurrentActionBarHeight();
                     layoutParams.bottomMargin = AndroidUtilities.dp(48);
                     layoutParams.width = ViewGroup.MarginLayoutParams.MATCH_PARENT;
                     layoutParams.height = ViewGroup.MarginLayoutParams.MATCH_PARENT;
@@ -791,7 +788,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
     private void checkAndUpdateAvatar() {
         TLRPC.FileLocation newPhoto = null;
-        int placeHolderId = 0;
+        AvatarDrawable avatarDrawable = null;
         if (currentChat != null) {
             TLRPC.Chat chat = MessagesController.getInstance().getChat(currentChat.id);
             if (chat == null) {
@@ -801,7 +798,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             if (currentChat.photo != null) {
                 newPhoto = currentChat.photo.photo_small;
             }
-            placeHolderId = AndroidUtilities.getGroupAvatarForId(currentChat.id);
+            avatarDrawable = new AvatarDrawable(currentChat);
         } else if (currentUser != null) {
             TLRPC.User user = MessagesController.getInstance().getUser(currentUser.id);
             if (user == null) {
@@ -811,10 +808,10 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             if (currentUser.photo != null) {
                 newPhoto = currentUser.photo.photo_small;
             }
-            placeHolderId = AndroidUtilities.getUserAvatarForId(currentUser.id);
+            avatarDrawable = new AvatarDrawable(currentUser);
         }
         if (avatarImageView != null) {
-            avatarImageView.setImage(newPhoto, "50_50", placeHolderId);
+            avatarImageView.setImage(newPhoto, "50_50", avatarDrawable);
         }
     }
 

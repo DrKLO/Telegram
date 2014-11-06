@@ -125,7 +125,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
             actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             if (destroyAfterSelect) {
                 actionBarLayer.setTitle(LocaleController.getString("SelectContact", R.string.SelectContact));
@@ -446,7 +446,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     if (error == null) {
                         final TLRPC.TL_help_inviteText res = (TLRPC.TL_help_inviteText)response;
                         if (res.message.length() != 0) {
-                            AndroidUtilities.RunOnUIThread(new Runnable() {
+                            AndroidUtilities.runOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     updatingInviteText = false;

@@ -8,13 +8,11 @@
 
 package org.telegram.ui.Views.ActionBar;
 
-import android.animation.Animator;
-import android.animation.AnimatorSet;
-import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.os.Build;
 import android.os.Handler;
 import android.view.ActionMode;
@@ -34,6 +32,10 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.ui.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.ui.AnimationCompat.AnimatorSetProxy;
+import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.ui.AnimationCompat.ViewProxy;
 
 import java.util.ArrayList;
 
@@ -64,6 +66,10 @@ public class ActionBarLayout extends FrameLayout {
     private FrameLayoutAnimationListener containerView;
     private FrameLayoutAnimationListener containerViewBack;
     private View shadowView;
+    private DrawerLayout drawerLayout;
+
+    private boolean needStatusBar;
+    private Paint statusBarPaint = new Paint();
 
     private Animation openAnimation;
     private Animation closeAnimation;
@@ -131,6 +137,10 @@ public class ActionBarLayout extends FrameLayout {
             fragment.setParentLayout(this);
         }
 
+        if (drawerLayout != null) {
+            bringChildToFront(drawerLayout);
+        }
+
         needLayout();
     }
 
@@ -141,6 +151,14 @@ public class ActionBarLayout extends FrameLayout {
         if (!fragmentsStack.isEmpty()) {
             BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
             lastFragment.onConfigurationChanged(newConfig);
+        }
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        if (needStatusBar) {
+            canvas.drawRect(0, 0, getWidth(), AndroidUtilities.statusBarHeight, statusBarPaint);
         }
     }
 
@@ -199,12 +217,7 @@ public class ActionBarLayout extends FrameLayout {
         this.delegate = delegate;
     }
 
-    private void onSlideAnimationEnd(boolean backAnimation) {
-        containerView.setTranslationX(0);
-        containerViewBack.setTranslationX(0);
-        actionBar.stopMoving(backAnimation);
-        shadowView.setVisibility(View.INVISIBLE);
-        shadowView.setTranslationX(-AndroidUtilities.dp(2));
+    private void onSlideAnimationEnd(final boolean backAnimation) {
         if (!backAnimation) {
             BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
             lastFragment.onPause();
@@ -216,8 +229,14 @@ public class ActionBarLayout extends FrameLayout {
             containerView = containerViewBack;
             containerViewBack = temp;
             ViewGroup parent = (ViewGroup)containerView.getParent();
-            parent.removeView(containerView);
-            parent.addView(containerView, 1);
+            parent.bringChildToFront(containerView);
+            parent.bringChildToFront(shadowView);
+            parent.bringChildToFront(actionBar);
+            if (drawerLayout != null) {
+                parent.bringChildToFront(drawerLayout);
+            }
+            //parent.removeViewInLayout(containerView);
+            //parent.addView(containerView, 1);
             lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
             lastFragment.onResume();
         } else {
@@ -234,6 +253,12 @@ public class ActionBarLayout extends FrameLayout {
         AndroidUtilities.unlockOrientation(parentActivity);
         startedTracking = false;
         animationInProgress = false;
+
+        ViewProxy.setTranslationX(containerView, 0);
+        ViewProxy.setTranslationX(containerViewBack, 0);
+        actionBar.stopMoving(backAnimation);
+        shadowView.setVisibility(View.INVISIBLE);
+        ViewProxy.setTranslationX(shadowView, -AndroidUtilities.dp(2));
     }
 
     private void prepareForMoving(MotionEvent ev) {
@@ -241,7 +266,7 @@ public class ActionBarLayout extends FrameLayout {
         startedTracking = true;
         startedTrackingX = (int) ev.getX();
         shadowView.setVisibility(View.VISIBLE);
-        shadowView.setTranslationX(-AndroidUtilities.dp(2));
+        ViewProxy.setTranslationX(shadowView, -AndroidUtilities.dp(2));
         containerViewBack.setVisibility(View.VISIBLE);
         beginTrackingSent = false;
 
@@ -266,7 +291,7 @@ public class ActionBarLayout extends FrameLayout {
     }
 
     public boolean onTouchEvent(MotionEvent ev) {
-        if(android.os.Build.VERSION.SDK_INT >= 11 && !checkTransitionAnimation() && !inActionMode && fragmentsStack.size() > 1 && !animationInProgress) {
+        if(!checkTransitionAnimation() && !inActionMode && fragmentsStack.size() > 1 && !animationInProgress) {
             if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && !startedTracking && !maybeStartTracking) {
                 BaseFragment currentFragment = fragmentsStack.get(fragmentsStack.size() - 1);
                 if (!currentFragment.swipeBackEnabled) {
@@ -298,8 +323,8 @@ public class ActionBarLayout extends FrameLayout {
                         beginTrackingSent = true;
                     }
                     actionBar.moveActionBarByX(dx);
-                    containerView.setTranslationX(dx);
-                    shadowView.setTranslationX(dx - AndroidUtilities.dp(2));
+                    ViewProxy.setTranslationX(containerView, dx);
+                    ViewProxy.setTranslationX(shadowView, dx - AndroidUtilities.dp(2));
                 }
             } else if (ev != null && ev.getPointerId(0) == startedTrackingPointerId && (ev.getAction() == MotionEvent.ACTION_CANCEL || ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_POINTER_UP)) {
                 if (velocityTracker == null) {
@@ -314,49 +339,46 @@ public class ActionBarLayout extends FrameLayout {
                     }
                 }
                 if (startedTracking) {
-                    float x = containerView.getX();
-                    ArrayList<Animator> animators = new ArrayList<Animator>();
+                    float x = ViewProxy.getX(containerView);
+                    AnimatorSetProxy animatorSet = new AnimatorSetProxy();
                     float velX = velocityTracker.getXVelocity();
                     float velY = velocityTracker.getYVelocity();
                     final boolean backAnimation = x < containerView.getMeasuredWidth() / 3.0f && (velX < 3500 || velX < velY);
                     float distToMove = 0;
                     if (!backAnimation) {
                         distToMove = containerView.getMeasuredWidth() - x;
-                        animators.add(ObjectAnimator.ofFloat(containerView, "x", containerView.getMeasuredWidth()));
-                        animators.add(ObjectAnimator.ofFloat(shadowView, "x", containerView.getMeasuredWidth() - AndroidUtilities.dp(2)));
+                        animatorSet.playTogether(
+                                ObjectAnimatorProxy.ofFloat(containerView, "x", containerView.getMeasuredWidth()),
+                                ObjectAnimatorProxy.ofFloat(shadowView, "x", containerView.getMeasuredWidth() - AndroidUtilities.dp(2)),
+                                ObjectAnimatorProxy.ofFloat(actionBar.currentLayer, "x", actionBar.getMeasuredWidth()),
+                                ObjectAnimatorProxy.ofFloat(actionBar.shadowView, "x", actionBar.getMeasuredWidth() - AndroidUtilities.dp(2)),
+                                ObjectAnimatorProxy.ofFloat(actionBar.previousLayer, "alphaEx", 1.0f)
+                        );
                     } else {
                         distToMove = x;
-                        animators.add(ObjectAnimator.ofFloat(containerView, "x", 0));
-                        animators.add(ObjectAnimator.ofFloat(shadowView, "x", -AndroidUtilities.dp(2)));
+                        animatorSet.playTogether(
+                                ObjectAnimatorProxy.ofFloat(containerView, "x", 0),
+                                ObjectAnimatorProxy.ofFloat(shadowView, "x", -AndroidUtilities.dp(2)),
+                                ObjectAnimatorProxy.ofFloat(actionBar.currentLayer, "x", 0),
+                                ObjectAnimatorProxy.ofFloat(actionBar.shadowView, "x", -AndroidUtilities.dp(2)),
+                                ObjectAnimatorProxy.ofFloat(actionBar.previousLayer, "alphaEx", 0)
+                        );
                     }
-                    actionBar.setupAnimations(animators, backAnimation);
 
-                    AnimatorSet animatorSet = new AnimatorSet();
-                    animatorSet.playTogether(animators);
                     animatorSet.setDuration(Math.max((int) (200.0f / containerView.getMeasuredWidth() * distToMove), 50));
-                    animatorSet.start();
-                    animationInProgress = true;
-                    animatorSet.addListener(new Animator.AnimatorListener() {
+                    animatorSet.addListener(new AnimatorListenerAdapterProxy() {
                         @Override
-                        public void onAnimationStart(Animator animator) {
-
-                        }
-
-                        @Override
-                        public void onAnimationEnd(Animator animator) {
+                        public void onAnimationEnd(Object animator) {
                             onSlideAnimationEnd(backAnimation);
                         }
 
                         @Override
-                        public void onAnimationCancel(Animator animator) {
+                        public void onAnimationCancel(Object animator) {
                             onSlideAnimationEnd(backAnimation);
-                        }
-
-                        @Override
-                        public void onAnimationRepeat(Animator animator) {
-
                         }
                     });
+                    animatorSet.start();
+                    animationInProgress = true;
                 } else {
                     maybeStartTracking = false;
                     startedTracking = false;
@@ -438,13 +460,17 @@ public class ActionBarLayout extends FrameLayout {
 
         int height = 0;
         if (actionBar.getVisibility() == View.VISIBLE) {
-            if (!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                height = AndroidUtilities.dp(40);
-            } else {
-                height = AndroidUtilities.dp(48);
-            }
+            height = AndroidUtilities.getCurrentActionBarHeight();
+        }
+        if (needStatusBar) {
+            height += AndroidUtilities.statusBarHeight;
         }
 
+        if (actionBar != null) {
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) actionBar.getLayoutParams();
+            layoutParams.topMargin = needStatusBar ? AndroidUtilities.statusBarHeight : 0;
+            actionBar.setLayoutParams(layoutParams);
+        }
         if (containerView != null) {
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) containerView.getLayoutParams();
             if (layoutParams.topMargin != height) {
@@ -529,8 +555,14 @@ public class ActionBarLayout extends FrameLayout {
         containerViewBack = temp;
         containerView.setVisibility(View.VISIBLE);
         ViewGroup parent = (ViewGroup)containerView.getParent();
-        parent.removeView(containerView);
-        parent.addView(containerView, 1);
+        //parent.removeView(containerView);
+        //parent.addView(containerView, 1);
+        parent.bringChildToFront(containerView);
+        parent.bringChildToFront(shadowView);
+        parent.bringChildToFront(actionBar);
+        if (drawerLayout != null) {
+            parent.bringChildToFront(drawerLayout);
+        }
 
         if (!needAnimation) {
             presentFragmentInternalRemoveOld(removeLast, currentFragment);
@@ -823,5 +855,24 @@ public class ActionBarLayout extends FrameLayout {
 
     public void setBackgroundView(View view) {
         backgroundView = view;
+    }
+
+    public void setNeedStatusBar(boolean value) {
+        needStatusBar = value;
+        setWillNotDraw(!needStatusBar);
+    }
+
+    public void setStatusBarColor(int color) {
+        statusBarPaint.setColor(color);
+    }
+
+    public void createDrawerLayout() {
+        drawerLayout = new DrawerLayout(getContext());
+        addView(drawerLayout);
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)drawerLayout.getLayoutParams();
+        layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+        layoutParams.width = AndroidUtilities.dp(100);
+        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        drawerLayout.setLayoutParams(layoutParams);
     }
 }

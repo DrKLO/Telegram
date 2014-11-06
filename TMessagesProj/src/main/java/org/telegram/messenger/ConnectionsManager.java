@@ -639,7 +639,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     public void bindRequestToGuid(final Long request, final int guid) {
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 ArrayList<Long> requests = requestsByGuids.get(guid);
@@ -652,7 +652,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     public void removeRequestInClass(final Long request) {
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 Integer guid = requestsByClass.get(request);
@@ -2143,7 +2143,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                     if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0) {
                                         if (UserConfig.isClientActivated()) {
                                             UserConfig.clearConfig();
-                                            AndroidUtilities.RunOnUIThread(new Runnable() {
+                                            AndroidUtilities.runOnUIThread(new Runnable() {
                                                 @Override
                                                 public void run() {
                                                     NotificationCenter.getInstance().postNotificationName(NotificationCenter.appDidLogout);
@@ -2402,7 +2402,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 }
             }
             final int stateCopy = connectionState;
-            AndroidUtilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     NotificationCenter.getInstance().postNotificationName(NotificationCenter.didUpdatedConnectionState, stateCopy);
@@ -2452,7 +2452,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             if (ConnectionsManager.getInstance().connectionState == 3 && !MessagesController.getInstance().gettingDifference && !MessagesController.getInstance().gettingDifferenceAgain) {
                 ConnectionsManager.getInstance().connectionState = 0;
                 final int stateCopy = ConnectionsManager.getInstance().connectionState;
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.didUpdatedConnectionState, stateCopy);
@@ -2468,7 +2468,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             if (connectionState == 1 || connectionState == 2) {
                 connectionState = 3;
                 final int stateCopy = connectionState;
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.didUpdatedConnectionState, stateCopy);

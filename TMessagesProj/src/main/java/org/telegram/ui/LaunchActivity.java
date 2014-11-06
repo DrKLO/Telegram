@@ -235,6 +235,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
         actionBarLayout.init(mainFragmentsStack);
         actionBarLayout.setDelegate(this);
+        if (Build.VERSION.SDK_INT >= 21) {
+            actionBarLayout.setNeedStatusBar(true);
+            actionBarLayout.setStatusBarColor(0xff54759e);
+        }
+        actionBarLayout.createDrawerLayout();
 
         int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
         if (resourceId > 0) {

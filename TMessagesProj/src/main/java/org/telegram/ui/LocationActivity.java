@@ -27,7 +27,6 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
@@ -39,6 +38,7 @@ import org.telegram.messenger.R;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 
@@ -91,7 +91,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
             actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             if (messageObject != null) {
                 actionBarLayer.setTitle(LocaleController.getString("ChatLocation", R.string.ChatLocation));
@@ -226,19 +226,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 }
 
                 if (messageObject != null) {
-                    int fromId = messageObject.messageOwner.from_id;
-                    if (messageObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
-                        fromId = messageObject.messageOwner.fwd_from_id;
-                    }
-                    TLRPC.User user = MessagesController.getInstance().getUser(fromId);
-                    if (user != null) {
-                        TLRPC.FileLocation photo = null;
-                        if (user.photo != null) {
-                            photo = user.photo.photo_small;
-                        }
-                        avatarImageView.setImage(photo, "50_50", AndroidUtilities.getUserAvatarForId(user.id));
-                        nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
-                    }
+                    updateUserData();
                     userLocation = new Location("network");
                     userLocation.setLatitude(messageObject.messageOwner.media.geo.lat);
                     userLocation.setLongitude(messageObject.messageOwner.media.geo._long);
@@ -285,7 +273,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 if (user.photo != null) {
                     photo = user.photo.photo_small;
                 }
-                avatarImageView.setImage(photo, null, AndroidUtilities.getUserAvatarForId(user.id));
+                avatarImageView.setImage(photo, null, new AvatarDrawable(user));
                 nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
             }
         }

@@ -419,7 +419,7 @@ public class ContactsController {
                                 FileLog.e("tmessages", "detected account deletion!");
                                 currentAccount = new Account(UserConfig.getCurrentUser().phone, "org.telegram.account");
                                 am.addAccountExplicitly(currentAccount, "", null);
-                                AndroidUtilities.RunOnUIThread(new Runnable() {
+                                AndroidUtilities.runOnUIThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         performWriteContactsToPhoneBook();
@@ -546,7 +546,7 @@ public class ContactsController {
                             MessagesStorage.getInstance().putCachedPhoneBook(contactsMap);
                         }
                         if (!disableDeletion && !contactHashMap.isEmpty()) {
-                            AndroidUtilities.RunOnUIThread(new Runnable() {
+                            AndroidUtilities.runOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     if (BuildVars.DEBUG_VERSION) {
@@ -702,7 +702,7 @@ public class ContactsController {
                                 }
                             }
                         });
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 updateUnregisteredContacts(contacts);
@@ -763,7 +763,7 @@ public class ContactsController {
                                 applyContactsUpdates(delayedContactsUpdate, null, null, null);
                                 delayedContactsUpdate.clear();
                             }
-                            AndroidUtilities.RunOnUIThread(new Runnable() {
+                            AndroidUtilities.runOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     synchronized (loadContactsSync) {
@@ -784,7 +784,7 @@ public class ContactsController {
 
     public void processLoadedContacts(final ArrayList<TLRPC.TL_contact> contactsArr, final ArrayList<TLRPC.User> usersArr, final int from) {
         //from: 0 - from server, 1 - from db, 2 - from imported contacts
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 MessagesController.getInstance().putUsers(usersArr, from == 1);
@@ -928,7 +928,7 @@ public class ContactsController {
                             }
                         });
 
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 contacts = contactsArr;
@@ -953,7 +953,7 @@ public class ContactsController {
                         }
 
                         if (contactsByPhonesDictFinal != null) {
-                            AndroidUtilities.RunOnUIThread(new Runnable() {
+                            AndroidUtilities.runOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     Utilities.globalQueue.postRunnable(new Runnable() {
@@ -1272,7 +1272,7 @@ public class ContactsController {
         } else {
             final ArrayList<TLRPC.TL_contact> newContacts = newC;
             final ArrayList<Integer> contactsToDelete = contactsTD;
-            AndroidUtilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     for (TLRPC.TL_contact contact : newContacts) {
@@ -1477,7 +1477,7 @@ public class ContactsController {
                     }
                 }
 
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         for (TLRPC.User u : res.users) {
@@ -1541,7 +1541,7 @@ public class ContactsController {
                     }
                 }
 
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         boolean remove = false;

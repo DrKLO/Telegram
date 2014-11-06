@@ -56,6 +56,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.android.MessageObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.AvatarUpdater;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
@@ -162,7 +163,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
                             users.add(user);
                             MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);
-                            AndroidUtilities.RunOnUIThread(new Runnable() {
+                            AndroidUtilities.runOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_ALL);
@@ -227,7 +228,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
             actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             actionBarLayer.setTitle(LocaleController.getString("Settings", R.string.Settings));
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
@@ -338,7 +339,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                                     @Override
                                     public void run(final TLObject response, final TLRPC.TL_error error) {
-                                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                                        AndroidUtilities.runOnUIThread(new Runnable() {
                                             @Override
                                             public void run() {
                                                 if (getParentActivity() == null) {
@@ -593,7 +594,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     if (error == null) {
 
                         final TLRPC.TL_help_support res = (TLRPC.TL_help_support)response;
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 SharedPreferences.Editor editor = preferences.edit();
@@ -617,7 +618,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             }
                         });
                     } else {
-                        AndroidUtilities.RunOnUIThread(new Runnable() {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
                                 try {
@@ -826,7 +827,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         photo = user.photo.photo_small;
                         photoBig = user.photo.photo_big;
                     }
-                    avatarImage.setImage(photo, "50_50", AndroidUtilities.getUserAvatarForId(user.id));
+                    avatarImage.setImage(photo, "50_50", new AvatarDrawable(user));
                     avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
                 }
                 return view;

@@ -35,6 +35,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.WindowManager;
 import android.webkit.MimeTypeMap;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
@@ -73,6 +74,7 @@ import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.ChatActivityEnterView;
@@ -441,10 +443,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
-            if (AndroidUtilities.isTablet()) {
-                actionBarLayer.setExtraLeftMargin(4);
-            }
+            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
             actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
@@ -877,7 +876,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     SecretPhotoViewer.getInstance().openPhoto(messageObject);
                                 }
                             };
-                            AndroidUtilities.RunOnUIThread(openSecretPhotoRunnable, 100);
+                            AndroidUtilities.runOnUIThread(openSecretPhotoRunnable, 100);
                             return true;
                         }
                     }
@@ -890,14 +889,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 public boolean onTouch(View v, MotionEvent event) {
                     if (openSecretPhotoRunnable != null || SecretPhotoViewer.getInstance().isVisible()) {
                         if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL || event.getAction() == MotionEvent.ACTION_POINTER_UP) {
-                            AndroidUtilities.RunOnUIThread(new Runnable() {
+                            AndroidUtilities.runOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     chatListView.setOnItemClickListener(onItemClickListener);
                                 }
                             }, 150);
                             if (openSecretPhotoRunnable != null) {
-                                AndroidUtilities.CancelRunOnUIThread(openSecretPhotoRunnable);
+                                AndroidUtilities.cancelRunOnUIThread(openSecretPhotoRunnable);
                                 openSecretPhotoRunnable = null;
                                 try {
                                     Toast.makeText(v.getContext(), LocaleController.getString("PhotoTip", R.string.PhotoTip), Toast.LENGTH_SHORT).show();
@@ -906,7 +905,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 }
                             } else {
                                 if (SecretPhotoViewer.getInstance().isVisible()) {
-                                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                                    AndroidUtilities.runOnUIThread(new Runnable() {
                                         @Override
                                         public void run() {
                                             chatListView.setOnItemLongClickListener(onItemLongClickListener);
@@ -922,11 +921,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             } else if (openSecretPhotoRunnable != null) {
                                 if (event.getAction() == MotionEvent.ACTION_MOVE) {
                                     if (Math.hypot(startX - event.getX(), startY - event.getY()) > AndroidUtilities.dp(5)) {
-                                        AndroidUtilities.CancelRunOnUIThread(openSecretPhotoRunnable);
+                                        AndroidUtilities.cancelRunOnUIThread(openSecretPhotoRunnable);
                                         openSecretPhotoRunnable = null;
                                     }
                                 } else {
-                                    AndroidUtilities.CancelRunOnUIThread(openSecretPhotoRunnable);
+                                    AndroidUtilities.cancelRunOnUIThread(openSecretPhotoRunnable);
                                     openSecretPhotoRunnable = null;
                                 }
                             }
@@ -1192,26 +1191,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             timerButton.setTime(currentEncryptedChat.ttl);
         }
 
-        if (avatarImageView != null) {
-            TLRPC.FileLocation photo = null;
-            int placeHolderId = 0;
-            if (currentUser != null) {
-                if (currentUser.photo != null) {
-                    photo = currentUser.photo.photo_small;
-                }
-                placeHolderId = AndroidUtilities.getUserAvatarForId(currentUser.id);
-            } else if (currentChat != null) {
-                if (currentChat.photo != null) {
-                    photo = currentChat.photo.photo_small;
-                }
-                if (isBroadcast) {
-                    placeHolderId = AndroidUtilities.getBroadcastAvatarForId(currentChat.id);
-                } else {
-                    placeHolderId = AndroidUtilities.getGroupAvatarForId(currentChat.id);
-                }
-            }
-            avatarImageView.setImage(photo, "50_50", placeHolderId);
-        }
+        checkAndUpdateAvatar();
     }
 
     private void updateOnlineCount() {
@@ -1461,7 +1441,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private void checkAndUpdateAvatar() {
         TLRPC.FileLocation newPhoto = null;
-        int placeHolderId = 0;
+        AvatarDrawable avatarDrawable = null;
         if (currentUser != null) {
             TLRPC.User user = MessagesController.getInstance().getUser(currentUser.id);
             if (user == null) {
@@ -1471,7 +1451,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (currentUser.photo != null) {
                 newPhoto = currentUser.photo.photo_small;
             }
-            placeHolderId = AndroidUtilities.getUserAvatarForId(currentUser.id);
+            avatarDrawable = new AvatarDrawable(currentUser);
         } else if (currentChat != null) {
             TLRPC.Chat chat = MessagesController.getInstance().getChat(currentChat.id);
             if (chat == null) {
@@ -1481,14 +1461,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (currentChat.photo != null) {
                 newPhoto = currentChat.photo.photo_small;
             }
-            if (isBroadcast) {
-                placeHolderId = AndroidUtilities.getBroadcastAvatarForId(currentChat.id);
-            } else {
-                placeHolderId = AndroidUtilities.getGroupAvatarForId(currentChat.id);
-            }
+            avatarDrawable = new AvatarDrawable(currentChat);
         }
         if (avatarImageView != null) {
-            avatarImageView.setImage(newPhoto, "50_50", placeHolderId);
+            avatarImageView.setImage(newPhoto, "50_50", avatarDrawable);
         }
     }
 
@@ -2407,6 +2383,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     public void onResume() {
         super.onResume();
 
+        getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+
         checkActionBarMenu();
         if (chatAdapter != null) {
             chatAdapter.notifyDataSetChanged();
@@ -2458,7 +2436,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
 
         if (startVideoEdit != null) {
-            AndroidUtilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     openVideoEditor(startVideoEdit, false);
@@ -2481,6 +2459,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     @Override
     public void onPause() {
         super.onPause();
+        getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
         actionBarLayer.hideActionMode();
         chatActivityEnterView.hideEmojiPopup();
         paused = true;
@@ -2537,9 +2516,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (getParentActivity() == null) {
                     return true;
                 }
-                int height = AndroidUtilities.dp(48);
+                int height = AndroidUtilities.getCurrentActionBarHeight();
                 if (!AndroidUtilities.isTablet() && getParentActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                    height = AndroidUtilities.dp(40);
                     selectedMessagesCountTextView.setTextSize(16);
                 } else {
                     selectedMessagesCountTextView.setTextSize(18);
@@ -3227,6 +3205,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                                 if (idx != -1) {
                                                     String ext = fileName.substring(idx + 1);
                                                     realMimeType = myMime.getMimeTypeFromExtension(ext.toLowerCase());
+                                                    if (realMimeType == null) {
+                                                        realMimeType = message.messageOwner.media.document.mime_type;
+                                                        if (realMimeType == null || realMimeType.length() == 0) {
+                                                            realMimeType = null;
+                                                        }
+                                                    }
                                                     if (realMimeType != null) {
                                                         intent.setDataAndType(Uri.fromFile(f), realMimeType);
                                                     } else {

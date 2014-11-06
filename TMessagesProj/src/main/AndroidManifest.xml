@@ -51,7 +51,7 @@
 
         <activity
             android:name="org.telegram.ui.LaunchActivity"
-            android:windowSoftInputMode="adjustResize"
+            android:windowSoftInputMode="adjustPan"
             android:hardwareAccelerated="true"
             android:launchMode="singleTask"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize">

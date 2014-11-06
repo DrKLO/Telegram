@@ -15,6 +15,7 @@ import android.content.DialogInterface;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Environment;
@@ -29,14 +30,12 @@ import android.widget.TextView;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ApplicationLoader;
 import org.telegram.ui.Views.NumberPicker;
 
 import java.io.File;
 import java.lang.reflect.Field;
 import java.util.Hashtable;
-import java.util.Locale;
 
 public class AndroidUtilities {
 
@@ -50,37 +49,6 @@ public class AndroidUtilities {
     public static Point displaySize = new Point();
     public static Integer photoSize = null;
     private static Boolean isTablet = null;
-
-    public static int[] arrColors = {0xffee4928, 0xff41a903, 0xffe09602, 0xff0f94ed, 0xff8f3bf7, 0xfffc4380, 0xff00a1c4, 0xffeb7002};
-    public static int[] arrUsersAvatars = {
-            R.drawable.user_red,
-            R.drawable.user_green,
-            R.drawable.user_yellow,
-            R.drawable.user_blue,
-            R.drawable.user_violet,
-            R.drawable.user_pink,
-            R.drawable.user_aqua,
-            R.drawable.user_orange};
-
-    public static int[] arrGroupsAvatars = {
-            R.drawable.group_red,
-            R.drawable.group_green,
-            R.drawable.group_yellow,
-            R.drawable.group_blue,
-            R.drawable.group_violet,
-            R.drawable.group_pink,
-            R.drawable.group_aqua,
-            R.drawable.group_orange};
-
-    public static int[] arrBroadcastAvatars = {
-            R.drawable.broadcast_red,
-            R.drawable.broadcast_green,
-            R.drawable.broadcast_yellow,
-            R.drawable.broadcast_blue,
-            R.drawable.broadcast_violet,
-            R.drawable.broadcast_pink,
-            R.drawable.broadcast_aqua,
-            R.drawable.broadcast_orange};
 
     static {
         density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
@@ -239,11 +207,7 @@ public class AndroidUtilities {
         return new File("");
     }
 
-    public static int dp(int value) {
-        return (int)(Math.max(1, density * value));
-    }
-
-    public static int dpf(float value) {
+    public static int dp(float value) {
         return (int)Math.ceil(density * value);
     }
 
@@ -290,11 +254,11 @@ public class AndroidUtilities {
         return layer & 0x0000ffff | (version << 16);
     }
 
-    public static void RunOnUIThread(Runnable runnable) {
-        RunOnUIThread(runnable, 0);
+    public static void runOnUIThread(Runnable runnable) {
+        runOnUIThread(runnable, 0);
     }
 
-    public static void RunOnUIThread(Runnable runnable, long delay) {
+    public static void runOnUIThread(Runnable runnable, long delay) {
         if (delay == 0) {
             ApplicationLoader.applicationHandler.post(runnable);
         } else {
@@ -302,7 +266,7 @@ public class AndroidUtilities {
         }
     }
 
-    public static void CancelRunOnUIThread(Runnable runnable) {
+    public static void cancelRunOnUIThread(Runnable runnable) {
         ApplicationLoader.applicationHandler.removeCallbacks(runnable);
     }
 
@@ -335,58 +299,6 @@ public class AndroidUtilities {
             }
             return Math.min(smallSide, maxSide - leftSide);
         }
-    }
-
-    public static int getColorIndex(int id) {
-        int[] arr;
-        if (id >= 0) {
-            arr = arrUsersAvatars;
-        } else {
-            arr = arrGroupsAvatars;
-        }
-        try {
-            String str;
-            if (id >= 0) {
-                str = String.format(Locale.US, "%d%d", id, UserConfig.getClientUserId());
-            } else {
-                str = String.format(Locale.US, "%d", id);
-            }
-            if (str.length() > 15) {
-                str = str.substring(0, 15);
-            }
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-            byte[] digest = md.digest(str.getBytes());
-            int b = digest[Math.abs(id % 16)];
-            if (b < 0) {
-                b += 256;
-            }
-            return Math.abs(b) % arr.length;
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
-        return id % arr.length;
-    }
-
-    public static int getColorForId(int id) {
-        if (id / 1000 == 333) {
-            return 0xff0f94ed;
-        }
-        return arrColors[getColorIndex(id)];
-    }
-
-    public static int getUserAvatarForId(int id) {
-        if (id / 1000 == 333 || id / 1000 == 777) {
-            return R.drawable.telegram_avatar;
-        }
-        return arrUsersAvatars[getColorIndex(id)];
-    }
-
-    public static int getGroupAvatarForId(int id) {
-        return arrGroupsAvatars[getColorIndex(-Math.abs(id))];
-    }
-
-    public static int getBroadcastAvatarForId(int id) {
-        return arrBroadcastAvatars[getColorIndex(-Math.abs(id))];
     }
 
     public static int getPhotoSize() {
@@ -499,6 +411,36 @@ public class AndroidUtilities {
             mCursorDrawableRes.setInt(editText, 0);
         } catch (Exception e) {
             FileLog.e("tmessages", e);
+        }
+    }
+
+    public static int getViewInset(View view) {
+        if (view == null || Build.VERSION.SDK_INT < 21) {
+            return 0;
+        }
+        try {
+            Field mAttachInfoField = View.class.getDeclaredField("mAttachInfo");
+            mAttachInfoField.setAccessible(true);
+            Object mAttachInfo = mAttachInfoField.get(view);
+            if (mAttachInfo != null) {
+                Field mStableInsetsField = mAttachInfo.getClass().getDeclaredField("mStableInsets");
+                mStableInsetsField.setAccessible(true);
+                Rect insets = (Rect)mStableInsetsField.get(mAttachInfo);
+                return insets.bottom;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return 0;
+    }
+
+    public static int getCurrentActionBarHeight() {
+        if (isTablet()) {
+            return dp(64);
+        } else if (ApplicationLoader.applicationContext.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            return dp(48);
+        } else {
+            return dp(56);
         }
     }
 }

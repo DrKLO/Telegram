@@ -259,7 +259,7 @@ public class Emoji {
 
             Utilities.loadBitmap(imageFile.getAbsolutePath(), bitmap, imageResize);
 
-            AndroidUtilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     emojiBmp[page] = bitmap;

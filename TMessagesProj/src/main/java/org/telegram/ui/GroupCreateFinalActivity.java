@@ -33,6 +33,7 @@ import org.telegram.messenger.R;
 import org.telegram.ui.Cells.ChatOrUserCell;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
+import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.AvatarUpdater;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
@@ -50,6 +51,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     private TLRPC.InputFile uploadedAvatar;
     private ArrayList<Integer> selectedContacts;
     private BackupImageView avatarImage;
+    private AvatarDrawable avatarDrawable;
     private boolean createAfterUpload;
     private boolean donePressed;
     private AvatarUpdater avatarUpdater = new AvatarUpdater();
@@ -120,7 +122,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
             actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             if (isBroadcast) {
                 actionBarLayer.setTitle(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList));
@@ -212,7 +214,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                                 } else if (i == 2) {
                                     avatar = null;
                                     uploadedAvatar = null;
-                                    avatarImage.setImage(avatar, "50_50", R.drawable.group_blue);
+                                    avatarImage.setImage(avatar, "50_50", avatarDrawable);
                                 }
                             }
                         });
@@ -222,7 +224,8 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             }
 
             avatarImage = (BackupImageView)fragmentView.findViewById(R.id.settings_avatar_image);
-            avatarImage.setImageResource(R.drawable.group_blue);
+            avatarDrawable.setInfo(3, null, null, isBroadcast);
+            avatarImage.setImageDrawable(avatarDrawable);
 
             nameTextView = (EditText)fragmentView.findViewById(R.id.bubble_input_text);
             if (isBroadcast) {
@@ -247,12 +250,12 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
     @Override
     public void didUploadedPhoto(final TLRPC.InputFile file, final TLRPC.PhotoSize small, final TLRPC.PhotoSize big) {
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 uploadedAvatar = file;
                 avatar = small.location;
-                avatarImage.setImage(avatar, "50_50", R.drawable.group_blue);
+                avatarImage.setImage(avatar, "50_50", avatarDrawable);
                 if (createAfterUpload) {
                     FileLog.e("tmessages", "avatar did uploaded");
                     MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, uploadedAvatar, false);
@@ -311,7 +314,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             }
             donePressed = false;
         } else if (id == NotificationCenter.chatDidCreated) {
-            AndroidUtilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     if (progressDialog != null) {

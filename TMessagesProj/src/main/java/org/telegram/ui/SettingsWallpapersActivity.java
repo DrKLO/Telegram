@@ -16,6 +16,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -366,7 +367,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 progressBar.setProgress((int)(progress * 100));
             }
         } else if (id == NotificationCenter.wallpapersDidLoaded) {
-            AndroidUtilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     wallPapers = (ArrayList<TLRPC.WallPaper>)args[0];
@@ -400,7 +401,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 if (error != null) {
                     return;
                 }
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         wallPapers.clear();
@@ -534,7 +535,7 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                 TLRPC.WallPaper wallPaper = wallPapers.get(i - 1);
                 TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(wallPaper.sizes, AndroidUtilities.dp(100));
                 if (size != null && size.location != null) {
-                    image.setImage(size.location, "100_100", 0);
+                    image.setImage(size.location, "100_100", (Drawable)null);
                 }
                 if (wallPaper.id == selectedBackground) {
                     selection.setVisibility(View.VISIBLE);

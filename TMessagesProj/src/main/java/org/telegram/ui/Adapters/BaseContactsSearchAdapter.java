@@ -41,7 +41,7 @@ public class BaseContactsSearchAdapter extends BaseFragmentAdapter {
         reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(final TLObject response, final TLRPC.TL_error error) {
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if (currentReqId == lastReqId) {

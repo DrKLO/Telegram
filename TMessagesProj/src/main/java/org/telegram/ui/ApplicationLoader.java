@@ -272,7 +272,7 @@ public class ApplicationLoader extends Application {
                 UserConfig.registeredForPush = !isNew;
                 UserConfig.saveConfig(false);
                 if (UserConfig.getClientUserId() != 0) {
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             MessagesController.getInstance().registerForPush(regid);

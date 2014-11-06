@@ -50,7 +50,7 @@ public class LanguageSelectActivity extends BaseFragment {
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
+            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
             actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
             actionBarLayer.setTitle(LocaleController.getString("Language", R.string.Language));
 
@@ -264,7 +264,7 @@ public class LanguageSelectActivity extends BaseFragment {
     }
 
     private void updateSearchResults(final ArrayList<LocaleController.LocaleInfo> arrCounties) {
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 searchResult = arrCounties;
