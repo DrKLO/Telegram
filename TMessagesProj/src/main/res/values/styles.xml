@@ -27,7 +27,6 @@
         <item name="android:editTextStyle">@style/Theme.TMessages.EditText</item>
         <item name="android:windowContentOverlay">@drawable/shadow</item>
         <item name="android:actionBarItemBackground">@drawable/bar_selector</item>
-        <item name="searchViewSearchIcon">@android:color/transparent</item>
 
         <item name="actionBarStyle">@style/ActionBar.Transparent.TMessages</item>
         <item name="actionOverflowButtonStyle">@style/ActionBar.Transparent.TMessages.ActionButtonOverflow</item>

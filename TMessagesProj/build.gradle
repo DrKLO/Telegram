@@ -3,10 +3,10 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:0.12.+'
+        classpath 'com.android.tools.build:gradle:0.14.0'
     }
 }
-apply plugin: 'android'
+apply plugin: 'com.android.application'
 
 repositories {
     mavenCentral()
@@ -17,18 +17,16 @@ tasks.withType(JavaCompile) {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:19.1.+'
-    compile 'com.android.support:appcompat-v7:19.1.+'
-    compile 'com.google.android.gms:play-services:4.3.23'
+    compile 'com.android.support:support-v4:21.0.0'
+    compile 'com.android.support:appcompat-v7:21.0.0'
+    compile 'com.google.android.gms:play-services:6.1.71'
     compile 'net.hockeyapp.android:HockeySDK:3.0.1'
     compile project(':aniways')
 }
 
 android {
-    compileSdkVersion 19
+    compileSdkVersion 21
     buildToolsVersion '20'
-
-    aaptOptions.useAaptPngCruncher = true
 
     lintOptions {
         checkReleaseBuilds false
@@ -91,9 +89,9 @@ android {
 
     defaultConfig {
         minSdkVersion 9
-        targetSdkVersion 19
-        renderscriptTargetApi 19
-        renderscriptSupportMode true
+        targetSdkVersion 21
+        renderscriptTargetApi 21
+        renderscriptSupportModeEnabled true
         versionCode 233
         versionName "1.5.64"
     }
