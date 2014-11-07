@@ -38,9 +38,7 @@ import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.os.Vibrator;
 import android.provider.MediaStore;
-import android.view.Display;
 import android.view.View;
-import android.view.WindowManager;
 
 import org.telegram.android.video.InputSurface;
 import org.telegram.android.video.MP4Builder;
@@ -62,7 +60,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -739,29 +736,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
     public void processMediaObserver(Uri uri) {
         try {
-            int width = 0;
-            int height = 0;
-
-            try {
-                WindowManager windowManager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                    Point size = new Point();
-                    windowManager.getDefaultDisplay().getRealSize(size);
-                    width = size.x;
-                    height = size.y;
-                } else {
-                    try {
-                        Method mGetRawW = Display.class.getMethod("getRawWidth");
-                        Method mGetRawH = Display.class.getMethod("getRawHeight");
-                        width = (Integer) mGetRawW.invoke(windowManager.getDefaultDisplay());
-                        height = (Integer) mGetRawH.invoke(windowManager.getDefaultDisplay());
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                }
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
-            }
+            Point size = AndroidUtilities.getRealScreenSize();
 
             Cursor cursor = ApplicationLoader.applicationContext.getContentResolver().query(uri, mediaProjections, null, null, "date_added DESC LIMIT 1");
             final ArrayList<Long> screenshotDates = new ArrayList<Long>();
@@ -791,7 +766,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                                 photoW = bmOptions.outWidth;
                                 photoH = bmOptions.outHeight;
                             }
-                            if (photoW <= 0 || photoH <= 0 || (photoW == width && photoH == height || photoH == width && photoW == height)) {
+                            if (photoW <= 0 || photoH <= 0 || (photoW == size.x && photoH == size.y || photoH == size.x && photoW == size.y)) {
                                 screenshotDates.add(date);
                             }
                         } catch (Exception e) {

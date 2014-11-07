@@ -9,6 +9,8 @@
 package org.telegram.ui.Views.ActionBar;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
@@ -16,13 +18,25 @@ import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.widget.FrameLayout;
 
-public class DrawerLayout extends FrameLayout {
+import org.telegram.android.AndroidUtilities;
+import org.telegram.ui.AnimationCompat.ViewProxy;
 
-    private Object mLastInsets;
+public class DrawerLayoutContainer extends FrameLayout {
 
-    public DrawerLayout(Context context) {
+    private static final int MIN_DRAWER_MARGIN = 64;
+
+    private View drawerLayout;
+
+    private Paint statusBarPaint = new Paint();
+    private Object lastInsets;
+    private boolean inLayout;
+    private int minDrawerMargin;
+    private float drawerOffset;
+
+    public DrawerLayoutContainer(Context context) {
         super(context);
 
+        minDrawerMargin = (int) (MIN_DRAWER_MARGIN * AndroidUtilities.density + 0.5f);
         setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
         setFocusableInTouchMode(true);
 
@@ -32,23 +46,23 @@ public class DrawerLayout extends FrameLayout {
         }
     }
 
-    static class InsetsListener implements View.OnApplyWindowInsetsListener {
+    private class InsetsListener implements View.OnApplyWindowInsetsListener {
         @Override
         public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
-            final DrawerLayout drawerLayout = (DrawerLayout) v;
+            final DrawerLayoutContainer drawerLayout = (DrawerLayoutContainer) v;
             drawerLayout.setChildInsets(insets, insets.getSystemWindowInsetTop() > 0);
             return insets.consumeSystemWindowInsets();
         }
     }
 
-    public void configureApplyInsets(View drawerLayout) {
+    private void configureApplyInsets(View drawerLayout) {
         if (Build.VERSION.SDK_INT >= 21) {
             drawerLayout.setOnApplyWindowInsetsListener(new InsetsListener());
             drawerLayout.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         }
     }
 
-    public void dispatchChildInsets(View child, Object insets, int drawerGravity) {
+    private void dispatchChildInsets(View child, Object insets, int drawerGravity) {
         WindowInsets wi = (WindowInsets) insets;
         if (drawerGravity == Gravity.LEFT) {
             wi = wi.replaceSystemWindowInsets(wi.getSystemWindowInsetLeft(), wi.getSystemWindowInsetTop(), 0, wi.getSystemWindowInsetBottom());
@@ -58,7 +72,7 @@ public class DrawerLayout extends FrameLayout {
         child.dispatchApplyWindowInsets(wi);
     }
 
-    public void applyMarginInsets(MarginLayoutParams lp, Object insets, int drawerGravity) {
+    private void applyMarginInsets(MarginLayoutParams lp, Object insets, int drawerGravity) {
         WindowInsets wi = (WindowInsets) insets;
         if (drawerGravity == Gravity.LEFT) {
             wi = wi.replaceSystemWindowInsets(wi.getSystemWindowInsetLeft(), wi.getSystemWindowInsetTop(), 0, wi.getSystemWindowInsetBottom());
@@ -71,17 +85,133 @@ public class DrawerLayout extends FrameLayout {
         lp.bottomMargin = wi.getSystemWindowInsetBottom();
     }
 
-    public int getTopInset(Object insets) {
+    private int getTopInset(Object insets) {
         if (Build.VERSION.SDK_INT >= 21) {
             return insets != null ? ((WindowInsets) insets).getSystemWindowInsetTop() : 0;
         }
         return 0;
     }
 
-    public void setChildInsets(Object insets, boolean draw) {
-        mLastInsets = insets;
+    private void setChildInsets(Object insets, boolean draw) {
+        lastInsets = insets;
         setWillNotDraw(!draw && getBackground() == null);
         requestLayout();
+    }
+
+    public void setStatusBarColor(int color) {
+        statusBarPaint.setColor(color);
+    }
+
+    public void setDrawerLayout(View layout) {
+        drawerLayout = layout;
+        addView(drawerLayout);
+        if (Build.VERSION.SDK_INT >= 21) {
+            drawerLayout.setFitsSystemWindows(true);
+        }
+    }
+
+    public void moveDrawerByX(int dx) {
+        if (dx > drawerLayout.getMeasuredWidth()) {
+            dx = drawerLayout.getMeasuredWidth();
+        }
+        ViewProxy.setTranslationX(drawerLayout, dx);
+
+        final int newVisibility = dx > 0 ? VISIBLE : INVISIBLE;
+        if (drawerLayout.getVisibility() != newVisibility) {
+            drawerLayout.setVisibility(newVisibility);
+        }
+    }
+
+    public void openDrawer() {
+
+    }
+
+    public void closeDrawer() {
+
+    }
+
+    public View getDrawerLayout() {
+        return drawerLayout;
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        if (Build.VERSION.SDK_INT >= 21) {
+            canvas.drawRect(0, 0, getWidth(), AndroidUtilities.statusBarHeight, statusBarPaint);
+        }
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        inLayout = true;
+        final int width = r - l;
+        final int childCount = getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            final View child = getChildAt(i);
+
+            if (child.getVisibility() == GONE) {
+                continue;
+            }
+
+            final LayoutParams lp = (LayoutParams) child.getLayoutParams();
+
+            if (drawerLayout != child) {
+                child.layout(lp.leftMargin, lp.topMargin, lp.leftMargin + child.getMeasuredWidth(), lp.topMargin + child.getMeasuredHeight());
+            } else {
+                child.layout(-child.getMeasuredWidth(), lp.topMargin, 0, lp.topMargin + child.getMeasuredHeight());
+            }
+        }
+        inLayout = false;
+    }
+
+    @Override
+    public void requestLayout() {
+        if (!inLayout) {
+            super.requestLayout();
+        }
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        int widthMode = MeasureSpec.getMode(widthMeasureSpec);
+        int heightMode = MeasureSpec.getMode(heightMeasureSpec);
+        int widthSize = MeasureSpec.getSize(widthMeasureSpec);
+        int heightSize = MeasureSpec.getSize(heightMeasureSpec);
+
+        setMeasuredDimension(widthSize, heightSize);
+
+        final boolean applyInsets = lastInsets != null && Build.VERSION.SDK_INT >= 21;
+
+        int foundDrawers = 0;
+        final int childCount = getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            final View child = getChildAt(i);
+
+            if (child.getVisibility() == GONE) {
+                continue;
+            }
+
+            final LayoutParams lp = (LayoutParams) child.getLayoutParams();
+
+            if (applyInsets) {
+                if (child.getFitsSystemWindows()) {
+                    dispatchChildInsets(child, lastInsets, lp.gravity);
+                } else {
+                    applyMarginInsets(lp, lastInsets, lp.gravity);
+                }
+            }
+
+            if (drawerLayout != child) {
+                final int contentWidthSpec = MeasureSpec.makeMeasureSpec(widthSize - lp.leftMargin - lp.rightMargin, MeasureSpec.EXACTLY);
+                final int contentHeightSpec = MeasureSpec.makeMeasureSpec(heightSize - lp.topMargin - lp.bottomMargin, MeasureSpec.EXACTLY);
+                child.measure(contentWidthSpec, contentHeightSpec);
+            } else {
+                final int drawerWidthSpec = getChildMeasureSpec(widthMeasureSpec, minDrawerMargin + lp.leftMargin + lp.rightMargin, lp.width);
+                final int drawerHeightSpec = getChildMeasureSpec(heightMeasureSpec, lp.topMargin + lp.bottomMargin, lp.height);
+                child.measure(drawerWidthSpec, drawerHeightSpec);
+            }
+        }
     }
 
 
@@ -163,18 +293,6 @@ public class DrawerLayout extends FrameLayout {
         public void onDrawerStateChanged(int newState) {
         }
     }
-
-
-    static {
-        final int version = Build.VERSION.SDK_INT;
-        if (version >= 21) {
-            IMPL = new DrawerLayoutCompatImplApi21();
-        } else {
-            IMPL = new DrawerLayoutCompatImplBase();
-        }
-    }
-
-    static final DrawerLayoutCompatImpl IMPL;
 
     public void setDrawerShadow(Drawable shadowDrawable, @EdgeGravity int gravity) {
 
@@ -463,160 +581,6 @@ public class DrawerLayout extends FrameLayout {
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         mFirstLayout = true;
-    }
-
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int widthMode = MeasureSpec.getMode(widthMeasureSpec);
-        int heightMode = MeasureSpec.getMode(heightMeasureSpec);
-        int widthSize = MeasureSpec.getSize(widthMeasureSpec);
-        int heightSize = MeasureSpec.getSize(heightMeasureSpec);
-
-        setMeasuredDimension(widthSize, heightSize);
-
-        final boolean applyInsets = mLastInsets != null && ViewCompat.getFitsSystemWindows(this);
-        final int layoutDirection = ViewCompat.getLayoutDirection(this);
-
-        // Gravity value for each drawer we've seen. Only one of each permitted.
-        int foundDrawers = 0;
-        final int childCount = getChildCount();
-        for (int i = 0; i < childCount; i++) {
-            final View child = getChildAt(i);
-
-            if (child.getVisibility() == GONE) {
-                continue;
-            }
-
-            final LayoutParams lp = (LayoutParams) child.getLayoutParams();
-
-            if (applyInsets) {
-                final int cgrav = GravityCompat.getAbsoluteGravity(lp.gravity, layoutDirection);
-                if (ViewCompat.getFitsSystemWindows(child)) {
-                    IMPL.dispatchChildInsets(child, mLastInsets, cgrav);
-                } else {
-                    IMPL.applyMarginInsets(lp, mLastInsets, cgrav);
-                }
-            }
-
-            if (isContentView(child)) {
-                // Content views get measured at exactly the layout's size.
-                final int contentWidthSpec = MeasureSpec.makeMeasureSpec(
-                        widthSize - lp.leftMargin - lp.rightMargin, MeasureSpec.EXACTLY);
-                final int contentHeightSpec = MeasureSpec.makeMeasureSpec(
-                        heightSize - lp.topMargin - lp.bottomMargin, MeasureSpec.EXACTLY);
-                child.measure(contentWidthSpec, contentHeightSpec);
-            } else if (isDrawerView(child)) {
-                final int childGravity =
-                        getDrawerViewAbsoluteGravity(child) & Gravity.HORIZONTAL_GRAVITY_MASK;
-                if ((foundDrawers & childGravity) != 0) {
-                    throw new IllegalStateException("Child drawer has absolute gravity " +
-                            gravityToString(childGravity) + " but this " + TAG + " already has a " +
-                            "drawer view along that edge");
-                }
-                final int drawerWidthSpec = getChildMeasureSpec(widthMeasureSpec,
-                        mMinDrawerMargin + lp.leftMargin + lp.rightMargin,
-                        lp.width);
-                final int drawerHeightSpec = getChildMeasureSpec(heightMeasureSpec,
-                        lp.topMargin + lp.bottomMargin,
-                        lp.height);
-                child.measure(drawerWidthSpec, drawerHeightSpec);
-            } else {
-                throw new IllegalStateException("Child " + child + " at index " + i +
-                        " does not have a valid layout_gravity - must be Gravity.LEFT, " +
-                        "Gravity.RIGHT or Gravity.NO_GRAVITY");
-            }
-        }
-    }
-
-    @Override
-    protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        mInLayout = true;
-        final int width = r - l;
-        final int childCount = getChildCount();
-        for (int i = 0; i < childCount; i++) {
-            final View child = getChildAt(i);
-
-            if (child.getVisibility() == GONE) {
-                continue;
-            }
-
-            final LayoutParams lp = (LayoutParams) child.getLayoutParams();
-
-            if (isContentView(child)) {
-                child.layout(lp.leftMargin, lp.topMargin,
-                        lp.leftMargin + child.getMeasuredWidth(),
-                        lp.topMargin + child.getMeasuredHeight());
-            } else { // Drawer, if it wasn't onMeasure would have thrown an exception.
-                final int childWidth = child.getMeasuredWidth();
-                final int childHeight = child.getMeasuredHeight();
-                int childLeft;
-
-                final float newOffset;
-                if (checkDrawerViewAbsoluteGravity(child, Gravity.LEFT)) {
-                    childLeft = -childWidth + (int) (childWidth * lp.onScreen);
-                    newOffset = (float) (childWidth + childLeft) / childWidth;
-                } else { // Right; onMeasure checked for us.
-                    childLeft = width - (int) (childWidth * lp.onScreen);
-                    newOffset = (float) (width - childLeft) / childWidth;
-                }
-
-                final boolean changeOffset = newOffset != lp.onScreen;
-
-                final int vgrav = lp.gravity & Gravity.VERTICAL_GRAVITY_MASK;
-
-                switch (vgrav) {
-                    default:
-                    case Gravity.TOP: {
-                        child.layout(childLeft, lp.topMargin, childLeft + childWidth,
-                                lp.topMargin + childHeight);
-                        break;
-                    }
-
-                    case Gravity.BOTTOM: {
-                        final int height = b - t;
-                        child.layout(childLeft,
-                                height - lp.bottomMargin - child.getMeasuredHeight(),
-                                childLeft + childWidth,
-                                height - lp.bottomMargin);
-                        break;
-                    }
-
-                    case Gravity.CENTER_VERTICAL: {
-                        final int height = b - t;
-                        int childTop = (height - childHeight) / 2;
-
-                        // Offset for margins. If things don't fit right because of
-                        // bad measurement before, oh well.
-                        if (childTop < lp.topMargin) {
-                            childTop = lp.topMargin;
-                        } else if (childTop + childHeight > height - lp.bottomMargin) {
-                            childTop = height - lp.bottomMargin - childHeight;
-                        }
-                        child.layout(childLeft, childTop, childLeft + childWidth,
-                                childTop + childHeight);
-                        break;
-                    }
-                }
-
-                if (changeOffset) {
-                    setDrawerViewOffset(child, newOffset);
-                }
-
-                final int newVisibility = lp.onScreen > 0 ? VISIBLE : INVISIBLE;
-                if (child.getVisibility() != newVisibility) {
-                    child.setVisibility(newVisibility);
-                }
-            }
-        }
-        mInLayout = false;
-        mFirstLayout = false;
-    }
-
-    @Override
-    public void requestLayout() {
-        if (!mInLayout) {
-            super.requestLayout();
-        }
     }
 
     @Override

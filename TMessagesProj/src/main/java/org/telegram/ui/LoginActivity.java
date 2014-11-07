@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ScrollView;
@@ -125,6 +126,18 @@ public class LoginActivity extends BaseFragment implements SlideView.SlideViewDe
             }
         }
         return fragmentView;
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     }
 
     private void saveCurrentState() {

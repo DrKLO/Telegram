@@ -35,6 +35,7 @@ import org.telegram.ui.Views.NumberPicker;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Hashtable;
 
 public class AndroidUtilities {
@@ -442,5 +443,26 @@ public class AndroidUtilities {
         } else {
             return dp(56);
         }
+    }
+
+    public static Point getRealScreenSize() {
+        Point size = new Point();
+        try {
+            WindowManager windowManager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                windowManager.getDefaultDisplay().getRealSize(size);
+            } else {
+                try {
+                    Method mGetRawW = Display.class.getMethod("getRawWidth");
+                    Method mGetRawH = Display.class.getMethod("getRawHeight");
+                    size.set((Integer) mGetRawW.invoke(windowManager.getDefaultDisplay()), (Integer) mGetRawH.invoke(windowManager.getDefaultDisplay()));
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return size;
     }
 }

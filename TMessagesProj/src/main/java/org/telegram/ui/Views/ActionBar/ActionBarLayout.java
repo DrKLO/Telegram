@@ -11,8 +11,6 @@ package org.telegram.ui.Views.ActionBar;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.os.Build;
 import android.os.Handler;
 import android.view.ActionMode;
@@ -66,10 +64,9 @@ public class ActionBarLayout extends FrameLayout {
     private FrameLayoutAnimationListener containerView;
     private FrameLayoutAnimationListener containerViewBack;
     private View shadowView;
-    private DrawerLayout drawerLayout;
+    private DrawerLayoutContainer drawerLayoutContainer;
 
-    private boolean needStatusBar;
-    private Paint statusBarPaint = new Paint();
+    private boolean allowOpenDrawer;
 
     private Animation openAnimation;
     private Animation closeAnimation;
@@ -137,10 +134,6 @@ public class ActionBarLayout extends FrameLayout {
             fragment.setParentLayout(this);
         }
 
-        if (drawerLayout != null) {
-            bringChildToFront(drawerLayout);
-        }
-
         needLayout();
     }
 
@@ -151,14 +144,6 @@ public class ActionBarLayout extends FrameLayout {
         if (!fragmentsStack.isEmpty()) {
             BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
             lastFragment.onConfigurationChanged(newConfig);
-        }
-    }
-
-    @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
-        if (needStatusBar) {
-            canvas.drawRect(0, 0, getWidth(), AndroidUtilities.statusBarHeight, statusBarPaint);
         }
     }
 
@@ -232,9 +217,6 @@ public class ActionBarLayout extends FrameLayout {
             parent.bringChildToFront(containerView);
             parent.bringChildToFront(shadowView);
             parent.bringChildToFront(actionBar);
-            if (drawerLayout != null) {
-                parent.bringChildToFront(drawerLayout);
-            }
             //parent.removeViewInLayout(containerView);
             //parent.addView(containerView, 1);
             lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
@@ -259,6 +241,14 @@ public class ActionBarLayout extends FrameLayout {
         actionBar.stopMoving(backAnimation);
         shadowView.setVisibility(View.INVISIBLE);
         ViewProxy.setTranslationX(shadowView, -AndroidUtilities.dp(2));
+    }
+
+    private void prepareForDrawerOpen(MotionEvent ev) {
+        maybeStartTracking = false;
+        startedTracking = true;
+        startedTrackingX = (int) ev.getX();
+        beginTrackingSent = false;
+        AndroidUtilities.lockOrientation(parentActivity);
     }
 
     private void prepareForMoving(MotionEvent ev) {
@@ -291,108 +281,181 @@ public class ActionBarLayout extends FrameLayout {
     }
 
     public boolean onTouchEvent(MotionEvent ev) {
-        if(!checkTransitionAnimation() && !inActionMode && fragmentsStack.size() > 1 && !animationInProgress) {
-            if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && !startedTracking && !maybeStartTracking) {
-                BaseFragment currentFragment = fragmentsStack.get(fragmentsStack.size() - 1);
-                if (!currentFragment.swipeBackEnabled) {
-                    return false;
-                }
-                startedTrackingPointerId = ev.getPointerId(0);
-                maybeStartTracking = true;
-                startedTrackingX = (int) ev.getX();
-                startedTrackingY = (int) ev.getY();
-                if (velocityTracker != null) {
-                    velocityTracker.clear();
-                }
-            } else if (ev != null && ev.getAction() == MotionEvent.ACTION_MOVE && ev.getPointerId(0) == startedTrackingPointerId) {
-                if (velocityTracker == null) {
-                    velocityTracker = VelocityTracker.obtain();
-                }
-                int dx = Math.max(0, (int) (ev.getX() - startedTrackingX));
-                int dy = Math.abs((int)ev.getY() - startedTrackingY);
-                velocityTracker.addMovement(ev);
-                if (maybeStartTracking && !startedTracking && dx >= AndroidUtilities.dp(10) && Math.abs(dx) / 3 > dy) {
-                    prepareForMoving(ev);
-                } else if (startedTracking) {
-                    if (!beginTrackingSent) {
-                        if (parentActivity.getCurrentFocus() != null) {
-                            AndroidUtilities.hideKeyboard(parentActivity.getCurrentFocus());
-                        }
-                        BaseFragment currentFragment = fragmentsStack.get(fragmentsStack.size() - 1);
-                        currentFragment.onBeginSlide();
-                        beginTrackingSent = true;
+        if(!checkTransitionAnimation() && !inActionMode && !animationInProgress) {
+            if (fragmentsStack.size() > 1) {
+                if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && !startedTracking && !maybeStartTracking) {
+                    BaseFragment currentFragment = fragmentsStack.get(fragmentsStack.size() - 1);
+                    if (!currentFragment.swipeBackEnabled) {
+                        return false;
                     }
-                    actionBar.moveActionBarByX(dx);
-                    ViewProxy.setTranslationX(containerView, dx);
-                    ViewProxy.setTranslationX(shadowView, dx - AndroidUtilities.dp(2));
-                }
-            } else if (ev != null && ev.getPointerId(0) == startedTrackingPointerId && (ev.getAction() == MotionEvent.ACTION_CANCEL || ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_POINTER_UP)) {
-                if (velocityTracker == null) {
-                    velocityTracker = VelocityTracker.obtain();
-                }
-                velocityTracker.computeCurrentVelocity(1000);
-                if (!startedTracking) {
-                    float velX = velocityTracker.getXVelocity();
-                    float velY = velocityTracker.getYVelocity();
-                    if (velX >= 3500 && velX > velY) {
+                    startedTrackingPointerId = ev.getPointerId(0);
+                    maybeStartTracking = true;
+                    startedTrackingX = (int) ev.getX();
+                    startedTrackingY = (int) ev.getY();
+                    if (velocityTracker != null) {
+                        velocityTracker.clear();
+                    }
+                } else if (ev != null && ev.getAction() == MotionEvent.ACTION_MOVE && ev.getPointerId(0) == startedTrackingPointerId) {
+                    if (velocityTracker == null) {
+                        velocityTracker = VelocityTracker.obtain();
+                    }
+                    int dx = Math.max(0, (int) (ev.getX() - startedTrackingX));
+                    int dy = Math.abs((int) ev.getY() - startedTrackingY);
+                    velocityTracker.addMovement(ev);
+                    if (maybeStartTracking && !startedTracking && dx >= AndroidUtilities.dp(10) && Math.abs(dx) / 3 > dy) {
                         prepareForMoving(ev);
+                    } else if (startedTracking) {
+                        if (!beginTrackingSent) {
+                            if (parentActivity.getCurrentFocus() != null) {
+                                AndroidUtilities.hideKeyboard(parentActivity.getCurrentFocus());
+                            }
+                            BaseFragment currentFragment = fragmentsStack.get(fragmentsStack.size() - 1);
+                            currentFragment.onBeginSlide();
+                            beginTrackingSent = true;
+                        }
+                        actionBar.moveActionBarByX(dx);
+                        ViewProxy.setTranslationX(containerView, dx);
+                        ViewProxy.setTranslationX(shadowView, dx - AndroidUtilities.dp(2));
                     }
-                }
-                if (startedTracking) {
-                    float x = ViewProxy.getX(containerView);
-                    AnimatorSetProxy animatorSet = new AnimatorSetProxy();
-                    float velX = velocityTracker.getXVelocity();
-                    float velY = velocityTracker.getYVelocity();
-                    final boolean backAnimation = x < containerView.getMeasuredWidth() / 3.0f && (velX < 3500 || velX < velY);
-                    float distToMove = 0;
-                    if (!backAnimation) {
-                        distToMove = containerView.getMeasuredWidth() - x;
-                        animatorSet.playTogether(
-                                ObjectAnimatorProxy.ofFloat(containerView, "x", containerView.getMeasuredWidth()),
-                                ObjectAnimatorProxy.ofFloat(shadowView, "x", containerView.getMeasuredWidth() - AndroidUtilities.dp(2)),
-                                ObjectAnimatorProxy.ofFloat(actionBar.currentLayer, "x", actionBar.getMeasuredWidth()),
-                                ObjectAnimatorProxy.ofFloat(actionBar.shadowView, "x", actionBar.getMeasuredWidth() - AndroidUtilities.dp(2)),
-                                ObjectAnimatorProxy.ofFloat(actionBar.previousLayer, "alphaEx", 1.0f)
-                        );
+                } else if (ev != null && ev.getPointerId(0) == startedTrackingPointerId && (ev.getAction() == MotionEvent.ACTION_CANCEL || ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_POINTER_UP)) {
+                    if (velocityTracker == null) {
+                        velocityTracker = VelocityTracker.obtain();
+                    }
+                    velocityTracker.computeCurrentVelocity(1000);
+                    if (!startedTracking) {
+                        float velX = velocityTracker.getXVelocity();
+                        float velY = velocityTracker.getYVelocity();
+                        if (velX >= 3500 && velX > velY) {
+                            prepareForMoving(ev);
+                        }
+                    }
+                    if (startedTracking) {
+                        float x = ViewProxy.getX(containerView);
+                        AnimatorSetProxy animatorSet = new AnimatorSetProxy();
+                        float velX = velocityTracker.getXVelocity();
+                        float velY = velocityTracker.getYVelocity();
+                        final boolean backAnimation = x < containerView.getMeasuredWidth() / 3.0f && (velX < 3500 || velX < velY);
+                        float distToMove = 0;
+                        if (!backAnimation) {
+                            distToMove = containerView.getMeasuredWidth() - x;
+                            animatorSet.playTogether(
+                                    ObjectAnimatorProxy.ofFloat(containerView, "x", containerView.getMeasuredWidth()),
+                                    ObjectAnimatorProxy.ofFloat(shadowView, "x", containerView.getMeasuredWidth() - AndroidUtilities.dp(2)),
+                                    ObjectAnimatorProxy.ofFloat(actionBar.currentLayer, "x", actionBar.getMeasuredWidth()),
+                                    ObjectAnimatorProxy.ofFloat(actionBar.shadowView, "x", actionBar.getMeasuredWidth() - AndroidUtilities.dp(2)),
+                                    ObjectAnimatorProxy.ofFloat(actionBar.previousLayer, "alphaEx", 1.0f)
+                            );
+                        } else {
+                            distToMove = x;
+                            animatorSet.playTogether(
+                                    ObjectAnimatorProxy.ofFloat(containerView, "x", 0),
+                                    ObjectAnimatorProxy.ofFloat(shadowView, "x", -AndroidUtilities.dp(2)),
+                                    ObjectAnimatorProxy.ofFloat(actionBar.currentLayer, "x", 0),
+                                    ObjectAnimatorProxy.ofFloat(actionBar.shadowView, "x", -AndroidUtilities.dp(2)),
+                                    ObjectAnimatorProxy.ofFloat(actionBar.previousLayer, "alphaEx", 0)
+                            );
+                        }
+
+                        animatorSet.setDuration(Math.max((int) (200.0f / containerView.getMeasuredWidth() * distToMove), 50));
+                        animatorSet.addListener(new AnimatorListenerAdapterProxy() {
+                            @Override
+                            public void onAnimationEnd(Object animator) {
+                                onSlideAnimationEnd(backAnimation);
+                            }
+
+                            @Override
+                            public void onAnimationCancel(Object animator) {
+                                onSlideAnimationEnd(backAnimation);
+                            }
+                        });
+                        animatorSet.start();
+                        animationInProgress = true;
                     } else {
-                        distToMove = x;
-                        animatorSet.playTogether(
-                                ObjectAnimatorProxy.ofFloat(containerView, "x", 0),
-                                ObjectAnimatorProxy.ofFloat(shadowView, "x", -AndroidUtilities.dp(2)),
-                                ObjectAnimatorProxy.ofFloat(actionBar.currentLayer, "x", 0),
-                                ObjectAnimatorProxy.ofFloat(actionBar.shadowView, "x", -AndroidUtilities.dp(2)),
-                                ObjectAnimatorProxy.ofFloat(actionBar.previousLayer, "alphaEx", 0)
-                        );
+                        maybeStartTracking = false;
+                        startedTracking = false;
                     }
-
-                    animatorSet.setDuration(Math.max((int) (200.0f / containerView.getMeasuredWidth() * distToMove), 50));
-                    animatorSet.addListener(new AnimatorListenerAdapterProxy() {
-                        @Override
-                        public void onAnimationEnd(Object animator) {
-                            onSlideAnimationEnd(backAnimation);
-                        }
-
-                        @Override
-                        public void onAnimationCancel(Object animator) {
-                            onSlideAnimationEnd(backAnimation);
-                        }
-                    });
-                    animatorSet.start();
-                    animationInProgress = true;
-                } else {
+                    if (velocityTracker != null) {
+                        velocityTracker.recycle();
+                        velocityTracker = null;
+                    }
+                } else if (ev == null) {
                     maybeStartTracking = false;
                     startedTracking = false;
+                    if (velocityTracker != null) {
+                        velocityTracker.recycle();
+                        velocityTracker = null;
+                    }
                 }
-                if (velocityTracker != null) {
-                    velocityTracker.recycle();
-                    velocityTracker = null;
-                }
-            } else if (ev == null) {
-                maybeStartTracking = false;
-                startedTracking = false;
-                if (velocityTracker != null) {
-                    velocityTracker.recycle();
-                    velocityTracker = null;
+            } else if (drawerLayoutContainer != null && allowOpenDrawer && fragmentsStack.size() == 1) {
+                if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && !startedTracking && !maybeStartTracking) {
+                    startedTrackingPointerId = ev.getPointerId(0);
+                    maybeStartTracking = true;
+                    startedTrackingX = (int) ev.getX();
+                    startedTrackingY = (int) ev.getY();
+                    if (velocityTracker != null) {
+                        velocityTracker.clear();
+                    }
+                } else if (ev != null && ev.getAction() == MotionEvent.ACTION_MOVE && ev.getPointerId(0) == startedTrackingPointerId) {
+                    if (velocityTracker == null) {
+                        velocityTracker = VelocityTracker.obtain();
+                    }
+                    int dx = (int) (ev.getX() - startedTrackingX);
+                    int dy = Math.abs((int) ev.getY() - startedTrackingY);
+                    velocityTracker.addMovement(ev);
+                    if (maybeStartTracking && !startedTracking && Math.abs(dx) >= AndroidUtilities.dp(10) && Math.abs(dx) / 3 > dy) {
+                        prepareForDrawerOpen(ev);
+                    } else if (startedTracking) {
+                        if (!beginTrackingSent) {
+                            if (parentActivity.getCurrentFocus() != null) {
+                                AndroidUtilities.hideKeyboard(parentActivity.getCurrentFocus());
+                            }
+                            BaseFragment currentFragment = fragmentsStack.get(fragmentsStack.size() - 1);
+                            currentFragment.onBeginSlide();
+                            beginTrackingSent = true;
+                        }
+                        drawerLayoutContainer.moveDrawerByX(dx);
+                    }
+                } else if (ev != null && ev.getPointerId(0) == startedTrackingPointerId && (ev.getAction() == MotionEvent.ACTION_CANCEL || ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_POINTER_UP)) {
+                    if (velocityTracker == null) {
+                        velocityTracker = VelocityTracker.obtain();
+                    }
+                    velocityTracker.computeCurrentVelocity(1000);
+                    if (!startedTracking) {
+                        float velX = velocityTracker.getXVelocity();
+                        float velY = velocityTracker.getYVelocity();
+                        if (Math.abs(velX) >= 3500 && velX > velY) {
+                            prepareForDrawerOpen(ev);
+                        }
+                    }
+                    if (startedTracking) {
+                        float x = ViewProxy.getX(containerView);
+                        float velX = velocityTracker.getXVelocity();
+                        float velY = velocityTracker.getYVelocity();
+                        final boolean backAnimation = x < containerView.getMeasuredWidth() / 3.0f && (velX < 3500 || velX < velY);
+                        float distToMove = 0;
+                        if (!backAnimation) {
+                            drawerLayoutContainer.openDrawer();
+                        } else {
+                            drawerLayoutContainer.closeDrawer();
+                        }
+                        AndroidUtilities.unlockOrientation(parentActivity);
+                        startedTracking = false;
+                        animationInProgress = false; //TODO animation check
+                    } else {
+                        maybeStartTracking = false;
+                        startedTracking = false;
+                    }
+                    if (velocityTracker != null) {
+                        velocityTracker.recycle();
+                        velocityTracker = null;
+                    }
+                } else if (ev == null) {
+                    maybeStartTracking = false;
+                    startedTracking = false;
+                    if (velocityTracker != null) {
+                        velocityTracker.recycle();
+                        velocityTracker = null;
+                    }
                 }
             }
             return startedTracking;
@@ -462,15 +525,7 @@ public class ActionBarLayout extends FrameLayout {
         if (actionBar.getVisibility() == View.VISIBLE) {
             height = AndroidUtilities.getCurrentActionBarHeight();
         }
-        if (needStatusBar) {
-            height += AndroidUtilities.statusBarHeight;
-        }
 
-        if (actionBar != null) {
-            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) actionBar.getLayoutParams();
-            layoutParams.topMargin = needStatusBar ? AndroidUtilities.statusBarHeight : 0;
-            actionBar.setLayoutParams(layoutParams);
-        }
         if (containerView != null) {
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) containerView.getLayoutParams();
             if (layoutParams.topMargin != height) {
@@ -560,9 +615,6 @@ public class ActionBarLayout extends FrameLayout {
         parent.bringChildToFront(containerView);
         parent.bringChildToFront(shadowView);
         parent.bringChildToFront(actionBar);
-        if (drawerLayout != null) {
-            parent.bringChildToFront(drawerLayout);
-        }
 
         if (!needAnimation) {
             presentFragmentInternalRemoveOld(removeLast, currentFragment);
@@ -857,22 +909,11 @@ public class ActionBarLayout extends FrameLayout {
         backgroundView = view;
     }
 
-    public void setNeedStatusBar(boolean value) {
-        needStatusBar = value;
-        setWillNotDraw(!needStatusBar);
+    public void setDrawerLayout(DrawerLayoutContainer layout) {
+        drawerLayoutContainer = layout;
     }
 
-    public void setStatusBarColor(int color) {
-        statusBarPaint.setColor(color);
-    }
-
-    public void createDrawerLayout() {
-        drawerLayout = new DrawerLayout(getContext());
-        addView(drawerLayout);
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)drawerLayout.getLayoutParams();
-        layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-        layoutParams.width = AndroidUtilities.dp(100);
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-        drawerLayout.setLayoutParams(layoutParams);
+    public void setAllowOpenDrawer(boolean value) {
+        allowOpenDrawer = value;
     }
 }

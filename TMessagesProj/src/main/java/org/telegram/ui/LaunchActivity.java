@@ -14,6 +14,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -46,6 +47,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.ActionBar.ActionBarLayout;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.Views.ActionBar.DrawerLayoutContainer;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -231,15 +233,24 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 }
             });
         } else {
-            setContentView(actionBarLayout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            DrawerLayoutContainer drawerLayoutContainer = new DrawerLayoutContainer(this);
+            drawerLayoutContainer.setStatusBarColor(0xff54759e);
+            drawerLayoutContainer.addView(actionBarLayout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+            FrameLayout frameLayout = new FrameLayout(this);
+            drawerLayoutContainer.setDrawerLayout(frameLayout);
+            frameLayout.setBackgroundColor(0xffff0000);
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)frameLayout.getLayoutParams();
+            Point screenSize = AndroidUtilities.getRealScreenSize();
+            layoutParams.width = Math.min(screenSize.x, screenSize.y) - AndroidUtilities.dp(56);
+            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            frameLayout.setLayoutParams(layoutParams);
+            setContentView(drawerLayoutContainer, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            actionBarLayout.setDrawerLayout(drawerLayoutContainer);
+            actionBarLayout.setAllowOpenDrawer(true);
         }
         actionBarLayout.init(mainFragmentsStack);
         actionBarLayout.setDelegate(this);
-        if (Build.VERSION.SDK_INT >= 21) {
-            actionBarLayout.setNeedStatusBar(true);
-            actionBarLayout.setStatusBarColor(0xff54759e);
-        }
-        actionBarLayout.createDrawerLayout();
 
         int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
         if (resourceId > 0) {
