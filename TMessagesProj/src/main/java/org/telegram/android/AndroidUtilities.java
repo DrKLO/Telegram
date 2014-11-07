@@ -457,6 +457,7 @@ public class AndroidUtilities {
                     Method mGetRawH = Display.class.getMethod("getRawHeight");
                     size.set((Integer) mGetRawW.invoke(windowManager.getDefaultDisplay()), (Integer) mGetRawH.invoke(windowManager.getDefaultDisplay()));
                 } catch (Exception e) {
+                    size.set(windowManager.getDefaultDisplay().getWidth(), windowManager.getDefaultDisplay().getHeight());
                     FileLog.e("tmessages", e);
                 }
             }

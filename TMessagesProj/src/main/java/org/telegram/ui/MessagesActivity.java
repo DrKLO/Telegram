@@ -82,13 +82,6 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
     private long openedDialogId = 0;
 
-    private final static int messages_list_menu_other = 1;
-    private final static int messages_list_menu_new_chat = 2;
-    private final static int messages_list_menu_new_secret_chat = 3;
-    private final static int messages_list_menu_contacts = 4;
-    private final static int messages_list_menu_settings = 5;
-    private final static int messages_list_menu_new_broadcast = 6;
-
     public static interface MessagesActivityDelegate {
         public abstract void didSelectDialog(MessagesActivity fragment, long dialog_id, boolean param);
     }
@@ -201,39 +194,18 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             } else {
                 actionBarLayer.setBackButtonDrawable(new MenuDrawable());
                 actionBarLayer.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
-                item.addSubItem(messages_list_menu_new_chat, LocaleController.getString("NewGroup", R.string.NewGroup), 0);
-                item.addSubItem(messages_list_menu_new_secret_chat, LocaleController.getString("NewSecretChat", R.string.NewSecretChat), 0);
-                item.addSubItem(messages_list_menu_new_broadcast, LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList), 0);
-                item.addSubItem(messages_list_menu_contacts, LocaleController.getString("Contacts", R.string.Contacts), 0);
-                item.addSubItem(messages_list_menu_settings, LocaleController.getString("Settings", R.string.Settings), 0);
             }
             actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
 
             actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
-                    if (id == messages_list_menu_settings) {
-                        presentFragment(new SettingsActivity());
-                    } else if (id == messages_list_menu_contacts) {
-                        presentFragment(new ContactsActivity(null));
-                    } else if (id == messages_list_menu_new_secret_chat) {
-                        Bundle args = new Bundle();
-                        args.putBoolean("onlyUsers", true);
-                        args.putBoolean("destroyAfterSelect", true);
-                        args.putBoolean("usersAsSections", true);
-                        args.putBoolean("createSecretChat", true);
-                        presentFragment(new ContactsActivity(args));
-                    } else if (id == messages_list_menu_new_chat) {
-                        presentFragment(new GroupCreateActivity());
-                    } else if (id == -1) {
+                    if (id == -1) {
                         if (onlySelect) {
                             finishFragment();
+                        } else if (parentLayout != null) {
+                            parentLayout.getDrawerLayoutContainer().openDrawer(false);
                         }
-                    } else if (id == messages_list_menu_new_broadcast) {
-                        Bundle args = new Bundle();
-                        args.putBoolean("broadcast", true);
-                        presentFragment(new GroupCreateActivity(args));
                     }
                 }
             });

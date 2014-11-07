@@ -66,8 +66,6 @@ public class ActionBarLayout extends FrameLayout {
     private View shadowView;
     private DrawerLayoutContainer drawerLayoutContainer;
 
-    private boolean allowOpenDrawer;
-
     private Animation openAnimation;
     private Animation closeAnimation;
     private Animation alphaOpenAnimation;
@@ -243,14 +241,6 @@ public class ActionBarLayout extends FrameLayout {
         ViewProxy.setTranslationX(shadowView, -AndroidUtilities.dp(2));
     }
 
-    private void prepareForDrawerOpen(MotionEvent ev) {
-        maybeStartTracking = false;
-        startedTracking = true;
-        startedTrackingX = (int) ev.getX();
-        beginTrackingSent = false;
-        AndroidUtilities.lockOrientation(parentActivity);
-    }
-
     private void prepareForMoving(MotionEvent ev) {
         maybeStartTracking = false;
         startedTracking = true;
@@ -327,6 +317,12 @@ public class ActionBarLayout extends FrameLayout {
                         float velY = velocityTracker.getYVelocity();
                         if (velX >= 3500 && velX > velY) {
                             prepareForMoving(ev);
+                            if (!beginTrackingSent) {
+                                if (((Activity)getContext()).getCurrentFocus() != null) {
+                                    AndroidUtilities.hideKeyboard(((Activity)getContext()).getCurrentFocus());
+                                }
+                                beginTrackingSent = true;
+                            }
                         }
                     }
                     if (startedTracking) {
@@ -370,77 +366,6 @@ public class ActionBarLayout extends FrameLayout {
                         });
                         animatorSet.start();
                         animationInProgress = true;
-                    } else {
-                        maybeStartTracking = false;
-                        startedTracking = false;
-                    }
-                    if (velocityTracker != null) {
-                        velocityTracker.recycle();
-                        velocityTracker = null;
-                    }
-                } else if (ev == null) {
-                    maybeStartTracking = false;
-                    startedTracking = false;
-                    if (velocityTracker != null) {
-                        velocityTracker.recycle();
-                        velocityTracker = null;
-                    }
-                }
-            } else if (drawerLayoutContainer != null && allowOpenDrawer && fragmentsStack.size() == 1) {
-                if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && !startedTracking && !maybeStartTracking) {
-                    startedTrackingPointerId = ev.getPointerId(0);
-                    maybeStartTracking = true;
-                    startedTrackingX = (int) ev.getX();
-                    startedTrackingY = (int) ev.getY();
-                    if (velocityTracker != null) {
-                        velocityTracker.clear();
-                    }
-                } else if (ev != null && ev.getAction() == MotionEvent.ACTION_MOVE && ev.getPointerId(0) == startedTrackingPointerId) {
-                    if (velocityTracker == null) {
-                        velocityTracker = VelocityTracker.obtain();
-                    }
-                    int dx = (int) (ev.getX() - startedTrackingX);
-                    int dy = Math.abs((int) ev.getY() - startedTrackingY);
-                    velocityTracker.addMovement(ev);
-                    if (maybeStartTracking && !startedTracking && Math.abs(dx) >= AndroidUtilities.dp(10) && Math.abs(dx) / 3 > dy) {
-                        prepareForDrawerOpen(ev);
-                    } else if (startedTracking) {
-                        if (!beginTrackingSent) {
-                            if (parentActivity.getCurrentFocus() != null) {
-                                AndroidUtilities.hideKeyboard(parentActivity.getCurrentFocus());
-                            }
-                            BaseFragment currentFragment = fragmentsStack.get(fragmentsStack.size() - 1);
-                            currentFragment.onBeginSlide();
-                            beginTrackingSent = true;
-                        }
-                        drawerLayoutContainer.moveDrawerByX(dx);
-                    }
-                } else if (ev != null && ev.getPointerId(0) == startedTrackingPointerId && (ev.getAction() == MotionEvent.ACTION_CANCEL || ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_POINTER_UP)) {
-                    if (velocityTracker == null) {
-                        velocityTracker = VelocityTracker.obtain();
-                    }
-                    velocityTracker.computeCurrentVelocity(1000);
-                    if (!startedTracking) {
-                        float velX = velocityTracker.getXVelocity();
-                        float velY = velocityTracker.getYVelocity();
-                        if (Math.abs(velX) >= 3500 && velX > velY) {
-                            prepareForDrawerOpen(ev);
-                        }
-                    }
-                    if (startedTracking) {
-                        float x = ViewProxy.getX(containerView);
-                        float velX = velocityTracker.getXVelocity();
-                        float velY = velocityTracker.getYVelocity();
-                        final boolean backAnimation = x < containerView.getMeasuredWidth() / 3.0f && (velX < 3500 || velX < velY);
-                        float distToMove = 0;
-                        if (!backAnimation) {
-                            drawerLayoutContainer.openDrawer();
-                        } else {
-                            drawerLayoutContainer.closeDrawer();
-                        }
-                        AndroidUtilities.unlockOrientation(parentActivity);
-                        startedTracking = false;
-                        animationInProgress = false; //TODO animation check
                     } else {
                         maybeStartTracking = false;
                         startedTracking = false;
@@ -909,11 +834,11 @@ public class ActionBarLayout extends FrameLayout {
         backgroundView = view;
     }
 
-    public void setDrawerLayout(DrawerLayoutContainer layout) {
+    public void setDrawerLayoutContainer(DrawerLayoutContainer layout) {
         drawerLayoutContainer = layout;
     }
 
-    public void setAllowOpenDrawer(boolean value) {
-        allowOpenDrawer = value;
+    public DrawerLayoutContainer getDrawerLayoutContainer() {
+        return drawerLayoutContainer;
     }
 }

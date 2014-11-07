@@ -72,6 +72,10 @@ public class AvatarDrawable extends Drawable {
         }
     }
 
+    public void setColor(int value) {
+        color = value;
+    }
+
     public void setInfo(int id, String firstName, String lastName, boolean isBroadcast) {
         color = arrColors[Math.abs(id) % arrColors.length];
 

@@ -27,9 +27,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.Window;
+import android.widget.AbsListView;
+import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -45,6 +48,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Adapters.DrawerLayoutAdapter;
 import org.telegram.ui.Views.ActionBar.ActionBarLayout;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.ActionBar.DrawerLayoutContainer;
@@ -75,6 +79,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     private LinearLayout buttonLayoutTablet = null;
     private FrameLayout shadowTabletSide = null;
     private ImageView backgroundTablet = null;
+    private DrawerLayoutContainer drawerLayoutContainer = null;
+
     private boolean tabletFullSize = false;
 
     @Override
@@ -233,21 +239,62 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 }
             });
         } else {
-            DrawerLayoutContainer drawerLayoutContainer = new DrawerLayoutContainer(this);
+            drawerLayoutContainer = new DrawerLayoutContainer(this);
             drawerLayoutContainer.setStatusBarColor(0xff54759e);
             drawerLayoutContainer.addView(actionBarLayout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-            FrameLayout frameLayout = new FrameLayout(this);
-            drawerLayoutContainer.setDrawerLayout(frameLayout);
-            frameLayout.setBackgroundColor(0xffff0000);
-            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)frameLayout.getLayoutParams();
+            ListView listView = new ListView(this);
+            listView.setAdapter(new DrawerLayoutAdapter(this));
+            drawerLayoutContainer.setDrawerLayout(listView);
+            listView.setBackgroundColor(0xffffffff);
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)listView.getLayoutParams();
             Point screenSize = AndroidUtilities.getRealScreenSize();
             layoutParams.width = Math.min(screenSize.x, screenSize.y) - AndroidUtilities.dp(56);
             layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            frameLayout.setLayoutParams(layoutParams);
+            listView.setPadding(0, 0, 0, 0);
+            listView.setChoiceMode(AbsListView.CHOICE_MODE_SINGLE);
+            listView.setDivider(null);
+            listView.setDividerHeight(0);
+            listView.setLayoutParams(layoutParams);
+            listView.setVerticalScrollBarEnabled(false);
+
+            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    if (position == 2) {
+                        presentFragment(new GroupCreateActivity());
+                        drawerLayoutContainer.closeDrawer(false);
+                    } else if (position == 3) {
+                        Bundle args = new Bundle();
+                        args.putBoolean("onlyUsers", true);
+                        args.putBoolean("destroyAfterSelect", true);
+                        args.putBoolean("usersAsSections", true);
+                        args.putBoolean("createSecretChat", true);
+                        presentFragment(new ContactsActivity(args));
+                        drawerLayoutContainer.closeDrawer(false);
+                    } else if (position == 4) {
+                        Bundle args = new Bundle();
+                        args.putBoolean("broadcast", true);
+                        presentFragment(new GroupCreateActivity(args));
+                        drawerLayoutContainer.closeDrawer(false);
+                    } else if (position == 8) {
+                        presentFragment(new ContactsActivity(null));
+                        drawerLayoutContainer.closeDrawer(false);
+                    } else if (position == 9) {
+                        drawerLayoutContainer.closeDrawer(false);
+                    } else if (position == 10) {
+                        presentFragment(new SettingsActivity());
+                        drawerLayoutContainer.closeDrawer(false);
+                    } else if (position == 11) {
+                        drawerLayoutContainer.closeDrawer(false);
+                    }
+                }
+            });
+
             setContentView(drawerLayoutContainer, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-            actionBarLayout.setDrawerLayout(drawerLayoutContainer);
-            actionBarLayout.setAllowOpenDrawer(true);
+            drawerLayoutContainer.setParentActionBarLayout(actionBarLayout);
+            drawerLayoutContainer.setAllowOpenDrawer(true);
+            actionBarLayout.setDrawerLayoutContainer(drawerLayoutContainer);
         }
         actionBarLayout.init(mainFragmentsStack);
         actionBarLayout.setDelegate(this);
@@ -965,23 +1012,23 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     public void onBackPressed() {
         if (PhotoViewer.getInstance().isVisible()) {
             PhotoViewer.getInstance().closePhoto(true);
-        } else {
-            if (AndroidUtilities.isTablet()) {
-                if (layersActionBarLayout.getVisibility() == View.VISIBLE) {
-                    layersActionBarLayout.onBackPressed();
-                } else {
-                    boolean cancel = false;
-                    if (rightActionBarLayout.getVisibility() == View.VISIBLE && !rightActionBarLayout.fragmentsStack.isEmpty()) {
-                        BaseFragment lastFragment = rightActionBarLayout.fragmentsStack.get(rightActionBarLayout.fragmentsStack.size() - 1);
-                        cancel = !lastFragment.onBackPressed();
-                    }
-                    if (!cancel) {
-                        actionBarLayout.onBackPressed();
-                    }
-                }
+        } else if (drawerLayoutContainer.isDrawerOpened()) {
+            drawerLayoutContainer.closeDrawer(false);
+        } else if (AndroidUtilities.isTablet()) {
+            if (layersActionBarLayout.getVisibility() == View.VISIBLE) {
+                layersActionBarLayout.onBackPressed();
             } else {
-                actionBarLayout.onBackPressed();
+                boolean cancel = false;
+                if (rightActionBarLayout.getVisibility() == View.VISIBLE && !rightActionBarLayout.fragmentsStack.isEmpty()) {
+                    BaseFragment lastFragment = rightActionBarLayout.fragmentsStack.get(rightActionBarLayout.fragmentsStack.size() - 1);
+                    cancel = !lastFragment.onBackPressed();
+                }
+                if (!cancel) {
+                    actionBarLayout.onBackPressed();
+                }
             }
+        } else {
+            actionBarLayout.onBackPressed();
         }
     }
 

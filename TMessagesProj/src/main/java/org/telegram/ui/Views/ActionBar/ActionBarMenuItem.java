@@ -382,7 +382,7 @@ public class ActionBarMenuItem extends ImageView {
             layoutParams.width = 0;
             layoutParams.gravity = Gravity.CENTER_VERTICAL;
             layoutParams.height = AndroidUtilities.dp(36);
-            layoutParams.rightMargin = AndroidUtilities.dp(4);
+            layoutParams.rightMargin = AndroidUtilities.dp(16);
             searchField.setLayoutParams(layoutParams);
             searchField.setVisibility(GONE);
         }
