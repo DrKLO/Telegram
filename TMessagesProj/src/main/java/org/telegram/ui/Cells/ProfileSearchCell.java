@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.x.
+ * This is the source code of Telegram for Android v. 1.7.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2014.
  */
 
 package org.telegram.ui.Cells;
@@ -17,19 +17,19 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 
-import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
-import org.telegram.android.LocaleController;
-import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.ConnectionsManager;
-import org.telegram.android.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
 import org.telegram.android.ImageReceiver;
+import org.telegram.android.LocaleController;
+import org.telegram.android.MessagesController;
+import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.R;
+import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Views.AvatarDrawable;
 
-public class ChatOrUserCell extends BaseCell {
+public class ProfileSearchCell extends BaseCell {
     private static TextPaint namePaint;
     private static TextPaint nameEncryptedPaint;
     private static TextPaint onlinePaint;
@@ -52,7 +52,6 @@ public class ChatOrUserCell extends BaseCell {
     private int lastStatus = 0;
     private TLRPC.FileLocation lastAvatar = null;
 
-    public boolean usePadding = true;
     public boolean useSeparator = false;
     public float drawAlpha = 1;
 
@@ -66,44 +65,44 @@ public class ChatOrUserCell extends BaseCell {
     private int nameLockTop;
 
     private int onlineLeft;
-    private int onlineTop = AndroidUtilities.dp(36);
     private StaticLayout onlineLayout;
 
-    private int avatarTop = AndroidUtilities.dp(7);
-
-    public ChatOrUserCell(Context context) {
+    public ProfileSearchCell(Context context) {
         super(context);
         init();
         avatarImage = new ImageReceiver(this);
+        avatarImage.setRoundRadius(AndroidUtilities.dp(26));
         avatarDrawable = new AvatarDrawable();
     }
 
     private void init() {
         if (namePaint == null) {
             namePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            namePaint.setTextSize(AndroidUtilities.dp(18));
+            namePaint.setTextSize(AndroidUtilities.dp(17));
             namePaint.setColor(0xff222222);
+            namePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
             nameEncryptedPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            nameEncryptedPaint.setTextSize(AndroidUtilities.dp(18));
+            nameEncryptedPaint.setTextSize(AndroidUtilities.dp(17));
             nameEncryptedPaint.setColor(0xff00a60e);
+            nameEncryptedPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
             onlinePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            onlinePaint.setTextSize(AndroidUtilities.dp(15));
+            onlinePaint.setTextSize(AndroidUtilities.dp(16));
             onlinePaint.setColor(0xff316f9f);
 
             offlinePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            offlinePaint.setTextSize(AndroidUtilities.dp(15));
+            offlinePaint.setTextSize(AndroidUtilities.dp(16));
             offlinePaint.setColor(0xff999999);
 
-            lockDrawable = getResources().getDrawable(R.drawable.ic_lock_green);
+            lockDrawable = getResources().getDrawable(R.drawable.list_secret);
 
             linePaint = new Paint();
             linePaint.setColor(0xffdcdcdc);
 
             broadcastDrawable = getResources().getDrawable(R.drawable.broadcast);
 
-            groupDrawable = getResources().getDrawable(R.drawable.grouplist);
+            groupDrawable = getResources().getDrawable(R.drawable.list_group);
         }
     }
 
@@ -127,7 +126,7 @@ public class ChatOrUserCell extends BaseCell {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(64));
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(72));
     }
 
     @Override
@@ -152,33 +151,35 @@ public class ChatOrUserCell extends BaseCell {
         if (encryptedChat != null) {
             drawNameLock = true;
             if (!LocaleController.isRTL) {
-                nameLockLeft = AndroidUtilities.dp(61 + (usePadding ? 11 : 0));
-                nameLeft = AndroidUtilities.dp(65 + (usePadding ? 11 : 0)) + lockDrawable.getIntrinsicWidth();
+                nameLockLeft = AndroidUtilities.dp(72);
+                nameLeft = AndroidUtilities.dp(76) + lockDrawable.getIntrinsicWidth();
             } else {
-                nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(63 + (usePadding ? 11 : 0)) - lockDrawable.getIntrinsicWidth();
-                nameLeft = usePadding ? AndroidUtilities.dp(11) : 0;
+                nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(74) - lockDrawable.getIntrinsicWidth();
+                nameLeft = AndroidUtilities.dp(11);
             }
-            nameLockTop = AndroidUtilities.dp(15);
+            nameLockTop = AndroidUtilities.dp(16.5f);
         } else {
             if (chat != null) {
-                nameLockTop = AndroidUtilities.dp(26);
+
                 if (chat.id < 0) {
                     drawNameBroadcast = true;
+                    nameLockTop = AndroidUtilities.dp(28.5f);
                 } else {
                     drawNameGroup = true;
+                    nameLockTop = AndroidUtilities.dp(30);
                 }
                 if (!LocaleController.isRTL) {
-                    nameLockLeft = AndroidUtilities.dp(61 + (usePadding ? 11 : 0));
-                    nameLeft = AndroidUtilities.dp(65 + (usePadding ? 11 : 0)) + (drawNameGroup ? groupDrawable.getIntrinsicWidth() : broadcastDrawable.getIntrinsicWidth());
+                    nameLockLeft = AndroidUtilities.dp(72);
+                    nameLeft = AndroidUtilities.dp(76) + (drawNameGroup ? groupDrawable.getIntrinsicWidth() : broadcastDrawable.getIntrinsicWidth());
                 } else {
-                    nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(63 + (usePadding ? 11 : 0)) - (drawNameGroup ? groupDrawable.getIntrinsicWidth() : broadcastDrawable.getIntrinsicWidth());
-                    nameLeft = usePadding ? AndroidUtilities.dp(11) : 0;
+                    nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(74) - (drawNameGroup ? groupDrawable.getIntrinsicWidth() : broadcastDrawable.getIntrinsicWidth());
+                    nameLeft = AndroidUtilities.dp(11);
                 }
             } else {
                 if (!LocaleController.isRTL) {
-                    nameLeft = AndroidUtilities.dp(61 + (usePadding ? 11 : 0));
+                    nameLeft = AndroidUtilities.dp(72);
                 } else {
-                    nameLeft = usePadding ? AndroidUtilities.dp(11) : 0;
+                    nameLeft = AndroidUtilities.dp(11);
                 }
             }
         }
@@ -210,14 +211,16 @@ public class ChatOrUserCell extends BaseCell {
         int onlineWidth;
         int nameWidth;
         if (!LocaleController.isRTL) {
-            onlineWidth = nameWidth = getMeasuredWidth() - nameLeft - AndroidUtilities.dp(3 + (usePadding ? 11 : 0));
+            onlineWidth = nameWidth = getMeasuredWidth() - nameLeft - AndroidUtilities.dp(14);
         } else {
-            onlineWidth = nameWidth = getMeasuredWidth() - nameLeft - AndroidUtilities.dp(61 + (usePadding ? 11 : 0));
+            onlineWidth = nameWidth = getMeasuredWidth() - nameLeft - AndroidUtilities.dp(72);
         }
         if (drawNameLock) {
             nameWidth -= AndroidUtilities.dp(6) + lockDrawable.getIntrinsicWidth();
         } else if (drawNameBroadcast) {
             nameWidth -= AndroidUtilities.dp(6) + broadcastDrawable.getIntrinsicWidth();
+        } else if (drawNameGroup) {
+            nameWidth -= AndroidUtilities.dp(6) + groupDrawable.getIntrinsicWidth();
         }
 
         CharSequence nameStringFinal = TextUtils.ellipsize(nameString, currentNamePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
@@ -225,9 +228,9 @@ public class ChatOrUserCell extends BaseCell {
 
         if (chat == null) {
             if (!LocaleController.isRTL) {
-                onlineLeft = AndroidUtilities.dp(61 + (usePadding ? 11 : 0));
+                onlineLeft = AndroidUtilities.dp(72);
             } else {
-                onlineLeft = usePadding ? AndroidUtilities.dp(11) : 0;
+                onlineLeft = AndroidUtilities.dp(11);
             }
 
             CharSequence onlineString = "";
@@ -243,22 +246,22 @@ public class ChatOrUserCell extends BaseCell {
                 }
             }
 
-            CharSequence onlineStringFinal = TextUtils.ellipsize(onlineString, currentOnlinePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
-            onlineLayout = new StaticLayout(onlineStringFinal, currentOnlinePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-            nameTop = AndroidUtilities.dp(12);
+            CharSequence onlineStringFinal = TextUtils.ellipsize(onlineString, currentOnlinePaint, onlineWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
+            onlineLayout = new StaticLayout(onlineStringFinal, currentOnlinePaint, onlineWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            nameTop = AndroidUtilities.dp(13);
         } else {
             onlineLayout = null;
-            nameTop = AndroidUtilities.dp(22);
+            nameTop = AndroidUtilities.dp(25);
         }
 
         int avatarLeft;
         if (!LocaleController.isRTL) {
-            avatarLeft = usePadding ? AndroidUtilities.dp(11) : 0;
+            avatarLeft = AndroidUtilities.dp(9);
         } else {
-            avatarLeft = getMeasuredWidth() - AndroidUtilities.dp(50 + (usePadding ? 11 : 0));
+            avatarLeft = getMeasuredWidth() - AndroidUtilities.dp(61);
         }
-        avatarImage.setImageCoords(avatarLeft, avatarTop, AndroidUtilities.dp(50), AndroidUtilities.dp(50));
 
+        avatarImage.setImageCoords(avatarLeft, AndroidUtilities.dp(10), AndroidUtilities.dp(52), AndroidUtilities.dp(52));
 
         double widthpx = 0;
         float left = 0;
@@ -382,11 +385,10 @@ public class ChatOrUserCell extends BaseCell {
         }
 
         if (useSeparator) {
-            int h = getMeasuredHeight();
-            if (!usePadding) {
-                canvas.drawLine(0, h - 1, getMeasuredWidth(), h - 1, linePaint);
+            if (LocaleController.isRTL) {
+                canvas.drawLine(0, getMeasuredHeight() - 1, getMeasuredWidth() - AndroidUtilities.dp(72), getMeasuredHeight() - 1, linePaint);
             } else {
-                canvas.drawLine(AndroidUtilities.dp(11), h - 1, getMeasuredWidth() - AndroidUtilities.dp(11), h - 1, linePaint);
+                canvas.drawLine(AndroidUtilities.dp(72), getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, linePaint);
             }
         }
 
@@ -412,7 +414,7 @@ public class ChatOrUserCell extends BaseCell {
 
         if (onlineLayout != null) {
             canvas.save();
-            canvas.translate(onlineLeft, onlineTop);
+            canvas.translate(onlineLeft, AndroidUtilities.dp(40));
             onlineLayout.draw(canvas);
             canvas.restore();
         }

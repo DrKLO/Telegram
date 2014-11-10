@@ -39,6 +39,7 @@ import android.widget.Toast;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.android.ContactsController;
 import org.telegram.android.SendMessagesHelper;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
@@ -204,7 +205,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     Bundle args = new Bundle();
                     args.putBoolean("onlyUsers", true);
                     args.putBoolean("destroyAfterSelect", true);
-                    args.putBoolean("usersAsSections", true);
                     args.putBoolean("createSecretChat", true);
                     presentFragment(new ContactsActivity(args));
                 }
@@ -268,7 +268,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         Bundle args = new Bundle();
                         args.putBoolean("onlyUsers", true);
                         args.putBoolean("destroyAfterSelect", true);
-                        args.putBoolean("usersAsSections", true);
                         args.putBoolean("createSecretChat", true);
                         presentFragment(new ContactsActivity(args));
                         drawerLayoutContainer.closeDrawer(false);
@@ -277,15 +276,29 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         args.putBoolean("broadcast", true);
                         presentFragment(new GroupCreateActivity(args));
                         drawerLayoutContainer.closeDrawer(false);
-                    } else if (position == 8) {
+                    } else if (position == 6) {
                         presentFragment(new ContactsActivity(null));
                         drawerLayoutContainer.closeDrawer(false);
-                    } else if (position == 9) {
+                    } else if (position == 7) {
+                        try {
+                            Intent intent = new Intent(Intent.ACTION_SEND);
+                            intent.setType("text/plain");
+                            intent.putExtra(Intent.EXTRA_TEXT, ContactsController.getInstance().getInviteText());
+                            startActivity(intent);
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
                         drawerLayoutContainer.closeDrawer(false);
-                    } else if (position == 10) {
+                    } else if (position == 8) {
                         presentFragment(new SettingsActivity());
                         drawerLayoutContainer.closeDrawer(false);
-                    } else if (position == 11) {
+                    } else if (position == 9) {
+                        try {
+                            Intent pickIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(LocaleController.getString("TelegramFaqUrl", R.string.TelegramFaqUrl)));
+                            startActivity(pickIntent);
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
                         drawerLayoutContainer.closeDrawer(false);
                     }
                 }

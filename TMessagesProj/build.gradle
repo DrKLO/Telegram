@@ -43,19 +43,19 @@ android {
     buildTypes {
         debug {
             debuggable true
-            jniDebugBuild false
+            jniDebuggable true
             signingConfig signingConfigs.debug
         }
 
         release {
             debuggable false
-            jniDebugBuild false
+            jniDebuggable false
             signingConfig signingConfigs.release
         }
 
         foss {
             debuggable false
-            jniDebugBuild false
+            jniDebuggable false
             signingConfig signingConfigs.release
         }
     }
@@ -80,7 +80,7 @@ android {
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 21
-        versionCode 379
-        versionName "1.9.7"
+        versionCode 380
+        versionName "2.0.0"
     }
 }

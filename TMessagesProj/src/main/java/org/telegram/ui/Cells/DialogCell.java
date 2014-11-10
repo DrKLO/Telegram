@@ -70,7 +70,6 @@ public class DialogCell extends BaseCell {
 
 
     private int nameLeft;
-    private int nameTop = AndroidUtilities.dp(13);
     private StaticLayout nameLayout;
     private boolean drawNameLock;
     private boolean drawNameGroup;
@@ -142,13 +141,13 @@ public class DialogCell extends BaseCell {
             countPaint.setColor(0xffffffff);
             countPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
-            lockDrawable = getResources().getDrawable(R.drawable.ic_lock_green);
+            lockDrawable = getResources().getDrawable(R.drawable.list_secret);
             checkDrawable = getResources().getDrawable(R.drawable.dialogs_check);
             halfCheckDrawable = getResources().getDrawable(R.drawable.dialogs_halfcheck);
             clockDrawable = getResources().getDrawable(R.drawable.msg_clock);
             errorDrawable = getResources().getDrawable(R.drawable.dialogs_warning);
             countDrawable = getResources().getDrawable(R.drawable.dialogs_badge);
-            groupDrawable = getResources().getDrawable(R.drawable.grouplist);
+            groupDrawable = getResources().getDrawable(R.drawable.list_group);
             broadcastDrawable = getResources().getDrawable(R.drawable.broadcast);
         }
     }
@@ -217,7 +216,7 @@ public class DialogCell extends BaseCell {
 
         if (encryptedChat != null) {
             drawNameLock = true;
-            nameLockTop = AndroidUtilities.dp(15);
+            nameLockTop = AndroidUtilities.dp(16.5f);
             if (!LocaleController.isRTL) {
                 nameLockLeft = AndroidUtilities.dp(72);
                 nameLeft = AndroidUtilities.dp(76) + lockDrawable.getIntrinsicWidth();
@@ -229,10 +228,12 @@ public class DialogCell extends BaseCell {
             if (chat != null) {
                 if (chat.id < 0) {
                     drawNameBroadcast = true;
+                    nameLockTop = AndroidUtilities.dp(16.5f);
                 } else {
                     drawNameGroup = true;
+                    nameLockTop = AndroidUtilities.dp(17.5f);
                 }
-                nameLockTop = AndroidUtilities.dp(16);
+
                 if (!LocaleController.isRTL) {
                     nameLockLeft = AndroidUtilities.dp(72);
                     nameLeft = AndroidUtilities.dp(76) + (drawNameGroup ? groupDrawable.getIntrinsicWidth() : broadcastDrawable.getIntrinsicWidth());
@@ -655,7 +656,7 @@ public class DialogCell extends BaseCell {
 
         if (nameLayout != null) {
             canvas.save();
-            canvas.translate(nameLeft, nameTop);
+            canvas.translate(nameLeft, AndroidUtilities.dp(13));
             nameLayout.draw(canvas);
             canvas.restore();
         }

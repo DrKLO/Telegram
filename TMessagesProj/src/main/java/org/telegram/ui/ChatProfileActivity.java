@@ -36,7 +36,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.android.MessageObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.ui.Cells.ChatOrUserCell;
+import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.AvatarDrawable;
@@ -257,7 +257,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                         }
                         Bundle args = new Bundle();
                         args.putInt("user_id", user_id);
-                        presentFragment(new UserProfileActivity(args));
+                        presentFragment(new ProfileActivity(args));
                     } else if (i == settingsNotificationsRow) {
                         Bundle args = new Bundle();
                         args.putLong("dialog_id", -chat_id);
@@ -403,8 +403,8 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         int count = listView.getChildCount();
         for (int a = 0; a < count; a++) {
             View child = listView.getChildAt(a);
-            if (child instanceof ChatOrUserCell) {
-                ((ChatOrUserCell) child).update(mask);
+            if (child instanceof UserCell) {
+                ((UserCell) child).update(mask);
             }
         }
     }
@@ -476,7 +476,6 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
         Bundle args = new Bundle();
         args.putBoolean("onlyUsers", true);
         args.putBoolean("destroyAfterSelect", true);
-        args.putBoolean("usersAsSections", true);
         args.putBoolean("returnAsResult", true);
         //args.putBoolean("allowUsernameSearch", false);
         if (chat_id > 0) {
@@ -633,7 +632,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 }
 
                 if (count != 0 && onlineCount > 1) {
-                    onlineText.setText(Html.fromHtml(String.format("%s, <font color='#357aa8'>%s</font>", LocaleController.formatPluralString("Members", count), LocaleController.formatPluralString("Online", onlineCount))));
+                    onlineText.setText(Html.fromHtml(String.format("%s, <font color='#548ab6'>%s</font>", LocaleController.formatPluralString("Members", count), LocaleController.formatPluralString("Online", onlineCount))));
                 } else {
                     onlineText.setText(LocaleController.formatPluralString("Members", count));
                 }
@@ -685,12 +684,11 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 TLRPC.User user = MessagesController.getInstance().getUser(part.user_id);
 
                 if (view == null) {
-                    view = new ChatOrUserCell(mContext);
-                    ((ChatOrUserCell)view).usePadding = false;
-                    ((ChatOrUserCell)view).useSeparator = true;
+                    view = new UserCell(mContext);
+                    ((UserCell)view).useSeparator = true;
                 }
 
-                ((ChatOrUserCell)view).setData(user, null, null, null, null);
+                ((UserCell)view).setData(user, null, null);
             } else if (type == 4) {
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);

@@ -640,7 +640,7 @@ public class Utilities {
                 builder.append(" ");
             }
             query.trim();
-            builder.append(Html.fromHtml("<font color=\"#357aa8\">" + query + "</font>"));
+            builder.append(Html.fromHtml("<font color=\"#548ab6\">" + query + "</font>"));
 
             lastIndex = end;
         }

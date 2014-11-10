@@ -30,7 +30,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.ui.Cells.ChatOrUserCell;
+import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.AvatarDrawable;
@@ -64,6 +64,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     public GroupCreateFinalActivity(Bundle args) {
         super(args);
         isBroadcast = args.getBoolean("broadcast", false);
+        avatarDrawable = new AvatarDrawable();
     }
 
     @SuppressWarnings("unchecked")
@@ -339,8 +340,8 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         int count = listView.getChildCount();
         for (int a = 0; a < count; a++) {
             View child = listView.getChildAt(a);
-            if (child instanceof ChatOrUserCell) {
-                ((ChatOrUserCell) child).update(mask);
+            if (child instanceof UserCell) {
+                ((UserCell) child).update(mask);
             }
         }
     }
@@ -390,12 +391,11 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             TLRPC.User user = MessagesController.getInstance().getUser(selectedContacts.get(position));
 
             if (convertView == null) {
-                convertView = new ChatOrUserCell(mContext);
-                ((ChatOrUserCell)convertView).usePadding = false;
+                convertView = new UserCell(mContext);
             }
 
-            ((ChatOrUserCell)convertView).setData(user, null, null, null, null);
-            ((ChatOrUserCell) convertView).useSeparator = position != selectedContacts.size() - 1;
+            ((UserCell)convertView).setData(user, null, null);
+            ((UserCell) convertView).useSeparator = position != selectedContacts.size() - 1;
 
             return convertView;
         }

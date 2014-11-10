@@ -44,7 +44,7 @@ import org.telegram.ui.Adapters.MessagesActivityAdapter;
 import org.telegram.ui.Adapters.MessagesActivitySearchAdapter;
 import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.ui.AnimationCompat.ViewProxy;
-import org.telegram.ui.Cells.ChatOrUserCell;
+import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
@@ -266,9 +266,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 @Override
                 public void onClick(View v) {
                     Bundle args = new Bundle();
-                    args.putBoolean("onlyUsers", true);
                     args.putBoolean("destroyAfterSelect", true);
-                    args.putBoolean("usersAsSections", true);
                     presentFragment(new ContactsActivity(args));
                 }
             });
@@ -613,8 +611,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     }
                 }
                 cell.update(mask);
-            } else if (child instanceof ChatOrUserCell) {
-                ((ChatOrUserCell) child).update(mask);
+            } else if (child instanceof UserCell) {
+                ((UserCell) child).update(mask);
             }
         }
     }

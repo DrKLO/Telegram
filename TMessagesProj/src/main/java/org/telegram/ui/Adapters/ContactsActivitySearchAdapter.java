@@ -22,8 +22,8 @@ import org.telegram.messenger.FileLog;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.Cells.ChatOrUserCell;
-import org.telegram.ui.Views.SettingsSectionLayout;
+import org.telegram.ui.Cells.GreySectionCell;
+import org.telegram.ui.Cells.ProfileSearchCell;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -197,16 +197,15 @@ public class ContactsActivitySearchAdapter extends BaseContactsSearchAdapter {
     public View getView(int i, View view, ViewGroup viewGroup) {
         if (i == searchResult.size()) {
             if (view == null) {
-                view = new SettingsSectionLayout(mContext);
-                ((SettingsSectionLayout) view).setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
+                view = new GreySectionCell(mContext);
+                ((GreySectionCell) view).setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
             }
         } else {
             if (view == null) {
-                view = new ChatOrUserCell(mContext);
-                ((ChatOrUserCell) view).usePadding = false;
+                view = new ProfileSearchCell(mContext);
             }
 
-            ((ChatOrUserCell) view).useSeparator = (i != getCount() - 1 && i != searchResult.size() - 1);
+            ((ProfileSearchCell) view).useSeparator = (i != getCount() - 1 && i != searchResult.size() - 1);
             TLRPC.User user = getItem(i);
             if (user != null) {
                 CharSequence username = null;
@@ -221,20 +220,20 @@ public class ContactsActivitySearchAdapter extends BaseContactsSearchAdapter {
                     }
                 } else if (i > searchResult.size() && user.username != null) {
                     try {
-                        username = Html.fromHtml(String.format("<font color=\"#357aa8\">@%s</font>%s", user.username.substring(0, lastFoundUsername.length()), user.username.substring(lastFoundUsername.length())));
+                        username = Html.fromHtml(String.format("<font color=\"#548ab6\">@%s</font>%s", user.username.substring(0, lastFoundUsername.length()), user.username.substring(lastFoundUsername.length())));
                     } catch (Exception e) {
                         username = user.username;
                         FileLog.e("tmessages", e);
                     }
                 }
 
-                ((ChatOrUserCell) view).setData(user, null, null, name, username);
+                ((ProfileSearchCell) view).setData(user, null, null, name, username);
 
                 if (ignoreUsers != null) {
                     if (ignoreUsers.containsKey(user.id)) {
-                        ((ChatOrUserCell) view).drawAlpha = 0.5f;
+                        ((ProfileSearchCell) view).drawAlpha = 0.5f;
                     } else {
-                        ((ChatOrUserCell) view).drawAlpha = 1.0f;
+                        ((ProfileSearchCell) view).drawAlpha = 1.0f;
                     }
                 }
             }

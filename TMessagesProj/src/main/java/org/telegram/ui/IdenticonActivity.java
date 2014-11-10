@@ -17,6 +17,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -27,7 +28,7 @@ import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
-import org.telegram.ui.Views.IdenticonView;
+import org.telegram.ui.Views.IdenticonDrawable;
 
 public class IdenticonActivity extends BaseFragment {
     private int chat_id;
@@ -60,11 +61,13 @@ public class IdenticonActivity extends BaseFragment {
             });
 
             fragmentView = inflater.inflate(R.layout.identicon_layout, container, false);
-            IdenticonView identiconView = (IdenticonView) fragmentView.findViewById(R.id.identicon_view);
+            ImageView identiconView = (ImageView) fragmentView.findViewById(R.id.identicon_view);
             TextView textView = (TextView)fragmentView.findViewById(R.id.identicon_text);
             TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat(chat_id);
             if (encryptedChat != null) {
-                identiconView.setBytes(encryptedChat.auth_key);
+                IdenticonDrawable drawable = new IdenticonDrawable();
+                identiconView.setImageDrawable(drawable);
+                drawable.setBytes(encryptedChat.auth_key);
                 TLRPC.User user = MessagesController.getInstance().getUser(encryptedChat.user_id);
                 textView.setText(Html.fromHtml(LocaleController.formatString("EncryptionKeyDescription", R.string.EncryptionKeyDescription, user.first_name, user.first_name)));
             }

@@ -27,7 +27,7 @@ import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.ui.Cells.ChatOrUserCell;
+import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
@@ -72,7 +72,6 @@ public class SettingsBlockedUsersActivity extends BaseFragment implements Notifi
                         Bundle args = new Bundle();
                         args.putBoolean("onlyUsers", true);
                         args.putBoolean("destroyAfterSelect", true);
-                        args.putBoolean("usersAsSections", true);
                         args.putBoolean("returnAsResult", true);
                         ContactsActivity fragment = new ContactsActivity(args);
                         fragment.setDelegate(SettingsBlockedUsersActivity.this);
@@ -111,7 +110,7 @@ public class SettingsBlockedUsersActivity extends BaseFragment implements Notifi
                     if (i < MessagesController.getInstance().blockedUsers.size()) {
                         Bundle args = new Bundle();
                         args.putInt("user_id", MessagesController.getInstance().blockedUsers.get(i));
-                        presentFragment(new UserProfileActivity(args));
+                        presentFragment(new ProfileActivity(args));
                     }
                 }
             });
@@ -177,8 +176,8 @@ public class SettingsBlockedUsersActivity extends BaseFragment implements Notifi
         int count = listView.getChildCount();
         for (int a = 0; a < count; a++) {
             View child = listView.getChildAt(a);
-            if (child instanceof ChatOrUserCell) {
-                ((ChatOrUserCell) child).update(mask);
+            if (child instanceof UserCell) {
+                ((UserCell) child).update(mask);
             }
         }
     }
@@ -244,12 +243,11 @@ public class SettingsBlockedUsersActivity extends BaseFragment implements Notifi
             int type = getItemViewType(i);
             if (type == 0) {
                 if (view == null) {
-                    view = new ChatOrUserCell(mContext);
-                    ((ChatOrUserCell)view).usePadding = false;
-                    ((ChatOrUserCell)view).useSeparator = true;
+                    view = new UserCell(mContext);
+                    ((UserCell)view).useSeparator = true;
                 }
                 TLRPC.User user = MessagesController.getInstance().getUser(MessagesController.getInstance().blockedUsers.get(i));
-                ((ChatOrUserCell)view).setData(user, null, null, null, user.phone != null && user.phone.length() != 0 ? PhoneFormat.getInstance().format("+" + user.phone) : LocaleController.getString("NumberUnknown", R.string.NumberUnknown));
+                ((UserCell)view).setData(user, null, user.phone != null && user.phone.length() != 0 ? PhoneFormat.getInstance().format("+" + user.phone) : LocaleController.getString("NumberUnknown", R.string.NumberUnknown));
             } else if (type == 1) {
                 if (view == null) {
                     LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);

@@ -436,7 +436,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (currentEncryptedChat != null) {
             MediaController.getInstance().stopMediaObserver();
         }
-
+        getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
         AndroidUtilities.unlockOrientation(getParentActivity());
         MediaController.getInstance().stopAudio();
     }
@@ -555,7 +555,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             if (currentEncryptedChat != null) {
                                 args.putLong("dialog_id", dialog_id);
                             }
-                            presentFragment(new UserProfileActivity(args));
+                            presentFragment(new ProfileActivity(args));
                         } else if (currentChat != null) {
                             if (info != null && info instanceof TLRPC.TL_chatParticipantsForbidden) {
                                 return;
@@ -2383,6 +2383,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     public void onResume() {
         super.onResume();
 
+        if (parentLayout != null) {
+            parentLayout.getDrawerLayoutContainer().setStatusBarColor(0xff54759e);
+        }
         getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
         checkActionBarMenu();
@@ -2459,7 +2462,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     @Override
     public void onPause() {
         super.onPause();
-        getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
         actionBarLayer.hideActionMode();
         chatActivityEnterView.hideEmojiPopup();
         paused = true;
@@ -3127,7 +3129,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             if (user != null && user.id != UserConfig.getClientUserId()) {
                                 Bundle args = new Bundle();
                                 args.putInt("user_id", user.id);
-                                presentFragment(new UserProfileActivity(args));
+                                presentFragment(new ProfileActivity(args));
                             }
                         }
 
@@ -3315,7 +3317,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             if (uid != UserConfig.getClientUserId()) {
                                 Bundle args = new Bundle();
                                 args.putInt("user_id", uid);
-                                presentFragment(new UserProfileActivity(args));
+                                presentFragment(new ProfileActivity(args));
                             }
                         }
                     });

@@ -30,9 +30,9 @@ import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.Cells.ChatOrUserCell;
 import org.telegram.ui.Cells.DialogCell;
-import org.telegram.ui.Views.SettingsSectionLayout;
+import org.telegram.ui.Cells.GreySectionCell;
+import org.telegram.ui.Cells.ProfileSearchCell;
 
 import java.util.ArrayList;
 import java.util.Timer;
@@ -113,7 +113,7 @@ public class MessagesActivitySearchAdapter extends BaseContactsSearchAdapter {
         }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
     }
 
-    private void searchDialogsInternal(final String query, final boolean needEncrypted) {
+    private void searchDialogsInternal(final String query, final boolean serverOnly) {
         MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -162,7 +162,7 @@ public class MessagesActivitySearchAdapter extends BaseContactsSearchAdapter {
                     }
                     cursor.dispose();
 
-                    if (needEncrypted) {
+                    if (!serverOnly) {
                         cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT q.data, u.name, q.user, q.g, q.authkey, q.ttl, u.data, u.status, q.layer, q.seq_in, q.seq_out FROM enc_chats as q INNER JOIN dialogs as d ON (q.uid << 32) = d.did INNER JOIN users as u ON q.user = u.uid");
                         while (cursor.next()) {
                             String name = cursor.stringValue(1);
@@ -219,7 +219,7 @@ public class MessagesActivitySearchAdapter extends BaseContactsSearchAdapter {
                             ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
                             if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
                                 TLRPC.Chat chat = (TLRPC.Chat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                                if (!needEncrypted && chat.id < 0) {
+                                if (serverOnly && chat.id < 0) {
                                     continue;
                                 }
                                 resultArrayNames.add(Utilities.generateSearchName(chat.title, null, q));
@@ -367,17 +367,16 @@ public class MessagesActivitySearchAdapter extends BaseContactsSearchAdapter {
 
         if (type == 1) {
             if (view == null) {
-                view = new SettingsSectionLayout(mContext);
-                view.setPadding(AndroidUtilities.dp(11), 0, AndroidUtilities.dp(11), 0);
+                view = new GreySectionCell(mContext);
             }
             if (!globalSearch.isEmpty() && i == searchResult.size()) {
-                ((SettingsSectionLayout) view).setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
+                ((GreySectionCell) view).setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
             } else {
-                ((SettingsSectionLayout) view).setText(LocaleController.getString("SearchMessages", R.string.SearchMessages));
+                ((GreySectionCell) view).setText(LocaleController.getString("SearchMessages", R.string.SearchMessages));
             }
         } else if (type == 0) {
             if (view == null) {
-                view = new ChatOrUserCell(mContext);
+                view = new ProfileSearchCell(mContext);
             }
 
             TLRPC.User user = null;
@@ -385,9 +384,9 @@ public class MessagesActivitySearchAdapter extends BaseContactsSearchAdapter {
             TLRPC.EncryptedChat encryptedChat = null;
 
             int localCount = searchResult.size();
-            int globalCount = globalSearch.isEmpty() ? -1 : globalSearch.size() + 1;
+            int globalCount = globalSearch.isEmpty() ? 0 : globalSearch.size() + 1;
 
-            ((ChatOrUserCell) view).useSeparator = (i != getCount() - 1 && i != localCount - 1 && i != localCount + globalCount - 1);
+            ((ProfileSearchCell) view).useSeparator = (i != getCount() - 1 && i != localCount - 1 && i != localCount + globalCount - 1);
             Object obj = getItem(i);
             if (obj instanceof TLRPC.User) {
                 user = MessagesController.getInstance().getUser(((TLRPC.User) obj).id);
@@ -413,14 +412,14 @@ public class MessagesActivitySearchAdapter extends BaseContactsSearchAdapter {
                 }
             } else if (i > searchResult.size() && user != null && user.username != null) {
                 try {
-                    username = Html.fromHtml(String.format("<font color=\"#357aa8\">@%s</font>%s", user.username.substring(0, lastFoundUsername.length()), user.username.substring(lastFoundUsername.length())));
+                    username = Html.fromHtml(String.format("<font color=\"#548ab6\">@%s</font>%s", user.username.substring(0, lastFoundUsername.length()), user.username.substring(lastFoundUsername.length())));
                 } catch (Exception e) {
                     username = user.username;
                     FileLog.e("tmessages", e);
                 }
             }
 
-            ((ChatOrUserCell) view).setData(user, chat, encryptedChat, name, username);
+            ((ProfileSearchCell) view).setData(user, chat, encryptedChat, name, username);
         } else if (type == 2) {
             if (view == null) {
                 view = new DialogCell(mContext);

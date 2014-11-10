@@ -253,6 +253,14 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
         return fragmentView;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (parentLayout != null) {
+            parentLayout.getDrawerLayoutContainer().setStatusBarColor(0xff54759e);
+        }
+    }
+
     public void updateServerNotificationsSettings() {
         if ((int)dialog_id == 0) {
             return;

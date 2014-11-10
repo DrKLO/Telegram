@@ -11,15 +11,19 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.widget.FrameLayout;
 
-public class DrawerDividerCell extends FrameLayout {
+import org.telegram.android.AndroidUtilities;
 
-    public DrawerDividerCell(Context context) {
+public class EmptyCell extends FrameLayout {
+
+    int cellHeight;
+
+    public EmptyCell(Context context, int height) {
         super(context);
-        setBackgroundColor(0xffd9d9d9);
+        cellHeight = height;
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(1, MeasureSpec.EXACTLY));
+        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(cellHeight), MeasureSpec.EXACTLY));
     }
 }

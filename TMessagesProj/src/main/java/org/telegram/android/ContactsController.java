@@ -10,9 +10,11 @@ package org.telegram.android;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.app.Activity;
 import android.content.ContentProviderOperation;
 import android.content.ContentProviderResult;
 import android.content.ContentResolver;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.BaseColumns;
@@ -35,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ContactsController {
@@ -48,6 +51,8 @@ public class ContactsController {
     private boolean contactsBookLoaded = false;
     private String lastContactsVersions = "";
     private ArrayList<Integer> delayedContactsUpdate = new ArrayList<Integer>();
+    private String inviteText;
+    private boolean updatingInviteText = false;
 
     public static class Contact {
         public int id;
@@ -75,8 +80,7 @@ public class ContactsController {
 
     public HashMap<Integer, Contact> contactsBook = new HashMap<Integer, Contact>();
     public HashMap<String, Contact> contactsBookSPhones = new HashMap<String, Contact>();
-    public HashMap<String, ArrayList<Contact>> contactsSectionsDict = new HashMap<String, ArrayList<Contact>>();
-    public ArrayList<String> sortedContactsSectionsArray = new ArrayList<String>();
+    public ArrayList<Contact> phoneBookContacts = new ArrayList<Contact>();
 
     public ArrayList<TLRPC.TL_contact> contacts = new ArrayList<TLRPC.TL_contact>();
     public SparseArray<TLRPC.TL_contact> contactsDict = new SparseArray<TLRPC.TL_contact>();
@@ -102,8 +106,7 @@ public class ContactsController {
     public void cleanup() {
         contactsBook.clear();
         contactsBookSPhones.clear();
-        contactsSectionsDict.clear();
-        sortedContactsSectionsArray.clear();
+        phoneBookContacts.clear();
         contacts.clear();
         contactsDict.clear();
         usersSectionsDict.clear();
@@ -116,6 +119,45 @@ public class ContactsController {
         contactsLoaded = false;
         contactsBookLoaded = false;
         lastContactsVersions = "";
+    }
+
+    public void checkInviteText() {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        inviteText = preferences.getString("invitetext", null);
+        int time = preferences.getInt("invitetexttime", 0);
+        if (!updatingInviteText && (inviteText == null || time + 86400 < (int)(System.currentTimeMillis() / 1000))) {
+            updatingInviteText = true;
+            TLRPC.TL_help_getInviteText req = new TLRPC.TL_help_getInviteText();
+            req.lang_code = LocaleController.getLocaleString(Locale.getDefault());
+            if (req.lang_code == null || req.lang_code.length() == 0) {
+                req.lang_code = "en";
+            }
+            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                @Override
+                public void run(TLObject response, TLRPC.TL_error error) {
+                    if (error == null) {
+                        final TLRPC.TL_help_inviteText res = (TLRPC.TL_help_inviteText)response;
+                        if (res.message.length() != 0) {
+                            AndroidUtilities.runOnUIThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    updatingInviteText = false;
+                                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                                    SharedPreferences.Editor editor = preferences.edit();
+                                    editor.putString("invitetext", res.message);
+                                    editor.putInt("invitetexttime", (int) (System.currentTimeMillis() / 1000));
+                                    editor.commit();
+                                }
+                            });
+                        }
+                    }
+                }
+            }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
+        }
+    }
+
+    public String getInviteText() {
+        return inviteText != null ? inviteText : LocaleController.getString("InviteText", R.string.InviteText);
     }
 
     public void checkAppAccount() {
@@ -989,8 +1031,7 @@ public class ContactsController {
             contactsPhonesShort.put(user.phone, value);
         }
 
-        final HashMap<String, ArrayList<Contact>> sectionsPhoneDict = new HashMap<String, ArrayList<Contact>>();
-        final ArrayList<String> sortedSectionsPhoneArray = new ArrayList<String>();
+        final ArrayList<Contact> sortedPhoneBookContacts = new ArrayList<Contact>();
         for (HashMap.Entry<Integer, Contact> pair : contactsBook.entrySet()) {
             Contact value = pair.getValue();
             int id = pair.getKey();
@@ -1007,61 +1048,24 @@ public class ContactsController {
                 continue;
             }
 
-            String key = value.first_name;
-            if (key.length() == 0) {
-                key = value.last_name;
-            }
-            if (key.length() == 0) {
-                key = "#";
-                if (value.phones.size() != 0) {
-                    value.first_name = "+" + value.phones.get(0);
-                }
-            } else {
-                key = key.toUpperCase();
-            }
-            if (key.length() > 1) {
-                key = key.substring(0, 1);
-            }
-            ArrayList<Contact> arr = sectionsPhoneDict.get(key);
-            if (arr == null) {
-                arr = new ArrayList<Contact>();
-                sectionsPhoneDict.put(key, arr);
-                sortedSectionsPhoneArray.add(key);
-            }
-            arr.add(value);
+            sortedPhoneBookContacts.add(value);
         }
-        for (HashMap.Entry<String, ArrayList<Contact>> entry : sectionsPhoneDict.entrySet()) {
-            Collections.sort(entry.getValue(), new Comparator<Contact>() {
-                @Override
-                public int compare(Contact contact, Contact contact2) {
-                    String toComapre1 = contact.first_name;
-                    if (toComapre1.length() == 0) {
-                        toComapre1 = contact.last_name;
-                    }
-                    String toComapre2 = contact2.first_name;
-                    if (toComapre2.length() == 0) {
-                        toComapre2 = contact2.last_name;
-                    }
-                    return toComapre1.compareTo(toComapre2);
-                }
-            });
-        }
-        Collections.sort(sortedSectionsPhoneArray, new Comparator<String>() {
+        Collections.sort(sortedPhoneBookContacts, new Comparator<Contact>() {
             @Override
-            public int compare(String s, String s2) {
-                char cv1 = s.charAt(0);
-                char cv2 = s2.charAt(0);
-                if (cv1 == '#') {
-                    return 1;
-                } else if (cv2 == '#') {
-                    return -1;
+            public int compare(Contact contact, Contact contact2) {
+                String toComapre1 = contact.first_name;
+                if (toComapre1.length() == 0) {
+                    toComapre1 = contact.last_name;
                 }
-                return s.compareTo(s2);
+                String toComapre2 = contact2.first_name;
+                if (toComapre2.length() == 0) {
+                    toComapre2 = contact2.last_name;
+                }
+                return toComapre1.compareTo(toComapre2);
             }
         });
 
-        contactsSectionsDict = sectionsPhoneDict;
-        sortedContactsSectionsArray = sortedSectionsPhoneArray;
+        phoneBookContacts = sortedPhoneBookContacts;
     }
 
     private void buildContactsSectionsArrays(boolean sort) {

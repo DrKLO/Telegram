@@ -144,7 +144,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         }
         codeField.setText("");
         AndroidUtilities.setWaitingForSms(true);
-        NotificationCenter.getInstance().addObserver(this, 998);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.didReceiveSmsCode);
         currentParams = params;
         waitingForSms = true;
         String phone = params.getString("phone");
@@ -279,7 +279,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         nextPressed = true;
         waitingForSms = false;
         AndroidUtilities.setWaitingForSms(false);
-        NotificationCenter.getInstance().removeObserver(this, 998);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didReceiveSmsCode);
         final TLRPC.TL_auth_signIn req = new TLRPC.TL_auth_signIn();
         req.phone_number = requestPhone;
         req.phone_code = codeField.getText().toString();
@@ -353,7 +353,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
         destroyCodeTimer();
         currentParams = null;
         AndroidUtilities.setWaitingForSms(false);
-        NotificationCenter.getInstance().removeObserver(this, 998);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didReceiveSmsCode);
         waitingForSms = false;
     }
 
@@ -361,7 +361,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
     public void onDestroyActivity() {
         super.onDestroyActivity();
         AndroidUtilities.setWaitingForSms(false);
-        NotificationCenter.getInstance().removeObserver(this, 998);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didReceiveSmsCode);
         destroyTimer();
         destroyCodeTimer();
         waitingForSms = false;
@@ -378,7 +378,7 @@ public class LoginActivitySmsView extends SlideView implements NotificationCente
 
     @Override
     public void didReceivedNotification(int id, final Object... args) {
-        if (id == 998) {
+        if (id == NotificationCenter.didReceiveSmsCode) {
             AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {

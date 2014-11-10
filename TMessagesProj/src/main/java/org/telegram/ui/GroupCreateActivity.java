@@ -568,7 +568,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
             holder.messageTextView.setText(LocaleController.formatUserStatus(user));
             if (user.status != null && user.status.expires > ConnectionsManager.getInstance().getCurrentTime()) {
-                holder.messageTextView.setTextColor(0xff357aa8);
+                holder.messageTextView.setTextColor(0xff548ab6);
             } else {
                 holder.messageTextView.setTextColor(0xff808080);
             }

@@ -187,11 +187,11 @@
     <string name="BlockContact">Block</string>
     <string name="EditContact">Edit</string>
     <string name="DeleteContact">Delete</string>
-    <string name="PhoneHome">HOME</string>
-    <string name="PhoneMobile">MOBILE</string>
-    <string name="PhoneWork">WORK</string>
-    <string name="PhoneOther">OTHER</string>
-    <string name="PhoneMain">MAIN</string>
+    <string name="PhoneHome">Home</string>
+    <string name="PhoneMobile">Mobile</string>
+    <string name="PhoneWork">Work</string>
+    <string name="PhoneOther">Other</string>
+    <string name="PhoneMain">Main</string>
     <string name="ContactInfo">Contact Info</string>
     <string name="PHONE">PHONE</string>
     <string name="StartEncryptedChat">Start Secret Chat</string>

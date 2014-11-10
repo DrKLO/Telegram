@@ -259,6 +259,9 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     @Override
     public void onResume() {
         super.onResume();
+        if (parentLayout != null) {
+            parentLayout.getDrawerLayoutContainer().setStatusBarColor(0xff54759e);
+        }
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }

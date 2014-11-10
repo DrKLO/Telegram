@@ -16,6 +16,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
@@ -222,7 +223,8 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
             if (requestCode == 10) {
                 Utilities.addMediaToGallery(currentPicturePath);
                 try {
-                    Bitmap bitmap = ImageLoader.loadBitmap(currentPicturePath, null, AndroidUtilities.dp(320), AndroidUtilities.dp(480));
+                    Point screenSize = AndroidUtilities.getRealScreenSize();
+                    Bitmap bitmap = ImageLoader.loadBitmap(currentPicturePath, null, screenSize.x, screenSize.y);
                     File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
                     FileOutputStream stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
@@ -238,7 +240,8 @@ public class SettingsWallpapersActivity extends BaseFragment implements Notifica
                     return;
                 }
                 try {
-                    Bitmap bitmap = ImageLoader.loadBitmap(null, data.getData(), AndroidUtilities.dp(320), AndroidUtilities.dp(480));
+                    Point screenSize = AndroidUtilities.getRealScreenSize();
+                    Bitmap bitmap = ImageLoader.loadBitmap(null, data.getData(), screenSize.x, screenSize.y);
                     File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
                     FileOutputStream stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
