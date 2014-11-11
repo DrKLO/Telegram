@@ -28,7 +28,7 @@ import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.UserCell;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 
@@ -60,10 +60,10 @@ public class SettingsBlockedUsersActivity extends BaseFragment implements Notifi
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
-            actionBarLayer.setTitle(LocaleController.getString("BlockedUsers", R.string.BlockedUsers));
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setTitle(LocaleController.getString("BlockedUsers", R.string.BlockedUsers));
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
@@ -80,7 +80,7 @@ public class SettingsBlockedUsersActivity extends BaseFragment implements Notifi
                 }
             });
 
-            ActionBarMenu menu = actionBarLayer.createMenu();
+            ActionBarMenu menu = actionBar.createMenu();
             menu.addItem(block_user, R.drawable.plus);
 
             fragmentView = inflater.inflate(R.layout.settings_blocked_users_layout, container, false);

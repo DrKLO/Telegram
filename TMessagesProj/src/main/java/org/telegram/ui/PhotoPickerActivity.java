@@ -32,7 +32,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessageObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.BackupImageView;
@@ -84,17 +84,17 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setBackgroundColor(0xff333333);
-            actionBarLayer.setItemsBackground(R.drawable.bar_selector_picker);
-            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBarLayer.setTitle(LocaleController.getString("Gallery", R.string.Gallery));
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setBackgroundColor(0xff333333);
+            actionBar.setItemsBackground(R.drawable.bar_selector_picker);
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setTitle(LocaleController.getString("Gallery", R.string.Gallery));
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
                         if (selectedAlbum != null) {
                             selectedAlbum = null;
-                            actionBarLayer.setTitle(LocaleController.getString("Gallery", R.string.Gallery));
+                            actionBar.setTitle(LocaleController.getString("Gallery", R.string.Gallery));
                             fixLayoutInternal();
                         } else {
                             if (Build.VERSION.SDK_INT < 11) {
@@ -113,7 +113,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 }
             });
 
-            ActionBarMenu menu = actionBarLayer.createMenu();
+            ActionBarMenu menu = actionBar.createMenu();
             menu.addItem(1, R.drawable.ic_ab_other);
 
             fragmentView = inflater.inflate(R.layout.photo_picker_layout, container, false);
@@ -158,7 +158,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                             return;
                         }
                         selectedAlbum = albumsSorted.get(i);
-                        actionBarLayer.setTitle(selectedAlbum.bucketName);
+                        actionBar.setTitle(selectedAlbum.bucketName);
                         fixLayoutInternal();
                     } else {
                         if (i < 0 || i >= selectedAlbum.photos.size()) {
@@ -231,7 +231,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     public boolean onBackPressed() {
         if (selectedAlbum != null) {
             selectedAlbum = null;
-            actionBarLayer.setTitle(LocaleController.getString("Gallery", R.string.Gallery));
+            actionBar.setTitle(LocaleController.getString("Gallery", R.string.Gallery));
             fixLayoutInternal();
             return false;
         }

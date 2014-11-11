@@ -24,7 +24,10 @@ import android.view.Surface;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AbsListView;
+import android.widget.EdgeEffect;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.messenger.FileLog;
@@ -465,5 +468,27 @@ public class AndroidUtilities {
             FileLog.e("tmessages", e);
         }
         return size;
+    }
+
+    public static void setListViewEdgeEffectColor(ListView listView, int color) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            try {
+                Field field = AbsListView.class.getDeclaredField("mEdgeGlowTop");
+                field.setAccessible(true);
+                EdgeEffect mEdgeGlowTop = (EdgeEffect) field.get(listView);
+                if (mEdgeGlowTop != null) {
+                    mEdgeGlowTop.setColor(color);
+                }
+
+                field = AbsListView.class.getDeclaredField("mEdgeGlowBottom");
+                field.setAccessible(true);
+                EdgeEffect mEdgeGlowBottom = (EdgeEffect) field.get(listView);
+                if (mEdgeGlowBottom != null) {
+                    mEdgeGlowBottom.setColor(color);
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+        }
     }
 }

@@ -18,6 +18,8 @@ package org.telegram.ui.Animation;
 
 import android.view.View;
 
+import org.telegram.ui.Views.ActionBar.ActionBarLayout;
+
 import java.util.HashMap;
 
 public final class ObjectAnimator10 extends ValueAnimator {
@@ -25,7 +27,7 @@ public final class ObjectAnimator10 extends ValueAnimator {
     private static final HashMap<String, Property> PROXY_PROPERTIES = new HashMap<String, Property>();
 
     static {
-        Property<View, Float> ALPHA = new FloatProperty<View>("alpha") {
+        Property<View, Float> ALPHA = new FloatProperty10<View>("alpha") {
             @Override
             public void setValue(View object, float value) {
                 View10.wrap(object).setAlpha(value);
@@ -37,7 +39,7 @@ public final class ObjectAnimator10 extends ValueAnimator {
             }
         };
 
-        Property<View, Float> PIVOT_X = new FloatProperty<View>("pivotX") {
+        Property<View, Float> PIVOT_X = new FloatProperty10<View>("pivotX") {
             @Override
             public void setValue(View object, float value) {
                 View10.wrap(object).setPivotX(value);
@@ -49,7 +51,7 @@ public final class ObjectAnimator10 extends ValueAnimator {
             }
         };
 
-        Property<View, Float> PIVOT_Y = new FloatProperty<View>("pivotY") {
+        Property<View, Float> PIVOT_Y = new FloatProperty10<View>("pivotY") {
             @Override
             public void setValue(View object, float value) {
                 View10.wrap(object).setPivotY(value);
@@ -61,7 +63,7 @@ public final class ObjectAnimator10 extends ValueAnimator {
             }
         };
 
-        Property<View, Float> TRANSLATION_X = new FloatProperty<View>("translationX") {
+        Property<View, Float> TRANSLATION_X = new FloatProperty10<View>("translationX") {
             @Override
             public void setValue(View object, float value) {
                 View10.wrap(object).setTranslationX(value);
@@ -73,7 +75,7 @@ public final class ObjectAnimator10 extends ValueAnimator {
             }
         };
 
-        Property<View, Float> TRANSLATION_Y = new FloatProperty<View>("translationY") {
+        Property<View, Float> TRANSLATION_Y = new FloatProperty10<View>("translationY") {
             @Override
             public void setValue(View object, float value) {
                 View10.wrap(object).setTranslationY(value);
@@ -85,7 +87,7 @@ public final class ObjectAnimator10 extends ValueAnimator {
             }
         };
 
-        Property<View, Float> ROTATION = new FloatProperty<View>("rotation") {
+        Property<View, Float> ROTATION = new FloatProperty10<View>("rotation") {
             @Override
             public void setValue(View object, float value) {
                 View10.wrap(object).setRotation(value);
@@ -97,7 +99,7 @@ public final class ObjectAnimator10 extends ValueAnimator {
             }
         };
 
-        Property<View, Float> ROTATION_X = new FloatProperty<View>("rotationX") {
+        Property<View, Float> ROTATION_X = new FloatProperty10<View>("rotationX") {
             @Override
             public void setValue(View object, float value) {
                 View10.wrap(object).setRotationX(value);
@@ -109,7 +111,7 @@ public final class ObjectAnimator10 extends ValueAnimator {
             }
         };
 
-        Property<View, Float> ROTATION_Y = new FloatProperty<View>("rotationY") {
+        Property<View, Float> ROTATION_Y = new FloatProperty10<View>("rotationY") {
             @Override
             public void setValue(View object, float value) {
                 View10.wrap(object).setRotationY(value);
@@ -121,7 +123,7 @@ public final class ObjectAnimator10 extends ValueAnimator {
             }
         };
 
-        Property<View, Float> SCALE_X = new FloatProperty<View>("scaleX") {
+        Property<View, Float> SCALE_X = new FloatProperty10<View>("scaleX") {
             @Override
             public void setValue(View object, float value) {
                 View10.wrap(object).setScaleX(value);
@@ -133,7 +135,7 @@ public final class ObjectAnimator10 extends ValueAnimator {
             }
         };
 
-        Property<View, Float> SCALE_Y = new FloatProperty<View>("scaleY") {
+        Property<View, Float> SCALE_Y = new FloatProperty10<View>("scaleY") {
             @Override
             public void setValue(View object, float value) {
                 View10.wrap(object).setScaleY(value);
@@ -169,7 +171,7 @@ public final class ObjectAnimator10 extends ValueAnimator {
             }
         };
 
-        Property<View, Float> X = new FloatProperty<View>("x") {
+        Property<View, Float> X = new FloatProperty10<View>("x") {
             @Override
             public void setValue(View object, float value) {
                 View10.wrap(object).setX(value);
@@ -181,7 +183,7 @@ public final class ObjectAnimator10 extends ValueAnimator {
             }
         };
 
-        Property<View, Float> Y = new FloatProperty<View>("y") {
+        Property<View, Float> Y = new FloatProperty10<View>("y") {
             @Override
             public void setValue(View object, float value) {
                 View10.wrap(object).setY(value);

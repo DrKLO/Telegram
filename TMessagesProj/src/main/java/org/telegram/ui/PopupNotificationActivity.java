@@ -45,7 +45,6 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessageObject;
 import org.telegram.android.PhotoObject;
 import org.telegram.ui.Views.ActionBar.ActionBar;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.BackupImageView;
@@ -59,7 +58,7 @@ import java.util.ArrayList;
 
 public class PopupNotificationActivity extends Activity implements NotificationCenter.NotificationCenterDelegate {
 
-    private ActionBarLayer actionBarLayer;
+    private ActionBar actionBar;
     private ChatActivityEnterView chatActivityEnterView;
     private BackupImageView avatarImageView;
     private TextView countText;
@@ -182,19 +181,16 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         messageContainer = new FrameLayoutTouch(this);
         popupContainer.addView(messageContainer, 0);
 
-        ActionBar actionBar = new ActionBar(this);
+        actionBar = new ActionBar(this);
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setBackgroundResource(R.color.header);
+        actionBar.setItemsBackground(R.drawable.bar_selector);
         popupContainer.addView(actionBar);
         ViewGroup.LayoutParams layoutParams = actionBar.getLayoutParams();
         layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
         actionBar.setLayoutParams(layoutParams);
 
-        actionBarLayer = actionBar.createLayer();
-        actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBarLayer.setBackgroundResource(R.color.header);
-        actionBarLayer.setItemsBackground(R.drawable.bar_selector);
-        actionBar.setCurrentActionBarLayer(actionBarLayer);
-
-        ActionBarMenu menu = actionBarLayer.createMenu();
+        ActionBarMenu menu = actionBar.createMenu();
         View view = menu.addItemResource(2, R.layout.popup_count_layout);
         countText = (TextView) view.findViewById(R.id.count_text);
 
@@ -202,7 +198,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         avatarImageView = (BackupImageView)view.findViewById(R.id.chat_avatar_image);
         avatarImageView.processDetach = false;
 
-        actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
@@ -715,7 +711,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     }
 
     private void updateInterfaceForCurrentMessage(int move) {
-        if (actionBarLayer == null) {
+        if (actionBar == null) {
             return;
         }
         currentChat = null;
@@ -736,15 +732,15 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
 
         if (currentChat != null && currentUser != null) {
-            actionBarLayer.setTitle(currentChat.title);
-            actionBarLayer.setSubtitle(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
-            actionBarLayer.setTitleIcon(0, 0);
+            actionBar.setTitle(currentChat.title);
+            actionBar.setSubtitle(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
+            actionBar.setTitleIcon(0, 0);
         } else if (currentUser != null) {
-            actionBarLayer.setTitle(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
+            actionBar.setTitle(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
             if ((int)dialog_id == 0) {
-                actionBarLayer.setTitleIcon(R.drawable.ic_lock_white, AndroidUtilities.dp(4));
+                actionBar.setTitleIcon(R.drawable.ic_lock_white, AndroidUtilities.dp(4));
             } else {
-                actionBarLayer.setTitleIcon(0, 0);
+                actionBar.setTitleIcon(0, 0);
             }
         }
 
@@ -755,7 +751,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     }
 
     private void updateSubtitle() {
-        if (actionBarLayer == null) {
+        if (actionBar == null) {
             return;
         }
         if (currentChat != null || currentUser == null) {
@@ -763,12 +759,12 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
         if (currentUser.id / 1000 != 777 && currentUser.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(currentUser.id) == null && (ContactsController.getInstance().contactsDict.size() != 0 || !ContactsController.getInstance().isLoadingContacts())) {
             if (currentUser.phone != null && currentUser.phone.length() != 0) {
-                actionBarLayer.setTitle(PhoneFormat.getInstance().format("+" + currentUser.phone));
+                actionBar.setTitle(PhoneFormat.getInstance().format("+" + currentUser.phone));
             } else {
-                actionBarLayer.setTitle(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
+                actionBar.setTitle(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
             }
         } else {
-            actionBarLayer.setTitle(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
+            actionBar.setTitle(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
         }
         CharSequence printString = MessagesController.getInstance().printingStrings.get(currentMessageObject.getDialogId());
         if (printString == null || printString.length() == 0) {
@@ -778,10 +774,10 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             if (user != null) {
                 currentUser = user;
             }
-            actionBarLayer.setSubtitle(LocaleController.formatUserStatus(currentUser));
+            actionBar.setSubtitle(LocaleController.formatUserStatus(currentUser));
         } else {
             lastPrintString = printString;
-            actionBarLayer.setSubtitle(printString);
+            actionBar.setSubtitle(printString);
             setTypingAnimation(true);
         }
     }
@@ -816,18 +812,18 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     }
 
     private void setTypingAnimation(boolean start) {
-        if (actionBarLayer == null) {
+        if (actionBar == null) {
             return;
         }
         if (start) {
             try {
-                actionBarLayer.setSubTitleIcon(0, typingDotsDrawable, AndroidUtilities.dp(4));
+                actionBar.setSubTitleIcon(0, typingDotsDrawable, AndroidUtilities.dp(4));
                 typingDotsDrawable.start();
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
         } else {
-            actionBarLayer.setSubTitleIcon(0, null, 0);
+            actionBar.setSubTitleIcon(0, null, 0);
             typingDotsDrawable.stop();
         }
     }

@@ -18,6 +18,7 @@ import org.telegram.ui.Animation.AnimatorListenerAdapter10;
 import org.telegram.ui.Animation.AnimatorSet10;
 import org.telegram.ui.Animation.View10;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class AnimatorSetProxy {
@@ -37,6 +38,22 @@ public class AnimatorSetProxy {
             ((AnimatorSet10) animatorSet).playTogether(animators);
         } else {
             Animator[] animators = Arrays.copyOf(items, items.length, Animator[].class);
+            ((AnimatorSet) animatorSet).playTogether(animators);
+        }
+    }
+
+    public void playTogether(ArrayList<Object> items) {
+        if (View10.NEED_PROXY) {
+            ArrayList<Animator10> animators = new ArrayList<Animator10>();
+            for (Object obj : items) {
+                animators.add((Animator10)obj);
+            }
+            ((AnimatorSet10) animatorSet).playTogether(animators);
+        } else {
+            ArrayList<Animator> animators = new ArrayList<Animator>();
+            for (Object obj : items) {
+                animators.add((Animator)obj);
+            }
             ((AnimatorSet) animatorSet).playTogether(animators);
         }
     }

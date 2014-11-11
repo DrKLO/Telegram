@@ -33,7 +33,7 @@ import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 
@@ -87,10 +87,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
-            actionBarLayer.setTitle(LocaleController.getString("SharedMedia", R.string.SharedMedia));
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setTitle(LocaleController.getString("SharedMedia", R.string.SharedMedia));
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
@@ -259,9 +259,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     @Override
     public void onResume() {
         super.onResume();
-        if (parentLayout != null) {
-            parentLayout.getDrawerLayoutContainer().setStatusBarColor(0xff54759e);
-        }
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }

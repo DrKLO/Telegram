@@ -35,7 +35,7 @@ import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.AvatarDrawable;
@@ -91,15 +91,15 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setBackOverlay(R.layout.updating_state_layout);
             if (messageObject != null) {
-                actionBarLayer.setTitle(LocaleController.getString("ChatLocation", R.string.ChatLocation));
+                actionBar.setTitle(LocaleController.getString("ChatLocation", R.string.ChatLocation));
             } else {
-                actionBarLayer.setTitle(LocaleController.getString("ShareLocation", R.string.ShareLocation));
+                actionBar.setTitle(LocaleController.getString("ShareLocation", R.string.ShareLocation));
             }
 
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
@@ -128,7 +128,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 }
             });
 
-            ActionBarMenu menu = actionBarLayer.createMenu();
+            ActionBarMenu menu = actionBar.createMenu();
             menu.addItem(map_to_my_location, R.drawable.ic_ab_location);
 
             ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);

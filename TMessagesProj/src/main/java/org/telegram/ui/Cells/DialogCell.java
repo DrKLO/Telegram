@@ -56,6 +56,7 @@ public class DialogCell extends BaseCell {
     private boolean allowPrintStrings;
     private int lastMessageDate;
     private int unreadCount;
+    private boolean lastUnreadState;
     private MessageObject message;
 
     private ImageReceiver avatarImage;
@@ -148,7 +149,7 @@ public class DialogCell extends BaseCell {
             errorDrawable = getResources().getDrawable(R.drawable.dialogs_warning);
             countDrawable = getResources().getDrawable(R.drawable.dialogs_badge);
             groupDrawable = getResources().getDrawable(R.drawable.list_group);
-            broadcastDrawable = getResources().getDrawable(R.drawable.broadcast);
+            broadcastDrawable = getResources().getDrawable(R.drawable.list_broadcast);
         }
     }
 
@@ -166,6 +167,7 @@ public class DialogCell extends BaseCell {
         allowPrintStrings = usePrintStrings;
         lastMessageDate = date;
         unreadCount = unread;
+        lastUnreadState = messageObject != null && messageObject.isUnread();
         update(0);
     }
 
@@ -584,7 +586,9 @@ public class DialogCell extends BaseCell {
                 }
             }
             if ((mask & MessagesController.UPDATE_MASK_READ_DIALOG_MESSAGE) != 0) {
-                continueUpdate = true;
+                if (message != null && lastUnreadState != message.isUnread()) {
+                    continueUpdate = true;
+                }
             }
 
             if (!continueUpdate) {

@@ -25,7 +25,7 @@ import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
@@ -122,11 +122,11 @@ public class CountrySelectActivity extends BaseFragment {
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
-            actionBarLayer.setTitle(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setTitle(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
 
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
@@ -135,7 +135,7 @@ public class CountrySelectActivity extends BaseFragment {
                 }
             });
 
-            ActionBarMenu menu = actionBarLayer.createMenu();
+            ActionBarMenu menu = actionBar.createMenu();
             menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
                 @Override
                 public void onSearchExpand() {

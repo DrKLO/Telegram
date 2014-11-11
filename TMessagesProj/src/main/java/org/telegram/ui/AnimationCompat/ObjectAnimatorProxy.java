@@ -78,4 +78,36 @@ public class ObjectAnimatorProxy {
             ((ObjectAnimator) objectAnimator).start();
         }
     }
+
+    public void setAutoCancel(boolean cancel) {
+        if (View10.NEED_PROXY) {
+            ((ObjectAnimator10) objectAnimator).setAutoCancel(cancel);
+        } else {
+            ((ObjectAnimator) objectAnimator).setAutoCancel(cancel);
+        }
+    }
+
+    public boolean isRunning() {
+        if (View10.NEED_PROXY) {
+            return ((ObjectAnimator10) objectAnimator).isRunning();
+        } else {
+            return ((ObjectAnimator) objectAnimator).isRunning();
+        }
+    }
+
+    public void end() {
+        if (View10.NEED_PROXY) {
+            ((ObjectAnimator10) objectAnimator).end();
+        } else {
+            ((ObjectAnimator) objectAnimator).end();
+        }
+    }
+
+    public void cancel() {
+        if (View10.NEED_PROXY) {
+            ((ObjectAnimator10) objectAnimator).cancel();
+        } else {
+            ((ObjectAnimator) objectAnimator).cancel();
+        }
+    }
 }

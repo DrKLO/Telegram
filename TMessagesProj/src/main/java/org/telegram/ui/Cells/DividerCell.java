@@ -16,12 +16,15 @@ import org.telegram.android.AndroidUtilities;
 
 public class DividerCell extends BaseCell {
 
-    Paint paint = new Paint();
+    private static Paint paint;
 
     public DividerCell(Context context) {
         super(context);
-        paint.setColor(0xffd9d9d9);
-        paint.setStrokeWidth(1);
+        if (paint == null) {
+            paint = new Paint();
+            paint.setColor(0xffd9d9d9);
+            paint.setStrokeWidth(1);
+        }
     }
 
     @Override

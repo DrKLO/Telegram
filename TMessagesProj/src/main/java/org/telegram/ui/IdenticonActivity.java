@@ -26,7 +26,7 @@ import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.IdenticonDrawable;
 
@@ -46,12 +46,12 @@ public class IdenticonActivity extends BaseFragment {
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
-            actionBarLayer.setTitle(LocaleController.getString("EncryptionKey", R.string.EncryptionKey));
-            actionBarLayer.setTitleIcon(R.drawable.ic_lock_white, AndroidUtilities.dp(4));
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setTitle(LocaleController.getString("EncryptionKey", R.string.EncryptionKey));
+            actionBar.setTitleIcon(R.drawable.ic_lock_white, AndroidUtilities.dp(4));
 
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {

@@ -95,13 +95,11 @@ public class ProfileSearchCell extends BaseCell {
             offlinePaint.setTextSize(AndroidUtilities.dp(16));
             offlinePaint.setColor(0xff999999);
 
-            lockDrawable = getResources().getDrawable(R.drawable.list_secret);
-
             linePaint = new Paint();
             linePaint.setColor(0xffdcdcdc);
 
-            broadcastDrawable = getResources().getDrawable(R.drawable.broadcast);
-
+            broadcastDrawable = getResources().getDrawable(R.drawable.list_broadcast);
+            lockDrawable = getResources().getDrawable(R.drawable.list_secret);
             groupDrawable = getResources().getDrawable(R.drawable.list_group);
         }
     }

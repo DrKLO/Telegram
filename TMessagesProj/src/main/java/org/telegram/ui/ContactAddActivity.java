@@ -65,15 +65,15 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setCustomView(R.layout.settings_do_action_layout);
-            Button cancelButton = (Button)actionBarLayer.findViewById(R.id.cancel_button);
+            actionBar.setCustomView(R.layout.settings_do_action_layout);
+            Button cancelButton = (Button) actionBar.findViewById(R.id.cancel_button);
             cancelButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     finishFragment();
                 }
             });
-            doneButton = actionBarLayer.findViewById(R.id.done_button);
+            doneButton = actionBar.findViewById(R.id.done_button);
             doneButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {

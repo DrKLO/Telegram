@@ -64,7 +64,6 @@ import org.telegram.ui.AnimationCompat.AnimatorSetProxy;
 import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.ui.AnimationCompat.ViewProxy;
 import org.telegram.ui.Views.ActionBar.ActionBar;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.ClippingImageView;
@@ -84,7 +83,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private Activity parentActivity;
 
     private ActionBar actionBar;
-    private ActionBarLayer actionBarLayer;
     private boolean isActionBarVisible = true;
 
     private static Drawable[] progressDrawables = null;
@@ -484,7 +482,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     loadingMoreImages = true;
                     MessagesController.getInstance().loadMedia(currentDialogId, 0, 100, 0, true, classGuid);
                 } else if (!imagesArr.isEmpty()) {
-                    actionBarLayer.setTitle(LocaleController.formatString("Of", R.string.Of, (totalImagesCount - imagesArr.size()) + currentIndex + 1, totalImagesCount));
+                    actionBar.setTitle(LocaleController.formatString("Of", R.string.Of, (totalImagesCount - imagesArr.size()) + currentIndex + 1, totalImagesCount));
                 }
             }
         } else if (id == NotificationCenter.mediaDidLoaded) {
@@ -603,18 +601,16 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 
         actionBar = new ActionBar(activity);
-        containerView.addView(actionBar);
         actionBar.setBackgroundColor(0x7F000000);
-        layoutParams = (FrameLayout.LayoutParams)actionBar.getLayoutParams();
+        actionBar.setItemsBackground(R.drawable.bar_selector_white);
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setTitle(LocaleController.formatString("Of", R.string.Of, 1, 1));
+        containerView.addView(actionBar);
+        layoutParams = (FrameLayout.LayoutParams) actionBar.getLayoutParams();
         layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
         actionBar.setLayoutParams(layoutParams);
-        actionBarLayer = actionBar.createLayer();
-        actionBarLayer.setItemsBackground(R.drawable.bar_selector_white);
-        actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBarLayer.setTitle(LocaleController.formatString("Of", R.string.Of, 1, 1));
-        actionBar.setCurrentActionBarLayer(actionBarLayer);
 
-        actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
@@ -692,7 +688,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
         });
 
-        ActionBarMenu menu = actionBarLayer.createMenu();
+        ActionBarMenu menu = actionBar.createMenu();
         menuItem = menu.addItem(0, R.drawable.ic_ab_other);
         menuItem.addSubItem(gallery_menu_save, LocaleController.getString("SaveToGallery", R.string.SaveToGallery), 0);
         menuItem.addSubItem(gallery_menu_showall, LocaleController.getString("ShowAllMedia", R.string.ShowAllMedia), 0);
@@ -953,7 +949,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
         isActionBarVisible = show;
         actionBar.setEnabled(show);
-        actionBarLayer.setEnabled(show);
         bottomLayout.setEnabled(show);
 
         if (animated) {
@@ -1295,7 +1290,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     MessagesController.getInstance().loadMedia(currentDialogId, 0, 100, lastMessage.messageOwner.id, !cacheEndReached, classGuid);
                     loadingMoreImages = true;
                 }
-                actionBarLayer.setTitle(LocaleController.formatString("Of", R.string.Of, (totalImagesCount - imagesArr.size()) + currentIndex + 1, totalImagesCount));
+                actionBar.setTitle(LocaleController.formatString("Of", R.string.Of, (totalImagesCount - imagesArr.size()) + currentIndex + 1, totalImagesCount));
             }
             if (currentMessageObject.messageOwner.ttl != 0) {
                 menuItem.hideSubItem(gallery_menu_save);
@@ -1317,12 +1312,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (old != null && currentFileLocation != null && old.local_id == currentFileLocation.local_id && old.volume_id == currentFileLocation.volume_id) {
                 sameImage = true;
             }
-            actionBarLayer.setTitle(LocaleController.formatString("Of", R.string.Of, currentIndex + 1, imagesArrLocations.size()));
+            actionBar.setTitle(LocaleController.formatString("Of", R.string.Of, currentIndex + 1, imagesArrLocations.size()));
             menuItem.showSubItem(gallery_menu_save);
             shareButton.setVisibility(View.VISIBLE);
         } else if (!imagesArrLocals.isEmpty()) {
             currentPathObject = imagesArrLocals.get(index).path;
-            actionBarLayer.setTitle(LocaleController.formatString("Of", R.string.Of, currentIndex + 1, imagesArrLocals.size()));
+            actionBar.setTitle(LocaleController.formatString("Of", R.string.Of, currentIndex + 1, imagesArrLocals.size()));
 
             if (placeProvider.isPhotoChecked(currentIndex)) {
                 checkImageView.setBackgroundColor(0xff42d1f6);
@@ -1559,7 +1554,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             return;
         }
 
-        actionBarLayer.setTitle(LocaleController.formatString("Of", R.string.Of, 1, 1));
+        actionBar.setTitle(LocaleController.formatString("Of", R.string.Of, 1, 1));
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileDidFailedLoad);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileDidLoaded);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileLoadProgressChanged);

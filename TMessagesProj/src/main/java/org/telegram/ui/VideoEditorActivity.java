@@ -46,7 +46,7 @@ import org.telegram.android.MediaController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.VideoSeekBarView;
@@ -220,11 +220,11 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setBackgroundColor(0xff333333);
-            actionBarLayer.setItemsBackground(R.drawable.bar_selector_white);
-            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBarLayer.setTitle(LocaleController.getString("EditVideo", R.string.EditVideo));
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setBackgroundColor(0xff333333);
+            actionBar.setItemsBackground(R.drawable.bar_selector_white);
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setTitle(LocaleController.getString("EditVideo", R.string.EditVideo));
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
@@ -253,7 +253,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                 }
             });
 
-            ActionBarMenu menu = actionBarLayer.createMenu();
+            ActionBarMenu menu = actionBar.createMenu();
             View doneItem = menu.addItemResource(1, R.layout.group_create_done_layout);
 
             TextView doneTextView = (TextView) doneItem.findViewById(R.id.done_button);

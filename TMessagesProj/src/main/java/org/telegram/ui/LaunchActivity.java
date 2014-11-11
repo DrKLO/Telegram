@@ -240,7 +240,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             });
         } else {
             drawerLayoutContainer = new DrawerLayoutContainer(this);
-            drawerLayoutContainer.setStatusBarColor(0xff54759e);
             drawerLayoutContainer.addView(actionBarLayout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
             ListView listView = new ListView(this);
@@ -933,7 +932,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         Utilities.checkForUpdates(this);
         ApplicationLoader.mainInterfacePaused = false;
         ConnectionsManager.getInstance().setAppPaused(false, false);
-        actionBarLayout.getActionBar().setBackOverlayVisible(currentConnectionState != 0);
+        //actionBarLayout.getActionBar().setBackOverlayVisible(currentConnectionState != 0);
     }
 
     @Override
@@ -974,7 +973,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             if (currentConnectionState != state) {
                 FileLog.e("tmessages", "switch to state " + state);
                 currentConnectionState = state;
-                actionBarLayout.getActionBar().setBackOverlayVisible(currentConnectionState != 0);
+                //actionBarLayout.getActionBar().setBackOverlayVisible(currentConnectionState != 0);
             }
         }
     }

@@ -175,7 +175,6 @@
     <string name="EnterGroupNameTitle">그룹 이름을 입력하세요</string>
     <string name="SharedMedia">공유한 미디어</string>
     <string name="GroupInfo">그룹 정보</string>
-    <string name="SHAREDMEDIA">공유한 미디어</string>
     <string name="SETTINGS">설정</string>
     <string name="AddMember">대화상대 추가</string>
     <string name="DeleteAndExit">그룹에서 나가기</string>

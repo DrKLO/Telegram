@@ -148,10 +148,10 @@ public class PropertyValuesHolder implements Cloneable {
         Class args[] = null;
         if (valueType == null) {
             try {
-                returnVal = targetClass.getMethod(methodName, args);
+                returnVal = targetClass.getMethod(methodName);
             } catch (NoSuchMethodException e) {
                 try {
-                    returnVal = targetClass.getDeclaredMethod(methodName, args);
+                    returnVal = targetClass.getDeclaredMethod(methodName);
                     returnVal.setAccessible(true);
                 } catch (NoSuchMethodException e2) {
                     e2.printStackTrace();
@@ -464,7 +464,7 @@ public class PropertyValuesHolder implements Cloneable {
     static class FloatPropertyValuesHolder extends PropertyValuesHolder {
 
         private static final HashMap<Class, HashMap<String, Integer>> sJNISetterPropertyMap = new HashMap<Class, HashMap<String, Integer>>();
-        private FloatProperty mFloatProperty;
+        private FloatProperty10 mFloatProperty;
 
         FloatKeyframeSet mFloatKeyframeSet;
         float mFloatAnimatedValue;
@@ -481,8 +481,8 @@ public class PropertyValuesHolder implements Cloneable {
             mValueType = float.class;
             mKeyframeSet = keyframeSet;
             mFloatKeyframeSet = (FloatKeyframeSet) mKeyframeSet;
-            if (property instanceof FloatProperty) {
-                mFloatProperty = (FloatProperty) mProperty;
+            if (property instanceof FloatProperty10) {
+                mFloatProperty = (FloatProperty10) mProperty;
             }
         }
 
@@ -494,8 +494,8 @@ public class PropertyValuesHolder implements Cloneable {
         public FloatPropertyValuesHolder(Property property, float... values) {
             super(property);
             setFloatValues(values);
-            if (property instanceof FloatProperty) {
-                mFloatProperty = (FloatProperty) mProperty;
+            if (property instanceof FloatProperty10) {
+                mFloatProperty = (FloatProperty10) mProperty;
             }
         }
 

@@ -42,7 +42,7 @@ import org.telegram.ui.Adapters.BaseSectionsAdapter;
 import org.telegram.ui.Adapters.ContactsActivityAdapter;
 import org.telegram.ui.Adapters.ContactsActivitySearchAdapter;
 import org.telegram.ui.Cells.UserCell;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
@@ -117,15 +117,15 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             searching = false;
             searchWas = false;
 
-            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setBackOverlay(R.layout.updating_state_layout);
             if (destroyAfterSelect) {
-                actionBarLayer.setTitle(LocaleController.getString("SelectContact", R.string.SelectContact));
+                actionBar.setTitle(LocaleController.getString("SelectContact", R.string.SelectContact));
             } else {
-                actionBarLayer.setTitle(LocaleController.getString("Contacts", R.string.Contacts));
+                actionBar.setTitle(LocaleController.getString("Contacts", R.string.Contacts));
             }
 
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
@@ -134,7 +134,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 }
             });
 
-            ActionBarMenu menu = actionBarLayer.createMenu();
+            ActionBarMenu menu = actionBar.createMenu();
             menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
                 @Override
                 public void onSearchExpand() {

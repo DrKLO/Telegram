@@ -39,7 +39,7 @@ public class TextDetailCell extends FrameLayout {
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) textView.getLayoutParams();
         layoutParams.width = LayoutParams.WRAP_CONTENT;
         layoutParams.height = LayoutParams.WRAP_CONTENT;
-        layoutParams.topMargin = AndroidUtilities.dp(11);
+        layoutParams.topMargin = AndroidUtilities.dp(10);
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 71);
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 71 : 16);
         layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
@@ -56,7 +56,7 @@ public class TextDetailCell extends FrameLayout {
         layoutParams = (FrameLayout.LayoutParams) valueTextView.getLayoutParams();
         layoutParams.width = LayoutParams.WRAP_CONTENT;
         layoutParams.height = LayoutParams.WRAP_CONTENT;
-        layoutParams.topMargin = AndroidUtilities.dp(36);
+        layoutParams.topMargin = AndroidUtilities.dp(35);
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 71);
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 71 : 16);
         layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;

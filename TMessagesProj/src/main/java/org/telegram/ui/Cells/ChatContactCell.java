@@ -72,6 +72,7 @@ public class ChatContactCell extends ChatBaseCell {
             addContactDrawableOut = getResources().getDrawable(R.drawable.addcontact_green);
         }
         avatarImage = new ImageReceiver(this);
+        avatarDrawable = new AvatarDrawable();
     }
 
     public void setContactDelegate(ChatContactCellDelegate delegate) {

@@ -20,14 +20,12 @@ import org.telegram.android.AndroidUtilities;
 
 public class ActionBarMenu extends LinearLayout {
 
-    private ActionBar parentActionBar;
-    private ActionBarLayer parentActionBarLayer;
+    protected ActionBar parentActionBar;
 
-    public ActionBarMenu(Context context, ActionBar actionBar, ActionBarLayer layer) {
+    public ActionBarMenu(Context context, ActionBar layer) {
         super(context);
         setOrientation(LinearLayout.HORIZONTAL);
-        parentActionBar = actionBar;
-        parentActionBarLayer = layer;
+        parentActionBar = layer;
     }
 
     public ActionBarMenu(Context context) {
@@ -49,7 +47,7 @@ public class ActionBarMenu extends LinearLayout {
         addView(view);
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)view.getLayoutParams();
         layoutParams.height = FrameLayout.LayoutParams.FILL_PARENT;
-        view.setBackgroundResource(parentActionBarLayer.itemsBackgroundResourceId);
+        view.setBackgroundResource(parentActionBar.itemsBackgroundResourceId);
         view.setLayoutParams(layoutParams);
         view.setOnClickListener(new OnClickListener() {
             @Override
@@ -61,11 +59,11 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     public ActionBarMenuItem addItem(int id, int icon) {
-        return addItem(id, icon, parentActionBarLayer.itemsBackgroundResourceId);
+        return addItem(id, icon, parentActionBar.itemsBackgroundResourceId);
     }
 
     public ActionBarMenuItem addItem(int id, int icon, int backgroundResource) {
-        ActionBarMenuItem menuItem = new ActionBarMenuItem(getContext(), this, parentActionBar, backgroundResource);
+        ActionBarMenuItem menuItem = new ActionBarMenuItem(getContext(), this, backgroundResource);
         menuItem.setTag(id);
         menuItem.setScaleType(ImageView.ScaleType.CENTER);
         menuItem.setImageResource(icon);
@@ -79,11 +77,11 @@ public class ActionBarMenu extends LinearLayout {
             public void onClick(View view) {
                 ActionBarMenuItem item = (ActionBarMenuItem)view;
                 if (item.hasSubMenu()) {
-                    if (parentActionBarLayer.actionBarMenuOnItemClick.canOpenMenu()) {
+                    if (parentActionBar.actionBarMenuOnItemClick.canOpenMenu()) {
                         item.toggleSubMenu();
                     }
                 } else if (item.isSearchField()) {
-                    parentActionBarLayer.onSearchFieldVisibilityChanged(item.toggleSearch());
+                    parentActionBar.onSearchFieldVisibilityChanged(item.toggleSearch());
                 } else {
                     onItemClick((Integer)view.getTag());
                 }
@@ -102,8 +100,8 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     public void onItemClick(int id) {
-        if (parentActionBarLayer.actionBarMenuOnItemClick != null) {
-            parentActionBarLayer.actionBarMenuOnItemClick.onItemClick(id);
+        if (parentActionBar.actionBarMenuOnItemClick != null) {
+            parentActionBar.actionBarMenuOnItemClick.onItemClick(id);
         }
     }
 
@@ -132,7 +130,7 @@ public class ActionBarMenu extends LinearLayout {
             if (view instanceof ActionBarMenuItem) {
                 ActionBarMenuItem item = (ActionBarMenuItem)view;
                 if (item.isSearchField()) {
-                    parentActionBarLayer.onSearchFieldVisibilityChanged(item.toggleSearch());
+                    parentActionBar.onSearchFieldVisibilityChanged(item.toggleSearch());
                 }
             }
         }

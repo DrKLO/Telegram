@@ -46,7 +46,6 @@ public class DrawerLayoutContainer extends FrameLayout {
     private boolean beginTrackingSent;
     private AnimatorSetProxy currentAnimation = null;
 
-    private Paint statusBarPaint = new Paint();
     private Paint scrimPaint = new Paint();
 
     private Object lastInsets;
@@ -100,7 +99,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         child.dispatchApplyWindowInsets(wi);
     }
 
-    private void applyMarginInsets(MarginLayoutParams lp, Object insets, int drawerGravity) {
+    private void applyMarginInsets(MarginLayoutParams lp, Object insets, int drawerGravity, boolean topOnly) {
         WindowInsets wi = (WindowInsets) insets;
         if (drawerGravity == Gravity.LEFT) {
             wi = wi.replaceSystemWindowInsets(wi.getSystemWindowInsetLeft(), wi.getSystemWindowInsetTop(), 0, wi.getSystemWindowInsetBottom());
@@ -108,7 +107,7 @@ public class DrawerLayoutContainer extends FrameLayout {
             wi = wi.replaceSystemWindowInsets(0, wi.getSystemWindowInsetTop(), wi.getSystemWindowInsetRight(), wi.getSystemWindowInsetBottom());
         }
         lp.leftMargin = wi.getSystemWindowInsetLeft();
-        lp.topMargin = wi.getSystemWindowInsetTop();
+        lp.topMargin = topOnly ? 0 : wi.getSystemWindowInsetTop();
         lp.rightMargin = wi.getSystemWindowInsetRight();
         lp.bottomMargin = wi.getSystemWindowInsetBottom();
     }
@@ -124,10 +123,6 @@ public class DrawerLayoutContainer extends FrameLayout {
         lastInsets = insets;
         setWillNotDraw(!draw && getBackground() == null);
         requestLayout();
-    }
-
-    public void setStatusBarColor(int color) {
-        statusBarPaint.setColor(color);
     }
 
     public void setDrawerLayout(View layout) {
@@ -362,14 +357,6 @@ public class DrawerLayoutContainer extends FrameLayout {
     }
 
     @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
-        if (Build.VERSION.SDK_INT >= 21) {
-            canvas.drawRect(0, 0, getWidth(), AndroidUtilities.statusBarHeight, statusBarPaint);
-        }
-    }
-
-    @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         inLayout = true;
         final int width = r - l;
@@ -410,7 +397,6 @@ public class DrawerLayoutContainer extends FrameLayout {
 
         final boolean applyInsets = lastInsets != null && Build.VERSION.SDK_INT >= 21;
 
-        int foundDrawers = 0;
         final int childCount = getChildCount();
         for (int i = 0; i < childCount; i++) {
             final View child = getChildAt(i);
@@ -425,7 +411,7 @@ public class DrawerLayoutContainer extends FrameLayout {
                 if (child.getFitsSystemWindows()) {
                     dispatchChildInsets(child, lastInsets, lp.gravity);
                 } else {
-                    applyMarginInsets(lp, lastInsets, lp.gravity);
+                    applyMarginInsets(lp, lastInsets, lp.gravity, Build.VERSION.SDK_INT >= 21);
                 }
             }
 
@@ -471,7 +457,7 @@ public class DrawerLayoutContainer extends FrameLayout {
             scrimPaint.setColor((int) (((0x99000000 & 0xff000000) >>> 24) * scrimOpacity) << 24);
             canvas.drawRect(clipLeft, 0, clipRight, getHeight(), scrimPaint);
         } else if (shadowLeft != null) {
-            final float alpha = Math.max(0, Math.min((float) drawerPosition / AndroidUtilities.dp(20), 1.f));
+            final float alpha = Math.max(0, Math.min((float) drawerPosition / AndroidUtilities.dp(20), 1.0f));
             shadowLeft.setBounds(drawerPosition, child.getTop(), drawerPosition + shadowLeft.getIntrinsicWidth(), child.getBottom());
             shadowLeft.setAlpha((int) (0xff * alpha));
             shadowLeft.draw(canvas);

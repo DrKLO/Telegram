@@ -23,12 +23,13 @@ import org.telegram.messenger.R;
 
 public class BaseFragment {
     private boolean isFinished = false;
+    private AlertDialog visibleDialog = null;
+
     protected View fragmentView;
     protected ActionBarLayout parentLayout;
-    protected ActionBarLayer actionBarLayer;
+    protected ActionBar actionBar;
     protected int classGuid = 0;
     protected Bundle arguments;
-    private AlertDialog visibleDialog = null;
     protected boolean swipeBackEnabled = true;
 
     public BaseFragment() {
@@ -48,7 +49,7 @@ public class BaseFragment {
         return arguments;
     }
 
-    public void setParentLayout(ActionBarLayout layout) {
+    protected void setParentLayout(ActionBarLayout layout) {
         if (parentLayout != layout) {
             parentLayout = layout;
             if (fragmentView != null) {
@@ -62,14 +63,21 @@ public class BaseFragment {
                 }
                 fragmentView = null;
             }
-            if (parentLayout != null) {
-                if (actionBarLayer != null) {
-                    actionBarLayer.onDestroy();
+            if (actionBar != null) {
+                ViewGroup parent = (ViewGroup) actionBar.getParent();
+                if (parent != null) {
+                    try {
+                        parent.removeView(actionBar);
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
                 }
-                actionBarLayer = parentLayout.getInternalActionBar().createLayer();
-                actionBarLayer.parentFragment = this;
-                actionBarLayer.setBackgroundResource(R.color.header);
-                actionBarLayer.setItemsBackground(R.drawable.bar_selector);
+            }
+            if (parentLayout != null) {
+                actionBar = new ActionBar(parentLayout.getContext());
+                actionBar.parentFragment = this;
+                actionBar.setBackgroundResource(R.color.header);
+                actionBar.setItemsBackground(R.drawable.bar_selector);
             }
         }
     }
@@ -99,8 +107,8 @@ public class BaseFragment {
     public void onFragmentDestroy() {
         ConnectionsManager.getInstance().cancelRpcsForClassGuid(classGuid);
         isFinished = true;
-        if (actionBarLayer != null) {
-            actionBarLayer.setEnabled(false);
+        if (actionBar != null) {
+            actionBar.setEnabled(false);
         }
     }
 
@@ -109,9 +117,9 @@ public class BaseFragment {
     }
 
     public void onPause() {
-        if (actionBarLayer != null) {
-            actionBarLayer.onPause();
-            actionBarLayer.closeSearchField();
+        if (actionBar != null) {
+            actionBar.onPause();
+            actionBar.closeSearchField();
         }
         try {
             if (visibleDialog != null && visibleDialog.isShowing()) {
@@ -168,18 +176,6 @@ public class BaseFragment {
         }
     }
 
-    public void showActionBar() {
-        if (parentLayout != null) {
-            parentLayout.showActionBar();
-        }
-    }
-
-    public void hideActionBar() {
-        if (parentLayout != null) {
-            parentLayout.hideActionBar();
-        }
-    }
-
     public void onBeginSlide() {
         try {
             if (visibleDialog != null && visibleDialog.isShowing()) {
@@ -189,8 +185,8 @@ public class BaseFragment {
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
-        if (actionBarLayer != null) {
-            actionBarLayer.onPause();
+        if (actionBar != null) {
+            actionBar.onPause();
         }
     }
 
@@ -200,6 +196,10 @@ public class BaseFragment {
 
     public void onLowMemory() {
 
+    }
+
+    public boolean needAddActionBar() {
+        return true;
     }
 
     protected void showAlertDialog(AlertDialog.Builder builder) {

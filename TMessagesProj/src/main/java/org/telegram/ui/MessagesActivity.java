@@ -46,7 +46,7 @@ import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.ui.AnimationCompat.ViewProxy;
 import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Cells.DialogCell;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
@@ -129,7 +129,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            ActionBarMenu menu = actionBarLayer.createMenu();
+            ActionBarMenu menu = actionBar.createMenu();
             menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
                 @Override
                 public void onSearchExpand() {
@@ -189,15 +189,15 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 }
             });
             if (onlySelect) {
-                actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
-                actionBarLayer.setTitle(LocaleController.getString("SelectChat", R.string.SelectChat));
+                actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+                actionBar.setTitle(LocaleController.getString("SelectChat", R.string.SelectChat));
             } else {
-                actionBarLayer.setBackButtonDrawable(new MenuDrawable());
-                actionBarLayer.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                actionBar.setBackButtonDrawable(new MenuDrawable());
+                actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
             }
-            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setBackOverlay(R.layout.updating_state_layout);
 
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
@@ -357,9 +357,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                                 return;
                             }
                             messagesActivityAdapter.setOpenedDialogId(openedDialogId = dialog_id);
+                            updateVisibleRows(MessagesController.UPDATE_MASK_SELECT_DIALOG);
                         }
                         presentFragment(new ChatActivity(args));
-                        updateVisibleRows(0);
                     }
                 }
             });
@@ -501,7 +501,6 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onResume() {
         super.onResume();
-        showActionBar();
         if (messagesActivityAdapter != null) {
             messagesActivityAdapter.notifyDataSetChanged();
         }
@@ -579,7 +578,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     openedDialogId = dialog_id;
                 }
                 messagesActivityAdapter.setOpenedDialogId(openedDialogId);
-                updateVisibleRows(0);
+                updateVisibleRows(MessagesController.UPDATE_MASK_SELECT_DIALOG);
             }
         }
     }
@@ -603,14 +602,17 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             View child = messagesListView.getChildAt(a);
             if (child instanceof DialogCell) {
                 DialogCell cell = (DialogCell) child;
-                if (!serverOnly && AndroidUtilities.isTablet()) {
-                    if (cell.getDialogId() == openedDialogId) {
-                        child.setBackgroundColor(0x0f000000);
-                    } else {
-                        child.setBackgroundColor(0);
+                if ((mask & MessagesController.UPDATE_MASK_SELECT_DIALOG) != 0) {
+                    if (!serverOnly && AndroidUtilities.isTablet()) {
+                        if (cell.getDialogId() == openedDialogId) {
+                            child.setBackgroundColor(0x0f000000);
+                        } else {
+                            child.setBackgroundColor(0);
+                        }
                     }
+                } else {
+                    cell.update(mask);
                 }
-                cell.update(mask);
             } else if (child instanceof UserCell) {
                 ((UserCell) child).update(mask);
             }

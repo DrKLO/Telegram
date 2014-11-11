@@ -9,11 +9,18 @@
 package org.telegram.ui.Views.ActionBar;
 
 import android.content.Context;
-import android.util.AttributeSet;
+import android.content.res.Configuration;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
+import android.text.TextUtils;
 import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.R;
@@ -21,142 +28,462 @@ import org.telegram.ui.AnimationCompat.ViewProxy;
 
 public class ActionBar extends FrameLayout {
 
-    protected ActionBarLayer currentLayer = null;
-    protected ActionBarLayer previousLayer = null;
-    protected View shadowView = null;
+    public static class ActionBarMenuOnItemClick {
+        public void onItemClick(int id) {
+
+        }
+
+        public boolean canOpenMenu() {
+            return true;
+        }
+    }
+
+    private static boolean withStatusBar = Build.VERSION.SDK_INT >= 21;
+
+    private FrameLayout titleFrameLayout;
+    private ImageView backButtonImageView;
+    private TextView titleTextView;
+    private TextView subTitleTextView;
+    private ActionBarMenu menu;
+    private ActionBarMenu actionMode;
+    private View actionOverlay;
+    protected boolean isSearchFieldVisible;
+    protected int itemsBackgroundResourceId;
     private boolean isBackOverlayVisible;
+    protected BaseFragment parentFragment;
+    public ActionBarMenuOnItemClick actionBarMenuOnItemClick;
+    private float alphaEx = 1;
+    private int extraHeight;
 
     public ActionBar(Context context) {
         super(context);
-        createComponents();
-    }
-
-    public ActionBar(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        createComponents();
-    }
-
-    public ActionBar(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        createComponents();
-    }
-
-    public void createComponents() {
-        shadowView = new View(getContext());
-        addView(shadowView);
-        shadowView.setVisibility(INVISIBLE);
-        ViewGroup.LayoutParams layoutParams = shadowView.getLayoutParams();
-        layoutParams.width = AndroidUtilities.dp(2);
-        layoutParams.height = LayoutParams.MATCH_PARENT;
-        shadowView.setLayoutParams(layoutParams);
-        shadowView.setBackgroundResource(R.drawable.shadow);
-    }
-
-    public ActionBarLayer createLayer() {
-        return new ActionBarLayer(getContext(), this);
-    }
-
-    public void detachActionBarLayer(ActionBarLayer layer) {
-        if (layer == null) {
-            return;
-        }
-        removeView(layer);
-        if (currentLayer == layer) {
-            currentLayer = null;
-        }
-    }
-
-    public void setCurrentActionBarLayer(ActionBarLayer layer) {
-        if (layer == null || layer.getParent() != null) {
-            return;
-        }
-        if (currentLayer != null) {
-            removeView(currentLayer);
-        }
-        currentLayer = layer;
-        addView(layer);
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)layer.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        titleFrameLayout = new FrameLayout(context);
+        addView(titleFrameLayout);
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)titleFrameLayout.getLayoutParams();
+        layoutParams.width = LayoutParams.WRAP_CONTENT;
+        layoutParams.height = LayoutParams.FILL_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-        layer.setLayoutParams(layoutParams);
-        currentLayer.setBackOverlayVisible(isBackOverlayVisible);
-        layer.setAlphaEx(1);
-    }
+        if (withStatusBar) {
+            layoutParams.topMargin = AndroidUtilities.statusBarHeight;
+        }
+        titleFrameLayout.setLayoutParams(layoutParams);
+        titleFrameLayout.setPadding(0, 0, AndroidUtilities.dp(4), 0);
+        titleFrameLayout.setEnabled(false);
 
-    public void setBackOverlayVisible(boolean visible) {
-        isBackOverlayVisible = visible;
-        if (currentLayer != null) {
-            currentLayer.setBackOverlayVisible(visible);
-        }
-        if (previousLayer != null) {
-            previousLayer.setBackOverlayVisible(visible);
-        }
-    }
-
-    public void prepareForMoving(ActionBarLayer layer) {
-        if (currentLayer == null || layer == null) {
-            return;
-        }
-        previousLayer = layer;
-        ViewGroup parent = (ViewGroup) previousLayer.getParent();
-        if (parent != null) {
-            parent.removeView(previousLayer);
-        }
-        this.addView(previousLayer, 0);
-        ViewGroup.LayoutParams layoutParams = layer.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
-        layer.setLayoutParams(layoutParams);
-        ViewProxy.setX(shadowView, -AndroidUtilities.dp(2));
-        shadowView.setVisibility(VISIBLE);
-        previousLayer.setBackOverlayVisible(isBackOverlayVisible);
-    }
-
-    public void stopMoving(boolean backAnimation) {
-        if (currentLayer == null) {
-            return;
-        }
-
-        if (!backAnimation) {
-            removeView(currentLayer);
-            currentLayer = previousLayer;
-            currentLayer.setAlphaEx(1);
-            previousLayer = null;
-        } else {
-            removeView(previousLayer);
-            previousLayer = null;
-        }
-        shadowView.setVisibility(INVISIBLE);
-        ViewProxy.setX(currentLayer, 0);
-    }
-
-    public void moveActionBarByX(int dx) {
-        if (currentLayer == null) {
-            return;
-        }
-        ViewProxy.setX(currentLayer, dx);
-        ViewProxy.setX(shadowView, dx - AndroidUtilities.dp(2));
-        if (dx != 0) {
-            if (previousLayer != null) {
-                previousLayer.setAlphaEx(Math.min(1, (float) dx / (float) currentLayer.getMeasuredWidth()));
+        backButtonImageView = new ImageView(getContext());
+        titleFrameLayout.addView(backButtonImageView);
+        backButtonImageView.setVisibility(VISIBLE);
+        backButtonImageView.setScaleType(ImageView.ScaleType.CENTER);
+        backButtonImageView.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (isSearchFieldVisible) {
+                    closeSearchField();
+                    return;
+                }
+                if (actionBarMenuOnItemClick != null) {
+                    actionBarMenuOnItemClick.onItemClick(-1);
+                }
             }
-        } else {
-            if (previousLayer != null) {
-                previousLayer.setAlphaEx(0);
-            }
-            currentLayer.setAlphaEx(1);
+        });
+    }
+
+    private void positionBackImage(int height) {
+        if (backButtonImageView != null) {
+            LayoutParams layoutParams = (LayoutParams)backButtonImageView.getLayoutParams();
+            layoutParams.width = AndroidUtilities.dp(54);
+            layoutParams.height = height;
+            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+            backButtonImageView.setLayoutParams(layoutParams);
         }
+    }
+
+    private void positionTitle(int width, int height) {
+        int offset = AndroidUtilities.dp(2);
+        if (!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            offset = AndroidUtilities.dp(1);
+        }
+        int maxTextWidth = 0;
+
+        LayoutParams layoutParams = null;
+
+        if (titleTextView != null && titleTextView.getVisibility() == VISIBLE) {
+            if (!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                titleTextView.setTextSize(18);
+            } else {
+                titleTextView.setTextSize(20);
+            }
+
+            layoutParams = (LayoutParams) titleTextView.getLayoutParams();
+            layoutParams.width = LayoutParams.WRAP_CONTENT;
+            layoutParams.height = LayoutParams.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+            titleTextView.setLayoutParams(layoutParams);
+            titleTextView.measure(width, height);
+            maxTextWidth = titleTextView.getMeasuredWidth();
+        }
+        if (subTitleTextView != null && subTitleTextView.getVisibility() == VISIBLE) {
+            if (!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                subTitleTextView.setTextSize(14);
+            } else {
+                subTitleTextView.setTextSize(16);
+            }
+
+            layoutParams = (LayoutParams) subTitleTextView.getLayoutParams();
+            layoutParams.width = LayoutParams.WRAP_CONTENT;
+            layoutParams.height = LayoutParams.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+            subTitleTextView.setLayoutParams(layoutParams);
+            subTitleTextView.measure(width, height);
+            maxTextWidth = Math.max(maxTextWidth, subTitleTextView.getMeasuredWidth());
+        }
+
+        int x = 0;
+        if (AndroidUtilities.isTablet()) {
+            x = AndroidUtilities.dp(80);
+        } else {
+            x = AndroidUtilities.dp(72);
+        }
+
+
+        if (menu != null) {
+            maxTextWidth = Math.min(maxTextWidth, width - menu.getMeasuredWidth() - AndroidUtilities.dp(16));
+        }
+
+        if (titleTextView != null && titleTextView.getVisibility() == VISIBLE) {
+            layoutParams = (LayoutParams) titleTextView.getLayoutParams();
+            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.height = titleTextView.getMeasuredHeight();
+            int y;
+            if (subTitleTextView != null && subTitleTextView.getVisibility() == VISIBLE) {
+                y = (height / 2 - titleTextView.getMeasuredHeight()) / 2 + offset;
+            } else {
+                y = (height - titleTextView.getMeasuredHeight()) / 2 - AndroidUtilities.dp(1);
+            }
+            layoutParams.setMargins(x, y, 0, 0);
+            titleTextView.setLayoutParams(layoutParams);
+        }
+        if (subTitleTextView != null && subTitleTextView.getVisibility() == VISIBLE) {
+            layoutParams = (LayoutParams) subTitleTextView.getLayoutParams();
+            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.height = subTitleTextView.getMeasuredHeight();
+            layoutParams.setMargins(x, height / 2 + (height / 2 - subTitleTextView.getMeasuredHeight()) / 2 - offset, 0, 0);
+            subTitleTextView.setLayoutParams(layoutParams);
+        }
+
+        ViewGroup.LayoutParams layoutParams1 = titleFrameLayout.getLayoutParams();
+        layoutParams1.width = x + maxTextWidth + (isSearchFieldVisible ? 0 : AndroidUtilities.dp(6));
+        titleFrameLayout.setLayoutParams(layoutParams1);
+    }
+
+    public void positionMenu(int width, int height) {
+        if (menu == null) {
+            return;
+        }
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)menu.getLayoutParams();
+        layoutParams.width = isSearchFieldVisible ? LayoutParams.MATCH_PARENT : LayoutParams.WRAP_CONTENT;
+        layoutParams.height = height;
+        layoutParams.leftMargin = isSearchFieldVisible ? AndroidUtilities.dp(54) : 0;
+        if (withStatusBar) {
+            layoutParams.topMargin = AndroidUtilities.statusBarHeight;
+        }
+        menu.setLayoutParams(layoutParams);
+        menu.measure(width, height);
+    }
+
+    public void setBackButtonDrawable(Drawable drawable) {
+        backButtonImageView.setImageDrawable(drawable);
+    }
+
+    public void setBackButtonImage(int resource) {
+        backButtonImageView.setImageResource(resource);
+    }
+
+    private void createSubtitleTextView() {
+        if (subTitleTextView != null) {
+            return;
+        }
+        subTitleTextView = new TextView(getContext());
+        titleFrameLayout.addView(subTitleTextView);
+        subTitleTextView.setGravity(Gravity.LEFT);
+        subTitleTextView.setTextColor(0xffd7e8f7);
+        subTitleTextView.setSingleLine(true);
+        subTitleTextView.setLines(1);
+        subTitleTextView.setMaxLines(1);
+        subTitleTextView.setEllipsize(TextUtils.TruncateAt.END);
+    }
+
+    public void setSubtitle(CharSequence value) {
+        if (value != null && subTitleTextView == null) {
+            createSubtitleTextView();
+        }
+        if (subTitleTextView != null) {
+            subTitleTextView.setVisibility(value != null ? VISIBLE : GONE);
+            subTitleTextView.setText(value);
+            positionTitle(getMeasuredWidth(), getMeasuredHeight());
+        }
+    }
+
+    public void setSubTitleIcon(int resourceId, Drawable drawable, int padding) {
+        if ((resourceId != 0 || drawable != null) && subTitleTextView == null) {
+            createSubtitleTextView();
+            positionTitle(getMeasuredWidth(), getMeasuredHeight());
+        }
+        if (subTitleTextView != null) {
+            if (drawable != null) {
+                subTitleTextView.setCompoundDrawablesWithIntrinsicBounds(drawable, null, null, null);
+            } else {
+                subTitleTextView.setCompoundDrawablesWithIntrinsicBounds(resourceId, 0, 0, 0);
+            }
+            subTitleTextView.setCompoundDrawablePadding(padding);
+        }
+    }
+
+    private void createTitleTextView() {
+        if (titleTextView != null) {
+            return;
+        }
+        titleTextView = new TextView(getContext());
+        titleTextView.setGravity(Gravity.LEFT);
+        titleTextView.setSingleLine(true);
+        titleTextView.setLines(1);
+        titleTextView.setMaxLines(1);
+        titleTextView.setEllipsize(TextUtils.TruncateAt.END);
+        titleFrameLayout.addView(titleTextView);
+        titleTextView.setTextColor(0xffffffff);
+        titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+    }
+
+    public void setTitle(CharSequence value) {
+        if (value != null && titleTextView == null) {
+            createTitleTextView();
+        }
+        if (titleTextView != null) {
+            titleTextView.setVisibility(value != null ? VISIBLE : GONE);
+            titleTextView.setText(value);
+            positionTitle(getMeasuredWidth(), getMeasuredHeight());
+        }
+    }
+
+    public void setTitleIcon(int resourceId, int padding) {
+        if (resourceId != 0 && titleTextView == null) {
+            createTitleTextView();
+            positionTitle(getMeasuredWidth(), getMeasuredHeight());
+        }
+        titleTextView.setCompoundDrawablesWithIntrinsicBounds(resourceId, 0, 0, 0);
+        titleTextView.setCompoundDrawablePadding(padding);
+    }
+
+    public Drawable getSubTitleIcon() {
+        return subTitleTextView.getCompoundDrawables()[0];
+    }
+
+    public CharSequence getTitle() {
+        if (titleTextView == null) {
+            return null;
+        }
+        return titleTextView.getText();
+    }
+
+    public ActionBarMenu createMenu() {
+        if (menu != null) {
+            return menu;
+        }
+        menu = new ActionBarMenu(getContext(), this);
+        addView(menu);
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)menu.getLayoutParams();
+        layoutParams.height = LayoutParams.FILL_PARENT;
+        layoutParams.width = LayoutParams.WRAP_CONTENT;
+        layoutParams.gravity = Gravity.RIGHT;
+        menu.setLayoutParams(layoutParams);
+        return menu;
+    }
+
+    public void setActionBarMenuOnItemClick(ActionBarMenuOnItemClick listener) {
+        actionBarMenuOnItemClick = listener;
+    }
+
+    public void setCustomView(int resourceId) {
+        LayoutInflater li = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View view = li.inflate(resourceId, null);
+        addView(view);
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)view.getLayoutParams();
+        layoutParams.width = LayoutParams.FILL_PARENT;
+        layoutParams.height = LayoutParams.FILL_PARENT;
+        if (withStatusBar) {
+            layoutParams.topMargin = AndroidUtilities.statusBarHeight;
+        }
+        view.setLayoutParams(layoutParams);
+    }
+
+    public ActionBarMenu createActionMode() {
+        if (actionMode != null) {
+            return actionMode;
+        }
+        actionMode = new ActionBarMenu(getContext(), this);
+        actionMode.setBackgroundResource(R.drawable.editheader);
+        addView(actionMode);
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)actionMode.getLayoutParams();
+        layoutParams.height = LayoutParams.FILL_PARENT;
+        layoutParams.width = LayoutParams.FILL_PARENT;
+        layoutParams.gravity = Gravity.RIGHT;
+        if (withStatusBar) {
+            layoutParams.topMargin = AndroidUtilities.statusBarHeight;
+        }
+        actionMode.setLayoutParams(layoutParams);
+        actionMode.setVisibility(GONE);
+        return actionMode;
+    }
+
+    public void showActionMode() {
+        if (actionMode == null) {
+            return;
+        }
+        actionMode.setVisibility(VISIBLE);
+        if (titleFrameLayout != null) {
+            titleFrameLayout.setVisibility(INVISIBLE);
+        }
+        if (menu != null) {
+            menu.setVisibility(INVISIBLE);
+        }
+    }
+
+    public void hideActionMode() {
+        if (actionMode == null) {
+            return;
+        }
+        actionMode.setVisibility(GONE);
+        if (titleFrameLayout != null) {
+            titleFrameLayout.setVisibility(isSearchFieldVisible || actionOverlay == null || actionOverlay.getVisibility() == GONE ? VISIBLE : INVISIBLE);
+        }
+        if (menu != null) {
+            menu.setVisibility(VISIBLE);
+        }
+    }
+
+    public boolean isActionModeShowed() {
+        return actionMode != null && actionMode.getVisibility() == VISIBLE;
+    }
+
+    protected void onSearchFieldVisibilityChanged(boolean visible) {
+        isSearchFieldVisible = visible;
+        if (titleTextView != null) {
+            titleTextView.setVisibility(visible ? GONE : VISIBLE);
+        }
+        if (subTitleTextView != null) {
+            subTitleTextView.setVisibility(visible ? GONE : VISIBLE);
+        }
+        Drawable drawable = backButtonImageView.getDrawable();
+        if (drawable != null && drawable instanceof MenuDrawable) {
+            ((MenuDrawable)drawable).setRotation(visible ? 1 : 0, true);
+        }
+        positionBackOverlay(getMeasuredWidth(), getMeasuredHeight());
+    }
+
+    public void closeSearchField() {
+        if (!isSearchFieldVisible || menu == null) {
+            return;
+        }
+        menu.closeSearchField();
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.getCurrentActionBarHeight(), MeasureSpec.EXACTLY));
+        int actionBarHeight = AndroidUtilities.getCurrentActionBarHeight();
+        positionBackImage(actionBarHeight);
+        positionMenu(MeasureSpec.getSize(widthMeasureSpec), actionBarHeight);
+        positionTitle(MeasureSpec.getSize(widthMeasureSpec), actionBarHeight);
+        positionBackOverlay(MeasureSpec.getSize(widthMeasureSpec), actionBarHeight);
+        if (Build.VERSION.SDK_INT >= 21) {
+            actionBarHeight += AndroidUtilities.statusBarHeight;
+        }
+        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(actionBarHeight + extraHeight, MeasureSpec.EXACTLY));
+    }
+
+    public void setAlphaEx(float alpha) {
+        alphaEx = alpha;
+        if (menu != null) {
+            ViewProxy.setAlpha(menu, alphaEx);
+        }
+        if (titleFrameLayout != null) {
+            ViewProxy.setAlpha(titleFrameLayout, alphaEx);
+        }
+    }
+
+    public float getAlphaEx() {
+        return alphaEx;
     }
 
     public void onMenuButtonPressed() {
-        if (currentLayer != null) {
-            currentLayer.onMenuButtonPressed();
+        if (menu != null) {
+            menu.onMenuButtonPressed();
         }
+    }
+
+    protected void onPause() {
+        if (menu != null) {
+            menu.hideAllPopupMenus();
+        }
+    }
+
+    public void setBackOverlay(int resourceId) {
+        LayoutInflater li = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        actionOverlay = li.inflate(resourceId, null);
+        addView(actionOverlay);
+        actionOverlay.setVisibility(GONE);
+        actionOverlay.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (actionBarMenuOnItemClick != null) {
+                    actionBarMenuOnItemClick.onItemClick(-1);
+                }
+            }
+        });
+    }
+
+    public void setBackOverlayVisible(boolean visible) {
+        if (actionOverlay == null || parentFragment == null || parentFragment.parentLayout == null) {
+            return;
+        }
+        isBackOverlayVisible = visible;
+        if (visible) {
+            parentFragment.parentLayout.onOverlayShow(actionOverlay, parentFragment);
+        }
+        positionBackOverlay(getMeasuredWidth(), getMeasuredHeight());
+    }
+
+    public void setExtraHeight(int value) {
+        extraHeight = value;
+    }
+
+    private void positionBackOverlay(int widthMeasureSpec, int heightMeasureSpec) {
+        if (actionOverlay == null) {
+            return;
+        }
+        titleFrameLayout.setVisibility(isSearchFieldVisible || actionOverlay == null || actionOverlay.getVisibility() == GONE ? VISIBLE : INVISIBLE);
+        actionOverlay.setVisibility(!isSearchFieldVisible && isBackOverlayVisible ? VISIBLE : GONE);
+        if (actionOverlay.getVisibility() == VISIBLE) {
+            MarginLayoutParams layoutParams = (MarginLayoutParams) actionOverlay.getLayoutParams();
+            layoutParams.width = LayoutParams.WRAP_CONTENT;
+            layoutParams.height = LayoutParams.MATCH_PARENT;
+            actionOverlay.setLayoutParams(layoutParams);
+            actionOverlay.measure(widthMeasureSpec, heightMeasureSpec);
+            if (withStatusBar) {
+                layoutParams.topMargin = AndroidUtilities.statusBarHeight;
+            }
+            layoutParams.width = Math.min(actionOverlay.getMeasuredWidth() + AndroidUtilities.dp(4), widthMeasureSpec - (menu != null ? menu.getMeasuredWidth() : 0));
+            actionOverlay.setLayoutParams(layoutParams);
+        }
+    }
+
+    public void setItemsBackground(int resourceId) {
+        itemsBackgroundResourceId = resourceId;
+        backButtonImageView.setBackgroundResource(resourceId);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        super.onTouchEvent(event);
+        return true;
     }
 }

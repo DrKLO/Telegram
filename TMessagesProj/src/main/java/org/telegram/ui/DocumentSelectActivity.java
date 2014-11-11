@@ -29,7 +29,7 @@ import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.BackupImageView;
@@ -130,10 +130,10 @@ public class DocumentSelectActivity extends BaseFragment {
         }
 
         if (fragmentView == null) {
-            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
-            actionBarLayer.setTitle(LocaleController.getString("SelectFile", R.string.SelectFile));
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setTitle(LocaleController.getString("SelectFile", R.string.SelectFile));
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
@@ -146,7 +146,7 @@ public class DocumentSelectActivity extends BaseFragment {
                     }
                 }
             });
-            ActionBarMenu menu = actionBarLayer.createMenu();
+            ActionBarMenu menu = actionBar.createMenu();
             ActionBarMenuItem item = menu.addItem(1, R.drawable.ic_ab_other);
 
             fragmentView = inflater.inflate(R.layout.document_select_layout, container, false);
@@ -168,7 +168,7 @@ public class DocumentSelectActivity extends BaseFragment {
                     File file = item.file;
                     if (file == null) {
                         HistoryEntry he = history.remove(history.size() - 1);
-                        actionBarLayer.setTitle(he.title);
+                        actionBar.setTitle(he.title);
                         if (he.dir != null) {
                             listFiles(he.dir);
                         } else {
@@ -180,12 +180,12 @@ public class DocumentSelectActivity extends BaseFragment {
                         he.scrollItem = listView.getFirstVisiblePosition();
                         he.scrollOffset = listView.getChildAt(0).getTop();
                         he.dir = currentDir;
-                        he.title = actionBarLayer.getTitle().toString();
+                        he.title = actionBar.getTitle().toString();
                         if (!listFiles(file)) {
                             return;
                         }
                         history.add(he);
-                        actionBarLayer.setTitle(item.title);
+                        actionBar.setTitle(item.title);
                         listView.setSelection(0);
                     } else {
                         if (!file.canRead()) {
@@ -230,7 +230,7 @@ public class DocumentSelectActivity extends BaseFragment {
     public boolean onBackPressed() {
         if (history.size() > 0) {
             HistoryEntry he = history.remove(history.size() - 1);
-            actionBarLayer.setTitle(he.title);
+            actionBar.setTitle(he.title);
             if (he.dir != null) {
                 listFiles(he.dir);
             } else {

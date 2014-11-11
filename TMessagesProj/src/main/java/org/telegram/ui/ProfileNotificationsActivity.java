@@ -23,9 +23,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.FrameLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
 import org.telegram.messenger.ConnectionsManager;
@@ -37,8 +39,9 @@ import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.ColorPickerView;
 
 public class ProfileNotificationsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -76,12 +79,10 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
-
-            actionBarLayer.setTitle(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds));
-
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setTitle(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds));
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
@@ -90,9 +91,19 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                 }
             });
 
-            fragmentView = inflater.inflate(R.layout.settings_layout, container, false);
+            fragmentView = new FrameLayout(getParentActivity());
+            FrameLayout frameLayout = (FrameLayout) fragmentView;
 
-            listView = (ListView)fragmentView.findViewById(R.id.listView);
+            listView = new ListView(getParentActivity());
+            listView.setDivider(null);
+            listView.setDividerHeight(0);
+            listView.setVerticalScrollBarEnabled(false);
+            AndroidUtilities.setListViewEdgeEffectColor(listView, AvatarDrawable.getProfileBackColorForId(5));
+            frameLayout.addView(listView);
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
+            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            listView.setLayoutParams(layoutParams);
             listView.setAdapter(new ListAdapter(getParentActivity()));
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
@@ -251,14 +262,6 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
             }
         }
         return fragmentView;
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (parentLayout != null) {
-            parentLayout.getDrawerLayoutContainer().setStatusBarColor(0xff54759e);
-        }
     }
 
     public void updateServerNotificationsSettings() {

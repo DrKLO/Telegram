@@ -19,6 +19,7 @@ import android.text.TextPaint;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 
 public class AvatarDrawable extends Drawable {
@@ -28,6 +29,9 @@ public class AvatarDrawable extends Drawable {
     private static int[] arrColors = {0xffe56555, 0xfff28c48, 0xffeec764, 0xff76c84d, 0xff5fbed5, 0xff549cdd, 0xff8e85ee, 0xfff2749a};
     private static int[] arrColorsProfiles = {0xffd86f65, 0xffdc9663, 0xffdebc68, 0xff67b35d, 0xff56a2bb, 0xff5c98cd, 0xff8c79d2, 0xffda738e};
     private static int[] arrColorsProfilesBack = {0xffca6056, 0xffcf8550, 0xffcfa742, 0xff56a14c, 0xff4492ac, 0xff4c84b6, 0xff7d6ac4, 0xffc9637e};
+    private static int[] arrColorsProfilesText = {0xfff9cbc5, 0xfffadbc4, 0xfff7e7bf, 0xffc0edba, 0xffb8e2f0, 0xffb3d7f7, 0xffcdc4ed, 0xfff2cfd8};
+    private static int[] arrColorsButtons = {R.drawable.bar_selector_red, R.drawable.bar_selector_orange, R.drawable.bar_selector_yellow,
+            R.drawable.bar_selector_green, R.drawable.bar_selector_cyan, R.drawable.bar_selector_blue, R.drawable.bar_selector_violet, R.drawable.bar_selector_pink};
 
     private int color;
     private StaticLayout textLayout;
@@ -73,8 +77,16 @@ public class AvatarDrawable extends Drawable {
         return arrColors[Math.abs(id) % arrColors.length];
     }
 
+    public static int getButtonColorForId(int id) {
+        return arrColorsButtons[Math.abs(id) % arrColorsButtons.length];
+    }
+
     public static int getProfileColorForId(int id) {
         return arrColorsProfiles[Math.abs(id) % arrColorsProfiles.length];
+    }
+
+    public static int getProfileTextColorForId(int id) {
+        return arrColorsProfilesText[Math.abs(id) % arrColorsProfilesText.length];
     }
 
     public static int getProfileBackColorForId(int id) {
@@ -99,7 +111,7 @@ public class AvatarDrawable extends Drawable {
 
     public void setInfo(int id, String firstName, String lastName, boolean isBroadcast) {
         if (isProfile) {
-            color = arrColorsProfiles[Math.abs(id) % arrColors.length];
+            color = arrColorsProfiles[Math.abs(id) % arrColorsProfiles.length];
         } else {
             color = arrColors[Math.abs(id) % arrColors.length];
         }

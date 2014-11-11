@@ -13,7 +13,6 @@ import android.graphics.Rect;
 import android.os.Build;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.AttributeSet;
 import android.view.ActionMode;
 import android.view.ContextMenu;
 import android.view.Gravity;
@@ -48,7 +47,6 @@ public class ActionBarMenuItem extends ImageView {
     private ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout;
     private ActionBarMenu parentMenu;
     private ActionBarPopupWindow popupWindow;
-    private ActionBar parentActionBar;
     private EditText searchField;
     private boolean isSearchField = false;
     private ActionBarMenuItemSearchListener listener;
@@ -57,23 +55,10 @@ public class ActionBarMenuItem extends ImageView {
     private View selectedMenuView;
     private Runnable showMenuRunnable;
 
-    public ActionBarMenuItem(Context context, ActionBarMenu menu, ActionBar actionBar, int background) {
+    public ActionBarMenuItem(Context context, ActionBarMenu menu, int background) {
         super(context);
         setBackgroundResource(background);
         parentMenu = menu;
-        parentActionBar = actionBar;
-    }
-
-    public ActionBarMenuItem(Context context) {
-        super(context);
-    }
-
-    public ActionBarMenuItem(Context context, AttributeSet attrs) {
-        super(context, attrs);
-    }
-
-    public ActionBarMenuItem(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
     }
 
     @Override
@@ -254,10 +239,10 @@ public class ActionBarMenuItem extends ImageView {
         }
         popupWindow.setFocusable(true);
         if (popupLayout.getMeasuredWidth() == 0) {
-            popupWindow.showAsDropDown(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight());
-            popupWindow.update(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight(), -1, -1);
+            popupWindow.showAsDropDown(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight());
+            popupWindow.update(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight(), -1, -1);
         } else {
-            popupWindow.showAsDropDown(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight());
+            popupWindow.showAsDropDown(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight());
         }
     }
 
@@ -402,10 +387,10 @@ public class ActionBarMenuItem extends ImageView {
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
         if (popupWindow != null && popupWindow.isShowing()) {
-            int x = parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft();
+            int x = parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft();
             int y = -getMeasuredHeight();
             FileLog.e("tmessages", "x = " + x + " y = " + y);
-            popupWindow.update(this, parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight(), -1, -1);
+            popupWindow.update(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight(), -1, -1);
         }
     }
 

@@ -27,7 +27,7 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.SlideView;
@@ -68,9 +68,9 @@ public class LoginActivity extends BaseFragment implements SlideView.SlideViewDe
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setTitle(LocaleController.getString("AppName", R.string.AppName));
+            actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
 
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == done_button) {
@@ -79,7 +79,7 @@ public class LoginActivity extends BaseFragment implements SlideView.SlideViewDe
                 }
             });
 
-            ActionBarMenu menu = actionBarLayer.createMenu();
+            ActionBarMenu menu = actionBar.createMenu();
             View doneItem = menu.addItemResource(done_button, R.layout.group_create_done_layout);
             TextView doneTextView = (TextView)doneItem.findViewById(R.id.done_button);
             doneTextView.setText(LocaleController.getString("Done", R.string.Done).toUpperCase());
@@ -103,7 +103,7 @@ public class LoginActivity extends BaseFragment implements SlideView.SlideViewDe
                 FileLog.e("tmessages", e);
             }
 
-            actionBarLayer.setTitle(views[0].getHeaderName());
+            actionBar.setTitle(views[0].getHeaderName());
 
             Bundle savedInstanceState = loadCurrentState();
             if (savedInstanceState != null) {
@@ -283,7 +283,7 @@ public class LoginActivity extends BaseFragment implements SlideView.SlideViewDe
             currentViewNum = page;
 
             newView.setParams(params);
-            actionBarLayer.setTitle(newView.getHeaderName());
+            actionBar.setTitle(newView.getHeaderName());
             newView.onShow();
             newView.setX(back ? -AndroidUtilities.displaySize.x : AndroidUtilities.displaySize.x);
             outView.animate().setInterpolator(new AccelerateDecelerateInterpolator()).setListener(new Animator.AnimatorListener() {
@@ -328,7 +328,7 @@ public class LoginActivity extends BaseFragment implements SlideView.SlideViewDe
             currentViewNum = page;
             views[page].setParams(params);
             views[page].setVisibility(View.VISIBLE);
-            actionBarLayer.setTitle(views[page].getHeaderName());
+            actionBar.setTitle(views[page].getHeaderName());
             views[page].onShow();
         }
     }

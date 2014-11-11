@@ -12,6 +12,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,6 +21,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -42,7 +44,7 @@ import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextDetailCell;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.AvatarDrawable;
@@ -58,7 +60,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private BackupImageView avatarImage;
     private TextView nameTextView;
     private TextView onlineTextView;
-    FrameLayout nameContainer;
+    private ImageView writeButton;
 
     private int user_id;
     private int totalMediaCount = -1;
@@ -128,10 +130,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setBackgroundColor(AvatarDrawable.getProfileBackColorForId(user_id));
-            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setBackgroundColor(AvatarDrawable.getProfileBackColorForId(user_id));
+            actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(user_id));
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setExtraHeight(AndroidUtilities.dp(88));
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(final int id) {
                     if (id == -1) {
@@ -200,27 +204,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             fragmentView = new FrameLayout(getParentActivity());
             FrameLayout frameLayout = (FrameLayout) fragmentView;
-
-            nameContainer = new FrameLayout(getParentActivity());
-            nameContainer.setBackgroundColor(AvatarDrawable.getProfileBackColorForId(user_id));
-            frameLayout.addView(nameContainer);
-            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) nameContainer.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = AndroidUtilities.dp(88);
-            nameContainer.setLayoutParams(layoutParams);
+            frameLayout.addView(actionBar);
 
             avatarImage = new BackupImageView(getParentActivity());
             avatarImage.imageReceiver.setRoundRadius(AndroidUtilities.dp(30));
             avatarImage.processDetach = false;
-            nameContainer.addView(avatarImage);
-            FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) avatarImage.getLayoutParams();
-            layoutParams1.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM;
-            layoutParams1.width = AndroidUtilities.dp(60);
-            layoutParams1.height = AndroidUtilities.dp(60);
-            layoutParams1.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(17);
-            layoutParams1.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(17) : 0;
-            layoutParams1.bottomMargin = AndroidUtilities.dp(22);
-            avatarImage.setLayoutParams(layoutParams1);
+            actionBar.addView(avatarImage);
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) avatarImage.getLayoutParams();
+            layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM;
+            layoutParams.width = AndroidUtilities.dp(60);
+            layoutParams.height = AndroidUtilities.dp(60);
+            layoutParams.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(17);
+            layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(17) : 0;
+            layoutParams.bottomMargin = AndroidUtilities.dp(22);
+            avatarImage.setLayoutParams(layoutParams);
             avatarImage.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -240,42 +237,43 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             nameTextView.setSingleLine(true);
             nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
             nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            nameContainer.addView(nameTextView);
-            layoutParams1 = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
-            layoutParams1.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.height = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 97);
-            layoutParams1.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 97 : 16);
-            layoutParams1.bottomMargin = AndroidUtilities.dp(51);
-            layoutParams1.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM;
-            nameTextView.setLayoutParams(layoutParams1);
+            actionBar.addView(nameTextView);
+            layoutParams = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
+            layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 97);
+            layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 97 : 16);
+            layoutParams.bottomMargin = AndroidUtilities.dp(51);
+            layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM;
+            nameTextView.setLayoutParams(layoutParams);
 
             onlineTextView = new TextView(getParentActivity());
-            onlineTextView.setTextColor(0xffd0e4ea);
+            onlineTextView.setTextColor(AvatarDrawable.getProfileTextColorForId(user_id));
             onlineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             onlineTextView.setLines(1);
             onlineTextView.setMaxLines(1);
             onlineTextView.setSingleLine(true);
             onlineTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
-            nameContainer.addView(onlineTextView);
-            layoutParams1 = (FrameLayout.LayoutParams) onlineTextView.getLayoutParams();
-            layoutParams1.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.height = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 97);
-            layoutParams1.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 97 : 16);
-            layoutParams1.bottomMargin = AndroidUtilities.dp(30);
-            layoutParams1.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM;
-            onlineTextView.setLayoutParams(layoutParams1);
+            actionBar.addView(onlineTextView);
+            layoutParams = (FrameLayout.LayoutParams) onlineTextView.getLayoutParams();
+            layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 97);
+            layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 97 : 16);
+            layoutParams.bottomMargin = AndroidUtilities.dp(30);
+            layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM;
+            onlineTextView.setLayoutParams(layoutParams);
 
             listView = new ListView(getParentActivity());
             listView.setDivider(null);
             listView.setDividerHeight(0);
             listView.setVerticalScrollBarEnabled(false);
+            AndroidUtilities.setListViewEdgeEffectColor(listView, AvatarDrawable.getProfileBackColorForId(user_id));
             frameLayout.addView(listView);
             layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-            layoutParams.topMargin = AndroidUtilities.dp(88);
             layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
             layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.gravity = Gravity.TOP;
             listView.setLayoutParams(layoutParams);
 
             listView.setAdapter(listAdapter);
@@ -359,17 +357,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 MessagesController.getInstance().getMediaCount(user_id, classGuid, true);
             }
 
-            ImageView writeButton = new ImageView(getParentActivity());
-            writeButton.setImageResource(R.drawable.floating_states);
+            writeButton = new ImageView(getParentActivity());
+            writeButton.setImageResource(R.drawable.floating_user_states);
             frameLayout.addView(writeButton);
-            layoutParams1 = (FrameLayout.LayoutParams) writeButton.getLayoutParams();
-            layoutParams1.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.height = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 0);
-            layoutParams1.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 16);
-            layoutParams1.topMargin = AndroidUtilities.dp(58);
-            layoutParams1.gravity = (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
-            writeButton.setLayoutParams(layoutParams1);
+            layoutParams = (FrameLayout.LayoutParams) writeButton.getLayoutParams();
+            layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 0);
+            layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 16);
+            layoutParams.gravity = (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
+            writeButton.setLayoutParams(layoutParams);
             writeButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -392,6 +389,38 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
         }
         return fragmentView;
+    }
+
+    private void fixLayout() {
+        if (fragmentView == null) {
+            return;
+        }
+        fragmentView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                if (fragmentView != null) {
+                    ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) listView.getLayoutParams();
+                    layoutParams.topMargin = actionBar.getHeight();
+                    listView.setLayoutParams(layoutParams);
+                    layoutParams = (ViewGroup.MarginLayoutParams) writeButton.getLayoutParams();
+                    layoutParams.topMargin = actionBar.getHeight() - AndroidUtilities.dp(29.5f);
+                    writeButton.setLayoutParams(layoutParams);
+                    fragmentView.getViewTreeObserver().removeOnPreDrawListener(this);
+                }
+                return false;
+            }
+        });
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        fixLayout();
+    }
+
+    @Override
+    public boolean needAddActionBar() {
+        return false;
     }
 
     public void didReceivedNotification(int id, final Object... args) {
@@ -444,12 +473,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     @Override
     public void onResume() {
         super.onResume();
-        if (parentLayout != null) {
-            parentLayout.getDrawerLayoutContainer().setStatusBarColor(AvatarDrawable.getProfileBackColorForId(user_id));
-        }
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
+        fixLayout();
     }
 
     @Override
@@ -466,7 +493,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
                 object.viewX = coords[0];
                 object.viewY = coords[1] - AndroidUtilities.statusBarHeight;
-                object.parentView = nameContainer;
+                object.parentView = avatarImage;
                 object.imageReceiver = avatarImage.imageReceiver;
                 object.user_id = user_id;
                 object.thumb = object.imageReceiver.getBitmap();
@@ -509,6 +536,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             usernameRow = -1;
         }
         sectionRow = rowCount++;
+        settingsNotificationsRow = rowCount++;
+        sharedMediaRow = rowCount++;
         if (currentEncryptedChat instanceof TLRPC.TL_encryptedChat) {
             settingsTimerRow = rowCount++;
             settingsKeyRow = rowCount++;
@@ -516,8 +545,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             settingsTimerRow = -1;
             settingsKeyRow = -1;
         }
-        settingsNotificationsRow = rowCount++;
-        sharedMediaRow = rowCount++;
         if (currentEncryptedChat == null) {
             startSecretChatRow = rowCount++;
         } else {
@@ -543,7 +570,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void createActionBarMenu() {
-        ActionBarMenu menu = actionBarLayer.createMenu();
+        ActionBarMenu menu = actionBar.createMenu();
         menu.clearItems();
 
         if (ContactsController.getInstance().contactsDict.get(user_id) == null) {
@@ -661,7 +688,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     } else {
                         text = LocaleController.getString("NumberUnknown", R.string.NumberUnknown);
                     }
-                    textDetailCell.setTextAndValue(text, LocaleController.getString("PhoneMobile", R.string.PhoneMobile));
+                    textDetailCell.setTextAndValueAndIcon(text, LocaleController.getString("PhoneMobile", R.string.PhoneMobile), R.drawable.phone_grey);
                 } else if (i == usernameRow) {
                     String text;
                     if (user != null && user.username != null && user.username.length() != 0) {
@@ -696,7 +723,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     }
                     textCell.setTextAndValue(LocaleController.getString("MessageLifetime", R.string.MessageLifetime), value);
                 } else if (i == settingsNotificationsRow) {
-                    textCell.setText(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds));
+                    textCell.setTextAndIcon(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds), R.drawable.profile_list);
                 } else if (i == startSecretChatRow) {
                     textCell.setText(LocaleController.getString("StartEncryptedChat", R.string.StartEncryptedChat));
                     textCell.setTextColor(0xff37a919);

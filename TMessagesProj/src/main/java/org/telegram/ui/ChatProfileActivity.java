@@ -37,7 +37,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.android.MessageObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.UserCell;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.AvatarUpdater;
@@ -173,14 +173,14 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
 
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setBackOverlay(R.layout.updating_state_layout);
             if (chat_id > 0) {
-                actionBarLayer.setTitle(LocaleController.getString("GroupInfo", R.string.GroupInfo));
+                actionBar.setTitle(LocaleController.getString("GroupInfo", R.string.GroupInfo));
             } else {
-                actionBarLayer.setTitle(LocaleController.getString("BroadcastList", R.string.BroadcastList));
+                actionBar.setTitle(LocaleController.getString("BroadcastList", R.string.BroadcastList));
             }
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
@@ -190,7 +190,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                     }
                 }
             });
-            ActionBarMenu menu = actionBarLayer.createMenu();
+            ActionBarMenu menu = actionBar.createMenu();
             View item = menu.addItemResource(done_button, R.layout.group_profile_add_member_layout);
             TextView textView = (TextView)item.findViewById(R.id.done_button);
             if (textView != null) {
@@ -653,7 +653,7 @@ public class ChatProfileActivity extends BaseFragment implements NotificationCen
                 if (i == settingsSectionRow) {
                     ((SettingsSectionLayout) view).setText(LocaleController.getString("SETTINGS", R.string.SETTINGS));
                 } else if (i == sharedMediaSectionRow) {
-                    ((SettingsSectionLayout) view).setText(LocaleController.getString("SHAREDMEDIA", R.string.SHAREDMEDIA));
+
                 } else if (i == membersSectionRow) {
                     TLRPC.Chat chat = MessagesController.getInstance().getChat(chat_id);
                     int count = chat.participants_count;

@@ -22,6 +22,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -39,8 +40,10 @@ import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
+import org.telegram.ui.Cells.TextCheckCell;
+import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.ColorPickerView;
 import org.telegram.ui.Views.SettingsSectionLayout;
 
@@ -119,10 +122,10 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
-            actionBarLayer.setTitle(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds));
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setTitle(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds));
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
@@ -131,10 +134,20 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
                 }
             });
 
-            fragmentView = inflater.inflate(R.layout.settings_layout, container, false);
-            final ListAdapter listAdapter = new ListAdapter(getParentActivity());
-            listView = (ListView)fragmentView.findViewById(R.id.listView);
-            listView.setAdapter(listAdapter);
+            fragmentView = new FrameLayout(getParentActivity());
+            FrameLayout frameLayout = (FrameLayout) fragmentView;
+
+            listView = new ListView(getParentActivity());
+            listView.setDivider(null);
+            listView.setDividerHeight(0);
+            listView.setVerticalScrollBarEnabled(false);
+            AndroidUtilities.setListViewEdgeEffectColor(listView, AvatarDrawable.getProfileBackColorForId(5));
+            frameLayout.addView(listView);
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
+            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            listView.setLayoutParams(layoutParams);
+            listView.setAdapter(new ListAdapter(getParentActivity()));
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
@@ -559,13 +572,10 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
                 }
             } if (type == 1) {
                 if (view == null) {
-                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = li.inflate(R.layout.settings_row_check_notify_layout, viewGroup, false);
+                    view = new TextCheckCell(mContext);
                 }
-                TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
-                View divider = view.findViewById(R.id.settings_row_divider);
+                TextCheckCell checkCell = (TextCheckCell) view;
 
-                ImageView checkButton = (ImageView)view.findViewById(R.id.settings_row_check_button);
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                 boolean enabled = false;
                 boolean enabledAll = preferences.getBoolean("EnableAll", true);
@@ -577,49 +587,28 @@ public class SettingsNotificationsActivity extends BaseFragment implements Notif
                     } else if (i == groupAlertRow) {
                         enabled = enabledGroup;
                     }
-                    textView.setText(LocaleController.getString("Alert", R.string.Alert));
-                    divider.setVisibility(View.VISIBLE);
+                    checkCell.setTextAndCheck(LocaleController.getString("Alert", R.string.Alert), enabled, true);
                 } else if (i == messagePreviewRow || i == groupPreviewRow) {
                     if (i == messagePreviewRow) {
                         enabled = preferences.getBoolean("EnablePreviewAll", true);
                     } else if (i == groupPreviewRow) {
                         enabled = preferences.getBoolean("EnablePreviewGroup", true);
                     }
-                    textView.setText(LocaleController.getString("MessagePreview", R.string.MessagePreview));
-                    divider.setVisibility(View.VISIBLE);
+                    checkCell.setTextAndCheck(LocaleController.getString("MessagePreview", R.string.MessagePreview), enabled, true);
                 } else if (i == inappSoundRow) {
-                    enabled = preferences.getBoolean("EnableInAppSounds", true);
-                    textView.setText(LocaleController.getString("InAppSounds", R.string.InAppSounds));
-                    divider.setVisibility(View.VISIBLE);
+                    checkCell.setTextAndCheck(LocaleController.getString("InAppSounds", R.string.InAppSounds), preferences.getBoolean("EnableInAppSounds", true), true);
                 } else if (i == inappVibrateRow) {
-                    enabled = preferences.getBoolean("EnableInAppVibrate", true);
-                    textView.setText(LocaleController.getString("InAppVibrate", R.string.InAppVibrate));
-                    divider.setVisibility(View.VISIBLE);
+                    checkCell.setTextAndCheck(LocaleController.getString("InAppVibrate", R.string.InAppVibrate), preferences.getBoolean("EnableInAppVibrate", true), true);
                 } else if (i == inappPreviewRow) {
-                    enabled = preferences.getBoolean("EnableInAppPreview", true);
-                    textView.setText(LocaleController.getString("InAppPreview", R.string.InAppPreview));
-                    divider.setVisibility(View.INVISIBLE);
+                    checkCell.setTextAndCheck(LocaleController.getString("InAppPreview", R.string.InAppPreview), preferences.getBoolean("EnableInAppPreview", true), false);
                 } else if (i == contactJoinedRow) {
-                    enabled = preferences.getBoolean("EnableContactJoined", true);
-                    textView.setText(LocaleController.getString("ContactJoined", R.string.ContactJoined));
-                    divider.setVisibility(View.INVISIBLE);
+                    checkCell.setTextAndCheck(LocaleController.getString("ContactJoined", R.string.ContactJoined), preferences.getBoolean("EnableContactJoined", true), false);
                 } else if (i == pebbleAlertRow) {
-                    enabled = preferences.getBoolean("EnablePebbleNotifications", false);
-                    textView.setText(LocaleController.getString("Pebble", R.string.Pebble));
-                    divider.setVisibility(View.INVISIBLE);
+                    checkCell.setTextAndCheck(LocaleController.getString("Pebble", R.string.Pebble), preferences.getBoolean("EnablePebbleNotifications", false), false);
                 } else if (i == notificationsServiceRow) {
-                    enabled = preferences.getBoolean("pushService", true);
-                    textView.setText(LocaleController.getString("NotificationsService", R.string.NotificationsService));
-                    divider.setVisibility(View.INVISIBLE);
+                    checkCell.setTextAndCheck(LocaleController.getString("NotificationsService", R.string.NotificationsService), preferences.getBoolean("pushService", true), false);
                 } else if (i == badgeNumberRow) {
-                    enabled = preferences.getBoolean("badgeNumber", true);
-                    textView.setText(LocaleController.getString("BadgeNumber", R.string.BadgeNumber));
-                    divider.setVisibility(View.VISIBLE);
-                }
-                if (enabled) {
-                    checkButton.setImageResource(R.drawable.btn_check_on);
-                } else {
-                    checkButton.setImageResource(R.drawable.btn_check_off);
+                    checkCell.setTextAndCheck(LocaleController.getString("BadgeNumber", R.string.BadgeNumber), preferences.getBoolean("badgeNumber", true), true);
                 }
             } else if (type == 2) {
                 if (view == null) {

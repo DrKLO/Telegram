@@ -175,8 +175,7 @@
     <string name="EnterGroupNameTitle">ENTER GROUP NAME</string>
     <string name="SharedMedia">Shared Media</string>
     <string name="GroupInfo">Group Info</string>
-    <string name="SHAREDMEDIA">SHARED MEDIA</string>
-    <string name="SETTINGS">SETTINGS</string>
+    <string name="SETTINGS">Settings</string>
     <string name="AddMember">Add member</string>
     <string name="DeleteAndExit">Delete and leave group</string>
     <string name="Notifications">Notifications</string>
@@ -202,7 +201,7 @@
     <string name="ShortMessageLifetimeForever">Off</string>
     <string name="EncryptionKeyDescription">This image is a visualization of the encryption key for this secret chat with <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>If this image looks the same on <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> phone, your chat is 200%% secure.<![CDATA[<br><br>]]>Learn more at telegram.org</string>
     <string name="NumberUnknown">Unknown</string>
-    <string name="Info">INFO</string>
+    <string name="Info">Info</string>
     <string name="Phone">Phone</string>
     <!--usernames-->
     <string name="Username">Username</string>
@@ -245,9 +244,9 @@
     <string name="YourFirstNameAndLastName">YOUR FIRST AND LAST NAME</string>
     <string name="NoSound">No sound</string>
     <string name="Default">Default</string>
-    <string name="Support">SUPPORT</string>
+    <string name="Support">Support</string>
     <string name="ChatBackground">Chat Background</string>
-    <string name="MessagesSettings">MESSAGES</string>
+    <string name="MessagesSettings">Messages</string>
     <string name="SendByEnter">Send by Enter</string>
     <string name="TerminateAllSessions">Terminate All Other Sessions</string>
     <string name="Events">EVENTS</string>
@@ -280,12 +279,13 @@
     <string name="Long">Long</string>
     <string name="SystemDefault">System default</string>
     <string name="SettingsDefault">Settings default</string>
-    <string name="AutomaticMediaDownload">AUTOMATIC MEDIA DOWNLOAD</string>
+    <string name="AutomaticMediaDownload">Automatic media download</string>
     <string name="WhenUsingMobileData">When using mobile data</string>
     <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
     <string name="WhenRoaming">When roaming</string>
     <string name="NoMediaAutoDownload">No media</string>
     <string name="SaveToGallerySettings">Save to gallery</string>
+    <string name="EditName">Edit Name</string>
     <!--media view-->
     <string name="NoMedia">No shared media yet</string>
     <string name="CancelDownload">Cancel Download</string>
