@@ -432,7 +432,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             mask = MediaController.getInstance().roamingDownloadMask;
                         }
                         builder.setMultiChoiceItems(
-                                new CharSequence[]{LocaleController.getString("AttachPhoto", R.string.AttachPhoto), LocaleController.getString("AttachAudio", R.string.AttachAudio), LocaleController.getString("AttachAudio", R.string.AttachVideo), LocaleController.getString("AttachAudio", R.string.AttachDocument)},
+                                new CharSequence[]{LocaleController.getString("AttachPhoto", R.string.AttachPhoto), LocaleController.getString("AttachAudio", R.string.AttachAudio), LocaleController.getString("AttachVideo", R.string.AttachVideo), LocaleController.getString("AttachDocument", R.string.AttachDocument)},
                                 new boolean[]{(mask & MediaController.AUTODOWNLOAD_MASK_PHOTO) != 0, (mask & MediaController.AUTODOWNLOAD_MASK_AUDIO) != 0, (mask & MediaController.AUTODOWNLOAD_MASK_VIDEO) != 0, (mask & MediaController.AUTODOWNLOAD_MASK_DOCUMENT) != 0},
                                 new DialogInterface.OnMultiChoiceClickListener() {
                                     @Override
