@@ -355,7 +355,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                             }
                         } else if (fragmentName.equals("chat_profile")) {
                             if (args != null) {
-                                ChatProfileActivity profile = new ChatProfileActivity(args);
+                                ProfileActivity profile = new ProfileActivity(args);
                                 if (actionBarLayout.addFragmentToStack(profile)) {
                                     profile.restoreSelfArgs(savedInstanceState);
                                 }
@@ -1009,7 +1009,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     outState.putString("fragment", "group");
                 } else if (lastFragment instanceof SettingsWallpapersActivity) {
                     outState.putString("fragment", "wallpapers");
-                } else if (lastFragment instanceof ChatProfileActivity && args != null) {
+                } else if (lastFragment instanceof ProfileActivity && ((ProfileActivity) lastFragment).isChat() && args != null) {
                     outState.putBundle("args", args);
                     outState.putString("fragment", "chat_profile");
                 }

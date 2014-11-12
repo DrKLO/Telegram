@@ -21,6 +21,7 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
+import org.telegram.ui.ApplicationLoader;
 
 public class AvatarDrawable extends Drawable {
 
@@ -33,11 +34,14 @@ public class AvatarDrawable extends Drawable {
     private static int[] arrColorsButtons = {R.drawable.bar_selector_red, R.drawable.bar_selector_orange, R.drawable.bar_selector_yellow,
             R.drawable.bar_selector_green, R.drawable.bar_selector_cyan, R.drawable.bar_selector_blue, R.drawable.bar_selector_violet, R.drawable.bar_selector_pink};
 
+    private static Drawable broadcastDrawable;
+
     private int color;
     private StaticLayout textLayout;
     private float textWidth;
     private float textHeight;
     private boolean isProfile;
+    private boolean drawBrodcast;
 
     public AvatarDrawable() {
         super();
@@ -46,6 +50,8 @@ public class AvatarDrawable extends Drawable {
             namePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             namePaint.setColor(0xffffffff);
             namePaint.setTextSize(AndroidUtilities.dp(20));
+
+            broadcastDrawable = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.broadcast_w);
         }
     }
 
@@ -116,6 +122,8 @@ public class AvatarDrawable extends Drawable {
             color = arrColors[Math.abs(id) % arrColors.length];
         }
 
+        drawBrodcast = isBroadcast;
+
         String text = "";
         if (firstName != null && firstName.length() > 0) {
             text += firstName.substring(0, 1);
@@ -145,16 +153,22 @@ public class AvatarDrawable extends Drawable {
         if (bounds == null) {
             return;
         }
-        int size = bounds.right - bounds.left;
+        int size = bounds.width();
         paint.setColor(color);
-
         canvas.save();
         canvas.translate(bounds.left, bounds.top);
         canvas.drawCircle(size / 2, size / 2, size / 2, paint);
 
-        if (textLayout != null) {
-            canvas.translate((size - textWidth) / 2, (size - textHeight) / 2);
-            textLayout.draw(canvas);
+        if (drawBrodcast && broadcastDrawable != null) {
+            int x = (size - broadcastDrawable.getIntrinsicWidth()) / 2;
+            int y = (size - broadcastDrawable.getIntrinsicHeight()) / 2;
+            broadcastDrawable.setBounds(x, y, x + broadcastDrawable.getIntrinsicWidth(), y + broadcastDrawable.getIntrinsicHeight());
+            broadcastDrawable.draw(canvas);
+        } else {
+            if (textLayout != null) {
+                canvas.translate((size - textWidth) / 2, (size - textHeight) / 2);
+                textLayout.draw(canvas);
+            }
         }
         canvas.restore();
     }

@@ -1,302 +1,214 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.x.
+ * This is the source code of Telegram for Android v. 1.7.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2014.
  */
 
 package org.telegram.ui.Cells;
 
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.text.Layout;
-import android.text.StaticLayout;
-import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.ContactsController;
 import org.telegram.android.LocaleController;
-import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.ConnectionsManager;
 import org.telegram.android.MessagesController;
+import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.R;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
-import org.telegram.android.ImageReceiver;
 import org.telegram.ui.Views.AvatarDrawable;
+import org.telegram.ui.Views.BackupImageView;
 
-public class UserCell extends BaseCell {
-    private static TextPaint namePaint;
-    private static TextPaint onlinePaint;
-    private static TextPaint offlinePaint;
-    private static Paint linePaint;
+public class UserCell extends FrameLayout {
+
+    private BackupImageView avatarImageView;
+    private TextView nameTextView;
+    private TextView statusTextView;
+    private ImageView imageView;
+
+    private AvatarDrawable avatarDrawable;
+    private TLRPC.User currentUser = null;
 
     private CharSequence currentName;
-    private ImageReceiver avatarImage;
-    private AvatarDrawable avatarDrawable;
-    private CharSequence subLabel;
-
-    private TLRPC.User user = null;
+    private CharSequence currrntStatus;
+    private int currentDrawable;
 
     private String lastName = null;
     private int lastStatus = 0;
     private TLRPC.FileLocation lastAvatar = null;
 
-    public boolean useSeparator = false;
-    public float drawAlpha = 1;
+    private int statusColor = 0xffa8a8a8;
+    private int statusOnlineColor = 0xff3b84c0;
 
-    private int nameLeft;
-    private int nameTop;
-    private StaticLayout nameLayout;
-
-    private int onlineLeft;
-    private int onlineTop = AndroidUtilities.dp(36);
-    private StaticLayout onlineLayout;
-
-    public UserCell(Context context) {
+    public UserCell(Context context, int padding) {
         super(context);
-        init();
-        avatarImage = new ImageReceiver(this);
-        avatarImage.setRoundRadius(AndroidUtilities.dp(24));
+
+        avatarImageView = new BackupImageView(context);
+        avatarImageView.imageReceiver.setRoundRadius(AndroidUtilities.dp(24));
+        addView(avatarImageView);
+        LayoutParams layoutParams = (LayoutParams) avatarImageView.getLayoutParams();
+        layoutParams.width = AndroidUtilities.dp(48);
+        layoutParams.height = AndroidUtilities.dp(48);
+        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
+        layoutParams.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(7 + padding);
+        layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(7 + padding) : 0;
+        layoutParams.topMargin = AndroidUtilities.dp(8);
+        avatarImageView.setLayoutParams(layoutParams);
         avatarDrawable = new AvatarDrawable();
+
+        nameTextView = new TextView(context);
+        nameTextView.setTextColor(0xff000000);
+        nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
+        nameTextView.setLines(1);
+        nameTextView.setMaxLines(1);
+        nameTextView.setSingleLine(true);
+        nameTextView.setEllipsize(TextUtils.TruncateAt.END);
+        nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+        addView(nameTextView);
+        layoutParams = (LayoutParams) nameTextView.getLayoutParams();
+        layoutParams.width = LayoutParams.WRAP_CONTENT;
+        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : (68 + padding));
+        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? (68 + padding) : 16);
+        layoutParams.topMargin = AndroidUtilities.dp(10.5f);
+        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
+        nameTextView.setLayoutParams(layoutParams);
+
+        statusTextView = new TextView(context);
+        statusTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        statusTextView.setLines(1);
+        statusTextView.setMaxLines(1);
+        statusTextView.setSingleLine(true);
+        statusTextView.setEllipsize(TextUtils.TruncateAt.END);
+        statusTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+        addView(statusTextView);
+        layoutParams = (LayoutParams) statusTextView.getLayoutParams();
+        layoutParams.width = LayoutParams.WRAP_CONTENT;
+        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : (68 + padding));
+        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? (68 + padding) : 16);
+        layoutParams.topMargin = AndroidUtilities.dp(33.5f);
+        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
+        statusTextView.setLayoutParams(layoutParams);
+
+        imageView = new ImageView(context);
+        imageView.setScaleType(ImageView.ScaleType.CENTER);
+        addView(imageView);
+        layoutParams = (LayoutParams) imageView.getLayoutParams();
+        layoutParams.width = LayoutParams.WRAP_CONTENT;
+        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 16);
+        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 0);
+        layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL;
+        imageView.setLayoutParams(layoutParams);
     }
 
-    private void init() {
-        if (namePaint == null) {
-            namePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            namePaint.setTextSize(AndroidUtilities.dp(18));
-            namePaint.setColor(0xff222222);
-
-            onlinePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            onlinePaint.setTextSize(AndroidUtilities.dp(15));
-            onlinePaint.setColor(0xff316f9f);
-
-            offlinePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            offlinePaint.setTextSize(AndroidUtilities.dp(15));
-            offlinePaint.setColor(0xff999999);
-
-            linePaint = new Paint();
-            linePaint.setColor(0xffdcdcdc);
+    public void setData(TLRPC.User user, CharSequence name, CharSequence status, int resId) {
+        if (user == null) {
+            currrntStatus = null;
+            currentName = null;
+            currentUser = null;
+            nameTextView.setText("");
+            statusTextView.setText("");
+            avatarImageView.setImageDrawable(null);
+            return;
         }
-    }
-
-    public void setData(TLRPC.User u, CharSequence n, CharSequence s) {
-        currentName = n;
-        user = u;
-        subLabel = s;
+        currrntStatus = status;
+        currentName = name;
+        currentUser = user;
+        currentDrawable = resId;
         update(0);
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        if (avatarImage != null) {
-            avatarImage.clearImage();
-            lastAvatar = null;
-        }
+        lastAvatar = null;
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec) - getPaddingRight(), AndroidUtilities.dp(64));
+        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64), MeasureSpec.EXACTLY));
     }
 
-    @Override
-    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        if (user == null) {
-            super.onLayout(changed, left, top, right, bottom);
-            return;
-        }
-        if (changed) {
-            buildLayout();
-        }
-    }
-
-    public void buildLayout() {
-        int paddingLeft = getPaddingLeft();
-        int paddingRight = getPaddingRight();
-
-        onlineLeft = nameLeft = AndroidUtilities.dp(LocaleController.isRTL ? 11 : 72) + paddingLeft;
-        int avatarLeft = paddingLeft + (LocaleController.isRTL ? (getMeasuredWidth() - AndroidUtilities.dp(61)) : AndroidUtilities.dp(11));
-        int nameWidth = getMeasuredWidth() - nameLeft - AndroidUtilities.dp(LocaleController.isRTL ? 72 : 14);
-        int avatarTop = AndroidUtilities.dp(8);
-
-        CharSequence nameString = "";
-        if (currentName != null) {
-            nameString = currentName;
-        } else {
-            String nameString2 = "";
-            if (user != null) {
-                nameString2 = ContactsController.formatName(user.first_name, user.last_name);
-            }
-            nameString = nameString2.replace("\n", " ");
-        }
-        if (nameString.length() == 0) {
-            if (user != null && user.phone != null && user.phone.length() != 0) {
-                nameString = PhoneFormat.getInstance().format("+" + user.phone);
-            } else {
-                nameString = LocaleController.getString("HiddenName", R.string.HiddenName);
-            }
-        }
-        CharSequence nameStringFinal = TextUtils.ellipsize(nameString, namePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
-        nameLayout = new StaticLayout(nameStringFinal, namePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-
-        CharSequence onlineString = "";
-        TextPaint currentOnlinePaint = offlinePaint;
-        if (subLabel != null) {
-            onlineString = subLabel;
-        } else {
-            onlineString = LocaleController.formatUserStatus(user);
-            if (user != null && (user.id == UserConfig.getClientUserId() || user.status != null && user.status.expires > ConnectionsManager.getInstance().getCurrentTime())) {
-                currentOnlinePaint = onlinePaint;
-                onlineString = LocaleController.getString("Online", R.string.Online);
-            }
-        }
-
-        CharSequence onlineStringFinal = TextUtils.ellipsize(onlineString, currentOnlinePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
-        onlineLayout = new StaticLayout(onlineStringFinal, currentOnlinePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-        nameTop = AndroidUtilities.dp(12);
-
-        avatarImage.setImageCoords(avatarLeft, avatarTop, AndroidUtilities.dp(48), AndroidUtilities.dp(48));
-
-        double widthpx = 0;
-        float left = 0;
-        if (LocaleController.isRTL) {
-            if (nameLayout.getLineCount() > 0) {
-                left = nameLayout.getLineLeft(0);
-                if (left == 0) {
-                    widthpx = Math.ceil(nameLayout.getLineWidth(0));
-                    if (widthpx < nameWidth) {
-                        nameLeft += (nameWidth - widthpx);
-                    }
-                }
-            }
-            if (onlineLayout != null && onlineLayout.getLineCount() > 0) {
-                left = onlineLayout.getLineLeft(0);
-                if (left == 0) {
-                    widthpx = Math.ceil(onlineLayout.getLineWidth(0));
-                    if (widthpx < nameWidth) {
-                        onlineLeft += (nameWidth - widthpx);
-                    }
-                }
-            }
-        } else {
-            if (nameLayout.getLineCount() > 0) {
-                left = nameLayout.getLineRight(0);
-                if (left == nameWidth) {
-                    widthpx = Math.ceil(nameLayout.getLineWidth(0));
-                    if (widthpx < nameWidth) {
-                        nameLeft -= (nameWidth - widthpx);
-                    }
-                }
-            }
-            if (onlineLayout != null && onlineLayout.getLineCount() > 0) {
-                left = onlineLayout.getLineRight(0);
-                if (left == nameWidth) {
-                    widthpx = Math.ceil(onlineLayout.getLineWidth(0));
-                    if (widthpx < nameWidth) {
-                        onlineLeft -= (nameWidth - widthpx);
-                    }
-                }
-            }
-        }
+    public void setStatusColors(int color, int onlineColor) {
+        statusColor = color;
+        statusOnlineColor = onlineColor;
     }
 
     public void update(int mask) {
+        if (currentUser == null) {
+            return;
+        }
         TLRPC.FileLocation photo = null;
-        if (user != null) {
-            if (user.photo != null) {
-                photo = user.photo.photo_small;
-            }
-            avatarDrawable.setInfo(user);
-        } else {
-            avatarDrawable.setInfo(0, null, null, false);
+        if (currentUser.photo != null) {
+            photo = currentUser.photo.photo_small;
         }
 
         if (mask != 0) {
             boolean continueUpdate = false;
-            if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 && user != null) {
+            if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0) {
                 if (lastAvatar != null && photo == null || lastAvatar == null && photo != null && lastAvatar != null && photo != null && (lastAvatar.volume_id != photo.volume_id || lastAvatar.local_id != photo.local_id)) {
                     continueUpdate = true;
                 }
             }
-            if (!continueUpdate && (mask & MessagesController.UPDATE_MASK_STATUS) != 0 && user != null) {
+            if (!continueUpdate && (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
                 int newStatus = 0;
-                if (user.status != null) {
-                    newStatus = user.status.expires;
+                if (currentUser.status != null) {
+                    newStatus = currentUser.status.expires;
                 }
                 if (newStatus != lastStatus) {
                     continueUpdate = true;
                 }
             }
-            if (!continueUpdate && (mask & MessagesController.UPDATE_MASK_NAME) != 0 && user != null) {
-                String newName = null;
-                if (user != null) {
-                    newName = user.first_name + user.last_name;
-                }
+            if (!continueUpdate && (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
+                String newName = currentUser.first_name + currentUser.last_name;
                 if (newName == null || !newName.equals(lastName)) {
                     continueUpdate = true;
                 }
             }
-
             if (!continueUpdate) {
                 return;
             }
         }
 
-        if (user != null) {
-            if (user.status != null) {
-                lastStatus = user.status.expires;
-            } else {
-                lastStatus = 0;
-            }
-            lastName = user.first_name + user.last_name;
-        }
-
-        lastAvatar = photo;
-        avatarImage.setImage(photo, "50_50", avatarDrawable, false);
-
-        if (getMeasuredWidth() != 0 || getMeasuredHeight() != 0) {
-            buildLayout();
+        avatarDrawable.setInfo(currentUser);
+        if (currentUser.status != null) {
+            lastStatus = currentUser.status.expires;
         } else {
-            requestLayout();
+            lastStatus = 0;
         }
-        postInvalidate();
-    }
+        lastName = currentUser.first_name + currentUser.last_name;
+        lastAvatar = photo;
 
-    @Override
-    protected void onDraw(Canvas canvas) {
-        if (user == null) {
-            return;
+        if (currentName != null) {
+            nameTextView.setText(currentName);
+        } else {
+            nameTextView.setText(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
         }
-
-        if (useSeparator) {
-            if (LocaleController.isRTL) {
-                canvas.drawLine(0, getMeasuredHeight() - 1, getMeasuredWidth() - AndroidUtilities.dp(72), getMeasuredHeight() - 1, linePaint);
+        if (currrntStatus != null) {
+            statusTextView.setText(currrntStatus);
+            statusTextView.setTextColor(statusColor);
+        } else {
+            if (currentUser.id == UserConfig.getClientUserId() || currentUser.status != null && currentUser.status.expires > ConnectionsManager.getInstance().getCurrentTime()) {
+                statusTextView.setText(LocaleController.getString("Online", R.string.Online));
+                statusTextView.setTextColor(statusOnlineColor);
             } else {
-                canvas.drawLine(AndroidUtilities.dp(72), getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, linePaint);
+                statusTextView.setText(LocaleController.formatUserStatus(currentUser));
+                statusTextView.setTextColor(statusColor);
             }
         }
 
-        if (drawAlpha != 1) {
-            canvas.saveLayerAlpha(0, 0, canvas.getWidth(), canvas.getHeight(), (int)(255 * drawAlpha), Canvas.HAS_ALPHA_LAYER_SAVE_FLAG);
-        }
-
-        canvas.save();
-        canvas.translate(nameLeft, nameTop);
-        nameLayout.draw(canvas);
-        canvas.restore();
-
-        if (onlineLayout != null) {
-            canvas.save();
-            canvas.translate(onlineLeft, onlineTop);
-            onlineLayout.draw(canvas);
-            canvas.restore();
-        }
-
-        avatarImage.draw(canvas);
+        imageView.setVisibility(currentDrawable == 0 ? GONE : VISIBLE);
+        imageView.setImageResource(currentDrawable);
+        avatarImageView.setImage(photo, "50_50", avatarDrawable);
     }
 }

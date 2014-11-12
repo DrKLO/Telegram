@@ -570,7 +570,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             }
                             Bundle args = new Bundle();
                             args.putInt("chat_id", currentChat.id);
-                            ChatProfileActivity fragment = new ChatProfileActivity(args);
+                            ProfileActivity fragment = new ProfileActivity(args);
                             fragment.setChatInfo(info);
                             presentFragment(fragment);
                         }
@@ -1196,9 +1196,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         checkAndUpdateAvatar();
     }
 
-    private void updateOnlineCount() {
+    private int updateOnlineCount() {
         if (info == null) {
-            return;
+            return 0;
         }
         onlineCount = 0;
         int currentTime = ConnectionsManager.getInstance().getCurrentTime();
@@ -1208,6 +1208,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 onlineCount++;
             }
         }
+        return onlineCount;
     }
 
     private int getMessageType(MessageObject messageObject) {
@@ -1865,15 +1866,15 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 updateTitle();
             }
             boolean updateSubtitle = false;
-            if ((updateMask & MessagesController.UPDATE_MASK_CHAT_MEMBERS) != 0) {
-                updateSubtitle = true;
-                updateOnlineCount();
-            }
-            if ((updateMask & MessagesController.UPDATE_MASK_STATUS) != 0) {
-                updateSubtitle = true;
-            }
-            if (updateSubtitle) {
-                updateSubtitle();
+            if ((updateMask & MessagesController.UPDATE_MASK_CHAT_MEMBERS) != 0 || (updateMask & MessagesController.UPDATE_MASK_STATUS) != 0) {
+                if (currentChat != null) {
+                    int lastCount = onlineCount;
+                    if (lastCount != updateOnlineCount()) {
+                        updateSubtitle = true;
+                    }
+                } else {
+                    updateSubtitle = true;
+                }
             }
             if ((updateMask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (updateMask & MessagesController.UPDATE_MASK_CHAT_AVATAR) != 0 || (updateMask & MessagesController.UPDATE_MASK_NAME) != 0) {
                 checkAndUpdateAvatar();
@@ -1882,8 +1883,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if ((updateMask & MessagesController.UPDATE_MASK_USER_PRINT) != 0) {
                 CharSequence printString = MessagesController.getInstance().printingStrings.get(dialog_id);
                 if (lastPrintString != null && printString == null || lastPrintString == null && printString != null || lastPrintString != null && printString != null && !lastPrintString.equals(printString)) {
-                    updateSubtitle();
+                    updateSubtitle = true;
                 }
+            }
+            if (updateSubtitle) {
+                updateSubtitle();
             }
             if ((updateMask & MessagesController.UPDATE_MASK_USER_PHONE) != 0) {
                 updateContactStatus();

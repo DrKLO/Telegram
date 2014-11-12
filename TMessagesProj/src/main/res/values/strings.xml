@@ -60,7 +60,7 @@
     <string name="NewBroadcastList">New Broadcast List</string>
     <string name="EnterListName">Enter list name</string>
     <string name="YouCreatedBroadcastList">You created a broadcast list</string>
-    <string name="AddRecipient">Add Recipient</string>
+    <string name="AddRecipient">Add recipient</string>
     <string name="KickFromBroadcast">Remove from broadcast list</string>
     <!--documents view-->
     <string name="SelectFile">Select File</string>
@@ -240,7 +240,7 @@
     <string name="NotificationsAndSounds">Notifications and Sounds</string>
     <string name="BlockedUsers">Blocked Users</string>
     <string name="SaveIncomingPhotos">Save Incoming Photos</string>
-    <string name="LogOut">Log Out</string>
+    <string name="LogOut">Log out</string>
     <string name="YourFirstNameAndLastName">YOUR FIRST AND LAST NAME</string>
     <string name="NoSound">No sound</string>
     <string name="Default">Default</string>
@@ -285,7 +285,7 @@
     <string name="WhenRoaming">When roaming</string>
     <string name="NoMediaAutoDownload">No media</string>
     <string name="SaveToGallerySettings">Save to gallery</string>
-    <string name="EditName">Edit Name</string>
+    <string name="EditName">Edit name</string>
     <!--media view-->
     <string name="NoMedia">No shared media yet</string>
     <string name="CancelDownload">Cancel Download</string>

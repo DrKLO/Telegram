@@ -452,8 +452,15 @@ public class ActionBar extends FrameLayout {
         positionBackOverlay(getMeasuredWidth(), getMeasuredHeight());
     }
 
-    public void setExtraHeight(int value) {
+    public void setExtraHeight(int value, boolean layout) {
         extraHeight = value;
+        if (layout) {
+            requestLayout();
+        }
+    }
+
+    public int getExtraHeight() {
+        return extraHeight;
     }
 
     private void positionBackOverlay(int widthMeasureSpec, int heightMeasureSpec) {

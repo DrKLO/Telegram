@@ -25,6 +25,7 @@ public class TextDetailSettingsCell extends FrameLayout {
     private TextView valueTextView;
     private static Paint paint;
     private boolean needDivider;
+    private boolean multiline;
 
     public TextDetailSettingsCell(Context context) {
         super(context);
@@ -73,7 +74,7 @@ public class TextDetailSettingsCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        if (valueTextView.getMaxLines() == 1) {
+        if (!multiline) {
             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
         } else {
             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
@@ -81,6 +82,7 @@ public class TextDetailSettingsCell extends FrameLayout {
     }
 
     public void setMultilineDetail(boolean value) {
+        multiline = value;
         if (value) {
             valueTextView.setLines(0);
             valueTextView.setMaxLines(0);

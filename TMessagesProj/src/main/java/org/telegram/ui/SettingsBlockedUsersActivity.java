@@ -11,13 +11,17 @@ package org.telegram.ui;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.FrameLayout;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
@@ -27,6 +31,7 @@ import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
+import org.telegram.ui.Cells.TextInfoCell;
 import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.ActionBarMenu;
@@ -35,8 +40,8 @@ import org.telegram.ui.Views.ActionBar.BaseFragment;
 public class SettingsBlockedUsersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ContactsActivity.ContactsActivityDelegate {
     private ListView listView;
     private ListAdapter listViewAdapter;
-    private View progressView;
-    private TextView emptyView;
+    private FrameLayout progressView;
+    private TextView emptyTextView;
     private int selectedUserId;
 
     private final static int block_user = 1;
@@ -83,27 +88,58 @@ public class SettingsBlockedUsersActivity extends BaseFragment implements Notifi
             ActionBarMenu menu = actionBar.createMenu();
             menu.addItem(block_user, R.drawable.plus);
 
-            fragmentView = inflater.inflate(R.layout.settings_blocked_users_layout, container, false);
-            listViewAdapter = new ListAdapter(getParentActivity());
-            listView = (ListView)fragmentView.findViewById(R.id.listView);
-            progressView = fragmentView.findViewById(R.id.progressLayout);
-            emptyView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
-            emptyView.setOnTouchListener(new View.OnTouchListener() {
+            fragmentView = new FrameLayout(getParentActivity());
+            FrameLayout frameLayout = (FrameLayout) fragmentView;
+
+            emptyTextView = new TextView(getParentActivity());
+            emptyTextView.setTextColor(0xff808080);
+            emptyTextView.setTextSize(24);
+            emptyTextView.setGravity(Gravity.CENTER);
+            emptyTextView.setVisibility(View.INVISIBLE);
+            emptyTextView.setText(LocaleController.getString("NoBlocked", R.string.NoBlocked));
+            frameLayout.addView(emptyTextView);
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) emptyTextView.getLayoutParams();
+            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.gravity = Gravity.TOP;
+            emptyTextView.setLayoutParams(layoutParams);
+            emptyTextView.setOnTouchListener(new View.OnTouchListener() {
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
                     return true;
                 }
             });
-            emptyView.setText(LocaleController.getString("NoBlocked", R.string.NoBlocked));
-            if (MessagesController.getInstance().loadingBlockedUsers) {
-                progressView.setVisibility(View.VISIBLE);
-                emptyView.setVisibility(View.GONE);
-                listView.setEmptyView(null);
-            } else {
-                progressView.setVisibility(View.GONE);
-                listView.setEmptyView(emptyView);
+
+            progressView = new FrameLayout(getParentActivity());
+            frameLayout.addView(progressView);
+            layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
+            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            progressView.setLayoutParams(layoutParams);
+
+            ProgressBar progressBar = new ProgressBar(getParentActivity());
+            progressView.addView(progressBar);
+            layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
+            layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.CENTER;
+            progressView.setLayoutParams(layoutParams);
+
+            listView = new ListView(getParentActivity());
+            listView.setEmptyView(emptyTextView);
+            listView.setVerticalScrollBarEnabled(false);
+            listView.setDivider(null);
+            listView.setDividerHeight(0);
+            listView.setAdapter(listViewAdapter = new ListAdapter(getParentActivity()));
+            if (Build.VERSION.SDK_INT >= 11) {
+                listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
             }
-            listView.setAdapter(listViewAdapter);
+            frameLayout.addView(listView);
+            layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
+            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            listView.setLayoutParams(layoutParams);
+
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -140,6 +176,15 @@ public class SettingsBlockedUsersActivity extends BaseFragment implements Notifi
                     return true;
                 }
             });
+
+            if (MessagesController.getInstance().loadingBlockedUsers) {
+                progressView.setVisibility(View.VISIBLE);
+                emptyTextView.setVisibility(View.GONE);
+                listView.setEmptyView(null);
+            } else {
+                progressView.setVisibility(View.GONE);
+                listView.setEmptyView(emptyTextView);
+            }
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
             if (parent != null) {
@@ -161,7 +206,7 @@ public class SettingsBlockedUsersActivity extends BaseFragment implements Notifi
                 progressView.setVisibility(View.GONE);
             }
             if (listView != null && listView.getEmptyView() == null) {
-                listView.setEmptyView(emptyView);
+                listView.setEmptyView(emptyTextView);
             }
             if (listViewAdapter != null) {
                 listViewAdapter.notifyDataSetChanged();
@@ -243,17 +288,14 @@ public class SettingsBlockedUsersActivity extends BaseFragment implements Notifi
             int type = getItemViewType(i);
             if (type == 0) {
                 if (view == null) {
-                    view = new UserCell(mContext);
-                    ((UserCell)view).useSeparator = true;
+                    view = new UserCell(mContext, 1);
                 }
                 TLRPC.User user = MessagesController.getInstance().getUser(MessagesController.getInstance().blockedUsers.get(i));
-                ((UserCell)view).setData(user, null, user.phone != null && user.phone.length() != 0 ? PhoneFormat.getInstance().format("+" + user.phone) : LocaleController.getString("NumberUnknown", R.string.NumberUnknown));
+                ((UserCell)view).setData(user, null, user.phone != null && user.phone.length() != 0 ? PhoneFormat.getInstance().format("+" + user.phone) : LocaleController.getString("NumberUnknown", R.string.NumberUnknown), 0);
             } else if (type == 1) {
                 if (view == null) {
-                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = li.inflate(R.layout.settings_unblock_info_row_layout, viewGroup, false);
-                    TextView textView = (TextView)view.findViewById(R.id.info_text_view);
-                    textView.setText(LocaleController.getString("UnblockText", R.string.UnblockText));
+                    view = new TextInfoCell(mContext);
+                    ((TextInfoCell) view).setText(LocaleController.getString("UnblockText", R.string.UnblockText));
                 }
             }
             return view;

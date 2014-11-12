@@ -702,8 +702,6 @@ public class DialogCell extends BaseCell {
             canvas.restore();
         }
 
-        avatarImage.draw(canvas);
-
         if (useSeparator) {
             if (LocaleController.isRTL) {
                 canvas.drawLine(0, getMeasuredHeight() - 1, getMeasuredWidth() - AndroidUtilities.dp(72), getMeasuredHeight() - 1, linePaint);
@@ -711,5 +709,7 @@ public class DialogCell extends BaseCell {
                 canvas.drawLine(AndroidUtilities.dp(72), getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, linePaint);
             }
         }
+
+        avatarImage.draw(canvas);
     }
 }

@@ -18,6 +18,7 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.android.ContactsController;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.ui.AnimationCompat.ViewProxy;
 import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.GreySectionCell;
 import org.telegram.ui.Cells.LetterSectionCell;
@@ -28,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class ContactsActivityAdapter extends BaseSectionsAdapter {
+
     private Context mContext;
     private boolean onlyUsers;
     private boolean needPhonebook;
@@ -203,18 +205,18 @@ public class ContactsActivityAdapter extends BaseSectionsAdapter {
             }
         } else if (type == 0) {
             if (convertView == null) {
-                convertView = new UserCell(mContext);
-                convertView.setPadding(AndroidUtilities.dp(LocaleController.isRTL ? 16 : 54), 0, 0, 0);
+                convertView = new UserCell(mContext, 58);
+                ((UserCell) convertView).setStatusColors(0xffa8a8a8, 0xff3b84c0);
             }
 
             ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section - (onlyUsers ? 0 : 1)));
             TLRPC.User user = MessagesController.getInstance().getUser(arr.get(position).user_id);
-            ((UserCell)convertView).setData(user, null, null);
+            ((UserCell)convertView).setData(user, null, null, 0);
             if (ignoreUsers != null) {
                 if (ignoreUsers.containsKey(user.id)) {
-                    ((UserCell)convertView).drawAlpha = 0.5f;
+                    ViewProxy.setAlpha(convertView, 0.5f);
                 } else {
-                    ((UserCell)convertView).drawAlpha = 1.0f;
+                    ViewProxy.setAlpha(convertView, 1.0f);
                 }
             }
         }

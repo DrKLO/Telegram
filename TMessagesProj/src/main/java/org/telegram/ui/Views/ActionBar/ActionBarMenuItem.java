@@ -31,7 +31,6 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 
 import java.lang.reflect.Field;
@@ -186,7 +185,7 @@ public class ActionBarMenuItem extends ImageView {
         if (LocaleController.isRTL) {
             layoutParams.gravity = Gravity.RIGHT;
         }
-        layoutParams.width = LinearLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(48);
         textView.setLayoutParams(layoutParams);
         textView.setOnClickListener(new OnClickListener() {
@@ -389,7 +388,6 @@ public class ActionBarMenuItem extends ImageView {
         if (popupWindow != null && popupWindow.isShowing()) {
             int x = parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft();
             int y = -getMeasuredHeight();
-            FileLog.e("tmessages", "x = " + x + " y = " + y);
             popupWindow.update(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight(), -1, -1);
         }
     }

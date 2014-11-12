@@ -389,14 +389,10 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         @Override
         public View getItemView(int section, int position, View convertView, ViewGroup parent) {
             TLRPC.User user = MessagesController.getInstance().getUser(selectedContacts.get(position));
-
             if (convertView == null) {
-                convertView = new UserCell(mContext);
+                convertView = new UserCell(mContext, 1);
             }
-
-            ((UserCell)convertView).setData(user, null, null);
-            ((UserCell) convertView).useSeparator = position != selectedContacts.size() - 1;
-
+            ((UserCell) convertView).setData(user, null, null, 0);
             return convertView;
         }
 

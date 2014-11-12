@@ -17,8 +17,16 @@ public class EmptyCell extends FrameLayout {
 
     int cellHeight;
 
+    public EmptyCell(Context context) {
+        this(context, 8);
+    }
+
     public EmptyCell(Context context, int height) {
         super(context);
+        cellHeight = height;
+    }
+
+    public void setHeight(int height) {
         cellHeight = height;
     }
 
