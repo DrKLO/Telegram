@@ -18,12 +18,14 @@ import android.telephony.TelephonyManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.BuildVars;
@@ -32,7 +34,12 @@ import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
+
+import com.aniways.Log;
+import com.aniways.Utils;
 import com.aniways.anigram.messenger.R;
+import com.aniways.data.AniwaysNetworkStateChecker;
+
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Views.SlideView;
@@ -46,6 +53,7 @@ import java.util.HashMap;
 import java.util.Locale;
 
 public class LoginActivityPhoneView extends SlideView implements AdapterView.OnItemSelectedListener {
+    private static final String TAG = "AniwaysLoginActivityPhoneView";
     private EditText codeField;
     private EditText phoneField;
     private TextView countryButton;
@@ -60,6 +68,7 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
     private boolean ignoreSelection = false;
     private boolean ignoreOnTextChange = false;
     private boolean ignoreOnPhoneChange = false;
+    private boolean requestInprogress = false;
 
     public LoginActivityPhoneView(Context context) {
         super(context);
@@ -341,48 +350,94 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
         final Bundle params = new Bundle();
         params.putString("phone", "+" + codeField.getText() + phoneField.getText());
         params.putString("phoneFormated", phone);
-
+        this.requestInprogress = true;
         delegate.needShowProgress();
+        final long startReqTime = System.currentTimeMillis();
         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
-                if (error == null) {
-                    final TLRPC.TL_auth_sentCode res = (TLRPC.TL_auth_sentCode)response;
-                    params.putString("phoneHash", res.phone_code_hash);
-                    params.putInt("calltime", res.send_call_timeout * 1000);
-                    if (res.phone_registered) {
-                        params.putString("registered", "true");
+                try {
+                    if (error == null) {
+                        final TLRPC.TL_auth_sentCode res = (TLRPC.TL_auth_sentCode) response;
+                        params.putString("phoneHash", res.phone_code_hash);
+                        params.putInt("calltime", res.send_call_timeout * 1000);
+                        if (res.phone_registered) {
+                            params.putString("registered", "true");
+                        }
+                        Utilities.RunOnUIThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (delegate != null) {
+                                    delegate.setPage(1, true, params, false);
+                                }
+                            }
+                        });
+                    } else {
+                        if (delegate != null) {
+                            if (error.text != null) {
+                                if (error.text.contains("PHONE_NUMBER_INVALID")) {
+                                    delegate.needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
+                                } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
+                                    delegate.needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
+                                } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                                    delegate.needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
+                                } else if (error.text.contains("FLOOD_WAIT")) {
+                                    delegate.needShowAlert(LocaleController.getString("FloodWait", R.string.FloodWait));
+                                } else {
+                                    delegate.needShowAlert(error.text);
+                                }
+                            }
+                        }
                     }
-                    Utilities.RunOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (delegate != null) {
-                                delegate.setPage(1, true, params, false);
-                            }
-                        }
-                    });
-                } else {
                     if (delegate != null) {
-                        if (error.text != null) {
-                            if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                                delegate.needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
-                            } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                                delegate.needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
-                            } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                                delegate.needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
-                            } else if (error.text.contains("FLOOD_WAIT")) {
-                                delegate.needShowAlert(LocaleController.getString("FloodWait", R.string.FloodWait));
-                            } else {
-                                delegate.needShowAlert(error.text);
-                            }
-                        }
+                        delegate.needHideProgress();
                     }
                 }
-                if (delegate != null) {
-                    delegate.needHideProgress();
+                catch(Throwable ex){
+                    Log.e(true,TAG,"Caught exception in phone reg",ex);
+                }
+                finally{
+                    requestInprogress = false;
                 }
             }
         }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
+        checkConnection(startReqTime);
+    }
+
+    private void checkConnection(final long startReqTime){
+        AniwaysNetworkStateChecker.checkInternet(new AniwaysNetworkStateChecker.AniwaysNetworkSateCheckCallback() {
+
+            @Override
+            public void run(boolean connectionAvailable) {
+                if(!requestInprogress){
+                    return;
+                }
+                if (connectionAvailable) {
+                    long now = System.currentTimeMillis();
+                    if (now - startReqTime > 30000) {
+                        Log.e(true, TAG, "Takes long time receiving response in reg process ");
+                        Toast toast = Toast.makeText(getContext(), "Process takes too long. Please re-install app and try again", Toast.LENGTH_LONG);
+                        toast.setGravity(Gravity.CENTER, 0, 0);
+                        toast.show();
+                        if (delegate != null) {
+                            delegate.needHideProgress();
+                        }
+                    }
+                    else{
+                        Log.i(TAG, "Starting connectivity check again..");
+                        checkConnection(startReqTime);
+                    }
+                } else {
+                    Log.e(false, TAG, "Error registering phone cause no internet");
+                    Toast toast = Toast.makeText(getContext(), "No internet connection. Please try again once connected", Toast.LENGTH_LONG);
+                    toast.setGravity(Gravity.CENTER, 0, 0);
+                    toast.show();
+                    if (delegate != null) {
+                        delegate.needHideProgress();
+                    }
+                }
+            }
+        });
     }
 
     @Override
