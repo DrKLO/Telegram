@@ -285,6 +285,7 @@
     <string name="WhenRoaming">عند تواجدك خارج البلاد</string>
     <string name="NoMediaAutoDownload">لا يوجد وسائط</string>
     <string name="SaveToGallerySettings">حفظ في الجهاز</string>
+    <string name="EditName">Edit Name</string>
     <!--media view-->
     <string name="NoMedia">لا توجد وسائط بعد</string>
     <string name="CancelDownload">إلغاء التنزيل</string>

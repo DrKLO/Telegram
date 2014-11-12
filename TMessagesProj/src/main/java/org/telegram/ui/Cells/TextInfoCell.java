@@ -16,11 +16,11 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 
-public class DetailTextCell extends FrameLayout {
+public class TextInfoCell extends FrameLayout {
 
     private TextView textView;
 
-    public DetailTextCell(Context context) {
+    public TextInfoCell(Context context) {
         super(context);
 
         textView = new TextView(context);

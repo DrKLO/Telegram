@@ -285,6 +285,7 @@
     <string name="WhenRoaming">bei Roaming</string>
     <string name="NoMediaAutoDownload">kein automatischer Download</string>
     <string name="SaveToGallerySettings">In der Galerie speichern</string>
+    <string name="EditName">Edit Name</string>
     <!--media view-->
     <string name="NoMedia">Noch keine geteilten Medien vorhanden</string>
     <string name="CancelDownload">Download abbrechen</string>

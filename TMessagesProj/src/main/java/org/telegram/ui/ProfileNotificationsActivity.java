@@ -25,7 +25,6 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ListView;
-import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.MessagesController;
@@ -39,6 +38,8 @@ import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
+import org.telegram.ui.Cells.TextColorCell;
+import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Views.ActionBar.ActionBar;
 import org.telegram.ui.Views.ActionBar.BaseFragment;
 import org.telegram.ui.Views.AvatarDrawable;
@@ -64,8 +65,8 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
     public boolean onFragmentCreate() {
         settingsNotificationsRow = rowCount++;
         settingsVibrateRow = rowCount++;
-        settingsLedRow = rowCount++;
         settingsSoundRow = rowCount++;
+        settingsLedRow = rowCount++;
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.notificationsSettingsUpdated);
         return super.onFragmentCreate();
     }
@@ -389,102 +390,77 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
             int type = getItemViewType(i);
             if (type == 0) {
                 if (view == null) {
-                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = li.inflate(R.layout.user_profile_leftright_row_layout, viewGroup, false);
+                    view = new TextDetailSettingsCell(mContext);
                 }
-                TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
-                TextView detailTextView = (TextView)view.findViewById(R.id.settings_row_text_detail);
 
-                View divider = view.findViewById(R.id.settings_row_divider);
+                TextDetailSettingsCell textCell = (TextDetailSettingsCell) view;
+
+                SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+
                 if (i == settingsVibrateRow) {
-                    textView.setText(LocaleController.getString("Vibrate", R.string.Vibrate));
-                    divider.setVisibility(View.VISIBLE);
-                    SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     int value = preferences.getInt("vibrate_" + dialog_id, 0);
                     if (value == 0) {
-                        detailTextView.setText(LocaleController.getString("SettingsDefault", R.string.SettingsDefault));
+                        textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("SettingsDefault", R.string.SettingsDefault), true);
                     } else if (value == 1) {
-                        detailTextView.setText(LocaleController.getString("Short", R.string.Short));
+                        textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("Short", R.string.Short), true);
                     } else if (value == 2) {
-                        detailTextView.setText(LocaleController.getString("Disabled", R.string.Disabled));
+                        textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("Disabled", R.string.Disabled), true);
                     } else if (value == 3) {
-                        detailTextView.setText(LocaleController.getString("Long", R.string.Long));
+                        textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("Long", R.string.Long), true);
                     } else if (value == 4) {
-                        detailTextView.setText(LocaleController.getString("SystemDefault", R.string.SystemDefault));
+                        textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("SystemDefault", R.string.SystemDefault), true);
                     }
                 } else if (i == settingsNotificationsRow) {
-                    textView.setText(LocaleController.getString("Notifications", R.string.Notifications));
-                    divider.setVisibility(View.VISIBLE);
-                    SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     int value = preferences.getInt("notify2_" + dialog_id, 0);
                     if (value == 0) {
-                        detailTextView.setText(LocaleController.getString("Default", R.string.Default));
+                        textCell.setTextAndValue(LocaleController.getString("Notifications", R.string.Notifications), LocaleController.getString("Default", R.string.Default), true);
                     } else if (value == 1) {
-                        detailTextView.setText(LocaleController.getString("Enabled", R.string.Enabled));
+                        textCell.setTextAndValue(LocaleController.getString("Notifications", R.string.Notifications), LocaleController.getString("Enabled", R.string.Enabled), true);
                     } else if (value == 2) {
-                        detailTextView.setText(LocaleController.getString("Disabled", R.string.Disabled));
+                        textCell.setTextAndValue(LocaleController.getString("Notifications", R.string.Notifications), LocaleController.getString("Disabled", R.string.Disabled), true);
                     }
+                } else if (i == settingsSoundRow) {
+                    String value = preferences.getString("sound_" + dialog_id, LocaleController.getString("Default", R.string.Default));
+                    if (value.equals("NoSound")) {
+                        value = LocaleController.getString("NoSound", R.string.NoSound);
+                    }
+                    textCell.setTextAndValue(LocaleController.getString("Sound", R.string.Sound), value, true);
                 }
-            } if (type == 1) {
+            } else if (type == 1) {
                 if (view == null) {
-                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = li.inflate(R.layout.settings_row_detail_layout, viewGroup, false);
+                    view = new TextColorCell(mContext);
                 }
-                TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
-                TextView detailTextView = (TextView)view.findViewById(R.id.settings_row_text_detail);
 
-                View divider = view.findViewById(R.id.settings_row_divider);
-                if (i == settingsSoundRow) {
-                    SharedPreferences preferences = mContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                    String name = preferences.getString("sound_" + dialog_id, LocaleController.getString("Default", R.string.Default));
-                    if (name.equals("NoSound")) {
-                        detailTextView.setText(LocaleController.getString("NoSound", R.string.NoSound));
-                    } else {
-                        detailTextView.setText(name);
-                    }
-                    textView.setText(LocaleController.getString("Sound", R.string.Sound));
-                    divider.setVisibility(View.INVISIBLE);
-                }
-            } else if (type == 2) {
-                if (view == null) {
-                    LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = li.inflate(R.layout.settings_row_color_layout, viewGroup, false);
-                }
-                TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
-                View colorView = view.findViewById(R.id.settings_color);
-                View divider = view.findViewById(R.id.settings_row_divider);
-                textView.setText(LocaleController.getString("LedColor", R.string.LedColor));
+                TextColorCell textCell = (TextColorCell) view;
+
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
 
                 if (preferences.contains("color_" + dialog_id)) {
-                    colorView.setBackgroundColor(preferences.getInt("color_" + dialog_id, 0xff00ff00));
+                    textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), preferences.getInt("color_" + dialog_id, 0xff00ff00), false);
                 } else {
                     if ((int)dialog_id < 0) {
-                        colorView.setBackgroundColor(preferences.getInt("GroupLed", 0xff00ff00));
+                        textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), preferences.getInt("GroupLed", 0xff00ff00), false);
                     } else {
-                        colorView.setBackgroundColor(preferences.getInt("MessagesLed", 0xff00ff00));
+                        textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), preferences.getInt("MessagesLed", 0xff00ff00), false);
                     }
                 }
-                divider.setVisibility(View.VISIBLE);
             }
             return view;
         }
 
         @Override
         public int getItemViewType(int i) {
-            if (i == settingsNotificationsRow || i == settingsVibrateRow) {
+            if (i == settingsNotificationsRow || i == settingsVibrateRow || i == settingsSoundRow) {
                 return 0;
-            } else if (i == settingsSoundRow) {
-                return 1;
             } else if (i == settingsLedRow) {
-                return 2;
+                return 1;
             }
             return 0;
         }
 
         @Override
         public int getViewTypeCount() {
-            return 3;
+            return 2;
         }
 
         @Override

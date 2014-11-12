@@ -285,6 +285,7 @@
     <string name="WhenRoaming">In roaming</string>
     <string name="NoMediaAutoDownload">Nessun media</string>
     <string name="SaveToGallerySettings">Salva nella galleria</string>
+    <string name="EditName">Edit Name</string>
     <!--media view-->
     <string name="NoMedia">Nessun media condiviso</string>
     <string name="CancelDownload">Annulla scaricamento</string>

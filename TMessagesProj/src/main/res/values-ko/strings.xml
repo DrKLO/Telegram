@@ -285,6 +285,7 @@
     <string name="WhenRoaming">로밍 중일 때</string>
     <string name="NoMediaAutoDownload">다운로드 안함</string>
     <string name="SaveToGallerySettings">앨범에 자동 저장</string>
+    <string name="EditName">Edit Name</string>
     <!--media view-->
     <string name="NoMedia">공유한 미디어가 없습니다</string>
     <string name="CancelDownload">다운로드 취소</string>

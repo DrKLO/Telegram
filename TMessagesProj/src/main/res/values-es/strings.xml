@@ -285,6 +285,7 @@
     <string name="WhenRoaming">Con itinerancia de datos</string>
     <string name="NoMediaAutoDownload">Ningún contenido multimedia</string>
     <string name="SaveToGallerySettings">Guardar en galería</string>
+    <string name="EditName">Edit Name</string>
     <!--media view-->
     <string name="NoMedia">Aún no hay fotos ni vídeos</string>
     <string name="CancelDownload">Cancelar descarga</string>

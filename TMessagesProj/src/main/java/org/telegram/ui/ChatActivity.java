@@ -1390,7 +1390,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             printString = TextUtils.replace(printString, new String[]{"..."}, new String[]{""});
         }
         if (printString == null || printString.length() == 0) {
-            lastPrintString = null;
             setTypingAnimation(false);
             if (currentChat != null) {
                 if (currentChat instanceof TLRPC.TL_chatForbidden) {
@@ -1413,11 +1412,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (user != null) {
                     currentUser = user;
                 }
-                if (lastStatus != user.status || lastStatus != null && user.status != null && lastStatus.expires != user.status.expires) {
+                if (lastPrintString != null || lastStatus != user.status || lastStatus != null && user.status != null && lastStatus.expires != user.status.expires) {
                     lastStatus = user.status;
                     actionBar.setSubtitle(LocaleController.formatUserStatus(currentUser));
                 }
             }
+            lastPrintString = null;
         } else {
             lastPrintString = printString;
             actionBar.setSubtitle(printString);
