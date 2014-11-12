@@ -38,18 +38,20 @@
     <integer name="aniways_smallIconSize">20</integer>
 
     <!-- The height (in dips) of Aniways icons in the AniwaysEditText control. Default value is 60. -->
-    <integer name="aniways_iconInEditTextSize">60</integer>
+    <integer name="aniways_iconInEditTextSize">40</integer>
 
     <!-- The height (in dips) of Aniways icons in the AniwaysTextView control. Default value is 60. -->
-    <integer name="aniways_iconInTextViewSize">60</integer>
+    <integer name="aniways_iconInTextViewSize">40</integer>
 
     <!-- The size (in dips) of Aniways icons in the icon suggestion popup. Default value is 80. -->
-    <integer name="aniways_iconInSuggestionPopupSize">80</integer>
+    <integer name="aniways_iconInSuggestionPopupSize">60</integer>
+
+    <integer name="aniways_bigIconSize">120</integer>
     
     <!-- Whether to use smaller icons in the 'icons on demand' popup and have 3 rows and 6 columns 
     	 instead of the default 2 rows and 4 columns.
 	 	 Default value is 'false'.  -->
-    <bool name="aniways_useSmallerIconsInIconsOnDemendPopup">false</bool>
+    <bool name="aniways_useSmallerIconsInIconsOnDemendPopup">true</bool>
 
     <!--
        The number of times that the user sees highlighted text (suggested to be replaced with an icon) without clicking on it until the 

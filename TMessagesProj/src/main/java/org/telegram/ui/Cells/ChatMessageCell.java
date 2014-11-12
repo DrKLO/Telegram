@@ -17,10 +17,11 @@ import android.text.style.ClickableSpan;
 import android.view.MotionEvent;
 import android.view.View;
 
+import com.aniways.AniwaysDynamicImageSpansContainer;
+import com.aniways.AniwaysIconInfoDisplayer;
 import com.aniways.IAniwaysIconInfoSpan;
-import com.aniways.AniwaysLoadingImageSpan;
-import com.aniways.AniwaysLoadingImageSpansContainer;
 import com.aniways.IAniwaysTextContainer;
+import com.aniways.IIconInfoDisplayer;
 import com.aniways.Log;
 import com.aniways.volley.toolbox.IResponseListener;
 
@@ -30,7 +31,7 @@ import org.telegram.objects.MessageObject;
 
 public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContainer {
 
-    private static final String TAG = "ChatMessageCell";
+    private final AniwaysIconInfoDisplayer mIconInfoDisplayer;
     private int textX, textY;
     private int totalHeight = 0;
     private ClickableSpan pressedLink;
@@ -40,23 +41,13 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     private int firstVisibleBlockNum = 0;
     private int totalVisibleBlocksCount = 0;
     private long clickDownEventTIme = -1;
-    private AniwaysLoadingImageSpansContainer mLoadingImageSpansContainer;
+    private AniwaysDynamicImageSpansContainer mDynamicImageSpansContainer;
 
     public ChatMessageCell(Context context, boolean isChat) {
         super(context, isChat);
         drawForwardedName = true;
-        mLoadingImageSpansContainer = new AniwaysLoadingImageSpansContainer(this, new IResponseListener() {
-            @Override
-            public void onError() {
-
-            }
-
-            @Override
-            public void onSuccess() {
-                currentMessageObject.generateLayout(ChatMessageCell.this);
-                setMessageObject(currentMessageObject, true);
-            }
-        });
+        mDynamicImageSpansContainer = new AniwaysDynamicImageSpansContainer(this);
+        mIconInfoDisplayer = new AniwaysIconInfoDisplayer();
     }
 
     @Override
@@ -226,7 +217,7 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
                 }
             }
         }
-        this.mLoadingImageSpansContainer.onSetText(this.getText(), oldText);
+        this.mDynamicImageSpansContainer.onSetText(this.getText(), oldText);
     }
 
     @Override
@@ -238,7 +229,7 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
 
-        this.mLoadingImageSpansContainer.onLayoutCalled();
+        this.mDynamicImageSpansContainer.onLayoutCalled();
 
         if (currentMessageObject.messageOwner.out) {
             textX = layoutWidth - backgroundWidth + Utilities.dp(10);
@@ -369,8 +360,8 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     }
 
     @Override
-    public AniwaysLoadingImageSpansContainer getLoadingImageSpansContainer() {
-        return this.mLoadingImageSpansContainer;
+    public AniwaysDynamicImageSpansContainer getDynamicImageSpansContainer() {
+        return this.mDynamicImageSpansContainer;
     }
 
     @Override
@@ -386,8 +377,25 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     }
 
     @Override
+    public void onLoadedImageSuccessfuly() {
+        Log.i("AniwaysChatMessageCell", "Successfully loaded image");
+        currentMessageObject.generateLayout(ChatMessageCell.this);
+        setMessageObject(currentMessageObject, true);
+    }
+
+    @Override
+    public void onErrorLoadingImage() {
+
+    }
+
+    @Override
+    public IIconInfoDisplayer getIconInfoDisplayer() {
+        return mIconInfoDisplayer;
+    }
+
+    @Override
     protected void onDetachedFromWindow() {
-        this.mLoadingImageSpansContainer.onDetachFromWindowCalled();
+        this.mDynamicImageSpansContainer.onDetachFromWindowCalled();
 
         super.onDetachedFromWindow();
     }

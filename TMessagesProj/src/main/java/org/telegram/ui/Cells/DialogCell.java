@@ -30,8 +30,9 @@ import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.MessagesController;
 
 import com.aniways.AniwaysLoadingImageSpan;
-import com.aniways.AniwaysLoadingImageSpansContainer;
+import com.aniways.AniwaysDynamicImageSpansContainer;
 import com.aniways.IAniwaysTextContainer;
+import com.aniways.IIconInfoDisplayer;
 import com.aniways.Log;
 import com.aniways.anigram.messenger.R;
 import com.aniways.volley.toolbox.IResponseListener;
@@ -60,6 +61,7 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
     private static Drawable lockDrawable;
     private static Drawable countDrawable;
     private static Drawable groupDrawable;
+    private final AniwaysIconInfoDisplayer mIconInfoDisplayer;
 
     private TLRPC.TL_dialog currentDialog;
     private ImageReceiver avatarImage;
@@ -69,7 +71,7 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
     private TLRPC.Chat chat = null;
     private TLRPC.EncryptedChat encryptedChat = null;
     private CharSequence lastPrintString = null;
-    private AniwaysLoadingImageSpansContainer mLoadingImageSpansContainer;
+    private AniwaysDynamicImageSpansContainer mLoadingImageSpansContainer;
 
     private void init() {
         if (namePaint == null) {
@@ -158,18 +160,8 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
     public DialogCell(Context context) {
         super(context);
         init();
-        mLoadingImageSpansContainer = new AniwaysLoadingImageSpansContainer(this, new IResponseListener() {
-            @Override
-            public void onError() {
-
-            }
-
-            @Override
-            public void onSuccess() {
-                Log.i("AniwaysDialogCell", "Successfully loaded image");
-                setDialog(currentDialog);
-            }
-        });
+        mLoadingImageSpansContainer = new AniwaysDynamicImageSpansContainer(this);
+        mIconInfoDisplayer = new AniwaysIconInfoDisplayer();
     }
 
     public void setDialog(TLRPC.TL_dialog dialog) {
@@ -366,7 +358,7 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
     }
 
     @Override
-    public AniwaysLoadingImageSpansContainer getLoadingImageSpansContainer() {
+    public AniwaysDynamicImageSpansContainer getDynamicImageSpansContainer() {
         return this.mLoadingImageSpansContainer;
     }
 
@@ -379,6 +371,22 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
     public void addBackTheTextWatchers() {
         //TODO: temp!!
         setDialog(currentDialog);
+    }
+
+    @Override
+    public void onLoadedImageSuccessfuly() {
+        Log.i("AniwaysDialogCell", "Successfully loaded image");
+        setDialog(currentDialog);
+    }
+
+    @Override
+    public void onErrorLoadingImage() {
+
+    }
+
+    @Override
+    public IIconInfoDisplayer getIconInfoDisplayer() {
+        return mIconInfoDisplayer;
     }
 
     @Override
@@ -744,7 +752,7 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
             //}
 
             // TODO: need to put a textcontainer there, make this a text container
-            messageString = Aniways.decodeMessage(messageString, new AniwaysIconInfoDisplayer(), this.mTextContainer, true);
+            messageString = Aniways.decodeMessage(messageString, mIconInfoDisplayer, this.mTextContainer, true);
             CharSequence messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - Utilities.dp(12), TextUtils.TruncateAt.END);
             Spannable oldText = this.getText();
             messageLayout = new StaticLayout(messageStringFinal, currentMessagePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
