@@ -39,6 +39,7 @@ import com.aniways.Log;
 import com.aniways.Utils;
 import com.aniways.anigram.messenger.R;
 import com.aniways.data.AniwaysNetworkStateChecker;
+import com.aniways.data.AniwaysPrivateConfig;
 
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.Utilities;
@@ -414,8 +415,8 @@ public class LoginActivityPhoneView extends SlideView implements AdapterView.OnI
                 }
                 if (connectionAvailable) {
                     long now = System.currentTimeMillis();
-                    if (now - startReqTime > 30000) {
-                        Log.e(true, TAG, "Takes long time receiving response in reg process ");
+                    if ((now - startReqTime) > AniwaysPrivateConfig.getInstance().phoneRegTimeout) {
+                        Log.e(true, TAG, "Takes long time receiving response in reg process: " + (now - startReqTime));
                         Toast toast = Toast.makeText(getContext(), "Process takes too long. Please re-install app and try again", Toast.LENGTH_LONG);
                         toast.setGravity(Gravity.CENTER, 0, 0);
                         toast.show();
