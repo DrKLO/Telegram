@@ -50,9 +50,9 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Adapters.DrawerLayoutAdapter;
-import org.telegram.ui.Views.ActionBar.ActionBarLayout;
-import org.telegram.ui.Views.ActionBar.BaseFragment;
-import org.telegram.ui.Views.ActionBar.DrawerLayoutContainer;
+import org.telegram.ui.ActionBar.ActionBarLayout;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.DrawerLayoutContainer;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -361,7 +361,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                 }
                             }
                         } else if (fragmentName.equals("wallpapers")) {
-                            SettingsWallpapersActivity settings = new SettingsWallpapersActivity();
+                            WallpapersActivity settings = new WallpapersActivity();
                             actionBarLayout.addFragmentToStack(settings);
                             settings.restoreSelfArgs(savedInstanceState);
                         }
@@ -1007,7 +1007,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 } else if (lastFragment instanceof GroupCreateFinalActivity && args != null) {
                     outState.putBundle("args", args);
                     outState.putString("fragment", "group");
-                } else if (lastFragment instanceof SettingsWallpapersActivity) {
+                } else if (lastFragment instanceof WallpapersActivity) {
                     outState.putString("fragment", "wallpapers");
                 } else if (lastFragment instanceof ProfileActivity && ((ProfileActivity) lastFragment).isChat() && args != null) {
                     outState.putBundle("args", args);

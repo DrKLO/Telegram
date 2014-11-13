@@ -17,6 +17,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -28,6 +29,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.EditText;
@@ -46,11 +48,11 @@ import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.Adapters.BaseSectionsAdapter;
-import org.telegram.ui.Adapters.ContactsActivityAdapter;
-import org.telegram.ui.Adapters.ContactsActivitySearchAdapter;
-import org.telegram.ui.Views.ActionBar.ActionBar;
-import org.telegram.ui.Views.ActionBar.ActionBarMenu;
-import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.Adapters.ContactsAdapter;
+import org.telegram.ui.Adapters.ContactsSearchAdapter;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Views.SectionsListView;
 
 import java.util.ArrayList;
@@ -87,7 +89,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private TextView emptyTextView;
     private EditText userSelectEditText;
     private SectionsListView listView;
-    private ContactsActivitySearchAdapter searchListViewAdapter;
+    private ContactsSearchAdapter searchListViewAdapter;
 
     private int beforeChangeIndex;
     private int maxCount = 200;
@@ -160,85 +162,17 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             TextView doneTextView = (TextView)doneItem.findViewById(R.id.done_button);
             doneTextView.setText(LocaleController.getString("Next", R.string.Next));
 
-            searchListViewAdapter = new ContactsActivitySearchAdapter(getParentActivity(), null, false);
-            listViewAdapter = new ContactsActivityAdapter(getParentActivity(), true, false, null);
-
-            /*
-
-
-    <FrameLayout
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/top_layout"
-        android:layout_gravity="top">
-
-        <EditText
-            android:textColorHint="#a6a6a6"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="5dp"
-            android:layout_marginRight="5dp"
-            android:minHeight="52dp"
-            android:gravity="right|center_vertical"
-            android:maxLines="2"
-            android:paddingTop="3dp"
-            android:layout_marginTop="0dp"
-            android:inputType="textFilter|textNoSuggestions|textMultiLine"
-            android:imeOptions="flagNoExtractUi"
-            android:textCursorDrawable="@null"
-            android:textColor="#000000"/>
-
-    </FrameLayout>
-
-
-            ------------RTL---------- END
-
-
-        <EditText
-            android:textColorHint="#a6a6a6"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="5dp"
-            android:layout_marginRight="5dp"
-            android:minHeight="52dp"
-            android:gravity="left|center_vertical"
-            android:maxLines="2"
-            android:paddingTop="3dp"
-            android:layout_marginTop="0dp"
-            android:inputType="textFilter|textNoSuggestions|textMultiLine"
-            android:imeOptions="flagNoExtractUi"
-            android:textCursorDrawable="@null"
-            android:textColor="#000000"/>
-
-
-             */
+            searchListViewAdapter = new ContactsSearchAdapter(getParentActivity(), null, false);
+            listViewAdapter = new ContactsAdapter(getParentActivity(), true, false, null);
+            searchListViewAdapter.setUseUserCell(true);
 
             fragmentView = new LinearLayout(getParentActivity());
             LinearLayout linearLayout = (LinearLayout) fragmentView;
             linearLayout.setOrientation(LinearLayout.VERTICAL);
 
-            emptyTextView = new TextView(getParentActivity());
-            emptyTextView.setTextColor(0xff808080);
-            emptyTextView.setTextSize(24);
-            emptyTextView.setGravity(Gravity.CENTER);
-            emptyTextView.setVisibility(View.INVISIBLE);
-            emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
-            linearLayout.addView(emptyTextView);
-            LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) emptyTextView.getLayoutParams();
-            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.gravity = Gravity.TOP;
-            emptyTextView.setLayoutParams(layoutParams);
-            emptyTextView.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    return true;
-                }
-            });
-
             FrameLayout frameLayout = new FrameLayout(getParentActivity());
             linearLayout.addView(frameLayout);
-            layoutParams = (LinearLayout.LayoutParams) frameLayout.getLayoutParams();
+            LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) frameLayout.getLayoutParams();
             layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
             layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
             layoutParams.gravity = Gravity.TOP;
@@ -246,7 +180,23 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
             userSelectEditText = new EditText(getParentActivity());
             userSelectEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            userSelectEditText.setHintTextColor(0xffa6a6a6);
+            userSelectEditText.setTextColor(0xff000000);
+            userSelectEditText.setMinimumHeight(AndroidUtilities.dp(52));
+            userSelectEditText.setMaxLines(2);
+            userSelectEditText.setPadding(userSelectEditText.getPaddingLeft(), AndroidUtilities.dp(3), userSelectEditText.getPaddingRight(), userSelectEditText.getPaddingBottom());
+            userSelectEditText.setInputType(InputType.TYPE_TEXT_VARIATION_FILTER | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+            userSelectEditText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+            userSelectEditText.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+            AndroidUtilities.clearCursorDrawable(userSelectEditText);
             frameLayout.addView(userSelectEditText);
+            FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) userSelectEditText.getLayoutParams();
+            layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams1.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams1.leftMargin = AndroidUtilities.dp(5);
+            layoutParams1.rightMargin = AndroidUtilities.dp(5);
+            layoutParams1.gravity = Gravity.TOP;
+            userSelectEditText.setLayoutParams(layoutParams1);
 
             userSelectEditText.setHint(LocaleController.getString("SendMessageTo", R.string.SendMessageTo));
             if (Build.VERSION.SDK_INT >= 11) {
@@ -301,21 +251,56 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         if (search) {
                             String text = userSelectEditText.getText().toString().replace("<", "");
                             if (text.length() != 0) {
-                                searchDialogs(text);
                                 searching = true;
                                 searchWas = true;
-                                emptyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
-                                listViewAdapter.notifyDataSetChanged();
+                                if (listView != null) {
+                                    listView.setAdapter(searchListViewAdapter);
+                                    searchListViewAdapter.notifyDataSetChanged();
+                                    if(android.os.Build.VERSION.SDK_INT >= 11) {
+                                        listView.setFastScrollAlwaysVisible(false);
+                                    }
+                                    listView.setFastScrollEnabled(false);
+                                    listView.setVerticalScrollBarEnabled(true);
+                                }
+                                if (emptyTextView != null) {
+                                    emptyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+                                }
+                                searchListViewAdapter.searchDialogs(text);
                             } else {
-                                searchResult = null;
-                                searchResultNames = null;
+                                searchListViewAdapter.searchDialogs(null);
                                 searching = false;
                                 searchWas = false;
-                                emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+                                ViewGroup group = (ViewGroup) listView.getParent();
+                                listView.setAdapter(listViewAdapter);
                                 listViewAdapter.notifyDataSetChanged();
+                                if (android.os.Build.VERSION.SDK_INT >= 11) {
+                                    listView.setFastScrollAlwaysVisible(true);
+                                }
+                                listView.setFastScrollEnabled(true);
+                                listView.setVerticalScrollBarEnabled(false);
+                                emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
                             }
                         }
                     }
+                }
+            });
+
+            emptyTextView = new TextView(getParentActivity());
+            emptyTextView.setTextColor(0xff808080);
+            emptyTextView.setTextSize(24);
+            emptyTextView.setGravity(Gravity.CENTER);
+            emptyTextView.setVisibility(View.INVISIBLE);
+            emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+            linearLayout.addView(emptyTextView);
+            layoutParams = (LinearLayout.LayoutParams) emptyTextView.getLayoutParams();
+            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.gravity = Gravity.TOP;
+            emptyTextView.setLayoutParams(layoutParams);
+            emptyTextView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    return true;
                 }
             });
 
@@ -331,7 +316,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 listView.setFastScrollAlwaysVisible(true);
                 listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
             }
-            ((FrameLayout) fragmentView).addView(listView);
+            linearLayout.addView(listView);
             layoutParams = (LinearLayout.LayoutParams) listView.getLayoutParams();
             layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
             layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
@@ -339,7 +324,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    TLRPC.User user;
+                    /*TLRPC.User user;
                     int section = listViewAdapter.getSectionForPosition(i);
                     int row = listViewAdapter.getPositionInSectionForPosition(i);
                     if (searching && searchWas) {
@@ -387,7 +372,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         listViewAdapter.notifyDataSetChanged();
                     } else {
                         listView.invalidateViews();
-                    }
+                    }*/
                 }
             });
             listView.setOnScrollListener(new AbsListView.OnScrollListener() {

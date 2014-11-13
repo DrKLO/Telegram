@@ -18,8 +18,6 @@ package org.telegram.ui.Animation;
 
 import android.view.View;
 
-import org.telegram.ui.Views.ActionBar.ActionBarLayout;
-
 import java.util.HashMap;
 
 public final class ObjectAnimator10 extends ValueAnimator {

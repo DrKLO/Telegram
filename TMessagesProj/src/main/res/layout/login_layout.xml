@@ -248,26 +248,6 @@
                 android:textColorHint="#979797"
                 android:layout_marginTop="10dp"/>
 
-            <!--<FrameLayout-->
-                <!--android:layout_width="108dp"-->
-                <!--android:layout_height="108dp"-->
-                <!--android:layout_marginTop="20dp"-->
-                <!--android:layout_below="@+id/login_register_info"-->
-                <!--android:id="@+id/login_avatar_button">-->
-
-                <!--<org.telegram.ui.Views.BackupImageView-->
-                    <!--android:id="@+id/settings_avatar_image"-->
-                    <!--android:layout_width="fill_parent"-->
-                    <!--android:layout_height="fill_parent"-->
-                    <!--android:src="@drawable/user_placeholder"/>-->
-
-                <!--<ImageButton-->
-                    <!--android:id="@+id/settings_change_avatar_button"-->
-                    <!--android:background="@drawable/photo_spinner"-->
-                    <!--android:layout_width="fill_parent"-->
-                    <!--android:layout_height="fill_parent"/>-->
-            <!--</FrameLayout>-->
-
             <LinearLayout
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"

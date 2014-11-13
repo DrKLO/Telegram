@@ -69,13 +69,13 @@ import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Cells.TextSettingsCell;
-import org.telegram.ui.Views.ActionBar.ActionBar;
-import org.telegram.ui.Views.ActionBar.ActionBarMenu;
-import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.AvatarUpdater;
 import org.telegram.ui.Views.BackupImageView;
-import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Views.NumberPicker;
 
 import java.io.File;
@@ -274,7 +274,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     if (id == -1) {
                         finishFragment();
                     } else if (id == edit_name) {
-                        presentFragment(new SettingsChangeNameActivity());
+                        presentFragment(new ChangeNameActivity());
                     } else if (id == logout) {
                         if (getParentActivity() == null) {
                             return;
@@ -424,11 +424,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             listView.invalidateViews();
                         }
                     } else if (i == notificationRow) {
-                        presentFragment(new SettingsNotificationsActivity());
+                        presentFragment(new NotificationsSettingsActivity());
                     } else if (i == blockedRow) {
-                        presentFragment(new SettingsBlockedUsersActivity());
+                        presentFragment(new BlockedUsersActivity());
                     } else if (i == backgroundRow) {
-                        presentFragment(new SettingsWallpapersActivity());
+                        presentFragment(new WallpapersActivity());
                     } else if (i == askQuestionRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -627,7 +627,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), null);
                         showAlertDialog(builder);
                     } else if (i == usernameRow) {
-                        presentFragment(new SettingsChangeUsernameActivity());
+                        presentFragment(new ChangeUsernameActivity());
                     }
                 }
             });

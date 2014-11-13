@@ -172,7 +172,7 @@
     <string name="AllContacts">ALL CONTACTS</string>
     <string name="MembersCount">%1$d/%2$d members</string>
     <!--group info view-->
-    <string name="EnterGroupNameTitle">ENTER GROUP NAME</string>
+    <string name="EnterGroupNameTitle">Enter group name</string>
     <string name="SharedMedia">Shared Media</string>
     <string name="GroupInfo">Group Info</string>
     <string name="SETTINGS">Settings</string>
@@ -183,6 +183,7 @@
     <!--contact info view-->
     <string name="ShareContact">Share</string>
     <string name="AddContact">Add</string>
+    <string name="AddContactTitle">Add contact</string>
     <string name="BlockContact">Block</string>
     <string name="EditContact">Edit</string>
     <string name="DeleteContact">Delete</string>

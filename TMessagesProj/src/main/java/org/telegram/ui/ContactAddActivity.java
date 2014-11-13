@@ -17,7 +17,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -29,19 +28,26 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.BackupImageView;
-import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.BaseFragment;
 
 public class ContactAddActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
-    private int user_id;
-    private String phone = null;
+
     private View doneButton;
     private EditText firstNameField;
     private EditText lastNameField;
     private BackupImageView avatarImage;
     private TextView onlineText;
     private TextView phoneText;
+
+    private int user_id;
+    private boolean addContact;
+    private String phone = null;
+
+    private final static int done_button = 1;
 
     public ContactAddActivity(Bundle args) {
         super(args);
@@ -52,6 +58,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
         user_id = getArguments().getInt("user_id", 0);
         phone = getArguments().getString("phone");
+        addContact = getArguments().getBoolean("addContact", false);
         TLRPC.User user = MessagesController.getInstance().getUser(user_id);
         return user != null && super.onFragmentCreate();
     }
@@ -65,32 +72,33 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBar.setCustomView(R.layout.settings_do_action_layout);
-            Button cancelButton = (Button) actionBar.findViewById(R.id.cancel_button);
-            cancelButton.setOnClickListener(new View.OnClickListener() {
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setBackOverlay(R.layout.updating_state_layout);
+            if (addContact) {
+                actionBar.setTitle(LocaleController.getString("AddContactTitle", R.string.AddContactTitle));
+            } else {
+                actionBar.setTitle(LocaleController.getString("EditName", R.string.EditName));
+            }
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
-                public void onClick(View view) {
-                    finishFragment();
-                }
-            });
-            doneButton = actionBar.findViewById(R.id.done_button);
-            doneButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (firstNameField.getText().length() != 0) {
-                        TLRPC.User user = MessagesController.getInstance().getUser(user_id);
-                        user.first_name = firstNameField.getText().toString();
-                        user.last_name = lastNameField.getText().toString();
-                        ContactsController.getInstance().addContact(user);
+                public void onItemClick(int id) {
+                    if (id == -1) {
                         finishFragment();
-                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
+                    } else if (id == done_button) {
+                        if (firstNameField.getText().length() != 0) {
+                            TLRPC.User user = MessagesController.getInstance().getUser(user_id);
+                            user.first_name = firstNameField.getText().toString();
+                            user.last_name = lastNameField.getText().toString();
+                            ContactsController.getInstance().addContact(user);
+                            finishFragment();
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
+                        }
                     }
                 }
             });
 
-            cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
-            TextView textView = (TextView)doneButton.findViewById(R.id.done_button_text);
-            textView.setText(LocaleController.getString("Done", R.string.Done).toUpperCase());
+            ActionBarMenu menu = actionBar.createMenu();
+            doneButton = menu.addItem(done_button, R.drawable.ic_done);
 
             fragmentView = inflater.inflate(R.layout.contact_add_layout, container, false);
 

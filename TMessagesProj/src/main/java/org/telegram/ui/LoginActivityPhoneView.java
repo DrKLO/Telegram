@@ -31,7 +31,7 @@ import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
-import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Views.SlideView;
 
 import java.io.BufferedReader;

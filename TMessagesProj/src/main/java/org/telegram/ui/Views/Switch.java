@@ -360,7 +360,6 @@ public class Switch extends CompoundButton {
         final float targetPosition = newCheckedState ? 1 : 0;
         mPositionAnimator = ObjectAnimatorProxy.ofFloatProxy(this, "thumbPosition", targetPosition);
         mPositionAnimator.setDuration(THUMB_ANIMATION_DURATION);
-        mPositionAnimator.setAutoCancel(true);
         mPositionAnimator.start();
     }
 

@@ -20,16 +20,16 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.FrameLayout;
-import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ImageLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.BaseFragment;
 
 import java.io.File;
 
@@ -282,6 +282,8 @@ public class PhotoCropActivity extends BaseFragment {
     private boolean sameBitmap = false;
     private boolean doneButtonPressed = false;
 
+    private final static int done_button = 1;
+
     public PhotoCropActivity(Bundle args) {
         super(args);
     }
@@ -328,33 +330,30 @@ public class PhotoCropActivity extends BaseFragment {
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBar.setCustomView(R.layout.settings_do_action_layout);
-            Button cancelButton = (Button) actionBar.findViewById(R.id.cancel_button);
-            cancelButton.setOnClickListener(new View.OnClickListener() {
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setTitle(LocaleController.getString("AddContact", R.string.AddContact));
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
-                public void onClick(View view) {
-                    finishFragment();
-                }
-            });
-            View doneButton = actionBar.findViewById(R.id.done_button);
-            doneButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (delegate != null && !doneButtonPressed) {
-                        Bitmap bitmap = view.getBitmap();
-                        if (bitmap == imageToCrop) {
-                            sameBitmap = true;
+                public void onItemClick(int id) {
+                    if (id == -1) {
+                        finishFragment();
+                    } else if (id == done_button) {
+                        if (delegate != null && !doneButtonPressed) {
+                            Bitmap bitmap = view.getBitmap();
+                            if (bitmap == imageToCrop) {
+                                sameBitmap = true;
+                            }
+                            delegate.didFinishCrop(bitmap);
+                            doneButtonPressed = true;
                         }
-                        delegate.didFinishCrop(bitmap);
-                        doneButtonPressed = true;
+                        finishFragment();
                     }
-                    finishFragment();
                 }
             });
 
-            cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
-            TextView textView = (TextView)doneButton.findViewById(R.id.done_button_text);
-            textView.setText(LocaleController.getString("Done", R.string.Done).toUpperCase());
+            ActionBarMenu menu = actionBar.createMenu();
+            menu.addItem(done_button, R.drawable.ic_done);
 
             fragmentView = view = new PhotoCropView(getParentActivity());
             fragmentView.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));

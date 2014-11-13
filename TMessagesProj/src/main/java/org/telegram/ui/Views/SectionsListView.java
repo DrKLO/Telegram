@@ -14,7 +14,6 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
-import android.widget.AdapterView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 
@@ -199,17 +198,5 @@ public class SectionsListView extends ListView implements AbsListView.OnScrollLi
 
     public void setOnItemClickListener(SectionsListView.OnItemClickListener listener) {
         super.setOnItemClickListener(listener);
-    }
-
-    public static abstract class OnItemClickListener implements AdapterView.OnItemClickListener {
-        @Override
-        public void onItemClick(AdapterView<?> adapterView, View view, int rawPosition, long id) {
-            SectionedBaseAdapter adapter = (SectionedBaseAdapter) adapterView.getAdapter();
-            int section = adapter.getSectionForPosition(rawPosition);
-            int position = adapter.getPositionInSectionForPosition(rawPosition);
-            onItemClick(adapterView, view, section, position, id);
-        }
-
-        public abstract void onItemClick(AdapterView<?> adapterView, View view, int section, int position, long id);
     }
 }

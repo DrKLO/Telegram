@@ -40,4 +40,8 @@ public class LetterSectionCell extends FrameLayout {
     public void setLetter(String letter) {
         textView.setText(letter.toUpperCase());
     }
+
+    public void setCellHeight(int height) {
+        setLayoutParams(new ViewGroup.LayoutParams(AndroidUtilities.dp(54), height));
+    }
 }

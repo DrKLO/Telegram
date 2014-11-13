@@ -54,13 +54,13 @@ import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextDetailCell;
 import org.telegram.ui.Cells.UserCell;
-import org.telegram.ui.Views.ActionBar.ActionBar;
-import org.telegram.ui.Views.ActionBar.ActionBarMenu;
-import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.AvatarUpdater;
 import org.telegram.ui.Views.BackupImageView;
-import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Views.IdenticonDrawable;
 
 import java.util.ArrayList;
@@ -325,7 +325,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     } else if (id == edit_name) {
                         Bundle args = new Bundle();
                         args.putInt("chat_id", chat_id);
-                        presentFragment(new ChatProfileChangeNameActivity(args));
+                        presentFragment(new ChangeChatNameActivity(args));
                     }
                 }
             });

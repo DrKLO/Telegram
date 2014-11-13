@@ -12,6 +12,7 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -33,6 +34,7 @@ public class UserCell extends FrameLayout {
     private TextView nameTextView;
     private TextView statusTextView;
     private ImageView imageView;
+    private CheckBox checkBox;
 
     private AvatarDrawable avatarDrawable;
     private TLRPC.User currentUser = null;
@@ -65,7 +67,7 @@ public class UserCell extends FrameLayout {
         avatarDrawable = new AvatarDrawable();
 
         nameTextView = new TextView(context);
-        nameTextView.setTextColor(0xff000000);
+        nameTextView.setTextColor(0xff212121);
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
         nameTextView.setLines(1);
         nameTextView.setMaxLines(1);

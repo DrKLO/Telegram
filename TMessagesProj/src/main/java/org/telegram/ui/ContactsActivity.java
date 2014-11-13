@@ -39,13 +39,13 @@ import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Adapters.BaseSectionsAdapter;
-import org.telegram.ui.Adapters.ContactsActivityAdapter;
-import org.telegram.ui.Adapters.ContactsActivitySearchAdapter;
+import org.telegram.ui.Adapters.ContactsAdapter;
+import org.telegram.ui.Adapters.ContactsSearchAdapter;
 import org.telegram.ui.Cells.UserCell;
-import org.telegram.ui.Views.ActionBar.ActionBar;
-import org.telegram.ui.Views.ActionBar.ActionBarMenu;
-import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Views.SectionsListView;
 
 import java.util.ArrayList;
@@ -56,7 +56,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private BaseSectionsAdapter listViewAdapter;
     private TextView emptyTextView;
     private SectionsListView listView;
-    private ContactsActivitySearchAdapter searchListViewAdapter;
+    private ContactsSearchAdapter searchListViewAdapter;
 
     private boolean searchWas;
     private boolean searching;
@@ -150,7 +150,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     }
                     listView.setFastScrollEnabled(true);
                     listView.setVerticalScrollBarEnabled(false);
-
                     emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
                 }
 
@@ -179,8 +178,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 }
             });
 
-            searchListViewAdapter = new ContactsActivitySearchAdapter(getParentActivity(), ignoreUsers, allowUsernameSearch);
-            listViewAdapter = new ContactsActivityAdapter(getParentActivity(), onlyUsers, needPhonebook, ignoreUsers);
+            searchListViewAdapter = new ContactsSearchAdapter(getParentActivity(), ignoreUsers, allowUsernameSearch);
+            listViewAdapter = new ContactsAdapter(getParentActivity(), onlyUsers, needPhonebook, ignoreUsers);
 
             fragmentView = new FrameLayout(getParentActivity());
 

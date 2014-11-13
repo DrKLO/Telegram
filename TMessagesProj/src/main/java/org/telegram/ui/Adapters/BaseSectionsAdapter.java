@@ -120,7 +120,7 @@ public abstract class BaseSectionsAdapter extends BaseFragmentAdapter {
             }
             sectionStart = sectionEnd;
         }
-        return 0;
+        return -1;
     }
 
     public int getPositionInSectionForPosition(int position) {
@@ -139,7 +139,7 @@ public abstract class BaseSectionsAdapter extends BaseFragmentAdapter {
             }
             sectionStart = sectionEnd;
         }
-        return 0;
+        return -1;
     }
 
     public abstract int getSectionCount();

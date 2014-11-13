@@ -15,12 +15,6 @@ import android.widget.BaseAdapter;
 
 public class BaseFragmentAdapter extends BaseAdapter {
 
-    public void onFragmentCreate() {
-    }
-
-    public void onFragmentDestroy() {
-    }
-
     @Override
     public int getCount() {
         return 0;

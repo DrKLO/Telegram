@@ -8,7 +8,6 @@
 
 package org.telegram.ui;
 
-import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -18,7 +17,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
-import android.widget.ImageButton;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
@@ -30,22 +29,20 @@ import org.telegram.messenger.FileLog;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.UserCell;
-import org.telegram.ui.Views.ActionBar.ActionBar;
-import org.telegram.ui.Views.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.AvatarUpdater;
 import org.telegram.ui.Views.BackupImageView;
-import org.telegram.ui.Views.ActionBar.BaseFragment;
-import org.telegram.ui.Views.PinnedHeaderListView;
-import org.telegram.ui.Views.SectionedBaseAdapter;
-import org.telegram.ui.Views.SettingsSectionLayout;
+import org.telegram.ui.ActionBar.BaseFragment;
 
 import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
 
 public class GroupCreateFinalActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, AvatarUpdater.AvatarUpdaterDelegate {
-    private PinnedHeaderListView listView;
+    private ListView listView;
     private EditText nameTextView;
     private TLRPC.FileLocation avatar;
     private TLRPC.InputFile uploadedAvatar;
@@ -185,11 +182,8 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
             fragmentView = inflater.inflate(R.layout.group_create_final_layout, container, false);
 
-            final ImageButton button2 = (ImageButton)fragmentView.findViewById(R.id.settings_change_avatar_button);
-            if (isBroadcast) {
-                button2.setVisibility(View.GONE);
-            } else {
-                button2.setOnClickListener(new View.OnClickListener() {
+            if (!isBroadcast) {
+                /*button2.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
                         if (getParentActivity() == null) {
@@ -221,7 +215,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                         });
                         showAlertDialog(builder);
                     }
-                });
+                });*/
             }
 
             avatarImage = (BackupImageView)fragmentView.findViewById(R.id.settings_avatar_image);
@@ -238,7 +232,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 nameTextView.setText(nameToSet);
                 nameToSet = null;
             }
-            listView = (PinnedHeaderListView)fragmentView.findViewById(R.id.listView);
+            listView = (ListView)fragmentView.findViewById(R.id.listView);
             listView.setAdapter(new ListAdapter(getParentActivity()));
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
@@ -346,16 +340,11 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         }
     }
 
-    private class ListAdapter extends SectionedBaseAdapter {
+    private class ListAdapter extends BaseFragmentAdapter {
         private Context mContext;
 
         public ListAdapter(Context context) {
             mContext = context;
-        }
-
-        @Override
-        public Object getItem(int section, int position) {
-            return null;
         }
 
         @Override
@@ -369,61 +358,22 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         }
 
         @Override
-        public long getItemId(int section, int position) {
-            return 0;
-        }
-
-        @Override
-        public int getSectionCount() {
-            return 1;
-        }
-
-        @Override
-        public int getCountForSection(int section) {
-            if (selectedContacts == null) {
-                return 0;
+        public View getView(int i, View view, ViewGroup viewGroup) {
+            TLRPC.User user = MessagesController.getInstance().getUser(selectedContacts.get(i));
+            if (view == null) {
+                view = new UserCell(mContext, 1);
             }
-            return selectedContacts.size();
-        }
+            ((UserCell) view).setData(user, null, null, 0);
+            return view;
 
-        @Override
-        public View getItemView(int section, int position, View convertView, ViewGroup parent) {
-            TLRPC.User user = MessagesController.getInstance().getUser(selectedContacts.get(position));
-            if (convertView == null) {
-                convertView = new UserCell(mContext, 1);
-            }
-            ((UserCell) convertView).setData(user, null, null, 0);
-            return convertView;
-        }
-
-        @Override
-        public int getItemViewType(int section, int position) {
-            return 0;
-        }
-
-        @Override
-        public int getItemViewTypeCount() {
-            return 1;
-        }
-
-        @Override
-        public int getSectionHeaderViewType(int section) {
-            return 0;
-        }
-
-        @Override
-        public int getSectionHeaderViewTypeCount() {
-            return 1;
-        }
-
-        @Override
-        public View getSectionHeaderView(int section, View convertView, ViewGroup parent) {
+            /*
             if (convertView == null) {
                 convertView = new SettingsSectionLayout(mContext);
                 convertView.setBackgroundColor(0xffffffff);
             }
             ((SettingsSectionLayout) convertView).setText(LocaleController.formatPluralString("Members", selectedContacts.size()).toUpperCase());
             return convertView;
+             */
         }
     }
 }

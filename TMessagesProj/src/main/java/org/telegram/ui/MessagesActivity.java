@@ -40,24 +40,24 @@ import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.ui.Adapters.MessagesActivityAdapter;
-import org.telegram.ui.Adapters.MessagesActivitySearchAdapter;
+import org.telegram.ui.Adapters.DialogsAdapter;
+import org.telegram.ui.Adapters.DialogsSearchAdapter;
 import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.ui.AnimationCompat.ViewProxy;
 import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Cells.DialogCell;
-import org.telegram.ui.Views.ActionBar.ActionBar;
-import org.telegram.ui.Views.ActionBar.ActionBarMenu;
-import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.Views.ActionBar.BaseFragment;
-import org.telegram.ui.Views.ActionBar.MenuDrawable;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.MenuDrawable;
 
 import java.util.ArrayList;
 
 public class MessagesActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private ListView messagesListView;
-    private MessagesActivityAdapter messagesActivityAdapter;
-    private MessagesActivitySearchAdapter messagesActivitySearchAdapter;
+    private DialogsAdapter dialogsAdapter;
+    private DialogsSearchAdapter dialogsSearchAdapter;
     private TextView searchEmptyView;
     private View progressView;
     private View emptyView;
@@ -158,13 +158,13 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                             ViewProxy.setTranslationY(floatingButton, AndroidUtilities.dp(100));
                             hideFloatingButton(false);
                         }
-                        if (messagesListView.getAdapter() != messagesActivityAdapter) {
-                            messagesListView.setAdapter(messagesActivityAdapter);
-                            messagesActivityAdapter.notifyDataSetChanged();
+                        if (messagesListView.getAdapter() != dialogsAdapter) {
+                            messagesListView.setAdapter(dialogsAdapter);
+                            dialogsAdapter.notifyDataSetChanged();
                         }
                     }
-                    if (messagesActivitySearchAdapter != null) {
-                        messagesActivitySearchAdapter.searchDialogs(null, false);
+                    if (dialogsSearchAdapter != null) {
+                        dialogsSearchAdapter.searchDialogs(null, false);
                     }
                 }
 
@@ -173,9 +173,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     String text = editText.getText().toString();
                     if (text.length() != 0) {
                         searchWas = true;
-                        if (messagesActivitySearchAdapter != null) {
-                            messagesListView.setAdapter(messagesActivitySearchAdapter);
-                            messagesActivitySearchAdapter.notifyDataSetChanged();
+                        if (dialogsSearchAdapter != null) {
+                            messagesListView.setAdapter(dialogsSearchAdapter);
+                            dialogsSearchAdapter.notifyDataSetChanged();
                         }
                         if (searchEmptyView != null && messagesListView.getEmptyView() == emptyView) {
                             messagesListView.setEmptyView(searchEmptyView);
@@ -183,8 +183,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                             progressView.setVisibility(View.GONE);
                         }
                     }
-                    if (messagesActivitySearchAdapter != null) {
-                        messagesActivitySearchAdapter.searchDialogs(text, serverOnly);
+                    if (dialogsSearchAdapter != null) {
+                        dialogsSearchAdapter.searchDialogs(text, serverOnly);
                     }
                 }
             });
@@ -215,9 +215,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
             fragmentView = inflater.inflate(R.layout.messages_list, container, false);
 
-            messagesActivityAdapter = new MessagesActivityAdapter(getParentActivity(), serverOnly);
-            messagesActivitySearchAdapter = new MessagesActivitySearchAdapter(getParentActivity());
-            messagesActivitySearchAdapter.setDelegate(new MessagesActivitySearchAdapter.MessagesActivitySearchAdapterDelegate() {
+            dialogsAdapter = new DialogsAdapter(getParentActivity(), serverOnly);
+            dialogsSearchAdapter = new DialogsSearchAdapter(getParentActivity());
+            dialogsSearchAdapter.setDelegate(new DialogsSearchAdapter.MessagesActivitySearchAdapterDelegate() {
                 @Override
                 public void searchStateChanged(boolean search) {
                     if (searching && searchWas && messagesListView != null) {
@@ -229,13 +229,13 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             });
 
             messagesListView = (ListView)fragmentView.findViewById(R.id.messages_list_view);
-            messagesListView.setAdapter(messagesActivityAdapter);
+            messagesListView.setAdapter(dialogsAdapter);
             if (Build.VERSION.SDK_INT >= 11) {
                 messagesListView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
             }
 
             progressView = fragmentView.findViewById(R.id.progressLayout);
-            messagesActivityAdapter.notifyDataSetChanged();
+            dialogsAdapter.notifyDataSetChanged();
             searchEmptyView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
             searchEmptyView.setOnTouchListener(new View.OnTouchListener() {
                 @Override
@@ -295,17 +295,17 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     long dialog_id = 0;
                     int message_id = 0;
                     BaseFragmentAdapter adapter = (BaseFragmentAdapter)messagesListView.getAdapter();
-                    if (adapter == messagesActivityAdapter) {
-                        TLRPC.TL_dialog dialog = messagesActivityAdapter.getItem(i);
+                    if (adapter == dialogsAdapter) {
+                        TLRPC.TL_dialog dialog = dialogsAdapter.getItem(i);
                         if (dialog == null) {
                             return;
                         }
                         dialog_id = dialog.id;
-                    } else if (adapter == messagesActivitySearchAdapter) {
-                        Object obj = messagesActivitySearchAdapter.getItem(i);
+                    } else if (adapter == dialogsSearchAdapter) {
+                        Object obj = dialogsSearchAdapter.getItem(i);
                         if (obj instanceof TLRPC.User) {
                             dialog_id = ((TLRPC.User) obj).id;
-                            if (messagesActivitySearchAdapter.isGlobalSearch(i)) {
+                            if (dialogsSearchAdapter.isGlobalSearch(i)) {
                                 ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
                                 users.add((TLRPC.User)obj);
                                 MessagesController.getInstance().putUsers(users, false);
@@ -356,7 +356,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                             if (openedDialogId == dialog_id) {
                                 return;
                             }
-                            messagesActivityAdapter.setOpenedDialogId(openedDialogId = dialog_id);
+                            dialogsAdapter.setOpenedDialogId(openedDialogId = dialog_id);
                             updateVisibleRows(MessagesController.UPDATE_MASK_SELECT_DIALOG);
                         }
                         presentFragment(new ChatActivity(args));
@@ -501,11 +501,11 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onResume() {
         super.onResume();
-        if (messagesActivityAdapter != null) {
-            messagesActivityAdapter.notifyDataSetChanged();
+        if (dialogsAdapter != null) {
+            dialogsAdapter.notifyDataSetChanged();
         }
-        if (messagesActivitySearchAdapter != null) {
-            messagesActivitySearchAdapter.notifyDataSetChanged();
+        if (dialogsSearchAdapter != null) {
+            dialogsSearchAdapter.notifyDataSetChanged();
         }
     }
 
@@ -533,8 +533,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     @SuppressWarnings("unchecked")
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.dialogsNeedReload) {
-            if (messagesActivityAdapter != null) {
-                messagesActivityAdapter.notifyDataSetChanged();
+            if (dialogsAdapter != null) {
+                dialogsAdapter.notifyDataSetChanged();
             }
             if (messagesListView != null) {
                 if (MessagesController.getInstance().loadingDialogs && MessagesController.getInstance().dialogs.isEmpty()) {
@@ -577,7 +577,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 } else {
                     openedDialogId = dialog_id;
                 }
-                messagesActivityAdapter.setOpenedDialogId(openedDialogId);
+                dialogsAdapter.setOpenedDialogId(openedDialogId);
                 updateVisibleRows(MessagesController.UPDATE_MASK_SELECT_DIALOG);
             }
         }

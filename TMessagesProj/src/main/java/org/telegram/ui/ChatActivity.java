@@ -71,12 +71,12 @@ import org.telegram.ui.Cells.ChatBaseCell;
 import org.telegram.ui.Cells.ChatContactCell;
 import org.telegram.ui.Cells.ChatMediaCell;
 import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.Views.ActionBar.ActionBar;
-import org.telegram.ui.Views.ActionBar.ActionBarMenu;
-import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.BackupImageView;
-import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Views.ChatActivityEnterView;
 import org.telegram.android.ImageReceiver;
 import org.telegram.ui.Views.LayoutListView;
@@ -2364,6 +2364,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             public void onClick(View v) {
                                 Bundle args = new Bundle();
                                 args.putInt("user_id", currentUser.id);
+                                args.putBoolean("addContact", true);
                                 presentFragment(new ContactAddActivity(args));
                             }
                         });
@@ -3292,6 +3293,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 Bundle args = new Bundle();
                                 args.putInt("user_id", messageObject.messageOwner.media.user_id);
                                 args.putString("phone", messageObject.messageOwner.media.phone_number);
+                                args.putBoolean("addContact", true);
                                 presentFragment(new ContactAddActivity(args));
                             }
 
