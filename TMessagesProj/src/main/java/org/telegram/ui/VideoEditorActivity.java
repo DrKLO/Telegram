@@ -254,10 +254,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             });
 
             ActionBarMenu menu = actionBar.createMenu();
-            View doneItem = menu.addItemResource(1, R.layout.group_create_done_layout);
-
-            TextView doneTextView = (TextView) doneItem.findViewById(R.id.done_button);
-            doneTextView.setText(LocaleController.getString("Done", R.string.Done).toUpperCase());
+            menu.addItem(1, R.drawable.ic_done, 0, AndroidUtilities.dp(56));
 
             fragmentView = inflater.inflate(R.layout.video_editor_layout, container, false);
             originalSizeTextView = (TextView) fragmentView.findViewById(R.id.original_size);

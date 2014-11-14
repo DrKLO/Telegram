@@ -51,6 +51,8 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_updates_difference.constructor, TLRPC.TL_updates_difference.class);
         classStore.put(TLRPC.TL_geoPointEmpty.constructor, TLRPC.TL_geoPointEmpty.class);
         classStore.put(TLRPC.TL_geoPoint.constructor, TLRPC.TL_geoPoint.class);
+        classStore.put(TLRPC.TL_privacyKeyStatusTimestamp.constructor, TLRPC.TL_privacyKeyStatusTimestamp.class);
+        classStore.put(TLRPC.TL_account_privacyRules.constructor, TLRPC.TL_account_privacyRules.class);
         classStore.put(TLRPC.TL_help_appUpdate.constructor, TLRPC.TL_help_appUpdate.class);
         classStore.put(TLRPC.TL_help_noAppUpdate.constructor, TLRPC.TL_help_noAppUpdate.class);
         classStore.put(TLRPC.TL_messageForwarded.constructor, TLRPC.TL_messageForwarded.class);
@@ -93,8 +95,15 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_audioEmpty.constructor, TLRPC.TL_audioEmpty.class);
         classStore.put(TLRPC.TL_audio.constructor, TLRPC.TL_audio.class);
         classStore.put(TLRPC.TL_destroy_sessions_res.constructor, TLRPC.TL_destroy_sessions_res.class);
+        classStore.put(TLRPC.TL_privacyValueAllowUsers.constructor, TLRPC.TL_privacyValueAllowUsers.class);
+        classStore.put(TLRPC.TL_privacyValueDisallowAll.constructor, TLRPC.TL_privacyValueDisallowAll.class);
+        classStore.put(TLRPC.TL_privacyValueAllowContacts.constructor, TLRPC.TL_privacyValueAllowContacts.class);
+        classStore.put(TLRPC.TL_privacyValueDisallowContacts.constructor, TLRPC.TL_privacyValueDisallowContacts.class);
+        classStore.put(TLRPC.TL_privacyValueAllowAll.constructor, TLRPC.TL_privacyValueAllowAll.class);
+        classStore.put(TLRPC.TL_privacyValueDisallowUsers.constructor, TLRPC.TL_privacyValueDisallowUsers.class);
         classStore.put(TLRPC.TL_contacts_contacts.constructor, TLRPC.TL_contacts_contacts.class);
         classStore.put(TLRPC.TL_contacts_contactsNotModified.constructor, TLRPC.TL_contacts_contactsNotModified.class);
+        classStore.put(TLRPC.TL_inputPrivacyKeyStatusTimestamp.constructor, TLRPC.TL_inputPrivacyKeyStatusTimestamp.class);
         classStore.put(TLRPC.TL_photos_photos.constructor, TLRPC.TL_photos_photos.class);
         classStore.put(TLRPC.TL_photos_photosSlice.constructor, TLRPC.TL_photos_photosSlice.class);
         classStore.put(TLRPC.TL_chatFull.constructor, TLRPC.TL_chatFull.class);
@@ -165,6 +174,12 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_messages_affectedHistory.constructor, TLRPC.TL_messages_affectedHistory.class);
         classStore.put(TLRPC.TL_documentEmpty.constructor, TLRPC.TL_documentEmpty.class);
         classStore.put(TLRPC.TL_document.constructor, TLRPC.TL_document.class);
+        classStore.put(TLRPC.TL_inputPrivacyValueDisallowUsers.constructor, TLRPC.TL_inputPrivacyValueDisallowUsers.class);
+        classStore.put(TLRPC.TL_inputPrivacyValueDisallowAll.constructor, TLRPC.TL_inputPrivacyValueDisallowAll.class);
+        classStore.put(TLRPC.TL_inputPrivacyValueDisallowContacts.constructor, TLRPC.TL_inputPrivacyValueDisallowContacts.class);
+        classStore.put(TLRPC.TL_inputPrivacyValueAllowAll.constructor, TLRPC.TL_inputPrivacyValueAllowAll.class);
+        classStore.put(TLRPC.TL_inputPrivacyValueAllowContacts.constructor, TLRPC.TL_inputPrivacyValueAllowContacts.class);
+        classStore.put(TLRPC.TL_inputPrivacyValueAllowUsers.constructor, TLRPC.TL_inputPrivacyValueAllowUsers.class);
         classStore.put(TLRPC.TL_inputMediaContact.constructor, TLRPC.TL_inputMediaContact.class);
         classStore.put(TLRPC.TL_inputMediaUploadedThumbDocument.constructor, TLRPC.TL_inputMediaUploadedThumbDocument.class);
         classStore.put(TLRPC.TL_inputMediaAudio.constructor, TLRPC.TL_inputMediaAudio.class);
@@ -187,9 +202,12 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_contactSuggested.constructor, TLRPC.TL_contactSuggested.class);
         classStore.put(TLRPC.TL_server_DH_params_fail.constructor, TLRPC.TL_server_DH_params_fail.class);
         classStore.put(TLRPC.TL_server_DH_params_ok.constructor, TLRPC.TL_server_DH_params_ok.class);
-        classStore.put(TLRPC.TL_userStatusEmpty.constructor, TLRPC.TL_userStatusEmpty.class);
-        classStore.put(TLRPC.TL_userStatusOnline.constructor, TLRPC.TL_userStatusOnline.class);
         classStore.put(TLRPC.TL_userStatusOffline.constructor, TLRPC.TL_userStatusOffline.class);
+        classStore.put(TLRPC.TL_userStatusLastWeek.constructor, TLRPC.TL_userStatusLastWeek.class);
+        classStore.put(TLRPC.TL_userStatusEmpty.constructor, TLRPC.TL_userStatusEmpty.class);
+        classStore.put(TLRPC.TL_userStatusLastMonth.constructor, TLRPC.TL_userStatusLastMonth.class);
+        classStore.put(TLRPC.TL_userStatusOnline.constructor, TLRPC.TL_userStatusOnline.class);
+        classStore.put(TLRPC.TL_userStatusRecently.constructor, TLRPC.TL_userStatusRecently.class);
         classStore.put(TLRPC.TL_msg_copy.constructor, TLRPC.TL_msg_copy.class);
         classStore.put(TLRPC.TL_contacts_importedContacts.constructor, TLRPC.TL_contacts_importedContacts.class);
         classStore.put(TLRPC.TL_futureSalt.constructor, TLRPC.TL_futureSalt.class);
@@ -210,6 +228,7 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_updateEncryptedChatTyping.constructor, TLRPC.TL_updateEncryptedChatTyping.class);
         classStore.put(TLRPC.TL_updateDcOptions.constructor, TLRPC.TL_updateDcOptions.class);
         classStore.put(TLRPC.TL_updateChatParticipants.constructor, TLRPC.TL_updateChatParticipants.class);
+        classStore.put(TLRPC.TL_updatePrivacy.constructor, TLRPC.TL_updatePrivacy.class);
         classStore.put(TLRPC.TL_updateEncryption.constructor, TLRPC.TL_updateEncryption.class);
         classStore.put(TLRPC.TL_updateUserBlocked.constructor, TLRPC.TL_updateUserBlocked.class);
         classStore.put(TLRPC.TL_updateActivation.constructor, TLRPC.TL_updateActivation.class);
@@ -328,6 +347,7 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_inputPhotoEmpty.constructor, TLRPC.TL_inputPhotoEmpty.class);
         classStore.put(TLRPC.TL_inputPhoto.constructor, TLRPC.TL_inputPhoto.class);
         classStore.put(TLRPC.TL_importedContact.constructor, TLRPC.TL_importedContact.class);
+        classStore.put(TLRPC.TL_accountDaysTTL.constructor, TLRPC.TL_accountDaysTTL.class);
         classStore.put(TLRPC.TL_inputPeerContact.constructor, TLRPC.TL_inputPeerContact.class);
         classStore.put(TLRPC.TL_inputPeerChat.constructor, TLRPC.TL_inputPeerChat.class);
         classStore.put(TLRPC.TL_inputPeerEmpty.constructor, TLRPC.TL_inputPeerEmpty.class);

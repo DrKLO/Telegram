@@ -53,6 +53,8 @@ public class ActionBarMenuItem extends ImageView {
     private int[] location;
     private View selectedMenuView;
     private Runnable showMenuRunnable;
+    private boolean showFromBottom;
+    private int height;
 
     public ActionBarMenuItem(Context context, ActionBarMenu menu, int background) {
         super(context);
@@ -127,6 +129,10 @@ public class ActionBarMenuItem extends ImageView {
             }
         }
         return super.onTouchEvent(event);
+    }
+
+    public void setShowFromBottom(boolean value) {
+        showFromBottom = value;
     }
 
     public void addSubItem(int id, String text, int icon) {
@@ -238,10 +244,23 @@ public class ActionBarMenuItem extends ImageView {
         }
         popupWindow.setFocusable(true);
         if (popupLayout.getMeasuredWidth() == 0) {
-            popupWindow.showAsDropDown(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight());
-            popupWindow.update(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight(), -1, -1);
+            if (showFromBottom) {
+                popupWindow.showAsDropDown(this, -popupLayout.getMeasuredWidth() + getMeasuredWidth() + AndroidUtilities.dp(12), -popupLayout.getMeasuredHeight() + AndroidUtilities.dp(12));
+                popupWindow.update(this, -popupLayout.getMeasuredWidth() + getMeasuredWidth() + AndroidUtilities.dp(12), -popupLayout.getMeasuredHeight() + AndroidUtilities.dp(12), -1, -1);
+                height = popupLayout.getMeasuredHeight();
+            } else {
+                popupWindow.showAsDropDown(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight());
+                popupWindow.update(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight(), -1, -1);
+            }
         } else {
-            popupWindow.showAsDropDown(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight());
+            if (showFromBottom) {
+                if (height == 0) {
+                    height = popupLayout.getMeasuredHeight();
+                }
+                popupWindow.showAsDropDown(this, -popupLayout.getMeasuredWidth() + getMeasuredWidth() + AndroidUtilities.dp(12), -height + AndroidUtilities.dp(12));
+            } else {
+                popupWindow.showAsDropDown(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight());
+            }
         }
     }
 
@@ -287,7 +306,7 @@ public class ActionBarMenuItem extends ImageView {
             searchField.setTextColor(0xffffffff);
             searchField.setSingleLine(true);
             searchField.setBackgroundResource(R.drawable.search_light_states);
-            searchField.setPadding(AndroidUtilities.dp(6), 0, AndroidUtilities.dp(6), 0);
+            searchField.setPadding(0, 0, 0, 0);
             searchField.setInputType(EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
             if (android.os.Build.VERSION.SDK_INT < 11) {
                 searchField.setOnCreateContextMenuListener(new OnCreateContextMenuListener() {
@@ -366,7 +385,8 @@ public class ActionBarMenuItem extends ImageView {
             layoutParams.width = 0;
             layoutParams.gravity = Gravity.CENTER_VERTICAL;
             layoutParams.height = AndroidUtilities.dp(36);
-            layoutParams.rightMargin = AndroidUtilities.dp(16);
+            layoutParams.rightMargin = AndroidUtilities.dp(22);
+            layoutParams.leftMargin = AndroidUtilities.dp(6);
             searchField.setLayoutParams(layoutParams);
             searchField.setVisibility(GONE);
         }
@@ -386,9 +406,11 @@ public class ActionBarMenuItem extends ImageView {
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
         if (popupWindow != null && popupWindow.isShowing()) {
-            int x = parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft();
-            int y = -getMeasuredHeight();
-            popupWindow.update(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight(), -1, -1);
+            if (showFromBottom) {
+                popupWindow.update(this, -popupLayout.getMeasuredWidth() + getMeasuredWidth() + AndroidUtilities.dp(12), -height + AndroidUtilities.dp(12), -1, -1);
+            } else {
+                popupWindow.update(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight(), -1, -1);
+            }
         }
     }
 

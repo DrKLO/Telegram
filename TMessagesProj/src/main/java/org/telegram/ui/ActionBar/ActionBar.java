@@ -190,6 +190,7 @@ public class ActionBar extends FrameLayout {
         titleFrameLayout.addView(backButtonImageView);
         backButtonImageView.setVisibility(VISIBLE);
         backButtonImageView.setScaleType(ImageView.ScaleType.CENTER);
+        backButtonImageView.setBackgroundResource(itemsBackgroundResourceId);
         backButtonImageView.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -505,7 +506,7 @@ public class ActionBar extends FrameLayout {
     public void setItemsBackground(int resourceId) {
         itemsBackgroundResourceId = resourceId;
         if (backButtonImageView != null) {
-            backButtonImageView.setBackgroundResource(resourceId);
+            backButtonImageView.setBackgroundResource(itemsBackgroundResourceId);
         }
     }
 

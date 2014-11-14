@@ -35,6 +35,7 @@ public class AvatarDrawable extends Drawable {
             R.drawable.bar_selector_green, R.drawable.bar_selector_cyan, R.drawable.bar_selector_blue, R.drawable.bar_selector_violet, R.drawable.bar_selector_pink};
 
     private static Drawable broadcastDrawable;
+    private static Drawable photoDrawable;
 
     private int color;
     private StaticLayout textLayout;
@@ -42,6 +43,7 @@ public class AvatarDrawable extends Drawable {
     private float textHeight;
     private boolean isProfile;
     private boolean drawBrodcast;
+    private boolean drawPhoto;
 
     public AvatarDrawable() {
         super();
@@ -147,6 +149,13 @@ public class AvatarDrawable extends Drawable {
         }
     }
 
+    public void setDrawPhoto(boolean value) {
+        if (value && photoDrawable == null) {
+            photoDrawable = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.photo_w);
+        }
+        drawPhoto = value;
+    }
+
     @Override
     public void draw(Canvas canvas) {
         Rect bounds = getBounds();
@@ -168,6 +177,11 @@ public class AvatarDrawable extends Drawable {
             if (textLayout != null) {
                 canvas.translate((size - textWidth) / 2, (size - textHeight) / 2);
                 textLayout.draw(canvas);
+            } else if (drawPhoto && photoDrawable != null) {
+                int x = (size - photoDrawable.getIntrinsicWidth()) / 2;
+                int y = (size - photoDrawable.getIntrinsicHeight()) / 2;
+                photoDrawable.setBounds(x, y, x + photoDrawable.getIntrinsicWidth(), y + photoDrawable.getIntrinsicHeight());
+                photoDrawable.draw(canvas);
             }
         }
         canvas.restore();

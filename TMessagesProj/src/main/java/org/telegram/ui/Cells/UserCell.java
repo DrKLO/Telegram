@@ -12,7 +12,6 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -27,6 +26,7 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.BackupImageView;
+import org.telegram.ui.Views.CheckBox;
 
 public class UserCell extends FrameLayout {
 
@@ -111,6 +111,18 @@ public class UserCell extends FrameLayout {
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 0);
         layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL;
         imageView.setLayoutParams(layoutParams);
+
+        checkBox = new CheckBox(context);
+        checkBox.setVisibility(GONE);
+        addView(checkBox);
+        layoutParams = (LayoutParams) checkBox.getLayoutParams();
+        layoutParams.width = AndroidUtilities.dp(22);
+        layoutParams.height = AndroidUtilities.dp(22);
+        layoutParams.topMargin = AndroidUtilities.dp(38);
+        layoutParams.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(37 + padding);
+        layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(37 + padding) : 0;
+        layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        checkBox.setLayoutParams(layoutParams);
     }
 
     public void setData(TLRPC.User user, CharSequence name, CharSequence status, int resId) {
@@ -128,6 +140,13 @@ public class UserCell extends FrameLayout {
         currentUser = user;
         currentDrawable = resId;
         update(0);
+    }
+
+    public void setChecked(boolean checked) {
+        if (checkBox.getVisibility() != VISIBLE) {
+            checkBox.setVisibility(VISIBLE);
+        }
+        checkBox.setChecked(checked);
     }
 
     @Override

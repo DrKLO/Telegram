@@ -36,6 +36,7 @@ public class ContactsSearchAdapter extends BaseContactsSearchAdapter {
     private HashMap<Integer, TLRPC.User> ignoreUsers;
     private ArrayList<TLRPC.User> searchResult = new ArrayList<TLRPC.User>();
     private ArrayList<CharSequence> searchResultNames = new ArrayList<CharSequence>();
+    private HashMap<Integer, ?> checkedMap;
     private Timer searchTimer;
     private boolean allowUsernameSearch;
     private boolean useUserCell;
@@ -44,6 +45,10 @@ public class ContactsSearchAdapter extends BaseContactsSearchAdapter {
         mContext = context;
         ignoreUsers = arg1;
         allowUsernameSearch = usernameSearch;
+    }
+
+    public void setCheckedMap(HashMap<Integer, ?> map) {
+        checkedMap = map;
     }
 
     public void setUseUserCell(boolean value) {
@@ -238,6 +243,9 @@ public class ContactsSearchAdapter extends BaseContactsSearchAdapter {
 
                 if (useUserCell) {
                     ((UserCell) view).setData(user, name, username, 0);
+                    if (checkedMap != null) {
+                        ((UserCell) view).setChecked(checkedMap.containsKey(user.id));
+                    }
                 } else {
                     ((ProfileSearchCell) view).useSeparator = (i != getCount() - 1 && i != searchResult.size() - 1);
                     if (ignoreUsers != null) {

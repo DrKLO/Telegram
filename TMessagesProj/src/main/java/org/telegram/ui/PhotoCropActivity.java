@@ -353,7 +353,7 @@ public class PhotoCropActivity extends BaseFragment {
             });
 
             ActionBarMenu menu = actionBar.createMenu();
-            menu.addItem(done_button, R.drawable.ic_done);
+            menu.addItem(done_button, R.drawable.ic_done, 0, AndroidUtilities.dp(56));
 
             fragmentView = view = new PhotoCropView(getParentActivity());
             fragmentView.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));

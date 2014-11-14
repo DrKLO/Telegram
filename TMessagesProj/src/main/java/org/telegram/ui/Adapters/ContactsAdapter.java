@@ -34,12 +34,17 @@ public class ContactsAdapter extends BaseSectionsAdapter {
     private boolean onlyUsers;
     private boolean needPhonebook;
     private HashMap<Integer, TLRPC.User> ignoreUsers;
+    private HashMap<Integer, ?> checkedMap;
 
     public ContactsAdapter(Context context, boolean arg1, boolean arg2, HashMap<Integer, TLRPC.User> arg3) {
         mContext = context;
         onlyUsers = arg1;
         needPhonebook = arg2;
         ignoreUsers = arg3;
+    }
+
+    public void setCheckedMap(HashMap<Integer, ?> map) {
+        checkedMap = map;
     }
 
     @Override
@@ -212,6 +217,9 @@ public class ContactsAdapter extends BaseSectionsAdapter {
             ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section - (onlyUsers ? 0 : 1)));
             TLRPC.User user = MessagesController.getInstance().getUser(arr.get(position).user_id);
             ((UserCell)convertView).setData(user, null, null, 0);
+            if (checkedMap != null) {
+                ((UserCell) convertView).setChecked(checkedMap.containsKey(user.id));
+            }
             if (ignoreUsers != null) {
                 if (ignoreUsers.containsKey(user.id)) {
                     ViewProxy.setAlpha(convertView, 0.5f);

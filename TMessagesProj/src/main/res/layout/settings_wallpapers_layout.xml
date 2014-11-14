@@ -10,7 +10,6 @@
         android:id="@+id/background_image"/>
 
     <ProgressBar
-        android:background="#99000000"
         android:layout_width="60dp"
         android:layout_height="60dp"
         android:layout_gravity="center"

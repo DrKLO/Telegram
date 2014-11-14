@@ -9,7 +9,7 @@
     <string name="LanguageCode">en</string>
     <!--signin view-->
     <string name="YourPhone">Your phone</string>
-    <string name="StartText">Please confirm your country code\nand enter your phone number.</string>
+    <string name="StartText">Please confirm your country code and enter your phone number.</string>
     <string name="ChooseCountry">Choose a country</string>
     <string name="WrongCountry">Wrong country code</string>
     <!--code enter view-->
@@ -306,6 +306,37 @@
     <string name="Gallery">Gallery</string>
     <string name="AllPhotos">All Photos</string>
     <string name="NoPhotos">No photos yet</string>
+    <!--privacy settings-->
+    <string name="PrivacySettings">Privacy and Security</string>
+    <string name="PrivacyTitle">Privacy</string>
+    <string name="PrivacyLastSeen">Last Seen</string>
+    <string name="LastSeenEverybody">Everybody</string>
+    <string name="LastSeenContacts">My Contacts</string>
+    <string name="LastSeenNobody">Nobody</string>
+    <string name="LastSeenEverybodyMinus">Everybody (-%1$d)</string>
+    <string name="LastSeenContactsPlus">My Contacts (+%1$d)</string>
+    <string name="LastSeenContactsMinus">My Contacts (-%1$d)</string>
+    <string name="LastSeenContactsMinusPlus">My Contacts (-%1$d, +%2$d)</string>
+    <string name="LastSeenNobodyPlus">Nobody (+%1$d)</string>
+    <string name="SecurityTitle">Security</string>
+    <string name="DeleteAccountTitle">Delete my account</string>
+    <string name="DeleteAccountIfAwayFor">If Away For</string>
+    <string name="DeleteAccountHelp">If you do not log in at least once within this period, your account will be deleted along with all groups, messages and contacts.</string>
+    <string name="DeleteAccountNowConfirmation">Delete your account?</string>
+    <string name="DeleteAccountNever">Never</string>
+    <string name="LastSeenHelp">Change who can see your Last Seen time.</string>
+    <string name="CustomHelp">Important: you won\'t be able to see Last Seen times for people with whom you don\'t share your Last Seen time. Approximate last seen will be shown instead (recently, within a week, witin a month).</string>
+    <string name="AlwaysShareWith">Always Share With</string>
+    <string name="NeverShareWith">Never Share With</string>
+    <string name="CustomShareSettingsHelp">These settings will override the values above.</string>
+    <string name="AlwaysShareWithTitle">Always Share</string>
+    <string name="AlwaysShareWithPlaceholder">Always share with users...</string>
+    <string name="NeverShareWithTitle">Never Share</string>
+    <string name="NeverShareWithPlaceholder">Never share with users...</string>
+    <string name="EmpryUsersPlaceholder">Add Users</string>
+    <string name="PrivacyAddUsers">Add %1$s to this list?</string>
+    <string name="PrivacyFloodControlError">Sorry, too many requests. Unable to change privacy settings now, please wait.</string>
+
     <!--edit video view-->
     <string name="EditVideo">Edit Video</string>
     <string name="OriginalVideo">Original Video</string>
@@ -386,6 +417,7 @@
     <string name="AreYouSureUnblockContact">Are you sure you want to unblock this contact?</string>
     <string name="AreYouSureDeleteContact">Are you sure you want to delete this contact?</string>
     <string name="AreYouSureSecretChat">Are you sure you want to start a secret chat?</string>
+    <string name="AreYouSureRegistration">Are you sure you want to cancel registration?</string>
     <string name="ForwardFromMyName">forward from my name</string>
     <string name="SendMessagesToGroup">Send messages to %1$s?</string>
     <string name="ForwardMessagesToGroup">Forward messages to %1$s?</string>
@@ -473,6 +505,12 @@
     <string name="Weeks_few">%1$d weeks</string>
     <string name="Weeks_many">%1$d weeks</string>
     <string name="Weeks_other">%1$d weeks</string>
+    <string name="Users_zero">%1$d users</string>
+    <string name="Users_one">%1$d user</string>
+    <string name="Users_two">%1$d users</string>
+    <string name="Users_few">%1$d users</string>
+    <string name="Users_many">%1$d users</string>
+    <string name="Users_other">%1$d users</string>
     <!--date formatters-->
     <string name="formatterMonth">MMM dd</string>
     <string name="formatterYear">dd.MM.yy</string>

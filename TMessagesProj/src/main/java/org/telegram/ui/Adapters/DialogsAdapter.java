@@ -136,7 +136,7 @@ public class DialogsAdapter extends BaseFragmentAdapter {
     @Override
     public boolean isEmpty() {
         if (MessagesController.getInstance().loadingDialogs && MessagesController.getInstance().dialogs.isEmpty()) {
-            return false;
+            return true;
         }
         int count;
         if (serverOnly) {

@@ -98,7 +98,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
             });
 
             ActionBarMenu menu = actionBar.createMenu();
-            doneButton = menu.addItem(done_button, R.drawable.ic_done);
+            doneButton = menu.addItem(done_button, R.drawable.ic_done, 0, AndroidUtilities.dp(56));
 
             fragmentView = inflater.inflate(R.layout.contact_add_layout, container, false);
 
@@ -112,6 +112,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
             onlineText = (TextView)fragmentView.findViewById(R.id.settings_online);
             avatarImage = (BackupImageView)fragmentView.findViewById(R.id.settings_avatar_image);
             avatarImage.processDetach = false;
+            avatarImage.imageReceiver.setRoundRadius(AndroidUtilities.dp(32));
             phoneText = (TextView)fragmentView.findViewById(R.id.settings_name);
             Typeface typeface = AndroidUtilities.getTypeface("fonts/rmedium.ttf");
             phoneText.setTypeface(typeface);

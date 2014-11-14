@@ -824,12 +824,11 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 if (invoke.system_version == null || invoke.system_version.length() == 0) {
                     invoke.system_version = "SDK Unknown";
                 }
-                object = invoke;
+                TLRPC.invokeWithLayer invoke2 = new TLRPC.invokeWithLayer();
+                invoke2.query = invoke;
+                FileLog.d("wrap in layer", "" + object);
+                object = invoke2;
             }
-            TLRPC.invokeWithLayer18 invoke = new TLRPC.invokeWithLayer18();
-            invoke.query = object;
-            FileLog.d("wrap in layer", "" + object);
-            return invoke;
         }
         return object;
     }
@@ -1607,12 +1606,12 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             TLRPC.TL_protoMessage message = networkMessage.protoMessage;
 
             if (BuildVars.DEBUG_VERSION) {
-                if (message.body instanceof TLRPC.invokeWithLayer18) {
-                    FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + ((TLRPC.invokeWithLayer18)message.body).query);
+                if (message.body instanceof TLRPC.invokeWithLayer) {
+                    FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + ((TLRPC.invokeWithLayer)message.body).query);
                 } else if (message.body instanceof TLRPC.initConnection) {
                     TLRPC.initConnection r = (TLRPC.initConnection)message.body;
-                    if (r.query instanceof TLRPC.invokeWithLayer18) {
-                        FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + ((TLRPC.invokeWithLayer18)r.query).query);
+                    if (r.query instanceof TLRPC.invokeWithLayer) {
+                        FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + ((TLRPC.invokeWithLayer)r.query).query);
                     } else {
                         FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + r.query);
                     }
@@ -1647,12 +1646,12 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 TLRPC.TL_protoMessage message = networkMessage.protoMessage;
                 containerMessages.add(message);
                 if (BuildVars.DEBUG_VERSION) {
-                    if (message.body instanceof TLRPC.invokeWithLayer18) {
-                        FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + ((TLRPC.invokeWithLayer18)message.body).query);
+                    if (message.body instanceof TLRPC.invokeWithLayer) {
+                        FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + ((TLRPC.invokeWithLayer)message.body).query);
                     } else if (message.body instanceof TLRPC.initConnection) {
                         TLRPC.initConnection r = (TLRPC.initConnection)message.body;
-                        if (r.query instanceof TLRPC.invokeWithLayer18) {
-                            FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + ((TLRPC.invokeWithLayer18)r.query).query);
+                        if (r.query instanceof TLRPC.invokeWithLayer) {
+                            FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + ((TLRPC.invokeWithLayer)r.query).query);
                         } else {
                             FileLog.d("tmessages", connection.getSissionId() + ":DC" + datacenter.datacenterId + "> Send message (" + message.seqno + ", " + message.msg_id + "): " + r.query);
                         }

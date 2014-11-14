@@ -66,7 +66,11 @@
                     android:ems="10"
                     android:inputType="textCapSentences|textMultiLine"
                     android:layout_alignParentTop="true"
-                    android:paddingBottom="12dp"
+                    android:layout_marginLeft="6dp"
+                    android:layout_marginRight="6dp"
+                    android:layout_marginBottom="4dp"
+                    android:paddingBottom="10dp"
+                    android:paddingTop="4dp"
                     android:maxLength="16384"
                     android:textCursorDrawable="@null"
                     android:textColor="#000000"/>

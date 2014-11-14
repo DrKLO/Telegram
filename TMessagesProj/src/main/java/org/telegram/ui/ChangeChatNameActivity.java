@@ -74,7 +74,7 @@ public class ChangeChatNameActivity extends BaseFragment {
             });
 
             ActionBarMenu menu = actionBar.createMenu();
-            doneButton = menu.addItem(done_button, R.drawable.ic_done);
+            doneButton = menu.addItem(done_button, R.drawable.ic_done, 0, AndroidUtilities.dp(56));
 
             TLRPC.Chat currentChat = MessagesController.getInstance().getChat(chat_id);
 

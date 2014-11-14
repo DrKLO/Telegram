@@ -26,6 +26,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
@@ -49,6 +50,8 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.ApplicationLoader;
 
+import java.util.ArrayList;
+
 public class ChatActivityEnterView implements NotificationCenter.NotificationCenterDelegate, SizeNotifierRelativeLayout.SizeNotifierRelativeLayoutDelegate {
 
     public static interface ChatActivityEnterViewDelegate {
@@ -65,24 +68,25 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
     private ImageButton audioSendButton;
     private View recordPanel;
     private View slideText;
-    private PowerManager.WakeLock mWakeLock = null;
+    private PowerManager.WakeLock mWakeLock;
     private SizeNotifierRelativeLayout sizeNotifierRelativeLayout;
-    private Object runningAnimation = null;
-    private int runningAnimationType = 0;
+    private FrameLayout attachButton;
+    private Object runningAnimation;
+    private int runningAnimationType;
 
-    private int keyboardHeight = 0;
-    private int keyboardHeightLand = 0;
+    private int keyboardHeight;
+    private int keyboardHeightLand;
     private boolean keyboardVisible;
-    private boolean sendByEnter = false;
-    private long lastTypingTimeSend = 0;
-    private String lastTimeString = null;
+    private boolean sendByEnter;
+    private long lastTypingTimeSend;
+    private String lastTimeString;
     private float startedDraggingX = -1;
     private float distCanMove = AndroidUtilities.dp(80);
-    private boolean recordingAudio = false;
+    private boolean recordingAudio;
 
     private Activity parentActivity;
     private long dialog_id;
-    private boolean ignoreTextChange = false;
+    private boolean ignoreTextChange;
     private ChatActivityEnterViewDelegate delegate;
 
     public ChatActivityEnterView() {
@@ -123,20 +127,22 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
     public void setContainerView(Activity activity, View containerView) {
         parentActivity = activity;
 
-        sizeNotifierRelativeLayout = (SizeNotifierRelativeLayout)containerView.findViewById(R.id.chat_layout);
+        sizeNotifierRelativeLayout = (SizeNotifierRelativeLayout) containerView.findViewById(R.id.chat_layout);
         sizeNotifierRelativeLayout.delegate = this;
 
-        messsageEditText = (EditText)containerView.findViewById(R.id.chat_text_edit);
+        messsageEditText = (EditText) containerView.findViewById(R.id.chat_text_edit);
         messsageEditText.setHint(LocaleController.getString("TypeMessage", R.string.TypeMessage));
 
-        sendButton = (ImageButton)containerView.findViewById(R.id.chat_send_button);
+        attachButton = (FrameLayout) containerView.findViewById(R.id.chat_attach_button);
+
+        sendButton = (ImageButton) containerView.findViewById(R.id.chat_send_button);
         sendButton.setVisibility(View.INVISIBLE);
-        emojiButton = (ImageView)containerView.findViewById(R.id.chat_smile_button);
-        audioSendButton = (ImageButton)containerView.findViewById(R.id.chat_audio_send_button);
+        emojiButton = (ImageView) containerView.findViewById(R.id.chat_smile_button);
+        audioSendButton = (ImageButton) containerView.findViewById(R.id.chat_audio_send_button);
         recordPanel = containerView.findViewById(R.id.record_panel);
-        recordTimeText = (TextView)containerView.findViewById(R.id.recording_time_text);
+        recordTimeText = (TextView) containerView.findViewById(R.id.recording_time_text);
         slideText = containerView.findViewById(R.id.slideText);
-        TextView textView = (TextView)containerView.findViewById(R.id.slideToCancelTextView);
+        TextView textView = (TextView) containerView.findViewById(R.id.slideToCancelTextView);
         textView.setText(LocaleController.getString("SlideToCancel", R.string.SlideToCancel));
 
         emojiButton.setOnClickListener(new View.OnClickListener() {
@@ -218,12 +224,12 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                         recordingAudio = false;
                         updateAudioRecordIntefrace();
                     }
-                    if(android.os.Build.VERSION.SDK_INT > 13) {
+                    if (android.os.Build.VERSION.SDK_INT > 13) {
                         x = x + audioSendButton.getX();
-                        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams)slideText.getLayoutParams();
+                        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) slideText.getLayoutParams();
                         if (startedDraggingX != -1) {
                             float dist = (x - startedDraggingX);
-                            params.leftMargin = AndroidUtilities.dp(30) + (int)dist;
+                            params.leftMargin = AndroidUtilities.dp(30) + (int) dist;
                             slideText.setLayoutParams(params);
                             float alpha = 1.0f + dist / distCanMove;
                             if (alpha > 1) {
@@ -271,8 +277,8 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 if (message.length() != 0 && lastTypingTimeSend < System.currentTimeMillis() - 5000 && !ignoreTextChange) {
                     int currentTime = ConnectionsManager.getInstance().getCurrentTime();
                     TLRPC.User currentUser = null;
-                    if ((int)dialog_id > 0) {
-                        currentUser = MessagesController.getInstance().getUser((int)dialog_id);
+                    if ((int) dialog_id > 0) {
+                        currentUser = MessagesController.getInstance().getUser((int) dialog_id);
                     }
                     if (currentUser != null && currentUser.status != null && currentUser.status.expires < currentTime) {
                         return;
@@ -319,7 +325,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
     public boolean processSendingText(String text) {
         text = getTrimmedString(text);
         if (text.length() != 0) {
-            int count = (int)Math.ceil(text.length() / 4096.0f);
+            int count = (int) Math.ceil(text.length() / 4096.0f);
             for (int a = 0; a < count; a++) {
                 String mess = text.substring(a * 4096, Math.min((a + 1) * 4096, text.length()));
                 SendMessagesHelper.getInstance().sendMessage(mess, dialog_id);
@@ -352,7 +358,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                         return;
                     }
                     if (runningAnimation != null) {
-                        ((AnimatorSet)runningAnimation).cancel();
+                        ((AnimatorSet) runningAnimation).cancel();
                         runningAnimation = null;
                     }
 
@@ -360,14 +366,23 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                     AnimatorSet animatorSet = new AnimatorSet();
                     runningAnimation = animatorSet;
                     runningAnimationType = 1;
-                    animatorSet.playTogether(
-                            ObjectAnimator.ofFloat(audioSendButton, "scaleX", 0.1f),
-                            ObjectAnimator.ofFloat(audioSendButton, "scaleY", 0.1f),
-                            ObjectAnimator.ofFloat(audioSendButton, "alpha", 0.0f),
-                            ObjectAnimator.ofFloat(sendButton, "scaleX", 1.0f),
-                            ObjectAnimator.ofFloat(sendButton, "scaleY", 1.0f),
-                            ObjectAnimator.ofFloat(sendButton, "alpha", 1.0f)
-                    );
+
+                    ArrayList<Animator> animators = new ArrayList<Animator>();
+                    animators.add(ObjectAnimator.ofFloat(audioSendButton, "scaleX", 0.1f));
+                    animators.add(ObjectAnimator.ofFloat(audioSendButton, "scaleY", 0.1f));
+                    animators.add(ObjectAnimator.ofFloat(audioSendButton, "alpha", 0.0f));
+                    animators.add(ObjectAnimator.ofFloat(sendButton, "scaleX", 1.0f));
+                    animators.add(ObjectAnimator.ofFloat(sendButton, "scaleY", 1.0f));
+                    animators.add(ObjectAnimator.ofFloat(sendButton, "alpha", 1.0f));
+                    if (attachButton != null) {
+                        animators.add(ObjectAnimator.ofFloat(attachButton, "alpha", 0.0f));
+                        animators.add(ObjectAnimator.ofFloat(attachButton, "translationX", AndroidUtilities.dp(48)));
+
+                        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
+                        layoutParams.rightMargin = AndroidUtilities.dp(6);
+                        messsageEditText.setLayoutParams(layoutParams);
+                    }
+                    animatorSet.playTogether(animators);
 
                     animatorSet.setDuration(200);
                     animatorSet.addListener(new AnimatorListenerAdapter() {
@@ -393,6 +408,9 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                     }
                     sendButton.setVisibility(View.VISIBLE);
                     audioSendButton.setVisibility(View.INVISIBLE);
+                    if (attachButton != null) {
+                        attachButton.setVisibility(View.GONE);
+                    }
                 }
             }
         } else if (sendButton.getVisibility() == View.VISIBLE) {
@@ -402,7 +420,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 }
 
                 if (runningAnimation != null) {
-                    ((AnimatorSet)runningAnimation).cancel();
+                    ((AnimatorSet) runningAnimation).cancel();
                     runningAnimation = null;
                 }
 
@@ -410,14 +428,23 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 AnimatorSet animatorSet = new AnimatorSet();
                 runningAnimation = animatorSet;
                 runningAnimationType = 2;
-                animatorSet.playTogether(
-                        ObjectAnimator.ofFloat(sendButton, "scaleX", 0.1f),
-                        ObjectAnimator.ofFloat(sendButton, "scaleY", 0.1f),
-                        ObjectAnimator.ofFloat(sendButton, "alpha", 0.0f),
-                        ObjectAnimator.ofFloat(audioSendButton, "scaleX", 1.0f),
-                        ObjectAnimator.ofFloat(audioSendButton, "scaleY", 1.0f),
-                        ObjectAnimator.ofFloat(audioSendButton, "alpha", 1.0f)
-                );
+
+                ArrayList<Animator> animators = new ArrayList<Animator>();
+                animators.add(ObjectAnimator.ofFloat(sendButton, "scaleX", 0.1f));
+                animators.add(ObjectAnimator.ofFloat(sendButton, "scaleY", 0.1f));
+                animators.add(ObjectAnimator.ofFloat(sendButton, "alpha", 0.0f));
+                animators.add(ObjectAnimator.ofFloat(audioSendButton, "scaleX", 1.0f));
+                animators.add(ObjectAnimator.ofFloat(audioSendButton, "scaleY", 1.0f));
+                animators.add(ObjectAnimator.ofFloat(audioSendButton, "alpha", 1.0f));
+                if (attachButton != null) {
+                    animators.add(ObjectAnimator.ofFloat(attachButton, "alpha", 1.0f));
+                    animators.add(ObjectAnimator.ofFloat(attachButton, "translationX", 0.0f));
+
+                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
+                    layoutParams.rightMargin = AndroidUtilities.dp(54);
+                    messsageEditText.setLayoutParams(layoutParams);
+                }
+                animatorSet.playTogether(animators);
 
                 animatorSet.setDuration(200);
                 animatorSet.addListener(new AnimatorListenerAdapter() {
@@ -443,6 +470,9 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 }
                 sendButton.setVisibility(View.INVISIBLE);
                 audioSendButton.setVisibility(View.VISIBLE);
+                if (attachButton != null) {
+                    attachButton.setVisibility(View.VISIBLE);
+                }
             }
         }
     }
@@ -463,8 +493,8 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             recordPanel.setVisibility(View.VISIBLE);
             recordTimeText.setText("00:00");
             lastTimeString = null;
-            if(android.os.Build.VERSION.SDK_INT > 13) {
-                FrameLayout.LayoutParams params = (FrameLayout.LayoutParams)slideText.getLayoutParams();
+            if (android.os.Build.VERSION.SDK_INT > 13) {
+                FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) slideText.getLayoutParams();
                 params.leftMargin = AndroidUtilities.dp(30);
                 slideText.setLayoutParams(params);
                 slideText.setAlpha(1);
@@ -498,7 +528,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 }
             }
             AndroidUtilities.unlockOrientation(parentActivity);
-            if(android.os.Build.VERSION.SDK_INT > 13) {
+            if (android.os.Build.VERSION.SDK_INT > 13) {
                 recordPanel.animate().setInterpolator(new AccelerateDecelerateInterpolator()).setListener(new Animator.AnimatorListener() {
                     @Override
                     public void onAnimationStart(Animator animator) {
@@ -507,7 +537,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
 
                     @Override
                     public void onAnimationEnd(Animator animator) {
-                        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams)slideText.getLayoutParams();
+                        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) slideText.getLayoutParams();
                         params.leftMargin = AndroidUtilities.dp(30);
                         slideText.setLayoutParams(params);
                         slideText.setAlpha(1);
@@ -670,6 +700,22 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         return emojiPopup != null && emojiPopup.isShowing();
     }
 
+    public void addToAttachLayout(View view) {
+        if (attachButton == null) {
+            return;
+        }
+        if (view.getParent() != null) {
+            ViewGroup viewGroup = (ViewGroup) view.getParent();
+            viewGroup.removeView(view);
+        }
+        attachButton.addView(view);
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) view.getLayoutParams();
+        layoutParams.gravity = Gravity.CENTER;
+        layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        view.setLayoutParams(layoutParams);
+    }
+
     @Override
     public void onSizeChanged(int height) {
         Rect localRect = new Rect();
@@ -698,7 +744,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             } else {
                 newHeight = keyboardHeight;
             }
-            final WindowManager.LayoutParams layoutParams = (WindowManager.LayoutParams)emojiPopup.getContentView().getLayoutParams();
+            final WindowManager.LayoutParams layoutParams = (WindowManager.LayoutParams) emojiPopup.getContentView().getLayoutParams();
             if (layoutParams.width != AndroidUtilities.displaySize.x || layoutParams.height != newHeight) {
                 WindowManager wm = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
                 layoutParams.width = AndroidUtilities.displaySize.x;
@@ -734,7 +780,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 emojiView.invalidateViews();
             }
         } else if (id == NotificationCenter.recordProgressChanged) {
-            Long time = (Long)args[0] / 1000;
+            Long time = (Long) args[0] / 1000;
             String str = String.format("%02d:%02d", time / 60, time % 60);
             if (lastTimeString == null || !lastTimeString.equals(str)) {
                 if (recordTimeText != null) {

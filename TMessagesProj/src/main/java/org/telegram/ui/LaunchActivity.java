@@ -305,7 +305,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
             setContentView(drawerLayoutContainer, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             drawerLayoutContainer.setParentActionBarLayout(actionBarLayout);
-            drawerLayoutContainer.setAllowOpenDrawer(true);
             actionBarLayout.setDrawerLayoutContainer(drawerLayoutContainer);
         }
         actionBarLayout.init(mainFragmentsStack);
@@ -1119,6 +1118,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     @Override
     public boolean needPresentFragment(BaseFragment fragment, boolean removeLast, boolean forceWithoutAnimation, ActionBarLayout layout) {
+        drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity));
         if (AndroidUtilities.isTablet()) {
             if (fragment instanceof MessagesActivity) {
                 MessagesActivity messagesActivity = (MessagesActivity)fragment;
@@ -1196,6 +1196,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     @Override
     public boolean needAddFragmentToStack(BaseFragment fragment, ActionBarLayout layout) {
+        drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity));
         if (AndroidUtilities.isTablet()) {
             if (fragment instanceof MessagesActivity) {
                 MessagesActivity messagesActivity = (MessagesActivity)fragment;

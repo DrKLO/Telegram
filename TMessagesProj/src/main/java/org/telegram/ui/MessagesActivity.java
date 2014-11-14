@@ -149,9 +149,16 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     searching = false;
                     searchWas = false;
                     if (messagesListView != null) {
-                        messagesListView.setEmptyView(emptyView);
-                        searchEmptyView.setVisibility(View.GONE);
-                        progressView.setVisibility(View.GONE);
+                        if (MessagesController.getInstance().loadingDialogs && MessagesController.getInstance().dialogs.isEmpty()) {
+                            searchEmptyView.setVisibility(View.GONE);
+                            emptyView.setVisibility(View.GONE);
+                            progressView.setVisibility(View.VISIBLE);
+                            messagesListView.setEmptyView(progressView);
+                        } else {
+                            messagesListView.setEmptyView(emptyView);
+                            searchEmptyView.setVisibility(View.GONE);
+                            progressView.setVisibility(View.GONE);
+                        }
                         if (!onlySelect) {
                             floatingButton.setVisibility(View.VISIBLE);
                             floatingHidden = true;
@@ -274,15 +281,11 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             if (MessagesController.getInstance().loadingDialogs && MessagesController.getInstance().dialogs.isEmpty()) {
                 searchEmptyView.setVisibility(View.GONE);
                 emptyView.setVisibility(View.GONE);
+                progressView.setVisibility(View.VISIBLE);
                 messagesListView.setEmptyView(progressView);
             } else {
-                if (searching && searchWas) {
-                    messagesListView.setEmptyView(searchEmptyView);
-                    emptyView.setVisibility(View.GONE);
-                } else {
-                    messagesListView.setEmptyView(emptyView);
-                    searchEmptyView.setVisibility(View.GONE);
-                }
+                messagesListView.setEmptyView(emptyView);
+                searchEmptyView.setVisibility(View.GONE);
                 progressView.setVisibility(View.GONE);
             }
 

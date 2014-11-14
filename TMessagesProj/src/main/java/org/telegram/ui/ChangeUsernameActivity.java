@@ -77,7 +77,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             });
 
             ActionBarMenu menu = actionBar.createMenu();
-            doneButton = menu.addItem(done_button, R.drawable.ic_done);
+            doneButton = menu.addItem(done_button, R.drawable.ic_done, 0, AndroidUtilities.dp(56));
 
             TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
             if (user == null) {

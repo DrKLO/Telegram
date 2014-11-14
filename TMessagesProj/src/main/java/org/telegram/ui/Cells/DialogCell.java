@@ -33,6 +33,7 @@ import org.telegram.android.ImageReceiver;
 import org.telegram.ui.Views.AvatarDrawable;
 
 public class DialogCell extends BaseCell {
+
     private static TextPaint namePaint;
     private static TextPaint nameEncryptedPaint;
     private static TextPaint nameUnknownPaint;
