@@ -994,7 +994,7 @@ public class LoginActivity extends BaseFragment {
             codeField.setHintTextColor(0xff979797);
             codeField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
             codeField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            codeField.setInputType(InputType.TYPE_CLASS_NUMBER);
+            codeField.setInputType(InputType.TYPE_CLASS_PHONE);
             codeField.setMaxLines(1);
             codeField.setPadding(0, 0, 0, 0);
             addView(codeField);
@@ -1037,7 +1037,7 @@ public class LoginActivity extends BaseFragment {
             problemText.setVisibility(time < 1000 ? VISIBLE : GONE);
             problemText.setGravity(Gravity.LEFT);
             problemText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            problemText.setTextColor(0xff548ab6);
+            problemText.setTextColor(0xff4d83b3);
             problemText.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             problemText.setPadding(0, AndroidUtilities.dp(2), 0, AndroidUtilities.dp(12));
             addView(problemText);
@@ -1078,7 +1078,7 @@ public class LoginActivity extends BaseFragment {
 
             TextView wrongNumber = new TextView(context);
             wrongNumber.setGravity(Gravity.LEFT | Gravity.CENTER_HORIZONTAL);
-            wrongNumber.setTextColor(0xff548ab6);
+            wrongNumber.setTextColor(0xff4d83b3);
             wrongNumber.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             wrongNumber.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             wrongNumber.setPadding(0, AndroidUtilities.dp(24), 0, 0);
@@ -1487,7 +1487,7 @@ public class LoginActivity extends BaseFragment {
             TextView wrongNumber = new TextView(context);
             wrongNumber.setText(LocaleController.getString("CancelRegistration", R.string.CancelRegistration));
             wrongNumber.setGravity(Gravity.LEFT | Gravity.CENTER_HORIZONTAL);
-            wrongNumber.setTextColor(0xff548ab6);
+            wrongNumber.setTextColor(0xff4d83b3);
             wrongNumber.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             wrongNumber.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             wrongNumber.setPadding(0, AndroidUtilities.dp(24), 0, 0);

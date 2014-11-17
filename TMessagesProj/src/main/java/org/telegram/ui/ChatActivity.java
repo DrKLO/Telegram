@@ -453,7 +453,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             lastStatus = null;
 
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setBackOverlay(R.layout.updating_state_layout);
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(final int id) {
@@ -699,16 +698,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         }
                         presentFragment(new ProfileActivity(args));
                     } else if (currentChat != null) {
-                        if (info != null && info instanceof TLRPC.TL_chatParticipantsForbidden) {
-                            return;
-                        }
-                        int count = currentChat.participants_count;
-                        if (info != null) {
-                            count = info.participants.size();
-                        }
-                        if (count == 0 || currentChat.left || currentChat instanceof TLRPC.TL_chatForbidden) {
-                            return;
-                        }
                         Bundle args = new Bundle();
                         args.putInt("chat_id", currentChat.id);
                         ProfileActivity fragment = new ProfileActivity(args);
@@ -717,6 +706,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                 }
             });
+
+            if (currentChat != null) {
+                int count = currentChat.participants_count;
+                if (info != null) {
+                    count = info.participants.size();
+                }
+                if (count == 0 || currentChat.left || currentChat instanceof TLRPC.TL_chatForbidden || info != null && info instanceof TLRPC.TL_chatParticipantsForbidden) {
+                    avatarContainer.setEnabled(false);
+                }
+            }
 
             avatarImageView = new BackupImageView(getParentActivity());
             avatarImageView.imageReceiver.setRoundRadius(AndroidUtilities.dp(21));
@@ -768,10 +767,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             updateSubtitle();
 
             if (currentEncryptedChat != null) {
-                nameTextView.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock_white, 0, 0, 0);
-                nameTextView.setCompoundDrawablePadding(AndroidUtilities.dp(4));
-            } else if (currentChat != null && currentChat.id < 0) {
-                nameTextView.setCompoundDrawablesWithIntrinsicBounds(R.drawable.broadcast2, 0, 0, 0);
+                nameTextView.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock_header, 0, 0, 0);
                 nameTextView.setCompoundDrawablePadding(AndroidUtilities.dp(4));
             }
 
@@ -2471,6 +2467,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         }
 
+        if (chatAdapter != null) {
+            chatAdapter.notifyDataSetChanged();
+        }
+
         checkActionBarMenu();
 
         NotificationsController.getInstance().setOpennedDialogId(dialog_id);
@@ -2543,7 +2543,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     @Override
     public void onPause() {
         super.onPause();
-        actionBar.hideActionMode();
         chatActivityEnterView.hideEmojiPopup();
         paused = true;
         NotificationsController.getInstance().setOpennedDialogId(0);
@@ -2660,6 +2659,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         forwaringMessage = null;
         selectedMessagesCanCopyIds.clear();
         selectedMessagesIds.clear();
+        actionBar.hideActionMode();
 
         if (single || type < 2 || type == 6) {
             if (type >= 0) {
@@ -2928,6 +2928,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
             selectedMessagesCanCopyIds.clear();
             selectedMessagesIds.clear();
+            actionBar.hideActionMode();
         }
     }
 

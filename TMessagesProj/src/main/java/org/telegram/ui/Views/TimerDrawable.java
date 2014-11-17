@@ -90,8 +90,8 @@ public class TimerDrawable extends Drawable {
 
     @Override
     public void draw(Canvas canvas) {
-        int width = canvas.getWidth();
-        int height = canvas.getHeight();
+        int width = getBounds().width();
+        int height = getBounds().height();
         Drawable drawable = null;
         if (time == 0) {
             drawable = timerDrawable;

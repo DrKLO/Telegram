@@ -735,6 +735,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 }
             } else {
                 actionBarLayout.presentFragment(fragment, true);
+
                 if (sendingText != null) {
                     fragment.processSendingText(sendingText);
                 }
@@ -1156,10 +1157,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         }
                         layersActionBarLayout.closeLastFragment(!forceWithoutAnimation);
                     }
-                    if (actionBarLayout.fragmentsStack.size() > 1) {
-                        actionBarLayout.presentFragment(fragment, actionBarLayout.fragmentsStack.size() > 1, forceWithoutAnimation, false);
-                        return false;
-                    }
+                    actionBarLayout.presentFragment(fragment, actionBarLayout.fragmentsStack.size() > 1, forceWithoutAnimation, false);
+                    return false;
                 }
             } else if (layout != layersActionBarLayout) {
                 layersActionBarLayout.setVisibility(View.VISIBLE);

@@ -71,24 +71,22 @@ public class AndroidUtilities {
             if (manager != null && manager.getDefaultDisplay() != null) {
                 int rotation = manager.getDefaultDisplay().getRotation();
                 int orientation = activity.getResources().getConfiguration().orientation;
+                int SCREEN_ORIENTATION_REVERSE_LANDSCAPE = 8;
+                int SCREEN_ORIENTATION_REVERSE_PORTRAIT = 9;
+                if (Build.VERSION.SDK_INT < 9) {
+                    SCREEN_ORIENTATION_REVERSE_LANDSCAPE = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                    SCREEN_ORIENTATION_REVERSE_PORTRAIT = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+                }
 
                 if (rotation == Surface.ROTATION_270) {
                     if (orientation == Configuration.ORIENTATION_PORTRAIT) {
                         activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
                     } else {
-                        if (Build.VERSION.SDK_INT >= 9) {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                        } else {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                        }
+                        activity.setRequestedOrientation(SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
                     }
                 } else if (rotation == Surface.ROTATION_90) {
                     if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-                        if (Build.VERSION.SDK_INT >= 9) {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
-                        } else {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                        }
+                        activity.setRequestedOrientation(SCREEN_ORIENTATION_REVERSE_PORTRAIT);
                     } else {
                         activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
                     }
@@ -100,17 +98,9 @@ public class AndroidUtilities {
                     }
                 } else {
                     if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                        if (Build.VERSION.SDK_INT >= 9) {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                        } else {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                        }
+                        activity.setRequestedOrientation(SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
                     } else {
-                        if (Build.VERSION.SDK_INT >= 9) {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
-                        } else {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                        }
+                        activity.setRequestedOrientation(SCREEN_ORIENTATION_REVERSE_PORTRAIT);
                     }
                 }
             }
@@ -472,7 +462,7 @@ public class AndroidUtilities {
         return size;
     }
 
-    public static void setListViewEdgeEffectColor(ListView listView, int color) {
+    public static void setListViewEdgeEffectColor(AbsListView listView, int color) {
         if (Build.VERSION.SDK_INT >= 21) {
             try {
                 Field field = AbsListView.class.getDeclaredField("mEdgeGlowTop");

@@ -18,7 +18,6 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.res.Configuration;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.Spannable;
@@ -211,11 +210,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         usernameRow = rowCount++;
         settingsSectionRow = rowCount++;
         settingsSectionRow2 = rowCount++;
-        enableAnimationsRow = rowCount++;
         notificationRow = rowCount++;
         privacyRow = rowCount++;
         backgroundRow = rowCount++;
         languageRow = rowCount++;
+        enableAnimationsRow = rowCount++;
         mediaDownloadSection = rowCount++;
         mediaDownloadSection2 = rowCount++;
         mobileDownloadRow = rowCount++;
@@ -264,7 +263,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             actionBar.setBackgroundColor(AvatarDrawable.getProfileBackColorForId(5));
             actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(5));
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setBackOverlay(R.layout.updating_state_layout);
             actionBar.setExtraHeight(AndroidUtilities.dp(88), false);
             if (AndroidUtilities.isTablet()) {
                 actionBar.setOccupyStatusBar(false);
@@ -637,7 +635,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 avatarUpdater.openCamera();
                             } else if (i == 1) {
                                 avatarUpdater.openGallery();
-                            } else if (i == 3) {
+                            } else if (i == 2) {
                                 MessagesController.getInstance().deleteUserPhoto(null);
                             }
                         }
@@ -716,7 +714,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) { }
 
     @Override
-    public void willHidePhotoViewer() { }
+    public void willHidePhotoViewer() {
+        avatarImage.imageReceiver.setVisible(true, true);
+    }
 
     @Override
     public boolean isPhotoChecked(int index) { return false; }
@@ -1034,7 +1034,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     int size = preferences.getInt("fons_size", AndroidUtilities.isTablet() ? 18 : 16);
                     textCell.setTextAndValue(LocaleController.getString("TextSize", R.string.TextSize), String.format("%d", size), true);
                 } else if (i == languageRow) {
-                    textCell.setTextAndValue(LocaleController.getString("Language", R.string.Language), LocaleController.getCurrentLanguageName(), false);
+                    textCell.setTextAndValue(LocaleController.getString("Language", R.string.Language), LocaleController.getCurrentLanguageName(), true);
                 } else if (i == contactsSortRow) {
                     String value;
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
@@ -1074,7 +1074,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                 if (i == enableAnimationsRow) {
-                    textCell.setTextAndCheck(LocaleController.getString("EnableAnimations", R.string.EnableAnimations), preferences.getBoolean("view_animations", true), true);
+                    textCell.setTextAndCheck(LocaleController.getString("EnableAnimations", R.string.EnableAnimations), preferences.getBoolean("view_animations", true), false);
                 } else if (i == sendByEnterRow) {
                     textCell.setTextAndCheck(LocaleController.getString("SendByEnter", R.string.SendByEnter), preferences.getBoolean("send_by_enter", false), false);
                 } else if (i == saveToGalleryRow) {

@@ -1375,10 +1375,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             @Override
             public void run() {
                 int lower_id = (int)dialog_id;
+                int high_id = (int)(dialog_id >> 32);
                 if (!isCache) {
                     MessagesStorage.getInstance().putMessages(messagesRes, dialog_id);
                 }
-                if (lower_id != 0 && isCache && messagesRes.messages.size() == 0 && (load_type == 0 || load_type == 2 || load_type == 3)) {
+                if (high_id != 1 && lower_id != 0 && isCache && messagesRes.messages.size() == 0 && (load_type == 0 || load_type == 2 || load_type == 3)) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {

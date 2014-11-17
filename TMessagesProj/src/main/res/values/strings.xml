@@ -47,7 +47,7 @@
     <string name="ClearHistory">Clear history</string>
     <string name="DeleteChat">Delete and exit</string>
     <string name="DeleteChatUser">Delete chat</string>
-    <string name="HiddenName">Hidden Name</string>
+    <string name="HiddenName">Deleted Account</string>
     <string name="SelectChat">Select Chat</string>
     <string name="PhotoTip">Tap and hold to view</string>
     <string name="CompatibilityChat">%1$s is using an older version of Telegram, so secret photos will be shown in compatibility mode.\n\nOnce %2$s updates Telegram, photos with timers for 1 minute or less will start working in \'Tap and hold to view\' mode, and you will be notified whenever the other party takes a screenshot.</string>
@@ -287,6 +287,7 @@
     <string name="Gallery">Gallery</string>
     <string name="AllPhotos">All Photos</string>
     <string name="NoPhotos">No photos yet</string>
+    <string name="PleaseDownload">Please download media first</string>
     <!--privacy settings-->
     <string name="PrivacySettings">Privacy and Security</string>
     <string name="PrivacyTitle">Privacy</string>
@@ -300,11 +301,10 @@
     <string name="LastSeenContactsMinusPlus">My Contacts (-%1$d, +%2$d)</string>
     <string name="LastSeenNobodyPlus">Nobody (+%1$d)</string>
     <string name="SecurityTitle">Security</string>
-    <string name="DeleteAccountTitle">Delete my account</string>
-    <string name="DeleteAccountIfAwayFor">If Away For</string>
+    <string name="DeleteAccountTitle">Account self-destructs</string>
+    <string name="DeleteAccountIfAwayFor">If you\'re away for</string>
     <string name="DeleteAccountHelp">If you do not log in at least once within this period, your account will be deleted along with all groups, messages and contacts.</string>
     <string name="DeleteAccountNowConfirmation">Delete your account?</string>
-    <string name="DeleteAccountNever">Never</string>
     <string name="LastSeenHelp">Change who can see your Last Seen time.</string>
     <string name="LastSeenTitle">Who can see your Last Seen time?</string>
     <string name="AddExceptions">Add exceptions</string>

@@ -58,8 +58,8 @@ public class TextCell extends FrameLayout {
         layoutParams = (LayoutParams) valueTextView.getLayoutParams();
         layoutParams.width = LayoutParams.WRAP_CONTENT;
         layoutParams.height = LayoutParams.MATCH_PARENT;
-        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 0);
-        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 16);
+        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 24 : 0);
+        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 24);
         layoutParams.gravity = LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT;
         valueTextView.setLayoutParams(layoutParams);
 
@@ -80,8 +80,8 @@ public class TextCell extends FrameLayout {
         layoutParams = (LayoutParams) valueImageView.getLayoutParams();
         layoutParams.width = LayoutParams.WRAP_CONTENT;
         layoutParams.height = LayoutParams.WRAP_CONTENT;
-        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 0);
-        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 16);
+        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 24 : 0);
+        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 24);
         layoutParams.gravity = (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL;
         valueImageView.setLayoutParams(layoutParams);
     }

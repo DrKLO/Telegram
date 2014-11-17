@@ -218,7 +218,6 @@ public class DrawerLayoutContainer extends FrameLayout {
     }
 
     private void onDrawerAnimationEnd(boolean opened) {
-        AndroidUtilities.unlockOrientation((Activity) getContext());
         startedTracking = false;
         currentAnimation = null;
         drawerOpened = opened;
@@ -257,7 +256,6 @@ public class DrawerLayoutContainer extends FrameLayout {
             startedTrackingX = (int) ev.getX();
         }
         beginTrackingSent = false;
-        AndroidUtilities.lockOrientation((Activity)getContext());
     }
 
     public boolean isDrawerOpened() {

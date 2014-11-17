@@ -264,7 +264,7 @@ public class ActionBarMenuItem extends ImageView {
 
     private int getBottomOffsetY() {
         getLocationOnScreen(location);
-        int diff = location[1] - (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0) + getMeasuredHeight() - menuHeight;
+        int diff = location[1] - AndroidUtilities.statusBarHeight + getMeasuredHeight() - menuHeight;
         int y = AndroidUtilities.dp(8) - menuHeight;
         if (diff < 0) {
             y -= diff;

@@ -8,8 +8,12 @@
 
 package org.telegram.ui;
 
+import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Spannable;
 import android.text.method.LinkMovementMethod;
@@ -105,59 +109,30 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
                     if (id == -1) {
                         finishFragment();
                     } else if (id == done_button) {
-                        TLRPC.TL_account_setPrivacy req = new TLRPC.TL_account_setPrivacy();
-                        req.key = new TLRPC.TL_inputPrivacyKeyStatusTimestamp();
-                        if (currentType != 0 && currentPlus.size() > 0) {
-                            TLRPC.TL_inputPrivacyValueAllowUsers rule = new TLRPC.TL_inputPrivacyValueAllowUsers();
-                            for (Integer uid : currentPlus) {
-                                TLRPC.User user = MessagesController.getInstance().getUser(uid);
-                                if (user != null) {
-                                    TLRPC.InputUser inputUser = MessagesController.getInputUser(user);
-                                    if (inputUser != null) {
-                                        rule.users.add(inputUser);
-                                    }
-                                }
-                            }
-                            req.rules.add(rule);
+                        if (getParentActivity() == null) {
+                            return;
                         }
-                        if (currentType != 1 && currentMinus.size() > 0) {
-                            TLRPC.TL_inputPrivacyValueDisallowUsers rule = new TLRPC.TL_inputPrivacyValueDisallowUsers();
-                            for (Integer uid : currentMinus) {
-                                TLRPC.User user = MessagesController.getInstance().getUser(uid);
-                                if (user != null) {
-                                    TLRPC.InputUser inputUser = MessagesController.getInputUser(user);
-                                    if (inputUser != null) {
-                                        rule.users.add(inputUser);
-                                    }
-                                }
-                            }
-                            req.rules.add(rule);
-                        }
-                        if (currentType == 0) {
-                            req.rules.add(new TLRPC.TL_inputPrivacyValueAllowAll());
-                        } else if (currentType == 1) {
-                            req.rules.add(new TLRPC.TL_inputPrivacyValueDisallowAll());
-                        } else if (currentType == 2) {
-                            req.rules.add(new TLRPC.TL_inputPrivacyValueAllowContacts());
-                        }
-                        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
-                            @Override
-                            public void run(final TLObject response, final TLRPC.TL_error error) {
-                                AndroidUtilities.runOnUIThread(new Runnable() {
+
+                        if (currentType != 0) {
+                            final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                            boolean showed = preferences.getBoolean("privacyAlertShowed", false);
+                            if (!showed) {
+                                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                                builder.setMessage(LocaleController.getString("CustomHelp", R.string.CustomHelp));
+                                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                                     @Override
-                                    public void run() {
-                                        if (error == null) {
-                                            finishFragment();
-                                            TLRPC.TL_account_privacyRules rules = (TLRPC.TL_account_privacyRules) response;
-                                            MessagesController.getInstance().putUsers(rules.users, false);
-                                            ContactsController.getInstance().setPrivacyRules(rules.rules);
-                                        } else {
-                                            showErrorAlert();
-                                        }
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        applyCurrentPrivacySettings();
+                                        preferences.edit().putBoolean("privacyAlertShowed", true).commit();
                                     }
                                 });
+                                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                                showAlertDialog(builder);
+                                return;
                             }
-                        }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
+                        }
+                        applyCurrentPrivacySettings();
                     }
                 }
             });
@@ -269,6 +244,73 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
         if (id == NotificationCenter.privacyRulesUpdated) {
             checkPrivacy();
         }
+    }
+
+    private void applyCurrentPrivacySettings() {
+        TLRPC.TL_account_setPrivacy req = new TLRPC.TL_account_setPrivacy();
+        req.key = new TLRPC.TL_inputPrivacyKeyStatusTimestamp();
+        if (currentType != 0 && currentPlus.size() > 0) {
+            TLRPC.TL_inputPrivacyValueAllowUsers rule = new TLRPC.TL_inputPrivacyValueAllowUsers();
+            for (Integer uid : currentPlus) {
+                TLRPC.User user = MessagesController.getInstance().getUser(uid);
+                if (user != null) {
+                    TLRPC.InputUser inputUser = MessagesController.getInputUser(user);
+                    if (inputUser != null) {
+                        rule.users.add(inputUser);
+                    }
+                }
+            }
+            req.rules.add(rule);
+        }
+        if (currentType != 1 && currentMinus.size() > 0) {
+            TLRPC.TL_inputPrivacyValueDisallowUsers rule = new TLRPC.TL_inputPrivacyValueDisallowUsers();
+            for (Integer uid : currentMinus) {
+                TLRPC.User user = MessagesController.getInstance().getUser(uid);
+                if (user != null) {
+                    TLRPC.InputUser inputUser = MessagesController.getInputUser(user);
+                    if (inputUser != null) {
+                        rule.users.add(inputUser);
+                    }
+                }
+            }
+            req.rules.add(rule);
+        }
+        if (currentType == 0) {
+            req.rules.add(new TLRPC.TL_inputPrivacyValueAllowAll());
+        } else if (currentType == 1) {
+            req.rules.add(new TLRPC.TL_inputPrivacyValueDisallowAll());
+        } else if (currentType == 2) {
+            req.rules.add(new TLRPC.TL_inputPrivacyValueAllowContacts());
+        }
+        final ProgressDialog progressDialog = new ProgressDialog(getParentActivity());
+        progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
+        progressDialog.setCanceledOnTouchOutside(false);
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+
+        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            @Override
+            public void run(final TLObject response, final TLRPC.TL_error error) {
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            progressDialog.dismiss();
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
+                        if (error == null) {
+                            finishFragment();
+                            TLRPC.TL_account_privacyRules rules = (TLRPC.TL_account_privacyRules) response;
+                            MessagesController.getInstance().putUsers(rules.users, false);
+                            ContactsController.getInstance().setPrivacyRules(rules.rules);
+                        } else {
+                            showErrorAlert();
+                        }
+                    }
+                });
+            }
+        }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
     }
 
     private void showErrorAlert() {

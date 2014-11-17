@@ -223,7 +223,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             fragmentView = inflater.inflate(R.layout.messages_list, container, false);
 
             dialogsAdapter = new DialogsAdapter(getParentActivity(), serverOnly);
-            dialogsSearchAdapter = new DialogsSearchAdapter(getParentActivity());
+            dialogsSearchAdapter = new DialogsSearchAdapter(getParentActivity(), !onlySelect);
             dialogsSearchAdapter.setDelegate(new DialogsSearchAdapter.MessagesActivitySearchAdapterDelegate() {
                 @Override
                 public void searchStateChanged(boolean search) {

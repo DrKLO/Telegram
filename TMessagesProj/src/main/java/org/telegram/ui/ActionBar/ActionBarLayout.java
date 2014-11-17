@@ -633,6 +633,10 @@ public class ActionBarLayout extends FrameLayout {
                 currentAnimation.start();
             }
         } else {
+            if (backgroundView != null) {
+                ViewProxy.setAlpha(backgroundView, 1.0f);
+                backgroundView.setVisibility(VISIBLE);
+            }
             fragment.onOpenAnimationEnd();
         }
         return true;
@@ -788,6 +792,10 @@ public class ActionBarLayout extends FrameLayout {
         if (previousFragment.needAddActionBar() && previousFragment.actionBar != null) {
             if (removeActionBarExtraHeight) {
                 previousFragment.actionBar.setOccupyStatusBar(false);
+            }
+            ViewGroup parent = (ViewGroup) previousFragment.actionBar.getParent();
+            if (parent != null) {
+                parent.removeView(previousFragment.actionBar);
             }
             containerView.addView(previousFragment.actionBar);
         }

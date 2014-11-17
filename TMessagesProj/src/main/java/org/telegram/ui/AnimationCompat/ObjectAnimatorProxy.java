@@ -121,4 +121,9 @@ public class ObjectAnimatorProxy {
         }
         return this;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        return objectAnimator == o;
+    }
 }

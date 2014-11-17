@@ -55,11 +55,9 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
     private float currentPositionOffset = 0f;
 
     private Paint rectPaint;
-    private Paint dividerPaint;
 
     private int indicatorColor = 0xFF666666;
     private int underlineColor = 0x1A000000;
-    private int dividerColor = 0x1A000000;
 
     private boolean shouldExpand = false;
     private boolean textAllCaps = true;
@@ -69,7 +67,6 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
     private int underlineHeight = 2;
     private int dividerPadding = 12;
     private int tabPadding = 24;
-    private int dividerWidth = 1;
 
     private int tabTextSize = 12;
     private int tabTextColor = 0xFF666666;
@@ -108,16 +105,11 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         underlineHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, underlineHeight, dm);
         dividerPadding = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dividerPadding, dm);
         tabPadding = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, tabPadding, dm);
-        dividerWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dividerWidth, dm);
         tabTextSize = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, tabTextSize, dm);
 
         rectPaint = new Paint();
         rectPaint.setAntiAlias(true);
         rectPaint.setStyle(Style.FILL);
-
-        dividerPaint = new Paint();
-        dividerPaint.setAntiAlias(true);
-        dividerPaint.setStrokeWidth(dividerWidth);
 
         defaultTabLayoutParams = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
 
@@ -322,14 +314,6 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
 
         rectPaint.setColor(underlineColor);
         canvas.drawRect(0, height - underlineHeight, tabsContainer.getWidth(), height, rectPaint);
-
-        // draw divider
-
-        dividerPaint.setColor(dividerColor);
-        for (int i = 0; i < tabCount - 1; i++) {
-            View tab = tabsContainer.getChildAt(i);
-            canvas.drawLine(tab.getRight(), dividerPadding, tab.getRight(), height - dividerPadding, dividerPaint);
-        }
     }
 
     private class PageListener implements OnPageChangeListener {
@@ -417,20 +401,6 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
 
     public int getUnderlineColor() {
         return underlineColor;
-    }
-
-    public void setDividerColor(int dividerColor) {
-        this.dividerColor = dividerColor;
-        invalidate();
-    }
-
-    public void setDividerColorResource(int resId) {
-        this.dividerColor = getResources().getColor(resId);
-        invalidate();
-    }
-
-    public int getDividerColor() {
-        return dividerColor;
     }
 
     public void setUnderlineHeight(int underlineHeightPx) {

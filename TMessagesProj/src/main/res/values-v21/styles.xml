@@ -35,7 +35,7 @@
         <item name="android:colorPrimaryDark">#33000000</item>
         <item name="android:colorPrimary">#54759e</item>
         <item name="android:alertDialogTheme">@style/Theme.TMessages.Dialog.Alert</item>
-        <item name="android:colorControlActivated">#678cb9</item>
+        <item name="android:colorControlActivated">#4d83b3</item>
     </style>
 
     <style name="Theme.TMessages.PopupNotification" parent="Theme.TMessages">
@@ -47,7 +47,7 @@
     </style>
 
     <style name="Theme.TMessages.Dialog.Alert" parent="android:style/Theme.Material.Light.Dialog.Alert">
-        <item name="android:colorAccent">#678cb9</item>
+        <item name="android:colorAccent">#4d83b3</item>
     </style>
 
     <!--ACTION BAR-->

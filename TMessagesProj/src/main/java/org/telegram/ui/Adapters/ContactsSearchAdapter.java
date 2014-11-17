@@ -234,7 +234,7 @@ public class ContactsSearchAdapter extends BaseContactsSearchAdapter {
                     }
                 } else if (i > searchResult.size() && user.username != null) {
                     try {
-                        username = Html.fromHtml(String.format("<font color=\"#548ab6\">@%s</font>%s", user.username.substring(0, lastFoundUsername.length()), user.username.substring(lastFoundUsername.length())));
+                        username = Html.fromHtml(String.format("<font color=\"#4d83b3\">@%s</font>%s", user.username.substring(0, lastFoundUsername.length()), user.username.substring(lastFoundUsername.length())));
                     } catch (Exception e) {
                         username = user.username;
                         FileLog.e("tmessages", e);

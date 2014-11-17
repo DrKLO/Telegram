@@ -10,7 +10,6 @@ package org.telegram.ui.Views;
 
 import android.content.Context;
 import android.database.DataSetObserver;
-import android.graphics.drawable.GradientDrawable;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.text.TextUtils;
@@ -114,10 +113,11 @@ public class EmojiView extends LinearLayout {
 
             EmojiGridAdapter localEmojiGridAdapter = new EmojiGridAdapter(Emoji.data[i]);
             gridView.setAdapter(localEmojiGridAdapter);
+            AndroidUtilities.setListViewEdgeEffectColor(gridView, 0xff999999);
             adapters.add(localEmojiGridAdapter);
         }
 
-        setBackgroundDrawable(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] { -14145496, -16777216 }));
+        setBackgroundColor(0xff222222);
         pager = new ViewPager(getContext());
         pager.setAdapter(new EmojiPagesAdapter());
         PagerSlidingTabStrip tabs = new PagerSlidingTabStrip(getContext());
@@ -258,33 +258,30 @@ public class EmojiView extends LinearLayout {
 
     private class EmojiPagesAdapter extends PagerAdapter implements PagerSlidingTabStrip.IconTabProvider {
 
-        private EmojiPagesAdapter() {
-        }
-
         public void destroyItem(ViewGroup paramViewGroup, int paramInt, Object paramObject) {
             View localObject;
             if (paramInt == 0) {
-                localObject = EmojiView.this.recentsWrap;
+                localObject = recentsWrap;
             } else {
-                localObject = EmojiView.this.views.get(paramInt);
+                localObject = views.get(paramInt);
             }
             paramViewGroup.removeView(localObject);
         }
 
         public int getCount() {
-            return EmojiView.this.views.size();
+            return views.size();
         }
 
         public int getPageIconResId(int paramInt) {
-            return EmojiView.this.icons[paramInt];
+            return icons[paramInt];
         }
 
         public Object instantiateItem(ViewGroup paramViewGroup, int paramInt) {
             View localObject;
             if (paramInt == 0) {
-                localObject = EmojiView.this.recentsWrap;
+                localObject = recentsWrap;
             } else {
-                localObject = EmojiView.this.views.get(paramInt);
+                localObject = views.get(paramInt);
             }
             paramViewGroup.addView(localObject);
             return localObject;

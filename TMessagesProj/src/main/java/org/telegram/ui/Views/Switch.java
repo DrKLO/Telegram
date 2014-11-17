@@ -525,7 +525,8 @@ public class Switch extends CompoundButton {
 
             final int thumbLeft = thumbInitialLeft - padding.left;
             final int thumbRight = thumbInitialLeft + mThumbWidth + padding.right;
-            mThumbDrawable.setBounds(thumbLeft, switchTop, thumbRight, switchBottom);
+            int offset = (AndroidUtilities.density == 1.5f ? AndroidUtilities.dp(1) : 0);
+            mThumbDrawable.setBounds(thumbLeft, switchTop + offset, thumbRight, switchBottom + offset);
 
             final Drawable background = getBackground();
             if (background != null) {

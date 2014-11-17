@@ -41,6 +41,7 @@ import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ContactsController {
+
     private Account currentAccount;
     private boolean loadingContacts = false;
     private static final Object loadContactsSync = new Object();
@@ -106,6 +107,13 @@ public class ContactsController {
             }
         }
         return localInstance;
+    }
+
+    public ContactsController() {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        if (preferences.getBoolean("needGetStatuses", false)) {
+            reloadContactsStatuses();
+        }
     }
 
     public void cleanup() {
@@ -1577,6 +1585,42 @@ public class ContactsController {
         }, true, RPCRequest.RPCRequestClassGeneric);
     }
 
+    public void reloadContactsStatuses() {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        final SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("needGetStatuses", true).commit();
+        TLRPC.TL_contacts_getStatuses req = new TLRPC.TL_contacts_getStatuses();
+        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            @Override
+            public void run(final TLObject response, TLRPC.TL_error error) {
+                if (error == null) {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            editor.remove("needGetStatuses").commit();
+                            TLRPC.Vector vector = (TLRPC.Vector) response;
+                            if (!vector.objects.isEmpty()) {
+                                ArrayList<TLRPC.User> dbUsersStatus = new ArrayList<TLRPC.User>();
+                                for (Object object : vector.objects) {
+                                    TLRPC.User toDbUser = new TLRPC.User();
+                                    TLRPC.TL_contactStatus status = (TLRPC.TL_contactStatus) object;
+                                    TLRPC.User user = MessagesController.getInstance().getUser(status.user_id);
+                                    if (user != null) {
+                                        user.status = status.status;
+                                    }
+                                    toDbUser.status = status.status;
+                                    dbUsersStatus.add(toDbUser);
+                                }
+                                MessagesStorage.getInstance().updateUsers(dbUsersStatus, true, true, true);
+                            }
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_STATUS);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
     public void loadPrivacySettings() {
         if (loadingDeleteInfo == 0) {
             loadingDeleteInfo = 1;
@@ -1650,6 +1694,7 @@ public class ContactsController {
     public void setPrivacyRules(ArrayList<TLRPC.PrivacyRule> rules) {
         privacyRules = rules;
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.privacyRulesUpdated);
+        reloadContactsStatuses();
     }
 
     public static String formatName(String firstName, String lastName) {

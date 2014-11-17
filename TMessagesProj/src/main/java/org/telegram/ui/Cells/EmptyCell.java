@@ -28,6 +28,7 @@ public class EmptyCell extends FrameLayout {
 
     public void setHeight(int height) {
         cellHeight = height;
+        requestLayout();
     }
 
     @Override

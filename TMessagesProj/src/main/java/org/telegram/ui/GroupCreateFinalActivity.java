@@ -51,6 +51,8 @@ import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
 
 public class GroupCreateFinalActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, AvatarUpdater.AvatarUpdaterDelegate {
+
+    private ListAdapter listAdapter;
     private ListView listView;
     private EditText nameTextView;
     private TLRPC.FileLocation avatar;
@@ -124,6 +126,14 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.chatDidCreated);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.chatDidFailCreate);
         avatarUpdater.clear();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (listAdapter != null) {
+            listAdapter.notifyDataSetChanged();
+        }
     }
 
     @Override
@@ -297,7 +307,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             listView.setDivider(null);
             listView.setDividerHeight(0);
             listView.setVerticalScrollBarEnabled(false);
-            listView.setAdapter(new ListAdapter(getParentActivity()));
+            listView.setAdapter(listAdapter = new ListAdapter(getParentActivity()));
             linearLayout.addView(listView);
             layoutParams = (LinearLayout.LayoutParams) listView.getLayoutParams();
             layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;

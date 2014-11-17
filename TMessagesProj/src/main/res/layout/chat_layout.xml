@@ -111,7 +111,7 @@
                 android:layout_marginTop="2dp"
                 android:maxLines="4"
                 android:textSize="18dp"
-                android:textColorHint="#909090"
+                android:textColorHint="#b2b2b2"
                 android:ems="10"
                 android:imeOptions="flagNoExtractUi"
                 android:inputType="textCapSentences|textMultiLine"
@@ -119,8 +119,9 @@
                 android:layout_marginLeft="52dp"
                 android:layout_marginRight="2dp"
                 android:layout_marginBottom="4dp"
-                android:paddingBottom="10dp"
+                android:paddingBottom="8dp"
                 android:paddingTop="4dp"
+                android:background="@null"
                 android:textCursorDrawable="@null"
                 android:textColor="#000000"/>
 

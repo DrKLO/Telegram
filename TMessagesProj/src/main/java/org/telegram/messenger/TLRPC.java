@@ -272,20 +272,20 @@ public class TLRPC {
     }
 
     public static class TL_contactStatus extends TLObject {
-        public static int constructor = 0xaa77b873;
+        public static int constructor = 0xd3680c61;
 
         public int user_id;
-        public int expires;
+        public UserStatus status;
 
         public void readParams(AbsSerializedData stream) {
             user_id = stream.readInt32();
-            expires = stream.readInt32();
+            status = (UserStatus)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32());
         }
 
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(user_id);
-            stream.writeInt32(expires);
+            status.serializeToStream(stream);
         }
     }
 
@@ -7389,6 +7389,18 @@ public class TLRPC {
     public static class TL_contacts_getStatuses extends TLObject {
         public static int constructor = 0xc4a353ee;
 
+        public ArrayList<TL_contactStatus> id = new ArrayList<TL_contactStatus>();
+
+        public Class responseClass () {
+            return Vector.class;
+        }
+
+        public void parseVector(Vector vector, AbsSerializedData data) {
+            int size = data.readInt32();
+            for (int a = 0; a < size; a++) {
+                vector.objects.add(TLClassStore.Instance().TLdeserialize(data, data.readInt32()));
+            }
+        }
 
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);

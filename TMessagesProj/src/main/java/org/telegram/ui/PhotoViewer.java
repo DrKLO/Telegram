@@ -10,6 +10,7 @@ package org.telegram.ui;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -628,6 +629,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
                     if (f != null && f.exists()) {
                         MediaController.saveFile(f.toString(), parentActivity, currentFileNames[0].endsWith("mp4") ? 1 : 0, null);
+                    } else {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setPositiveButton(R.string.OK, null);
+                        builder.setMessage(LocaleController.getString("PleaseDownload", R.string.PleaseDownload));
+                        builder.show().setCanceledOnTouchOutside(true);
                     }
                 } else if (id == gallery_menu_showall) {
                     if (opennedFromMedia) {
@@ -745,6 +752,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         }
                         intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(f));
                         parentActivity.startActivity(intent);
+                    } else {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setPositiveButton(R.string.OK, null);
+                        builder.setMessage(LocaleController.getString("PleaseDownload", R.string.PleaseDownload));
+                        builder.show().setCanceledOnTouchOutside(true);
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);

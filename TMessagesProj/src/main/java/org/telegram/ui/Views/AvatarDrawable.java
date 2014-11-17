@@ -21,7 +21,10 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ApplicationLoader;
+
+import java.util.Locale;
 
 public class AvatarDrawable extends Drawable {
 
@@ -58,47 +61,69 @@ public class AvatarDrawable extends Drawable {
     }
 
     public AvatarDrawable(TLRPC.User user) {
-        this();
+        this(user, false);
+    }
+
+    public AvatarDrawable(TLRPC.Chat chat) {
+        this(chat, false);
+    }
+
+    public AvatarDrawable(TLRPC.User user, boolean profile) {
+        isProfile = profile;
         if (user != null) {
             setInfo(user.id, user.first_name, user.last_name, false);
         }
     }
 
-    public AvatarDrawable(TLRPC.Chat chat) {
-        this();
+    public AvatarDrawable(TLRPC.Chat chat, boolean profile) {
+        isProfile = profile;
         if (chat != null) {
             setInfo(chat.id, chat.title, null, chat.id < 0);
         }
     }
 
-    public AvatarDrawable(TLRPC.User user, boolean profile) {
-        this(user);
-        isProfile = profile;
-    }
-
-    public AvatarDrawable(TLRPC.Chat chat, boolean profile) {
-        this(chat);
-        isProfile = profile;
+    public static int getColorIndex(int id) {
+        try {
+            String str;
+            if (id >= 0) {
+                str = String.format(Locale.US, "%d%d", id, UserConfig.getClientUserId());
+            } else {
+                str = String.format(Locale.US, "%d", id);
+            }
+            if (str.length() > 15) {
+                str = str.substring(0, 15);
+            }
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+            byte[] digest = md.digest(str.getBytes());
+            int b = digest[Math.abs(id % 16)];
+            if (b < 0) {
+                b += 256;
+            }
+            return Math.abs(b) % arrColors.length;
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return id % arrColors.length;
     }
 
     public static int getColorForId(int id) {
-        return arrColors[Math.abs(id) % arrColors.length];
+        return arrColors[getColorIndex(id)];
     }
 
     public static int getButtonColorForId(int id) {
-        return arrColorsButtons[Math.abs(id) % arrColorsButtons.length];
+        return arrColorsButtons[getColorIndex(id)];
     }
 
     public static int getProfileColorForId(int id) {
-        return arrColorsProfiles[Math.abs(id) % arrColorsProfiles.length];
+        return arrColorsProfiles[getColorIndex(id)];
     }
 
     public static int getProfileTextColorForId(int id) {
-        return arrColorsProfilesText[Math.abs(id) % arrColorsProfilesText.length];
+        return arrColorsProfilesText[getColorIndex(id)];
     }
 
     public static int getProfileBackColorForId(int id) {
-        return arrColorsProfilesBack[Math.abs(id) % arrColorsProfilesBack.length];
+        return arrColorsProfilesBack[getColorIndex(id)];
     }
 
     public void setInfo(TLRPC.User user) {
@@ -119,9 +144,9 @@ public class AvatarDrawable extends Drawable {
 
     public void setInfo(int id, String firstName, String lastName, boolean isBroadcast) {
         if (isProfile) {
-            color = arrColorsProfiles[Math.abs(id) % arrColorsProfiles.length];
+            color = arrColorsProfiles[getColorIndex(id)];
         } else {
-            color = arrColors[Math.abs(id) % arrColors.length];
+            color = arrColors[getColorIndex(id)];
         }
 
         drawBrodcast = isBroadcast;

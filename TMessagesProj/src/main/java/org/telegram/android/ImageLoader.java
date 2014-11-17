@@ -1117,9 +1117,9 @@ public class ImageLoader {
         return b;
     }
 
-    private static TLRPC.PhotoSize scaleAndSaveImageInternal(Bitmap bitmap, int w, int h, float photoW, float photoH, float scaleFactor, int quality, boolean cache) throws Exception {
+    private static TLRPC.PhotoSize scaleAndSaveImageInternal(Bitmap bitmap, int w, int h, float photoW, float photoH, float scaleFactor, int quality, boolean cache, boolean scaleAnyway) throws Exception {
         Bitmap scaledBitmap = null;
-        if (scaleFactor > 1) {
+        if (scaleFactor > 1 || scaleAnyway) {
             scaledBitmap = Bitmap.createScaledBitmap(bitmap, w, h, true);
         } else {
             scaledBitmap = bitmap;
@@ -1171,6 +1171,10 @@ public class ImageLoader {
     }
 
     public static TLRPC.PhotoSize scaleAndSaveImage(Bitmap bitmap, float maxWidth, float maxHeight, int quality, boolean cache) {
+        return scaleAndSaveImage(bitmap, maxWidth, maxHeight, quality, cache, 0, 0);
+    }
+
+    public static TLRPC.PhotoSize scaleAndSaveImage(Bitmap bitmap, float maxWidth, float maxHeight, int quality, boolean cache, int minWidth, int minHeight) {
         if (bitmap == null) {
             return null;
         }
@@ -1179,7 +1183,12 @@ public class ImageLoader {
         if (photoW == 0 || photoH == 0) {
             return null;
         }
+        boolean scaleAnyway = false;
         float scaleFactor = Math.max(photoW / maxWidth, photoH / maxHeight);
+        if (scaleFactor < 1 && minWidth != 0 && minHeight != 0) {
+            scaleFactor = Math.max(photoW / minWidth, photoH / minHeight);
+            scaleAnyway = true;
+        }
         int w = (int)(photoW / scaleFactor);
         int h = (int)(photoH / scaleFactor);
         if (h == 0 || w == 0) {
@@ -1187,13 +1196,13 @@ public class ImageLoader {
         }
 
         try {
-            return scaleAndSaveImageInternal(bitmap, w, h, photoW, photoH, scaleFactor, quality, cache);
+            return scaleAndSaveImageInternal(bitmap, w, h, photoW, photoH, scaleFactor, quality, cache, scaleAnyway);
         } catch (Throwable e) {
             FileLog.e("tmessages", e);
             ImageLoader.getInstance().clearMemory();
             System.gc();
             try {
-                return scaleAndSaveImageInternal(bitmap, w, h, photoW, photoH, scaleFactor, quality, cache);
+                return scaleAndSaveImageInternal(bitmap, w, h, photoW, photoH, scaleFactor, quality, cache, scaleAnyway);
             } catch (Throwable e2) {
                 FileLog.e("tmessages", e2);
                 return null;

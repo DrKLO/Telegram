@@ -172,7 +172,6 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("DeleteAccountTitle", R.string.DeleteAccountTitle));
                         builder.setItems(new CharSequence[] {
-                                LocaleController.getString("DeleteAccountNever", R.string.DeleteAccountNever),
                                 LocaleController.formatPluralString("Months", 1),
                                 LocaleController.formatPluralString("Months", 3),
                                 LocaleController.formatPluralString("Months", 6),
@@ -181,13 +180,13 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 int value = 0;
-                                if (which == 1) {
+                                if (which == 0) {
                                     value = 30;
-                                } else if (which == 2) {
+                                } else if (which == 1) {
                                     value = 60;
-                                } else if (which == 3) {
+                                } else if (which == 2) {
                                     value = 182;
-                                } else if (which == 4) {
+                                } else if (which == 3) {
                                     value = 365;
                                 }
                                 final ProgressDialog progressDialog = new ProgressDialog(getParentActivity());
@@ -366,9 +365,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         value = LocaleController.getString("Loading", R.string.Loading);
                     } else {
                         int ttl = ContactsController.getInstance().getDeleteAccountTTL();
-                        if (ttl == 0) {
-                            value = LocaleController.getString("DeleteAccountNever", R.string.DeleteAccountNever);
-                        } else if (ttl <= 182) {
+                        if (ttl <= 182) {
                             value = LocaleController.formatPluralString("Months", ttl / 30);
                         } else if (ttl == 365) {
                             value = LocaleController.formatPluralString("Years", ttl / 365);

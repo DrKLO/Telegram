@@ -120,7 +120,7 @@ public class DialogCell extends BaseCell {
 
             nameUnknownPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             nameUnknownPaint.setTextSize(AndroidUtilities.dp(17));
-            nameUnknownPaint.setColor(0xff548ab6);
+            nameUnknownPaint.setColor(0xff4d83b3);
             nameUnknownPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
             messagePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
@@ -132,7 +132,7 @@ public class DialogCell extends BaseCell {
 
             messagePrintingPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             messagePrintingPaint.setTextSize(AndroidUtilities.dp(16));
-            messagePrintingPaint.setColor(0xff548ab6);
+            messagePrintingPaint.setColor(0xff4d83b3);
 
             timePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             timePaint.setTextSize(AndroidUtilities.dp(13));
@@ -325,10 +325,10 @@ public class DialogCell extends BaseCell {
                         checkMessage = false;
                         if (message.messageOwner.media != null && !(message.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
                             currentMessagePaint = messagePrintingPaint;
-                            messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#548ab6>%s:</font> <font color=#548ab6>%s</font>", name, message.messageText)), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
+                            messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#4d83b3>%s:</font> <font color=#4d83b3>%s</font>", name, message.messageText)), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
                         } else {
                             if (message.messageOwner.message != null) {
-                                messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#548ab6>%s:</font> <font color=#808080>%s</font>", name, message.messageOwner.message.replace("\n", " ").replace("<", "&lt;").replace(">", "&gt;"))), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
+                                messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#4d83b3>%s:</font> <font color=#808080>%s</font>", name, message.messageOwner.message.replace("\n", " ").replace("<", "&lt;").replace(">", "&gt;"))), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
                             }
                         }
                     } else {

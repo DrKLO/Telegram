@@ -48,13 +48,15 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
     private long reqId = 0;
     private int lastReqId;
     private MessagesActivitySearchAdapterDelegate delegate;
+    private boolean needMessagesSearch;
 
     public static interface MessagesActivitySearchAdapterDelegate {
         public abstract void searchStateChanged(boolean searching);
     }
 
-    public DialogsSearchAdapter(Context context) {
+    public DialogsSearchAdapter(Context context, boolean messagesSearch) {
         mContext = context;
+        needMessagesSearch = messagesSearch;
     }
 
     public void setDelegate(MessagesActivitySearchAdapterDelegate delegate) {
@@ -62,6 +64,9 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
     }
 
     private void searchMessagesInternal(final String query) {
+        if (!needMessagesSearch) {
+            return;
+        }
         if (reqId != 0) {
             ConnectionsManager.getInstance().cancelRpc(reqId, true);
             reqId = 0;
@@ -412,7 +417,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                 }
             } else if (i > searchResult.size() && user != null && user.username != null) {
                 try {
-                    username = Html.fromHtml(String.format("<font color=\"#548ab6\">@%s</font>%s", user.username.substring(0, lastFoundUsername.length()), user.username.substring(lastFoundUsername.length())));
+                    username = Html.fromHtml(String.format("<font color=\"#4d83b3\">@%s</font>%s", user.username.substring(0, lastFoundUsername.length()), user.username.substring(lastFoundUsername.length())));
                 } catch (Exception e) {
                     username = user.username;
                     FileLog.e("tmessages", e);

@@ -222,7 +222,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             actionBar.setBackgroundColor(AvatarDrawable.getProfileBackColorForId(user_id != 0 ? user_id : chat_id));
             actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(user_id != 0 ? user_id : chat_id));
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setBackOverlay(R.layout.updating_state_layout);
             actionBar.setExtraHeight(AndroidUtilities.dp(88), false);
             if (AndroidUtilities.isTablet()) {
                 actionBar.setOccupyStatusBar(false);
@@ -409,8 +408,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             onlineTextView.setLayoutParams(layoutParams);
 
             listView = new ListView(getParentActivity());
-            listView.setDrawingCacheEnabled(false);
-            listView.setDrawingCacheBackgroundColor(0);
             listView.setDivider(null);
             listView.setDividerHeight(0);
             listView.setVerticalScrollBarEnabled(false);
@@ -554,7 +551,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             frameLayout.addView(actionBar);
 
-            if (user_id != 0 || chat_id >= 0) {
+            if (user_id != 0 || chat_id >= 0 && !currentChat.left) {
                 writeButton = new ImageView(getParentActivity());
                 if (user_id != 0) {
                     writeButton.setImageResource(R.drawable.floating_user_states);
@@ -602,7 +599,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                         avatarUpdater.openCamera();
                                     } else if (i == 1) {
                                         avatarUpdater.openGallery();
-                                    } else if (i == 3) {
+                                    } else if (i == 2) {
                                         MessagesController.getInstance().changeChatAvatar(chat_id, null);
                                     }
                                 }
@@ -890,7 +887,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) { }
 
     @Override
-    public void willHidePhotoViewer() { }
+    public void willHidePhotoViewer() {
+        avatarImage.imageReceiver.setVisible(true, true);
+    }
 
     @Override
     public boolean isPhotoChecked(int index) { return false; }
@@ -1065,6 +1064,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 photoBig = chat.photo.photo_big;
             }
             avatarImage.setImage(photo, "50_50", new AvatarDrawable(chat));
+
             avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
         }
     }

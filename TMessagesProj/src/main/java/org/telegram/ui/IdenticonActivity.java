@@ -49,7 +49,6 @@ public class IdenticonActivity extends BaseFragment {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setBackOverlay(R.layout.updating_state_layout);
             actionBar.setTitle(LocaleController.getString("EncryptionKey", R.string.EncryptionKey));
-            actionBar.setTitleIcon(R.drawable.ic_lock_white, AndroidUtilities.dp(4));
 
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
