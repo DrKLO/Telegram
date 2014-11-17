@@ -427,4 +427,8 @@ public class ImageReceiver {
             bitmapRect = null;
         }
     }
+
+    public int getRoundRadius() {
+        return roundRadius;
+    }
 }

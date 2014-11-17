@@ -13,13 +13,13 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.ui.Views.FrameLayoutFixed;
 
-public class TextDetailSettingsCell extends FrameLayout {
+public class TextDetailSettingsCell extends FrameLayoutFixed {
 
     private TextView textView;
     private TextView valueTextView;
@@ -37,7 +37,7 @@ public class TextDetailSettingsCell extends FrameLayout {
         }
 
         textView = new TextView(context);
-        textView.setTextColor(0xff000000);
+        textView.setTextColor(0xff212121);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
         textView.setMaxLines(1);

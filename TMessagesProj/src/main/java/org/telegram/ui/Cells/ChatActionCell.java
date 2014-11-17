@@ -74,6 +74,7 @@ public class ChatActionCell extends BaseCell {
             textPaint.linkColor = 0xffffffff;
         }
         imageReceiver = new ImageReceiver(this);
+        imageReceiver.setRoundRadius(AndroidUtilities.dp(32));
         avatarDrawable = new AvatarDrawable();
         textPaint.setTextSize(AndroidUtilities.dp(MessagesController.getInstance().fontSize));
     }

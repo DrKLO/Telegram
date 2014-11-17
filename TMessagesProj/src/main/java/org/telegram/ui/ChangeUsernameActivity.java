@@ -21,6 +21,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -43,7 +44,6 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Views.SettingsSectionLayout;
 
 import java.util.ArrayList;
 
@@ -77,7 +77,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             });
 
             ActionBarMenu menu = actionBar.createMenu();
-            doneButton = menu.addItem(done_button, R.drawable.ic_done, 0, AndroidUtilities.dp(56));
+            doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
             TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
             if (user == null) {
@@ -86,20 +86,21 @@ public class ChangeUsernameActivity extends BaseFragment {
 
             fragmentView = new LinearLayout(inflater.getContext());
             fragmentView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-            fragmentView.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(8), AndroidUtilities.dp(16), 0);
             ((LinearLayout) fragmentView).setOrientation(LinearLayout.VERTICAL);
-
-            SettingsSectionLayout settingsSectionLayout = new SettingsSectionLayout(inflater.getContext());
-            ((LinearLayout) fragmentView).addView(settingsSectionLayout);
-            settingsSectionLayout.setText(LocaleController.getString("Username", R.string.Username).toUpperCase());
+            fragmentView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    return true;
+                }
+            });
 
             firstNameField = new EditText(inflater.getContext());
-            firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 19);
-            firstNameField.setHintTextColor(0xffa3a3a3);
-            firstNameField.setTextColor(0xff000000);
-            firstNameField.setPadding(AndroidUtilities.dp(15), 0, AndroidUtilities.dp(15), AndroidUtilities.dp(15));
+            firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+            firstNameField.setHintTextColor(0xff979797);
+            firstNameField.setTextColor(0xff212121);
             firstNameField.setMaxLines(1);
             firstNameField.setLines(1);
+            firstNameField.setPadding(0, 0, 0, 0);
             firstNameField.setSingleLine(true);
             firstNameField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             firstNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
@@ -119,9 +120,11 @@ public class ChangeUsernameActivity extends BaseFragment {
 
             ((LinearLayout) fragmentView).addView(firstNameField);
             LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)firstNameField.getLayoutParams();
-            layoutParams.topMargin = AndroidUtilities.dp(15);
+            layoutParams.topMargin = AndroidUtilities.dp(24);
+            layoutParams.height = AndroidUtilities.dp(36);
+            layoutParams.leftMargin = AndroidUtilities.dp(24);
+            layoutParams.rightMargin = AndroidUtilities.dp(24);
             layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
             firstNameField.setLayoutParams(layoutParams);
 
             if (user != null && user.username != null && user.username.length() > 0) {
@@ -131,7 +134,6 @@ public class ChangeUsernameActivity extends BaseFragment {
 
             checkTextView = new TextView(inflater.getContext());
             checkTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            checkTextView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
             checkTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             ((LinearLayout) fragmentView).addView(checkTextView);
             layoutParams = (LinearLayout.LayoutParams)checkTextView.getLayoutParams();
@@ -139,12 +141,13 @@ public class ChangeUsernameActivity extends BaseFragment {
             layoutParams.width = LinearLayout.LayoutParams.WRAP_CONTENT;
             layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
             layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
+            layoutParams.leftMargin = AndroidUtilities.dp(24);
+            layoutParams.rightMargin = AndroidUtilities.dp(24);
             checkTextView.setLayoutParams(layoutParams);
 
             TextView helpTextView = new TextView(inflater.getContext());
             helpTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             helpTextView.setTextColor(0xff6d6d72);
-            helpTextView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
             helpTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             helpTextView.setText(Html.fromHtml(LocaleController.getString("UsernameHelp", R.string.UsernameHelp)));
             ((LinearLayout) fragmentView).addView(helpTextView);
@@ -153,6 +156,8 @@ public class ChangeUsernameActivity extends BaseFragment {
             layoutParams.width = LinearLayout.LayoutParams.WRAP_CONTENT;
             layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
             layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
+            layoutParams.leftMargin = AndroidUtilities.dp(24);
+            layoutParams.rightMargin = AndroidUtilities.dp(24);
             helpTextView.setLayoutParams(layoutParams);
 
             firstNameField.addTextChangedListener(new TextWatcher() {

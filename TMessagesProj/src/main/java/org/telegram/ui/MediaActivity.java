@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class MediaActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, PhotoViewer.PhotoViewerProvider {
+
     private GridView listView;
     private ListAdapter listAdapter;
     private ArrayList<MessageObject> messages = new ArrayList<MessageObject>();

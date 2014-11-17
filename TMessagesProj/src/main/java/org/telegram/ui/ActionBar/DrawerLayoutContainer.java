@@ -320,7 +320,7 @@ public class DrawerLayoutContainer extends FrameLayout {
                             }
                         }
                     }
-                    if (startedTracking) {
+                    if (startedTracking || drawerPosition != 0 && drawerPosition != drawerLayout.getMeasuredWidth()) {
                         float velX = velocityTracker.getXVelocity();
                         float velY = velocityTracker.getYVelocity();
                         boolean backAnimation = drawerPosition < drawerLayout.getMeasuredWidth() / 2.0f && (velX < 1500 || Math.abs(velX) < Math.abs(velY)) || velX < 0 && Math.abs(velX) >= 1500;
@@ -458,9 +458,11 @@ public class DrawerLayoutContainer extends FrameLayout {
             canvas.drawRect(clipLeft, 0, clipRight, getHeight(), scrimPaint);
         } else if (shadowLeft != null) {
             final float alpha = Math.max(0, Math.min((float) drawerPosition / AndroidUtilities.dp(20), 1.0f));
-            shadowLeft.setBounds(drawerPosition, child.getTop(), drawerPosition + shadowLeft.getIntrinsicWidth(), child.getBottom());
-            shadowLeft.setAlpha((int) (0xff * alpha));
-            shadowLeft.draw(canvas);
+            if (alpha != 0) {
+                shadowLeft.setBounds(drawerPosition, child.getTop(), drawerPosition + shadowLeft.getIntrinsicWidth(), child.getBottom());
+                shadowLeft.setAlpha((int) (0xff * alpha));
+                shadowLeft.draw(canvas);
+            }
         }
         return result;
     }

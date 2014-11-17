@@ -117,7 +117,7 @@ public class LoginActivity extends BaseFragment {
             });
 
             ActionBarMenu menu = actionBar.createMenu();
-            menu.addItem(done_button, R.drawable.ic_done, 0, AndroidUtilities.dp(56));
+            menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
             fragmentView = new ScrollView(getParentActivity());
             ScrollView scrollView = (ScrollView) fragmentView;
@@ -207,13 +207,17 @@ public class LoginActivity extends BaseFragment {
     @Override
     public void onPause() {
         super.onPause();
-        getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+        if (!AndroidUtilities.isTablet()) {
+            getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+        }
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        if (!AndroidUtilities.isTablet()) {
+            getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
     }
 
     private Bundle loadCurrentState() {
@@ -411,6 +415,7 @@ public class LoginActivity extends BaseFragment {
     public void needFinishActivity() {
         clearCurrentState();
         presentFragment(new MessagesActivity(null), true);
+        NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
     }
 
     public class SlideView extends LinearLayout {
@@ -989,7 +994,7 @@ public class LoginActivity extends BaseFragment {
             codeField.setHintTextColor(0xff979797);
             codeField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
             codeField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            codeField.setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL);
+            codeField.setInputType(InputType.TYPE_CLASS_NUMBER);
             codeField.setMaxLines(1);
             codeField.setPadding(0, 0, 0, 0);
             addView(codeField);

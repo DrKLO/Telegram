@@ -19,7 +19,7 @@
             android:paddingBottom="2dp"
             android:paddingLeft="7dp"
             android:paddingRight="7dp"
-            android:textSize="14dp"
+            android:textSize="16dp"
             android:id="@+id/searchEmptyView"
             android:layout_gravity="center"/>
 
@@ -77,32 +77,6 @@
 
     </FrameLayout>
 
-    <FrameLayout
-        android:layout_width="fill_parent"
-        android:layout_height="48dp"
-        android:id="@+id/top_panel">
-
-        <TextView
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:layout_gravity="center"
-            android:id="@+id/top_panel_text"
-            android:textAllCaps="true"
-            android:textSize="12dp"
-            android:textStyle="bold"
-            android:textColor="#ffffff"/>
-
-        <ImageView
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:scaleType="centerInside"
-            android:layout_marginRight="4dp"
-            android:layout_gravity="right|center"
-            android:id="@+id/top_plane_close"
-            android:clickable="true"/>
-
-    </FrameLayout>
-
     <LinearLayout
         android:layout_height="wrap_content"
         android:layout_width="match_parent"
@@ -142,8 +116,8 @@
                 android:imeOptions="flagNoExtractUi"
                 android:inputType="textCapSentences|textMultiLine"
                 android:maxLength="16384"
-                android:layout_marginLeft="54dp"
-                android:layout_marginRight="54dp"
+                android:layout_marginLeft="52dp"
+                android:layout_marginRight="2dp"
                 android:layout_marginBottom="4dp"
                 android:paddingBottom="10dp"
                 android:paddingTop="4dp"

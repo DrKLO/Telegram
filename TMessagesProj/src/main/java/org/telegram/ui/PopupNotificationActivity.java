@@ -15,6 +15,7 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.PowerManager;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -61,6 +62,9 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     private ActionBar actionBar;
     private ChatActivityEnterView chatActivityEnterView;
     private BackupImageView avatarImageView;
+    private TextView nameTextView;
+    private TextView onlineTextView;
+    private FrameLayout avatarContainer;
     private TextView countText;
     private ViewGroup messageContainer;
     private ViewGroup centerView;
@@ -182,6 +186,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         popupContainer.addView(messageContainer, 0);
 
         actionBar = new ActionBar(this);
+        actionBar.setOccupyStatusBar(false);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setBackgroundResource(R.color.header);
         actionBar.setItemsBackground(R.drawable.bar_selector);
@@ -194,9 +199,62 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         View view = menu.addItemResource(2, R.layout.popup_count_layout);
         countText = (TextView) view.findViewById(R.id.count_text);
 
-        view = menu.addItemResource(1, R.layout.chat_header_layout);
-        avatarImageView = (BackupImageView)view.findViewById(R.id.chat_avatar_image);
+        avatarContainer = new FrameLayoutFixed(this);
+        avatarContainer.setBackgroundResource(R.drawable.bar_selector);
+        avatarContainer.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
+        actionBar.addView(avatarContainer);
+        FrameLayout.LayoutParams layoutParams2 = (FrameLayout.LayoutParams) avatarContainer.getLayoutParams();
+        layoutParams2.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams2.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams2.rightMargin = AndroidUtilities.dp(48);
+        layoutParams2.leftMargin = AndroidUtilities.dp(60);
+        layoutParams2.gravity = Gravity.TOP | Gravity.LEFT;
+        avatarContainer.setLayoutParams(layoutParams2);
+
+        avatarImageView = new BackupImageView(this);
+        avatarImageView.imageReceiver.setRoundRadius(AndroidUtilities.dp(21));
         avatarImageView.processDetach = false;
+        avatarContainer.addView(avatarImageView);
+        layoutParams2 = (FrameLayout.LayoutParams) avatarImageView.getLayoutParams();
+        layoutParams2.width = AndroidUtilities.dp(42);
+        layoutParams2.height = AndroidUtilities.dp(42);
+        layoutParams2.topMargin = AndroidUtilities.dp(3);
+        avatarImageView.setLayoutParams(layoutParams2);
+
+        nameTextView = new TextView(this);
+        nameTextView.setTextColor(0xffffffff);
+        nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+        nameTextView.setLines(1);
+        nameTextView.setMaxLines(1);
+        nameTextView.setSingleLine(true);
+        nameTextView.setEllipsize(TextUtils.TruncateAt.END);
+        nameTextView.setGravity(Gravity.LEFT);
+        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        avatarContainer.addView(nameTextView);
+        layoutParams2 = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
+        layoutParams2.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams2.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams2.leftMargin = AndroidUtilities.dp(54);
+        layoutParams2.bottomMargin = AndroidUtilities.dp(22);
+        layoutParams2.gravity = Gravity.BOTTOM;
+        nameTextView.setLayoutParams(layoutParams2);
+
+        onlineTextView = new TextView(this);
+        onlineTextView.setTextColor(0xffd7e8f7);
+        onlineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        onlineTextView.setLines(1);
+        onlineTextView.setMaxLines(1);
+        onlineTextView.setSingleLine(true);
+        onlineTextView.setEllipsize(TextUtils.TruncateAt.END);
+        onlineTextView.setGravity(Gravity.LEFT);
+        avatarContainer.addView(onlineTextView);
+        layoutParams2 = (FrameLayout.LayoutParams) onlineTextView.getLayoutParams();
+        layoutParams2.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams2.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams2.leftMargin = AndroidUtilities.dp(54);
+        layoutParams2.bottomMargin = AndroidUtilities.dp(4);
+        layoutParams2.gravity = Gravity.BOTTOM;
+        onlineTextView.setLayoutParams(layoutParams2);
 
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -616,22 +674,37 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     }
 
     private void fixLayout() {
-        messageContainer.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-            @Override
-            public boolean onPreDraw() {
-                messageContainer.getViewTreeObserver().removeOnPreDrawListener(this);
-                if (!checkTransitionAnimation() && !startedMoving) {
-                    ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams)messageContainer.getLayoutParams();
-                    layoutParams.topMargin = AndroidUtilities.getCurrentActionBarHeight();
-                    layoutParams.bottomMargin = AndroidUtilities.dp(48);
-                    layoutParams.width = ViewGroup.MarginLayoutParams.MATCH_PARENT;
-                    layoutParams.height = ViewGroup.MarginLayoutParams.MATCH_PARENT;
-                    messageContainer.setLayoutParams(layoutParams);
-                    applyViewsLayoutParams(0);
+        if (avatarContainer != null) {
+            avatarContainer.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                @Override
+                public boolean onPreDraw() {
+                    if (avatarContainer != null) {
+                        avatarContainer.getViewTreeObserver().removeOnPreDrawListener(this);
+                    }
+                    int padding = (AndroidUtilities.getCurrentActionBarHeight() - AndroidUtilities.dp(48)) / 2;
+                    avatarContainer.setPadding(avatarContainer.getPaddingLeft(), padding, avatarContainer.getPaddingRight(), padding);
+                    return false;
                 }
-                return false;
-            }
-        });
+            });
+        }
+        if (messageContainer != null) {
+            messageContainer.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                @Override
+                public boolean onPreDraw() {
+                    messageContainer.getViewTreeObserver().removeOnPreDrawListener(this);
+                    if (!checkTransitionAnimation() && !startedMoving) {
+                        ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) messageContainer.getLayoutParams();
+                        layoutParams.topMargin = AndroidUtilities.getCurrentActionBarHeight();
+                        layoutParams.bottomMargin = AndroidUtilities.dp(48);
+                        layoutParams.width = ViewGroup.MarginLayoutParams.MATCH_PARENT;
+                        layoutParams.height = ViewGroup.MarginLayoutParams.MATCH_PARENT;
+                        messageContainer.setLayoutParams(layoutParams);
+                        applyViewsLayoutParams(0);
+                    }
+                    return false;
+                }
+            });
+        }
     }
 
     private void handleIntent(Intent intent) {
@@ -732,15 +805,18 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
 
         if (currentChat != null && currentUser != null) {
-            actionBar.setTitle(currentChat.title);
-            actionBar.setSubtitle(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
-            actionBar.setTitleIcon(0, 0);
+            nameTextView.setText(currentChat.title);
+            onlineTextView.setText(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
+            nameTextView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+            nameTextView.setCompoundDrawablePadding(0);
         } else if (currentUser != null) {
-            actionBar.setTitle(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
+            nameTextView.setText(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
             if ((int)dialog_id == 0) {
-                actionBar.setTitleIcon(R.drawable.ic_lock_white, AndroidUtilities.dp(4));
+                nameTextView.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock_white, 0, 0, 0);
+                nameTextView.setCompoundDrawablePadding(AndroidUtilities.dp(4));
             } else {
-                actionBar.setTitleIcon(0, 0);
+                nameTextView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+                nameTextView.setCompoundDrawablePadding(0);
             }
         }
 
@@ -759,12 +835,12 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
         if (currentUser.id / 1000 != 777 && currentUser.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(currentUser.id) == null && (ContactsController.getInstance().contactsDict.size() != 0 || !ContactsController.getInstance().isLoadingContacts())) {
             if (currentUser.phone != null && currentUser.phone.length() != 0) {
-                actionBar.setTitle(PhoneFormat.getInstance().format("+" + currentUser.phone));
+                nameTextView.setText(PhoneFormat.getInstance().format("+" + currentUser.phone));
             } else {
-                actionBar.setTitle(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
+                nameTextView.setText(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
             }
         } else {
-            actionBar.setTitle(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
+            nameTextView.setText(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
         }
         CharSequence printString = MessagesController.getInstance().printingStrings.get(currentMessageObject.getDialogId());
         if (printString == null || printString.length() == 0) {
@@ -774,10 +850,10 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             if (user != null) {
                 currentUser = user;
             }
-            actionBar.setSubtitle(LocaleController.formatUserStatus(currentUser));
+            onlineTextView.setText(LocaleController.formatUserStatus(currentUser));
         } else {
             lastPrintString = printString;
-            actionBar.setSubtitle(printString);
+            onlineTextView.setText(printString);
             setTypingAnimation(true);
         }
     }
@@ -817,13 +893,15 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
         if (start) {
             try {
-                actionBar.setSubTitleIcon(0, typingDotsDrawable, AndroidUtilities.dp(4));
+                onlineTextView.setCompoundDrawablesWithIntrinsicBounds(typingDotsDrawable, null, null, null);
+                onlineTextView.setCompoundDrawablePadding(AndroidUtilities.dp(4));
                 typingDotsDrawable.start();
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
         } else {
-            actionBar.setSubTitleIcon(0, null, 0);
+            onlineTextView.setCompoundDrawablesWithIntrinsicBounds(null, null, null, null);
+            onlineTextView.setCompoundDrawablePadding(0);
             typingDotsDrawable.stop();
         }
     }

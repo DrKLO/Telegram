@@ -60,7 +60,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     public boolean loadingBlockedUsers = false;
     public ArrayList<Integer> blockedUsers = new ArrayList<Integer>();
 
-    public HashMap<Integer, TLRPC.User> hidenAddToContacts = new HashMap<Integer, TLRPC.User>();
     private HashMap<Integer, TLRPC.EncryptedChat> acceptingChats = new HashMap<Integer, TLRPC.EncryptedChat>();
     private ArrayList<TLRPC.Updates> updatesQueue = new ArrayList<TLRPC.Updates>();
     private ArrayList<Long> pendingEncMessagesToDelete = new ArrayList<Long>();
@@ -317,7 +316,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         printingStrings.clear();
         totalDialogsCount = 0;
         lastPrintingStringCount = 0;
-        hidenAddToContacts.clear();
         updatesQueue.clear();
         pendingEncMessagesToDelete.clear();
         delayedEncryptedChatUpdates.clear();
@@ -391,7 +389,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         if (user == null) {
             return false;
         }
-        fromCache = fromCache && user.id / 1000 != 333;
+        fromCache = fromCache && user.id / 1000 != 333 && user.id != 777000;
         TLRPC.User oldUser = users.get(user.id);
         if (!fromCache) {
             users.put(user.id, user);
@@ -758,6 +756,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             if (user != null) {
                 user.photo = UserConfig.getCurrentUser().photo;
             }
+            NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
             NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_ALL);
             ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                 @Override
@@ -1379,7 +1378,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 if (!isCache) {
                     MessagesStorage.getInstance().putMessages(messagesRes, dialog_id);
                 }
-                if (lower_id != 0 && isCache && messagesRes.messages.size() == 0 && (load_type == 0 || load_type == 3)) {
+                if (lower_id != 0 && isCache && messagesRes.messages.size() == 0 && (load_type == 0 || load_type == 2 || load_type == 3)) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
@@ -3242,6 +3241,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
                 arr.add(obj);
                 pushMessages.add(obj);
+            } else if (update instanceof TLRPC.TL_updatePrivacy) {
+                updatesOnMainThread.add(update);
             }
         }
         if (!messages.isEmpty()) {
@@ -3299,7 +3300,18 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         TLRPC.User toDbUser = new TLRPC.User();
                         toDbUser.id = update.user_id;
                         TLRPC.User currentUser = getUser(update.user_id);
-                        if (update instanceof TLRPC.TL_updateUserStatus) {
+                        if (update instanceof TLRPC.TL_updatePrivacy) {
+                            if (update.key instanceof TLRPC.TL_privacyKeyStatusTimestamp) {
+                                ContactsController.getInstance().setPrivacyRules(update.rules);
+                            }
+                        } else if (update instanceof TLRPC.TL_updateUserStatus) {
+                            if (update.status instanceof TLRPC.TL_userStatusRecently) {
+                                update.status.expires = -100;
+                            } else if (update.status instanceof TLRPC.TL_userStatusLastWeek) {
+                                update.status.expires = -101;
+                            } else if (update.status instanceof TLRPC.TL_userStatusLastMonth) {
+                                update.status.expires = -102;
+                            }
                             if (currentUser != null) {
                                 currentUser.id = update.user_id;
                                 currentUser.status = update.status;

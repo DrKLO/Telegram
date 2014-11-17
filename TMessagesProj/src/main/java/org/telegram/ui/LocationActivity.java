@@ -27,6 +27,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
@@ -145,6 +146,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             avatarImageView = (BackupImageView)fragmentView.findViewById(R.id.location_avatar_view);
             if (avatarImageView != null) {
                 avatarImageView.processDetach = false;
+                avatarImageView.imageReceiver.setRoundRadius(AndroidUtilities.dp(32));
             }
             nameTextView = (TextView)fragmentView.findViewById(R.id.location_name_label);
             distanceTextView = (TextView)fragmentView.findViewById(R.id.location_distance_label);

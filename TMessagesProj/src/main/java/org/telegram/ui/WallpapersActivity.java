@@ -155,7 +155,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
             });
 
             ActionBarMenu menu = actionBar.createMenu();
-            doneButton = menu.addItem(done_button, R.drawable.ic_done, 0, AndroidUtilities.dp(56));
+            doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
             fragmentView = inflater.inflate(R.layout.settings_wallpapers_layout, container, false);
             listAdapter = new ListAdapter(getParentActivity());

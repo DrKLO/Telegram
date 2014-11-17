@@ -783,7 +783,7 @@ public class LocaleController {
 
     public static String formatUserStatus(TLRPC.User user) {
         if (user == null || user.status == null || user.status.expires == 0 || user instanceof TLRPC.TL_userDeleted || user instanceof TLRPC.TL_userEmpty) {
-            return getString("Offline", R.string.Offline);
+            return getString("ALongTimeAgo", R.string.ALongTimeAgo);
         } else {
             int currentTime = ConnectionsManager.getInstance().getCurrentTime();
             if (user.status.expires > currentTime) {
@@ -791,7 +791,13 @@ public class LocaleController {
             } else {
                 if (user.status.expires == -1) {
                     return getString("Invisible", R.string.Invisible);
-                } else {
+                } else if (user.status.expires == -100) {
+                    return getString("Lately", R.string.Lately);
+                } else if (user.status.expires == -101) {
+                    return getString("WithinAWeek", R.string.WithinAWeek);
+                } else if (user.status.expires == -102) {
+                    return getString("WithinAMonth", R.string.WithinAMonth);
+                }  else {
                     return formatDateOnline(user.status.expires);
                 }
             }

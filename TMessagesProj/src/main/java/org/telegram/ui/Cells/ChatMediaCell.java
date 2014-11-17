@@ -133,7 +133,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             infoPaint.setTextSize(AndroidUtilities.dp(12));
 
             namePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            namePaint.setColor(0xff000000);
+            namePaint.setColor(0xff212121);
             namePaint.setTextSize(AndroidUtilities.dp(16));
 
             docBackPaint = new Paint();
@@ -827,7 +827,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 menuDrawable = docMenuInDrawable;
             }
 
-            setDrawableBounds(menuDrawable, photoImage.getImageX() + backgroundWidth - AndroidUtilities.dp(50), AndroidUtilities.dp(10));
+            setDrawableBounds(menuDrawable, photoImage.getImageX() + backgroundWidth - AndroidUtilities.dp(44), AndroidUtilities.dp(10));
             menuDrawable.draw(canvas);
 
             if (!imageDrawn) {

@@ -566,29 +566,35 @@ public class DialogCell extends BaseCell {
                     continueUpdate = true;
                 }
             }
-            if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0) {
+            if (!continueUpdate && (mask & MessagesController.UPDATE_MASK_AVATAR) != 0) {
                 if (chat == null) {
                     continueUpdate = true;
                 }
             }
-            if ((mask & MessagesController.UPDATE_MASK_NAME) != 0) {
+            if (!continueUpdate && (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
                 if (chat == null) {
                     continueUpdate = true;
                 }
             }
-            if ((mask & MessagesController.UPDATE_MASK_CHAT_AVATAR) != 0) {
+            if (!continueUpdate && (mask & MessagesController.UPDATE_MASK_CHAT_AVATAR) != 0) {
                 if (user == null) {
                     continueUpdate = true;
                 }
             }
-            if ((mask & MessagesController.UPDATE_MASK_CHAT_NAME) != 0) {
+            if (!continueUpdate && (mask & MessagesController.UPDATE_MASK_CHAT_NAME) != 0) {
                 if (user == null) {
                     continueUpdate = true;
                 }
             }
-            if ((mask & MessagesController.UPDATE_MASK_READ_DIALOG_MESSAGE) != 0) {
+            if (!continueUpdate && (mask & MessagesController.UPDATE_MASK_READ_DIALOG_MESSAGE) != 0) {
                 if (message != null && lastUnreadState != message.isUnread()) {
                     continueUpdate = true;
+                } else if (allowPrintStrings) {
+                    TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs_dict.get(currentDialogId);
+                    if (dialog != null && unreadCount != dialog.unread_count) {
+                        unreadCount = dialog.unread_count;
+                        continueUpdate = true;
+                    }
                 }
             }
 

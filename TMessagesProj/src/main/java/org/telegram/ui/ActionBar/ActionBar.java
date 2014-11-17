@@ -17,7 +17,6 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -38,8 +37,6 @@ public class ActionBar extends FrameLayout {
         }
     }
 
-    private static boolean withStatusBar = Build.VERSION.SDK_INT >= 21;
-
     private FrameLayout titleFrameLayout;
     private ImageView backButtonImageView;
     private TextView titleTextView;
@@ -47,6 +44,7 @@ public class ActionBar extends FrameLayout {
     private ActionBarMenu menu;
     private ActionBarMenu actionMode;
     private View actionOverlay;
+    private boolean occupyStatusBar = Build.VERSION.SDK_INT >= 21;
 
     protected boolean isSearchFieldVisible;
     protected int itemsBackgroundResourceId;
@@ -64,9 +62,6 @@ public class ActionBar extends FrameLayout {
         layoutParams.width = LayoutParams.WRAP_CONTENT;
         layoutParams.height = LayoutParams.FILL_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-        if (withStatusBar) {
-            layoutParams.topMargin = AndroidUtilities.statusBarHeight;
-        }
         titleFrameLayout.setLayoutParams(layoutParams);
         titleFrameLayout.setPadding(0, 0, AndroidUtilities.dp(4), 0);
         titleFrameLayout.setEnabled(false);
@@ -162,8 +157,9 @@ public class ActionBar extends FrameLayout {
             subTitleTextView.setLayoutParams(layoutParams);
         }
 
-        ViewGroup.LayoutParams layoutParams1 = titleFrameLayout.getLayoutParams();
+        MarginLayoutParams layoutParams1 = (MarginLayoutParams) titleFrameLayout.getLayoutParams();
         layoutParams1.width = x + maxTextWidth + (isSearchFieldVisible ? 0 : AndroidUtilities.dp(6));
+        layoutParams1.topMargin = occupyStatusBar ? AndroidUtilities.statusBarHeight : 0;
         titleFrameLayout.setLayoutParams(layoutParams1);
     }
 
@@ -175,9 +171,7 @@ public class ActionBar extends FrameLayout {
         layoutParams.width = isSearchFieldVisible ? LayoutParams.MATCH_PARENT : LayoutParams.WRAP_CONTENT;
         layoutParams.height = height;
         layoutParams.leftMargin = isSearchFieldVisible ? AndroidUtilities.dp(54) : 0;
-        if (withStatusBar) {
-            layoutParams.topMargin = AndroidUtilities.statusBarHeight;
-        }
+        layoutParams.topMargin = occupyStatusBar ? AndroidUtilities.statusBarHeight : 0;
         menu.setLayoutParams(layoutParams);
         menu.measure(width, height);
     }
@@ -330,9 +324,7 @@ public class ActionBar extends FrameLayout {
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)view.getLayoutParams();
         layoutParams.width = LayoutParams.FILL_PARENT;
         layoutParams.height = LayoutParams.FILL_PARENT;
-        if (withStatusBar) {
-            layoutParams.topMargin = AndroidUtilities.statusBarHeight;
-        }
+        layoutParams.topMargin = occupyStatusBar ? AndroidUtilities.statusBarHeight : 0;
         view.setLayoutParams(layoutParams);
     }
 
@@ -343,13 +335,11 @@ public class ActionBar extends FrameLayout {
         actionMode = new ActionBarMenu(getContext(), this);
         actionMode.setBackgroundResource(R.drawable.editheader);
         addView(actionMode);
+        actionMode.setPadding(0, occupyStatusBar ? AndroidUtilities.statusBarHeight : 0, 0, 0);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)actionMode.getLayoutParams();
         layoutParams.height = LayoutParams.FILL_PARENT;
         layoutParams.width = LayoutParams.FILL_PARENT;
         layoutParams.gravity = Gravity.RIGHT;
-        if (withStatusBar) {
-            layoutParams.topMargin = AndroidUtilities.statusBarHeight;
-        }
         actionMode.setLayoutParams(layoutParams);
         actionMode.setVisibility(GONE);
         return actionMode;
@@ -414,9 +404,7 @@ public class ActionBar extends FrameLayout {
         positionMenu(MeasureSpec.getSize(widthMeasureSpec), actionBarHeight);
         positionTitle(MeasureSpec.getSize(widthMeasureSpec), actionBarHeight);
         positionBackOverlay(MeasureSpec.getSize(widthMeasureSpec), actionBarHeight);
-        if (Build.VERSION.SDK_INT >= 21) {
-            actionBarHeight += AndroidUtilities.statusBarHeight;
-        }
+        actionBarHeight += occupyStatusBar ? AndroidUtilities.statusBarHeight : 0;
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(actionBarHeight + extraHeight, MeasureSpec.EXACTLY));
     }
 
@@ -495,12 +483,18 @@ public class ActionBar extends FrameLayout {
             layoutParams.height = LayoutParams.MATCH_PARENT;
             actionOverlay.setLayoutParams(layoutParams);
             actionOverlay.measure(widthMeasureSpec, heightMeasureSpec);
-            if (withStatusBar) {
-                layoutParams.topMargin = AndroidUtilities.statusBarHeight;
-            }
+            layoutParams.topMargin = occupyStatusBar ? AndroidUtilities.statusBarHeight : 0;
             layoutParams.width = Math.min(actionOverlay.getMeasuredWidth() + AndroidUtilities.dp(4), widthMeasureSpec - (menu != null ? menu.getMeasuredWidth() : 0));
             actionOverlay.setLayoutParams(layoutParams);
         }
+    }
+
+    public void setOccupyStatusBar(boolean value) {
+        occupyStatusBar = value;
+    }
+
+    public boolean getOccupyStatusBar() {
+        return occupyStatusBar;
     }
 
     public void setItemsBackground(int resourceId) {

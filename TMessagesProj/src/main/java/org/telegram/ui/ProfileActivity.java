@@ -224,6 +224,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setBackOverlay(R.layout.updating_state_layout);
             actionBar.setExtraHeight(AndroidUtilities.dp(88), false);
+            if (AndroidUtilities.isTablet()) {
+                actionBar.setOccupyStatusBar(false);
+            }
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(final int id) {
@@ -675,7 +678,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         FrameLayout.LayoutParams layoutParams;
         if (listView != null) {
             layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-            layoutParams.topMargin = (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.getCurrentActionBarHeight();
+            layoutParams.topMargin = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.getCurrentActionBarHeight();
             listView.setLayoutParams(layoutParams);
         }
 
@@ -694,7 +697,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             if (writeButton != null) {
                 layoutParams = (FrameLayout.LayoutParams) writeButton.getLayoutParams();
-                layoutParams.topMargin = (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.getCurrentActionBarHeight() + actionBar.getExtraHeight() - AndroidUtilities.dp(29.5f);
+                layoutParams.topMargin = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.getCurrentActionBarHeight() + actionBar.getExtraHeight() - AndroidUtilities.dp(29.5f);
                 writeButton.setLayoutParams(layoutParams);
                 ViewProxy.setAlpha(writeButton, diff);
                 writeButton.setVisibility(diff == 0 ? View.GONE : View.VISIBLE);
@@ -877,6 +880,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             object.user_id = user_id;
             object.thumb = object.imageReceiver.getBitmap();
             object.size = -1;
+            object.radius = avatarImage.imageReceiver.getRoundRadius();
             return object;
         }
         return null;
@@ -1019,6 +1023,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void updateProfileData() {
+        if (avatarImage == null) {
+            return;
+        }
         if (user_id != 0) {
             TLRPC.User user = MessagesController.getInstance().getUser(user_id);
             TLRPC.FileLocation photo = null;
@@ -1219,7 +1226,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     view = new TextCell(mContext);
                 }
                 TextCell textCell = (TextCell) view;
-                textCell.setTextColor(0xff000000);
+                textCell.setTextColor(0xff212121);
 
                 if (i == sharedMediaRow) {
                     String value;

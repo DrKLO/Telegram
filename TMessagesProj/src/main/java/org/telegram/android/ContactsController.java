@@ -54,6 +54,11 @@ public class ContactsController {
     private String inviteText;
     private boolean updatingInviteText = false;
 
+    private int loadingDeleteInfo = 0;
+    private int deleteAccountTTL;
+    private int loadingLastSeenInfo = 0;
+    private ArrayList<TLRPC.PrivacyRule> privacyRules = null;
+
     public static class Contact {
         public int id;
         public ArrayList<String> phones = new ArrayList<String>();
@@ -119,6 +124,10 @@ public class ContactsController {
         contactsLoaded = false;
         contactsBookLoaded = false;
         lastContactsVersions = "";
+        loadingDeleteInfo = 0;
+        deleteAccountTTL = 0;
+        loadingLastSeenInfo = 0;
+        privacyRules = null;
     }
 
     public void checkInviteText() {
@@ -1566,6 +1575,81 @@ public class ContactsController {
                 });
             }
         }, true, RPCRequest.RPCRequestClassGeneric);
+    }
+
+    public void loadPrivacySettings() {
+        if (loadingDeleteInfo == 0) {
+            loadingDeleteInfo = 1;
+            TLRPC.TL_account_getAccountTTL req = new TLRPC.TL_account_getAccountTTL();
+            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                @Override
+                public void run(final TLObject response, final TLRPC.TL_error error) {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (error == null) {
+                                TLRPC.TL_accountDaysTTL ttl = (TLRPC.TL_accountDaysTTL) response;
+                                deleteAccountTTL = ttl.days;
+                                loadingDeleteInfo = 2;
+                            } else {
+                                loadingDeleteInfo = 0;
+                            }
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.privacyRulesUpdated);
+                        }
+                    });
+                }
+            });
+        }
+        if (loadingLastSeenInfo == 0) {
+            loadingLastSeenInfo = 1;
+            TLRPC.TL_account_getPrivacy req = new TLRPC.TL_account_getPrivacy();
+            req.key = new TLRPC.TL_inputPrivacyKeyStatusTimestamp();
+            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                @Override
+                public void run(final TLObject response, final TLRPC.TL_error error) {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (error == null) {
+                                TLRPC.TL_account_privacyRules rules = (TLRPC.TL_account_privacyRules) response;
+                                MessagesController.getInstance().putUsers(rules.users, false);
+                                privacyRules = rules.rules;
+                                loadingLastSeenInfo = 2;
+                            } else {
+                                loadingLastSeenInfo = 0;
+                            }
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.privacyRulesUpdated);
+                        }
+                    });
+                }
+            });
+        }
+        NotificationCenter.getInstance().postNotificationName(NotificationCenter.privacyRulesUpdated);
+    }
+
+    public void setDeleteAccountTTL(int ttl) {
+        deleteAccountTTL = ttl;
+    }
+
+    public int getDeleteAccountTTL() {
+        return deleteAccountTTL;
+    }
+
+    public boolean getLoadingDeleteInfo() {
+        return loadingDeleteInfo != 2;
+    }
+
+    public boolean getLoadingLastSeenInfo() {
+        return loadingLastSeenInfo != 2;
+    }
+
+    public ArrayList<TLRPC.PrivacyRule> getPrivacyRules() {
+        return privacyRules;
+    }
+
+    public void setPrivacyRules(ArrayList<TLRPC.PrivacyRule> rules) {
+        privacyRules = rules;
+        NotificationCenter.getInstance().postNotificationName(NotificationCenter.privacyRulesUpdated);
     }
 
     public static String formatName(String firstName, String lastName) {

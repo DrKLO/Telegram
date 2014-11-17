@@ -19,6 +19,7 @@
             android:layout_height="wrap_content"
             android:textSize="16dp"
             android:textColor="#ff000000"
+            android:textColorLink="#ff000000"
             android:id="@+id/message_text"
             android:gravity="center"
             android:layout_gravity="center"/>

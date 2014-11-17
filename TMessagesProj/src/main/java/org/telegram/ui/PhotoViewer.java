@@ -76,6 +76,7 @@ import java.util.HashMap;
 import java.util.Locale;
 
 public class PhotoViewer implements NotificationCenter.NotificationCenterDelegate, GestureDetector.OnGestureListener, GestureDetector.OnDoubleTapListener {
+
     private int classGuid;
     private PhotoViewerProvider placeProvider;
     private boolean isVisible;
@@ -325,6 +326,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         public int user_id;
         public int index;
         public int size;
+        public int radius;
     }
 
     public static interface PhotoViewerProvider {
@@ -602,6 +604,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
         actionBar = new ActionBar(activity);
         actionBar.setBackgroundColor(0x7F000000);
+        actionBar.setOccupyStatusBar(false);
         actionBar.setItemsBackground(R.drawable.bar_selector_white);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setTitle(LocaleController.formatString("Of", R.string.Of, 1, 1));
@@ -1591,6 +1594,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         final Rect drawRegion = object.imageReceiver.getDrawRegion();
 
         animatingImageView.setVisibility(View.VISIBLE);
+        animatingImageView.setRadius(object.radius);
+        animatingImageView.setNeedRadius(object.radius != 0);
         animatingImageView.setImageBitmap(object.thumb);
 
         ViewProxy.setAlpha(animatingImageView, 1.0f);
@@ -1643,6 +1648,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         ObjectAnimatorProxy.ofInt(animatingImageView, "clipHorizontal", clipHorizontal, 0),
                         ObjectAnimatorProxy.ofInt(animatingImageView, "clipTop", clipTop, 0),
                         ObjectAnimatorProxy.ofInt(animatingImageView, "clipBottom", clipBottom, 0),
+                        ObjectAnimatorProxy.ofInt(animatingImageView, "radius", 0),
                         ObjectAnimatorProxy.ofFloat(containerView, "alpha", 0.0f, 1.0f)
                 );
 
@@ -1731,11 +1737,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             final ViewGroup.LayoutParams layoutParams = animatingImageView.getLayoutParams();
             Rect drawRegion = null;
             if (object != null) {
+                animatingImageView.setNeedRadius(object.radius != 0);
                 drawRegion = object.imageReceiver.getDrawRegion();
                 layoutParams.width = drawRegion.right - drawRegion.left;
                 layoutParams.height = drawRegion.bottom - drawRegion.top;
                 animatingImageView.setImageBitmap(object.thumb);
             } else {
+                animatingImageView.setNeedRadius(false);
                 layoutParams.width = centerImage.getImageWidth();
                 layoutParams.height = centerImage.getImageHeight();
                 animatingImageView.setImageBitmap(centerImage.getBitmap());
@@ -1782,6 +1790,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         ObjectAnimatorProxy.ofInt(animatingImageView, "clipHorizontal", clipHorizontal),
                         ObjectAnimatorProxy.ofInt(animatingImageView, "clipTop", clipTop),
                         ObjectAnimatorProxy.ofInt(animatingImageView, "clipBottom", clipBottom),
+                        ObjectAnimatorProxy.ofInt(animatingImageView, "radius", object.radius),
                         ObjectAnimatorProxy.ofFloat(containerView, "alpha", 0.0f)
                 );
             } else {

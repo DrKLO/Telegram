@@ -9,6 +9,7 @@
 package org.telegram.ui.ActionBar;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -58,19 +59,31 @@ public class ActionBarMenu extends LinearLayout {
         return view;
     }
 
+    public ActionBarMenuItem addItem(int id, Drawable drawable) {
+        return addItem(id, 0, parentActionBar.itemsBackgroundResourceId, drawable, AndroidUtilities.dp(48));
+    }
+
     public ActionBarMenuItem addItem(int id, int icon) {
         return addItem(id, icon, parentActionBar.itemsBackgroundResourceId);
     }
 
     public ActionBarMenuItem addItem(int id, int icon, int backgroundResource) {
-        return addItem(id, icon, parentActionBar.itemsBackgroundResourceId, AndroidUtilities.dp(48));
+        return addItem(id, icon, backgroundResource, null, AndroidUtilities.dp(48));
     }
 
-    public ActionBarMenuItem addItem(int id, int icon, int backgroundResource, int width) {
+    public ActionBarMenuItem addItemWithWidth(int id, int icon, int width) {
+        return addItem(id, icon, parentActionBar.itemsBackgroundResourceId, null, width);
+    }
+
+    public ActionBarMenuItem addItem(int id, int icon, int backgroundResource, Drawable drawable, int width) {
         ActionBarMenuItem menuItem = new ActionBarMenuItem(getContext(), this, backgroundResource);
         menuItem.setTag(id);
         menuItem.setScaleType(ImageView.ScaleType.CENTER);
-        menuItem.setImageResource(icon);
+        if (drawable != null) {
+            menuItem.setImageDrawable(drawable);
+        } else {
+            menuItem.setImageResource(icon);
+        }
         addView(menuItem);
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)menuItem.getLayoutParams();
         layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;

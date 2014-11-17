@@ -8,15 +8,10 @@
 
 package org.telegram.ui.Views;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.AnimatorSet;
-import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Rect;
-import android.os.Build;
 import android.os.PowerManager;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -48,9 +43,11 @@ import org.telegram.messenger.FileLog;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
+import org.telegram.ui.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.ui.AnimationCompat.AnimatorSetProxy;
+import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.ui.AnimationCompat.ViewProxy;
 import org.telegram.ui.ApplicationLoader;
-
-import java.util.ArrayList;
 
 public class ChatActivityEnterView implements NotificationCenter.NotificationCenterDelegate, SizeNotifierRelativeLayout.SizeNotifierRelativeLayoutDelegate {
 
@@ -71,7 +68,8 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
     private PowerManager.WakeLock mWakeLock;
     private SizeNotifierRelativeLayout sizeNotifierRelativeLayout;
     private FrameLayout attachButton;
-    private Object runningAnimation;
+    private AnimatorSetProxy runningAnimation;
+    private AnimatorSetProxy runningAnimation2;
     private int runningAnimationType;
 
     private int keyboardHeight;
@@ -134,6 +132,9 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         messsageEditText.setHint(LocaleController.getString("TypeMessage", R.string.TypeMessage));
 
         attachButton = (FrameLayout) containerView.findViewById(R.id.chat_attach_button);
+        if (attachButton != null) {
+            ViewProxy.setPivotX(attachButton, AndroidUtilities.dp(48));
+        }
 
         sendButton = (ImageButton) containerView.findViewById(R.id.chat_send_button);
         sendButton.setVisibility(View.INVISIBLE);
@@ -224,38 +225,37 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                         recordingAudio = false;
                         updateAudioRecordIntefrace();
                     }
-                    if (android.os.Build.VERSION.SDK_INT > 13) {
-                        x = x + audioSendButton.getX();
-                        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) slideText.getLayoutParams();
-                        if (startedDraggingX != -1) {
-                            float dist = (x - startedDraggingX);
-                            params.leftMargin = AndroidUtilities.dp(30) + (int) dist;
-                            slideText.setLayoutParams(params);
-                            float alpha = 1.0f + dist / distCanMove;
-                            if (alpha > 1) {
-                                alpha = 1;
-                            } else if (alpha < 0) {
-                                alpha = 0;
+
+                    x = x + ViewProxy.getX(audioSendButton);
+                    FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) slideText.getLayoutParams();
+                    if (startedDraggingX != -1) {
+                        float dist = (x - startedDraggingX);
+                        params.leftMargin = AndroidUtilities.dp(30) + (int) dist;
+                        slideText.setLayoutParams(params);
+                        float alpha = 1.0f + dist / distCanMove;
+                        if (alpha > 1) {
+                            alpha = 1;
+                        } else if (alpha < 0) {
+                            alpha = 0;
+                        }
+                        ViewProxy.setAlpha(slideText, alpha);
+                    }
+                    if (x <= ViewProxy.getX(slideText) + slideText.getWidth() + AndroidUtilities.dp(30)) {
+                        if (startedDraggingX == -1) {
+                            startedDraggingX = x;
+                            distCanMove = (recordPanel.getMeasuredWidth() - slideText.getMeasuredWidth() - AndroidUtilities.dp(48)) / 2.0f;
+                            if (distCanMove <= 0) {
+                                distCanMove = AndroidUtilities.dp(80);
+                            } else if (distCanMove > AndroidUtilities.dp(80)) {
+                                distCanMove = AndroidUtilities.dp(80);
                             }
-                            slideText.setAlpha(alpha);
                         }
-                        if (x <= slideText.getX() + slideText.getWidth() + AndroidUtilities.dp(30)) {
-                            if (startedDraggingX == -1) {
-                                startedDraggingX = x;
-                                distCanMove = (recordPanel.getMeasuredWidth() - slideText.getMeasuredWidth() - AndroidUtilities.dp(48)) / 2.0f;
-                                if (distCanMove <= 0) {
-                                    distCanMove = AndroidUtilities.dp(80);
-                                } else if (distCanMove > AndroidUtilities.dp(80)) {
-                                    distCanMove = AndroidUtilities.dp(80);
-                                }
-                            }
-                        }
-                        if (params.leftMargin > AndroidUtilities.dp(30)) {
-                            params.leftMargin = AndroidUtilities.dp(30);
-                            slideText.setLayoutParams(params);
-                            slideText.setAlpha(1);
-                            startedDraggingX = -1;
-                        }
+                    }
+                    if (params.leftMargin > AndroidUtilities.dp(30)) {
+                        params.leftMargin = AndroidUtilities.dp(30);
+                        slideText.setLayoutParams(params);
+                        ViewProxy.setAlpha(slideText, 1);
+                        startedDraggingX = -1;
                     }
                 }
                 view.onTouchEvent(motionEvent);
@@ -349,46 +349,63 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         return src;
     }
 
-    private void checkSendButton(boolean animated) {
+    private void checkSendButton(final boolean animated) {
         String message = getTrimmedString(messsageEditText.getText().toString());
         if (message.length() > 0) {
             if (audioSendButton.getVisibility() == View.VISIBLE) {
-                if (Build.VERSION.SDK_INT >= 11 && animated) {
+                if (animated) {
                     if (runningAnimationType == 1) {
                         return;
                     }
                     if (runningAnimation != null) {
-                        ((AnimatorSet) runningAnimation).cancel();
+                        runningAnimation.cancel();
                         runningAnimation = null;
+                    }
+                    if (runningAnimation2 != null) {
+                        runningAnimation2.cancel();
+                        runningAnimation2 = null;
+                    }
+
+                    if (attachButton != null) {
+                        runningAnimation2 = new AnimatorSetProxy();
+                        runningAnimation2.playTogether(
+                                ObjectAnimatorProxy.ofFloat(attachButton, "alpha", 0.0f),
+                                ObjectAnimatorProxy.ofFloat(attachButton, "scaleX", 0.0f)
+                        );
+                        runningAnimation2.setDuration(100);
+                        runningAnimation2.addListener(new AnimatorListenerAdapterProxy() {
+                            @Override
+                            public void onAnimationEnd(Object animation) {
+                                if (runningAnimation2.equals(animation)) {
+                                    attachButton.setVisibility(View.GONE);
+                                }
+                            }
+                        });
+                        runningAnimation2.start();
+
+                        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
+                        layoutParams.rightMargin = AndroidUtilities.dp(2);
+                        messsageEditText.setLayoutParams(layoutParams);
                     }
 
                     sendButton.setVisibility(View.VISIBLE);
-                    AnimatorSet animatorSet = new AnimatorSet();
-                    runningAnimation = animatorSet;
+                    runningAnimation = new AnimatorSetProxy();
                     runningAnimationType = 1;
 
-                    ArrayList<Animator> animators = new ArrayList<Animator>();
-                    animators.add(ObjectAnimator.ofFloat(audioSendButton, "scaleX", 0.1f));
-                    animators.add(ObjectAnimator.ofFloat(audioSendButton, "scaleY", 0.1f));
-                    animators.add(ObjectAnimator.ofFloat(audioSendButton, "alpha", 0.0f));
-                    animators.add(ObjectAnimator.ofFloat(sendButton, "scaleX", 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(sendButton, "scaleY", 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(sendButton, "alpha", 1.0f));
-                    if (attachButton != null) {
-                        animators.add(ObjectAnimator.ofFloat(attachButton, "alpha", 0.0f));
-                        animators.add(ObjectAnimator.ofFloat(attachButton, "translationX", AndroidUtilities.dp(48)));
+                    runningAnimation.playTogether(
+                            ObjectAnimatorProxy.ofFloat(audioSendButton, "scaleX", 0.1f),
+                            ObjectAnimatorProxy.ofFloat(audioSendButton, "scaleY", 0.1f),
+                            ObjectAnimatorProxy.ofFloat(audioSendButton, "alpha", 0.0f),
+                            ObjectAnimatorProxy.ofFloat(sendButton, "scaleX", 1.0f),
+                            ObjectAnimatorProxy.ofFloat(sendButton, "scaleY", 1.0f),
+                            ObjectAnimatorProxy.ofFloat(sendButton, "alpha", 1.0f)
+                    );
 
-                        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
-                        layoutParams.rightMargin = AndroidUtilities.dp(6);
-                        messsageEditText.setLayoutParams(layoutParams);
-                    }
-                    animatorSet.playTogether(animators);
-
-                    animatorSet.setDuration(200);
-                    animatorSet.addListener(new AnimatorListenerAdapter() {
+                    runningAnimation.setDuration(150);
+                    runningAnimation.addListener(new AnimatorListenerAdapterProxy() {
                         @Override
-                        public void onAnimationEnd(Animator animation) {
-                            if (animation == runningAnimation) {
+                        public void onAnimationEnd(Object animation) {
+                            if (runningAnimation.equals(animation)) {
                                 sendButton.setVisibility(View.VISIBLE);
                                 audioSendButton.setVisibility(View.INVISIBLE);
                                 runningAnimation = null;
@@ -396,16 +413,14 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                             }
                         }
                     });
-                    animatorSet.start();
+                    runningAnimation.start();
                 } else {
-                    if (Build.VERSION.SDK_INT >= 11) {
-                        audioSendButton.setScaleX(0.1f);
-                        audioSendButton.setScaleY(0.1f);
-                        audioSendButton.setAlpha(0.0f);
-                        sendButton.setScaleX(1.0f);
-                        sendButton.setScaleY(1.0f);
-                        sendButton.setAlpha(1.0f);
-                    }
+                    ViewProxy.setScaleX(audioSendButton, 0.1f);
+                    ViewProxy.setScaleY(audioSendButton, 0.1f);
+                    ViewProxy.setAlpha(audioSendButton, 0.0f);
+                    ViewProxy.setScaleX(sendButton, 1.0f);
+                    ViewProxy.setScaleY(sendButton, 1.0f);
+                    ViewProxy.setAlpha(sendButton, 1.0f);
                     sendButton.setVisibility(View.VISIBLE);
                     audioSendButton.setVisibility(View.INVISIBLE);
                     if (attachButton != null) {
@@ -414,43 +429,53 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 }
             }
         } else if (sendButton.getVisibility() == View.VISIBLE) {
-            if (Build.VERSION.SDK_INT >= 11 && animated) {
+            if (animated) {
                 if (runningAnimationType == 2) {
                     return;
                 }
 
                 if (runningAnimation != null) {
-                    ((AnimatorSet) runningAnimation).cancel();
+                    runningAnimation.cancel();
                     runningAnimation = null;
+                }
+                if (runningAnimation2 != null) {
+                    runningAnimation2.cancel();
+                    runningAnimation2 = null;
+                }
+
+                if (attachButton != null) {
+                    attachButton.setVisibility(View.VISIBLE);
+                    runningAnimation2 = new AnimatorSetProxy();
+                    runningAnimation2.playTogether(
+                            ObjectAnimatorProxy.ofFloat(attachButton, "alpha", 1.0f),
+                            ObjectAnimatorProxy.ofFloat(attachButton, "scaleX", 1.0f)
+                    );
+                    runningAnimation2.setDuration(100);
+                    runningAnimation2.start();
+
+                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
+                    layoutParams.rightMargin = AndroidUtilities.dp(2);
+                    messsageEditText.setLayoutParams(layoutParams);
                 }
 
                 audioSendButton.setVisibility(View.VISIBLE);
-                AnimatorSet animatorSet = new AnimatorSet();
-                runningAnimation = animatorSet;
+                runningAnimation = new AnimatorSetProxy();
                 runningAnimationType = 2;
 
-                ArrayList<Animator> animators = new ArrayList<Animator>();
-                animators.add(ObjectAnimator.ofFloat(sendButton, "scaleX", 0.1f));
-                animators.add(ObjectAnimator.ofFloat(sendButton, "scaleY", 0.1f));
-                animators.add(ObjectAnimator.ofFloat(sendButton, "alpha", 0.0f));
-                animators.add(ObjectAnimator.ofFloat(audioSendButton, "scaleX", 1.0f));
-                animators.add(ObjectAnimator.ofFloat(audioSendButton, "scaleY", 1.0f));
-                animators.add(ObjectAnimator.ofFloat(audioSendButton, "alpha", 1.0f));
-                if (attachButton != null) {
-                    animators.add(ObjectAnimator.ofFloat(attachButton, "alpha", 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(attachButton, "translationX", 0.0f));
+                runningAnimation.playTogether(
+                        ObjectAnimatorProxy.ofFloat(sendButton, "scaleX", 0.1f),
+                        ObjectAnimatorProxy.ofFloat(sendButton, "scaleY", 0.1f),
+                        ObjectAnimatorProxy.ofFloat(sendButton, "alpha", 0.0f),
+                        ObjectAnimatorProxy.ofFloat(audioSendButton, "scaleX", 1.0f),
+                        ObjectAnimatorProxy.ofFloat(audioSendButton, "scaleY", 1.0f),
+                        ObjectAnimatorProxy.ofFloat(audioSendButton, "alpha", 1.0f)
+                );
 
-                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
-                    layoutParams.rightMargin = AndroidUtilities.dp(54);
-                    messsageEditText.setLayoutParams(layoutParams);
-                }
-                animatorSet.playTogether(animators);
-
-                animatorSet.setDuration(200);
-                animatorSet.addListener(new AnimatorListenerAdapter() {
+                runningAnimation.setDuration(150);
+                runningAnimation.addListener(new AnimatorListenerAdapterProxy() {
                     @Override
-                    public void onAnimationEnd(Animator animation) {
-                        if (animation == runningAnimation) {
+                    public void onAnimationEnd(Object animation) {
+                        if (runningAnimation.equals(animation)) {
                             sendButton.setVisibility(View.INVISIBLE);
                             audioSendButton.setVisibility(View.VISIBLE);
                             runningAnimation = null;
@@ -458,16 +483,14 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                         }
                     }
                 });
-                animatorSet.start();
+                runningAnimation.start();
             } else {
-                if (Build.VERSION.SDK_INT >= 11) {
-                    sendButton.setScaleX(0.1f);
-                    sendButton.setScaleY(0.1f);
-                    sendButton.setAlpha(0.0f);
-                    audioSendButton.setScaleX(1.0f);
-                    audioSendButton.setScaleY(1.0f);
-                    audioSendButton.setAlpha(1.0f);
-                }
+                ViewProxy.setScaleX(sendButton, 0.1f);
+                ViewProxy.setScaleY(sendButton, 0.1f);
+                ViewProxy.setAlpha(sendButton, 0.0f);
+                ViewProxy.setScaleX(audioSendButton, 1.0f);
+                ViewProxy.setScaleY(audioSendButton, 1.0f);
+                ViewProxy.setAlpha(audioSendButton, 1.0f);
                 sendButton.setVisibility(View.INVISIBLE);
                 audioSendButton.setVisibility(View.VISIBLE);
                 if (attachButton != null) {
@@ -493,31 +516,21 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             recordPanel.setVisibility(View.VISIBLE);
             recordTimeText.setText("00:00");
             lastTimeString = null;
-            if (android.os.Build.VERSION.SDK_INT > 13) {
-                FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) slideText.getLayoutParams();
-                params.leftMargin = AndroidUtilities.dp(30);
-                slideText.setLayoutParams(params);
-                slideText.setAlpha(1);
-                recordPanel.setX(AndroidUtilities.displaySize.x);
-                recordPanel.animate().setInterpolator(new AccelerateDecelerateInterpolator()).setListener(new Animator.AnimatorListener() {
-                    @Override
-                    public void onAnimationStart(Animator animator) {
-                    }
 
-                    @Override
-                    public void onAnimationEnd(Animator animator) {
-                        recordPanel.setX(0);
-                    }
-
-                    @Override
-                    public void onAnimationCancel(Animator animator) {
-                    }
-
-                    @Override
-                    public void onAnimationRepeat(Animator animator) {
-                    }
-                }).setDuration(300).translationX(0).start();
-            }
+            FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) slideText.getLayoutParams();
+            params.leftMargin = AndroidUtilities.dp(30);
+            slideText.setLayoutParams(params);
+            ViewProxy.setAlpha(slideText, 1);
+            recordPanel.setX(AndroidUtilities.displaySize.x);
+            ObjectAnimatorProxy animatorProxy = ObjectAnimatorProxy.ofFloatProxy(recordPanel, "translationX", 0).setDuration(300);
+            animatorProxy.addListener(new AnimatorListenerAdapterProxy() {
+                @Override
+                public void onAnimationEnd(Object animator) {
+                    ViewProxy.setX(recordPanel, 0);
+                }
+            });
+            animatorProxy.setInterpolator(new AccelerateDecelerateInterpolator());
+            animatorProxy.start();
         } else {
             if (mWakeLock != null) {
                 try {
@@ -528,33 +541,20 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 }
             }
             AndroidUtilities.unlockOrientation(parentActivity);
-            if (android.os.Build.VERSION.SDK_INT > 13) {
-                recordPanel.animate().setInterpolator(new AccelerateDecelerateInterpolator()).setListener(new Animator.AnimatorListener() {
-                    @Override
-                    public void onAnimationStart(Animator animator) {
 
-                    }
-
-                    @Override
-                    public void onAnimationEnd(Animator animator) {
-                        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) slideText.getLayoutParams();
-                        params.leftMargin = AndroidUtilities.dp(30);
-                        slideText.setLayoutParams(params);
-                        slideText.setAlpha(1);
-                        recordPanel.setVisibility(View.GONE);
-                    }
-
-                    @Override
-                    public void onAnimationCancel(Animator animator) {
-                    }
-
-                    @Override
-                    public void onAnimationRepeat(Animator animator) {
-                    }
-                }).setDuration(300).translationX(AndroidUtilities.displaySize.x).start();
-            } else {
-                recordPanel.setVisibility(View.GONE);
-            }
+            ObjectAnimatorProxy animatorProxy = ObjectAnimatorProxy.ofFloatProxy(recordPanel, "translationX", AndroidUtilities.displaySize.x).setDuration(300);
+            animatorProxy.addListener(new AnimatorListenerAdapterProxy() {
+                @Override
+                public void onAnimationEnd(Object animator) {
+                    FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) slideText.getLayoutParams();
+                    params.leftMargin = AndroidUtilities.dp(30);
+                    slideText.setLayoutParams(params);
+                    ViewProxy.setAlpha(slideText, 1);
+                    recordPanel.setVisibility(View.GONE);
+                }
+            });
+            animatorProxy.setInterpolator(new AccelerateDecelerateInterpolator());
+            animatorProxy.start();
         }
     }
 

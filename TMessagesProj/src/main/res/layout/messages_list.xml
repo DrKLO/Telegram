@@ -14,18 +14,33 @@
         android:dividerHeight="0px"
         android:animationCache="false"/>
 
-    <TextView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:textColor="#808080"
+        android:id="@+id/search_empty_view"
+        android:orientation="vertical"
         android:gravity="center"
-        android:textSize="24dp"
-        android:id="@+id/searchEmptyView"
-        android:visibility="gone"/>
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:textColor="#808080"
+            android:gravity="center"
+            android:textSize="20dp"
+            android:id="@+id/search_empty_text"
+            android:layout_weight="1"/>
+
+        <FrameLayout
+            android:layout_height="0dp"
+            android:layout_width="match_parent"
+            android:layout_weight="1"/>
+
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:id="@+id/list_empty_view"
         android:orientation="vertical"
         android:gravity="center"
@@ -33,15 +48,15 @@
 
         <TextView
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:textColor="#959595"
             android:gravity="center"
-            android:textSize="24dp"
+            android:textSize="20dp"
             android:id="@+id/list_empty_view_text1"/>
 
         <TextView
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:textColor="#959595"
             android:gravity="center"
             android:textSize="15dp"

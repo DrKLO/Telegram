@@ -184,7 +184,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             });
 
             ActionBarMenu menu = actionBar.createMenu();
-            menu.addItem(done_button, R.drawable.ic_done, 0, AndroidUtilities.dp(56));
+            menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
             fragmentView = new LinearLayout(getParentActivity());
             LinearLayout linearLayout = (LinearLayout) fragmentView;
@@ -198,6 +198,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             frameLayout.setLayoutParams(layoutParams);
 
             avatarImage = new BackupImageView(getParentActivity());
+            avatarImage.imageReceiver.setRoundRadius(AndroidUtilities.dp(32));
             avatarDrawable.setInfo(5, null, null, isBroadcast);
             avatarImage.setImageDrawable(avatarDrawable);
             frameLayout.addView(avatarImage);
@@ -254,12 +255,12 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             nameTextView.setMaxLines(4);
             nameTextView.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
             nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            nameTextView.setHintTextColor(0xffa6a6a6);
+            nameTextView.setHintTextColor(0xff979797);
             nameTextView.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
             nameTextView.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
             nameTextView.setPadding(0, 0, 0, AndroidUtilities.dp(8));
             AndroidUtilities.clearCursorDrawable(nameTextView);
-            nameTextView.setTextColor(0xff000000);
+            nameTextView.setTextColor(0xff212121);
             frameLayout.addView(nameTextView);
             layoutParams1 = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
             layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;

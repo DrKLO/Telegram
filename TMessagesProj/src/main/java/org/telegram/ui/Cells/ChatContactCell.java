@@ -66,12 +66,13 @@ public class ChatContactCell extends ChatBaseCell {
 
             phonePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             phonePaint.setTextSize(AndroidUtilities.dp(15));
-            phonePaint.setColor(0xff000000);
+            phonePaint.setColor(0xff212121);
 
             addContactDrawableIn = getResources().getDrawable(R.drawable.addcontact_blue);
             addContactDrawableOut = getResources().getDrawable(R.drawable.addcontact_green);
         }
         avatarImage = new ImageReceiver(this);
+        avatarImage.setRoundRadius(AndroidUtilities.dp(21));
         avatarDrawable = new AvatarDrawable();
     }
 

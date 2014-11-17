@@ -18,9 +18,10 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.ui.Views.FrameLayoutFixed;
 import org.telegram.ui.Views.Switch;
 
-public class TextCheckCell extends FrameLayout {
+public class TextCheckCell extends FrameLayoutFixed {
 
     private TextView textView;
     private Switch checkBox;
@@ -37,7 +38,7 @@ public class TextCheckCell extends FrameLayout {
         }
 
         textView = new TextView(context);
-        textView.setTextColor(0xff000000);
+        textView.setTextColor(0xff212121);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
         textView.setMaxLines(1);

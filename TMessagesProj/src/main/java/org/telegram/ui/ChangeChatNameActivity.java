@@ -16,6 +16,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -74,25 +75,31 @@ public class ChangeChatNameActivity extends BaseFragment {
             });
 
             ActionBarMenu menu = actionBar.createMenu();
-            doneButton = menu.addItem(done_button, R.drawable.ic_done, 0, AndroidUtilities.dp(56));
+            doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
             TLRPC.Chat currentChat = MessagesController.getInstance().getChat(chat_id);
 
             fragmentView = new LinearLayout(inflater.getContext());
             fragmentView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-            fragmentView.setPadding(0, AndroidUtilities.dp(8), 0, 0);
             ((LinearLayout) fragmentView).setOrientation(LinearLayout.VERTICAL);
+            fragmentView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    return true;
+                }
+            });
 
             firstNameField = new EditText(inflater.getContext());
             firstNameField.setText(currentChat.title);
-            firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 19);
-            firstNameField.setHintTextColor(0xffa3a3a3);
-            firstNameField.setTextColor(0xff000000);
-            firstNameField.setPadding(AndroidUtilities.dp(15), 0, AndroidUtilities.dp(15), AndroidUtilities.dp(15));
+            firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+            firstNameField.setHintTextColor(0xff979797);
+            firstNameField.setTextColor(0xff212121);
             firstNameField.setMaxLines(3);
+            firstNameField.setPadding(0, 0, 0, 0);
             firstNameField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             firstNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
             firstNameField.setImeOptions(EditorInfo.IME_ACTION_DONE);
+            firstNameField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             AndroidUtilities.clearCursorDrawable(firstNameField);
             firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
@@ -104,17 +111,14 @@ public class ChangeChatNameActivity extends BaseFragment {
                     return false;
                 }
             });
-            if (LocaleController.isRTL) {
-                firstNameField.setGravity(Gravity.RIGHT);
-            }
 
             ((LinearLayout) fragmentView).addView(firstNameField);
             LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)firstNameField.getLayoutParams();
-            layoutParams.topMargin = AndroidUtilities.dp(15);
-            layoutParams.leftMargin = AndroidUtilities.dp(16);
-            layoutParams.rightMargin = AndroidUtilities.dp(16);
+            layoutParams.topMargin = AndroidUtilities.dp(24);
+            layoutParams.height = AndroidUtilities.dp(36);
+            layoutParams.leftMargin = AndroidUtilities.dp(24);
+            layoutParams.rightMargin = AndroidUtilities.dp(24);
             layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
             firstNameField.setLayoutParams(layoutParams);
 
             if (chat_id > 0) {

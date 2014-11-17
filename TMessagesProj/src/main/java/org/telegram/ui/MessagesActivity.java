@@ -58,7 +58,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     private ListView messagesListView;
     private DialogsAdapter dialogsAdapter;
     private DialogsSearchAdapter dialogsSearchAdapter;
-    private TextView searchEmptyView;
+    private View searchEmptyView;
     private View progressView;
     private View emptyView;
     private ImageView floatingButton;
@@ -243,14 +243,13 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
             progressView = fragmentView.findViewById(R.id.progressLayout);
             dialogsAdapter.notifyDataSetChanged();
-            searchEmptyView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
+            searchEmptyView = fragmentView.findViewById(R.id.search_empty_view);
             searchEmptyView.setOnTouchListener(new View.OnTouchListener() {
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
                     return true;
                 }
             });
-            searchEmptyView.setText(LocaleController.getString("NoResult", R.string.NoResult));
             emptyView = fragmentView.findViewById(R.id.list_empty_view);
             emptyView.setOnTouchListener(new View.OnTouchListener() {
                 @Override
@@ -258,10 +257,14 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     return true;
                 }
             });
+
+
             TextView textView = (TextView)fragmentView.findViewById(R.id.list_empty_view_text1);
             textView.setText(LocaleController.getString("NoChats", R.string.NoChats));
             textView = (TextView)fragmentView.findViewById(R.id.list_empty_view_text2);
-            textView.setText(LocaleController.getString("NoChats", R.string.NoChatsHelp));
+            textView.setText(LocaleController.getString("NoChatsHelp", R.string.NoChatsHelp));
+            textView = (TextView)fragmentView.findViewById(R.id.search_empty_text);
+            textView.setText(LocaleController.getString("NoResult", R.string.NoResult));
 
             floatingButton = (ImageView)fragmentView.findViewById(R.id.floating_button);
             floatingButton.setVisibility(onlySelect ? View.GONE : View.VISIBLE);
@@ -393,56 +396,40 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     int lower_id = (int)selectedDialog;
                     int high_id = (int)(selectedDialog >> 32);
 
-                    if (lower_id < 0 && high_id != 1) {
-                        builder.setItems(new CharSequence[]{LocaleController.getString("ClearHistory", R.string.ClearHistory), LocaleController.getString("DeleteChat", R.string.DeleteChat)}, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                if (which == 0) {
-                                    MessagesController.getInstance().deleteDialog(selectedDialog, 0, true);
-                                } else if (which == 1) {
-                                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    final boolean isChat = lower_id < 0 && high_id != 1;
+                    builder.setItems(new CharSequence[]{LocaleController.getString("ClearHistory", R.string.ClearHistory),
+                            isChat ? LocaleController.getString("DeleteChat", R.string.DeleteChat) : LocaleController.getString("Delete", R.string.Delete)}, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, final int which) {
+                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                            if (which == 0) {
+                                builder.setMessage(LocaleController.getString("AreYouSureClearHistory", R.string.AreYouSureClearHistory));
+                            } else {
+                                if (isChat) {
                                     builder.setMessage(LocaleController.getString("AreYouSureDeleteAndExit", R.string.AreYouSureDeleteAndExit));
-                                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialogInterface, int i) {
-                                            MessagesController.getInstance().deleteUserFromChat((int) -selectedDialog, MessagesController.getInstance().getUser(UserConfig.getClientUserId()), null);
-                                            MessagesController.getInstance().deleteDialog(selectedDialog, 0, false);
-                                            if (AndroidUtilities.isTablet()) {
-                                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats, selectedDialog);
-                                            }
-                                        }
-                                    });
-                                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                                    showAlertDialog(builder);
-                                }
-                            }
-                        });
-                    } else {
-                        builder.setItems(new CharSequence[]{LocaleController.getString("ClearHistory", R.string.ClearHistory), LocaleController.getString("Delete", R.string.Delete)}, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                if (which == 0) {
-                                    MessagesController.getInstance().deleteDialog(selectedDialog, 0, true);
                                 } else {
-                                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                                     builder.setMessage(LocaleController.getString("AreYouSureDeleteThisChat", R.string.AreYouSureDeleteThisChat));
-                                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialogInterface, int i) {
-                                            MessagesController.getInstance().deleteDialog(selectedDialog, 0, false);
-                                            if (AndroidUtilities.isTablet()) {
-                                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats, selectedDialog);
-                                            }
-                                        }
-                                    });
-                                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                                    showAlertDialog(builder);
                                 }
                             }
-                        });
-                    }
+                            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    MessagesController.getInstance().deleteDialog(selectedDialog, 0, which == 0);
+                                    if (which != 0) {
+                                        if (isChat) {
+                                            MessagesController.getInstance().deleteUserFromChat((int) -selectedDialog, MessagesController.getInstance().getUser(UserConfig.getClientUserId()), null);
+                                        }
+                                        if (AndroidUtilities.isTablet()) {
+                                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats, selectedDialog);
+                                        }
+                                    }
+                                }
+                            });
+                            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                            showAlertDialog(builder);
+                        }
+                    });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                     showAlertDialog(builder);
                     return true;
@@ -545,14 +532,12 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     emptyView.setVisibility(View.GONE);
                     messagesListView.setEmptyView(progressView);
                 } else {
-                    if (messagesListView.getEmptyView() == null) {
-                        if (searching && searchWas) {
-                            messagesListView.setEmptyView(searchEmptyView);
-                            emptyView.setVisibility(View.GONE);
-                        } else {
-                            messagesListView.setEmptyView(emptyView);
-                            searchEmptyView.setVisibility(View.GONE);
-                        }
+                    if (searching && searchWas) {
+                        messagesListView.setEmptyView(searchEmptyView);
+                        emptyView.setVisibility(View.GONE);
+                    } else {
+                        messagesListView.setEmptyView(emptyView);
+                        searchEmptyView.setVisibility(View.GONE);
                     }
                     progressView.setVisibility(View.GONE);
                 }

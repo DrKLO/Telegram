@@ -59,7 +59,11 @@ import java.util.HashMap;
 
 public class GroupCreateActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
-    public class XImageSpan extends ImageSpan {
+    public static interface GroupCreateActivityDelegate {
+        public abstract void didSelectUsers(ArrayList<Integer> ids);
+    }
+
+    private class XImageSpan extends ImageSpan {
         public int uid;
 
         public XImageSpan(Drawable d, int verticalAlignment) {
@@ -90,10 +94,14 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private SectionsListView listView;
     private ContactsSearchAdapter searchListViewAdapter;
 
+    private GroupCreateActivityDelegate delegate;
+
     private int beforeChangeIndex;
     private int maxCount = 200;
     private boolean ignoreChange = false;
     private boolean isBroadcast = false;
+    private boolean isAlwaysShare = false;
+    private boolean isNeverShare = false;
     private boolean searchWas;
     private boolean searching;
     private CharSequence changeString;
@@ -109,6 +117,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     public GroupCreateActivity(Bundle args) {
         super(args);
         isBroadcast = args.getBoolean("broadcast", false);
+        isAlwaysShare = args.getBoolean("isAlwaysShare", false);
+        isNeverShare = args.getBoolean("isNeverShare", false);
         maxCount = !isBroadcast ? MessagesController.getInstance().maxGroupCount : MessagesController.getInstance().maxBroadcastCount;
     }
 
@@ -136,8 +146,14 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setBackOverlay(R.layout.updating_state_layout);
-            actionBar.setTitle(isBroadcast ? LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList) : LocaleController.getString("NewGroup", R.string.NewGroup));
-            actionBar.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
+            if (isAlwaysShare) {
+                actionBar.setTitle(LocaleController.getString("AlwaysShareWithTitle", R.string.AlwaysShareWithTitle));
+            } else if (isNeverShare) {
+                actionBar.setTitle(LocaleController.getString("NeverShareWithTitle", R.string.NeverShareWithTitle));
+            } else {
+                actionBar.setTitle(isBroadcast ? LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList) : LocaleController.getString("NewGroup", R.string.NewGroup));
+                actionBar.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
+            }
 
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
@@ -145,9 +161,17 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     if (id == -1) {
                         finishFragment();
                     } else if (id == done_button) {
-                        if (!selectedContacts.isEmpty()) {
-                            ArrayList<Integer> result = new ArrayList<Integer>();
-                            result.addAll(selectedContacts.keySet());
+                        if (selectedContacts.isEmpty()) {
+                            return;
+                        }
+                        ArrayList<Integer> result = new ArrayList<Integer>();
+                        result.addAll(selectedContacts.keySet());
+                        if (isAlwaysShare || isNeverShare) {
+                            if (delegate != null) {
+                                delegate.didSelectUsers(result);
+                            }
+                            finishFragment();
+                        } else {
                             Bundle args = new Bundle();
                             args.putIntegerArrayList("result", result);
                             args.putBoolean("broadcast", isBroadcast);
@@ -157,7 +181,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 }
             });
             ActionBarMenu menu = actionBar.createMenu();
-            menu.addItem(done_button, R.drawable.ic_done, 0, AndroidUtilities.dp(56));
+            menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
             searchListViewAdapter = new ContactsSearchAdapter(getParentActivity(), null, false);
             searchListViewAdapter.setCheckedMap(selectedContacts);
@@ -179,8 +203,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
             userSelectEditText = new EditText(getParentActivity());
             userSelectEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            userSelectEditText.setHintTextColor(0xffa6a6a6);
-            userSelectEditText.setTextColor(0xff000000);
+            userSelectEditText.setHintTextColor(0xff979797);
+            userSelectEditText.setTextColor(0xff212121);
             userSelectEditText.setInputType(InputType.TYPE_TEXT_VARIATION_FILTER | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
             userSelectEditText.setMinimumHeight(AndroidUtilities.dp(54));
             userSelectEditText.setSingleLine(false);
@@ -201,7 +225,13 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             layoutParams1.gravity = Gravity.TOP;
             userSelectEditText.setLayoutParams(layoutParams1);
 
-            userSelectEditText.setHint(LocaleController.getString("SendMessageTo", R.string.SendMessageTo));
+            if (isAlwaysShare) {
+                userSelectEditText.setHint(LocaleController.getString("AlwaysShareWithPlaceholder", R.string.AlwaysShareWithPlaceholder));
+            } else if (isNeverShare) {
+                userSelectEditText.setHint(LocaleController.getString("NeverShareWithPlaceholder", R.string.NeverShareWithPlaceholder));
+            } else {
+                userSelectEditText.setHint(LocaleController.getString("SendMessageTo", R.string.SendMessageTo));
+            }
             if (Build.VERSION.SDK_INT >= 11) {
                 userSelectEditText.setTextIsSelectable(false);
             }
@@ -243,7 +273,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                         selectedContacts.remove(sp.uid);
                                     }
                                 }
-                                actionBar.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
+                                if (!isAlwaysShare && !isNeverShare) {
+                                    actionBar.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
+                                }
                                 listView.invalidateViews();
                             } else {
                                 search = true;
@@ -288,27 +320,43 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 }
             });
 
-            emptyTextView = new TextView(getParentActivity());
-            emptyTextView.setTextColor(0xff808080);
-            emptyTextView.setTextSize(24);
-            emptyTextView.setGravity(Gravity.CENTER);
-            emptyTextView.setVisibility(View.INVISIBLE);
-            emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
-            linearLayout.addView(emptyTextView);
-            layoutParams = (LinearLayout.LayoutParams) emptyTextView.getLayoutParams();
-            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.gravity = Gravity.TOP;
-            emptyTextView.setLayoutParams(layoutParams);
-            emptyTextView.setOnTouchListener(new View.OnTouchListener() {
+            LinearLayout emptyTextLayout = new LinearLayout(getParentActivity());
+            emptyTextLayout.setVisibility(View.INVISIBLE);
+            emptyTextLayout.setOrientation(LinearLayout.VERTICAL);
+            linearLayout.addView(emptyTextLayout);
+            layoutParams = (LinearLayout.LayoutParams) emptyTextLayout.getLayoutParams();
+            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            emptyTextLayout.setLayoutParams(layoutParams);
+            emptyTextLayout.setOnTouchListener(new View.OnTouchListener() {
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
                     return true;
                 }
             });
 
+            emptyTextView = new TextView(getParentActivity());
+            emptyTextView.setTextColor(0xff808080);
+            emptyTextView.setTextSize(20);
+            emptyTextView.setGravity(Gravity.CENTER);
+            emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+            emptyTextLayout.addView(emptyTextView);
+            layoutParams = (LinearLayout.LayoutParams) emptyTextView.getLayoutParams();
+            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.weight = 0.5f;
+            emptyTextView.setLayoutParams(layoutParams);
+
+            FrameLayout frameLayout2 = new FrameLayout(getParentActivity());
+            emptyTextLayout.addView(frameLayout2);
+            layoutParams = (LinearLayout.LayoutParams) frameLayout2.getLayoutParams();
+            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.weight = 0.5f;
+            frameLayout2.setLayoutParams(layoutParams);
+
             listView = new SectionsListView(getParentActivity());
-            listView.setEmptyView(emptyTextView);
+            listView.setEmptyView(emptyTextLayout);
             listView.setVerticalScrollBarEnabled(false);
             listView.setDivider(null);
             listView.setDividerHeight(0);
@@ -361,7 +409,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         span.uid = user.id;
                         ignoreChange = false;
                     }
-                    actionBar.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
+                    if (!isAlwaysShare && !isNeverShare) {
+                        actionBar.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
+                    }
                     if (searching || searchWas) {
                         ignoreChange = true;
                         SpannableStringBuilder ssb = new SpannableStringBuilder("");
@@ -400,6 +450,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
                 @Override
                 public void onScroll(AbsListView absListView, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                    if (absListView.isFastScrollEnabled()) {
+                        AndroidUtilities.clearDrawableAnimation(absListView);
+                    }
                 }
             });
         } else {
@@ -434,7 +487,11 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         }
     }
 
-    public XImageSpan createAndPutChipForUser(TLRPC.User user) {
+    public void setDelegate(GroupCreateActivityDelegate delegate) {
+        this.delegate = delegate;
+    }
+
+    private XImageSpan createAndPutChipForUser(TLRPC.User user) {
         LayoutInflater lf = (LayoutInflater)ApplicationLoader.applicationContext.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
         View textView = lf.inflate(R.layout.group_create_bubble, null);
         TextView text = (TextView)textView.findViewById(R.id.bubble_text_view);

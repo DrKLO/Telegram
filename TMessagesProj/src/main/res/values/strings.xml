@@ -28,16 +28,13 @@
     <string name="LastName">Last name (optional)</string>
     <string name="CancelRegistration">Cancel registration</string>
     <!--chats view-->
-    <string name="Chats">Chats</string>
-    <string name="Search">Search</string>
-    <string name="NewMessages">New messages</string>
     <string name="Settings">Settings</string>
     <string name="Contacts">Contacts</string>
     <string name="NewGroup">New Group</string>
     <string name="Yesterday">yesterday</string>
     <string name="NoResult">No results</string>
     <string name="NoChats">No chats yet...</string>
-    <string name="NoChatsHelp">Start messaging by pressing the\ncompose button in the top right corner\nor tap the menu button for more options.</string>
+    <string name="NoChatsHelp">Start messaging by pressing the\nnew message button in the bottom right corner\nor tap the menu button for more options.</string>
     <string name="WaitingForNetwork">Waiting for network...</string>
     <string name="Connecting">Connecting...</string>
     <string name="Updating">Updating...</string>
@@ -47,16 +44,15 @@
     <string name="EncryptionProcessing">Exchanging encryption keys...</string>
     <string name="EncryptedChatStartedOutgoing">%s joined your secret chat.</string>
     <string name="EncryptedChatStartedIncoming">You joined the secret chat.</string>
-    <string name="ClearHistory">Clear History</string>
+    <string name="ClearHistory">Clear history</string>
     <string name="DeleteChat">Delete and exit</string>
+    <string name="DeleteChatUser">Delete chat</string>
     <string name="HiddenName">Hidden Name</string>
     <string name="SelectChat">Select Chat</string>
     <string name="PhotoTip">Tap and hold to view</string>
     <string name="CompatibilityChat">%1$s is using an older version of Telegram, so secret photos will be shown in compatibility mode.\n\nOnce %2$s updates Telegram, photos with timers for 1 minute or less will start working in \'Tap and hold to view\' mode, and you will be notified whenever the other party takes a screenshot.</string>
-    <string name="SearchConversations">CONVERSATIONS</string>
     <string name="SearchMessages">MESSAGES</string>
     <!--broadcasts-->
-    <string name="BroadcastList">Broadcast List</string>
     <string name="NewBroadcastList">New Broadcast List</string>
     <string name="EnterListName">Enter list name</string>
     <string name="YouCreatedBroadcastList">You created a broadcast list</string>
@@ -75,10 +71,10 @@
     <string name="ExternalStorage">External Storage</string>
     <string name="SystemRoot">System Root</string>
     <string name="SdCard">SD Card</string>
+    <string name="Folder">Folder</string>
     <!--chat view-->
     <string name="Invisible">invisible</string>
     <string name="Typing">typing...</string>
-    <string name="Attach">Attach</string>
     <string name="IsTyping">is typing...</string>
     <string name="AreTyping">are typing...</string>
     <string name="GotAQuestion">Got a question\nabout Telegram?</string>
@@ -88,18 +84,13 @@
     <string name="ChatVideo">Video</string>
     <string name="ChatDocument">Document</string>
     <string name="NoMessages">No messages here yet...</string>
-    <string name="ViewPhoto">View Photo</string>
-    <string name="ViewLocation">View Location</string>
-    <string name="ViewVideo">Play Video</string>
     <string name="ForwardedMessage">Forwarded message</string>
     <string name="From">From</string>
     <string name="NoRecent">No recent</string>
     <string name="Message">Message</string>
-    <string name="TypeMessage">Type message</string>
-    <string name="DOWNLOAD">Download</string>
-    <string name="Selected">Selected: %d</string>
-    <string name="ShareMyContactInfo">SHARE MY CONTACT INFO</string>
-    <string name="AddToContacts">ADD TO CONTACTS</string>
+    <string name="TypeMessage">Message</string>
+    <string name="ShareMyContactInfo">Share my contact</string>
+    <string name="AddToContacts">Add to contacts</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s invited you to join a secret chat.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">You have invited %s to join a secret chat.</string>
     <string name="EncryptedDescriptionTitle">Secret chats:</string>
@@ -116,8 +107,6 @@
     <string name="ApplyLocalizationFile">Apply localization file</string>
     <string name="UnsupportedAttachment">Unsupported attachment</string>
     <!--notification-->
-    <string name="EncryptedChatRequested">Secret chat requested</string>
-    <string name="EncryptedChatAccepted">Secret chat started</string>
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
     <string name="MessageLifetimeRemoved">%1$s disabled the self-destruct timer</string>
@@ -160,21 +149,21 @@
     <string name="TodayAt">today at</string>
     <string name="YesterdayAt">yesterday at</string>
     <string name="Online">online</string>
-    <string name="Offline">offline</string>
     <string name="LastSeen">last seen</string>
     <string name="LastSeenDate">last seen</string>
     <string name="InviteFriends">Invite Friends</string>
     <string name="GlobalSearch">GLOBAL SEARCH</string>
+    <string name="Lately">last seen recently</string>
+    <string name="WithinAWeek">last seen within a week</string>
+    <string name="WithinAMonth">last seen within a month</string>
+    <string name="ALongTimeAgo">last seen a long time ago</string>
     <!--group create view-->
     <string name="SendMessageTo">Send message to...</string>
     <string name="EnterGroupNamePlaceholder">Enter group name</string>
     <string name="GroupName">Group name</string>
-    <string name="AllContacts">ALL CONTACTS</string>
     <string name="MembersCount">%1$d/%2$d members</string>
     <!--group info view-->
-    <string name="EnterGroupNameTitle">Enter group name</string>
     <string name="SharedMedia">Shared Media</string>
-    <string name="GroupInfo">Group Info</string>
     <string name="SETTINGS">Settings</string>
     <string name="AddMember">Add member</string>
     <string name="DeleteAndExit">Delete and leave group</string>
@@ -192,11 +181,8 @@
     <string name="PhoneWork">Work</string>
     <string name="PhoneOther">Other</string>
     <string name="PhoneMain">Main</string>
-    <string name="ContactInfo">Contact Info</string>
-    <string name="PHONE">PHONE</string>
     <string name="StartEncryptedChat">Start Secret Chat</string>
     <string name="CreateEncryptedChatError">An error occurred.</string>
-    <string name="SecretTitle">Secret Chat</string>
     <string name="EncryptionKey">Encryption Key</string>
     <string name="MessageLifetime">Self-Destruct Timer</string>
     <string name="ShortMessageLifetimeForever">Off</string>
@@ -240,9 +226,7 @@
     <string name="UndoAllCustom">Undo all custom notification settings for all your contacts and groups</string>
     <string name="NotificationsAndSounds">Notifications and Sounds</string>
     <string name="BlockedUsers">Blocked Users</string>
-    <string name="SaveIncomingPhotos">Save Incoming Photos</string>
     <string name="LogOut">Log out</string>
-    <string name="YourFirstNameAndLastName">YOUR FIRST AND LAST NAME</string>
     <string name="NoSound">No sound</string>
     <string name="Default">Default</string>
     <string name="Support">Support</string>
@@ -266,7 +250,6 @@
     <string name="NotificationsServiceDisableInfo">If Google Play Services are enough for you to receive notifications, you can disable Notifications Service. However we recommend you to leave it enabled to keep app running in background and receive instant notifications.</string>
     <string name="SortBy">Sort By</string>
     <string name="ImportContacts">Import Contacts</string>
-    <string name="WiFiOnly">Via WiFi only</string>
     <string name="SortFirstName">First name</string>
     <string name="SortLastName">Last name</string>
     <string name="LedColor">LED Color</string>
@@ -289,9 +272,7 @@
     <string name="EditName">Edit name</string>
     <!--media view-->
     <string name="NoMedia">No shared media yet</string>
-    <string name="CancelDownload">Cancel Download</string>
     <!--map view-->
-    <string name="MyLocation">My location</string>
     <string name="Map">Map</string>
     <string name="Satellite">Satellite</string>
     <string name="Hybrid">Hybrid</string>
@@ -325,6 +306,8 @@
     <string name="DeleteAccountNowConfirmation">Delete your account?</string>
     <string name="DeleteAccountNever">Never</string>
     <string name="LastSeenHelp">Change who can see your Last Seen time.</string>
+    <string name="LastSeenTitle">Who can see your Last Seen time?</string>
+    <string name="AddExceptions">Add exceptions</string>
     <string name="CustomHelp">Important: you won\'t be able to see Last Seen times for people with whom you don\'t share your Last Seen time. Approximate last seen will be shown instead (recently, within a week, witin a month).</string>
     <string name="AlwaysShareWith">Always Share With</string>
     <string name="NeverShareWith">Never Share With</string>
@@ -334,9 +317,9 @@
     <string name="NeverShareWithTitle">Never Share</string>
     <string name="NeverShareWithPlaceholder">Never share with users...</string>
     <string name="EmpryUsersPlaceholder">Add Users</string>
-    <string name="PrivacyAddUsers">Add %1$s to this list?</string>
     <string name="PrivacyFloodControlError">Sorry, too many requests. Unable to change privacy settings now, please wait.</string>
-
+    <string name="ClearOtherSessionsHelp">Logs out all devices except for this one.</string>
+    <string name="RemoveFromListText">Tap and hold on user to delete.</string>
     <!--edit video view-->
     <string name="EditVideo">Edit Video</string>
     <string name="OriginalVideo">Original Video</string>
@@ -360,7 +343,6 @@
     <string name="FromCamera">From camera</string>
     <string name="FromGalley">From gallery</string>
     <string name="DeletePhoto">Delete photo</string>
-    <string name="OpenPhoto">Open photo</string>
     <string name="Set">Set</string>
     <string name="OK">OK</string>
     <!--messages-->
@@ -403,10 +385,8 @@
     <string name="NoHandleAppInstalled">You don\'t have applications that can handle the file type \'%1$s\', please install one to continue</string>
     <string name="InviteUser">This user does not have Telegram yet, send an invitation?</string>
     <string name="AreYouSure">Are you sure?</string>
-    <string name="AddContactQ">Add contact?</string>
     <string name="AddToTheGroup">Add %1$s to the group?\n\nNumber of last messages to forward:</string>
     <string name="ForwardMessagesTo">Forward messages to %1$s?</string>
-    <string name="DeleteChatQuestion">Delete this chat?</string>
     <string name="SendMessagesTo">Send messages to %1$s?</string>
     <string name="AreYouSureLogout">Are you sure you want to log out?</string>
     <string name="AreYouSureSessions">Are you sure you want to terminate all other sessions?</string>
@@ -418,7 +398,7 @@
     <string name="AreYouSureDeleteContact">Are you sure you want to delete this contact?</string>
     <string name="AreYouSureSecretChat">Are you sure you want to start a secret chat?</string>
     <string name="AreYouSureRegistration">Are you sure you want to cancel registration?</string>
-    <string name="ForwardFromMyName">forward from my name</string>
+    <string name="AreYouSureClearHistory">Are you sure you want to clear history?</string>
     <string name="SendMessagesToGroup">Send messages to %1$s?</string>
     <string name="ForwardMessagesToGroup">Forward messages to %1$s?</string>
     <string name="FeatureUnavailable">Sorry, this feature is currently not available in your country.</string>
@@ -505,6 +485,18 @@
     <string name="Weeks_few">%1$d weeks</string>
     <string name="Weeks_many">%1$d weeks</string>
     <string name="Weeks_other">%1$d weeks</string>
+    <string name="Months_zero">%1$d months</string>
+    <string name="Months_one">%1$d month</string>
+    <string name="Months_two">%1$d months</string>
+    <string name="Months_few">%1$d months</string>
+    <string name="Months_many">%1$d months</string>
+    <string name="Months_other">%1$d months</string>
+    <string name="Years_zero">%1$d years</string>
+    <string name="Years_one">%1$d year</string>
+    <string name="Years_two">%1$d years</string>
+    <string name="Years_few">%1$d years</string>
+    <string name="Years_many">%1$d years</string>
+    <string name="Years_other">%1$d years</string>
     <string name="Users_zero">%1$d users</string>
     <string name="Users_one">%1$d user</string>
     <string name="Users_two">%1$d users</string>

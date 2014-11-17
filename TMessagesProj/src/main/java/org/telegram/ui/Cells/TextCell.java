@@ -31,7 +31,7 @@ public class TextCell extends FrameLayout {
         super(context);
 
         textView = new TextView(context);
-        textView.setTextColor(0xff000000);
+        textView.setTextColor(0xff212121);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
         textView.setMaxLines(1);

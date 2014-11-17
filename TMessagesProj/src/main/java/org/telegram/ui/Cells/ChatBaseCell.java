@@ -156,6 +156,7 @@ public class ChatBaseCell extends BaseCell {
             forwardNamePaint.setTextSize(AndroidUtilities.dp(14));
         }
         avatarImage = new ImageReceiver(this);
+        avatarImage.setRoundRadius(AndroidUtilities.dp(21));
         avatarDrawable = new AvatarDrawable();
     }
 

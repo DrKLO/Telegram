@@ -15,6 +15,7 @@ import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
@@ -24,6 +25,7 @@ public class TextSettingsCell extends FrameLayout {
 
     private TextView textView;
     private TextView valueTextView;
+    private ImageView valueImageView;
     private static Paint paint;
     private boolean needDivider;
 
@@ -37,7 +39,7 @@ public class TextSettingsCell extends FrameLayout {
         }
 
         textView = new TextView(context);
-        textView.setTextColor(0xff000000);
+        textView.setTextColor(0xff212121);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
         textView.setMaxLines(1);
@@ -69,6 +71,18 @@ public class TextSettingsCell extends FrameLayout {
         layoutParams.rightMargin = AndroidUtilities.dp(17);
         layoutParams.gravity = LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT;
         valueTextView.setLayoutParams(layoutParams);
+
+        valueImageView = new ImageView(context);
+        valueImageView.setScaleType(ImageView.ScaleType.CENTER);
+        valueImageView.setVisibility(GONE);
+        addView(valueImageView);
+        layoutParams = (LayoutParams) valueImageView.getLayoutParams();
+        layoutParams.width = LayoutParams.WRAP_CONTENT;
+        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 17 : 0);
+        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 17);
+        layoutParams.gravity = (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL;
+        valueImageView.setLayoutParams(layoutParams);
     }
 
     @Override
@@ -77,6 +91,9 @@ public class TextSettingsCell extends FrameLayout {
 
         int availableWidth = getMeasuredWidth() - getPaddingLeft() - getPaddingRight() - AndroidUtilities.dp(34);
         int width = availableWidth / 2;
+        if (valueImageView.getVisibility() == VISIBLE) {
+            valueImageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
+        }
         if (valueTextView.getVisibility() == VISIBLE) {
             valueTextView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
             width = availableWidth - valueTextView.getMeasuredWidth() - AndroidUtilities.dp(8);
@@ -99,8 +116,26 @@ public class TextSettingsCell extends FrameLayout {
 
     public void setTextAndValue(String text, String value, boolean divider) {
         textView.setText(text);
-        valueTextView.setText(value);
-        valueTextView.setVisibility(VISIBLE);
+        valueImageView.setVisibility(GONE);
+        if (value != null) {
+            valueTextView.setText(value);
+            valueTextView.setVisibility(VISIBLE);
+        } else {
+            valueTextView.setVisibility(GONE);
+        }
+        needDivider = divider;
+        setWillNotDraw(!divider);
+    }
+
+    public void setTextAndIcon(String text, int resId, boolean divider) {
+        textView.setText(text);
+        valueTextView.setVisibility(GONE);
+        if (resId != 0) {
+            valueImageView.setVisibility(VISIBLE);
+            valueImageView.setImageResource(resId);
+        } else {
+            valueImageView.setVisibility(GONE);
+        }
         needDivider = divider;
         setWillNotDraw(!divider);
     }

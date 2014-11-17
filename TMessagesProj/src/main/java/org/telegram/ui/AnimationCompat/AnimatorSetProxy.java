@@ -18,11 +18,32 @@ import org.telegram.ui.Animation.AnimatorListenerAdapter10;
 import org.telegram.ui.Animation.AnimatorSet10;
 import org.telegram.ui.Animation.View10;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class AnimatorSetProxy {
+
     private Object animatorSet;
+
+    public static <T, U> T[] copyOf(U[] original, int newLength, Class<? extends T[]> newType) {
+        return copyOfRange(original, 0, newLength, newType);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T, U> T[] copyOfRange(U[] original, int start, int end, Class<? extends T[]> newType) {
+        if (start > end) {
+            throw new IllegalArgumentException();
+        }
+        int originalLength = original.length;
+        if (start < 0 || start > originalLength) {
+            throw new ArrayIndexOutOfBoundsException();
+        }
+        int resultLength = end - start;
+        int copyLength = Math.min(resultLength, originalLength - start);
+        T[] result = (T[]) Array.newInstance(newType.getComponentType(), resultLength);
+        System.arraycopy(original, start, result, 0, copyLength);
+        return result;
+    }
 
     public AnimatorSetProxy() {
         if (View10.NEED_PROXY) {
@@ -32,12 +53,13 @@ public class AnimatorSetProxy {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public void playTogether(Object... items) {
         if (View10.NEED_PROXY) {
-            Animator10[] animators = Arrays.copyOf(items, items.length, Animator10[].class);
+            Animator10[] animators = copyOf(items, items.length, Animator10[].class);
             ((AnimatorSet10) animatorSet).playTogether(animators);
         } else {
-            Animator[] animators = Arrays.copyOf(items, items.length, Animator[].class);
+            Animator[] animators = copyOf(items, items.length, Animator[].class);
             ((AnimatorSet) animatorSet).playTogether(animators);
         }
     }
@@ -97,5 +119,10 @@ public class AnimatorSetProxy {
         } else {
             ((AnimatorSet) animatorSet).setInterpolator(interpolator);
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return animatorSet == o;
     }
 }

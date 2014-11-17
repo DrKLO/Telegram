@@ -8,9 +8,11 @@
 
 package org.telegram.ui.AnimationCompat;
 
+import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.view.animation.Interpolator;
 
+import org.telegram.ui.Animation.AnimatorListenerAdapter10;
 import org.telegram.ui.Animation.ObjectAnimator10;
 import org.telegram.ui.Animation.View10;
 
@@ -109,5 +111,14 @@ public class ObjectAnimatorProxy {
         } else {
             ((ObjectAnimator) objectAnimator).cancel();
         }
+    }
+
+    public ObjectAnimatorProxy addListener(AnimatorListenerAdapterProxy listener) {
+        if (View10.NEED_PROXY) {
+            ((ObjectAnimator10) objectAnimator).addListener((AnimatorListenerAdapter10) listener.animatorListenerAdapter);
+        } else {
+            ((ObjectAnimator) objectAnimator).addListener((AnimatorListenerAdapter) listener.animatorListenerAdapter);
+        }
+        return this;
     }
 }

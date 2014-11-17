@@ -38,6 +38,7 @@ import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
 
 public class BlockedUsersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ContactsActivity.ContactsActivityDelegate {
+
     private ListView listView;
     private ListAdapter listViewAdapter;
     private FrameLayout progressView;
@@ -93,7 +94,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
 
             emptyTextView = new TextView(getParentActivity());
             emptyTextView.setTextColor(0xff808080);
-            emptyTextView.setTextSize(24);
+            emptyTextView.setTextSize(20);
             emptyTextView.setGravity(Gravity.CENTER);
             emptyTextView.setVisibility(View.INVISIBLE);
             emptyTextView.setText(LocaleController.getString("NoBlocked", R.string.NoBlocked));

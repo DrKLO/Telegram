@@ -17,8 +17,10 @@ import android.content.res.Configuration;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Environment;
+import android.util.StateSet;
 import android.view.Display;
 import android.view.Surface;
 import android.view.View;
@@ -488,6 +490,25 @@ public class AndroidUtilities {
                 }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
+            }
+        }
+    }
+
+    public static void clearDrawableAnimation(View view) {
+        if (Build.VERSION.SDK_INT < 21 || view == null) {
+            return;
+        }
+        Drawable drawable = null;
+        if (view instanceof ListView) {
+            drawable = ((ListView) view).getSelector();
+            if (drawable != null) {
+                drawable.setState(StateSet.NOTHING);
+            }
+        } else {
+            drawable = view.getBackground();
+            if (drawable != null) {
+                drawable.setState(StateSet.NOTHING);
+                drawable.jumpToCurrentState();
             }
         }
     }
