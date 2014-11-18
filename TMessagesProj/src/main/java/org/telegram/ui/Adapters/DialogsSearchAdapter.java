@@ -57,6 +57,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
     public DialogsSearchAdapter(Context context, boolean messagesSearch) {
         mContext = context;
         needMessagesSearch = messagesSearch;
+        needMessagesSearch = false;
     }
 
     public void setDelegate(MessagesActivitySearchAdapterDelegate delegate) {

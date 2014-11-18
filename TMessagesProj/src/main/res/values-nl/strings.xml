@@ -9,9 +9,9 @@
     <string name="LanguageCode">nl</string>
     <!--signin view-->
     <string name="YourPhone">Je telefoon</string>
-    <string name="StartText">Bevestig je landcode\nen voer je telefoonnummer in.</string>
+    <string name="StartText">Bevestig je landnummer en voer je telefoonnummer in.</string>
     <string name="ChooseCountry">Kies een land</string>
-    <string name="WrongCountry">Onjuist landcode</string>
+    <string name="WrongCountry">Onjuist landnummer</string>
     <!--code enter view-->
     <string name="YourCode">Je code</string>
     <string name="SentSmsCode">We hebben een sms met een activatiecode verzonden naar je telefoon</string>
@@ -28,16 +28,13 @@
     <string name="LastName">Achternaam (optioneel)</string>
     <string name="CancelRegistration">Registratie annuleren</string>
     <!--chats view-->
-    <string name="Chats">Gesprekken</string>
-    <string name="Search">Zoeken</string>
-    <string name="NewMessages">Nieuwe berichten</string>
     <string name="Settings">Instellingen</string>
     <string name="Contacts">Contacten</string>
     <string name="NewGroup">Nieuwe groep</string>
     <string name="Yesterday">gisteren</string>
     <string name="NoResult">Geen resultaten</string>
     <string name="NoChats">Nog geen gesprekken…</string>
-    <string name="NoChatsHelp">Begin een gesprek door op de\nopstellen-knop rechtsboven te drukken\nof druk op de menuknop voor meer opties.</string>
+    <string name="NoChatsHelp">Begin een gesprek door op de\nopstellen-knop rechtsboven te drukken\nof druk op de menu knop voor meer opties.</string>
     <string name="WaitingForNetwork">Wachten op netwerk…</string>
     <string name="Connecting">Verbinden…</string>
     <string name="Updating">Bijwerken…</string>
@@ -49,14 +46,13 @@
     <string name="EncryptedChatStartedIncoming">Toegevoegd aan de geheime chat.</string>
     <string name="ClearHistory">Geschiedenis wissen</string>
     <string name="DeleteChat">Verwijderen en verlaten</string>
-    <string name="HiddenName">Verborgen naam</string>
+    <string name="DeleteChatUser">Gesprek verwijderen</string>
+    <string name="HiddenName">Verwijderd account</string>
     <string name="SelectChat">Kies een gesprek</string>
     <string name="PhotoTip">Druk en houd ingedrukt</string>
     <string name="CompatibilityChat">%1$s gebruikt een oudere versie van Telegram, dus worden geheime foto\'s weergegeven in de compatibiliteitsmodus.\n\nZodra %2$s Telegram updatet werken foto\'s met timers voor 1 minuut of minder in de \'Druk en houd ingedrukt\'-modus en krijg je een bericht wanneer de andere partij een schermafbeelding maakt.</string>
-    <string name="SearchConversations">Conversations</string>
-    <string name="SearchMessages">Messages</string>
+    <string name="SearchMessages">BERICHTEN</string>
     <!--broadcasts-->
-    <string name="BroadcastList">Verzendlijst</string>
     <string name="NewBroadcastList">Nieuwe verzendlijst</string>
     <string name="EnterListName">Naam van lijst</string>
     <string name="YouCreatedBroadcastList">Je hebt een verzendlijst gemaakt</string>
@@ -73,12 +69,12 @@
     <string name="UsbActive">USB-overdracht actief</string>
     <string name="InternalStorage">Interne opslag</string>
     <string name="ExternalStorage">Externe opslag</string>
-    <string name="SystemRoot">Systeemmap</string>
+    <string name="SystemRoot">Systeem map</string>
     <string name="SdCard">SD-kaart</string>
+    <string name="Folder">Map</string>
     <!--chat view-->
     <string name="Invisible">onzichtbaar</string>
     <string name="Typing">aan het typen…</string>
-    <string name="Attach">Bijvoegen</string>
     <string name="IsTyping">is aan het typen…</string>
     <string name="AreTyping">zijn aan het typen…</string>
     <string name="GotAQuestion">Heb je een vraag\nover Telegram?</string>
@@ -88,18 +84,13 @@
     <string name="ChatVideo">Video</string>
     <string name="ChatDocument">Document</string>
     <string name="NoMessages">Nog geen berichten hier…</string>
-    <string name="ViewPhoto">Foto bekijken</string>
-    <string name="ViewLocation">Locatie bekijken</string>
-    <string name="ViewVideo">Video afspelen</string>
     <string name="ForwardedMessage">Doorgestuurd bericht</string>
     <string name="From">Van</string>
     <string name="NoRecent">Niets recents</string>
     <string name="Message">Bericht</string>
-    <string name="TypeMessage">Typ een bericht...</string>
-    <string name="DOWNLOAD">Downloaden</string>
-    <string name="Selected">Geselecteerd: %d</string>
-    <string name="ShareMyContactInfo">MIJN CONTACTGEGEVENS DELEN</string>
-    <string name="AddToContacts">TOEVOEGEN AAN CONTACTEN</string>
+    <string name="TypeMessage">Bericht</string>
+    <string name="ShareMyContactInfo">Mijn contactgegevens delen</string>
+    <string name="AddToContacts">Toevoegen aan contacten</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s heeft je uitgenodigd voor een geheime chat.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">Je hebt %s uitgenodigd voor een geheime chat.</string>
     <string name="EncryptedDescriptionTitle">Geheime chat functies:</string>
@@ -116,8 +107,6 @@
     <string name="ApplyLocalizationFile">Vertaling toepassen</string>
     <string name="UnsupportedAttachment">Bestandstype niet ondersteund</string>
     <!--notification-->
-    <string name="EncryptedChatRequested">Geheime chat aangevraagd</string>
-    <string name="EncryptedChatAccepted">Geheime chat gestart</string>
     <string name="MessageLifetimeChanged">%1$s heeft de zelfvernietigingstimer ingesteld op %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Je hebt de zelfvernietigingstimer ingesteld op %1$s</string>
     <string name="MessageLifetimeRemoved">%1$s heeft de zelfvernietigingstimer uitgeschakeld</string>
@@ -160,22 +149,22 @@
     <string name="TodayAt">vandaag om</string>
     <string name="YesterdayAt">gisteren om</string>
     <string name="Online">online</string>
-    <string name="Offline">offline</string>
     <string name="LastSeen">gezien</string>
     <string name="LastSeenDate">gezien</string>
     <string name="InviteFriends">Vrienden uitnodigen</string>
     <string name="GlobalSearch">WERELDWIJD ZOEKEN</string>
+    <string name="Lately">recent gezien</string>
+    <string name="WithinAWeek">afgelopen week gezien</string>
+    <string name="WithinAMonth">afgelopen maand gezien</string>
+    <string name="ALongTimeAgo">lang geleden gezien</string>
     <!--group create view-->
     <string name="SendMessageTo">Bericht verzenden naar…</string>
     <string name="EnterGroupNamePlaceholder">Groepsnaam...</string>
     <string name="GroupName">Groepsnaam</string>
-    <string name="AllContacts">ALLE CONTACTEN</string>
     <string name="MembersCount">%1$d/%2$d deelnemers</string>
     <!--group info view-->
-    <string name="EnterGroupNameTitle">GROEPSNAAM INSTELLEN</string>
     <string name="SharedMedia">Gedeelde media</string>
-    <string name="GroupInfo">Groepsinformatie</string>
-    <string name="SETTINGS">INSTELLINGEN</string>
+    <string name="SETTINGS">Instellingen</string>
     <string name="AddMember">Deelnemer toevoegen</string>
     <string name="DeleteAndExit">Groep verwijderen en verlaten</string>
     <string name="Notifications">Meldingen</string>
@@ -183,25 +172,23 @@
     <!--contact info view-->
     <string name="ShareContact">Delen</string>
     <string name="AddContact">Toevoegen</string>
+    <string name="AddContactTitle">Contact toevoegen</string>
     <string name="BlockContact">Blokkeren</string>
     <string name="EditContact">Bewerken</string>
     <string name="DeleteContact">Verwijderen</string>
-    <string name="PhoneHome">THUIS</string>
-    <string name="PhoneMobile">MOBIEL</string>
-    <string name="PhoneWork">WERK</string>
-    <string name="PhoneOther">OVERIG</string>
-    <string name="PhoneMain">ALGEMEEN</string>
-    <string name="ContactInfo">Contactinformatie</string>
-    <string name="PHONE">TELEFOON</string>
+    <string name="PhoneHome">Thuis</string>
+    <string name="PhoneMobile">Mobiel</string>
+    <string name="PhoneWork">Werk</string>
+    <string name="PhoneOther">Overig</string>
+    <string name="PhoneMain">Hoofd</string>
     <string name="StartEncryptedChat">Geheime chat starten</string>
     <string name="CreateEncryptedChatError">Er is een fout opgetreden.</string>
-    <string name="SecretTitle">Geheime chat</string>
     <string name="EncryptionKey">Encryptiesleutel</string>
     <string name="MessageLifetime">Zelfvernietigingstimer</string>
     <string name="ShortMessageLifetimeForever">Uit</string>
     <string name="EncryptionKeyDescription">Dit is een weergave van de encryptiesleutel voor deze geheime chat met <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Als deze afbeelding er bij <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> hetzelfde uitziet, is jullie gesprek 200%% beveiligd.<![CDATA[<br><br>]]>Lees meer op telegram.org.</string>
     <string name="NumberUnknown">Onbekend</string>
-    <string name="Info">INFORMATIE</string>
+    <string name="Info">Info</string>
     <string name="Phone">Telefoon</string>
     <!--usernames-->
     <string name="Username">Gebruikersnaam</string>
@@ -224,32 +211,30 @@
     <string name="Unblock">Deblokkeren</string>
     <string name="UnblockText">Houd een gebruiker ingedrukt om hem/haar te deblokkeren.</string>
     <string name="NoBlocked">Geen geblokkeerde gebruikers</string>
-    <string name="MessageNotifications">BERICHTMELDINGEN</string>
+    <string name="MessageNotifications">Berichtmeldingen</string>
     <string name="Alert">Waarschuwing</string>
     <string name="MessagePreview">Voorvertoning</string>
-    <string name="GroupNotifications">GROEPSMELDINGEN</string>
+    <string name="GroupNotifications">Groepsmeldingen</string>
     <string name="Sound">Geluid</string>
-    <string name="InAppNotifications">IN-APP BERICHTGEVING</string>
+    <string name="InAppNotifications">In-app meldingen</string>
     <string name="InAppSounds">Geluiden</string>
     <string name="InAppVibrate">Trillen</string>
     <string name="Vibrate">Trillen</string>
     <string name="InAppPreview">Voorvertoningen</string>
-    <string name="Reset">RESETTEN</string>
+    <string name="Reset">Resetten</string>
     <string name="ResetAllNotifications">Alle meldingen resetten</string>
     <string name="UndoAllCustom">Aangepaste meldingsinstellingen wissen voor contacten en groepen.</string>
     <string name="NotificationsAndSounds">Meldingen en geluiden</string>
     <string name="BlockedUsers">Geblokkeerde gebruikers</string>
-    <string name="SaveIncomingPhotos">Inkomende foto\'s opslaan</string>
     <string name="LogOut">Uitloggen</string>
-    <string name="YourFirstNameAndLastName">JE VOOR- EN ACHTERNAAM</string>
     <string name="NoSound">Geen geluid</string>
     <string name="Default">Standaard</string>
-    <string name="Support">ONDERSTEUNING</string>
-    <string name="ChatBackground">Achtergrond</string>
-    <string name="MessagesSettings">BERICHTEN</string>
+    <string name="Support">Ondersteuning</string>
+    <string name="ChatBackground">Achtergrond kiezen</string>
+    <string name="MessagesSettings">Berichten</string>
     <string name="SendByEnter">Verzenden met Enter</string>
     <string name="TerminateAllSessions">Beëindig alle andere sessies</string>
-    <string name="Events">GEBEURTENISSEN</string>
+    <string name="Events">Gebeurtenissen</string>
     <string name="ContactJoined">Contact lid van Telegram</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Taal</string>
@@ -265,7 +250,6 @@
     <string name="NotificationsServiceDisableInfo">Als Google Play Services genoeg voor je is om meldingen te ontvangen kun je de Meldingenservice uitschakelen. We raden echter aan dit ingeschakeld te laten om de app in de achtergrond te laten draaien en directe meldingen te ontvangen.</string>
     <string name="SortBy">Sorteren op</string>
     <string name="ImportContacts">Importeer contacten</string>
-    <string name="WiFiOnly">Alleen via WiFi</string>
     <string name="SortFirstName">Voornaam</string>
     <string name="SortLastName">Achternaam</string>
     <string name="LedColor">LED kleur</string>
@@ -279,18 +263,16 @@
     <string name="Long">Lang</string>
     <string name="SystemDefault">Systeem standaard</string>
     <string name="SettingsDefault">Standaardinstelling</string>
-    <string name="AutomaticMediaDownload">AUTOMATISCH MEDIA OPHALEN</string>
+    <string name="AutomaticMediaDownload">Automatisch media downloaden</string>
     <string name="WhenUsingMobileData">Bij mobiele verbinding</string>
     <string name="WhenConnectedOnWiFi">Bij Wi-Fi-verbinding</string>
     <string name="WhenRoaming">Bij roaming</string>
     <string name="NoMediaAutoDownload">Geen media</string>
     <string name="SaveToGallerySettings">Opslaan in galerij</string>
-    <string name="EditName">Edit Name</string>
+    <string name="EditName">Naam bewerken</string>
     <!--media view-->
     <string name="NoMedia">Nog geen media gedeeld</string>
-    <string name="CancelDownload">Downloaden annuleren</string>
     <!--map view-->
-    <string name="MyLocation">Mijn locatie</string>
     <string name="Map">Kaart</string>
     <string name="Satellite">Satelliet</string>
     <string name="Hybrid">Hybride</string>
@@ -305,6 +287,39 @@
     <string name="Gallery">Galerij</string>
     <string name="AllPhotos">Alle foto\'s</string>
     <string name="NoPhotos">Nog geen foto\'s</string>
+    <string name="PleaseDownload">Download media eerst</string>
+    <!--privacy settings-->
+    <string name="PrivacySettings">Privacy en veiligheid</string>
+    <string name="PrivacyTitle">Privacy</string>
+    <string name="PrivacyLastSeen">Laatst gezien</string>
+    <string name="LastSeenEverybody">Iedereen</string>
+    <string name="LastSeenContacts">Mijn contacten</string>
+    <string name="LastSeenNobody">Niemand</string>
+    <string name="LastSeenEverybodyMinus">Iedereen (-%1$d)</string>
+    <string name="LastSeenContactsPlus">Mijn contacten (+%1$d)</string>
+    <string name="LastSeenContactsMinus">Mijn contacten (-%1$d)</string>
+    <string name="LastSeenContactsMinusPlus">Mijn contacten (-%1$d, +%2$d)</string>
+    <string name="LastSeenNobodyPlus">Niemand (+%1$d)</string>
+    <string name="SecurityTitle">Veiligheid</string>
+    <string name="DeleteAccountTitle">Account verwijderen</string>
+    <string name="DeleteAccountIfAwayFor">Indien afwezig voor</string>
+    <string name="DeleteAccountHelp">Als je binnen deze periode niet minimaal één keer ingelogd bent geweest zal je account worden verwijderd, inclusief alle data.</string>
+    <string name="DeleteAccountNowConfirmation">Je account verwijderen?</string>
+    <string name="LastSeenHelp">Wijzig wie je laatst gezien tijd kan zien.</string>
+    <string name="LastSeenTitle">Wie kan mijn laatst gezien tijd zien?</string>
+    <string name="AddExceptions">Uitzonderingen toevoegen</string>
+    <string name="CustomHelp">Let op: van mensen waarmee je je laatst gezien tijd niet deelt is deze voor jou ook niet zichtbaar. In plaats daarvan krijg je tijden bij benadering te zien (recent, afgelopen week, afgelopen maand).</string>
+    <string name="AlwaysShareWith">Altijd delen met</string>
+    <string name="NeverShareWith">Nooit delen met</string>
+    <string name="CustomShareSettingsHelp">Deze instelling overschrijft de bovenstaande.</string>
+    <string name="AlwaysShareWithTitle">Altijd delen</string>
+    <string name="AlwaysShareWithPlaceholder">Altijd delen met gebruikers</string>
+    <string name="NeverShareWithTitle">Nooit delen</string>
+    <string name="NeverShareWithPlaceholder">Nooit delen met gebruikers</string>
+    <string name="EmpryUsersPlaceholder">Toevoegen</string>
+    <string name="PrivacyFloodControlError">Sorry, te veel verzoeken. Momenteel is het niet mogelijk om de privacyinstellingen te wijzigen, even geduld alsjeblieft.</string>
+    <string name="ClearOtherSessionsHelp">Logt alle apparaten behalve deze uit.</string>
+    <string name="RemoveFromListText">Druk langdurig op een gebruiker om deze te verwijderen.</string>
     <!--edit video view-->
     <string name="EditVideo">Video bewerken</string>
     <string name="OriginalVideo">Originele video</string>
@@ -328,7 +343,6 @@
     <string name="FromCamera">Van camera</string>
     <string name="FromGalley">Uit galerij</string>
     <string name="DeletePhoto">Foto verwijderen</string>
-    <string name="OpenPhoto">Foto openen</string>
     <string name="Set">Instellen</string>
     <string name="OK">OK</string>
     <!--messages-->
@@ -357,7 +371,7 @@
     <string name="AttachAudio">Geluidsbestand</string>
     <string name="FromYou">Jij</string>
     <string name="ActionTakeScreenshootYou">Je hebt een schermafbeelding gemaakt!</string>
-    <string name="ActionTakeScreenshoot">un1 maakte een schermafbeeling!</string>
+    <string name="ActionTakeScreenshoot">un1 maakte een schermafbeelding!</string>
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Ongeldig telefoonnummer</string>
     <string name="CodeExpired">Code verlopen. Log opnieuw in.</string>
@@ -368,15 +382,13 @@
     <string name="Loading">Bezig met laden…</string>
     <string name="NoPlayerInstalled">Je hebt geen mediaspeler. Installeer een mediaspeler om door te gaan.</string>
     <string name="NoMailInstalled">Mail ons op sms@telegram.org en vertel ons over je probleem.</string>
-    <string name="NoHandleAppInstalled">Je hebt geen apps die bestandstype \'%1$s\' kunnen verwerken, gelieve een compitabele app te installeren</string>
+    <string name="NoHandleAppInstalled">Je hebt geen apps die bestandstype \'%1$s\' kunnen verwerken, gelieve een compatibele app te installeren</string>
     <string name="InviteUser">Deze gebruiker heeft nog geen Telegram. Wil je een uitnodiging sturen?</string>
     <string name="AreYouSure">Weet je het zeker?</string>
-    <string name="AddContactQ">Contact toevoegen?</string>
     <string name="AddToTheGroup">%1$s toevoegen aan de groep?\n\nAantal recente berichten om door te sturen:</string>
     <string name="ForwardMessagesTo">Berichten doorsturen naar %1$s?</string>
-    <string name="DeleteChatQuestion">Dit gesprek verwijderen?</string>
     <string name="SendMessagesTo">Berichten naar %1$s verzenden?</string>
-    <string name="AreYouSureLogout">Weet je zeker dat je wilt uitloggen?</string>
+    <string name="AreYouSureLogout">Weet je zeker dat je wilt uitloggen?\n\nTelegram kun je naadloos op al je apparaten tegelijkertijd gebruiken.\n\nLet op! Als je uitlogt worden al je geheime chats verwijderd.</string>
     <string name="AreYouSureSessions">Alle apparaten behalve het huidige apparaat uitloggen?</string>
     <string name="AreYouSureDeleteAndExit">Weet je zeker dat je alles wilt verwijderen en de groep wilt verlaten?</string>
     <string name="AreYouSureDeleteThisChat">Weet je zeker dat je dit gesprek wilt verwijderen?</string>
@@ -385,7 +397,8 @@
     <string name="AreYouSureUnblockContact">Weet je zeker dat je deze persoon wilt deblokkeren?</string>
     <string name="AreYouSureDeleteContact">Weet je zeker dat je deze contactpersoon wilt verwijderen?</string>
     <string name="AreYouSureSecretChat">Weet je zeker dat je een geheime chat wilt starten?</string>
-    <string name="ForwardFromMyName">doorsturen via mijn eigen naam</string>
+    <string name="AreYouSureRegistration">Weet je zeker dat je de registratie wilt annuleren?</string>
+    <string name="AreYouSureClearHistory">Weet je zeker dat je de geschiedenis wilt wissen?</string>
     <string name="SendMessagesToGroup">Berichten naar %1$s verzenden?</string>
     <string name="ForwardMessagesToGroup">Berichten naar %1$s doorsturen?</string>
     <string name="FeatureUnavailable">Sorry, deze functie is momenteel niet beschikbaar in jouw land.</string>
@@ -472,6 +485,24 @@
     <string name="Weeks_few">%1$d weken</string>
     <string name="Weeks_many">%1$d weken</string>
     <string name="Weeks_other">%1$d weken</string>
+    <string name="Months_zero">%1$d maanden</string>
+    <string name="Months_one">%1$d maand</string>
+    <string name="Months_two">%1$d maanden</string>
+    <string name="Months_few">%1$d maanden</string>
+    <string name="Months_many">%1$d maanden</string>
+    <string name="Months_other">%1$d maanden</string>
+    <string name="Years_zero">%1$d jaren</string>
+    <string name="Years_one">%1$d jaar</string>
+    <string name="Years_two">%1$d jaren</string>
+    <string name="Years_few">%1$d jaren</string>
+    <string name="Years_many">%1$d jaren</string>
+    <string name="Years_other">%1$d jaren</string>
+    <string name="Users_zero">%1$d gebruikers</string>
+    <string name="Users_one">%1$d gebruiker</string>
+    <string name="Users_two">%1$d gebruikers</string>
+    <string name="Users_few">%1$d gebruikers</string>
+    <string name="Users_many">%1$d gebruikers</string>
+    <string name="Users_other">%1$d gebruikers</string>
     <!--date formatters-->
     <string name="formatterMonth">dd MMM</string>
     <string name="formatterYear">dd-MM-yy</string>

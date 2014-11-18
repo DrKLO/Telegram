@@ -132,7 +132,7 @@ public class DocumentSelectActivity extends BaseFragment {
 
         if (fragmentView == null) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setAllowOverlayTitle(true);
             actionBar.setTitle(LocaleController.getString("SelectFile", R.string.SelectFile));
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override

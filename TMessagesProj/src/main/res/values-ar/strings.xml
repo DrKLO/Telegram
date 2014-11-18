@@ -9,7 +9,7 @@
     <string name="LanguageCode">ar</string>
     <!--signin view-->
     <string name="YourPhone">رقم هاتفك المحمول</string>
-    <string name="StartText">يرجى التحقق من صحة رمز بلدك وإدخال رقم هاتفك المحمول</string>
+    <string name="StartText">يرجى التحقق من صحة رمز بلدك وإدخال رقم هاتفك المحمول.</string>
     <string name="ChooseCountry">اختر دولة</string>
     <string name="WrongCountry">رمز البلد خاطئ</string>
     <!--code enter view-->
@@ -28,16 +28,13 @@
     <string name="LastName">اسم العائلة</string>
     <string name="CancelRegistration">إلغاء التسجيل</string>
     <!--chats view-->
-    <string name="Chats">الدردشات</string>
-    <string name="Search">بحث</string>
-    <string name="NewMessages">الرسائل الجديدة</string>
     <string name="Settings">الإعدادات</string>
     <string name="Contacts">جهات الاتصال</string>
     <string name="NewGroup">مجموعة جديدة</string>
     <string name="Yesterday">أمس</string>
     <string name="NoResult">لا توجد نتائج</string>
     <string name="NoChats">...لا توجد محادثات بعد</string>
-    <string name="NoChatsHelp">إبدأ المراسلة بالضغط على\nأيقونة النقاط في أعلى يمين الشاشة\nأو اضغط على زر القائمة الرئيسية لخيارات أكثر.</string>
+    <string name="NoChatsHelp">إبدأ المراسلة بالضغط على\nأيقونة النقاط في أعلى يمين الشاشة\nأو اذهب لقسم جهات الاتصال.</string>
     <string name="WaitingForNetwork">في إنتظار الشبكة...</string>
     <string name="Connecting">جاري الاتصال...</string>
     <string name="Updating">جاري التحديث...</string>
@@ -47,16 +44,15 @@
     <string name="EncryptionProcessing">جاري إرسال المفاتيح المشفرة...</string>
     <string name="EncryptedChatStartedOutgoing">%s قام بالدخول للمحادثة السرية.</string>
     <string name="EncryptedChatStartedIncoming">لقد قمت بالدخول للمحادثة السرية.</string>
-    <string name="ClearHistory">مسح سجل التاريخ</string>
+    <string name="ClearHistory">مسح سجل المحادثات</string>
     <string name="DeleteChat">حذف وخروج</string>
-    <string name="HiddenName">الاسم مخفي</string>
+    <string name="DeleteChatUser">حذف المحادثة</string>
+    <string name="HiddenName">حساب محذوف</string>
     <string name="SelectChat">اختر محادثة</string>
-    <string name="PhotoTip">إضغط بإستمرار على المستخدم العرض</string>
+    <string name="PhotoTip">اضغط بإستمرار على المستخدم العرض</string>
     <string name="CompatibilityChat">%1$s يستخدم إصدار قديم من تيليجرام، لذلك، الصور السرية ستظهر في وضع الموافقة.\n\nعندما يقوم %2$s بتحديث تيليجرام، الصور التي بها عداد دقيقة أو أقل ستعمل بطريقة \"الاستمرار بالضغط للإستعراض\"، وسيتم إخبارك عندما يلتقط المستقبل صورة من شاشته.</string>
-    <string name="SearchConversations">Conversations</string>
-    <string name="SearchMessages">Messages</string>
+    <string name="SearchMessages">الرسائل</string>
     <!--broadcasts-->
-    <string name="BroadcastList">قائمة الرسالة الجماعية</string>
     <string name="NewBroadcastList">رسالة جماعية جديدة</string>
     <string name="EnterListName">أدخل اسم القائمة</string>
     <string name="YouCreatedBroadcastList">أنت قمت بإنشاء قائمة رسالة جماعية</string>
@@ -75,10 +71,10 @@
     <string name="ExternalStorage">الذاكرة الخارجية</string>
     <string name="SystemRoot">جذر النظام</string>
     <string name="SdCard">بطاقة الذاكرة</string>
+    <string name="Folder">مجلد</string>
     <!--chat view-->
     <string name="Invisible">مخفي</string>
     <string name="Typing">جاري الكتابة… </string>
-    <string name="Attach">أرفق</string>
     <string name="IsTyping">يكتب… </string>
     <string name="AreTyping">يكتبون… </string>
     <string name="GotAQuestion">هل يوجد لديك سؤال\nحول تيليجرام؟</string>
@@ -88,17 +84,12 @@
     <string name="ChatVideo">مقطع مرئي</string>
     <string name="ChatDocument">مستند</string>
     <string name="NoMessages">...لا توجد رسائل بعد</string>
-    <string name="ViewPhoto">عرض الصورة</string>
-    <string name="ViewLocation">عرض الموقع</string>
-    <string name="ViewVideo">مشاهدة المقطع المرئي</string>
     <string name="ForwardedMessage">الرسالة المعاد توجيهها</string>
     <string name="From">من</string>
     <string name="NoRecent">لا توجد رسائل أحدث</string>
     <string name="Message">الرسالة</string>
-    <string name="TypeMessage">أكتب رسالة</string>
-    <string name="DOWNLOAD">تحميل</string>
-    <string name="Selected">تم تحديد : %d</string>
-    <string name="ShareMyContactInfo">شارك جهة الاتصال الخاصة بي</string>
+    <string name="TypeMessage">الرسالة</string>
+    <string name="ShareMyContactInfo">قم بمشاركة جهة الاتصال الخاصة بي</string>
     <string name="AddToContacts">أضف لجهات الاتصال</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s قام بدعوتك لمحادثة سرية</string>
     <string name="EncryptedPlaceholderTitleOutgoing">لقد قمت بدعوة %s لمحادثة سرية.</string>
@@ -116,8 +107,6 @@
     <string name="ApplyLocalizationFile">تطبيق ملف التعريب</string>
     <string name="UnsupportedAttachment">المرفق غير مدعوم</string>
     <!--notification-->
-    <string name="EncryptedChatRequested">تم طلب محادثة سرية</string>
-    <string name="EncryptedChatAccepted">تم بدء المحادثة السرية</string>
     <string name="MessageLifetimeChanged">%1$s قام بتعيين عداد التدمير الذاتي إلى to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">لقد قمت بتعيين التدمير الذاتي إلى %1$s</string>
     <string name="MessageLifetimeRemoved">%1$s قام بإيقاف عداد التدمير الذاتي</string>
@@ -160,21 +149,21 @@
     <string name="TodayAt">اليوم الساعة</string>
     <string name="YesterdayAt">أمس الساعة</string>
     <string name="Online">متصل</string>
-    <string name="Offline">غير متصل</string>
     <string name="LastSeen">آخر ظهور</string>
     <string name="LastSeenDate">آخر ظهور</string>
     <string name="InviteFriends">قم بدعوة صديق</string>
     <string name="GlobalSearch">بحث شامل</string>
+    <string name="Lately">آخر ظهور كان قريب</string>
+    <string name="WithinAWeek">آخر ظهور خلال أسبوع</string>
+    <string name="WithinAMonth">آخر ظهور خلال شهر</string>
+    <string name="ALongTimeAgo">آخر ظهور خلال فترة طويلة</string>
     <!--group create view-->
     <string name="SendMessageTo">إرسال الرسالة إلى...</string>
     <string name="EnterGroupNamePlaceholder">أدخل اسم للمجموعة</string>
     <string name="GroupName">اسم المجموعة</string>
-    <string name="AllContacts">جميع جهات الاتصال</string>
     <string name="MembersCount">%1$d/%2$d عضو</string>
     <!--group info view-->
-    <string name="EnterGroupNameTitle">أدخل سم للمجموعة</string>
     <string name="SharedMedia">عدد الوسائط المشتركة</string>
-    <string name="GroupInfo">معلومات المجموعة</string>
     <string name="SETTINGS">الإعدادات</string>
     <string name="AddMember">إضافة مشترك</string>
     <string name="DeleteAndExit">مغادرة المجموعة وحذفها</string>
@@ -183,19 +172,17 @@
     <!--contact info view-->
     <string name="ShareContact">مشاركة</string>
     <string name="AddContact">إضافة</string>
+    <string name="AddContactTitle">قم بإضافة جهة اتصال</string>
     <string name="BlockContact">حظر</string>
     <string name="EditContact">تعديل</string>
     <string name="DeleteContact">حذف</string>
-    <string name="PhoneHome">الهاتف المنزلي</string>
+    <string name="PhoneHome">منزل</string>
     <string name="PhoneMobile">الهاتف المحمول</string>
-    <string name="PhoneWork">هاتف العمل</string>
-    <string name="PhoneOther">هاتف آخر</string>
-    <string name="PhoneMain">الهاتف الأساسي</string>
-    <string name="ContactInfo">معلومات جهة الاتصال</string>
-    <string name="PHONE">الهاتف</string>
+    <string name="PhoneWork">العمل</string>
+    <string name="PhoneOther">آخر</string>
+    <string name="PhoneMain">الرئيسية</string>
     <string name="StartEncryptedChat">إبدأ محادثة سرية</string>
     <string name="CreateEncryptedChatError">حدث خطأ.</string>
-    <string name="SecretTitle">محادثة سرية</string>
     <string name="EncryptionKey">مفتاح التشفير</string>
     <string name="MessageLifetime">عداد التدمير الذاتي</string>
     <string name="ShortMessageLifetimeForever">إيقاف</string>
@@ -222,14 +209,14 @@
     <string name="AskAQuestion">اسأل سؤالًا</string>
     <string name="EnableAnimations">تفعيل التأثيرات المتحركة</string>
     <string name="Unblock">إلغاء الحظر</string>
-    <string name="UnblockText">إضغط بإستمرار على المستخدم لإلغاء الحظر</string>
+    <string name="UnblockText">اضغط بإستمرار على المستخدم لإلغاء الحظر</string>
     <string name="NoBlocked">لا توجد جهات اتصال محظورة</string>
     <string name="MessageNotifications">إشعارات الرسائل</string>
     <string name="Alert">التنبيه</string>
     <string name="MessagePreview">معاينة الرسالة</string>
     <string name="GroupNotifications">إشعارات المجموعات</string>
     <string name="Sound">الصوت</string>
-    <string name="InAppNotifications">إشعارات داخل التطبيق</string>
+    <string name="InAppNotifications">الإشعارات داخل التطبيق</string>
     <string name="InAppSounds">أصوات داخل التطبيق</string>
     <string name="InAppVibrate">اهتزاز داخل التطبيق</string>
     <string name="Vibrate">اهتزاز</string>
@@ -239,9 +226,7 @@
     <string name="UndoAllCustom">إعادة تعيين كافة إعدادات الإشعارات لجميع جهات الاتصال والمجموعات</string>
     <string name="NotificationsAndSounds">الإشعارات والأصوات</string>
     <string name="BlockedUsers">جهات الاتصال المحظورة</string>
-    <string name="SaveIncomingPhotos">حفظ الصور الواردة</string>
     <string name="LogOut">تسجيل خروج</string>
-    <string name="YourFirstNameAndLastName">اسمك واسم عائلتك</string>
     <string name="NoSound">لا يوجد صوت</string>
     <string name="Default">افتراضي</string>
     <string name="Support">الدعم</string>
@@ -265,7 +250,6 @@
     <string name="NotificationsServiceDisableInfo">إذا كانت خدمات Google play كافية بالنسبة لك لتلقي الإشعارات ، يمكنك تعطيل \" خدمة الإشعارات \" . ومع ذلك نحن نوصي بترك هذه الخدمة مفعلة للحفاظ على تشغيل التطبيق في الخلفية ، ولتلقي إشعارات الدردشة .</string>
     <string name="SortBy">فرز حسب</string>
     <string name="ImportContacts">استيراد جهات الاتصال</string>
-    <string name="WiFiOnly">بواسطة WiFi فقط</string>
     <string name="SortFirstName">الاسم الأول</string>
     <string name="SortLastName">اسم العائلة</string>
     <string name="LedColor">لون إضاءة الـ LED</string>
@@ -279,18 +263,16 @@
     <string name="Long">طويل</string>
     <string name="SystemDefault">النظام الإفتراضي</string>
     <string name="SettingsDefault">الإعدادات الإفتراضية</string>
-    <string name="AutomaticMediaDownload">تنزيل الوسائط تلقائيا</string>
+    <string name="AutomaticMediaDownload">تنزيل تلقائي للوسائط</string>
     <string name="WhenUsingMobileData">عند استخدام البيانات الخلوية</string>
     <string name="WhenConnectedOnWiFi">عند الاتصال بالشبكة اللاسلكية</string>
     <string name="WhenRoaming">عند تواجدك خارج البلاد</string>
     <string name="NoMediaAutoDownload">لا يوجد وسائط</string>
     <string name="SaveToGallerySettings">حفظ في الجهاز</string>
-    <string name="EditName">Edit Name</string>
+    <string name="EditName">تعديل الاسم</string>
     <!--media view-->
     <string name="NoMedia">لا توجد وسائط بعد</string>
-    <string name="CancelDownload">إلغاء التنزيل</string>
     <!--map view-->
-    <string name="MyLocation">موقعي</string>
     <string name="Map">الخريطة</string>
     <string name="Satellite">قمر صناعي</string>
     <string name="Hybrid">هجين</string>
@@ -305,6 +287,39 @@
     <string name="Gallery">الألبوم</string>
     <string name="AllPhotos">جميع الصور</string>
     <string name="NoPhotos">لا توجد صور حتى الآن</string>
+    <string name="PleaseDownload">فضلًا، قم بتنزيل الوسائط أولًا</string>
+    <!--privacy settings-->
+    <string name="PrivacySettings">الخصوصية والأمان</string>
+    <string name="PrivacyTitle">الخصوصية</string>
+    <string name="PrivacyLastSeen">آخر ظهور</string>
+    <string name="LastSeenEverybody">الجميع</string>
+    <string name="LastSeenContacts">جهات الاتصال الخاصة بي</string>
+    <string name="LastSeenNobody">لا أحد</string>
+    <string name="LastSeenEverybodyMinus">الجميع (-%1$d)</string>
+    <string name="LastSeenContactsPlus">جهات الاتصال الخاصة بي (+%1$d)</string>
+    <string name="LastSeenContactsMinus">جهات الاتصال الخاصة بي (-%1$d)</string>
+    <string name="LastSeenContactsMinusPlus">جهات الاتصال الخاصة بي (-%1$d, +%2$d)</string>
+    <string name="LastSeenNobodyPlus">لا أحد (+%1$d)</string>
+    <string name="SecurityTitle">الأمان</string>
+    <string name="DeleteAccountTitle">تدمير ذاتي للحساب</string>
+    <string name="DeleteAccountIfAwayFor">إذا كنت غائب لمدة</string>
+    <string name="DeleteAccountHelp">إذا لم تقم بتسجيل الدخول خلال هذه الفترة، سيتم حذف حسابك بالإضافة إلى مجموعاتك، رسائلك، وجهات الاتصال الخاصة بك في تيليجرام.</string>
+    <string name="DeleteAccountNowConfirmation">هل ترغب في حذف حسابك؟</string>
+    <string name="LastSeenHelp">قم بتغيير من يستطيع رؤية آخر ظهور خاص بك.</string>
+    <string name="LastSeenTitle">من يستطيع رؤية آخر ظهور خاص بك؟</string>
+    <string name="AddExceptions">إضافة استثناءات</string>
+    <string name="CustomHelp">هام: لن تستطيع رؤية آخر ظهور للأشخاص اللذين اخترت ألا يروا آخر ظهور لك. سيتم عرض آخر ظهور تقريبي كبديل (قريبًا، خلال أسبوع، خلال شهر).</string>
+    <string name="AlwaysShareWith">دائمًا شارك معه</string>
+    <string name="NeverShareWith">لا تشارك أبدًا مع</string>
+    <string name="CustomShareSettingsHelp">هذه الإعدادات ستستبدل الإعدادات المختارة أعلاه.</string>
+    <string name="AlwaysShareWithTitle">دائمُا شارك</string>
+    <string name="AlwaysShareWithPlaceholder">دائمًا شارك مع جهات الاتصال...</string>
+    <string name="NeverShareWithTitle">لا تشارك أبدًا</string>
+    <string name="NeverShareWithPlaceholder">لا تشارك أبدًا مع جهات الاتصال...</string>
+    <string name="EmpryUsersPlaceholder">إضافة جهات اتصال</string>
+    <string name="PrivacyFloodControlError">المعذرة، يوجد الكثير من الطلبات حاليًا. لا نستطيع تغيير إعدادات الخصوصية الآن، يرجى الإنتظار.</string>
+    <string name="ClearOtherSessionsHelp">قم بتسجيل الخروج من جميع الأجهزة الأخرى باستثناء هذا الجهاز</string>
+    <string name="RemoveFromListText">إضغط بإستمرار على المستخدم لحذفه</string>
     <!--edit video view-->
     <string name="EditVideo">تحرير الفيديو</string>
     <string name="OriginalVideo">الفيديو الأصلي</string>
@@ -328,7 +343,6 @@
     <string name="FromCamera">من الكاميرا</string>
     <string name="FromGalley">من الجهاز</string>
     <string name="DeletePhoto">حذف الصورة</string>
-    <string name="OpenPhoto">فتح الصورة</string>
     <string name="Set">تعيين</string>
     <string name="OK">موافق</string>
     <!--messages-->
@@ -371,12 +385,10 @@
     <string name="NoHandleAppInstalled">لا يوجد لديك تطبيق يمكنه فتح \'%1$s\'، يرجى تنزيل تطبيق مناسب للإستمرار</string>
     <string name="InviteUser">هذا المستخدم ليس لديه تيليجرام بعد ، هل ترغب في دعوته الآن؟</string>
     <string name="AreYouSure">هل أنت متأكد؟</string>
-    <string name="AddContactQ">هل تريد إضافة جهة اتصال؟</string>
     <string name="AddToTheGroup">هل ترغب في إضافة %1$s للمجموعة؟\n\nعدد الرسائل الحديثة المراد إعادة تحويلها:</string>
     <string name="ForwardMessagesTo">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
-    <string name="DeleteChatQuestion">هل تريد حذف هذه الدردشة؟</string>
     <string name="SendMessagesTo">هل ترغب في إرسال رسالة إلى %1$s؟</string>
-    <string name="AreYouSureLogout">هل أنت متأكد من أنك تريد تسجيل الخروج؟</string>
+    <string name="AreYouSureLogout">نرجو الأخذ بالعلم أنه يمكنك استخدام تيليجرام على أجهزتك المتعددة بسهولة تامة وفي وقت واحد.\n\nوتذكر، تسجيل الخروج يحذف كافة محادثاتك السرية.</string>
     <string name="AreYouSureSessions">هل أنت متأكد من تسجيل الخروج من جميع الأجهزة الأخرى باستثناء هذا الجهاز؟</string>
     <string name="AreYouSureDeleteAndExit">هل أنت متأكد من أنك تريد حذف المجموعة والخروج منها؟</string>
     <string name="AreYouSureDeleteThisChat">هل أنت متأكد من رغبتك في حذف المجموعة؟</string>
@@ -385,7 +397,8 @@
     <string name="AreYouSureUnblockContact">هل أنت متأكد من رغبتك في إزالة الحظر عن جهة الاتصال هذه؟</string>
     <string name="AreYouSureDeleteContact">هل أنت متأكد من رغبتك في حذف جهة الاتصال هذه؟</string>
     <string name="AreYouSureSecretChat">هل أنت متأكد من أنك تريد بدء محادثة سرية؟</string>
-    <string name="ForwardFromMyName">أعد الإرسال باستخدام اسمي</string>
+    <string name="AreYouSureRegistration">هل أنت متأكد من رغبتك في إلغاء التسجيل؟</string>
+    <string name="AreYouSureClearHistory">هل أنت متأكد من رغبتك في حذف سجل المحادثات؟</string>
     <string name="SendMessagesToGroup">هل ترغب في إرسال رسالة إلى %1$s؟</string>
     <string name="ForwardMessagesToGroup">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
     <string name="FeatureUnavailable">.Sorry, this feature is currently not available in your country</string>
@@ -472,6 +485,24 @@
     <string name="Weeks_few">%1$d أسابيع</string>
     <string name="Weeks_many">%1$d أسبوع</string>
     <string name="Weeks_other">%1$d أسبوع</string>
+    <string name="Months_zero">%1$d شهر</string>
+    <string name="Months_one">%1$d شهر</string>
+    <string name="Months_two">%1$d شهران</string>
+    <string name="Months_few">%1$d أشهر</string>
+    <string name="Months_many">%1$d شهر</string>
+    <string name="Months_other">%1$d شهر</string>
+    <string name="Years_zero">%1$d سنة</string>
+    <string name="Years_one">%1$d سنة</string>
+    <string name="Years_two">%1$d سنتان</string>
+    <string name="Years_few">%1$d سنوات</string>
+    <string name="Years_many">%1$d سنة</string>
+    <string name="Years_other">%1$d سنة</string>
+    <string name="Users_zero">%1$d مستخدم</string>
+    <string name="Users_one">%1$d مستخدم</string>
+    <string name="Users_two">%1$d مستخدمان</string>
+    <string name="Users_few">%1$d مستخدمون</string>
+    <string name="Users_many">%1$d مستخدم</string>
+    <string name="Users_other">%1$d مستخدم</string>
     <!--date formatters-->
     <string name="formatterMonth">MMM dd</string>
     <string name="formatterYear">dd.MM.yy</string>

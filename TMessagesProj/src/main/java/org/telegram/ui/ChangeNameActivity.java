@@ -50,7 +50,7 @@ public class ChangeNameActivity extends BaseFragment {
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setAllowOverlayTitle(true);
             actionBar.setTitle(LocaleController.getString("EditName", R.string.EditName));
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override

@@ -64,7 +64,7 @@ public class CountrySelectActivity extends BaseFragment {
     public View createView(LayoutInflater inflater, final ViewGroup container) {
         if (fragmentView == null) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setAllowOverlayTitle(true);
             actionBar.setTitle(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
 
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {

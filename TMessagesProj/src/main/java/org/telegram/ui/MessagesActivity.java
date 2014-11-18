@@ -202,7 +202,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 actionBar.setBackButtonDrawable(new MenuDrawable());
                 actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
             }
-            actionBar.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setAllowOverlayTitle(true);
 
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override

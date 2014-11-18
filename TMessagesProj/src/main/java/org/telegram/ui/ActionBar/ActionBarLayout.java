@@ -42,7 +42,6 @@ public class ActionBarLayout extends FrameLayout {
 
     public static interface ActionBarLayoutDelegate {
         public abstract boolean onPreIme();
-        public abstract void onOverlayShow(View view, BaseFragment fragment);
         public abstract boolean needPresentFragment(BaseFragment fragment, boolean removeLast, boolean forceWithoutAnimation, ActionBarLayout layout);
         public abstract boolean needAddFragmentToStack(BaseFragment fragment, ActionBarLayout layout);
         public abstract boolean needCloseLastFragment(ActionBarLayout layout);
@@ -127,6 +126,8 @@ public class ActionBarLayout extends FrameLayout {
     private boolean useAlphaAnimations;
     private View backgroundView;
     private boolean removeActionBarExtraHeight;
+
+    private String titleOverlayText;
 
     private ActionBarLayoutDelegate delegate = null;
     protected Activity parentActivity = null;
@@ -332,6 +333,7 @@ public class ActionBarLayout extends FrameLayout {
                 lastFragment.actionBar.setOccupyStatusBar(false);
             }
             containerViewBack.addView(lastFragment.actionBar);
+            lastFragment.actionBar.setTitleOverlayText(titleOverlayText);
         }
         containerViewBack.addView(fragmentView);
         ViewGroup.LayoutParams layoutParams = fragmentView.getLayoutParams();
@@ -558,6 +560,7 @@ public class ActionBarLayout extends FrameLayout {
                 fragment.actionBar.setOccupyStatusBar(false);
             }
             containerViewBack.addView(fragment.actionBar);
+            fragment.actionBar.setTitleOverlayText(titleOverlayText);
         }
         containerViewBack.addView(fragmentView);
         ViewGroup.LayoutParams layoutParams = fragmentView.getLayoutParams();
@@ -695,6 +698,7 @@ public class ActionBarLayout extends FrameLayout {
                     previousFragment.actionBar.setOccupyStatusBar(false);
                 }
                 containerView.addView(previousFragment.actionBar);
+                previousFragment.actionBar.setTitleOverlayText(titleOverlayText);
             }
             containerView.addView(fragmentView);
             ViewGroup.LayoutParams layoutParams = fragmentView.getLayoutParams();
@@ -798,6 +802,7 @@ public class ActionBarLayout extends FrameLayout {
                 parent.removeView(previousFragment.actionBar);
             }
             containerView.addView(previousFragment.actionBar);
+            previousFragment.actionBar.setTitleOverlayText(titleOverlayText);
         }
         containerView.addView(fragmentView);
         ViewGroup.LayoutParams layoutParams = fragmentView.getLayoutParams();
@@ -840,12 +845,6 @@ public class ActionBarLayout extends FrameLayout {
             currentActionBar.onMenuButtonPressed();
         }
         return super.onKeyUp(keyCode, event);
-    }
-
-    protected void onOverlayShow(View view, BaseFragment fragment) {
-        if (delegate != null) {
-            delegate.onOverlayShow(view, fragment);
-        }
     }
 
     public void onActionModeStarted(ActionMode mode) {
@@ -941,5 +940,14 @@ public class ActionBarLayout extends FrameLayout {
 
     public void setRemoveActionBarExtraHeight(boolean value) {
         removeActionBarExtraHeight = value;
+    }
+
+    public void setTitleOverlayText(String text) {
+        titleOverlayText = text;
+        for (BaseFragment fragment : fragmentsStack) {
+            if (fragment.actionBar != null) {
+                fragment.actionBar.setTitleOverlayText(titleOverlayText);
+            }
+        }
     }
 }

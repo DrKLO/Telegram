@@ -34,7 +34,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import org.telegram.android.AndroidUtilities;
@@ -917,7 +916,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         Utilities.checkForUpdates(this);
         ApplicationLoader.mainInterfacePaused = false;
         ConnectionsManager.getInstance().setAppPaused(false, false);
-        //actionBarLayout.getActionBar().setBackOverlayVisible(currentConnectionState != 0);
+        updateCurrentConnectionState();
     }
 
     @Override
@@ -958,11 +957,23 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             if (currentConnectionState != state) {
                 FileLog.e("tmessages", "switch to state " + state);
                 currentConnectionState = state;
-                //actionBarLayout.getActionBar().setBackOverlayVisible(currentConnectionState != 0);
+                updateCurrentConnectionState();
             }
         } else if (id == NotificationCenter.mainUserInfoChanged) {
             drawerLayoutAdapter.notifyDataSetChanged();
         }
+    }
+
+    private void updateCurrentConnectionState() {
+        String text = null;
+        if (currentConnectionState == 1) {
+            text = LocaleController.getString("WaitingForNetwork", R.string.WaitingForNetwork);
+        } else if (currentConnectionState == 2) {
+            text = LocaleController.getString("Connecting", R.string.Connecting);
+        } else if (currentConnectionState == 3) {
+            text = LocaleController.getString("Updating", R.string.Updating);
+        }
+        actionBarLayout.setTitleOverlayText(text);
     }
 
     @Override
@@ -1068,24 +1079,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             return true;
         }
         return false;
-    }
-
-    @Override
-    public void onOverlayShow(View view, BaseFragment fragment) {
-        if (view == null || fragment == null || actionBarLayout.fragmentsStack.isEmpty()) {
-            return;
-        }
-        View backStatusButton = view.findViewById(R.id.back_button);
-        TextView statusText = (TextView)view.findViewById(R.id.status_text);
-        backStatusButton.setVisibility(actionBarLayout.fragmentsStack.get(0) == fragment ? View.GONE : View.VISIBLE);
-        view.setEnabled(actionBarLayout.fragmentsStack.get(0) != fragment);
-        if (currentConnectionState == 1) {
-            statusText.setText(LocaleController.getString("WaitingForNetwork", R.string.WaitingForNetwork));
-        } else if (currentConnectionState == 2) {
-            statusText.setText(LocaleController.getString("Connecting", R.string.Connecting));
-        } else if (currentConnectionState == 3) {
-            statusText.setText(LocaleController.getString("Updating", R.string.Updating));
-        }
     }
 
     @Override

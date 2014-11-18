@@ -145,9 +145,12 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             });
 
             cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
+            cancelButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             doneButtonTextView = (TextView)doneButton.findViewById(R.id.done_button_text);
             doneButtonTextView.setText(LocaleController.getString("Send", R.string.Send).toUpperCase());
+            doneButtonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             doneButtonBadgeTextView = (TextView)doneButton.findViewById(R.id.done_button_badge);
+            doneButtonBadgeTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
             listView.setAdapter(listAdapter = new ListAdapter(getParentActivity()));
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {

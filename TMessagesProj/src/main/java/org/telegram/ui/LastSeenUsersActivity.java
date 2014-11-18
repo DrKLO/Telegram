@@ -78,7 +78,7 @@ public class LastSeenUsersActivity extends BaseFragment implements NotificationC
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setAllowOverlayTitle(true);
             if (isAlwaysShare) {
                 actionBar.setTitle(LocaleController.getString("AlwaysShareWithTitle", R.string.AlwaysShareWithTitle));
             } else {

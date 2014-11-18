@@ -58,7 +58,7 @@ public class ChangeChatNameActivity extends BaseFragment {
         if (fragmentView == null) {
 
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setAllowOverlayTitle(true);
             actionBar.setTitle(LocaleController.getString("EditName", R.string.EditName));
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override

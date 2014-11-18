@@ -52,6 +52,7 @@ import org.telegram.ui.Adapters.ContactsSearchAdapter;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Views.SectionsListView;
 
 import java.util.ArrayList;
@@ -145,7 +146,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             searchWas = false;
 
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setAllowOverlayTitle(true);
             if (isAlwaysShare) {
                 actionBar.setTitle(LocaleController.getString("AlwaysShareWithTitle", R.string.AlwaysShareWithTitle));
             } else if (isNeverShare) {
@@ -473,9 +474,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         } else if (id == NotificationCenter.updateInterfaces) {
             int mask = (Integer)args[0];
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0 || (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
-                if (listView != null) {
-                    listView.invalidateViews();
-                }
+                updateVisibleRows(mask);
             }
         } else if (id == NotificationCenter.chatDidCreated) {
             AndroidUtilities.runOnUIThread(new Runnable() {
@@ -484,6 +483,18 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     removeSelfFromStack();
                 }
             });
+        }
+    }
+
+    private void updateVisibleRows(int mask) {
+        if (listView != null) {
+            int count = listView.getChildCount();
+            for (int a = 0; a < count; a++) {
+                View child = listView.getChildAt(a);
+                if (child instanceof UserCell) {
+                    ((UserCell) child).update(mask);
+                }
+            }
         }
     }
 

@@ -91,7 +91,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setAllowOverlayTitle(true);
             actionBar.setTitle(LocaleController.getString("PrivacySettings", R.string.PrivacySettings));
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override

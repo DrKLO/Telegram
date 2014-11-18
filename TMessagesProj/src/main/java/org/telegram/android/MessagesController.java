@@ -1354,7 +1354,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     req.peer.user_id = user.id;
                 }
             }
-            req.offset = 0;
+            if (load_type == 3) {
+                req.offset = -count / 2;
+            } else {
+                req.offset = 0;
+            }
             req.limit = count;
             req.max_id = max_id;
             long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {

@@ -911,9 +911,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         pickerView.setLayoutParams(layoutParams);
 
         cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
+        cancelButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         doneButtonTextView = (TextView)doneButton.findViewById(R.id.done_button_text);
         doneButtonTextView.setText(LocaleController.getString("Send", R.string.Send).toUpperCase());
+        doneButtonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         doneButtonBadgeTextView = (TextView)doneButton.findViewById(R.id.done_button_badge);
+        doneButtonBadgeTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
         gestureDetector = new GestureDetector(containerView.getContext(), this);
         gestureDetector.setOnDoubleTapListener(this);

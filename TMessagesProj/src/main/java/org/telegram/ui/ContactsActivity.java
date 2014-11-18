@@ -119,7 +119,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             searchWas = false;
 
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setAllowOverlayTitle(true);
             actionBar.setTitle(destroyAfterSelect ? LocaleController.getString("SelectContact", R.string.SelectContact) : LocaleController.getString("Contacts", R.string.Contacts));
 
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {

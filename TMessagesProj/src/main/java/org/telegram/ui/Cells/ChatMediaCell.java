@@ -74,6 +74,8 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     private boolean photoNotSet = false;
     private boolean cancelLoading = false;
 
+    private boolean allowedToSetPhoto = true;
+
     private int TAG;
 
     private int buttonState = 0;
@@ -595,18 +597,19 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                             }
                         }
                         if (photoExist || MediaController.getInstance().canDownloadMedia(MediaController.AUTODOWNLOAD_MASK_PHOTO)) {
-                            if (messageObject.imagePreview != null) {
-                                photoImage.setImage(currentPhotoObject.photoOwner.location, currentPhotoFilter, new BitmapDrawable(messageObject.imagePreview), noSize ? 0 : currentPhotoObject.photoOwner.size, false);
+                            if (allowedToSetPhoto || ImageLoader.getInstance().getImageFromMemory(currentPhotoObject.photoOwner.location, null, currentPhotoFilter, null) != null) {
+                                allowedToSetPhoto = true;
+                                if (messageObject.imagePreview != null) {
+                                    photoImage.setImage(currentPhotoObject.photoOwner.location, currentPhotoFilter, new BitmapDrawable(messageObject.imagePreview), noSize ? 0 : currentPhotoObject.photoOwner.size, false);
+                                } else {
+                                    photoImage.setImage(currentPhotoObject.photoOwner.location, currentPhotoFilter, null, noSize ? 0 : currentPhotoObject.photoOwner.size, false);
+                                }
                             } else {
-                                photoImage.setImage(currentPhotoObject.photoOwner.location, currentPhotoFilter, null, noSize ? 0 : currentPhotoObject.photoOwner.size, false);
+                                photoImage.setImageBitmap(messageObject.imagePreview);
                             }
                         } else {
                             photoNotSet = true;
-                            if (messageObject.imagePreview != null) {
-                                photoImage.setImageBitmap(messageObject.imagePreview);
-                            } else {
-                                photoImage.setImageBitmap((Bitmap)null);
-                            }
+                            photoImage.setImageBitmap(messageObject.imagePreview);
                         }
                     }
                 } else {
@@ -797,6 +800,18 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             CharSequence str2 = TextUtils.ellipsize(currentInfoString, infoPaint, infoWidth, TextUtils.TruncateAt.END);
             infoLayout = new StaticLayout(str2, infoPaint, infoWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             invalidate();
+        }
+    }
+
+    public void setAllowedToSetPhoto(boolean value) {
+        if (allowedToSetPhoto == value) {
+            return;
+        }
+        allowedToSetPhoto = value;
+        if (value && currentMessageObject != null && currentMessageObject.type == 1) {
+            MessageObject temp = currentMessageObject;
+            currentMessageObject = null;
+            setMessageObject(temp);
         }
     }
 

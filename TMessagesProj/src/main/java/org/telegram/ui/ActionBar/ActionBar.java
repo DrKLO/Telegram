@@ -23,7 +23,6 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.R;
-import org.telegram.ui.AnimationCompat.ViewProxy;
 
 public class ActionBar extends FrameLayout {
 
@@ -43,15 +42,17 @@ public class ActionBar extends FrameLayout {
     private TextView subTitleTextView;
     private ActionBarMenu menu;
     private ActionBarMenu actionMode;
-    private View actionOverlay;
     private boolean occupyStatusBar = Build.VERSION.SDK_INT >= 21;
+
+    private boolean allowOverlayTitle;
+    private CharSequence lastTitle;
+    private boolean showingOverlayTitle;
 
     protected boolean isSearchFieldVisible;
     protected int itemsBackgroundResourceId;
     private boolean isBackOverlayVisible;
     protected BaseFragment parentFragment;
     public ActionBarMenuOnItemClick actionBarMenuOnItemClick;
-    private float alphaEx = 1;
     private int extraHeight;
 
     public ActionBar(Context context) {
@@ -182,7 +183,6 @@ public class ActionBar extends FrameLayout {
         }
         backButtonImageView = new ImageView(getContext());
         titleFrameLayout.addView(backButtonImageView);
-        backButtonImageView.setVisibility(VISIBLE);
         backButtonImageView.setScaleType(ImageView.ScaleType.CENTER);
         backButtonImageView.setBackgroundResource(itemsBackgroundResourceId);
         backButtonImageView.setOnClickListener(new OnClickListener() {
@@ -273,6 +273,7 @@ public class ActionBar extends FrameLayout {
             createTitleTextView();
         }
         if (titleTextView != null) {
+            lastTitle = value;
             titleTextView.setVisibility(value != null ? VISIBLE : GONE);
             titleTextView.setText(value);
             positionTitle(getMeasuredWidth(), getMeasuredHeight());
@@ -364,7 +365,7 @@ public class ActionBar extends FrameLayout {
         }
         actionMode.setVisibility(GONE);
         if (titleFrameLayout != null) {
-            titleFrameLayout.setVisibility(isSearchFieldVisible || actionOverlay == null || actionOverlay.getVisibility() == GONE ? VISIBLE : INVISIBLE);
+            titleFrameLayout.setVisibility(VISIBLE);
         }
         if (menu != null) {
             menu.setVisibility(VISIBLE);
@@ -387,7 +388,6 @@ public class ActionBar extends FrameLayout {
         if (drawable != null && drawable instanceof MenuDrawable) {
             ((MenuDrawable)drawable).setRotation(visible ? 1 : 0, true);
         }
-        positionBackOverlay(getMeasuredWidth(), getMeasuredHeight());
     }
 
     public void closeSearchField() {
@@ -403,23 +403,8 @@ public class ActionBar extends FrameLayout {
         positionBackImage(actionBarHeight);
         positionMenu(MeasureSpec.getSize(widthMeasureSpec), actionBarHeight);
         positionTitle(MeasureSpec.getSize(widthMeasureSpec), actionBarHeight);
-        positionBackOverlay(MeasureSpec.getSize(widthMeasureSpec), actionBarHeight);
         actionBarHeight += occupyStatusBar ? AndroidUtilities.statusBarHeight : 0;
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(actionBarHeight + extraHeight, MeasureSpec.EXACTLY));
-    }
-
-    public void setAlphaEx(float alpha) {
-        alphaEx = alpha;
-        if (menu != null) {
-            ViewProxy.setAlpha(menu, alphaEx);
-        }
-        if (titleFrameLayout != null) {
-            ViewProxy.setAlpha(titleFrameLayout, alphaEx);
-        }
-    }
-
-    public float getAlphaEx() {
-        return alphaEx;
     }
 
     public void onMenuButtonPressed() {
@@ -434,30 +419,24 @@ public class ActionBar extends FrameLayout {
         }
     }
 
-    public void setBackOverlay(int resourceId) {
-        LayoutInflater li = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        actionOverlay = li.inflate(resourceId, null);
-        addView(actionOverlay);
-        actionOverlay.setVisibility(GONE);
-        actionOverlay.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (actionBarMenuOnItemClick != null) {
-                    actionBarMenuOnItemClick.onItemClick(-1);
-                }
-            }
-        });
+    public void setAllowOverlayTitle(boolean value) {
+        allowOverlayTitle = value;
     }
 
-    public void setBackOverlayVisible(boolean visible) {
-        if (actionOverlay == null || parentFragment == null || parentFragment.parentLayout == null) {
+    public void setTitleOverlayText(String text) {
+        if (showingOverlayTitle == (text != null) || !allowOverlayTitle || parentFragment.parentLayout == null) {
             return;
         }
-        isBackOverlayVisible = visible;
-        if (visible) {
-            parentFragment.parentLayout.onOverlayShow(actionOverlay, parentFragment);
+        showingOverlayTitle = text != null;
+        CharSequence textToSet = text != null ? text : lastTitle;
+        if (textToSet != null && titleTextView == null) {
+            createTitleTextView();
         }
-        positionBackOverlay(getMeasuredWidth(), getMeasuredHeight());
+        if (titleTextView != null) {
+            titleTextView.setVisibility(textToSet != null ? VISIBLE : GONE);
+            titleTextView.setText(textToSet);
+            positionTitle(getMeasuredWidth(), getMeasuredHeight());
+        }
     }
 
     public void setExtraHeight(int value, boolean layout) {
@@ -469,24 +448,6 @@ public class ActionBar extends FrameLayout {
 
     public int getExtraHeight() {
         return extraHeight;
-    }
-
-    private void positionBackOverlay(int widthMeasureSpec, int heightMeasureSpec) {
-        if (actionOverlay == null) {
-            return;
-        }
-        titleFrameLayout.setVisibility(isSearchFieldVisible || actionOverlay == null || actionOverlay.getVisibility() == GONE ? VISIBLE : INVISIBLE);
-        actionOverlay.setVisibility(!isSearchFieldVisible && isBackOverlayVisible ? VISIBLE : GONE);
-        if (actionOverlay.getVisibility() == VISIBLE) {
-            MarginLayoutParams layoutParams = (MarginLayoutParams) actionOverlay.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.MATCH_PARENT;
-            actionOverlay.setLayoutParams(layoutParams);
-            actionOverlay.measure(widthMeasureSpec, heightMeasureSpec);
-            layoutParams.topMargin = occupyStatusBar ? AndroidUtilities.statusBarHeight : 0;
-            layoutParams.width = Math.min(actionOverlay.getMeasuredWidth() + AndroidUtilities.dp(4), widthMeasureSpec - (menu != null ? menu.getMeasuredWidth() : 0));
-            actionOverlay.setLayoutParams(layoutParams);
-        }
     }
 
     public void setOccupyStatusBar(boolean value) {

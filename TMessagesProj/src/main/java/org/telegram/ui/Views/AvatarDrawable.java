@@ -83,6 +83,9 @@ public class AvatarDrawable extends Drawable {
     }
 
     public static int getColorIndex(int id) {
+        if (id >= 0 && id < 8) {
+            return id;
+        }
         try {
             String str;
             if (id >= 0) {
