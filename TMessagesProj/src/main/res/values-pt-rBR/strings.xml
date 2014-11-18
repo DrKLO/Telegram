@@ -143,6 +143,7 @@
     <string name="ReplyToUser">Responder para %1$s</string>
     <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
     <!--contacts view-->
+    <string name="NewMessageTitle">Nova Mensagem</string>
     <string name="SelectContact">Selecionar Contato</string>
     <string name="NoContacts">Ainda não há contatos</string>
     <string name="InviteText">Ei, vamos mudar para o Telegram: http://telegram.org/dl2</string>
@@ -308,7 +309,7 @@
     <string name="LastSeenHelp">Alterar quem pode ver o seu Último Acesso.</string>
     <string name="LastSeenTitle">Quem pode ver o seu Último Acesso?</string>
     <string name="AddExceptions">Adicionar exceções</string>
-    <string name="CustomHelp">Importante: você não poderá ver o tempo de Último Acesso das pessoas com quem você não compartilha o seu tempo de Último Acesso. Será exibido um tempo aproximado (recentemente, na última semana, no último mês).</string>
+    <string name="CustomHelp">Importante: você não será capaz de ver quando foi o Último Acesso para as pessoas com quem você não compartilha quando foi seu Último Acesso. Você visualizará a última vez visto aproximada. (recentemente, dentro de uma semana, dentro de um mês).</string>
     <string name="AlwaysShareWith">Sempre Mostrar Para</string>
     <string name="NeverShareWith">Nunca Mostrar Para</string>
     <string name="CustomShareSettingsHelp">Estas configurações irão substituir os valores anteriores.</string>
@@ -319,7 +320,7 @@
     <string name="EmpryUsersPlaceholder">Adicionar Usuários</string>
     <string name="PrivacyFloodControlError">Desculpe, muitas solicitações. Impossível alterar os ajustes de privacidade agora, por favor aguarde.</string>
     <string name="ClearOtherSessionsHelp">Sair de todos os dispositivos, exceto este.</string>
-    <string name="RemoveFromListText">Toque e segure no usuário para desbloquear</string>
+    <string name="RemoveFromListText">Toque e segure no usuário para deletar.</string>
     <!--edit video view-->
     <string name="EditVideo">Editar Vídeo</string>
     <string name="OriginalVideo">Vídeo Original</string>
@@ -399,6 +400,7 @@
     <string name="AreYouSureSecretChat">Você tem certeza que deseja começar um chat secreto?</string>
     <string name="AreYouSureRegistration">Você tem certeza que deseja cancelar o registro?</string>
     <string name="AreYouSureClearHistory">Você tem certeza que deseja limpar o histórico?</string>
+    <string name="AreYouSureDeleteMessages">Você tem certeza que deseja deletar %1$s?</string>
     <string name="SendMessagesToGroup">Enviar mensagens para %1$s?</string>
     <string name="ForwardMessagesToGroup">Encaminhar mensagem para %1$s?</string>
     <string name="FeatureUnavailable">Desculpe, esta funcionalidade não está disponível para seu país.</string>

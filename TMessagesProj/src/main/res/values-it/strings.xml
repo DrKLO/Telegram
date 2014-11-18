@@ -143,6 +143,7 @@
     <string name="ReplyToUser">Rispondi a %1$s</string>
     <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
     <!--contacts view-->
+    <string name="NewMessageTitle">Nuovo messaggio</string>
     <string name="SelectContact">Seleziona contatto</string>
     <string name="NoContacts">Ancora nessun contatto</string>
     <string name="InviteText">Ehi, è il momento di passare a Telegram: http://telegram.org/dl2</string>
@@ -399,6 +400,7 @@
     <string name="AreYouSureSecretChat">Iniziare una chat segreta?</string>
     <string name="AreYouSureRegistration">Sei sicuro di volere eliminare questa registrazione?</string>
     <string name="AreYouSureClearHistory">Sei sicuro di volere eliminare la cronologia?</string>
+    <string name="AreYouSureDeleteMessages">Sei sicuro di voler eliminare %1$s?</string>
     <string name="SendMessagesToGroup">Inviare messaggi a %1$s?</string>
     <string name="ForwardMessagesToGroup">Inoltra messaggi a %1$s?</string>
     <string name="FeatureUnavailable">Ci spiace, questa funzione non è disponibile nel tuo paese.</string>

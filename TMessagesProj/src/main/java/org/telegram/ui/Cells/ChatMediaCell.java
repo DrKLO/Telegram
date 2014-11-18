@@ -807,11 +807,13 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         if (allowedToSetPhoto == value) {
             return;
         }
-        allowedToSetPhoto = value;
-        if (value && currentMessageObject != null && currentMessageObject.type == 1) {
-            MessageObject temp = currentMessageObject;
-            currentMessageObject = null;
-            setMessageObject(temp);
+        if (currentMessageObject != null && currentMessageObject.type == 1) {
+            allowedToSetPhoto = value;
+            if (value) {
+                MessageObject temp = currentMessageObject;
+                currentMessageObject = null;
+                setMessageObject(temp);
+            }
         }
     }
 

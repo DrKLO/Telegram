@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!--Translated by Telegram Team, corrected by Florian Keller-->
+
 
 <resources>
     <string name="AppName">Telegram</string>
@@ -157,6 +157,7 @@
     <string name="WithinAWeek">last seen within a week</string>
     <string name="WithinAMonth">last seen within a month</string>
     <string name="ALongTimeAgo">last seen a long time ago</string>
+    <string name="NewMessageTitle">New Message</string>
     <!--group create view-->
     <string name="SendMessageTo">Send message to...</string>
     <string name="EnterGroupNamePlaceholder">Enter group name</string>
@@ -308,7 +309,7 @@
     <string name="LastSeenHelp">Change who can see your Last Seen time.</string>
     <string name="LastSeenTitle">Who can see your Last Seen time?</string>
     <string name="AddExceptions">Add exceptions</string>
-    <string name="CustomHelp">Important: you won\'t be able to see Last Seen times for people with whom you don\'t share your Last Seen time. Approximate last seen will be shown instead (recently, within a week, witin a month).</string>
+    <string name="CustomHelp">Important: you won\'t be able to see Last Seen times for people with whom you don\'t share your Last Seen time. Approximate last seen will be shown instead (recently, within a week, within a month).</string>
     <string name="AlwaysShareWith">Always Share With</string>
     <string name="NeverShareWith">Never Share With</string>
     <string name="CustomShareSettingsHelp">These settings will override the values above.</string>
@@ -399,6 +400,7 @@
     <string name="AreYouSureSecretChat">Are you sure you want to start a secret chat?</string>
     <string name="AreYouSureRegistration">Are you sure you want to cancel registration?</string>
     <string name="AreYouSureClearHistory">Are you sure you want to clear history?</string>
+    <string name="AreYouSureDeleteMessages">Are you sure you want to delete %1$s?</string>
     <string name="SendMessagesToGroup">Send messages to %1$s?</string>
     <string name="ForwardMessagesToGroup">Forward messages to %1$s?</string>
     <string name="FeatureUnavailable">Sorry, this feature is currently not available in your country.</string>

@@ -143,6 +143,7 @@
     <string name="ReplyToUser">%1$s antworten</string>
     <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
     <!--contacts view-->
+    <string name="NewMessageTitle">Neue Nachricht</string>
     <string name="SelectContact">Kontakt auswählen</string>
     <string name="NoContacts">Noch keine Kontakte</string>
     <string name="InviteText">Hey, lass uns zu Telegram wechseln: http://telegram.org/dl2</string>
@@ -308,7 +309,7 @@
     <string name="LastSeenHelp">Bearbeite wer deinen Online Status sieht.</string>
     <string name="LastSeenTitle">Wer kann deinen Online Status sehen?</string>
     <string name="AddExceptions">Ausnahmen hinzufügen</string>
-    <string name="CustomHelp">Wichtig: Du kannst den \"zuletzt online\" Status nur von Personen sehen, mit denen du auch deinen teilst. Ansonsten wird die ungefähre Zeit angezeigt (kürzlich, innerhalb einer Woche, innerhalb eines Monats).</string>
+    <string name="CustomHelp">Wichtig: Du kannst den \"zuletzt gesehen\" Status nur von Personen sehen, mit denen du auch deinen teilst. Ansonsten wird die ungefähre Zeit angezeigt (kürzlich, innerhalb einer Woche, innerhalb eines Monats).</string>
     <string name="AlwaysShareWith">Immer teilen mit</string>
     <string name="NeverShareWith">Niemals teilen mit</string>
     <string name="CustomShareSettingsHelp">Hier kannst du Kontakte hinzufügen, für die eine Ausnahme gemacht werden soll.</string>
@@ -388,7 +389,7 @@
     <string name="AddToTheGroup">%1$s zur Gruppe hinzufügen?\n\nAnzahl der letzten Nachrichten für die Weiterleitung:</string>
     <string name="ForwardMessagesTo">Nachrichten an %1$s weiterleiten?</string>
     <string name="SendMessagesTo">Nachricht an %1$s senden?</string>
-    <string name="AreYouSureLogout">Möchtest du dich wirklich abmelden?\n\n\Du kannst Telegram von all deinen Geräten gleichzeitig nutzen.\n\nWichtig: Abmelden löscht deine Geheimen Chats.</string>
+    <string name="AreYouSureLogout">Wirklich abmelden?\n\nDu kannst Telegram von all deinen Geräten gleichzeitig nutzen.\n\nWichtig: Abmelden löscht deine Geheimen Chats.</string>
     <string name="AreYouSureSessions">Sicher, dass du alle anderen Geräte abmelden möchtest?</string>
     <string name="AreYouSureDeleteAndExit">Diese Gruppe wirklich löschen und verlassen?</string>
     <string name="AreYouSureDeleteThisChat">Möchtest du wirklich diesen Chat löschen?</string>
@@ -399,6 +400,7 @@
     <string name="AreYouSureSecretChat">Geheimen Chat starten?</string>
     <string name="AreYouSureRegistration">Bist du dir sicher, dass du die Registrierung abbrechen willst?</string>
     <string name="AreYouSureClearHistory">Möchtest du wirklich den Verlauf löschen?</string>
+    <string name="AreYouSureDeleteMessages">Sicher, dass du %1$s löschen willst?</string>
     <string name="SendMessagesToGroup">Nachricht an %1$s senden?</string>
     <string name="ForwardMessagesToGroup">Weiterleiten an %1$s?</string>
     <string name="FeatureUnavailable">Verzeihung, diese Funktion ist derzeit in deinem Land nicht verfügbar.</string>

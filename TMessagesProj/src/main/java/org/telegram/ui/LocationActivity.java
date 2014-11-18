@@ -153,7 +153,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             View bottomView = fragmentView.findViewById(R.id.location_bottom_view);
             TextView sendButton = (TextView) fragmentView.findViewById(R.id.location_send_button);
             if (sendButton != null) {
-                sendButton.setText(LocaleController.getString("SendLocation", R.string.SendLocation));
+                sendButton.setText(LocaleController.getString("SendLocation", R.string.SendLocation).toUpperCase());
+                sendButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             }
 
             mapView = (MapView)fragmentView.findViewById(R.id.map_view);

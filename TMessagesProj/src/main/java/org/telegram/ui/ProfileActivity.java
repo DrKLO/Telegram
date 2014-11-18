@@ -697,7 +697,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 layoutParams.topMargin = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.getCurrentActionBarHeight() + actionBar.getExtraHeight() - AndroidUtilities.dp(29.5f);
                 writeButton.setLayoutParams(layoutParams);
                 ViewProxy.setAlpha(writeButton, diff);
-                writeButton.setVisibility(diff == 0 ? View.GONE : View.VISIBLE);
+                writeButton.setEnabled(diff > 0.02);
+                writeButton.setVisibility(diff <= 0.02 ? View.GONE : View.VISIBLE);
             }
 
             avatarImage.imageReceiver.setRoundRadius(AndroidUtilities.dp(avatarSize / 2));
@@ -1063,7 +1064,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 photo = chat.photo.photo_small;
                 photoBig = chat.photo.photo_big;
             }
-            avatarImage.setImage(photo, "50_50", new AvatarDrawable(chat));
+            avatarImage.setImage(photo, "50_50", new AvatarDrawable(chat, true));
 
             avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
         }

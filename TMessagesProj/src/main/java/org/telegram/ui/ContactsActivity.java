@@ -120,7 +120,15 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setAllowOverlayTitle(true);
-            actionBar.setTitle(destroyAfterSelect ? LocaleController.getString("SelectContact", R.string.SelectContact) : LocaleController.getString("Contacts", R.string.Contacts));
+            if (destroyAfterSelect) {
+                if (returnAsResult) {
+                    actionBar.setTitle(LocaleController.getString("SelectContact", R.string.SelectContact));
+                } else {
+                    actionBar.setTitle(LocaleController.getString("NewMessageTitle", R.string.NewMessageTitle));
+                }
+            } else {
+                actionBar.setTitle(LocaleController.getString("Contacts", R.string.Contacts));
+            }
 
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override

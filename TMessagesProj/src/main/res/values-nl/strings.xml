@@ -143,6 +143,7 @@
     <string name="ReplyToUser">Antwoord op %1$s</string>
     <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
     <!--contacts view-->
+    <string name="NewMessageTitle">Nieuw bericht</string>
     <string name="SelectContact">Kies een contact</string>
     <string name="NoContacts">Nog geen contacten</string>
     <string name="InviteText">Hey! Zullen we overstappen op Telegram? http://telegram.org/dl2</string>
@@ -319,7 +320,7 @@
     <string name="EmpryUsersPlaceholder">Toevoegen</string>
     <string name="PrivacyFloodControlError">Sorry, te veel verzoeken. Momenteel is het niet mogelijk om de privacyinstellingen te wijzigen, even geduld alsjeblieft.</string>
     <string name="ClearOtherSessionsHelp">Logt alle apparaten behalve deze uit.</string>
-    <string name="RemoveFromListText">Druk langdurig op een gebruiker om deze te verwijderen.</string>
+    <string name="RemoveFromListText">Gebruiker vasthouden om te verwijderen.</string>
     <!--edit video view-->
     <string name="EditVideo">Video bewerken</string>
     <string name="OriginalVideo">Originele video</string>
@@ -390,7 +391,7 @@
     <string name="SendMessagesTo">Berichten naar %1$s verzenden?</string>
     <string name="AreYouSureLogout">Weet je zeker dat je wilt uitloggen?\n\nTelegram kun je naadloos op al je apparaten tegelijkertijd gebruiken.\n\nLet op! Als je uitlogt worden al je geheime chats verwijderd.</string>
     <string name="AreYouSureSessions">Alle apparaten behalve het huidige apparaat uitloggen?</string>
-    <string name="AreYouSureDeleteAndExit">Weet je zeker dat je alles wilt verwijderen en de groep wilt verlaten?</string>
+    <string name="AreYouSureDeleteAndExit">Echt alles verwijderen en de groep verlaten?</string>
     <string name="AreYouSureDeleteThisChat">Weet je zeker dat je dit gesprek wilt verwijderen?</string>
     <string name="AreYouSureShareMyContactInfo">Weet je zeker dat je je contactinformatie wilt delen?</string>
     <string name="AreYouSureBlockContact">Weet je zeker dat je deze persoon wilt blokkeren?</string>
@@ -398,7 +399,8 @@
     <string name="AreYouSureDeleteContact">Weet je zeker dat je deze contactpersoon wilt verwijderen?</string>
     <string name="AreYouSureSecretChat">Weet je zeker dat je een geheime chat wilt starten?</string>
     <string name="AreYouSureRegistration">Weet je zeker dat je de registratie wilt annuleren?</string>
-    <string name="AreYouSureClearHistory">Weet je zeker dat je de geschiedenis wilt wissen?</string>
+    <string name="AreYouSureClearHistory">Geschiedenis echt wissen? </string>
+    <string name="AreYouSureDeleteMessages">%1$s echt verwijderen?</string>
     <string name="SendMessagesToGroup">Berichten naar %1$s verzenden?</string>
     <string name="ForwardMessagesToGroup">Berichten naar %1$s doorsturen?</string>
     <string name="FeatureUnavailable">Sorry, deze functie is momenteel niet beschikbaar in jouw land.</string>

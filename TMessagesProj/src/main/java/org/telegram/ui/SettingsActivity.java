@@ -885,7 +885,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             layoutParams.topMargin = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.getCurrentActionBarHeight() + actionBar.getExtraHeight() - AndroidUtilities.dp(29.5f);
             writeButton.setLayoutParams(layoutParams);
             ViewProxy.setAlpha(writeButton, diff);
-            writeButton.setVisibility(diff == 0 ? View.GONE : View.VISIBLE);
+            writeButton.setEnabled(diff > 0.02);
+            writeButton.setVisibility(diff <= 0.02 ? View.GONE : View.VISIBLE);
 
             avatarImage.imageReceiver.setRoundRadius(AndroidUtilities.dp(avatarSize / 2));
             layoutParams = (FrameLayout.LayoutParams) avatarImage.getLayoutParams();

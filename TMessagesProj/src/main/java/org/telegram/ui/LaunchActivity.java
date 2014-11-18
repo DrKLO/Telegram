@@ -349,6 +349,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
+        } else {
+            if (AndroidUtilities.isTablet()) {
+                drawerLayoutContainer.setAllowOpenDrawer(actionBarLayout.fragmentsStack.size() <= 1 && layersActionBarLayout.fragmentsStack.isEmpty());
+            } else {
+                drawerLayoutContainer.setAllowOpenDrawer(actionBarLayout.fragmentsStack.size() <= 1);
+            }
         }
 
         handleIntent(getIntent(), false, savedInstanceState != null);

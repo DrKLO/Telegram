@@ -594,19 +594,32 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         actionBar.hideActionMode();
                         updateVisibleRows();
                     } else if (id == delete) {
-                        ArrayList<Integer> ids = new ArrayList<Integer>(selectedMessagesIds.keySet());
-                        ArrayList<Long> random_ids = null;
-                        if (currentEncryptedChat != null) {
-                            random_ids = new ArrayList<Long>();
-                            for (HashMap.Entry<Integer, MessageObject> entry : selectedMessagesIds.entrySet()) {
-                                MessageObject msg = entry.getValue();
-                                if (msg.messageOwner.random_id != 0 && msg.type != 10) {
-                                    random_ids.add(msg.messageOwner.random_id);
-                                }
-                            }
+                        if (getParentActivity() == null) {
+                            return;
                         }
-                        MessagesController.getInstance().deleteMessages(ids, random_ids, currentEncryptedChat);
-                        actionBar.hideActionMode();
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setMessage(LocaleController.formatString("AreYouSureDeleteMessages", R.string.AreYouSureDeleteMessages, LocaleController.formatPluralString("messages", selectedMessagesIds.size())));
+                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                ArrayList<Integer> ids = new ArrayList<Integer>(selectedMessagesIds.keySet());
+                                ArrayList<Long> random_ids = null;
+                                if (currentEncryptedChat != null) {
+                                    random_ids = new ArrayList<Long>();
+                                    for (HashMap.Entry<Integer, MessageObject> entry : selectedMessagesIds.entrySet()) {
+                                        MessageObject msg = entry.getValue();
+                                        if (msg.messageOwner.random_id != 0 && msg.type != 10) {
+                                            random_ids.add(msg.messageOwner.random_id);
+                                        }
+                                    }
+                                }
+                                MessagesController.getInstance().deleteMessages(ids, random_ids, currentEncryptedChat);
+                                actionBar.hideActionMode();
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showAlertDialog(builder);
                     } else if (id == forward) {
                         Bundle args = new Bundle();
                         args.putBoolean("onlySelect", true);

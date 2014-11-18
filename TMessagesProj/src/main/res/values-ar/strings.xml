@@ -143,6 +143,7 @@
     <string name="ReplyToUser">الرد على %1$s</string>
     <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
     <!--contacts view-->
+    <string name="NewMessageTitle">رسالة جديدة</string>
     <string name="SelectContact">اختر جهة اتصال</string>
     <string name="NoContacts">لا توجد جهات اتصال بعد</string>
     <string name="InviteText">http://telegram.org/dl2 مرحبا! هيا نستخدم تيليجرام: </string>
@@ -399,6 +400,7 @@
     <string name="AreYouSureSecretChat">هل أنت متأكد من أنك تريد بدء محادثة سرية؟</string>
     <string name="AreYouSureRegistration">هل أنت متأكد من رغبتك في إلغاء التسجيل؟</string>
     <string name="AreYouSureClearHistory">هل أنت متأكد من رغبتك في حذف سجل المحادثات؟</string>
+    <string name="AreYouSureDeleteMessages">هل أنت متأكد من رغبتك في حذف %1$s؟</string>
     <string name="SendMessagesToGroup">هل ترغب في إرسال رسالة إلى %1$s؟</string>
     <string name="ForwardMessagesToGroup">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
     <string name="FeatureUnavailable">.Sorry, this feature is currently not available in your country</string>

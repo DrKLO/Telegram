@@ -232,7 +232,7 @@ public class ActionBar extends FrameLayout {
             createSubtitleTextView();
         }
         if (subTitleTextView != null) {
-            subTitleTextView.setVisibility(value != null ? VISIBLE : GONE);
+            subTitleTextView.setVisibility(value != null && !isSearchFieldVisible ? VISIBLE : GONE);
             subTitleTextView.setText(value);
             positionTitle(getMeasuredWidth(), getMeasuredHeight());
         }
@@ -274,7 +274,7 @@ public class ActionBar extends FrameLayout {
         }
         if (titleTextView != null) {
             lastTitle = value;
-            titleTextView.setVisibility(value != null ? VISIBLE : GONE);
+            titleTextView.setVisibility(value != null && !isSearchFieldVisible ? VISIBLE : GONE);
             titleTextView.setText(value);
             positionTitle(getMeasuredWidth(), getMeasuredHeight());
         }
@@ -433,7 +433,7 @@ public class ActionBar extends FrameLayout {
             createTitleTextView();
         }
         if (titleTextView != null) {
-            titleTextView.setVisibility(textToSet != null ? VISIBLE : GONE);
+            titleTextView.setVisibility(textToSet != null && !isSearchFieldVisible ? VISIBLE : GONE);
             titleTextView.setText(textToSet);
             positionTitle(getMeasuredWidth(), getMeasuredHeight());
         }
