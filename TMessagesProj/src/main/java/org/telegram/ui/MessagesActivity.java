@@ -223,6 +223,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             fragmentView = inflater.inflate(R.layout.messages_list, container, false);
 
             dialogsAdapter = new DialogsAdapter(getParentActivity(), serverOnly);
+            if (AndroidUtilities.isTablet() && openedDialogId != 0) {
+                dialogsAdapter.setOpenedDialogId(openedDialogId);
+            }
             dialogsSearchAdapter = new DialogsSearchAdapter(getParentActivity(), !onlySelect);
             dialogsSearchAdapter.setDelegate(new DialogsSearchAdapter.MessagesActivitySearchAdapterDelegate() {
                 @Override
@@ -527,9 +530,6 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     @SuppressWarnings("unchecked")
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.dialogsNeedReload) {
-            if (dialogsAdapter != null) {
-                dialogsAdapter.notifyDataSetChanged();
-            }
             if (messagesListView != null) {
                 if (MessagesController.getInstance().loadingDialogs && MessagesController.getInstance().dialogs.isEmpty()) {
                     searchEmptyView.setVisibility(View.GONE);
@@ -537,13 +537,32 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     messagesListView.setEmptyView(progressView);
                 } else {
                     if (searching && searchWas) {
+                        if (dialogsAdapter != null) {
+                            dialogsAdapter.notifyDataSetChanged();
+                        }
+                        if (dialogsSearchAdapter != null) {
+                            dialogsSearchAdapter.notifyDataSetChanged();
+                        }
                         messagesListView.setEmptyView(searchEmptyView);
                         emptyView.setVisibility(View.GONE);
                     } else {
+                        if (dialogsAdapter != null) {
+                            dialogsAdapter.notifyDataSetChanged();
+                        }
+                        if (dialogsSearchAdapter != null) {
+                            dialogsSearchAdapter.notifyDataSetChanged();
+                        }
                         messagesListView.setEmptyView(emptyView);
                         searchEmptyView.setVisibility(View.GONE);
                     }
                     progressView.setVisibility(View.GONE);
+                }
+            } else {
+                if (dialogsAdapter != null) {
+                    dialogsAdapter.notifyDataSetChanged();
+                }
+                if (dialogsSearchAdapter != null) {
+                    dialogsSearchAdapter.notifyDataSetChanged();
                 }
             }
         } else if (id == NotificationCenter.emojiDidLoaded) {
@@ -569,7 +588,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 } else {
                     openedDialogId = dialog_id;
                 }
-                dialogsAdapter.setOpenedDialogId(openedDialogId);
+                if (dialogsAdapter != null) {
+                    dialogsAdapter.setOpenedDialogId(openedDialogId);
+                }
                 updateVisibleRows(MessagesController.UPDATE_MASK_SELECT_DIALOG);
             }
         }

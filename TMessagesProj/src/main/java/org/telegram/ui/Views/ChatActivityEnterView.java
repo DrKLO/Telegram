@@ -695,6 +695,9 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
     }
 
     public void setFieldText(String text) {
+        if (messsageEditText == null) {
+            return;
+        }
         ignoreTextChange = true;
         messsageEditText.setText(text);
         messsageEditText.setSelection(messsageEditText.getText().length());

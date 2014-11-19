@@ -165,6 +165,9 @@ public class DrawerLayoutContainer extends FrameLayout {
     }
 
     public void openDrawer(boolean fast) {
+        if (AndroidUtilities.isTablet() && parentActionBarLayout != null && parentActionBarLayout.parentActivity != null) {
+            AndroidUtilities.hideKeyboard(parentActionBarLayout.parentActivity.getCurrentFocus());
+        }
         cancelCurrentAnimation();
         AnimatorSetProxy animatorSet = new AnimatorSetProxy();
         animatorSet.playTogether(

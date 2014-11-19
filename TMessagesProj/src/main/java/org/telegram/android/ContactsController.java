@@ -850,6 +850,8 @@ public class ContactsController {
 
                 final HashMap<Integer, TLRPC.User> usersDict = new HashMap<Integer, TLRPC.User>();
 
+                final boolean isEmpty = contactsArr.isEmpty();
+
                 if (!contacts.isEmpty()) {
                     for (int a = 0; a < contactsArr.size(); a++) {
                         TLRPC.TL_contact contact = contactsArr.get(a);
@@ -1003,6 +1005,12 @@ public class ContactsController {
                                 updateUnregisteredContacts(contactsArr);
 
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.contactsDidLoaded);
+
+                                if (from != 1 && !isEmpty) {
+                                    saveContactsLoadTime();
+                                } else {
+                                    reloadContactsStatusesMaybe();
+                                }
                             }
                         });
 
@@ -1035,6 +1043,27 @@ public class ContactsController {
                 });
             }
         });
+    }
+
+    private void reloadContactsStatusesMaybe() {
+        try {
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+            long lastReloadStatusTime = preferences.getLong("lastReloadStatusTime", 0);
+            if (lastReloadStatusTime < System.currentTimeMillis() - 1000 * 60 * 60 * 24) {
+                reloadContactsStatuses();
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
+    private void saveContactsLoadTime() {
+        try {
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+            preferences.edit().putLong("lastReloadStatusTime", System.currentTimeMillis()).commit();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     private void updateUnregisteredContacts(final ArrayList<TLRPC.TL_contact> contactsArr) {
@@ -1586,6 +1615,7 @@ public class ContactsController {
     }
 
     public void reloadContactsStatuses() {
+        saveContactsLoadTime();
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         final SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean("needGetStatuses", true).commit();

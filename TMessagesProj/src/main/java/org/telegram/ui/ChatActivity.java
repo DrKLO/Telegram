@@ -506,6 +506,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (currentEncryptedChat != null) {
             MediaController.getInstance().stopMediaObserver();
         }
+        if (currentUser != null) {
+            MessagesController.getInstance().cancelLoadFullUser(currentUser.id);
+        }
         if (!AndroidUtilities.isTablet()) {
             getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
         }
@@ -996,38 +999,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
             }
 
-            if (currentEncryptedChat != null) {
-                emptyView.setVisibility(View.INVISIBLE);
-                View secretChatPlaceholder = contentView.findViewById(R.id.secret_placeholder);
-                secretChatPlaceholder.setVisibility(View.VISIBLE);
-                if (isCustomTheme) {
-                    secretChatPlaceholder.setBackgroundResource(R.drawable.system_black);
-                } else {
-                    secretChatPlaceholder.setBackgroundResource(R.drawable.system_blue);
-                }
-                secretViewStatusTextView = (TextView) contentView.findViewById(R.id.invite_text);
-                secretChatPlaceholder.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(12), AndroidUtilities.dp(16), AndroidUtilities.dp(12));
-
-                View v = contentView.findViewById(R.id.secret_placeholder);
-                v.setVisibility(View.VISIBLE);
-
-                if (currentEncryptedChat.admin_id == UserConfig.getClientUserId()) {
-                    if (currentUser.first_name.length() > 0) {
-                        secretViewStatusTextView.setText(LocaleController.formatString("EncryptedPlaceholderTitleOutgoing", R.string.EncryptedPlaceholderTitleOutgoing, currentUser.first_name));
-                    } else {
-                        secretViewStatusTextView.setText(LocaleController.formatString("EncryptedPlaceholderTitleOutgoing", R.string.EncryptedPlaceholderTitleOutgoing, currentUser.last_name));
-                    }
-                } else {
-                    if (currentUser.first_name.length() > 0) {
-                        secretViewStatusTextView.setText(LocaleController.formatString("EncryptedPlaceholderTitleIncoming", R.string.EncryptedPlaceholderTitleIncoming, currentUser.first_name));
-                    } else {
-                        secretViewStatusTextView.setText(LocaleController.formatString("EncryptedPlaceholderTitleIncoming", R.string.EncryptedPlaceholderTitleIncoming, currentUser.last_name));
-                    }
-                }
-
-                updateSecretStatus();
-            }
-
             if (isCustomTheme) {
                 progressViewInner.setBackgroundResource(R.drawable.system_loader2);
                 emptyView.setBackgroundResource(R.drawable.system_black);
@@ -1261,6 +1232,38 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             chatActivityEnterView.setContainerView(getParentActivity(), fragmentView);
             chatActivityEnterView.addToAttachLayout(menuItem);
+
+            if (currentEncryptedChat != null) {
+                emptyView.setVisibility(View.INVISIBLE);
+                View secretChatPlaceholder = contentView.findViewById(R.id.secret_placeholder);
+                secretChatPlaceholder.setVisibility(View.VISIBLE);
+                if (isCustomTheme) {
+                    secretChatPlaceholder.setBackgroundResource(R.drawable.system_black);
+                } else {
+                    secretChatPlaceholder.setBackgroundResource(R.drawable.system_blue);
+                }
+                secretViewStatusTextView = (TextView) contentView.findViewById(R.id.invite_text);
+                secretChatPlaceholder.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(12), AndroidUtilities.dp(16), AndroidUtilities.dp(12));
+
+                View v = contentView.findViewById(R.id.secret_placeholder);
+                v.setVisibility(View.VISIBLE);
+
+                if (currentEncryptedChat.admin_id == UserConfig.getClientUserId()) {
+                    if (currentUser.first_name.length() > 0) {
+                        secretViewStatusTextView.setText(LocaleController.formatString("EncryptedPlaceholderTitleOutgoing", R.string.EncryptedPlaceholderTitleOutgoing, currentUser.first_name));
+                    } else {
+                        secretViewStatusTextView.setText(LocaleController.formatString("EncryptedPlaceholderTitleOutgoing", R.string.EncryptedPlaceholderTitleOutgoing, currentUser.last_name));
+                    }
+                } else {
+                    if (currentUser.first_name.length() > 0) {
+                        secretViewStatusTextView.setText(LocaleController.formatString("EncryptedPlaceholderTitleIncoming", R.string.EncryptedPlaceholderTitleIncoming, currentUser.first_name));
+                    } else {
+                        secretViewStatusTextView.setText(LocaleController.formatString("EncryptedPlaceholderTitleIncoming", R.string.EncryptedPlaceholderTitleIncoming, currentUser.last_name));
+                    }
+                }
+
+                updateSecretStatus();
+            }
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
             if (parent != null) {
@@ -2543,6 +2546,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 ChatMediaCell cell = (ChatMediaCell)view;
                 cell.setAllowedToSetPhoto(true);
             }
+        }
+
+        if (currentUser != null) {
+            MessagesController.getInstance().loadFullUser(MessagesController.getInstance().getUser(currentUser.id), classGuid);
         }
     }
 

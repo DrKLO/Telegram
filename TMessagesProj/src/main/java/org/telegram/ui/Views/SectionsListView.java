@@ -17,6 +17,7 @@ import android.widget.AbsListView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.FileLog;
 import org.telegram.ui.Adapters.BaseSectionsAdapter;
@@ -112,7 +113,12 @@ public class SectionsListView extends ListView implements AbsListView.OnScrollLi
                     header.setTag(-header.getHeight());
                 } else if (pos == count - 2) {
                     View child = getChildAt(itemNum - firstVisibleItem);
-                    int headerTop = child.getTop();
+                    int headerTop = 0;
+                    if (child != null) {
+                        headerTop = child.getTop();
+                    } else {
+                        headerTop = -AndroidUtilities.dp(100);
+                    }
                     if (headerTop < 0) {
                         header.setTag(headerTop);
                     } else {
@@ -124,7 +130,9 @@ public class SectionsListView extends ListView implements AbsListView.OnScrollLi
                 itemNum += count - mAdapter.getPositionInSectionForPosition(firstVisibleItem);
             } else {
                 View child = getChildAt(itemNum - firstVisibleItem);
-                header.setTag(child.getTop());
+                if (child != null) {
+                    header.setTag(child.getTop());
+                }
                 itemNum += count;
             }
         }

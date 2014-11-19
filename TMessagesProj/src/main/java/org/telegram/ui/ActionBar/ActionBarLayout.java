@@ -560,6 +560,10 @@ public class ActionBarLayout extends FrameLayout {
             if (removeActionBarExtraHeight) {
                 fragment.actionBar.setOccupyStatusBar(false);
             }
+            ViewGroup parent = (ViewGroup) fragment.actionBar.getParent();
+            if (parent != null) {
+                parent.removeView(fragment.actionBar);
+            }
             containerViewBack.addView(fragment.actionBar);
             fragment.actionBar.setTitleOverlayText(titleOverlayText);
         }
@@ -697,6 +701,10 @@ public class ActionBarLayout extends FrameLayout {
             if (previousFragment.needAddActionBar() && previousFragment.actionBar != null) {
                 if (removeActionBarExtraHeight) {
                     previousFragment.actionBar.setOccupyStatusBar(false);
+                }
+                ViewGroup parent = (ViewGroup) previousFragment.actionBar.getParent();
+                if (parent != null) {
+                    parent.removeView(previousFragment.actionBar);
                 }
                 containerView.addView(previousFragment.actionBar);
                 previousFragment.actionBar.setTitleOverlayText(titleOverlayText);
