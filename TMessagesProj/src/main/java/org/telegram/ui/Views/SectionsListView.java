@@ -17,6 +17,7 @@ import android.widget.AbsListView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.FileLog;
 import org.telegram.ui.Adapters.BaseSectionsAdapter;
 
@@ -181,7 +182,7 @@ public class SectionsListView extends ListView implements AbsListView.OnScrollLi
         for (View header : headers) {
             int saveCount = canvas.save();
             int top = (Integer)header.getTag();
-            canvas.translate(0, top);
+            canvas.translate(LocaleController.isRTL ? getWidth() - header.getWidth() : 0, top);
             canvas.clipRect(0, 0, getWidth(), header.getMeasuredHeight());
             if (top < 0) {
                 canvas.saveLayerAlpha(0, top, header.getWidth(), top + canvas.getHeight(), (int)(255 * (1.0f + (float)top / (float)header.getMeasuredHeight())), Canvas.HAS_ALPHA_LAYER_SAVE_FLAG);

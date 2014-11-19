@@ -87,7 +87,7 @@
         android:background="@drawable/compose_panel"
         android:orientation="horizontal">
 
-        <FrameLayout
+        <org.telegram.ui.Views.FrameLayoutFixed
             android:layout_height="wrap_content"
             android:layout_width="0dp"
             android:layout_weight="1">
@@ -197,7 +197,7 @@
 
             </org.telegram.ui.Views.FrameLayoutFixed>
 
-        </FrameLayout>
+        </org.telegram.ui.Views.FrameLayoutFixed>
 
         <FrameLayout
             android:layout_width="48dp"

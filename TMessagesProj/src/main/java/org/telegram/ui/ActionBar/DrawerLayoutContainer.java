@@ -247,6 +247,10 @@ public class DrawerLayoutContainer extends FrameLayout {
 
     public void setAllowOpenDrawer(boolean value) {
         allowOpenDrawer = value;
+        if (!allowOpenDrawer && drawerPosition != 0) {
+            setDrawerPosition(0);
+            onDrawerAnimationEnd(false);
+        }
     }
 
     private void prepareForDrawerOpen(MotionEvent ev) {
@@ -287,7 +291,7 @@ public class DrawerLayoutContainer extends FrameLayout {
                     int dx = (int) (ev.getX() - startedTrackingX);
                     int dy = Math.abs((int) ev.getY() - startedTrackingY);
                     velocityTracker.addMovement(ev);
-                    if (maybeStartTracking && !startedTracking && Math.abs(dx) / 3 > Math.abs(dy)) {
+                    if (maybeStartTracking && !startedTracking && Math.abs(dx) / 3 > Math.abs(dy) && (dx < 0 || dx > 0 && dx > AndroidUtilities.dp(10))) {
                         prepareForDrawerOpen(ev);
                         startedTrackingX = (int) ev.getX();
                     } else if (startedTracking) {

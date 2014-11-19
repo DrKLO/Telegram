@@ -106,6 +106,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private ActionBarMenuItem timeItem;
     private TimerDrawable timerDrawable;
     private ActionBarMenuItem menuItem;
+    //private ActionBarMenuItem attachItem;
+    //private ActionBarMenuItem headerItem;
     private TextView addContactItem;
     private LayoutListView chatListView;
     private BackupImageView avatarImageView;
@@ -120,6 +122,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private TextView bottomOverlayText;
     private TextView secretViewStatusTextView;
     private TextView selectedMessagesCountTextView;
+
+    private AnimatorSetProxy runningAnimation2;
 
     private MessageObject selectedObject;
     private MessageObject forwaringMessage;
@@ -150,6 +154,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private boolean cacheEndReaced = false;
     private boolean firstLoading = true;
     private int loadsCount = 0;
+
     private int startLoadFromMessageId = 0;
 
     private int minDate = 0;
@@ -157,6 +162,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private int unread_to_load = 0;
     private int first_unread_id = 0;
     private int last_message_id = 0;
+    private int first_message_id = 0;
     private boolean forward_end_reached = true;
     private boolean loadingForward = false;
     private MessageObject unreadMessageObject = null;
@@ -358,6 +364,62 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             public void needSendTyping() {
                 MessagesController.getInstance().sendTyping(dialog_id, classGuid);
             }
+
+            @Override
+            public void onAttachButtonHidden() {
+                /*if (runningAnimation2 != null) {
+                    runningAnimation2.cancel();
+                    runningAnimation2 = null;
+                }
+
+                attachItem.setVisibility(View.VISIBLE);
+                runningAnimation2 = new AnimatorSetProxy();
+                runningAnimation2.playTogether(
+                        ObjectAnimatorProxy.ofFloat(attachItem, "alpha", 1.0f),
+                        ObjectAnimatorProxy.ofFloat(headerItem, "alpha", 0.0f)
+                        //ObjectAnimatorProxy.ofFloat(attachItem, "scaleX", 1.0f),
+                        //ObjectAnimatorProxy.ofFloat(headerItem, "scaleX", 0.0f)
+                );
+                runningAnimation2.setDuration(100);
+                runningAnimation2.addListener(new AnimatorListenerAdapterProxy() {
+                    @Override
+                    public void onAnimationEnd(Object animation) {
+                        if (runningAnimation2.equals(animation)) {
+                            headerItem.setVisibility(View.INVISIBLE);
+                            headerItem.clearAnimation();
+                        }
+                    }
+                });
+                runningAnimation2.start();*/
+            }
+
+            @Override
+            public void onAttachButtonShow() {
+                /*if (runningAnimation2 != null) {
+                    runningAnimation2.cancel();
+                    runningAnimation2 = null;
+                }
+
+                headerItem.setVisibility(View.VISIBLE);
+                runningAnimation2 = new AnimatorSetProxy();
+                runningAnimation2.playTogether(
+                        ObjectAnimatorProxy.ofFloat(attachItem, "alpha", 0.0f),
+                        ObjectAnimatorProxy.ofFloat(headerItem, "alpha", 1.0f)
+                        //ObjectAnimatorProxy.ofFloat(attachItem, "scaleX", 0.0f),
+                        //ObjectAnimatorProxy.ofFloat(headerItem, "scaleX", 1.0f)
+                );
+                runningAnimation2.setDuration(100);
+                runningAnimation2.addListener(new AnimatorListenerAdapterProxy() {
+                    @Override
+                    public void onAnimationEnd(Object animation) {
+                        if (runningAnimation2.equals(animation)) {
+                            attachItem.setVisibility(View.INVISIBLE);
+                            attachItem.clearAnimation();
+                        }
+                    }
+                });
+                runningAnimation2.start();*/
+            }
         });
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagesDidLoaded);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
@@ -387,9 +449,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         loading = true;
 
         if (startLoadFromMessageId != 0) {
-            MessagesController.getInstance().loadMessages(dialog_id, AndroidUtilities.isTablet() ? 30 : 20, startLoadFromMessageId, true, 0, classGuid, 3);
+            MessagesController.getInstance().loadMessages(dialog_id, AndroidUtilities.isTablet() ? 30 : 20, startLoadFromMessageId, true, 0, classGuid, 3, 0, 0, false);
         } else {
-            MessagesController.getInstance().loadMessages(dialog_id, AndroidUtilities.isTablet() ? 30 : 20, 0, true, 0, classGuid, 2);
+            MessagesController.getInstance().loadMessages(dialog_id, AndroidUtilities.isTablet() ? 30 : 20, 0, true, 0, classGuid, 2, 0, 0, true);
         }
 
         if (currentUser != null) {
@@ -635,6 +697,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         }
                         showAlertDialog(AndroidUtilities.buildTTLAlert(getParentActivity(), currentEncryptedChat));
                     } else if (id == clear_history || id == delete_chat) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
                         final boolean isChat = (int)dialog_id < 0 && (int)(dialog_id >> 32) != 1;
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
@@ -792,6 +857,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             if (currentEncryptedChat != null) {
                 timeItem = menu.addItem(chat_enc_timer, timerDrawable = new TimerDrawable(getParentActivity()));
+                //headerItem = timeItem;
             } else {
                 ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
                 if (currentUser != null) {
@@ -803,7 +869,21 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 } else {
                     item.addSubItem(delete_chat, LocaleController.getString("DeleteChatUser", R.string.DeleteChatUser), 0);
                 }
+                //headerItem = item;
             }
+
+            /*LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) headerItem.getLayoutParams();
+            layoutParams.rightMargin = AndroidUtilities.dp(-48);
+            headerItem.setLayoutParams(layoutParams);
+
+            attachItem = menu.addItem(chat_menu_attach, R.drawable.ic_ab_attach3);
+            attachItem.addSubItem(attach_photo, LocaleController.getString("ChatTakePhoto", R.string.ChatTakePhoto), R.drawable.ic_attach_photo);
+            attachItem.addSubItem(attach_gallery, LocaleController.getString("ChatGallery", R.string.ChatGallery), R.drawable.ic_attach_gallery);
+            attachItem.addSubItem(attach_video, LocaleController.getString("ChatVideo", R.string.ChatVideo), R.drawable.ic_attach_video);
+            attachItem.addSubItem(attach_document, LocaleController.getString("ChatDocument", R.string.ChatDocument), R.drawable.ic_ab_doc);
+            attachItem.addSubItem(attach_location, LocaleController.getString("ChatLocation", R.string.ChatLocation), R.drawable.ic_attach_location);
+            ViewProxy.setPivotX(attachItem, AndroidUtilities.dp(48));
+            ViewProxy.setPivotX(headerItem, 0);*/
 
             menuItem = menu.addItem(chat_menu_attach, R.drawable.ic_ab_attach);
             menuItem.addSubItem(attach_photo, LocaleController.getString("ChatTakePhoto", R.string.ChatTakePhoto), R.drawable.ic_attach_photo);
@@ -1091,16 +1171,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (firstVisibleItem <= 10) {
                             if (!endReached && !loading) {
                                 if (messagesByDays.size() != 0) {
-                                    MessagesController.getInstance().loadMessages(dialog_id, 20, maxMessageId, !cacheEndReaced, minDate, classGuid, 0);
+                                    MessagesController.getInstance().loadMessages(dialog_id, 20, maxMessageId, !cacheEndReaced && startLoadFromMessageId == 0, minDate, classGuid, 0, 0, 0, startLoadFromMessageId == 0);
                                 } else {
-                                    MessagesController.getInstance().loadMessages(dialog_id, 20, 0, !cacheEndReaced, minDate, classGuid, 0);
+                                    MessagesController.getInstance().loadMessages(dialog_id, 20, 0, !cacheEndReaced && startLoadFromMessageId == 0, minDate, classGuid, 0, 0, 0, startLoadFromMessageId == 0);
                                 }
                                 loading = true;
                             }
                         }
                         if (firstVisibleItem + visibleItemCount >= totalItemCount - 6) {
                             if (!forward_end_reached && !loadingForward) {
-                                MessagesController.getInstance().loadMessages(dialog_id, 20, minMessageId, true, maxDate, classGuid, 1);
+                                MessagesController.getInstance().loadMessages(dialog_id, 20, minMessageId, startLoadFromMessageId == 0, maxDate, classGuid, 1, 0, 0, startLoadFromMessageId == 0);
                                 loadingForward = true;
                             }
                         }
@@ -1200,7 +1280,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private void scrollToLastMessage() {
-        if (forward_end_reached || first_unread_id == 0) {
+        if ((forward_end_reached || first_unread_id == 0) && startLoadFromMessageId == 0) {
             chatListView.setSelectionFromTop(messages.size() - 1, -100000 - chatListView.getPaddingTop());
         } else {
             messages.clear();
@@ -1219,8 +1299,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             minDate = 0;
             forward_end_reached = true;
             loading = true;
+            startLoadFromMessageId = 0;
             chatAdapter.notifyDataSetChanged();
-            MessagesController.getInstance().loadMessages(dialog_id, 30, 0, true, 0, classGuid, 0);
+            MessagesController.getInstance().loadMessages(dialog_id, 30, 0, true, 0, classGuid, 0, 0, 0, true);
         }
     }
 
@@ -1274,6 +1355,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         } else if (currentEncryptedChat instanceof TLRPC.TL_encryptedChatDiscarded) {
             bottomOverlayText.setText(LocaleController.getString("EncryptionRejected", R.string.EncryptionRejected));
             bottomOverlay.setVisibility(View.VISIBLE);
+            chatActivityEnterView.setFieldText("");
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+            preferences.edit().remove("dialog_" + dialog_id).commit();
             hideKeyboard = true;
         } else if (currentEncryptedChat instanceof TLRPC.TL_encryptedChat) {
             bottomOverlay.setVisibility(View.GONE);
@@ -1759,15 +1843,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 int count = (Integer)args[1];
                 boolean isCache = (Boolean)args[3];
                 int fnid = (Integer)args[4];
-                int last_unread_date = (Integer)args[7];
-                int load_type = (Integer)args[8];
+                int last_unread_date = (Integer)args[8];
+                int load_type = (Integer)args[9];
                 boolean wasUnread = false;
                 if (fnid != 0) {
                     first_unread_id = fnid;
                     last_message_id = (Integer)args[5];
-                    unread_to_load = (Integer)args[6];
-                } else if (startLoadFromMessageId != 0) {
+                    unread_to_load = (Integer)args[7];
+                } else if (startLoadFromMessageId != 0 && load_type == 3) {
                     last_message_id = (Integer)args[5];
+                    first_message_id = (Integer)args[6];
                 }
                 ArrayList<MessageObject> messArr = (ArrayList<MessageObject>)args[2];
 
@@ -1795,6 +1880,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         minDate = 0;
                     }
                     firstLoading = false;
+                }
+
+                if (load_type == 1) {
+                    Collections.reverse(messArr);
                 }
 
                 for (int a = 0; a < messArr.size(); a++) {
@@ -1872,8 +1961,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     } else if (load_type == 3 && obj.messageOwner.id == startLoadFromMessageId) {
                         highlightMessageId = obj.messageOwner.id;
                         scrollToMessage = obj;
-                        startLoadFromMessageId = 0;
+                        if (isCache) {
+                            startLoadFromMessageId = 0;
+                        }
                         scrollToMessageMiddleScreen = true;
+                    } else if (load_type == 1 && startLoadFromMessageId != 0 && first_message_id != 0 && obj.messageOwner.id >= first_message_id) {
+                        startLoadFromMessageId = 0;
                     }
 
                     if (obj.messageOwner.id == last_message_id) {
@@ -1883,6 +1976,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                 if (forward_end_reached) {
                     first_unread_id = 0;
+                    first_message_id = 0;
                     last_message_id = 0;
                 }
 
@@ -1891,6 +1985,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         forward_end_reached = true;
                         first_unread_id = 0;
                         last_message_id = 0;
+                        first_message_id = 0;
+                        startLoadFromMessageId = 0;
                     }
 
                     chatAdapter.notifyDataSetChanged();
@@ -1975,13 +2071,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (first && messages.size() > 0) {
                     final boolean wasUnreadFinal = wasUnread;
                     final int last_unread_date_final = last_unread_date;
+                    final int lastid = messages.get(0).messageOwner.id;
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             if (last_message_id != 0) {
-                                MessagesController.getInstance().markDialogAsRead(dialog_id, messages.get(0).messageOwner.id, last_message_id, 0, last_unread_date_final, wasUnreadFinal, false);
+                                MessagesController.getInstance().markDialogAsRead(dialog_id, lastid, last_message_id, 0, last_unread_date_final, wasUnreadFinal, false);
                             } else {
-                                MessagesController.getInstance().markDialogAsRead(dialog_id, messages.get(0).messageOwner.id, minMessageId, 0, maxDate, wasUnreadFinal, false);
+                                MessagesController.getInstance().markDialogAsRead(dialog_id, lastid, minMessageId, 0, maxDate, wasUnreadFinal, false);
                             }
                         }
                     }, 700);
@@ -2266,7 +2363,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                     maxDate = Integer.MIN_VALUE;
                     minDate = 0;
-                    MessagesController.getInstance().loadMessages(dialog_id, 30, 0, !cacheEndReaced, minDate, classGuid, 0);
+                    MessagesController.getInstance().loadMessages(dialog_id, 30, 0, !cacheEndReaced, minDate, classGuid, 0, 0, 0, true);
                     loading = true;
                 }
             }
@@ -2544,9 +2641,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         String lastMessageText = preferences.getString("dialog_" + dialog_id, null);
         if (lastMessageText != null) {
-            SharedPreferences.Editor editor = preferences.edit();
-            editor.remove("dialog_" + dialog_id);
-            editor.commit();
+            preferences.edit().remove("dialog_" + dialog_id).commit();
             chatActivityEnterView.setFieldText(lastMessageText);
         }
         if (bottomOverlayChat.getVisibility() != View.VISIBLE) {

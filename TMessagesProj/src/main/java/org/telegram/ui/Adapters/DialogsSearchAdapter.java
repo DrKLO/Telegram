@@ -32,6 +32,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.GreySectionCell;
+import org.telegram.ui.Cells.LoadingCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
 
 import java.util.ArrayList;
@@ -49,6 +50,8 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
     private int lastReqId;
     private MessagesActivitySearchAdapterDelegate delegate;
     private boolean needMessagesSearch;
+    private boolean messagesSearchEndReached;
+    private String lastMessagesSearchString;
 
     public static interface MessagesActivitySearchAdapterDelegate {
         public abstract void searchStateChanged(boolean searching);
@@ -57,11 +60,18 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
     public DialogsSearchAdapter(Context context, boolean messagesSearch) {
         mContext = context;
         needMessagesSearch = messagesSearch;
-        needMessagesSearch = false;
     }
 
     public void setDelegate(MessagesActivitySearchAdapterDelegate delegate) {
         this.delegate = delegate;
+    }
+
+    public boolean isMessagesSearchEndReached() {
+        return messagesSearchEndReached;
+    }
+
+    public void loadMoreSearchMessages() {
+        searchMessagesInternal(lastMessagesSearchString);
     }
 
     private void searchMessagesInternal(final String query) {
@@ -75,16 +85,21 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
         if (query == null || query.length() == 0) {
             searchResultMessages.clear();
             lastReqId = 0;
+            lastMessagesSearchString = null;
             notifyDataSetChanged();
             if (delegate != null) {
                 delegate.searchStateChanged(false);
             }
             return;
         }
-        TLRPC.TL_messages_search req = new TLRPC.TL_messages_search();
-        req.limit = 128;
+        final TLRPC.TL_messages_search req = new TLRPC.TL_messages_search();
+        req.limit = 20;
         req.peer = new TLRPC.TL_inputPeerEmpty();
         req.q = query;
+        if (lastMessagesSearchString != null && query.equals(lastMessagesSearchString) && !searchResultMessages.isEmpty()) {
+            req.max_id = searchResultMessages.get(searchResultMessages.size() - 1).messageOwner.id;
+        }
+        lastMessagesSearchString = query;
         req.filter = new TLRPC.TL_inputMessagesFilterEmpty();
         final int currentReqId = ++lastReqId;
         if (delegate != null) {
@@ -102,10 +117,13 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                                 MessagesStorage.getInstance().putUsersAndChats(res.users, res.chats, true, true);
                                 MessagesController.getInstance().putUsers(res.users, false);
                                 MessagesController.getInstance().putChats(res.chats, false);
-                                searchResultMessages.clear();
+                                if (req.max_id == 0) {
+                                    searchResultMessages.clear();
+                                }
                                 for (TLRPC.Message message : res.messages) {
                                     searchResultMessages.add(new MessageObject(message, null, 0));
                                 }
+                                messagesSearchEndReached = res.messages.size() != 20;
                                 notifyDataSetChanged();
                             }
                         }
@@ -278,7 +296,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
     }
 
     public void searchDialogs(final String query, final boolean serverOnly) {
-        if (query == null && lastSearchText == null || query != null && lastSearchText != null && query.equals(lastSearchText)) {
+        if (query != null && lastSearchText != null && query.equals(lastSearchText)) {
             return;
         }
         try {
@@ -337,7 +355,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
             count += globalCount + 1;
         }
         if (messagesCount != 0) {
-            count += messagesCount + 1;
+            count += messagesCount + 1 + (messagesSearchEndReached ? 0 : 1);
         }
         return count;
     }
@@ -433,6 +451,10 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
             ((DialogCell) view).useSeparator = (i != getCount() - 1);
             MessageObject messageObject = (MessageObject)getItem(i);
             ((DialogCell) view).setDialog(messageObject.getDialogId(), messageObject, false, messageObject.messageOwner.date, 0);
+        } else if (type == 3) {
+            if (view == null) {
+                view = new LoadingCell(mContext);
+            }
         }
 
         return view;
@@ -447,13 +469,15 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
             return 0;
         } else if (i > globalCount + localCount && i < globalCount + localCount + messagesCount) {
             return 2;
+        } else if (messagesCount != 0 && i == globalCount + localCount + messagesCount) {
+            return 3;
         }
         return 1;
     }
 
     @Override
     public int getViewTypeCount() {
-        return 3;
+        return 4;
     }
 
     @Override

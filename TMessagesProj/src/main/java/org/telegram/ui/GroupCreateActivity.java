@@ -392,15 +392,19 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     }
 
                     if (selectedContacts.containsKey(user.id)) {
-                        XImageSpan span = selectedContacts.get(user.id);
-                        selectedContacts.remove(user.id);
-                        SpannableStringBuilder text = new SpannableStringBuilder(userSelectEditText.getText());
-                        text.delete(text.getSpanStart(span), text.getSpanEnd(span));
-                        allSpans.remove(span);
-                        ignoreChange = true;
-                        userSelectEditText.setText(text);
-                        userSelectEditText.setSelection(text.length());
-                        ignoreChange = false;
+                        try {
+                            XImageSpan span = selectedContacts.get(user.id);
+                            selectedContacts.remove(user.id);
+                            SpannableStringBuilder text = new SpannableStringBuilder(userSelectEditText.getText());
+                            text.delete(text.getSpanStart(span), text.getSpanEnd(span));
+                            allSpans.remove(span);
+                            ignoreChange = true;
+                            userSelectEditText.setText(text);
+                            userSelectEditText.setSelection(text.length());
+                            ignoreChange = false;
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
                     } else {
                         if (selectedContacts.size() == maxCount) {
                             return;

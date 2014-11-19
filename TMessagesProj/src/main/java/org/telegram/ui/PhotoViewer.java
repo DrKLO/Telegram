@@ -146,7 +146,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private long animationDuration;
     private long animationStartTime;
     private GestureDetector gestureDetector;
-    private DecelerateInterpolator interpolator = new DecelerateInterpolator();
+    private DecelerateInterpolator interpolator = new DecelerateInterpolator(1.5f);
     private float pinchStartDistance = 0;
     private float pinchStartScale = 1;
     private float pinchCenterX;
@@ -245,14 +245,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
                 parent.invalidate();
             }
-        }
-
-        public float getRadOffset() {
-            return radOffset;
-        }
-
-        public void setRadOffset(float value) {
-            radOffset = value;
         }
 
         public void setProgress(float value, boolean animated) {
@@ -1396,26 +1388,39 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             setIndexToImage(centerImage, currentIndex);
             setIndexToImage(rightImage, currentIndex + 1);
             setIndexToImage(leftImage, currentIndex - 1);
+
+            for (int a = 0; a < 3; a++) {
+                checkProgress(a, false);
+            }
         } else {
+            checkProgress(0, false);
             if (prevIndex > currentIndex) {
                 ImageReceiver temp = rightImage;
                 rightImage = centerImage;
                 centerImage = leftImage;
                 leftImage = temp;
+
+                RadialProgressView tempProgress = radialProgressViews[0];
+                radialProgressViews[0] = radialProgressViews[2];
+                radialProgressViews[2] = tempProgress;
                 setIndexToImage(leftImage, currentIndex - 1);
-                radialProgressViews[0].setRadOffset(radialProgressViews[2].getRadOffset());
+
+                checkProgress(1, false);
+                checkProgress(2, false);
             } else if (prevIndex < currentIndex) {
                 ImageReceiver temp = leftImage;
                 leftImage = centerImage;
                 centerImage = rightImage;
                 rightImage = temp;
-                radialProgressViews[0].setRadOffset(radialProgressViews[1].getRadOffset());
-                setIndexToImage(rightImage, currentIndex + 1);
-            }
-        }
 
-        for (int a = 0; a < 3; a++) {
-            checkProgress(a, false);
+                RadialProgressView tempProgress = radialProgressViews[0];
+                radialProgressViews[0] = radialProgressViews[1];
+                radialProgressViews[1] = tempProgress;
+                setIndexToImage(rightImage, currentIndex + 1);
+
+                checkProgress(1, false);
+                checkProgress(2, false);
+            }
         }
     }
 
@@ -1970,23 +1975,25 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (animationStartTime == 0) {
                 AndroidUtilities.unlockOrientation(parentActivity);
             }
-            return false;
+            //return false;
         }
 
         if(ev.getPointerCount() == 1 && gestureDetector.onTouchEvent(ev) && doubleTap) {
             doubleTap = false;
             moving = false;
             zooming = false;
-            checkMinMax(false);
-            return true;
+            if (animationInProgress == 0 && animationStartTime == 0) {
+                checkMinMax(false);
+                return true;
+            }
         }
 
         if (ev.getActionMasked() == MotionEvent.ACTION_DOWN || ev.getActionMasked() == MotionEvent.ACTION_POINTER_DOWN) {
             if (!scroller.isFinished()) {
                 scroller.abortAnimation();
             }
-            if (!draggingDown && !changingPage) {
-                if (canZoom && ev.getPointerCount() == 2) {
+            if (!draggingDown) {
+                if (canZoom && ev.getPointerCount() == 2 && !changingPage) {
                     pinchStartDistance = (float) Math.hypot(ev.getX(1) - ev.getX(0), ev.getY(1) - ev.getY(0));
                     pinchStartScale = scale;
                     pinchCenterX = (ev.getX(0) + ev.getX(1)) / 2.0f;
@@ -2033,7 +2040,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 } else if (draggingDown) {
                     translationY = ev.getY() - dragY;
                     containerView.invalidate();
-                } else if (!invalidCoords && animationStartTime == 0) {
+                } else if (!invalidCoords/* && animationStartTime == 0*/) {
                     float moveDx = moveStartX - ev.getX();
                     float moveDy = moveStartY - ev.getY();
                     if (moving || scale == 1 && Math.abs(moveDy) + AndroidUtilities.dp(12) < Math.abs(moveDx) || scale != 1) {
@@ -2217,7 +2224,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         float ai = -1;
         if (System.currentTimeMillis() - animationStartTime < animationDuration) {
             ai = interpolator.getInterpolation((float)(System.currentTimeMillis() - animationStartTime) / animationDuration);
-            if (ai >= 0.95f) {
+            if (ai >= 0.99f) {
                 ai = -1;
             }
         }
@@ -2478,7 +2485,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (!canZoom || scale == 1.0f && (translationY != 0 || translationX != 0)) {
             return false;
         }
-        if (animationStartTime != 0) {
+        if (animationStartTime != 0 || animationInProgress != 0) {
             return false;
         }
         if (scale == 1.0f) {

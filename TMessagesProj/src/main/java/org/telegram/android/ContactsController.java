@@ -1604,6 +1604,15 @@ public class ContactsController {
                                 for (Object object : vector.objects) {
                                     TLRPC.User toDbUser = new TLRPC.User();
                                     TLRPC.TL_contactStatus status = (TLRPC.TL_contactStatus) object;
+
+                                    if (status.status instanceof TLRPC.TL_userStatusRecently) {
+                                        status.status.expires = -100;
+                                    } else if (status.status instanceof TLRPC.TL_userStatusLastWeek) {
+                                        status.status.expires = -101;
+                                    } else if (status.status instanceof TLRPC.TL_userStatusLastMonth) {
+                                        status.status.expires = -102;
+                                    }
+
                                     TLRPC.User user = MessagesController.getInstance().getUser(status.user_id);
                                     if (user != null) {
                                         user.status = status.status;

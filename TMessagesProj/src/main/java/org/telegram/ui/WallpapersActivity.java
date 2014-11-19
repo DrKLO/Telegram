@@ -297,7 +297,11 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                 loadingFileObject = null;
                 loadingFile = null;
                 loadingSize = null;
-                backgroundImage.setImageURI(Uri.fromFile(f));
+                try {
+                    backgroundImage.setImageURI(Uri.fromFile(f));
+                } catch (Throwable e) {
+                    FileLog.e("tmessages", e);
+                }
                 backgroundImage.setBackgroundColor(0);
                 selectedColor = 0;
                 doneButton.setEnabled(true);

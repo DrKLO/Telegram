@@ -284,6 +284,7 @@ public class ActionBarLayout extends FrameLayout {
             bringChildToFront(containerView);
 
             lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
+            currentActionBar = lastFragment.actionBar;
             lastFragment.onResume();
         } else {
             BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 2);
@@ -302,7 +303,7 @@ public class ActionBarLayout extends FrameLayout {
             }
         }
         containerViewBack.setVisibility(View.GONE);
-        AndroidUtilities.unlockOrientation(parentActivity);
+        //AndroidUtilities.unlockOrientation(parentActivity);
         startedTracking = false;
         animationInProgress = false;
 
@@ -345,7 +346,7 @@ public class ActionBarLayout extends FrameLayout {
         }
         lastFragment.onResume();
 
-        AndroidUtilities.lockOrientation(parentActivity);
+        //AndroidUtilities.lockOrientation(parentActivity);
     }
 
     public boolean onTouchEvent(MotionEvent ev) {

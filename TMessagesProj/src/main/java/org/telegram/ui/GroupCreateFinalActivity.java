@@ -46,6 +46,7 @@ import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.AvatarUpdater;
 import org.telegram.ui.Views.BackupImageView;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Views.FrameLayoutFixed;
 
 import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
@@ -200,11 +201,12 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             LinearLayout linearLayout = (LinearLayout) fragmentView;
             linearLayout.setOrientation(LinearLayout.VERTICAL);
 
-            FrameLayout frameLayout = new FrameLayout(getParentActivity());
+            FrameLayout frameLayout = new FrameLayoutFixed(getParentActivity());
             linearLayout.addView(frameLayout);
             LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) frameLayout.getLayoutParams();
             layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
             layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
             frameLayout.setLayoutParams(layoutParams);
 
             avatarImage = new BackupImageView(getParentActivity());
@@ -217,7 +219,9 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             layoutParams1.height = AndroidUtilities.dp(64);
             layoutParams1.topMargin = AndroidUtilities.dp(12);
             layoutParams1.bottomMargin = AndroidUtilities.dp(12);
-            layoutParams1.leftMargin = AndroidUtilities.dp(16);
+            layoutParams1.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(16);
+            layoutParams1.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(16) : 0;
+            layoutParams1.gravity = Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             avatarImage.setLayoutParams(layoutParams1);
             if (!isBroadcast) {
                 avatarDrawable.setDrawPhoto(true);
@@ -263,7 +267,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 nameToSet = null;
             }
             nameTextView.setMaxLines(4);
-            nameTextView.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
+            nameTextView.setGravity(Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
             nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             nameTextView.setHintTextColor(0xff979797);
             nameTextView.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
@@ -275,8 +279,8 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             layoutParams1 = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
             layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
             layoutParams1.height =  FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.leftMargin = AndroidUtilities.dp(96);
-            layoutParams1.rightMargin = AndroidUtilities.dp(16);
+            layoutParams1.leftMargin = LocaleController.isRTL ? AndroidUtilities.dp(16) : AndroidUtilities.dp(96);
+            layoutParams1.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(96) : AndroidUtilities.dp(16);
             layoutParams1.gravity = Gravity.CENTER_VERTICAL;
             nameTextView.setLayoutParams(layoutParams1);
             if (!isBroadcast) {

@@ -447,6 +447,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 @Override
                 public void onScroll(AbsListView absListView, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
                     if (searching && searchWas) {
+                        if (visibleItemCount > 0 && absListView.getLastVisiblePosition() == totalItemCount - 1 && !dialogsSearchAdapter.isMessagesSearchEndReached()) {
+                            dialogsSearchAdapter.loadMoreSearchMessages();
+                        }
                         return;
                     }
                     if (visibleItemCount > 0) {
@@ -507,6 +510,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 @Override
                 public void onGlobalLayout() {
                     ViewProxy.setTranslationY(floatingButton, floatingHidden ? AndroidUtilities.dp(100) : 0);
+                    floatingButton.setClickable(!floatingHidden);
                     if (floatingButton != null) {
                         if (Build.VERSION.SDK_INT < 16) {
                             floatingButton.getViewTreeObserver().removeGlobalOnLayoutListener(this);
@@ -578,6 +582,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         floatingHidden = hide;
         ObjectAnimatorProxy animator = ObjectAnimatorProxy.ofFloatProxy(floatingButton, "translationY", floatingHidden ? AndroidUtilities.dp(100) : 0).setDuration(300);
         animator.setInterpolator(floatingInterpolator);
+        floatingButton.setClickable(!hide);
         animator.start();
     }
 

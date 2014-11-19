@@ -229,7 +229,7 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jcl
     AndroidBitmap_unlockPixels(env, bitmap);
 }
 
-JNIEXPORT void Java_org_telegram_messenger_Utilities_loadBitmap(JNIEnv *env, jclass class, jstring path, jobject bitmap, int scale) {
+JNIEXPORT void Java_org_telegram_messenger_Utilities_loadBitmap(JNIEnv *env, jclass class, jstring path, jobject bitmap, int scale, int width, int height, int stride) {
     
     AndroidBitmapInfo info;
     int i;
@@ -260,13 +260,13 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_loadBitmap(JNIEnv *env, jcl
 
                 unsigned char *pixels;
                 if ((i = AndroidBitmap_lockPixels(env, bitmap, &pixels)) >= 0) {
-                    int rowCount = min(cinfo.output_height, info.height);
-                    int colCount = min(cinfo.output_width, info.width);
+                    int rowCount = min(cinfo.output_height, height);
+                    int colCount = min(cinfo.output_width, width);
                     
                     while (cinfo.output_scanline < rowCount) {
                         jpeg_read_scanlines(&cinfo, buffer, 1);
                         
-                        if (info.format == ANDROID_BITMAP_FORMAT_RGBA_8888) {
+                        //if (info.format == ANDROID_BITMAP_FORMAT_RGBA_8888) {
                             if (cinfo.out_color_space == JCS_GRAYSCALE) {
                                 for (i = 0; i < colCount; i++) {
                                     float alpha = buffer[0][i] / 255.0f;
@@ -285,11 +285,11 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_loadBitmap(JNIEnv *env, jcl
                                     c += 4;
                                 }
                             }
-                        } else if (info.format == ANDROID_BITMAP_FORMAT_RGB_565) {
+                        //} else if (info.format == ANDROID_BITMAP_FORMAT_RGB_565) {
                             
-                        }
+                        //}
                         
-                        pixels += info.stride;
+                        pixels += stride;
                     }
                     
                     AndroidBitmap_unlockPixels(env, bitmap);

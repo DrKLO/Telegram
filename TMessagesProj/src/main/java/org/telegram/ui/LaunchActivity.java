@@ -648,9 +648,15 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 actionBarLayout.showLastFragment();
                 rightActionBarLayout.showLastFragment();
             }
+            drawerLayoutContainer.setAllowOpenDrawer(false);
         }
         if (open_settings != 0) {
             actionBarLayout.presentFragment(new SettingsActivity(), false, true, true);
+            drawerLayoutContainer.setAllowOpenDrawer(false);
+            if (AndroidUtilities.isTablet()) {
+                layersActionBarLayout.showLastFragment();
+                rightActionBarLayout.showLastFragment();
+            }
             pushOpened = true;
         }
         if (!pushOpened && !isNew) {
@@ -1280,5 +1286,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 actionBarLayout.showLastFragment();
             }
         }
+        drawerLayoutAdapter.notifyDataSetChanged();
     }
 }

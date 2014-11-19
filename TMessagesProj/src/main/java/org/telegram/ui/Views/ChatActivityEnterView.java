@@ -54,6 +54,8 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
     public static interface ChatActivityEnterViewDelegate {
         public abstract void onMessageSend();
         public abstract void needSendTyping();
+        public abstract void onAttachButtonHidden();
+        public abstract void onAttachButtonShow();
     }
 
     private EditText messsageEditText;
@@ -136,6 +138,9 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         attachButton = (FrameLayout) containerView.findViewById(R.id.chat_attach_button);
         if (attachButton != null) {
             ViewProxy.setPivotX(attachButton, AndroidUtilities.dp(48));
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
+            layoutParams.rightMargin = AndroidUtilities.dp(50);
+            messsageEditText.setLayoutParams(layoutParams);
         }
 
         sendButton = (ImageButton) containerView.findViewById(R.id.chat_send_button);
@@ -380,14 +385,17 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                             public void onAnimationEnd(Object animation) {
                                 if (runningAnimation2.equals(animation)) {
                                     attachButton.setVisibility(View.GONE);
+                                    attachButton.clearAnimation();
                                 }
                             }
                         });
                         runningAnimation2.start();
 
                         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
-                        layoutParams.rightMargin = AndroidUtilities.dp(2);
+                        layoutParams.rightMargin = AndroidUtilities.dp(0);
                         messsageEditText.setLayoutParams(layoutParams);
+
+                        delegate.onAttachButtonHidden();
                     }
 
                     sendButton.setVisibility(View.VISIBLE);
@@ -409,7 +417,8 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                         public void onAnimationEnd(Object animation) {
                             if (runningAnimation.equals(animation)) {
                                 sendButton.setVisibility(View.VISIBLE);
-                                audioSendButton.setVisibility(View.INVISIBLE);
+                                audioSendButton.setVisibility(View.GONE);
+                                audioSendButton.clearAnimation();
                                 runningAnimation = null;
                                 runningAnimationType = 0;
                             }
@@ -424,9 +433,15 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                     ViewProxy.setScaleY(sendButton, 1.0f);
                     ViewProxy.setAlpha(sendButton, 1.0f);
                     sendButton.setVisibility(View.VISIBLE);
-                    audioSendButton.setVisibility(View.INVISIBLE);
+                    audioSendButton.setVisibility(View.GONE);
+                    audioSendButton.clearAnimation();
                     if (attachButton != null) {
                         attachButton.setVisibility(View.GONE);
+                        attachButton.clearAnimation();
+
+                        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
+                        layoutParams.rightMargin = AndroidUtilities.dp(0);
+                        messsageEditText.setLayoutParams(layoutParams);
                     }
                 }
             }
@@ -456,8 +471,10 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                     runningAnimation2.start();
 
                     FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
-                    layoutParams.rightMargin = AndroidUtilities.dp(2);
+                    layoutParams.rightMargin = AndroidUtilities.dp(50);
                     messsageEditText.setLayoutParams(layoutParams);
+
+                    delegate.onAttachButtonShow();
                 }
 
                 audioSendButton.setVisibility(View.VISIBLE);
@@ -478,7 +495,8 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                     @Override
                     public void onAnimationEnd(Object animation) {
                         if (runningAnimation.equals(animation)) {
-                            sendButton.setVisibility(View.INVISIBLE);
+                            sendButton.setVisibility(View.GONE);
+                            sendButton.clearAnimation();
                             audioSendButton.setVisibility(View.VISIBLE);
                             runningAnimation = null;
                             runningAnimationType = 0;
@@ -493,10 +511,14 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 ViewProxy.setScaleX(audioSendButton, 1.0f);
                 ViewProxy.setScaleY(audioSendButton, 1.0f);
                 ViewProxy.setAlpha(audioSendButton, 1.0f);
-                sendButton.setVisibility(View.INVISIBLE);
+                sendButton.setVisibility(View.GONE);
+                sendButton.clearAnimation();
                 audioSendButton.setVisibility(View.VISIBLE);
                 if (attachButton != null) {
                     attachButton.setVisibility(View.VISIBLE);
+                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
+                    layoutParams.rightMargin = AndroidUtilities.dp(50);
+                    messsageEditText.setLayoutParams(layoutParams);
                 }
             }
         }

@@ -246,8 +246,12 @@ public class Emoji {
             opts.inJustDecodeBounds = true;
             BitmapFactory.decodeFile(imageFile.getAbsolutePath(), opts);
 
-            final Bitmap bitmap = Bitmap.createBitmap(opts.outWidth / imageResize, opts.outHeight / imageResize, Bitmap.Config.ARGB_8888);
-            Utilities.loadBitmap(imageFile.getAbsolutePath(), bitmap, imageResize);
+            int width = opts.outWidth / imageResize;
+            int height = opts.outHeight / imageResize;
+            int stride = width * 4;
+
+            final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            Utilities.loadBitmap(imageFile.getAbsolutePath(), bitmap, imageResize, width, height, stride);
 
             imageName = String.format(Locale.US, "emoji%.01fx_a_%d.jpg", scale, page);
             imageFile = ApplicationLoader.applicationContext.getFileStreamPath(imageName);
@@ -257,7 +261,7 @@ public class Emoji {
                 is.close();
             }
 
-            Utilities.loadBitmap(imageFile.getAbsolutePath(), bitmap, imageResize);
+            Utilities.loadBitmap(imageFile.getAbsolutePath(), bitmap, imageResize, width, height, stride);
 
             AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override

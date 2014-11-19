@@ -618,20 +618,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
                 @Override
                 public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-                    if (totalItemCount == 0) {
-                        return;
-                    }
-                    int height = 0;
-                    View child = view.getChildAt(0);
-                    if (child != null) {
-                        if (firstVisibleItem == 0) {
-                            height = AndroidUtilities.dp(88) + child.getTop();
-                        }
-                        if (actionBar.getExtraHeight() != height) {
-                            actionBar.setExtraHeight(height, true);
-                            needLayout();
-                        }
-                    }
+                    checkListViewScroll();
                 }
             });
 
@@ -671,6 +658,23 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
+    private void checkListViewScroll() {
+        if (listView.getChildCount() == 0) {
+            return;
+        }
+        int height = 0;
+        View child = listView.getChildAt(0);
+        if (child != null) {
+            if (listView.getFirstVisiblePosition() == 0) {
+                height = AndroidUtilities.dp(88) + (child.getTop() < 0 ? child.getTop() : 0);
+            }
+            if (actionBar.getExtraHeight() != height) {
+                actionBar.setExtraHeight(height, true);
+                needLayout();
+            }
+        }
+    }
+
     private void needLayout() {
         FrameLayout.LayoutParams layoutParams;
         if (listView != null) {
@@ -697,8 +701,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 layoutParams.topMargin = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.getCurrentActionBarHeight() + actionBar.getExtraHeight() - AndroidUtilities.dp(29.5f);
                 writeButton.setLayoutParams(layoutParams);
                 ViewProxy.setAlpha(writeButton, diff);
-                writeButton.setEnabled(diff > 0.02);
                 writeButton.setVisibility(diff <= 0.02 ? View.GONE : View.VISIBLE);
+                if (writeButton.getVisibility() == View.GONE) {
+                    writeButton.clearAnimation();
+                }
             }
 
             avatarImage.imageReceiver.setRoundRadius(AndroidUtilities.dp(avatarSize / 2));
@@ -815,6 +821,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 updateRowsIds();
                 if (listAdapter != null) {
                     listAdapter.notifyDataSetChanged();
+                    checkListViewScroll();
                 }
             }
         } else if (id == NotificationCenter.blockedUsersDidLoaded) {
@@ -831,6 +838,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 updateRowsIds();
                 if (listAdapter != null) {
                     listAdapter.notifyDataSetChanged();
+                    checkListViewScroll();
                 }
             }
         } else if (id == NotificationCenter.closeChats) {

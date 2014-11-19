@@ -373,7 +373,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             listView = new ListView(getParentActivity());
             listView.setDivider(null);
-            listView.setDrawingCacheEnabled(false);
             listView.setDividerHeight(0);
             listView.setVerticalScrollBarEnabled(false);
             AndroidUtilities.setListViewEdgeEffectColor(listView, AvatarDrawable.getProfileBackColorForId(5));
@@ -659,7 +658,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     View child = view.getChildAt(0);
                     if (child != null) {
                         if (firstVisibleItem == 0) {
-                            height = AndroidUtilities.dp(88) + child.getTop();
+                            height = AndroidUtilities.dp(88) + (child.getTop() < 0 ? child.getTop() : 0);
                         }
                         if (actionBar.getExtraHeight() != height) {
                             actionBar.setExtraHeight(height, true);
@@ -885,8 +884,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             layoutParams.topMargin = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.getCurrentActionBarHeight() + actionBar.getExtraHeight() - AndroidUtilities.dp(29.5f);
             writeButton.setLayoutParams(layoutParams);
             ViewProxy.setAlpha(writeButton, diff);
-            writeButton.setEnabled(diff > 0.02);
             writeButton.setVisibility(diff <= 0.02 ? View.GONE : View.VISIBLE);
+            if (writeButton.getVisibility() == View.GONE) {
+                writeButton.clearAnimation();
+            }
 
             avatarImage.imageReceiver.setRoundRadius(AndroidUtilities.dp(avatarSize / 2));
             layoutParams = (FrameLayout.LayoutParams) avatarImage.getLayoutParams();
@@ -936,7 +937,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             photo = user.photo.photo_small;
             photoBig = user.photo.photo_big;
         }
-        avatarImage.setImage(photo, "50_50", new AvatarDrawable(user, true));
+        AvatarDrawable avatarDrawable = new AvatarDrawable(user, true);
+        avatarDrawable.setColor(0xff5c98cd);
+        avatarImage.setImage(photo, "50_50", avatarDrawable);
         avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
 
         nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));

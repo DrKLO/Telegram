@@ -782,6 +782,15 @@ public class LocaleController {
     }
 
     public static String formatUserStatus(TLRPC.User user) {
+        if (user != null && user.status != null && user.status.expires == 0) {
+            if (user.status instanceof TLRPC.TL_userStatusRecently) {
+                user.status.expires = -100;
+            } else if (user.status instanceof TLRPC.TL_userStatusLastWeek) {
+                user.status.expires = -101;
+            } else if (user.status instanceof TLRPC.TL_userStatusLastMonth) {
+                user.status.expires = -102;
+            }
+        }
         if (user == null || user.status == null || user.status.expires == 0 || user instanceof TLRPC.TL_userDeleted || user instanceof TLRPC.TL_userEmpty) {
             return getString("ALongTimeAgo", R.string.ALongTimeAgo);
         } else {

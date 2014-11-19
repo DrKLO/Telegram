@@ -178,6 +178,16 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     MessagesController.getInstance().sendTyping(currentMessageObject.getDialogId(), classGuid);
                 }
             }
+
+            @Override
+            public void onAttachButtonHidden() {
+
+            }
+
+            @Override
+            public void onAttachButtonShow() {
+
+            }
         });
 
         setContentView(R.layout.popup_notification_layout);

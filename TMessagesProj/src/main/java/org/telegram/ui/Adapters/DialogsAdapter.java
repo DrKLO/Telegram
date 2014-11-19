@@ -9,16 +9,15 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
-import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Cells.DialogCell;
+import org.telegram.ui.Cells.LoadingCell;
 
 public class DialogsAdapter extends BaseFragmentAdapter {
 
@@ -92,8 +91,7 @@ public class DialogsAdapter extends BaseFragmentAdapter {
         int type = getItemViewType(i);
         if (type == 1) {
             if (view == null) {
-                LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                view = li.inflate(R.layout.loading_more_layout, viewGroup, false);
+                view = new LoadingCell(mContext);
             }
         } else if (type == 0) {
             if (view == null) {

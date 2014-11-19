@@ -35,9 +35,12 @@ public class View10 extends Animation {
 
     public static View10 wrap(View view) {
         View10 proxy = PROXIES.get(view);
-        if (proxy == null || proxy != view.getAnimation()) {
+        Animation animation = view.getAnimation();
+        if (proxy == null || proxy != animation && animation != null) {
             proxy = new View10(view);
             PROXIES.put(view, proxy);
+        } else if (animation == null) {
+            view.setAnimation(proxy);
         }
         return proxy;
     }

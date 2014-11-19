@@ -1334,7 +1334,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
     }
 
-    public void loadMessages(final long dialog_id, final int count, final int max_id, boolean fromCache, int midDate, final int classGuid, final int load_type) {
+    public void loadMessages(final long dialog_id, final int count, final int max_id, boolean fromCache, int midDate, final int classGuid, final int load_type, final int last_message_id, final int first_message_id, final boolean allowCache) {
         int lower_part = (int)dialog_id;
         if (fromCache || lower_part == 0) {
             MessagesStorage.getInstance().getMessages(dialog_id, count, max_id, midDate, classGuid, load_type);
@@ -1356,6 +1356,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             }
             if (load_type == 3) {
                 req.offset = -count / 2;
+            } else if (load_type == 1) {
+                req.offset = -count - 1;
             } else {
                 req.offset = 0;
             }
@@ -1366,7 +1368,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 public void run(TLObject response, TLRPC.TL_error error) {
                     if (error == null) {
                         final TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
-                        processLoadedMessages(res, dialog_id, count, max_id, false, classGuid, 0, 0, 0, 0, load_type);
+                        processLoadedMessages(res, dialog_id, count, max_id, false, classGuid, 0, last_message_id, first_message_id, 0, 0, load_type, allowCache);
                     }
                 }
             });
@@ -1374,20 +1376,21 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
     }
 
-    public void processLoadedMessages(final TLRPC.messages_Messages messagesRes, final long dialog_id, final int count, final int max_id, final boolean isCache, final int classGuid, final int first_unread, final int last_message_id, final int unread_count, final int last_date, final int load_type) {
+    public void processLoadedMessages(final TLRPC.messages_Messages messagesRes, final long dialog_id, final int count, final int max_id, final boolean isCache, final int classGuid,
+                                      final int first_unread, final int last_message_id, final int first_message_id, final int unread_count, final int last_date, final int load_type, final boolean allowCache) {
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
                 int lower_id = (int)dialog_id;
                 int high_id = (int)(dialog_id >> 32);
-                if (!isCache) {
+                if (!isCache && allowCache) {
                     MessagesStorage.getInstance().putMessages(messagesRes, dialog_id);
                 }
                 if (high_id != 1 && lower_id != 0 && isCache && messagesRes.messages.size() == 0 && (load_type == 0 || load_type == 2 || load_type == 3)) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            loadMessages(dialog_id, count, max_id, false, 0, classGuid, load_type);
+                            loadMessages(dialog_id, count, max_id, false, 0, classGuid, load_type, last_message_id, first_message_id, allowCache);
                         }
                     });
                     return;
@@ -1406,7 +1409,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     public void run() {
                         putUsers(messagesRes.users, isCache);
                         putChats(messagesRes.chats, isCache);
-                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.messagesDidLoaded, dialog_id, count, objects, isCache, first_unread, last_message_id, unread_count, last_date, load_type);
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.messagesDidLoaded, dialog_id, count, objects, isCache, first_unread, last_message_id, first_message_id, unread_count, last_date, load_type);
                     }
                 });
             }

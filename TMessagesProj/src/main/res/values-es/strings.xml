@@ -143,6 +143,7 @@
     <string name="ReplyToUser">Responder a %1$s</string>
     <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
     <!--contacts view-->
+    <string name="NewMessageTitle">Nuevo mensaje</string>
     <string name="SelectContact">Elegir contacto</string>
     <string name="NoContacts">Aún sin contactos</string>
     <string name="InviteText">Oye, cambiémonos a Telegram: http://telegram.org/dl2</string>
@@ -308,7 +309,7 @@
     <string name="LastSeenHelp">Elige quién puede ver tu última conexión.</string>
     <string name="LastSeenTitle">¿Quién puede ver tu última conexión?</string>
     <string name="AddExceptions">Añadir excepciones</string>
-    <string name="CustomHelp">Importante: no podrás ver la última conexión de las personas con las que no compartes la tuya. En su lugar, se mostrarán conexiones indeterminadas (recientemente, hace unos días, hace unas semanas).</string>
+    <string name="CustomHelp">Importante: No podrás ver la última conexión de las personas con las que no compartes la tuya. En su lugar, se mostrarán conexiones indeterminadas (recientemente, hace unos días, hace unas semanas).</string>
     <string name="AlwaysShareWith">Compartir siempre con</string>
     <string name="NeverShareWith">Nunca compartir con</string>
     <string name="CustomShareSettingsHelp">Estos ajustes anularán los valores de arriba.</string>
@@ -399,6 +400,7 @@
     <string name="AreYouSureSecretChat">¿Quieres iniciar un chat secreto?</string>
     <string name="AreYouSureRegistration">¿Quieres cancelar el registro?</string>
     <string name="AreYouSureClearHistory">¿Quieres eliminar el historial?</string>
+    <string name="AreYouSureDeleteMessages">¿Quieres eliminar %1$s?</string>
     <string name="SendMessagesToGroup">¿Enviar mensajes a %1$s?</string>
     <string name="ForwardMessagesToGroup">¿Reenviar mensajes a %1$s?</string>
     <string name="FeatureUnavailable">Lo siento, esta característica no está disponible en tu país actualmente.</string>

@@ -161,9 +161,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
                     selectedUserId = MessagesController.getInstance().blockedUsers.get(i);
 
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-
                     CharSequence[] items = new CharSequence[] {LocaleController.getString("Unblock", R.string.Unblock)};
-
                     builder.setItems(items, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
