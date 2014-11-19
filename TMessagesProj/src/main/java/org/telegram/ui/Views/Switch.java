@@ -400,6 +400,10 @@ public class Switch extends CompoundButton {
         wasLayout = false;
     }
 
+    public void resetLayout() {
+        wasLayout = false;
+    }
+
     @Override
     public void setChecked(boolean checked) {
         super.setChecked(checked);

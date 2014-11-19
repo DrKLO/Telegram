@@ -68,7 +68,7 @@ public class ActionBarLayout extends FrameLayout {
                     if (view == child) {
                         continue;
                     }
-                    if (view instanceof ActionBar) {
+                    if (view instanceof ActionBar && view.getVisibility() == VISIBLE) {
                         actionBarHeight = view.getMeasuredHeight();
                         wasActionBar = true;
                         break;

@@ -1272,12 +1272,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (!init) {
             currentThumb = null;
         }
-        placeProvider.willSwitchFromPhoto(currentMessageObject, currentFileLocation, currentIndex);
-        int prevIndex = currentIndex;
-        currentIndex = index;
         currentFileNames[0] = getFileName(index);
         currentFileNames[1] = getFileName(index + 1);
         currentFileNames[2] = getFileName(index - 1);
+        placeProvider.willSwitchFromPhoto(currentMessageObject, currentFileLocation, currentIndex);
+        int prevIndex = currentIndex;
+        currentIndex = index;
+
         boolean sameImage = false;
 
         if (!imagesArr.isEmpty()) {
@@ -1975,25 +1976,23 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (animationStartTime == 0) {
                 AndroidUtilities.unlockOrientation(parentActivity);
             }
-            //return false;
+            return false;
         }
 
         if(ev.getPointerCount() == 1 && gestureDetector.onTouchEvent(ev) && doubleTap) {
             doubleTap = false;
             moving = false;
             zooming = false;
-            if (animationInProgress == 0 && animationStartTime == 0) {
-                checkMinMax(false);
-                return true;
-            }
+            checkMinMax(false);
+            return true;
         }
 
         if (ev.getActionMasked() == MotionEvent.ACTION_DOWN || ev.getActionMasked() == MotionEvent.ACTION_POINTER_DOWN) {
             if (!scroller.isFinished()) {
                 scroller.abortAnimation();
             }
-            if (!draggingDown) {
-                if (canZoom && ev.getPointerCount() == 2 && !changingPage) {
+            if (!draggingDown && !changingPage) {
+                if (canZoom && ev.getPointerCount() == 2) {
                     pinchStartDistance = (float) Math.hypot(ev.getX(1) - ev.getX(0), ev.getY(1) - ev.getY(0));
                     pinchStartScale = scale;
                     pinchCenterX = (ev.getX(0) + ev.getX(1)) / 2.0f;
@@ -2040,7 +2039,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 } else if (draggingDown) {
                     translationY = ev.getY() - dragY;
                     containerView.invalidate();
-                } else if (!invalidCoords/* && animationStartTime == 0*/) {
+                } else if (!invalidCoords && animationStartTime == 0) {
                     float moveDx = moveStartX - ev.getX();
                     float moveDy = moveStartY - ev.getY();
                     if (moving || scale == 1 && Math.abs(moveDy) + AndroidUtilities.dp(12) < Math.abs(moveDx) || scale != 1) {

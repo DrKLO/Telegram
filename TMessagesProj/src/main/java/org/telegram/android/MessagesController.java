@@ -68,6 +68,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     private boolean startingSecretChat = false;
     private ArrayList<Integer> loadingFullUsers = new ArrayList<Integer>();
     private ArrayList<Integer> loadedFullUsers = new ArrayList<Integer>();
+    private ArrayList<Integer> loadingFullChats = new ArrayList<Integer>();
+    private ArrayList<Integer> loadedFullChats = new ArrayList<Integer>();
 
     private HashMap<Integer, ArrayList<TLRPC.TL_decryptedMessageHolder>> secretHolesQueue = new HashMap<Integer, ArrayList<TLRPC.TL_decryptedMessageHolder>>();
 
@@ -323,6 +325,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         sendingTypings.clear();
         loadingFullUsers.clear();
         loadedFullUsers.clear();
+        loadingFullUsers.clear();
+        loadedFullUsers.clear();
         secretHolesQueue.clear();
 
         updatesStartWaitTime = 0;
@@ -468,6 +472,55 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
     public void cancelLoadFullUser(int uid) {
         loadingFullUsers.remove((Integer) uid);
+    }
+
+    public void cancelLoadFullChat(int cid) {
+        loadingFullChats.remove((Integer) cid);
+    }
+
+    protected void clearFullUsers() {
+        loadedFullUsers.clear();
+        loadedFullChats.clear();
+    }
+
+    public void loadFullChat(final int chat_id, final int classGuid) {
+        if (loadingFullChats.contains(chat_id) || loadedFullChats.contains(chat_id)) {
+            return;
+        }
+        loadingFullChats.add(chat_id);
+        TLRPC.TL_messages_getFullChat req = new TLRPC.TL_messages_getFullChat();
+        req.chat_id = chat_id;
+        long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            @Override
+            public void run(TLObject response, TLRPC.TL_error error) {
+                if (error == null) {
+                    final TLRPC.TL_messages_chatFull res = (TLRPC.TL_messages_chatFull) response;
+                    MessagesStorage.getInstance().putUsersAndChats(res.users, res.chats, true, true);
+                    MessagesStorage.getInstance().updateChatInfo(chat_id, res.full_chat.participants, false);
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            loadingFullChats.remove((Integer)chat_id);
+                            loadedFullChats.add(chat_id);
+
+                            putUsers(res.users, false);
+                            putChats(res.chats, false);
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.chatInfoDidLoaded, chat_id, res.full_chat.participants);
+                        }
+                    });
+                } else {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            loadingFullChats.remove((Integer) chat_id);
+                        }
+                    });
+                }
+            }
+        });
+        if (classGuid != 0) {
+            ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
+        }
     }
 
     public void loadFullUser(final TLRPC.User user, final int classGuid) {
@@ -1089,29 +1142,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     public void processChatInfo(final int chat_id, final TLRPC.ChatParticipants info, final ArrayList<TLRPC.User> usersArr, final boolean fromCache) {
-        if (info == null && fromCache) {
-            TLRPC.TL_messages_getFullChat req = new TLRPC.TL_messages_getFullChat();
-            req.chat_id = chat_id;
-            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
-                @Override
-                public void run(TLObject response, TLRPC.TL_error error) {
-                    if (error != null) {
-                        return;
-                    }
-                    final TLRPC.TL_messages_chatFull res = (TLRPC.TL_messages_chatFull) response;
-                    MessagesStorage.getInstance().putUsersAndChats(res.users, res.chats, true, true);
-                    MessagesStorage.getInstance().updateChatInfo(chat_id, res.full_chat.participants, false);
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            putUsers(res.users, false);
-                            putChats(res.chats, false);
-                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.chatInfoDidLoaded, chat_id, res.full_chat.participants);
-                        }
-                    });
-                }
-            });
-        } else {
+        if (fromCache && chat_id > 0) {
+            loadFullChat(chat_id, 0);
+        }
+        if (info != null) {
             AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {

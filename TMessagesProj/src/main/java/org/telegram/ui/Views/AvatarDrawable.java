@@ -69,6 +69,7 @@ public class AvatarDrawable extends Drawable {
     }
 
     public AvatarDrawable(TLRPC.User user, boolean profile) {
+        this();
         isProfile = profile;
         if (user != null) {
             setInfo(user.id, user.first_name, user.last_name, false);
@@ -76,6 +77,7 @@ public class AvatarDrawable extends Drawable {
     }
 
     public AvatarDrawable(TLRPC.Chat chat, boolean profile) {
+        this();
         isProfile = profile;
         if (chat != null) {
             setInfo(chat.id, chat.title, null, chat.id < 0);

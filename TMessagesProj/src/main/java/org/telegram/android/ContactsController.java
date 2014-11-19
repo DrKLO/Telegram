@@ -1616,6 +1616,7 @@ public class ContactsController {
 
     public void reloadContactsStatuses() {
         saveContactsLoadTime();
+        MessagesController.getInstance().clearFullUsers();
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         final SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean("needGetStatuses", true).commit();

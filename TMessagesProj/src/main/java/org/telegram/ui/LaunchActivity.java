@@ -654,7 +654,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             actionBarLayout.presentFragment(new SettingsActivity(), false, true, true);
             drawerLayoutContainer.setAllowOpenDrawer(false);
             if (AndroidUtilities.isTablet()) {
-                layersActionBarLayout.showLastFragment();
+                actionBarLayout.showLastFragment();
                 rightActionBarLayout.showLastFragment();
             }
             pushOpened = true;

@@ -48,7 +48,7 @@ public class TextSettingsCell extends FrameLayout {
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(textView);
         LayoutParams layoutParams = (LayoutParams) textView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutParams.MATCH_PARENT;
         layoutParams.height = LayoutParams.MATCH_PARENT;
         layoutParams.leftMargin = AndroidUtilities.dp(17);
         layoutParams.rightMargin = AndroidUtilities.dp(17);
@@ -100,7 +100,7 @@ public class TextSettingsCell extends FrameLayout {
         } else {
             width = availableWidth;
         }
-        textView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
+        textView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
     }
 
     public void setTextColor(int color) {
@@ -110,6 +110,7 @@ public class TextSettingsCell extends FrameLayout {
     public void setText(String text, boolean divider) {
         textView.setText(text);
         valueTextView.setVisibility(GONE);
+        valueImageView.setVisibility(GONE);
         needDivider = divider;
         setWillNotDraw(!divider);
     }

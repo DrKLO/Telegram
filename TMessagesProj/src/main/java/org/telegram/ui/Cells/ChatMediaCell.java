@@ -67,6 +67,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     private int photoWidth;
     private int photoHeight;
     private PhotoObject currentPhotoObject;
+    private PhotoObject currentPhotoObjectThumb;
     private String currentUrl;
     private String currentPhotoFilter;
     private ImageReceiver photoImage;
@@ -174,6 +175,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         if (photoImage != null) {
             photoImage.clearImage();
             currentPhotoObject = null;
+            currentPhotoObjectThumb = null;
         }
         currentUrl = null;
         if (gifDrawable != null) {
@@ -413,6 +415,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             buttonState = -1;
             gifDrawable = null;
             currentPhotoObject = null;
+            currentPhotoObjectThumb = null;
             currentUrl = null;
             photoNotSet = false;
 
@@ -527,6 +530,9 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 }
 
                 currentPhotoObject = PhotoObject.getClosestImageWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
+                if (messageObject.type == 1) {
+                    currentPhotoObjectThumb = PhotoObject.getClosestImageWithSize(messageObject.photoThumbs, 80);
+                }
                 if (currentPhotoObject != null) {
                     boolean noSize = false;
                     if (currentMessageObject.type == 3 || currentMessageObject.type == 8) {
@@ -609,7 +615,11 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                             }
                         } else {
                             photoNotSet = true;
-                            photoImage.setImageBitmap(messageObject.imagePreview);
+                            if (messageObject.imagePreview != null) {
+                                photoImage.setImageBitmap(messageObject.imagePreview);
+                            } else if (currentPhotoObjectThumb != null) {
+                                photoImage.setImage(currentPhotoObjectThumb.photoOwner.location, currentPhotoFilter, null, 0, true);
+                            }
                         }
                     }
                 } else {

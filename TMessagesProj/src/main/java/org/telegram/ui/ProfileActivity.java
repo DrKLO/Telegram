@@ -763,7 +763,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (id == NotificationCenter.updateInterfaces) {
             int mask = (Integer)args[0];
             if (user_id != 0) {
-                if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
+                if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0 || (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
                     updateProfileData();
                 }
             } else if (chat_id != 0) {
@@ -1042,8 +1042,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 photo = user.photo.photo_small;
                 photoBig = user.photo.photo_big;
             }
-            AvatarDrawable avatarDrawable = new AvatarDrawable(user, true);
-            avatarDrawable.setColor(0xff5c98cd);
+            AvatarDrawable avatarDrawable = new AvatarDrawable(user);
             avatarImage.setImage(photo, "50_50", avatarDrawable);
 
             nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));

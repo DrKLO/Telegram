@@ -12,7 +12,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
-import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.StaticLayout;
@@ -37,9 +36,9 @@ public class TimerDrawable extends Drawable {
             emptyTimerDrawable = context.getResources().getDrawable(R.drawable.header_timer);
             timerDrawable = context.getResources().getDrawable(R.drawable.header_timer2);
             timePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            timePaint.setTextSize(AndroidUtilities.dp(10));
-            timePaint.setColor(0xffd7e8f7);
-            timePaint.setTypeface(Typeface.DEFAULT_BOLD);
+            timePaint.setTextSize(AndroidUtilities.dp(11));
+            timePaint.setColor(0xffffffff);
+            timePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         }
     }
 
@@ -90,8 +89,8 @@ public class TimerDrawable extends Drawable {
 
     @Override
     public void draw(Canvas canvas) {
-        int width = getBounds().width();
-        int height = getBounds().height();
+        int width = timerDrawable.getIntrinsicWidth();
+        int height = timerDrawable.getIntrinsicHeight();
         Drawable drawable = null;
         if (time == 0) {
             drawable = timerDrawable;
@@ -105,7 +104,11 @@ public class TimerDrawable extends Drawable {
         drawable.draw(canvas);
 
         if (time != 0 && timeLayout != null) {
-            canvas.translate((int)(width / 2 - Math.ceil(timeWidth / 2)), (height - timeHeight) / 2 + AndroidUtilities.dpf2(1.5f));
+            int xOffxet = 0;
+            if (AndroidUtilities.density == 3) {
+                xOffxet = -1;
+            }
+            canvas.translate((int)(width / 2 - Math.ceil(timeWidth / 2)) + xOffxet, (height - timeHeight) / 2);
             timeLayout.draw(canvas);
         }
     }
@@ -127,11 +130,11 @@ public class TimerDrawable extends Drawable {
 
     @Override
     public int getIntrinsicWidth() {
-        return -1;
+        return timerDrawable.getIntrinsicWidth();
     }
 
     @Override
     public int getIntrinsicHeight() {
-        return -1;
+        return timerDrawable.getIntrinsicHeight();
     }
 }

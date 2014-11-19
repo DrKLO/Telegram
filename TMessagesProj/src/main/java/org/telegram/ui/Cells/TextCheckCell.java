@@ -11,6 +11,7 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.TextView;
@@ -74,6 +75,10 @@ public class TextCheckCell extends FrameLayoutFixed {
 
     public void setTextAndCheck(String text, boolean checked, boolean divider) {
         textView.setText(text);
+        if (Build.VERSION.SDK_INT < 11) {
+            checkBox.resetLayout();
+            checkBox.requestLayout();
+        }
         checkBox.setChecked(checked);
         needDivider = divider;
         setWillNotDraw(!divider);
