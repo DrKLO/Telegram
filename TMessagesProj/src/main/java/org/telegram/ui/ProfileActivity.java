@@ -219,8 +219,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBar.setBackgroundColor(AvatarDrawable.getProfileBackColorForId(user_id != 0 ? user_id : chat_id));
-            actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(user_id != 0 ? user_id : chat_id));
+            actionBar.setBackgroundColor(AvatarDrawable.getProfileBackColorForId(user_id != 0 ? 5 : chat_id));
+            actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(user_id != 0 ? 5 : chat_id));
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setExtraHeight(AndroidUtilities.dp(88), false);
             if (AndroidUtilities.isTablet()) {
@@ -390,7 +390,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             nameTextView.setLayoutParams(layoutParams);
 
             onlineTextView = new TextView(getParentActivity());
-            onlineTextView.setTextColor(AvatarDrawable.getProfileTextColorForId(user_id != 0 ? user_id : chat_id));
+            onlineTextView.setTextColor(AvatarDrawable.getProfileTextColorForId(user_id != 0 ? 5 : chat_id));
             onlineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             onlineTextView.setLines(1);
             onlineTextView.setMaxLines(1);
@@ -411,7 +411,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             listView.setDivider(null);
             listView.setDividerHeight(0);
             listView.setVerticalScrollBarEnabled(false);
-            AndroidUtilities.setListViewEdgeEffectColor(listView, AvatarDrawable.getProfileBackColorForId(user_id != 0 ? user_id : chat_id));
+            AndroidUtilities.setListViewEdgeEffectColor(listView, AvatarDrawable.getProfileBackColorForId(user_id != 0 ? 5 : chat_id));
             frameLayout.addView(listView);
             layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
             layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
@@ -1042,7 +1042,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 photo = user.photo.photo_small;
                 photoBig = user.photo.photo_big;
             }
-            avatarImage.setImage(photo, "50_50", new AvatarDrawable(user, true));
+            AvatarDrawable avatarDrawable = new AvatarDrawable(user, true);
+            avatarDrawable.setColor(0xff5c98cd);
+            avatarImage.setImage(photo, "50_50", avatarDrawable);
 
             nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
             onlineTextView.setText(LocaleController.formatUserStatus(user));

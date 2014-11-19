@@ -45,7 +45,6 @@ import org.telegram.ui.Cells.TextColorCell;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Views.AvatarDrawable;
 import org.telegram.ui.Views.ColorPickerView;
 
 public class NotificationsSettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -154,7 +153,6 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
             listView.setDivider(null);
             listView.setDividerHeight(0);
             listView.setVerticalScrollBarEnabled(false);
-            AndroidUtilities.setListViewEdgeEffectColor(listView, AvatarDrawable.getProfileBackColorForId(5));
             frameLayout.addView(listView);
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
             layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
@@ -164,10 +162,10 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
+                    boolean enabled = false;
                     if (i == messageAlertRow || i == groupAlertRow) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
-                        boolean enabled;
                         if (i == messageAlertRow) {
                             enabled = preferences.getBoolean("EnableAll", true);
                             editor.putBoolean("EnableAll", !enabled);
@@ -176,12 +174,10 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                             editor.putBoolean("EnableGroup", !enabled);
                         }
                         editor.commit();
-                        listView.invalidateViews();
                         updateServerNotificationsSettings(i == groupAlertRow);
                     } else if (i == messagePreviewRow || i == groupPreviewRow) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
-                        boolean enabled;
                         if (i == messagePreviewRow) {
                             enabled = preferences.getBoolean("EnablePreviewAll", true);
                             editor.putBoolean("EnablePreviewAll", !enabled);
@@ -190,7 +186,6 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                             editor.putBoolean("EnablePreviewGroup", !enabled);
                         }
                         editor.commit();
-                        listView.invalidateViews();
                         updateServerNotificationsSettings(i == groupPreviewRow);
                     } else if (i == messageSoundRow || i == groupSoundRow) {
                         try {
@@ -263,55 +258,48 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     } else if (i == inappSoundRow) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
-                        boolean enabled = preferences.getBoolean("EnableInAppSounds", true);
+                        enabled = preferences.getBoolean("EnableInAppSounds", true);
                         editor.putBoolean("EnableInAppSounds", !enabled);
                         editor.commit();
-                        listView.invalidateViews();
                     } else if (i == inappVibrateRow) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
-                        boolean enabled = preferences.getBoolean("EnableInAppVibrate", true);
+                        enabled = preferences.getBoolean("EnableInAppVibrate", true);
                         editor.putBoolean("EnableInAppVibrate", !enabled);
                         editor.commit();
-                        listView.invalidateViews();
                     } else if (i == inappPreviewRow) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
-                        boolean enabled = preferences.getBoolean("EnableInAppPreview", true);
+                        enabled = preferences.getBoolean("EnableInAppPreview", true);
                         editor.putBoolean("EnableInAppPreview", !enabled);
                         editor.commit();
-                        listView.invalidateViews();
                     } else if (i == contactJoinedRow) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
-                        boolean enabled = preferences.getBoolean("EnableContactJoined", true);
+                        enabled = preferences.getBoolean("EnableContactJoined", true);
                         MessagesController.getInstance().enableJoined = !enabled;
                         editor.putBoolean("EnableContactJoined", !enabled);
                         editor.commit();
-                        listView.invalidateViews();
                     } else if (i == pebbleAlertRow) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
-                        boolean enabled = preferences.getBoolean("EnablePebbleNotifications", false);
+                        enabled = preferences.getBoolean("EnablePebbleNotifications", false);
                         editor.putBoolean("EnablePebbleNotifications", !enabled);
                         editor.commit();
-                        listView.invalidateViews();
                     } else if (i == badgeNumberRow) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
-                        boolean enabled = preferences.getBoolean("badgeNumber", true);
+                        enabled = preferences.getBoolean("badgeNumber", true);
                         editor.putBoolean("badgeNumber", !enabled);
                         editor.commit();
-                        listView.invalidateViews();
                         NotificationsController.getInstance().setBadgeEnabled(!enabled);
                     } else if (i == notificationsServiceRow) {
                         final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                        boolean enabled = preferences.getBoolean("pushService", true);
+                        enabled = preferences.getBoolean("pushService", true);
                         if (!enabled) {
                             final SharedPreferences.Editor editor = preferences.edit();
                             editor.putBoolean("pushService", !enabled);
                             editor.commit();
-                            listView.invalidateViews();
                             ApplicationLoader.startPushService();
                         } else {
                             if (getParentActivity() == null) {
@@ -441,6 +429,9 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         showAlertDialog(builder);
+                    }
+                    if (view instanceof TextCheckCell) {
+                        ((TextCheckCell) view).setChecked(!enabled);
                     }
                 }
             });

@@ -13,7 +13,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
@@ -78,6 +77,10 @@ public class TextCheckCell extends FrameLayoutFixed {
         checkBox.setChecked(checked);
         needDivider = divider;
         setWillNotDraw(!divider);
+    }
+
+    public void setChecked(boolean checked) {
+        checkBox.setChecked(checked);
     }
 
     @Override

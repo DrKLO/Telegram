@@ -417,8 +417,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         SharedPreferences.Editor editor = preferences.edit();
                         editor.putBoolean("view_animations", !animations);
                         editor.commit();
-                        if (listView != null) {
-                            listView.invalidateViews();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(!animations);
                         }
                     } else if (i == notificationRow) {
                         presentFragment(new NotificationsSettingsActivity());
@@ -454,13 +454,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         SharedPreferences.Editor editor = preferences.edit();
                         editor.putBoolean("send_by_enter", !send);
                         editor.commit();
-                        if (listView != null) {
-                            listView.invalidateViews();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(!send);
                         }
                     } else if (i == saveToGalleryRow) {
                         MediaController.getInstance().toggleSaveToGallery();
-                        if (listView != null) {
-                            listView.invalidateViews();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(MediaController.getInstance().canSaveToGallery());
                         }
                     } else if (i == privacyRow) {
                         presentFragment(new PrivacySettingsActivity());
