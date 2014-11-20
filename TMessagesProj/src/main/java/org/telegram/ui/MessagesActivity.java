@@ -530,6 +530,12 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     @SuppressWarnings("unchecked")
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.dialogsNeedReload) {
+            if (dialogsAdapter != null) {
+                dialogsAdapter.notifyDataSetChanged();
+            }
+            if (dialogsSearchAdapter != null) {
+                dialogsSearchAdapter.notifyDataSetChanged();
+            }
             if (messagesListView != null) {
                 if (MessagesController.getInstance().loadingDialogs && MessagesController.getInstance().dialogs.isEmpty()) {
                     searchEmptyView.setVisibility(View.GONE);
@@ -537,32 +543,13 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     messagesListView.setEmptyView(progressView);
                 } else {
                     if (searching && searchWas) {
-                        if (dialogsAdapter != null) {
-                            dialogsAdapter.notifyDataSetChanged();
-                        }
-                        if (dialogsSearchAdapter != null) {
-                            dialogsSearchAdapter.notifyDataSetChanged();
-                        }
                         messagesListView.setEmptyView(searchEmptyView);
                         emptyView.setVisibility(View.GONE);
                     } else {
-                        if (dialogsAdapter != null) {
-                            dialogsAdapter.notifyDataSetChanged();
-                        }
-                        if (dialogsSearchAdapter != null) {
-                            dialogsSearchAdapter.notifyDataSetChanged();
-                        }
                         messagesListView.setEmptyView(emptyView);
                         searchEmptyView.setVisibility(View.GONE);
                     }
                     progressView.setVisibility(View.GONE);
-                }
-            } else {
-                if (dialogsAdapter != null) {
-                    dialogsAdapter.notifyDataSetChanged();
-                }
-                if (dialogsSearchAdapter != null) {
-                    dialogsSearchAdapter.notifyDataSetChanged();
                 }
             }
         } else if (id == NotificationCenter.emojiDidLoaded) {

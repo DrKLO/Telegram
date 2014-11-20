@@ -236,6 +236,11 @@ public class ChangeUsernameActivity extends BaseFragment {
         }
         lastNameAvailable = false;
         if (name != null) {
+            if (name.startsWith("_") || name.endsWith("_")) {
+                checkTextView.setText(LocaleController.getString("UsernameInvalid", R.string.UsernameInvalid));
+                checkTextView.setTextColor(0xffcf3030);
+                return false;
+            }
             for (int a = 0; a < name.length(); a++) {
                 char ch = name.charAt(a);
                 if (a == 0 && ch >= '0' && ch <= '9') {

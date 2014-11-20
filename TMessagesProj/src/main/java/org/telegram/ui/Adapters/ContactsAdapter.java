@@ -52,7 +52,9 @@ public class ContactsAdapter extends BaseSectionsAdapter {
         if (onlyUsers) {
             if (section < ContactsController.getInstance().sortedUsersSectionsArray.size()) {
                 ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
-                return MessagesController.getInstance().getUser(arr.get(position).user_id);
+                if (position < arr.size()) {
+                    return MessagesController.getInstance().getUser(arr.get(position).user_id);
+                }
             }
             return null;
         } else {

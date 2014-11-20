@@ -628,8 +628,7 @@ public class ActionBarLayout extends FrameLayout {
                 currentAnimation = new AnimatorSetProxy();
                 currentAnimation.playTogether(
                         ObjectAnimatorProxy.ofFloat(containerView, "alpha", 0.0f, 1.0f),
-                        ObjectAnimatorProxy.ofFloat(containerView, "scaleX", 0.8f, 1.0f),
-                        ObjectAnimatorProxy.ofFloat(containerView, "scaleY", 0.8f, 1.0f));
+                        ObjectAnimatorProxy.ofFloat(containerView, "translationY", AndroidUtilities.dp(48), 0));
                 currentAnimation.setInterpolator(new DecelerateInterpolator(1.5f));
                 currentAnimation.setDuration(200);
                 currentAnimation.addListener(new AnimatorListenerAdapterProxy() {
@@ -731,14 +730,14 @@ public class ActionBarLayout extends FrameLayout {
                     @Override
                     public void run() {
                         closeLastFragmentInternalRemoveOld(currentFragment);
+                        ViewProxy.setTranslationY(containerViewBack, 0);
                     }
                 };
 
                 currentAnimation = new AnimatorSetProxy();
                 currentAnimation.playTogether(
                         ObjectAnimatorProxy.ofFloat(containerViewBack, "alpha", 1.0f, 0.0f),
-                        ObjectAnimatorProxy.ofFloat(containerViewBack, "scaleX", 1.0f, 0.8f),
-                        ObjectAnimatorProxy.ofFloat(containerViewBack, "scaleY", 1.0f, 0.8f));
+                        ObjectAnimatorProxy.ofFloat(containerViewBack, "translationY", 0, AndroidUtilities.dp(48)));
                 currentAnimation.setInterpolator(new DecelerateInterpolator(1.5f));
                 currentAnimation.setDuration(200);
                 currentAnimation.addListener(new AnimatorListenerAdapterProxy() {

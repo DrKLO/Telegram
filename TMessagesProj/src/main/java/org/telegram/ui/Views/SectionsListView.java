@@ -132,6 +132,8 @@ public class SectionsListView extends ListView implements AbsListView.OnScrollLi
                 View child = getChildAt(itemNum - firstVisibleItem);
                 if (child != null) {
                     header.setTag(child.getTop());
+                } else {
+                    header.setTag(-AndroidUtilities.dp(100));
                 }
                 itemNum += count;
             }

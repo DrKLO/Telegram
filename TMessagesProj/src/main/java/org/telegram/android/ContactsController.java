@@ -1636,6 +1636,9 @@ public class ContactsController {
                                     TLRPC.User toDbUser = new TLRPC.User();
                                     TLRPC.TL_contactStatus status = (TLRPC.TL_contactStatus) object;
 
+                                    if (status == null) {
+                                        continue;
+                                    }
                                     if (status.status instanceof TLRPC.TL_userStatusRecently) {
                                         status.status.expires = -100;
                                     } else if (status.status instanceof TLRPC.TL_userStatusLastWeek) {

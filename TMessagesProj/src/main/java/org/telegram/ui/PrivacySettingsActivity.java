@@ -183,7 +183,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                                 if (which == 0) {
                                     value = 30;
                                 } else if (which == 1) {
-                                    value = 60;
+                                    value = 90;
                                 } else if (which == 2) {
                                     value = 182;
                                 } else if (which == 3) {

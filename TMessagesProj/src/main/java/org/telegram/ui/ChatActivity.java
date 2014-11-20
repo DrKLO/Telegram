@@ -473,7 +473,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (currentUser != null) {
             MessagesController.getInstance().cancelLoadFullUser(currentUser.id);
         }
-        if (!AndroidUtilities.isTablet()) {
+        if (!AndroidUtilities.isTablet() && getParentActivity() != null) {
             getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
         }
         AndroidUtilities.unlockOrientation(getParentActivity());
@@ -1270,7 +1270,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private void scrollToLastMessage() {
-        if ((forward_end_reached || first_unread_id == 0) && startLoadFromMessageId == 0) {
+        if (forward_end_reached && first_unread_id == 0 && startLoadFromMessageId == 0) {
             chatListView.setSelectionFromTop(messages.size() - 1, -100000 - chatListView.getPaddingTop());
         } else {
             messages.clear();
@@ -3087,7 +3087,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     presentFragment(chatActivity, true);
                     if (!AndroidUtilities.isTablet()) {
                         removeSelfFromStack();
-                        chatActivity.getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+                        Activity parentActivity = getParentActivity();
+                        if (parentActivity == null) {
+                            parentActivity = chatActivity.getParentActivity();
+                        }
+                        if (parentActivity != null) {
+                            parentActivity.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+                        }
                     }
                 } else {
                     activity.finishFragment();

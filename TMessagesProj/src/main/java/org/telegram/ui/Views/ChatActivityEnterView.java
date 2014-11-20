@@ -391,9 +391,11 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                         });
                         runningAnimation2.start();
 
-                        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
-                        layoutParams.rightMargin = AndroidUtilities.dp(0);
-                        messsageEditText.setLayoutParams(layoutParams);
+                        if (messsageEditText != null) {
+                            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
+                            layoutParams.rightMargin = AndroidUtilities.dp(0);
+                            messsageEditText.setLayoutParams(layoutParams);
+                        }
 
                         delegate.onAttachButtonHidden();
                     }
@@ -470,9 +472,11 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                     runningAnimation2.setDuration(100);
                     runningAnimation2.start();
 
-                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
-                    layoutParams.rightMargin = AndroidUtilities.dp(50);
-                    messsageEditText.setLayoutParams(layoutParams);
+                    if (messsageEditText != null) {
+                        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
+                        layoutParams.rightMargin = AndroidUtilities.dp(50);
+                        messsageEditText.setLayoutParams(layoutParams);
+                    }
 
                     delegate.onAttachButtonShow();
                 }

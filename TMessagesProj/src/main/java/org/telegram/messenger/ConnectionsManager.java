@@ -2236,6 +2236,17 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
                 lastOutgoingMessageId = Math.max(messageId, lastOutgoingMessageId);
             }
+            long resultMid = ((TLRPC.TL_bad_server_salt) message).bad_msg_id;
+            if (resultMid != 0) {
+                for (RPCRequest request : runningRequests) {
+                    if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) == 0) {
+                        continue;
+                    }
+                    if (request.respondsToMessageId(resultMid)) {
+                        request.retryCount = 0;
+                    }
+                }
+            }
 
             datacenter.clearServerSalts();
 

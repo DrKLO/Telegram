@@ -184,7 +184,9 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             @Override
             public void onPrepared(MediaPlayer mp) {
                 playerPrepared = true;
-                videoPlayer.seekTo((int) (videoTimelineView.getLeftProgress() * videoDuration));
+                if (videoTimelineView != null && videoPlayer != null) {
+                    videoPlayer.seekTo((int) (videoTimelineView.getLeftProgress() * videoDuration));
+                }
             }
         });
         try {

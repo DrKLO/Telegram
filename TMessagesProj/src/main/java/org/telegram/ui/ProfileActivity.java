@@ -937,8 +937,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             public int compare(Integer lhs, Integer rhs) {
                 TLRPC.User user1 = MessagesController.getInstance().getUser(info.participants.get(rhs).user_id);
                 TLRPC.User user2 = MessagesController.getInstance().getUser(info.participants.get(lhs).user_id);
-                Integer status1 = 0;
-                Integer status2 = 0;
+                int status1 = 0;
+                int status2 = 0;
                 if (user1 != null && user1.status != null) {
                     if (user1.id == UserConfig.getClientUserId()) {
                         status1 = ConnectionsManager.getInstance().getCurrentTime() + 50000;
@@ -953,7 +953,26 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         status2 = user2.status.expires;
                     }
                 }
-                return status1.compareTo(status2);
+                if (status1 > 0 && status2 > 0) {
+                    if (status1 > status2) {
+                        return 1;
+                    } else if (status1 < status2) {
+                        return -1;
+                    }
+                    return 0;
+                } else if (status1 < 0 && status2 < 0) {
+                    if (status1 > status2) {
+                        return 1;
+                    } else if (status1 < status2) {
+                        return -1;
+                    }
+                    return 0;
+                } else if (status1 < 0 && status2 > 0 || status1 == 0 && status2 != 0) {
+                    return -1;
+                } else if (status2 < 0 && status1 > 0 || status2 == 0 && status1 != 0) {
+                    return 1;
+                }
+                return 0;
             }
         });
 

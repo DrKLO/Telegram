@@ -214,15 +214,19 @@ public class BaseFragment {
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
-        visibleDialog = builder.show();
-        visibleDialog.setCanceledOnTouchOutside(true);
-        visibleDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-            @Override
-            public void onDismiss(DialogInterface dialog) {
-                visibleDialog = null;
-                onDialogDismiss();
-            }
-        });
+        try {
+            visibleDialog = builder.show();
+            visibleDialog.setCanceledOnTouchOutside(true);
+            visibleDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialog) {
+                    visibleDialog = null;
+                    onDialogDismiss();
+                }
+            });
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     protected void onDialogDismiss() {

@@ -397,6 +397,10 @@ public class NotificationsController {
                     .setGroup("messages")
                     .setGroupSummary(true);
 
+            //if (ApplicationLoader.mainInterfacePaused) {
+            //    mBuilder.setPriority(NotificationCompat.PRIORITY_HIGH);
+            //}
+
             String lastMessage = null;
             String lastMessageFull = null;
             if (pushMessages.size() == 1) {
