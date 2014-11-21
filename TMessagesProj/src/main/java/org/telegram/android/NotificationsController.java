@@ -424,6 +424,12 @@ public class NotificationsController {
                 mBuilder.setPriority(NotificationCompat.PRIORITY_MAX);
             }
 
+            mBuilder.setCategory(NotificationCompat.CATEGORY_MESSAGE);
+            mBuilder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+            /*Bundle bundle = new Bundle();
+            bundle.putString(NotificationCompat.EXTRA_PEOPLE, );
+            mBuilder.setExtras()*/
+
             String lastMessage = null;
             String lastMessageFull = null;
             if (pushMessages.size() == 1) {
@@ -627,7 +633,8 @@ public class NotificationsController {
                     .setContentText(text)
                     .setGroupSummary(false)
                     .setContentIntent(contentIntent)
-                    .extend(new NotificationCompat.WearableExtender().addAction(action));
+                    .extend(new NotificationCompat.WearableExtender().addAction(action))
+                    .setCategory(NotificationCompat.CATEGORY_MESSAGE);
 
             notificationManager.notify(notificationId, builder.build());
             wearNoticationsIds.put(dialog_id, notificationId);

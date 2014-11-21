@@ -346,7 +346,7 @@ public class AndroidUtilities {
         } else if (encryptedChat.ttl == 60 * 60 * 24 * 7) {
             numberPicker.setValue(20);
         } else if (encryptedChat.ttl == 0) {
-            numberPicker.setValue(5);
+            numberPicker.setValue(0);
         }
         numberPicker.setFormatter(new NumberPicker.Formatter() {
             @Override

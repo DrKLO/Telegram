@@ -328,7 +328,12 @@ public class DialogCell extends BaseCell {
                             messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#4d83b3>%s:</font> <font color=#4d83b3>%s</font>", name, message.messageText)), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
                         } else {
                             if (message.messageOwner.message != null) {
-                                messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#4d83b3>%s:</font> <font color=#808080>%s</font>", name, message.messageOwner.message.replace("\n", " ").replace("<", "&lt;").replace(">", "&gt;"))), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
+                                String mess = message.messageOwner.message;
+                                if (mess.length() > 150) {
+                                    mess = mess.substring(0, 150);
+                                }
+                                mess = mess.replace("\n", " ");
+                                messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#4d83b3>%s:</font> <font color=#808080>%s</font>", name, mess.replace("<", "&lt;").replace(">", "&gt;"))), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
                             }
                         }
                     } else {
@@ -505,10 +510,11 @@ public class DialogCell extends BaseCell {
             if (messageString == null) {
                 messageString = "";
             }
-            String mess = messageString.toString().replace("\n", " ");
+            String mess = messageString.toString();
             if (mess.length() > 150) {
                 mess = mess.substring(0, 150);
             }
+            mess = mess.replace("\n", " ");
             messageString = Emoji.replaceEmoji(mess, messagePaint.getFontMetricsInt(), AndroidUtilities.dp(17));
         }
         messageWidth = Math.max(AndroidUtilities.dp(12), messageWidth);

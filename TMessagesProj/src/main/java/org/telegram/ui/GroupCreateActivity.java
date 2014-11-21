@@ -120,7 +120,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         isBroadcast = args.getBoolean("broadcast", false);
         isAlwaysShare = args.getBoolean("isAlwaysShare", false);
         isNeverShare = args.getBoolean("isNeverShare", false);
-        maxCount = !isBroadcast ? MessagesController.getInstance().maxGroupCount : MessagesController.getInstance().maxBroadcastCount;
+        maxCount = !isBroadcast ? MessagesController.getInstance().maxGroupCount - 1 : MessagesController.getInstance().maxBroadcastCount;
     }
 
     @Override
@@ -391,7 +391,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         return;
                     }
 
+                    boolean check = true;
                     if (selectedContacts.containsKey(user.id)) {
+                        check = false;
                         try {
                             XImageSpan span = selectedContacts.get(user.id);
                             selectedContacts.remove(user.id);
@@ -441,7 +443,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         listView.setVerticalScrollBarEnabled(false);
                         emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
                     } else {
-                        listView.invalidateViews();
+                        if (view instanceof UserCell) {
+                            ((UserCell) view).setChecked(check, true);
+                        }
                     }
                 }
             });

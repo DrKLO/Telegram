@@ -220,7 +220,7 @@ public class ContactsAdapter extends BaseSectionsAdapter {
             TLRPC.User user = MessagesController.getInstance().getUser(arr.get(position).user_id);
             ((UserCell)convertView).setData(user, null, null, 0);
             if (checkedMap != null) {
-                ((UserCell) convertView).setChecked(checkedMap.containsKey(user.id));
+                ((UserCell) convertView).setChecked(checkedMap.containsKey(user.id), false);
             }
             if (ignoreUsers != null) {
                 if (ignoreUsers.containsKey(user.id)) {

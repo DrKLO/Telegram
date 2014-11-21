@@ -65,16 +65,16 @@ android {
         jni.srcDirs = [] //disable automatic ndk-build call
     }
 
-    sourceSets {
-        debug {
-            manifest.srcFile 'config/debug/AndroidManifest.xml'
-        }
-        release {
-            manifest.srcFile 'config/release/AndroidManifest.xml'
-        }
-        foss {
-            manifest.srcFile 'config/foss/AndroidManifest.xml'
-        }
+    sourceSets.debug {
+        manifest.srcFile 'config/debug/AndroidManifest.xml'
+    }
+
+    sourceSets.release {
+        manifest.srcFile 'config/release/AndroidManifest.xml'
+    }
+
+    sourceSets.foss {
+        manifest.srcFile 'config/foss/AndroidManifest.xml'
     }
 
     defaultConfig {

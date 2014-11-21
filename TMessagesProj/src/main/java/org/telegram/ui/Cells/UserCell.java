@@ -142,11 +142,11 @@ public class UserCell extends FrameLayout {
         update(0);
     }
 
-    public void setChecked(boolean checked) {
+    public void setChecked(boolean checked, boolean animated) {
         if (checkBox.getVisibility() != VISIBLE) {
             checkBox.setVisibility(VISIBLE);
         }
-        checkBox.setChecked(checked);
+        checkBox.setChecked(checked, animated);
     }
 
     @Override

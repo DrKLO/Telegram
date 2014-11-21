@@ -228,7 +228,7 @@ public class ChatActionCell extends BaseCell {
             setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), textHeight + AndroidUtilities.dp(14));
             return;
         }
-        int width = MeasureSpec.getSize(widthMeasureSpec);
+        int width = Math.max(AndroidUtilities.dp(30), MeasureSpec.getSize(widthMeasureSpec));
         if (width != previousWidth) {
             previousWidth = width;
 

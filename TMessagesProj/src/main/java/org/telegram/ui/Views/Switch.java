@@ -90,7 +90,6 @@ public class Switch extends CompoundButton {
 
     private ObjectAnimatorProxy mPositionAnimator;
 
-    @SuppressWarnings("hiding")
     private final Rect mTempRect = new Rect();
 
     public Switch(Context context) {

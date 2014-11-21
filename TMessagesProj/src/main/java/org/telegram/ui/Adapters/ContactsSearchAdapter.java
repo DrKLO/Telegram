@@ -215,6 +215,9 @@ public class ContactsSearchAdapter extends BaseContactsSearchAdapter {
             if (view == null) {
                 if (useUserCell) {
                     view = new UserCell(mContext, 1);
+                    if (checkedMap != null) {
+                        ((UserCell) view).setChecked(false, false);
+                    }
                 } else {
                     view = new ProfileSearchCell(mContext);
                 }
@@ -244,7 +247,7 @@ public class ContactsSearchAdapter extends BaseContactsSearchAdapter {
                 if (useUserCell) {
                     ((UserCell) view).setData(user, name, username, 0);
                     if (checkedMap != null) {
-                        ((UserCell) view).setChecked(checkedMap.containsKey(user.id));
+                        ((UserCell) view).setChecked(checkedMap.containsKey(user.id), false);
                     }
                 } else {
                     ((ProfileSearchCell) view).setData(user, null, null, name, username);

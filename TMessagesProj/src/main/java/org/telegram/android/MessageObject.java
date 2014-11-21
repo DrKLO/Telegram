@@ -345,7 +345,9 @@ public class MessageObject {
         int dateMonth = rightNow.get(Calendar.MONTH);
         dateKey = String.format("%d_%02d_%02d", dateYear, dateMonth, dateDay);
 
-        generateLayout();
+        if (preview != 0) {
+            generateLayout();
+        }
         generateThumbs(false, preview);
     }
 

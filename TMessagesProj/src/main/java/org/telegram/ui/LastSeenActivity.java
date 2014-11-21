@@ -193,8 +193,14 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
                                 public void didSelectUsers(ArrayList<Integer> ids) {
                                     if (i == neverShareRow) {
                                         currentMinus = ids;
+                                        for (Integer id : currentMinus) {
+                                            currentPlus.remove(id);
+                                        }
                                     } else {
                                         currentPlus = ids;
+                                        for (Integer id : currentPlus) {
+                                            currentMinus.remove(id);
+                                        }
                                     }
                                     doneButton.setVisibility(View.VISIBLE);
                                     listAdapter.notifyDataSetChanged();

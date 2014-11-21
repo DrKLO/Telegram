@@ -137,7 +137,7 @@
     <string name="NotificationGroupKickYou">%1$s removed you from the group %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s has left the group %2$s</string>
     <string name="NotificationContactJoined">%1$s joined Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nWe detected a login into your account from a new device on %2$s\n\nDevice: %3$s\nLocation: %4$s\n\nIf this wasn\'t you, you can go to Settings - Terminate all sessions.\n\nSincerely,\nThe Telegram Team</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nWe detected a login into your account from a new device on %2$s\n\nDevice: %3$s\nLocation: %4$s\n\nIf this wasn\'t you, you can go to Settings - Privacy and Security - Terminate all other sessions.\n\nSincerely,\nThe Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s updated profile photo</string>
     <string name="Reply">Reply</string>
     <string name="ReplyToGroup">Reply to %1$s</string>
