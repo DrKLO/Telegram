@@ -106,6 +106,7 @@
     <string name="SaveToDownloads">Salva in download</string>
     <string name="ApplyLocalizationFile">Applica file di localizzazione</string>
     <string name="UnsupportedAttachment">Allegato non supportato</string>
+    <string name="SetTimer">Timer di autodistruzione</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s ha impostato il timer di autodistruzione a %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Hai impostato il timer di autodistruzione a %1$s</string>
@@ -143,7 +144,6 @@
     <string name="ReplyToUser">Rispondi a %1$s</string>
     <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
     <!--contacts view-->
-    <string name="NewMessageTitle">Nuovo messaggio</string>
     <string name="SelectContact">Seleziona contatto</string>
     <string name="NoContacts">Ancora nessun contatto</string>
     <string name="InviteText">Ehi, è il momento di passare a Telegram: http://telegram.org/dl2</string>
@@ -158,6 +158,7 @@
     <string name="WithinAWeek">ultimo accesso entro una settimana</string>
     <string name="WithinAMonth">ultimo accesso entro un mese</string>
     <string name="ALongTimeAgo">ultimo accesso molto tempo fa</string>
+    <string name="NewMessageTitle">Nuovo messaggio</string>
     <!--group create view-->
     <string name="SendMessageTo">Invia messaggio a...</string>
     <string name="EnterGroupNamePlaceholder">Immetti il nome del gruppo</string>
@@ -271,6 +272,12 @@
     <string name="NoMediaAutoDownload">Nessun media</string>
     <string name="SaveToGallerySettings">Salva nella galleria</string>
     <string name="EditName">Modifica nome</string>
+    <string name="NotificationsPriority">Priorità</string>
+    <string name="NotificationsPriorityDefault">Default</string>
+    <string name="NotificationsPriorityLow">Bassa</string>
+    <string name="NotificationsPriorityHigh">Alta</string>
+    <string name="NotificationsPriorityMax">Massima</string>
+    <string name="RepeatNotifications">Ripeti Notifiche</string>
     <!--media view-->
     <string name="NoMedia">Nessun media condiviso</string>
     <!--map view-->

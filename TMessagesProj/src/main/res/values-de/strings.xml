@@ -46,7 +46,7 @@
     <string name="EncryptedChatStartedIncoming">Du bist dem geheimen Chat beigetreten.</string>
     <string name="ClearHistory">Verlauf löschen</string>
     <string name="DeleteChat">Löschen und beenden</string>
-    <string name="DeleteChatUser">Lösche Chat</string>
+    <string name="DeleteChatUser">Chat löschen</string>
     <string name="HiddenName">Gelöschtes Konto</string>
     <string name="SelectChat">Chat auswählen</string>
     <string name="PhotoTip">Tippen und Halten</string>
@@ -106,6 +106,7 @@
     <string name="SaveToDownloads">In Downloads speichern</string>
     <string name="ApplyLocalizationFile">Sprachdatei benutzen</string>
     <string name="UnsupportedAttachment">Nicht unterstützte Datei</string>
+    <string name="SetTimer">Wähle einen Selbstzerstörungs-Timer</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s hat den Selbstzerstörungs-Timer auf %2$s gesetzt</string>
     <string name="MessageLifetimeChangedOutgoing">Du hast den Selbstzerstörungs-Timer auf %1$s gesetzt</string>
@@ -143,7 +144,6 @@
     <string name="ReplyToUser">%1$s antworten</string>
     <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
     <!--contacts view-->
-    <string name="NewMessageTitle">Neue Nachricht</string>
     <string name="SelectContact">Kontakt auswählen</string>
     <string name="NoContacts">Noch keine Kontakte</string>
     <string name="InviteText">Hey, lass uns zu Telegram wechseln: http://telegram.org/dl2</string>
@@ -158,6 +158,7 @@
     <string name="WithinAWeek">diese Woche gesehen</string>
     <string name="WithinAMonth">diesen Monat gesehen</string>
     <string name="ALongTimeAgo">vor langer Zeit gesehen</string>
+    <string name="NewMessageTitle">Neue Nachricht</string>
     <!--group create view-->
     <string name="SendMessageTo">Sende Nachricht an…</string>
     <string name="EnterGroupNamePlaceholder">Gruppenname</string>
@@ -271,6 +272,12 @@
     <string name="NoMediaAutoDownload">kein automatischer Download</string>
     <string name="SaveToGallerySettings">In der Galerie speichern</string>
     <string name="EditName">Name bearbeiten</string>
+    <string name="NotificationsPriority">Priorität</string>
+    <string name="NotificationsPriorityDefault">Standard</string>
+    <string name="NotificationsPriorityLow">Niedrig</string>
+    <string name="NotificationsPriorityHigh">Hoch</string>
+    <string name="NotificationsPriorityMax">Max</string>
+    <string name="RepeatNotifications">Wiederholen Benachrichtigungen</string>
     <!--media view-->
     <string name="NoMedia">Noch keine geteilten Medien vorhanden</string>
     <!--map view-->

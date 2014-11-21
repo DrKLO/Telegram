@@ -52,6 +52,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
     private boolean needMessagesSearch;
     private boolean messagesSearchEndReached;
     private String lastMessagesSearchString;
+    private int lastSearchId = 0;
 
     public static interface MessagesActivitySearchAdapterDelegate {
         public abstract void searchStateChanged(boolean searching);
@@ -137,15 +138,17 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
         }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
     }
 
-    private void searchDialogsInternal(final String query, final boolean serverOnly) {
+    private void searchDialogsInternal(final String query, final boolean serverOnly, final int searchId) {
         MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
             @Override
             public void run() {
                 try {
+                    FileLog.e("tmessages", "trigger search");
                     ArrayList<TLRPC.User> encUsers = new ArrayList<TLRPC.User>();
                     String q = query.trim().toLowerCase();
                     if (q.length() == 0) {
-                        updateSearchResults(new ArrayList<TLObject>(), new ArrayList<CharSequence>(), new ArrayList<TLRPC.User>());
+                        lastSearchId = -1;
+                        updateSearchResults(new ArrayList<TLObject>(), new ArrayList<CharSequence>(), new ArrayList<TLRPC.User>(), lastSearchId);
                         return;
                     }
                     ArrayList<TLObject> resultArray = new ArrayList<TLObject>();
@@ -253,7 +256,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                         }
                     }
                     cursor.dispose();
-                    updateSearchResults(resultArray, resultArrayNames, encUsers);
+                    updateSearchResults(resultArray, resultArrayNames, encUsers, searchId);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
@@ -261,10 +264,13 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
         });
     }
 
-    private void updateSearchResults(final ArrayList<TLObject> result, final ArrayList<CharSequence> names, final ArrayList<TLRPC.User> encUsers) {
+    private void updateSearchResults(final ArrayList<TLObject> result, final ArrayList<CharSequence> names, final ArrayList<TLRPC.User> encUsers, final int searchId) {
         AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
+                if (searchId != lastSearchId) {
+                    return;
+                }
                 for (TLObject obj : result) {
                     if (obj instanceof TLRPC.User) {
                         TLRPC.User user = (TLRPC.User) obj;
@@ -313,6 +319,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
             queryServerSearch(null);
             notifyDataSetChanged();
         } else {
+            final int searchId = ++lastSearchId;
             searchTimer = new Timer();
             searchTimer.schedule(new TimerTask() {
                 @Override
@@ -323,7 +330,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
                     }
-                    searchDialogsInternal(query, serverOnly);
+                    searchDialogsInternal(query, serverOnly, searchId);
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {

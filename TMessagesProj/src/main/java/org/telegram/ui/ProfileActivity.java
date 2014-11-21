@@ -1125,11 +1125,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
         } else if (chat_id != 0) {
             ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
-            item.addSubItem(edit_name, LocaleController.getString("EditName", R.string.EditName), 0);
             if (chat_id > 0) {
                 item.addSubItem(add_member, LocaleController.getString("AddMember", R.string.AddMember), 0);
+                item.addSubItem(edit_name, LocaleController.getString("EditName", R.string.EditName), 0);
                 item.addSubItem(leave_group, LocaleController.getString("DeleteAndExit", R.string.DeleteAndExit), 0);
             } else {
+                item.addSubItem(edit_name, LocaleController.getString("EditName", R.string.EditName), 0);
                 item.addSubItem(add_member, LocaleController.getString("AddRecipient", R.string.AddRecipient), 0);
             }
         }

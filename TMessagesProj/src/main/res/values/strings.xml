@@ -106,7 +106,7 @@
     <string name="SaveToDownloads">Save to downloads</string>
     <string name="ApplyLocalizationFile">Apply localization file</string>
     <string name="UnsupportedAttachment">Unsupported attachment</string>
-    <string name="SetTimer">Set timer</string>
+    <string name="SetTimer">Set self-destruct timer</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
@@ -147,7 +147,7 @@
     <string name="SelectContact">Select Contact</string>
     <string name="NoContacts">No contacts yet</string>
     <string name="InviteText">Hey, let\'s switch to Telegram: http://telegram.org/dl2</string>
-    <string name="TodayAt">at</string>
+    <string name="TodayAt">today at</string>
     <string name="YesterdayAt">yesterday at</string>
     <string name="Online">online</string>
     <string name="LastSeen">last seen</string>
@@ -277,6 +277,7 @@
     <string name="NotificationsPriorityLow">Low</string>
     <string name="NotificationsPriorityHigh">High</string>
     <string name="NotificationsPriorityMax">Max</string>
+    <string name="RepeatNotifications">Repeat Notifications</string>
     <!--media view-->
     <string name="NoMedia">No shared media yet</string>
     <!--map view-->

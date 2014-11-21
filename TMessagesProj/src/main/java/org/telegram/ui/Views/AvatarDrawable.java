@@ -44,6 +44,7 @@ public class AvatarDrawable extends Drawable {
     private StaticLayout textLayout;
     private float textWidth;
     private float textHeight;
+    private float textLeft;
     private boolean isProfile;
     private boolean drawBrodcast;
     private boolean drawPhoto;
@@ -168,6 +169,7 @@ public class AvatarDrawable extends Drawable {
             try {
                 textLayout = new StaticLayout(text, namePaint, AndroidUtilities.dp(100), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                 if (textLayout.getLineCount() > 0) {
+                    textLeft = textLayout.getLineLeft(0);
                     textWidth = textLayout.getLineWidth(0);
                     textHeight = textLayout.getLineBottom(0);
                 }
@@ -205,7 +207,7 @@ public class AvatarDrawable extends Drawable {
             broadcastDrawable.draw(canvas);
         } else {
             if (textLayout != null) {
-                canvas.translate((size - textWidth) / 2, (size - textHeight) / 2);
+                canvas.translate((size - textWidth) / 2 - textLeft, (size - textHeight) / 2);
                 textLayout.draw(canvas);
             } else if (drawPhoto && photoDrawable != null) {
                 int x = (size - photoDrawable.getIntrinsicWidth()) / 2;

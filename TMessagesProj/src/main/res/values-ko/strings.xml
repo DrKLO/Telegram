@@ -106,6 +106,7 @@
     <string name="SaveToDownloads">다운로드 폴더에 저장</string>
     <string name="ApplyLocalizationFile">언어 파일 적용</string>
     <string name="UnsupportedAttachment">지원하지 않는 형식입니다</string>
+    <string name="SetTimer">자동삭제 타이머 설정</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s님이 자동삭제를 %2$s 후로 설정했습니다</string>
     <string name="MessageLifetimeChangedOutgoing">자동삭제를 %1$s 후로 설정했습니다</string>
@@ -143,7 +144,6 @@
     <string name="ReplyToUser">%1$s님에게 답장하기</string>
     <string name="NotificationMessagesPeopleDisplayOrder">%2$s %1$s</string>
     <!--contacts view-->
-    <string name="NewMessageTitle">새 메시지</string>
     <string name="SelectContact">대화상대 선택</string>
     <string name="NoContacts">대화상대가 없습니다</string>
     <string name="InviteText">텔레그램으로 초대합니다! http://telegram.org/dl2</string>
@@ -158,6 +158,7 @@
     <string name="WithinAWeek">일주일 이내 마지막으로 접속</string>
     <string name="WithinAMonth">한 달 이내 마지막으로 접속</string>
     <string name="ALongTimeAgo">마지막으로 접속한 지 오래됨</string>
+    <string name="NewMessageTitle">새 메시지</string>
     <!--group create view-->
     <string name="SendMessageTo">메시지 보내기...</string>
     <string name="EnterGroupNamePlaceholder">그룹 이름 입력</string>
@@ -271,6 +272,12 @@
     <string name="NoMediaAutoDownload">다운로드 안함</string>
     <string name="SaveToGallerySettings">앨범에 자동 저장</string>
     <string name="EditName">이름 편집</string>
+    <string name="NotificationsPriority">우선순위</string>
+    <string name="NotificationsPriorityDefault">기본</string>
+    <string name="NotificationsPriorityLow">낮음</string>
+    <string name="NotificationsPriorityHigh">높음</string>
+    <string name="NotificationsPriorityMax">최우선</string>
+    <string name="RepeatNotifications">Repeat Notifications</string>
     <!--media view-->
     <string name="NoMedia">공유한 미디어가 없습니다</string>
     <!--map view-->

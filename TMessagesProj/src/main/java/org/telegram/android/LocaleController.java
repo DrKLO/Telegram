@@ -791,6 +791,11 @@ public class LocaleController {
                 user.status.expires = -102;
             }
         }
+        if (user != null && user.status != null && user.status.expires <= 0) {
+            if (MessagesController.getInstance().onlinePrivacy.containsKey(user.id)) {
+                return getString("Online", R.string.Online);
+            }
+        }
         if (user == null || user.status == null || user.status.expires == 0 || user instanceof TLRPC.TL_userDeleted || user instanceof TLRPC.TL_userEmpty) {
             return getString("ALongTimeAgo", R.string.ALongTimeAgo);
         } else {

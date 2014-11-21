@@ -17,6 +17,7 @@ import android.content.SharedPreferences;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -60,6 +61,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     private int messageSoundRow;
     private int messageLedRow;
     private int messagePopupNotificationRow;
+    private int messagePriorityRow;
     private int groupSectionRow2;
     private int groupSectionRow;
     private int groupAlertRow;
@@ -68,11 +70,13 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     private int groupSoundRow;
     private int groupLedRow;
     private int groupPopupNotificationRow;
+    private int groupPriorityRow;
     private int inappSectionRow2;
     private int inappSectionRow;
     private int inappSoundRow;
     private int inappVibrateRow;
     private int inappPreviewRow;
+    private int inappPriorityRow;
     private int eventsSectionRow2;
     private int eventsSectionRow;
     private int contactJoinedRow;
@@ -80,6 +84,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     private int otherSectionRow;
     private int badgeNumberRow;
     private int pebbleAlertRow;
+    private int repeatRow;
     private int resetSectionRow2;
     private int resetSectionRow;
     private int resetNotificationsRow;
@@ -96,6 +101,11 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         messageVibrateRow = rowCount++;
         messagePopupNotificationRow = rowCount++;
         messageSoundRow = rowCount++;
+        if (Build.VERSION.SDK_INT >= 21) {
+            messagePriorityRow = rowCount++;
+        } else {
+            messagePriorityRow = -1;
+        }
         groupSectionRow2 = rowCount++;
         groupSectionRow = rowCount++;
         groupAlertRow = rowCount++;
@@ -104,11 +114,21 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         groupVibrateRow = rowCount++;
         groupPopupNotificationRow = rowCount++;
         groupSoundRow = rowCount++;
+        if (Build.VERSION.SDK_INT >= 21) {
+            groupPriorityRow = rowCount++;
+        } else {
+            groupPriorityRow = -1;
+        }
         inappSectionRow2 = rowCount++;
         inappSectionRow = rowCount++;
         inappSoundRow = rowCount++;
         inappVibrateRow = rowCount++;
         inappPreviewRow = rowCount++;
+        if (Build.VERSION.SDK_INT >= 21) {
+            inappPriorityRow = rowCount++;
+        } else {
+            inappPriorityRow = -1;
+        }
         eventsSectionRow2 = rowCount++;
         eventsSectionRow = rowCount++;
         contactJoinedRow = rowCount++;
@@ -116,6 +136,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         otherSectionRow = rowCount++;
         badgeNumberRow = rowCount++;
         pebbleAlertRow = rowCount++;
+        repeatRow = rowCount++;
         resetSectionRow2 = rowCount++;
         resetSectionRow = rowCount++;
         resetNotificationsRow = rowCount++;
@@ -273,6 +294,12 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         enabled = preferences.getBoolean("EnableInAppPreview", true);
                         editor.putBoolean("EnableInAppPreview", !enabled);
                         editor.commit();
+                    } else if (i == inappPriorityRow) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        enabled = preferences.getBoolean("EnableInAppPriority", false);
+                        editor.putBoolean("EnableInAppPriority", !enabled);
+                        editor.commit();
                     } else if (i == contactJoinedRow) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
@@ -422,6 +449,66 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                                     editor.putInt(param, 3);
                                 }
                                 editor.commit();
+                                if (listView != null) {
+                                    listView.invalidateViews();
+                                }
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showAlertDialog(builder);
+                    } else if (i == messagePriorityRow || i == groupPriorityRow) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority));
+                        builder.setItems(new CharSequence[] {
+                                LocaleController.getString("NotificationsPriorityDefault", R.string.NotificationsPriorityDefault),
+                                LocaleController.getString("NotificationsPriorityHigh", R.string.NotificationsPriorityHigh),
+                                LocaleController.getString("NotificationsPriorityMax", R.string.NotificationsPriorityMax)
+                        }, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                if (i == messagePriorityRow) {
+                                    preferences.edit().putInt("priority_messages", which).commit();
+                                } else if (i == groupPriorityRow) {
+                                    preferences.edit().putInt("priority_group", which).commit();
+                                }
+                                if (listView != null) {
+                                    listView.invalidateViews();
+                                }
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showAlertDialog(builder);
+                    } else if (i == repeatRow) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("RepeatNotifications", R.string.RepeatNotifications));
+                        builder.setItems(new CharSequence[] {
+                                LocaleController.getString("ShortMessageLifetimeForever", R.string.ShortMessageLifetimeForever),
+                                LocaleController.formatPluralString("Minutes", 5),
+                                LocaleController.formatPluralString("Minutes", 10),
+                                LocaleController.formatPluralString("Minutes", 30),
+                                LocaleController.formatPluralString("Hours", 1),
+                                LocaleController.formatPluralString("Hours", 2),
+                                LocaleController.formatPluralString("Hours", 4)
+                        }, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                int minutes = 0;
+                                if (which == 1) {
+                                    minutes = 5;
+                                } else if (which == 2) {
+                                    minutes = 10;
+                                } else if (which == 3) {
+                                    minutes = 30;
+                                } else if (which == 4) {
+                                    minutes = 60;
+                                } else if (which == 5) {
+                                    minutes = 60 * 2;
+                                } else if (which == 6) {
+                                    minutes = 60 * 4;
+                                }
+                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                preferences.edit().putInt("repeat_messages", minutes).commit();
                                 if (listView != null) {
                                     listView.invalidateViews();
                                 }
@@ -597,11 +684,13 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 } else if (i == inappVibrateRow) {
                     checkCell.setTextAndCheck(LocaleController.getString("InAppVibrate", R.string.InAppVibrate), preferences.getBoolean("EnableInAppVibrate", true), true);
                 } else if (i == inappPreviewRow) {
-                    checkCell.setTextAndCheck(LocaleController.getString("InAppPreview", R.string.InAppPreview), preferences.getBoolean("EnableInAppPreview", true), false);
+                    checkCell.setTextAndCheck(LocaleController.getString("InAppPreview", R.string.InAppPreview), preferences.getBoolean("EnableInAppPreview", true), true);
+                } else if (i == inappPriorityRow) {
+                    checkCell.setTextAndCheck(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), preferences.getBoolean("EnableInAppPriority", false), false);
                 } else if (i == contactJoinedRow) {
                     checkCell.setTextAndCheck(LocaleController.getString("ContactJoined", R.string.ContactJoined), preferences.getBoolean("EnableContactJoined", true), false);
                 } else if (i == pebbleAlertRow) {
-                    checkCell.setTextAndCheck(LocaleController.getString("Pebble", R.string.Pebble), preferences.getBoolean("EnablePebbleNotifications", false), false);
+                    checkCell.setTextAndCheck(LocaleController.getString("Pebble", R.string.Pebble), preferences.getBoolean("EnablePebbleNotifications", false), true);
                 } else if (i == notificationsServiceRow) {
                     checkCell.setTextAndCheck(LocaleController.getString("NotificationsService", R.string.NotificationsService), preferences.getBoolean("pushService", true), false);
                 } else if (i == badgeNumberRow) {
@@ -627,7 +716,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     if (value.equals("NoSound")) {
                         value = LocaleController.getString("NoSound", R.string.NoSound);
                     }
-                    textCell.setTextAndValue(LocaleController.getString("Sound", R.string.Sound), value, false);
+                    textCell.setTextAndValue(LocaleController.getString("Sound", R.string.Sound), value, true);
                 } else if (i == resetNotificationsRow) {
                     textCell.setMultilineDetail(true);
                     textCell.setTextAndValue(LocaleController.getString("ResetAllNotifications", R.string.ResetAllNotifications), LocaleController.getString("UndoAllCustom", R.string.UndoAllCustom), false);
@@ -667,6 +756,33 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     } else if (value == 3) {
                         textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("Long", R.string.Long), true);
                     }
+                } else if (i == repeatRow) {
+                    textCell.setMultilineDetail(false);
+                    int minutes = preferences.getInt("repeat_messages", 60);
+                    String value;
+                    if (minutes == 0) {
+                        value = LocaleController.getString("ShortMessageLifetimeForever", R.string.ShortMessageLifetimeForever);
+                    } else if (minutes < 60) {
+                        value = LocaleController.formatPluralString("Minutes", minutes);
+                    } else {
+                        value = LocaleController.formatPluralString("Hours", minutes / 60);
+                    }
+                    textCell.setTextAndValue(LocaleController.getString("RepeatNotifications", R.string.RepeatNotifications), value, false);
+                } else if (i == messagePriorityRow || i == groupPriorityRow) {
+                    textCell.setMultilineDetail(false);
+                    int value = 0;
+                    if (i == messagePriorityRow) {
+                        value = preferences.getInt("priority_messages", 1);
+                    } else if (i == groupPriorityRow) {
+                        value = preferences.getInt("priority_group", 1);
+                    }
+                    if (value == 0) {
+                        textCell.setTextAndValue(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), LocaleController.getString("NotificationsPriorityDefault", R.string.NotificationsPriorityDefault), false);
+                    } else if (value == 1) {
+                        textCell.setTextAndValue(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), LocaleController.getString("NotificationsPriorityHigh", R.string.NotificationsPriorityHigh), false);
+                    } else if (value == 2) {
+                        textCell.setTextAndValue(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), LocaleController.getString("NotificationsPriorityMax", R.string.NotificationsPriorityMax), false);
+                    }
                 }
             } else if (type == 3) {
                 if (view == null) {
@@ -697,7 +813,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
             } else if (i == messageAlertRow || i == messagePreviewRow || i == groupAlertRow ||
                     i == groupPreviewRow || i == inappSoundRow || i == inappVibrateRow ||
                     i == inappPreviewRow || i == contactJoinedRow || i == pebbleAlertRow ||
-                    i == notificationsServiceRow || i == badgeNumberRow) {
+                    i == notificationsServiceRow || i == badgeNumberRow || i == inappPriorityRow) {
                 return 1;
             } else if (i == messageLedRow || i == groupLedRow) {
                 return 3;

@@ -106,6 +106,7 @@
     <string name="SaveToDownloads">Opslaan in Downloads</string>
     <string name="ApplyLocalizationFile">Vertaling toepassen</string>
     <string name="UnsupportedAttachment">Bestandstype niet ondersteund</string>
+    <string name="SetTimer">Zelfvernietigingstimer instellen</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s heeft de zelfvernietigingstimer ingesteld op %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Je hebt de zelfvernietigingstimer ingesteld op %1$s</string>
@@ -143,7 +144,6 @@
     <string name="ReplyToUser">Antwoord op %1$s</string>
     <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
     <!--contacts view-->
-    <string name="NewMessageTitle">Nieuw bericht</string>
     <string name="SelectContact">Kies een contact</string>
     <string name="NoContacts">Nog geen contacten</string>
     <string name="InviteText">Hey! Zullen we overstappen op Telegram? http://telegram.org/dl2</string>
@@ -158,6 +158,7 @@
     <string name="WithinAWeek">afgelopen week gezien</string>
     <string name="WithinAMonth">afgelopen maand gezien</string>
     <string name="ALongTimeAgo">lang geleden gezien</string>
+    <string name="NewMessageTitle">Nieuw bericht</string>
     <!--group create view-->
     <string name="SendMessageTo">Bericht verzenden naar…</string>
     <string name="EnterGroupNamePlaceholder">Groepsnaam...</string>
@@ -271,6 +272,12 @@
     <string name="NoMediaAutoDownload">Geen media</string>
     <string name="SaveToGallerySettings">Opslaan in galerij</string>
     <string name="EditName">Naam bewerken</string>
+    <string name="NotificationsPriority">Prioriteit</string>
+    <string name="NotificationsPriorityDefault">Standaard</string>
+    <string name="NotificationsPriorityLow">Laag</string>
+    <string name="NotificationsPriorityHigh">Hoog</string>
+    <string name="NotificationsPriorityMax">Max</string>
+    <string name="RepeatNotifications">Meldingen herhalen</string>
     <!--media view-->
     <string name="NoMedia">Nog geen media gedeeld</string>
     <!--map view-->
@@ -392,11 +399,11 @@
     <string name="AreYouSureLogout">Weet je zeker dat je wilt uitloggen?\n\nTelegram kun je naadloos op al je apparaten tegelijkertijd gebruiken.\n\nLet op! Als je uitlogt worden al je geheime chats verwijderd.</string>
     <string name="AreYouSureSessions">Alle apparaten behalve het huidige apparaat uitloggen?</string>
     <string name="AreYouSureDeleteAndExit">Echt alles verwijderen en de groep verlaten?</string>
-    <string name="AreYouSureDeleteThisChat">Weet je zeker dat je dit gesprek wilt verwijderen?</string>
+    <string name="AreYouSureDeleteThisChat">Gesprek echt verwijderen?</string>
     <string name="AreYouSureShareMyContactInfo">Weet je zeker dat je je contactinformatie wilt delen?</string>
     <string name="AreYouSureBlockContact">Weet je zeker dat je deze persoon wilt blokkeren?</string>
     <string name="AreYouSureUnblockContact">Weet je zeker dat je deze persoon wilt deblokkeren?</string>
-    <string name="AreYouSureDeleteContact">Weet je zeker dat je deze contactpersoon wilt verwijderen?</string>
+    <string name="AreYouSureDeleteContact">Contactpersoon echt verwijderen?</string>
     <string name="AreYouSureSecretChat">Weet je zeker dat je een geheime chat wilt starten?</string>
     <string name="AreYouSureRegistration">Weet je zeker dat je de registratie wilt annuleren?</string>
     <string name="AreYouSureClearHistory">Geschiedenis echt wissen? </string>

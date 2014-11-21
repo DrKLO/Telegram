@@ -106,6 +106,7 @@
     <string name="SaveToDownloads">Guardar en descargas</string>
     <string name="ApplyLocalizationFile">Aplicar traducción</string>
     <string name="UnsupportedAttachment">Adjunto no soportado</string>
+    <string name="SetTimer">Establecer autodestrucción</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s activó la autodestrucción en %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Activaste la autodestrucción en %1$s</string>
@@ -143,7 +144,6 @@
     <string name="ReplyToUser">Responder a %1$s</string>
     <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
     <!--contacts view-->
-    <string name="NewMessageTitle">Nuevo mensaje</string>
     <string name="SelectContact">Elegir contacto</string>
     <string name="NoContacts">Aún sin contactos</string>
     <string name="InviteText">Oye, cambiémonos a Telegram: http://telegram.org/dl2</string>
@@ -158,6 +158,7 @@
     <string name="WithinAWeek">últ. vez hace unos días</string>
     <string name="WithinAMonth">últ. vez hace unas semanas</string>
     <string name="ALongTimeAgo">últ. vez hace mucho tiempo</string>
+    <string name="NewMessageTitle">Nuevo mensaje</string>
     <!--group create view-->
     <string name="SendMessageTo">Enviar mensaje a...</string>
     <string name="EnterGroupNamePlaceholder">Nombre del grupo</string>
@@ -271,6 +272,12 @@
     <string name="NoMediaAutoDownload">Ningún contenido multimedia</string>
     <string name="SaveToGallerySettings">Guardar en galería</string>
     <string name="EditName">Editar nombre</string>
+    <string name="NotificationsPriority">Prioridad</string>
+    <string name="NotificationsPriorityDefault">Por defecto</string>
+    <string name="NotificationsPriorityLow">Baja</string>
+    <string name="NotificationsPriorityHigh">Alta</string>
+    <string name="NotificationsPriorityMax">Máxima</string>
+    <string name="RepeatNotifications">Repetir notificaciones</string>
     <!--media view-->
     <string name="NoMedia">Aún no hay fotos ni vídeos</string>
     <!--map view-->

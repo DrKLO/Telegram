@@ -106,6 +106,7 @@
     <string name="SaveToDownloads">Salvar em downloads</string>
     <string name="ApplyLocalizationFile">Aplicar arquivo de localização</string>
     <string name="UnsupportedAttachment">Anexo não suportado</string>
+    <string name="SetTimer">Tempo de autodestruição</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s estabeleceu o tempo de autodestruição para %2$s </string>
     <string name="MessageLifetimeChangedOutgoing">Você estabeleceu o tempo de autodestruição para %1$s</string>
@@ -143,7 +144,6 @@
     <string name="ReplyToUser">Responder para %1$s</string>
     <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
     <!--contacts view-->
-    <string name="NewMessageTitle">Nova Mensagem</string>
     <string name="SelectContact">Selecionar Contato</string>
     <string name="NoContacts">Ainda não há contatos</string>
     <string name="InviteText">Ei, vamos mudar para o Telegram: http://telegram.org/dl2</string>
@@ -158,6 +158,7 @@
     <string name="WithinAWeek">visto na última semana</string>
     <string name="WithinAMonth">visto no último mês</string>
     <string name="ALongTimeAgo">visto há muito tempo atrás</string>
+    <string name="NewMessageTitle">Nova Mensagem</string>
     <!--group create view-->
     <string name="SendMessageTo">Enviar mensagem para...</string>
     <string name="EnterGroupNamePlaceholder">Digite o nome do grupo</string>
@@ -271,6 +272,12 @@
     <string name="NoMediaAutoDownload">Sem mídia</string>
     <string name="SaveToGallerySettings">Salvar na galeria</string>
     <string name="EditName">Editar nome</string>
+    <string name="NotificationsPriority">Priority</string>
+    <string name="NotificationsPriorityDefault">Default</string>
+    <string name="NotificationsPriorityLow">Low</string>
+    <string name="NotificationsPriorityHigh">High</string>
+    <string name="NotificationsPriorityMax">Max</string>
+    <string name="RepeatNotifications">Repeat Notifications</string>
     <!--media view-->
     <string name="NoMedia">Ainda não há mídia compartilhada</string>
     <!--map view-->

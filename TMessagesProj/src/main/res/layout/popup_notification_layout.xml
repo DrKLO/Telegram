@@ -60,7 +60,7 @@
                         android:layout_marginLeft="52dp"
                         android:layout_marginRight="2dp"
                         android:background="@null"
-                        android:layout_marginBottom="12dp"
+                        android:paddingBottom="12dp"
                         android:paddingTop="11dp"
                         android:textCursorDrawable="@null"
                         android:textColor="#000000"/>

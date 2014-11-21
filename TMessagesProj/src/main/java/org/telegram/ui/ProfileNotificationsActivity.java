@@ -17,6 +17,7 @@ import android.content.SharedPreferences;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.LayoutInflater;
@@ -53,6 +54,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
     private int settingsNotificationsRow;
     private int settingsVibrateRow;
     private int settingsSoundRow;
+    private int settingsPriorityRow;
     private int settingsLedRow;
     private int rowCount = 0;
 
@@ -66,6 +68,11 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
         settingsNotificationsRow = rowCount++;
         settingsVibrateRow = rowCount++;
         settingsSoundRow = rowCount++;
+        if (Build.VERSION.SDK_INT >= 21) {
+            settingsPriorityRow = rowCount++;
+        } else {
+            settingsPriorityRow = -1;
+        }
         settingsLedRow = rowCount++;
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.notificationsSettingsUpdated);
         return super.onFragmentCreate();
@@ -253,6 +260,31 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                             }
                         });
                         showAlertDialog(builder);
+                    } else if (i == settingsPriorityRow) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority));
+                        builder.setItems(new CharSequence[] {
+                                LocaleController.getString("SettingsDefault", R.string.SettingsDefault),
+                                LocaleController.getString("NotificationsPriorityDefault", R.string.NotificationsPriorityDefault),
+                                LocaleController.getString("NotificationsPriorityHigh", R.string.NotificationsPriorityHigh),
+                                LocaleController.getString("NotificationsPriorityMax", R.string.NotificationsPriorityMax)
+                        }, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                if (which == 0) {
+                                    which = 3;
+                                } else {
+                                    which--;
+                                }
+                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                preferences.edit().putInt("priority_" + dialog_id, which).commit();
+                                if (listView != null) {
+                                    listView.invalidateViews();
+                                }
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showAlertDialog(builder);
                     }
                 }
             });
@@ -425,6 +457,17 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         value = LocaleController.getString("NoSound", R.string.NoSound);
                     }
                     textCell.setTextAndValue(LocaleController.getString("Sound", R.string.Sound), value, true);
+                } else if (i == settingsPriorityRow) {
+                    int value = preferences.getInt("priority_" + dialog_id, 3);
+                    if (value == 0) {
+                        textCell.setTextAndValue(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), LocaleController.getString("NotificationsPriorityDefault", R.string.NotificationsPriorityDefault), true);
+                    } else if (value == 1) {
+                        textCell.setTextAndValue(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), LocaleController.getString("NotificationsPriorityHigh", R.string.NotificationsPriorityHigh), true);
+                    } else if (value == 2) {
+                        textCell.setTextAndValue(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), LocaleController.getString("NotificationsPriorityMax", R.string.NotificationsPriorityMax), true);
+                    } else if (value == 3) {
+                        textCell.setTextAndValue(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), LocaleController.getString("SettingsDefault", R.string.SettingsDefault), true);
+                    }
                 }
             } else if (type == 1) {
                 if (view == null) {
@@ -450,7 +493,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
 
         @Override
         public int getItemViewType(int i) {
-            if (i == settingsNotificationsRow || i == settingsVibrateRow || i == settingsSoundRow) {
+            if (i == settingsNotificationsRow || i == settingsVibrateRow || i == settingsSoundRow || i == settingsPriorityRow) {
                 return 0;
             } else if (i == settingsLedRow) {
                 return 1;

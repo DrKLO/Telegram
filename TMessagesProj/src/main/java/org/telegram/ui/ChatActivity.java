@@ -574,7 +574,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             @Override
                             public void didSelectFile(DocumentSelectActivity activity, String path) {
                                 activity.finishFragment();
-                                SendMessagesHelper.prepareSendingDocument(path, path, dialog_id);
+                                SendMessagesHelper.prepareSendingDocument(path, path, null, null, dialog_id);
                             }
 
                             @Override
@@ -854,7 +854,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 addContactItem = headerItem.addSubItem(share_contact, "", 0);
             }
             if (currentEncryptedChat != null) {
-                timeItem2 = headerItem.addSubItem(chat_enc_timer, LocaleController.getString("MessageLifetime", R.string.MessageLifetime), 0);
+                timeItem2 = headerItem.addSubItem(chat_enc_timer, LocaleController.getString("SetTimer", R.string.SetTimer), 0);
             }
             headerItem.addSubItem(clear_history, LocaleController.getString("ClearHistory", R.string.ClearHistory), 0);
             if (currentChat != null && !isBroadcast) {
@@ -957,14 +957,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             } else {
                 chatListView.setCacheColorHint(0);
                 try {
-                    if (selectedBackground == 1000001) {
-                        ((SizeNotifierRelativeLayout) contentView).setBackgroundImage(R.drawable.background_hd);
+                    if (ApplicationLoader.cachedWallpaper != null) {
+                        isCustomTheme = selectedBackground != 1000001;
+                        ((SizeNotifierRelativeLayout) contentView).setBackgroundImage(ApplicationLoader.cachedWallpaper);
                     } else {
-                        File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
-                        if (toFile.exists()) {
-                            if (ApplicationLoader.cachedWallpaper != null) {
-                                ((SizeNotifierRelativeLayout) contentView).setBackgroundImage(ApplicationLoader.cachedWallpaper);
-                            } else {
+                        if (selectedBackground == 1000001) {
+                            ((SizeNotifierRelativeLayout) contentView).setBackgroundImage(R.drawable.background_hd);
+                            ApplicationLoader.cachedWallpaper = ((SizeNotifierRelativeLayout) contentView).getBackgroundImage();
+                        } else {
+                            File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
+                            if (toFile.exists()) {
                                 Drawable drawable = Drawable.createFromPath(toFile.getAbsolutePath());
                                 if (drawable != null) {
                                     ((SizeNotifierRelativeLayout) contentView).setBackgroundImage(drawable);
@@ -973,10 +975,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     contentView.setBackgroundColor(-2693905);
                                     chatListView.setCacheColorHint(-2693905);
                                 }
+                                isCustomTheme = true;
+                            } else {
+                                ((SizeNotifierRelativeLayout) contentView).setBackgroundImage(R.drawable.background_hd);
+                                ApplicationLoader.cachedWallpaper = ((SizeNotifierRelativeLayout) contentView).getBackgroundImage();
+                                isCustomTheme = false;
                             }
-                            isCustomTheme = true;
-                        } else {
-                            ((SizeNotifierRelativeLayout) contentView).setBackgroundImage(R.drawable.background_hd);
                         }
                     }
                 } catch (Throwable e) {
@@ -1792,7 +1796,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     showAttachmentError();
                     return;
                 }
-                SendMessagesHelper.prepareSendingDocument(tempPath, originalPath, dialog_id);
+                SendMessagesHelper.prepareSendingDocument(tempPath, originalPath, null, null, dialog_id);
             }
         }
     }

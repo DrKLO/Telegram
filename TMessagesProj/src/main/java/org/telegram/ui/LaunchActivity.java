@@ -65,6 +65,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     private String sendingText;
     private ArrayList<Uri> photoPathsArray;
     private ArrayList<String> documentsPathsArray;
+    private ArrayList<Uri> documentsUrisArray;
+    private String documentsMimeType;
     private ArrayList<String> documentsOriginalPathsArray;
     private ArrayList<TLRPC.User> contactsToSend;
     private int currentConnectionState;
@@ -375,6 +377,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         sendingText = null;
         documentsPathsArray = null;
         documentsOriginalPathsArray = null;
+        documentsMimeType = null;
+        documentsUrisArray = null;
         contactsToSend = null;
 
         if ((intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0) {
@@ -501,7 +505,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                     documentsOriginalPathsArray.add(uri.toString());
                                 }
                             } else {
-                                error = true;
+                                if (documentsUrisArray == null) {
+                                    documentsUrisArray = new ArrayList<Uri>();
+                                }
+                                documentsUrisArray.add(uri);
+                                documentsMimeType = type;
                             }
                         }
                         if (error) {
@@ -628,7 +636,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             pushOpened = false;
             isNew = false;
         }
-        if (videoPath != null || photoPathsArray != null || sendingText != null || documentsPathsArray != null || contactsToSend != null) {
+        if (videoPath != null || photoPathsArray != null || sendingText != null || documentsPathsArray != null || contactsToSend != null || documentsUrisArray != null) {
             if (!AndroidUtilities.isTablet()) {
                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
             }
@@ -753,8 +761,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 if (photoPathsArray != null) {
                     SendMessagesHelper.prepareSendingPhotos(null, photoPathsArray, dialog_id);
                 }
-                if (documentsPathsArray != null) {
-                    SendMessagesHelper.prepareSendingDocuments(documentsPathsArray, documentsOriginalPathsArray, dialog_id);
+                if (documentsPathsArray != null || documentsUrisArray != null) {
+                    SendMessagesHelper.prepareSendingDocuments(documentsPathsArray, documentsOriginalPathsArray, documentsUrisArray, documentsMimeType, dialog_id);
                 }
                 if (contactsToSend != null && !contactsToSend.isEmpty()) {
                     for (TLRPC.User user : contactsToSend) {
@@ -1095,16 +1103,26 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
-        if (AndroidUtilities.isTablet()) {
-            if (layersActionBarLayout.getVisibility() == View.VISIBLE && !layersActionBarLayout.fragmentsStack.isEmpty()) {
-                layersActionBarLayout.onKeyUp(keyCode, event);
-            } else if (rightActionBarLayout.getVisibility() == View.VISIBLE && !rightActionBarLayout.fragmentsStack.isEmpty()) {
-                rightActionBarLayout.onKeyUp(keyCode, event);
+        if (keyCode == KeyEvent.KEYCODE_MENU) {
+            if (AndroidUtilities.isTablet()) {
+                if (layersActionBarLayout.getVisibility() == View.VISIBLE && !layersActionBarLayout.fragmentsStack.isEmpty()) {
+                    layersActionBarLayout.onKeyUp(keyCode, event);
+                } else if (rightActionBarLayout.getVisibility() == View.VISIBLE && !rightActionBarLayout.fragmentsStack.isEmpty()) {
+                    rightActionBarLayout.onKeyUp(keyCode, event);
+                } else {
+                    actionBarLayout.onKeyUp(keyCode, event);
+                }
             } else {
-                actionBarLayout.onKeyUp(keyCode, event);
+                if (actionBarLayout.fragmentsStack.size() == 1) {
+                    if (!drawerLayoutContainer.isDrawerOpened()) {
+                        drawerLayoutContainer.openDrawer(false);
+                    } else {
+                        drawerLayoutContainer.closeDrawer(false);
+                    }
+                } else {
+                    actionBarLayout.onKeyUp(keyCode, event);
+                }
             }
-        } else {
-            actionBarLayout.onKeyUp(keyCode, event);
         }
         return super.onKeyUp(keyCode, event);
     }
