@@ -18,6 +18,8 @@ import android.view.ViewTreeObserver;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 
+import org.telegram.messenger.FileLog;
+
 import java.lang.reflect.Field;
 
 public class ActionBarPopupWindow extends PopupWindow {
@@ -157,8 +159,12 @@ public class ActionBarPopupWindow extends PopupWindow {
 
     @Override
     public void showAsDropDown(View anchor, int xoff, int yoff) {
-        super.showAsDropDown(anchor, xoff, yoff);
-        registerListener(anchor);
+        try {
+            super.showAsDropDown(anchor, xoff, yoff);
+            registerListener(anchor);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     @Override

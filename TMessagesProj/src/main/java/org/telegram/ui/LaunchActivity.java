@@ -386,7 +386,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 if (Intent.ACTION_SEND.equals(intent.getAction())) {
                     boolean error = false;
                     String type = intent.getType();
-                    if (type != null && type.equals("text/plain")) {
+                    if (type != null && type.equals("text/plain") && intent.getStringExtra(Intent.EXTRA_TEXT) != null) {
                         String text = intent.getStringExtra(Intent.EXTRA_TEXT);
                         String subject = intent.getStringExtra(Intent.EXTRA_SUBJECT);
 
@@ -950,6 +950,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @SuppressWarnings("unchecked")
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.appDidLogout) {
+            if (drawerLayoutAdapter != null) {
+                drawerLayoutAdapter.notifyDataSetChanged();
+            }
             for (BaseFragment fragment : actionBarLayout.fragmentsStack) {
                 fragment.onFragmentDestroy();
             }

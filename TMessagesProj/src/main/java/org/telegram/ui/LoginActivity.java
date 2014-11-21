@@ -778,23 +778,27 @@ public class LoginActivity extends BaseFragment {
 
         private void updatePhoneField() {
             ignoreOnPhoneChange = true;
-            String codeText = codeField.getText().toString();
-            String phone = PhoneFormat.getInstance().format("+" + codeText + phoneField.getText().toString());
-            int idx = phone.indexOf(" ");
-            if (idx != -1) {
-                String resultCode = PhoneFormat.stripExceptNumbers(phone.substring(0, idx));
-                if (!codeText.equals(resultCode)) {
-                    phone = PhoneFormat.getInstance().format(phoneField.getText().toString()).trim();
-                    phoneField.setText(phone);
-                    int len = phoneField.length();
-                    phoneField.setSelection(phoneField.length());
+            try {
+                String codeText = codeField.getText().toString();
+                String phone = PhoneFormat.getInstance().format("+" + codeText + phoneField.getText().toString());
+                int idx = phone.indexOf(" ");
+                if (idx != -1) {
+                    String resultCode = PhoneFormat.stripExceptNumbers(phone.substring(0, idx));
+                    if (!codeText.equals(resultCode)) {
+                        phone = PhoneFormat.getInstance().format(phoneField.getText().toString()).trim();
+                        phoneField.setText(phone);
+                        int len = phoneField.length();
+                        phoneField.setSelection(phoneField.length());
+                    } else {
+                        phoneField.setText(phone.substring(idx).trim());
+                        int len = phoneField.length();
+                        phoneField.setSelection(phoneField.length());
+                    }
                 } else {
-                    phoneField.setText(phone.substring(idx).trim());
-                    int len = phoneField.length();
                     phoneField.setSelection(phoneField.length());
                 }
-            } else {
-                phoneField.setSelection(phoneField.length());
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
             }
             ignoreOnPhoneChange = false;
         }

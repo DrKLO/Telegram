@@ -1542,13 +1542,17 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         if (sourceFile.exists()) {
             ProgressDialog progressDialog = null;
             if (context != null) {
-                progressDialog = new ProgressDialog(context);
-                progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
-                progressDialog.setCanceledOnTouchOutside(false);
-                progressDialog.setCancelable(false);
-                progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-                progressDialog.setMax(100);
-                progressDialog.show();
+                try {
+                    progressDialog = new ProgressDialog(context);
+                    progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
+                    progressDialog.setCanceledOnTouchOutside(false);
+                    progressDialog.setCancelable(false);
+                    progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+                    progressDialog.setMax(100);
+                    progressDialog.show();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
             }
 
             final ProgressDialog finalProgress = progressDialog;

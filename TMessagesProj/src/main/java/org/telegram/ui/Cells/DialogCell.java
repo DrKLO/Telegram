@@ -458,6 +458,7 @@ public class DialogCell extends BaseCell {
             }
         }
 
+        nameWidth = Math.max(AndroidUtilities.dp(12), nameWidth);
         CharSequence nameStringFinal = TextUtils.ellipsize(nameString.replace("\n", " "), currentNamePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
         try {
             nameLayout = new StaticLayout(nameStringFinal, currentNamePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
@@ -510,9 +511,13 @@ public class DialogCell extends BaseCell {
             }
             messageString = Emoji.replaceEmoji(mess, messagePaint.getFontMetricsInt(), AndroidUtilities.dp(17));
         }
-
+        messageWidth = Math.max(AndroidUtilities.dp(12), messageWidth);
         CharSequence messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
-        messageLayout = new StaticLayout(messageStringFinal, currentMessagePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+        try {
+            messageLayout = new StaticLayout(messageStringFinal, currentMessagePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
 
         double widthpx = 0;
         float left = 0;
@@ -526,7 +531,7 @@ public class DialogCell extends BaseCell {
                     }
                 }
             }
-            if (messageLayout.getLineCount() > 0) {
+            if (messageLayout != null && messageLayout.getLineCount() > 0) {
                 left = messageLayout.getLineLeft(0);
                 if (left == 0) {
                     widthpx = Math.ceil(messageLayout.getLineWidth(0));
@@ -545,7 +550,7 @@ public class DialogCell extends BaseCell {
                     }
                 }
             }
-            if (messageLayout.getLineCount() > 0) {
+            if (messageLayout != null && messageLayout.getLineCount() > 0) {
                 left = messageLayout.getLineRight(0);
                 if (left == messageWidth) {
                     widthpx = Math.ceil(messageLayout.getLineWidth(0));
@@ -677,10 +682,12 @@ public class DialogCell extends BaseCell {
         timeLayout.draw(canvas);
         canvas.restore();
 
-        canvas.save();
-        canvas.translate(messageLeft, messageTop);
-        messageLayout.draw(canvas);
-        canvas.restore();
+        if (messageLayout != null) {
+            canvas.save();
+            canvas.translate(messageLeft, messageTop);
+            messageLayout.draw(canvas);
+            canvas.restore();
+        }
 
         if (drawClock) {
             setDrawableBounds(clockDrawable, checkDrawLeft, checkDrawTop);

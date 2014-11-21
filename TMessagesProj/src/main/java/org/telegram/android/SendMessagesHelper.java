@@ -16,6 +16,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
 import android.webkit.MimeTypeMap;
+import android.widget.Toast;
 
 import org.telegram.messenger.BuffersStorage;
 import org.telegram.messenger.ByteBufferDesc;
@@ -23,6 +24,7 @@ import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessageKeyData;
+import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
@@ -1856,9 +1858,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         }
     }
 
-    private static void prepareSendingDocumentInternal(String path, String originalPath, Uri uri, String mime, final long dialog_id) {
+    private static boolean prepareSendingDocumentInternal(String path, String originalPath, Uri uri, String mime, final long dialog_id) {
         if ((path == null || path.length() == 0) && uri == null) {
-            return;
+            return false;
         }
         MimeTypeMap myMime = MimeTypeMap.getSingleton();
         if (uri != null) {
@@ -1870,10 +1872,13 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 extension = "txt";
             }
             path = MediaController.copyDocumentToCache(uri, extension);
+            if (path == null) {
+                return false;
+            }
         }
         final File f = new File(path);
         if (!f.exists() || f.length() == 0) {
-            return;
+            return false;
         }
 
         boolean isEncrypted = (int)dialog_id == 0;
@@ -1938,6 +1943,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 SendMessagesHelper.getInstance().sendMessage(documentFinal, originalPathFinal, pathFinal, dialog_id);
             }
         });
+        return true;
     }
 
     public static void prepareSendingDocument(String path, String originalPath, Uri uri, String mine, long dialog_id) {
@@ -1962,15 +1968,33 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         new Thread(new Runnable() {
             @Override
             public void run() {
+                boolean error = false;
                 if (paths != null) {
                     for (int a = 0; a < paths.size(); a++) {
-                        prepareSendingDocumentInternal(paths.get(a), originalPaths.get(a), null, mime, dialog_id);
+                        if (!prepareSendingDocumentInternal(paths.get(a), originalPaths.get(a), null, mime, dialog_id)) {
+                            error = true;
+                        }
                     }
                 }
                 if (uris != null) {
                     for (int a = 0; a < uris.size(); a++) {
-                        prepareSendingDocumentInternal(null, null, uris.get(a), mime, dialog_id);
+                        if (!prepareSendingDocumentInternal(null, null, uris.get(a), mime, dialog_id)) {
+                            error = true;
+                        }
                     }
+                }
+                if (error) {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                Toast toast = Toast.makeText(ApplicationLoader.applicationContext, LocaleController.getString("UnsupportedAttachment", R.string.UnsupportedAttachment), Toast.LENGTH_SHORT);
+                                toast.show();
+                            } catch (Exception e) {
+                                FileLog.e("tmessages", e);
+                            }
+                        }
+                    });
                 }
             }
         }).start();

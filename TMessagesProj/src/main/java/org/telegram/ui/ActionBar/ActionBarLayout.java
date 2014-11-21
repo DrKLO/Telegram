@@ -567,6 +567,7 @@ public class ActionBarLayout extends FrameLayout {
             containerViewBack.addView(fragment.actionBar);
             fragment.actionBar.setTitleOverlayText(titleOverlayText);
         }
+
         containerViewBack.addView(fragmentView);
         ViewGroup.LayoutParams layoutParams = fragmentView.getLayoutParams();
         layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
@@ -623,6 +624,7 @@ public class ActionBarLayout extends FrameLayout {
                     public void run() {
                         presentFragmentInternalRemoveOld(removeLast, currentFragment);
                         fragment.onOpenAnimationEnd();
+                        ViewProxy.setTranslationX(containerView, 0);
                     }
                 };
                 currentAnimation = new AnimatorSetProxy();

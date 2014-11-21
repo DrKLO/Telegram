@@ -287,10 +287,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                                 SharedPreferences.Editor editor = preferences.edit();
                                 editor.clear().commit();
-                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.appDidLogout);
                                 MessagesController.getInstance().unregistedPush();
                                 MessagesController.getInstance().logOut();
                                 UserConfig.clearConfig();
+                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.appDidLogout);
                                 MessagesStorage.getInstance().cleanUp(false);
                                 MessagesController.getInstance().cleanUp();
                                 ContactsController.getInstance().deleteAllAppAccounts();

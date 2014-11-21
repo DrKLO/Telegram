@@ -1579,14 +1579,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             return;
         }
 
-        actionBar.setTitle(LocaleController.formatString("Of", R.string.Of, 1, 1));
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileDidFailedLoad);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileLoadProgressChanged);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.mediaCountDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.mediaDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.userPhotosLoaded);
-
         try {
             if (windowView.getParent() != null) {
                 WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
@@ -1596,9 +1588,24 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             FileLog.e("tmessages", e);
         }
 
-        placeProvider = provider;
+
         WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
-        wm.addView(windowView, windowLayoutParams);
+        try {
+            wm.addView(windowView, windowLayoutParams);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+            return;
+        }
+
+        actionBar.setTitle(LocaleController.formatString("Of", R.string.Of, 1, 1));
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileDidFailedLoad);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileDidLoaded);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileLoadProgressChanged);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.mediaCountDidLoaded);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.mediaDidLoaded);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.userPhotosLoaded);
+
+        placeProvider = provider;
 
         if (velocityTracker == null) {
             velocityTracker = VelocityTracker.obtain();

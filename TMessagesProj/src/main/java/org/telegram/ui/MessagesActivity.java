@@ -22,6 +22,7 @@ import android.view.ViewTreeObserver;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
+import android.widget.BaseAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -32,6 +33,7 @@ import android.widget.TextView;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessageObject;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.ContactsController;
 import org.telegram.android.MessagesController;
@@ -537,19 +539,26 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 dialogsSearchAdapter.notifyDataSetChanged();
             }
             if (messagesListView != null) {
-                if (MessagesController.getInstance().loadingDialogs && MessagesController.getInstance().dialogs.isEmpty()) {
-                    searchEmptyView.setVisibility(View.GONE);
-                    emptyView.setVisibility(View.GONE);
-                    messagesListView.setEmptyView(progressView);
-                } else {
-                    if (searching && searchWas) {
-                        messagesListView.setEmptyView(searchEmptyView);
-                        emptyView.setVisibility(View.GONE);
-                    } else {
-                        messagesListView.setEmptyView(emptyView);
-                        searchEmptyView.setVisibility(View.GONE);
+                try {
+                    if (messagesListView.getAdapter() != null && messagesListView.getAdapter() instanceof BaseAdapter) {
+                        ((BaseAdapter) messagesListView.getAdapter()).notifyDataSetChanged();
                     }
-                    progressView.setVisibility(View.GONE);
+                    if (MessagesController.getInstance().loadingDialogs && MessagesController.getInstance().dialogs.isEmpty()) {
+                        searchEmptyView.setVisibility(View.GONE);
+                        emptyView.setVisibility(View.GONE);
+                        messagesListView.setEmptyView(progressView);
+                    } else {
+                        if (searching && searchWas) {
+                            messagesListView.setEmptyView(searchEmptyView);
+                            emptyView.setVisibility(View.GONE);
+                        } else {
+                            messagesListView.setEmptyView(emptyView);
+                            searchEmptyView.setVisibility(View.GONE);
+                        }
+                        progressView.setVisibility(View.GONE);
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e); //TODO fix it in other way?
                 }
             }
         } else if (id == NotificationCenter.emojiDidLoaded) {

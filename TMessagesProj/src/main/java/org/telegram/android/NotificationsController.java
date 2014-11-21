@@ -238,7 +238,7 @@ public class NotificationsController {
             PendingIntent pintent = PendingIntent.getService(ApplicationLoader.applicationContext, 0, new Intent(ApplicationLoader.applicationContext, NotificationRepeat.class), 0);
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             int minutes = preferences.getInt("repeat_messages", 60);
-            if (minutes > 0 || personal_count > 0) {
+            if (minutes > 0 && personal_count > 0) {
                 alarm.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + minutes * 60 * 1000, pintent);
             } else {
                 alarm.cancel(pintent);
