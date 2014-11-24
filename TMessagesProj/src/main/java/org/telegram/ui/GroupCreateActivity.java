@@ -455,6 +455,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     if (i == SCROLL_STATE_TOUCH_SCROLL) {
                         AndroidUtilities.hideKeyboard(userSelectEditText);
                     }
+                    if (listViewAdapter != null) {
+                        listViewAdapter.setIsScrolling(i != SCROLL_STATE_IDLE);
+                    }
                 }
 
                 @Override

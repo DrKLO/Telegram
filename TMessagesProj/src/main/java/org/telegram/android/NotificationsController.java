@@ -425,7 +425,9 @@ public class NotificationsController {
             }
 
             mBuilder.setCategory(NotificationCompat.CATEGORY_MESSAGE);
-            mBuilder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+            if (chat == null && user != null && user.phone != null && user.phone.length() > 0) {
+                mBuilder.addPerson("tel:+" + user.phone);
+            }
             /*Bundle bundle = new Bundle();
             bundle.putString(NotificationCompat.EXTRA_PEOPLE, );
             mBuilder.setExtras()*/
@@ -635,6 +637,10 @@ public class NotificationsController {
                     .setContentIntent(contentIntent)
                     .extend(new NotificationCompat.WearableExtender().addAction(action))
                     .setCategory(NotificationCompat.CATEGORY_MESSAGE);
+
+            if (chat == null && user != null && user.phone != null && user.phone.length() > 0) {
+                builder.addPerson("tel:+" + user.phone);
+            }
 
             notificationManager.notify(notificationId, builder.build());
             wearNoticationsIds.put(dialog_id, notificationId);

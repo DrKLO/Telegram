@@ -9,6 +9,7 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
+import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -35,6 +36,7 @@ public class ContactsAdapter extends BaseSectionsAdapter {
     private boolean needPhonebook;
     private HashMap<Integer, TLRPC.User> ignoreUsers;
     private HashMap<Integer, ?> checkedMap;
+    private boolean scrolling;
 
     public ContactsAdapter(Context context, boolean arg1, boolean arg2, HashMap<Integer, TLRPC.User> arg3) {
         mContext = context;
@@ -45,6 +47,10 @@ public class ContactsAdapter extends BaseSectionsAdapter {
 
     public void setCheckedMap(HashMap<Integer, ?> map) {
         checkedMap = map;
+    }
+
+    public void setIsScrolling(boolean value) {
+        scrolling = value;
     }
 
     @Override
@@ -175,7 +181,7 @@ public class ContactsAdapter extends BaseSectionsAdapter {
         if (type == 4) {
             if (convertView == null) {
                 convertView = new DividerCell(mContext);
-                convertView.setPadding(AndroidUtilities.dp(LocaleController.isRTL ? 24 : 72), 0, AndroidUtilities.dp(LocaleController.isRTL ? 72 : 24), 0);
+                convertView.setPadding(AndroidUtilities.dp(LocaleController.isRTL ? 28 : 72), 0, AndroidUtilities.dp(LocaleController.isRTL ? 72 : 28), 0);
             }
         } else if (type == 3) {
             if (convertView == null) {
@@ -220,7 +226,7 @@ public class ContactsAdapter extends BaseSectionsAdapter {
             TLRPC.User user = MessagesController.getInstance().getUser(arr.get(position).user_id);
             ((UserCell)convertView).setData(user, null, null, 0);
             if (checkedMap != null) {
-                ((UserCell) convertView).setChecked(checkedMap.containsKey(user.id), false);
+                ((UserCell) convertView).setChecked(checkedMap.containsKey(user.id), !scrolling  && Build.VERSION.SDK_INT > 10);
             }
             if (ignoreUsers != null) {
                 if (ignoreUsers.containsKey(user.id)) {

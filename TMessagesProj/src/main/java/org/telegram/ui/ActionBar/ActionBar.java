@@ -40,6 +40,7 @@ public class ActionBar extends FrameLayout {
     private ImageView backButtonImageView;
     private TextView titleTextView;
     private TextView subTitleTextView;
+    private View actionModeTop;
     private ActionBarMenu menu;
     private ActionBarMenu actionMode;
     private boolean occupyStatusBar = Build.VERSION.SDK_INT >= 21;
@@ -343,6 +344,19 @@ public class ActionBar extends FrameLayout {
         layoutParams.gravity = Gravity.RIGHT;
         actionMode.setLayoutParams(layoutParams);
         actionMode.setVisibility(GONE);
+
+        if (occupyStatusBar) {
+            actionModeTop = new View(getContext());
+            actionModeTop.setBackgroundColor(0x99000000);
+            addView(actionModeTop);
+            layoutParams = (FrameLayout.LayoutParams)actionModeTop.getLayoutParams();
+            layoutParams.height = AndroidUtilities.statusBarHeight;
+            layoutParams.width = LayoutParams.FILL_PARENT;
+            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+            actionModeTop.setLayoutParams(layoutParams);
+            actionModeTop.setVisibility(GONE);
+        }
+
         return actionMode;
     }
 
@@ -351,6 +365,9 @@ public class ActionBar extends FrameLayout {
             return;
         }
         actionMode.setVisibility(VISIBLE);
+        if (actionModeTop != null) {
+            actionModeTop.setVisibility(VISIBLE);
+        }
         if (titleFrameLayout != null) {
             titleFrameLayout.setVisibility(INVISIBLE);
         }
@@ -364,6 +381,9 @@ public class ActionBar extends FrameLayout {
             return;
         }
         actionMode.setVisibility(GONE);
+        if (actionModeTop != null) {
+            actionModeTop.setVisibility(GONE);
+        }
         if (titleFrameLayout != null) {
             titleFrameLayout.setVisibility(VISIBLE);
         }

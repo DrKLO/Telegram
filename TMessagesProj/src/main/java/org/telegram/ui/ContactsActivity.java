@@ -441,6 +441,14 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
+    public void onPause() {
+        super.onPause();
+        if (actionBar != null) {
+            actionBar.closeSearchField();
+        }
+    }
+
+    @Override
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.contactsDidLoaded) {
             if (listViewAdapter != null) {

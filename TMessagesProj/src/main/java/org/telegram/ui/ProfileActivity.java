@@ -485,10 +485,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 } else if (i == 1) {
                                     if(Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.HONEYCOMB) {
                                         android.text.ClipboardManager clipboard = (android.text.ClipboardManager)ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                                        clipboard.setText(user.phone);
+                                        clipboard.setText("+" + user.phone);
                                     } else {
                                         android.content.ClipboardManager clipboard = (android.content.ClipboardManager)ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                                        android.content.ClipData clip = android.content.ClipData.newPlainText("label", user.phone);
+                                        android.content.ClipData clip = android.content.ClipData.newPlainText("label", "+" + user.phone);
                                         clipboard.setPrimaryClip(clip);
                                     }
                                 }

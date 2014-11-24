@@ -362,6 +362,10 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                         }
                         if (message_id != 0) {
                             args.putInt("message_id", message_id);
+                        } else {
+                            if (actionBar != null) {
+                                actionBar.closeSearchField();
+                            }
                         }
                         if (AndroidUtilities.isTablet()) {
                             if (openedDialogId == dialog_id) {

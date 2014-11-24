@@ -23,6 +23,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.Region;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -532,7 +533,7 @@ public class Switch extends CompoundButton {
             mThumbDrawable.setBounds(thumbLeft, switchTop + offset, thumbRight, switchBottom + offset);
 
             final Drawable background = getBackground();
-            if (background != null) {
+            if (background != null && Build.VERSION.SDK_INT >= 21) {
                 background.setHotspotBounds(thumbLeft, switchTop, thumbRight, switchBottom);
             }
         }

@@ -148,6 +148,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         ViewProxy.setScaleX(sendButton, 0.1f);
         ViewProxy.setScaleY(sendButton, 0.1f);
         ViewProxy.setAlpha(sendButton, 0.0f);
+        sendButton.clearAnimation();
         emojiButton = (ImageView) containerView.findViewById(R.id.chat_smile_button);
         audioSendButton = (ImageButton) containerView.findViewById(R.id.chat_audio_send_button);
         recordPanel = containerView.findViewById(R.id.record_panel);

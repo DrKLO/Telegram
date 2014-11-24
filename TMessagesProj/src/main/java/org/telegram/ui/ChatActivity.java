@@ -572,9 +572,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         DocumentSelectActivity fragment = new DocumentSelectActivity();
                         fragment.setDelegate(new DocumentSelectActivity.DocumentSelectActivityDelegate() {
                             @Override
-                            public void didSelectFile(DocumentSelectActivity activity, String path) {
+                            public void didSelectFiles(DocumentSelectActivity activity, ArrayList<String> files) {
                                 activity.finishFragment();
-                                SendMessagesHelper.prepareSendingDocument(path, path, null, null, dialog_id);
+                                SendMessagesHelper.prepareSendingDocuments(files, files, null, null, dialog_id);
                             }
 
                             @Override

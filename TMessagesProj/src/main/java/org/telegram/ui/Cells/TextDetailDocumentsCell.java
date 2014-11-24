@@ -19,6 +19,7 @@ import android.widget.TextView;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.ui.Views.BackupImageView;
+import org.telegram.ui.Views.CheckBox;
 
 public class TextDetailDocumentsCell extends FrameLayout {
 
@@ -26,6 +27,7 @@ public class TextDetailDocumentsCell extends FrameLayout {
     private TextView valueTextView;
     private TextView typeTextView;
     private BackupImageView imageView;
+    private CheckBox checkBox;
 
     public TextDetailDocumentsCell(Context context) {
         super(context);
@@ -90,6 +92,18 @@ public class TextDetailDocumentsCell extends FrameLayout {
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 0);
         layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL;
         imageView.setLayoutParams(layoutParams);
+
+        checkBox = new CheckBox(context);
+        checkBox.setVisibility(GONE);
+        addView(checkBox);
+        layoutParams = (LayoutParams) checkBox.getLayoutParams();
+        layoutParams.width = AndroidUtilities.dp(22);
+        layoutParams.height = AndroidUtilities.dp(22);
+        layoutParams.topMargin = AndroidUtilities.dp(34);
+        layoutParams.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(38);
+        layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(38) : 0;
+        layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        checkBox.setLayoutParams(layoutParams);
     }
 
     @Override
@@ -116,5 +130,12 @@ public class TextDetailDocumentsCell extends FrameLayout {
         } else {
             imageView.setVisibility(GONE);
         }
+    }
+
+    public void setChecked(boolean checked, boolean animated) {
+        if (checkBox.getVisibility() != VISIBLE) {
+            checkBox.setVisibility(VISIBLE);
+        }
+        checkBox.setChecked(checked, animated);
     }
 }

@@ -58,13 +58,23 @@ public class CheckBox extends View {
             eraser2.setStrokeWidth(AndroidUtilities.dp(28));
             eraser2.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
         }
-        drawBitmap = Bitmap.createBitmap(AndroidUtilities.dp(22), AndroidUtilities.dp(22), Bitmap.Config.ARGB_4444);
-        bitmapCanvas = new Canvas(drawBitmap);
-        checkBitmap = Bitmap.createBitmap(AndroidUtilities.dp(22), AndroidUtilities.dp(22), Bitmap.Config.ARGB_4444);
-        checkCanvas = new Canvas(checkBitmap);
+    }
+
+    @Override
+    public void setVisibility(int visibility) {
+        super.setVisibility(visibility);
+        if (visibility == VISIBLE && drawBitmap == null) {
+            drawBitmap = Bitmap.createBitmap(AndroidUtilities.dp(22), AndroidUtilities.dp(22), Bitmap.Config.ARGB_4444);
+            bitmapCanvas = new Canvas(drawBitmap);
+            checkBitmap = Bitmap.createBitmap(AndroidUtilities.dp(22), AndroidUtilities.dp(22), Bitmap.Config.ARGB_4444);
+            checkCanvas = new Canvas(checkBitmap);
+        }
     }
 
     public void setProgress(float value) {
+        if (progress == value) {
+            return;
+        }
         progress = value;
         invalidate();
     }
@@ -104,8 +114,10 @@ public class CheckBox extends View {
     }
 
     public void setChecked(boolean checked, boolean animated) {
+        if (checked == isChecked) {
+            return;
+        }
         isChecked = checked;
-        invalidate();
 
         if (attachedToWindow && animated) {
             animateToCheckedState(checked);
@@ -121,6 +133,9 @@ public class CheckBox extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        if (getVisibility() != VISIBLE) {
+            return;
+        }
         if (progress != 0) {
             drawBitmap.eraseColor(0);
             float rad = getMeasuredWidth() / 2;

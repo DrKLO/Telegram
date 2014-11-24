@@ -119,7 +119,6 @@ public class BaseFragment {
     public void onPause() {
         if (actionBar != null) {
             actionBar.onPause();
-            actionBar.closeSearchField();
         }
         try {
             if (visibleDialog != null && visibleDialog.isShowing()) {
