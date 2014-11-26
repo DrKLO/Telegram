@@ -89,7 +89,7 @@ android {
 
     defaultConfig {
         minSdkVersion 9
-        targetSdkVersion 21
+        targetSdkVersion 19
         renderscriptTargetApi 21
         renderscriptSupportModeEnabled true
         versionCode 236
