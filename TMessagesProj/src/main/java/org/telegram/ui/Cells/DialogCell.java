@@ -30,7 +30,7 @@ import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.android.ImageReceiver;
-import org.telegram.ui.Views.AvatarDrawable;
+import org.telegram.ui.Components.AvatarDrawable;
 
 public class DialogCell extends BaseCell {
 

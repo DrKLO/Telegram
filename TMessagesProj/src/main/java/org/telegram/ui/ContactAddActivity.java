@@ -31,14 +31,15 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.ContactsController;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.Views.AvatarDrawable;
-import org.telegram.ui.Views.BackupImageView;
+import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.ActionBar.BaseFragment;
 
 public class ContactAddActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -106,53 +107,6 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
 
             ActionBarMenu menu = actionBar.createMenu();
             doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
-
-            /*
-
-
-        <LinearLayout
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:paddingTop="12dp"
-            android:paddingBottom="12dp">
-
-            <org.telegram.ui.Views.BackupImageView
-                android:id="@+id/settings_avatar_image"
-                android:layout_width="64dp"
-                android:layout_height="64dp"/>
-
-            <LinearLayout
-                android:layout_gravity="center_vertical"
-                android:orientation="vertical"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="13dp"
-                android:layout_marginBottom="1dp">
-
-                <TextView
-                    android:textSize="21dp"
-                    android:textColor="#333333"
-                    android:ellipsize="end"
-                    android:id="@+id/settings_name"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:lines="1"
-                    android:singleLine="true"/>
-
-                <TextView
-                    android:textSize="14dp"
-                    android:textColor="#999999"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:id="@+id/settings_online"/>
-
-            </LinearLayout>
-
-        </LinearLayout>
-*/
 
             fragmentView = new ScrollView(getParentActivity());
 
@@ -227,7 +181,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
             layoutParams3.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP;
             onlineTextView.setLayoutParams(layoutParams3);
 
-            firstNameField = new EditText(inflater.getContext());
+            firstNameField = new EditText(getParentActivity());
             firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             firstNameField.setHintTextColor(0xff979797);
             firstNameField.setTextColor(0xff212121);
@@ -259,7 +213,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                 }
             });
 
-            lastNameField = new EditText(inflater.getContext());
+            lastNameField = new EditText(getParentActivity());
             lastNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             lastNameField.setHintTextColor(0xff979797);
             lastNameField.setTextColor(0xff212121);

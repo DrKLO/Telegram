@@ -25,6 +25,7 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
@@ -74,7 +75,7 @@ public class ChangeNameActivity extends BaseFragment {
                 user = UserConfig.getCurrentUser();
             }
 
-            fragmentView = new LinearLayout(inflater.getContext());
+            fragmentView = new LinearLayout(getParentActivity());
             fragmentView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             ((LinearLayout) fragmentView).setOrientation(LinearLayout.VERTICAL);
             fragmentView.setOnTouchListener(new View.OnTouchListener() {
@@ -84,7 +85,7 @@ public class ChangeNameActivity extends BaseFragment {
                 }
             });
 
-            firstNameField = new EditText(inflater.getContext());
+            firstNameField = new EditText(getParentActivity());
             firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             firstNameField.setHintTextColor(0xff979797);
             firstNameField.setTextColor(0xff212121);
@@ -116,7 +117,7 @@ public class ChangeNameActivity extends BaseFragment {
                 }
             });
 
-            lastNameField = new EditText(inflater.getContext());
+            lastNameField = new EditText(getParentActivity());
             lastNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             lastNameField.setHintTextColor(0xff979797);
             lastNameField.setTextColor(0xff212121);

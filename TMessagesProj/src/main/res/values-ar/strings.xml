@@ -272,12 +272,20 @@
     <string name="NoMediaAutoDownload">لا يوجد وسائط</string>
     <string name="SaveToGallerySettings">حفظ في الجهاز</string>
     <string name="EditName">تعديل الاسم</string>
-    <string name="NotificationsPriority">Priority</string>
-    <string name="NotificationsPriorityDefault">Default</string>
-    <string name="NotificationsPriorityLow">Low</string>
-    <string name="NotificationsPriorityHigh">High</string>
-    <string name="NotificationsPriorityMax">Max</string>
-    <string name="RepeatNotifications">Repeat Notifications</string>
+    <string name="NotificationsPriority">الأولوية</string>
+    <string name="NotificationsPriorityDefault">افتراضي</string>
+    <string name="NotificationsPriorityLow">منخفض</string>
+    <string name="NotificationsPriorityHigh">مرتفع</string>
+    <string name="NotificationsPriorityMax">القصوى</string>
+    <string name="RepeatNotificationsNever">للأبد</string>
+    <string name="RepeatNotifications">إعادة الإشعارات</string>
+    <string name="PhoneNumberHelp">يمكنك تغيير رقم تيليجرام الخاص بك هنا. حسابك وجميع بياناتك التي في السحاب بما فيها رسائلك، الوسائط، جهات الاتصال وغيرها سيتم نقلها للرقم الجديد.<![CDATA[<b>هام:</b>]]> جميع جهات الاتصال الخاصة بك في تيليجرام سيضاف لها <![CDATA[<b>رقمك الجديد</b>]]>، في حال تواجد بها رقمك القديم ولم تقم بحظره في تيليجرام.</string>
+    <string name="PhoneNumberAlert">جميع جهات الاتصال الخاصة بك في تيليجرام سيضاف لها رقمك الجديد، في حال تواجد بها رقمك القديم ولم تقم بحظره في تيليجرام.</string>
+    <string name="PhoneNumberChange">تغيير الرقم</string>
+    <string name="ChangePhoneNewNumber">الرقم الجديد</string>
+    <string name="ChangePhoneHelp">سيتم إرسال رسالة قصيرة تحتوي على رمز التفعيل الخاص إلى رقمك الجديد.</string>
+    <string name="ChangePhoneNumberOccupied">الرقم %1$s لديه حساب تيليجرام مسبقًا. يرجى حذف هذا الحساب قبل محاولة تغيير رقمك.</string>
+    <string name="NotificationsOther">آخر</string>
     <!--media view-->
     <string name="NoMedia">لا توجد وسائط بعد</string>
     <!--map view-->

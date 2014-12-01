@@ -43,14 +43,15 @@ import com.googlecode.mp4parser.util.Path;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MediaController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Views.VideoSeekBarView;
-import org.telegram.ui.Views.VideoTimelineView;
+import org.telegram.ui.Components.VideoSeekBarView;
+import org.telegram.ui.Components.VideoTimelineView;
 
 import java.io.File;
 import java.util.List;

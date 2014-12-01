@@ -1,4 +1,4 @@
-<org.telegram.ui.Views.SizeNotifierRelativeLayout
+<org.telegram.ui.Components.SizeNotifierRelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -29,7 +29,7 @@
                 android:background="@drawable/compose_panel"
                 android:orientation="horizontal">
 
-                <org.telegram.ui.Views.FrameLayoutFixed
+                <org.telegram.ui.Components.FrameLayoutFixed
                     android:layout_height="wrap_content"
                     android:layout_width="0dp"
                     android:layout_weight="1">
@@ -65,7 +65,7 @@
                         android:textCursorDrawable="@null"
                         android:textColor="#000000"/>
 
-                    <org.telegram.ui.Views.FrameLayoutFixed
+                    <org.telegram.ui.Components.FrameLayoutFixed
                         android:layout_height="48dp"
                         android:layout_width="fill_parent"
                         android:layout_marginTop="2dp"
@@ -127,9 +127,9 @@
 
                         </LinearLayout>
 
-                    </org.telegram.ui.Views.FrameLayoutFixed>
+                    </org.telegram.ui.Components.FrameLayoutFixed>
 
-                </org.telegram.ui.Views.FrameLayoutFixed>
+                </org.telegram.ui.Components.FrameLayoutFixed>
 
                 <FrameLayout
                     android:layout_width="48dp"
@@ -164,4 +164,4 @@
 
     </RelativeLayout>
 
-</org.telegram.ui.Views.SizeNotifierRelativeLayout>
+</org.telegram.ui.Components.SizeNotifierRelativeLayout>

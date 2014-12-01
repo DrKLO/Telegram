@@ -14,7 +14,7 @@ import android.content.SharedPreferences;
 import android.os.IBinder;
 
 import org.telegram.messenger.FileLog;
-import org.telegram.ui.ApplicationLoader;
+import org.telegram.messenger.ApplicationLoader;
 
 public class NotificationsService extends Service {
 

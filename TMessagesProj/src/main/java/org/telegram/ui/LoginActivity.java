@@ -16,8 +16,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
-import android.graphics.Paint;
-import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
@@ -26,10 +24,8 @@ import android.text.InputFilter;
 import android.text.InputType;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.text.style.MetricAffectingSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -52,6 +48,7 @@ import org.telegram.android.ContactsController;
 import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
@@ -64,6 +61,8 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.SlideView;
+import org.telegram.ui.Components.TypefaceSpan;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -78,6 +77,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class LoginActivity extends BaseFragment {
+
     private int currentViewNum = 0;
     private SlideView[] views = new SlideView[3];
     private ProgressDialog progressDialog;
@@ -418,45 +418,6 @@ public class LoginActivity extends BaseFragment {
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
     }
 
-    public class SlideView extends LinearLayout {
-
-        public SlideView(Context context) {
-            super(context);
-        }
-
-        public String getHeaderName() {
-            return "";
-        }
-
-        public void setParams(Bundle params) {
-
-        }
-
-        public void onBackPressed() {
-
-        }
-
-        public void onShow() {
-
-        }
-
-        public void onDestroyActivity() {
-
-        }
-
-        public void onNextPressed() {
-
-        }
-
-        public void saveStateParams(Bundle bundle) {
-
-        }
-
-        public void restoreStateParams(Bundle bundle) {
-
-        }
-    }
-
     public class PhoneView extends SlideView implements AdapterView.OnItemSelectedListener {
 
         private EditText codeField;
@@ -480,7 +441,7 @@ public class LoginActivity extends BaseFragment {
             setOrientation(VERTICAL);
 
             countryButton = new TextView(context);
-            countryButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            countryButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             countryButton.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(10), AndroidUtilities.dp(12), 0);
             countryButton.setTextColor(0xff212121);
             countryButton.setMaxLines(1);
@@ -535,7 +496,7 @@ public class LoginActivity extends BaseFragment {
             TextView textView = new TextView(context);
             textView.setText("+");
             textView.setTextColor(0xff212121);
-            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             linearLayout.addView(textView);
             layoutParams = (LayoutParams) textView.getLayoutParams();
             layoutParams.width = LayoutParams.WRAP_CONTENT;
@@ -548,7 +509,7 @@ public class LoginActivity extends BaseFragment {
             codeField.setTextColor(0xff212121);
             AndroidUtilities.clearCursorDrawable(codeField);
             codeField.setPadding(AndroidUtilities.dp(10), 0, 0, 0);
-            codeField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            codeField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             codeField.setMaxLines(1);
             codeField.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
             codeField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
@@ -624,7 +585,7 @@ public class LoginActivity extends BaseFragment {
             phoneField.setHintTextColor(0xff979797);
             phoneField.setPadding(0, 0, 0, 0);
             AndroidUtilities.clearCursorDrawable(phoneField);
-            phoneField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            phoneField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             phoneField.setMaxLines(1);
             phoneField.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
             phoneField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
@@ -693,7 +654,7 @@ public class LoginActivity extends BaseFragment {
             });
 
             textView = new TextView(context);
-            textView.setText(LocaleController.getString("StartText", R.string.StartText));
+            textView.setText(LocaleController.getString("ChangePhoneHelp", R.string.ChangePhoneHelp));
             textView.setTextColor(0xff757575);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView.setGravity(Gravity.LEFT);
@@ -828,7 +789,7 @@ public class LoginActivity extends BaseFragment {
             if (countryState == 1) {
                 needShowAlert(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
                 return;
-            } else if (countryState == 2) {
+            } else if (countryState == 2 && !BuildVars.DEBUG_VERSION) {
                 needShowAlert(LocaleController.getString("WrongCountry", R.string.WrongCountry));
                 return;
             }
@@ -951,27 +912,6 @@ public class LoginActivity extends BaseFragment {
         private boolean nextPressed = false;
         private String lastError = "";
 
-        public class TypefaceSpan extends MetricAffectingSpan {
-
-            private Typeface mTypeface;
-
-            public TypefaceSpan(Typeface typeface) {
-                mTypeface = typeface;
-            }
-
-            @Override
-            public void updateMeasureState(TextPaint p) {
-                p.setTypeface(mTypeface);
-                p.setFlags(p.getFlags() | Paint.SUBPIXEL_TEXT_FLAG);
-            }
-
-            @Override
-            public void updateDrawState(TextPaint tp) {
-                tp.setTypeface(mTypeface);
-                tp.setFlags(tp.getFlags() | Paint.SUBPIXEL_TEXT_FLAG);
-            }
-        }
-
         public LoginActivitySmsView(Context context) {
             super(context);
 
@@ -997,7 +937,7 @@ public class LoginActivity extends BaseFragment {
             AndroidUtilities.clearCursorDrawable(codeField);
             codeField.setHintTextColor(0xff979797);
             codeField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-            codeField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            codeField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             codeField.setInputType(InputType.TYPE_CLASS_PHONE);
             codeField.setMaxLines(1);
             codeField.setPadding(0, 0, 0, 0);
@@ -1440,7 +1380,7 @@ public class LoginActivity extends BaseFragment {
             AndroidUtilities.clearCursorDrawable(firstNameField);
             firstNameField.setHint(LocaleController.getString("FirstName", R.string.FirstName));
             firstNameField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-            firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             firstNameField.setMaxLines(1);
             firstNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS);
             addView(firstNameField);
@@ -1468,7 +1408,7 @@ public class LoginActivity extends BaseFragment {
             lastNameField.setTextColor(0xff212121);
             AndroidUtilities.clearCursorDrawable(lastNameField);
             lastNameField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-            lastNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            lastNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             lastNameField.setMaxLines(1);
             lastNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS);
             addView(lastNameField);

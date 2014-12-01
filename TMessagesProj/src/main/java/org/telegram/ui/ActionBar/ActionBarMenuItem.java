@@ -55,6 +55,7 @@ public class ActionBarMenuItem extends ImageView {
     private Runnable showMenuRunnable;
     private boolean showFromBottom;
     private int menuHeight = AndroidUtilities.dp(16);
+    private boolean needOffset = Build.VERSION.SDK_INT >= 21;
 
     public ActionBarMenuItem(Context context, ActionBarMenu menu, int background) {
         super(context);
@@ -133,6 +134,10 @@ public class ActionBarMenuItem extends ImageView {
 
     public void setShowFromBottom(boolean value) {
         showFromBottom = value;
+    }
+
+    public void setNeedOffset(boolean value) {
+        needOffset = Build.VERSION.SDK_INT >= 21 && value;
     }
 
     public TextView addSubItem(int id, String text, int icon) {
@@ -247,29 +252,33 @@ public class ActionBarMenuItem extends ImageView {
         popupWindow.setFocusable(true);
         if (popupLayout.getMeasuredWidth() == 0) {
             if (showFromBottom) {
-                popupWindow.showAsDropDown(this, -popupLayout.getMeasuredWidth() + getMeasuredWidth() + AndroidUtilities.dp(14), getBottomOffsetY());
-                popupWindow.update(this, -popupLayout.getMeasuredWidth() + getMeasuredWidth() + AndroidUtilities.dp(14), getBottomOffsetY(), -1, -1);
+                popupWindow.showAsDropDown(this, -popupLayout.getMeasuredWidth() + getMeasuredWidth() + AndroidUtilities.dp(14), getOffsetY());
+                popupWindow.update(this, -popupLayout.getMeasuredWidth() + getMeasuredWidth() + AndroidUtilities.dp(14), getOffsetY(), -1, -1);
             } else {
-                popupWindow.showAsDropDown(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight());
-                popupWindow.update(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight(), -1, -1);
+                popupWindow.showAsDropDown(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), getOffsetY());
+                popupWindow.update(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), getOffsetY(), -1, -1);
             }
         } else {
             if (showFromBottom) {
-                popupWindow.showAsDropDown(this, -popupLayout.getMeasuredWidth() + getMeasuredWidth() + AndroidUtilities.dp(14), getBottomOffsetY());
+                popupWindow.showAsDropDown(this, -popupLayout.getMeasuredWidth() + getMeasuredWidth() + AndroidUtilities.dp(14), getOffsetY());
             } else {
-                popupWindow.showAsDropDown(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight());
+                popupWindow.showAsDropDown(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), getOffsetY());
             }
         }
     }
 
-    private int getBottomOffsetY() {
-        getLocationOnScreen(location);
-        int diff = location[1] - AndroidUtilities.statusBarHeight + getMeasuredHeight() - menuHeight;
-        int y = AndroidUtilities.dp(8) - menuHeight;
-        if (diff < 0) {
-            y -= diff;
+    private int getOffsetY() {
+        if (showFromBottom) {
+            getLocationOnScreen(location);
+            int diff = location[1] - AndroidUtilities.statusBarHeight + getMeasuredHeight() - menuHeight;
+            int y = AndroidUtilities.dp(8) - menuHeight;
+            if (diff < 0) {
+                y -= diff;
+            }
+            return y - (needOffset ? AndroidUtilities.statusBarHeight : 0);
+        } else {
+            return -getMeasuredHeight() - (needOffset ? AndroidUtilities.statusBarHeight : 0);
         }
-        return y;
     }
 
     public boolean toggleSearch() {
@@ -415,9 +424,9 @@ public class ActionBarMenuItem extends ImageView {
         super.onLayout(changed, left, top, right, bottom);
         if (popupWindow != null && popupWindow.isShowing()) {
             if (showFromBottom) {
-                popupWindow.update(this, -popupLayout.getMeasuredWidth() + getMeasuredWidth() + AndroidUtilities.dp(14), getBottomOffsetY(), -1, -1);
+                popupWindow.update(this, -popupLayout.getMeasuredWidth() + getMeasuredWidth() + AndroidUtilities.dp(14), getOffsetY(), -1, -1);
             } else {
-                popupWindow.update(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), -getMeasuredHeight(), -1, -1);
+                popupWindow.update(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), getOffsetY(), -1, -1);
             }
         }
     }

@@ -17,7 +17,7 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
-import org.telegram.ui.Views.FrameLayoutFixed;
+import org.telegram.ui.Components.FrameLayoutFixed;
 
 public class TextDetailSettingsCell extends FrameLayoutFixed {
 

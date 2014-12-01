@@ -32,6 +32,7 @@ import android.widget.TextView;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesStorage;
+import org.telegram.android.SecretChatHelper;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
@@ -47,7 +48,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Views.SectionsListView;
+import org.telegram.ui.Components.SectionsListView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -268,7 +269,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         } else {
                             if (createSecretChat) {
                                 creatingChat = true;
-                                MessagesController.getInstance().startSecretChat(getParentActivity(), user);
+                                SecretChatHelper.getInstance().startSecretChat(getParentActivity(), user);
                             } else {
                                 Bundle args = new Bundle();
                                 args.putInt("user_id", user.id);
@@ -324,7 +325,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 } else {
                                     if (createSecretChat) {
                                         creatingChat = true;
-                                        MessagesController.getInstance().startSecretChat(getParentActivity(), user);
+                                        SecretChatHelper.getInstance().startSecretChat(getParentActivity(), user);
                                     } else {
                                         Bundle args = new Bundle();
                                         args.putInt("user_id", user.id);

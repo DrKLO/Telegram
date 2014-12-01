@@ -30,6 +30,7 @@ import android.widget.ListView;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
@@ -43,8 +44,8 @@ import org.telegram.ui.Cells.TextColorCell;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Views.AvatarDrawable;
-import org.telegram.ui.Views.ColorPickerView;
+import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.ColorPickerView;
 
 public class ProfileNotificationsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 

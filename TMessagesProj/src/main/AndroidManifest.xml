@@ -4,10 +4,10 @@
     android:installLocation="auto">
 
     <supports-screens android:anyDensity="true"
-                      android:smallScreens="true"
-                      android:normalScreens="true"
                       android:largeScreens="true"
+                      android:normalScreens="true"
                       android:resizeable="true"
+                      android:smallScreens="true"
                       android:xlargeScreens="true"/>
 
     <uses-feature android:glEsVersion="0x00020000" android:required="false"/>
@@ -41,20 +41,20 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
+        android:name=".ApplicationLoader"
         android:allowBackup="false"
+        android:hardwareAccelerated="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/AppName"
-        android:theme="@style/Theme.TMessages.Start"
-        android:name="org.telegram.ui.ApplicationLoader"
-        android:hardwareAccelerated="true"
-        android:largeHeap="true">
+        android:largeHeap="true"
+        android:theme="@style/Theme.TMessages.Start">
 
         <activity
             android:name="org.telegram.ui.LaunchActivity"
-            android:windowSoftInputMode="adjustPan"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:hardwareAccelerated="true"
             android:launchMode="singleTask"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize">
+            android:windowSoftInputMode="adjustPan">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -95,6 +95,19 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="vnd.android.cursor.item/vnd.org.telegram.messenger.android.profile"/>
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:host="telegram.me" android:scheme="http" />
+                <data android:host="telegram.me" android:scheme="https" />
+            </intent-filter>
+            <intent-filter android:icon="@drawable/ic_launcher" android:priority="1">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="tg" />
+            </intent-filter>
         </activity>
         <activity
             android:name="org.telegram.ui.IntroActivity"
@@ -105,9 +118,9 @@
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize"
             android:excludeFromRecents="true"
             android:launchMode="singleTask"
-            android:windowSoftInputMode="adjustResize|stateHidden"
             android:taskAffinity=""
-            android:theme="@style/Theme.TMessages.PopupNotification">
+            android:theme="@style/Theme.TMessages.PopupNotification"
+            android:windowSoftInputMode="adjustResize|stateHidden">
         </activity>
 
         <receiver android:name="org.telegram.android.SmsListener">
@@ -116,8 +129,7 @@
             </intent-filter>
         </receiver>
 
-        <service android:name="org.telegram.android.AuthenticatorService"
-            android:exported="true">
+        <service android:name="org.telegram.android.AuthenticatorService" android:exported="true">
             <intent-filter>
                 <action android:name="android.accounts.AccountAuthenticator"/>
             </intent-filter>
@@ -125,8 +137,7 @@
                 android:resource="@xml/auth"/>
         </service>
 
-        <service android:name="org.telegram.android.ContactsSyncAdapterService"
-            android:exported="true">
+        <service android:name="org.telegram.android.ContactsSyncAdapterService" android:exported="true">
             <intent-filter>
                 <action android:name="android.content.SyncAdapter" />
             </intent-filter>

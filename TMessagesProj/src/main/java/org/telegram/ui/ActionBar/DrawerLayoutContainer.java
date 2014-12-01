@@ -34,7 +34,7 @@ public class DrawerLayoutContainer extends FrameLayout {
 
     private static final int MIN_DRAWER_MARGIN = 64;
 
-    private View drawerLayout;
+    private ViewGroup drawerLayout;
     private ActionBarLayout parentActionBarLayout;
 
     private boolean maybeStartTracking = false;
@@ -55,7 +55,7 @@ public class DrawerLayoutContainer extends FrameLayout {
     private Drawable shadowLeft;
     private boolean allowOpenDrawer;
 
-    private int drawerPosition = 0;
+    private float drawerPosition = 0;
     private boolean drawerOpened = false;
 
     public DrawerLayoutContainer(Context context) {
@@ -125,7 +125,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         requestLayout();
     }
 
-    public void setDrawerLayout(View layout) {
+    public void setDrawerLayout(ViewGroup layout) {
         drawerLayout = layout;
         addView(drawerLayout);
         if (Build.VERSION.SDK_INT >= 21) {
@@ -133,11 +133,11 @@ public class DrawerLayoutContainer extends FrameLayout {
         }
     }
 
-    public void moveDrawerByX(int dx) {
+    public void moveDrawerByX(float dx) {
         setDrawerPosition(drawerPosition + dx);
     }
 
-    public void setDrawerPosition(int value) {
+    public void setDrawerPosition(float value) {
         drawerPosition = value;
         if (drawerPosition > drawerLayout.getMeasuredWidth()) {
             drawerPosition = drawerLayout.getMeasuredWidth();
@@ -150,10 +150,10 @@ public class DrawerLayoutContainer extends FrameLayout {
         if (drawerLayout.getVisibility() != newVisibility) {
             drawerLayout.setVisibility(newVisibility);
         }
-        setScrimOpacity((float)drawerPosition / (float)drawerLayout.getMeasuredWidth());
+        setScrimOpacity(drawerPosition / (float)drawerLayout.getMeasuredWidth());
     }
 
-    public int getDrawerPosition() {
+    public float getDrawerPosition() {
         return drawerPosition;
     }
 
@@ -171,7 +171,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         cancelCurrentAnimation();
         AnimatorSetProxy animatorSet = new AnimatorSetProxy();
         animatorSet.playTogether(
-                ObjectAnimatorProxy.ofInt(this, "drawerPosition", drawerLayout.getMeasuredWidth())
+                ObjectAnimatorProxy.ofFloat(this, "drawerPosition", drawerLayout.getMeasuredWidth())
         );
         animatorSet.setInterpolator(new DecelerateInterpolator());
         if (fast) {
@@ -198,7 +198,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         cancelCurrentAnimation();
         AnimatorSetProxy animatorSet = new AnimatorSetProxy();
         animatorSet.playTogether(
-                ObjectAnimatorProxy.ofInt(this, "drawerPosition", 0)
+                ObjectAnimatorProxy.ofFloat(this, "drawerPosition", 0)
         );
         animatorSet.setInterpolator(new DecelerateInterpolator());
         if (fast) {
@@ -291,12 +291,13 @@ public class DrawerLayoutContainer extends FrameLayout {
                     if (velocityTracker == null) {
                         velocityTracker = VelocityTracker.obtain();
                     }
-                    int dx = (int) (ev.getX() - startedTrackingX);
-                    int dy = Math.abs((int) ev.getY() - startedTrackingY);
+                    float dx = (int) (ev.getX() - startedTrackingX);
+                    float dy = Math.abs((int) ev.getY() - startedTrackingY);
                     velocityTracker.addMovement(ev);
-                    if (maybeStartTracking && !startedTracking && Math.abs(dx) / 3 > Math.abs(dy) && (dx < 0 || dx > 0 && dx > AndroidUtilities.dp(10))) {
+                    if (maybeStartTracking && !startedTracking && (dx > 0 && dx / 3.0f > Math.abs(dy) || dx < 0 && Math.abs(dx) >= Math.abs(dy) && Math.abs(dx) >= AndroidUtilities.dp(10))) {
                         prepareForDrawerOpen(ev);
                         startedTrackingX = (int) ev.getX();
+                        requestDisallowInterceptTouchEvent(true);
                     } else if (startedTracking) {
                         if (!beginTrackingSent) {
                             if (((Activity)getContext()).getCurrentFocus() != null) {
@@ -312,10 +313,10 @@ public class DrawerLayoutContainer extends FrameLayout {
                         velocityTracker = VelocityTracker.obtain();
                     }
                     velocityTracker.computeCurrentVelocity(1000);
-                    if (!startedTracking) {
+                    /*if (!startedTracking) {
                         float velX = velocityTracker.getXVelocity();
                         float velY = velocityTracker.getYVelocity();
-                        if (Math.abs(velX) >= 1500 && Math.abs(velX) > Math.abs(velY)) {
+                        if (Math.abs(velX) >= 3500 && Math.abs(velX) > Math.abs(velY)) {
                             prepareForDrawerOpen(ev);
                             if (!beginTrackingSent) {
                                 if (((Activity)getContext()).getCurrentFocus() != null) {
@@ -324,15 +325,15 @@ public class DrawerLayoutContainer extends FrameLayout {
                                 beginTrackingSent = true;
                             }
                         }
-                    }
+                    }*/
                     if (startedTracking || drawerPosition != 0 && drawerPosition != drawerLayout.getMeasuredWidth()) {
                         float velX = velocityTracker.getXVelocity();
                         float velY = velocityTracker.getYVelocity();
-                        boolean backAnimation = drawerPosition < drawerLayout.getMeasuredWidth() / 2.0f && (velX < 1500 || Math.abs(velX) < Math.abs(velY)) || velX < 0 && Math.abs(velX) >= 1500;
+                        boolean backAnimation = drawerPosition < drawerLayout.getMeasuredWidth() / 2.0f && (velX < 3500 || Math.abs(velX) < Math.abs(velY)) || velX < 0 && Math.abs(velX) >= 3500;
                         if (!backAnimation) {
-                            openDrawer(!drawerOpened && Math.abs(velX) >= 1500);
+                            openDrawer(!drawerOpened && Math.abs(velX) >= 3500);
                         } else {
-                            closeDrawer(drawerOpened && Math.abs(velX) >= 1500);
+                            closeDrawer(drawerOpened && Math.abs(velX) >= 3500);
                         }
                         startedTracking = false;
                     } else {
@@ -357,7 +358,9 @@ public class DrawerLayoutContainer extends FrameLayout {
 
     @Override
     public void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
-        onTouchEvent(null);
+        if (maybeStartTracking && !startedTracking) {
+            onTouchEvent(null);
+        }
         super.requestDisallowInterceptTouchEvent(disallowIntercept);
     }
 
@@ -378,7 +381,7 @@ public class DrawerLayoutContainer extends FrameLayout {
             if (drawerLayout != child) {
                 child.layout(lp.leftMargin, lp.topMargin, lp.leftMargin + child.getMeasuredWidth(), lp.topMargin + child.getMeasuredHeight());
             } else {
-                child.layout(-child.getMeasuredWidth() + drawerPosition, lp.topMargin, drawerPosition, lp.topMargin + child.getMeasuredHeight());
+                child.layout(-child.getMeasuredWidth() + (int)drawerPosition, lp.topMargin, (int)drawerPosition, lp.topMargin + child.getMeasuredHeight());
             }
         }
         inLayout = false;
@@ -462,9 +465,9 @@ public class DrawerLayoutContainer extends FrameLayout {
             scrimPaint.setColor((int) (((0x99000000 & 0xff000000) >>> 24) * scrimOpacity) << 24);
             canvas.drawRect(clipLeft, 0, clipRight, getHeight(), scrimPaint);
         } else if (shadowLeft != null) {
-            final float alpha = Math.max(0, Math.min((float) drawerPosition / AndroidUtilities.dp(20), 1.0f));
+            final float alpha = Math.max(0, Math.min(drawerPosition / AndroidUtilities.dp(20), 1.0f));
             if (alpha != 0) {
-                shadowLeft.setBounds(drawerPosition, child.getTop(), drawerPosition + shadowLeft.getIntrinsicWidth(), child.getBottom());
+                shadowLeft.setBounds((int)drawerPosition, child.getTop(), (int)drawerPosition + shadowLeft.getIntrinsicWidth(), child.getBottom());
                 shadowLeft.setAlpha((int) (0xff * alpha));
                 shadowLeft.draw(canvas);
             }

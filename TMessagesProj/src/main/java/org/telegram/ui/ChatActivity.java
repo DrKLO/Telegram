@@ -49,7 +49,9 @@ import org.telegram.android.LocaleController;
 import org.telegram.android.MediaController;
 import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationsController;
+import org.telegram.android.SecretChatHelper;
 import org.telegram.android.SendMessagesHelper;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.ContactsController;
@@ -75,16 +77,16 @@ import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.Views.AvatarDrawable;
-import org.telegram.ui.Views.BackupImageView;
+import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Views.ChatActivityEnterView;
+import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.android.ImageReceiver;
-import org.telegram.ui.Views.FrameLayoutFixed;
-import org.telegram.ui.Views.LayoutListView;
-import org.telegram.ui.Views.SizeNotifierRelativeLayout;
-import org.telegram.ui.Views.TimerDrawable;
-import org.telegram.ui.Views.TypingDotsDrawable;
+import org.telegram.ui.Components.FrameLayoutFixed;
+import org.telegram.ui.Components.LayoutListView;
+import org.telegram.ui.Components.SizeNotifierRelativeLayout;
+import org.telegram.ui.Components.TimerDrawable;
+import org.telegram.ui.Components.TypingDotsDrawable;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -429,8 +431,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         typingDotsDrawable = new TypingDotsDrawable();
         typingDotsDrawable.setIsChat(currentChat != null);
 
-        if (currentEncryptedChat != null && AndroidUtilities.getMyLayerVersion(currentEncryptedChat.layer) != SendMessagesHelper.CURRENT_SECRET_CHAT_LAYER) {
-            SendMessagesHelper.getInstance().sendNotifyLayerMessage(currentEncryptedChat, null);
+        if (currentEncryptedChat != null && AndroidUtilities.getMyLayerVersion(currentEncryptedChat.layer) != SecretChatHelper.CURRENT_SECRET_CHAT_LAYER) {
+            SecretChatHelper.getInstance().sendNotifyLayerMessage(currentEncryptedChat, null);
         }
 
         return true;
@@ -2431,7 +2433,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     } else if (obj.isOut() && !obj.isUnread()) {
                         break;
                     }
-                    if (obj.messageOwner.date <= date) {
+                    if (obj.messageOwner.date - 1 <= date) {
                         obj.setIsRead();
                     }
                 }

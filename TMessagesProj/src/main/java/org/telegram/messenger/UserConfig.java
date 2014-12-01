@@ -13,7 +13,6 @@ import android.content.SharedPreferences;
 import android.util.Base64;
 
 import org.telegram.android.MessagesStorage;
-import org.telegram.ui.ApplicationLoader;
 
 import java.io.File;
 

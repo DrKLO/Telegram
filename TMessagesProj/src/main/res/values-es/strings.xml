@@ -137,7 +137,7 @@
     <string name="NotificationGroupKickYou">%1$s te expulsó del grupo %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s dejó el grupo %2$s</string>
     <string name="NotificationContactJoined">¡%1$s se unió a Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nDetectamos un inicio de sesión en tu cuenta desde un nuevo dispositivo, el %2$s\n\nDispositivo: %3$s\nUbicación: %4$s\n\nSi no eras tú, puedes ir a Ajustes - Cerrar todas las otras sesiones.\n\nAtentamente,\nEl equipo de Telegram</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nDetectamos un inicio de sesión en tu cuenta desde un nuevo dispositivo, el %2$s\n\nDispositivo: %3$s\nUbicación: %4$s\n\nSi no eras tú, puedes ir a Ajustes - Privacidad y seguirdad - Cerrar todas las otras sesiones.\n\nAtentamente,\nEl equipo de Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s actualizó su foto de perfil</string>
     <string name="Reply">Responder</string>
     <string name="ReplyToGroup">Responder a %1$s</string>
@@ -277,7 +277,15 @@
     <string name="NotificationsPriorityLow">Baja</string>
     <string name="NotificationsPriorityHigh">Alta</string>
     <string name="NotificationsPriorityMax">Máxima</string>
+    <string name="RepeatNotificationsNever">Nunca</string>
     <string name="RepeatNotifications">Repetir notificaciones</string>
+    <string name="PhoneNumberHelp">Puedes cambiar tu número de Telegram aquí. Tu cuenta y todos tus datos de la nube — mensajes, archivos, grupos, contactos, etc., se moverán al nuevo número.\n\n<![CDATA[<b>Importante:</b>]]> Todos tus contactos de Telegram tendrán tu <![CDATA[<b>nuevo número</b>]]> añadido a sus agendas de contactos, siempre que hayan tenido tu número viejo y no los hayas bloqueado en Telegram.</string>
+    <string name="PhoneNumberAlert">Todos tus contactos de Telegram tendrán tu número nuevo añadido a sus agendas de contactos, siempre que hayan tenido tu número viejo y no los hayas bloqueado en Telegram.</string>
+    <string name="PhoneNumberChange">CAMBIAR NÚMERO</string>
+    <string name="ChangePhoneNewNumber">Nuevo número</string>
+    <string name="ChangePhoneHelp">Enviaremos un SMS con el código de confirmación a tu nuevo número.</string>
+    <string name="ChangePhoneNumberOccupied">El número %1$s ya está vinculado a una cuenta de Telegram. Por favor, elimina esa cuenta antes de migrar al nuevo número.</string>
+    <string name="NotificationsOther">Otras</string>
     <!--media view-->
     <string name="NoMedia">Aún no hay fotos ni vídeos</string>
     <!--map view-->

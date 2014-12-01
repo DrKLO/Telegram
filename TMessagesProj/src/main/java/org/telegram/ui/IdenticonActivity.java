@@ -23,12 +23,13 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Views.IdenticonDrawable;
+import org.telegram.ui.Components.IdenticonDrawable;
 
 public class IdenticonActivity extends BaseFragment {
     private int chat_id;
@@ -66,7 +67,7 @@ public class IdenticonActivity extends BaseFragment {
             if (encryptedChat != null) {
                 IdenticonDrawable drawable = new IdenticonDrawable();
                 identiconView.setImageDrawable(drawable);
-                drawable.setBytes(encryptedChat.auth_key);
+                drawable.setEncryptedChat(encryptedChat);
                 TLRPC.User user = MessagesController.getInstance().getUser(encryptedChat.user_id);
                 textView.setText(Html.fromHtml(LocaleController.formatString("EncryptionKeyDescription", R.string.EncryptionKeyDescription, user.first_name, user.first_name)));
             }
@@ -110,7 +111,7 @@ public class IdenticonActivity extends BaseFragment {
                     return true;
                 }
                 LinearLayout layout = (LinearLayout)fragmentView;
-                WindowManager manager = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+                WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
                 int rotation = manager.getDefaultDisplay().getRotation();
 
                 if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {

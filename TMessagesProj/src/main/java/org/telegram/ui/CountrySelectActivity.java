@@ -32,7 +32,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Views.SectionsListView;
+import org.telegram.ui.Components.SectionsListView;
 
 public class CountrySelectActivity extends BaseFragment {
 

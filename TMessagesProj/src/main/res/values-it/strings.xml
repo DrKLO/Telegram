@@ -133,11 +133,11 @@
     <string name="NotificationEditedGroupName">%1$s ha modificato il nome del gruppo %2$s</string>
     <string name="NotificationEditedGroupPhoto">%1$s ha modificato la foto del gruppo %2$s</string>
     <string name="NotificationGroupAddMember">%1$s ha invitato %3$s nel gruppo %2$s</string>
-    <string name="NotificationGroupKickMember">%1$s ha rimosso %3$s dal gruppo %2$s</string>
-    <string name="NotificationGroupKickYou">%1$s ti ha rimosso dal gruppo %2$s</string>
+    <string name="NotificationGroupKickMember">%1$s ha espulso %3$s dal gruppo %2$s</string>
+    <string name="NotificationGroupKickYou">%1$s ti ha espulso dal gruppo %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s ha lasciato il gruppo %2$s</string>
     <string name="NotificationContactJoined">%1$s ha iniziato a usare Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nAbbiamo rilevato un accesso al tuo account da un nuovo dispositivo %2$s\n\nDispositivo: %3$s\nPosizione: %4$s\n\nSe non sei stato tu, puoi andare su Impostazioni - Termina tutte le sessioni.\n\nGrazie,\nil team di Telegram</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nAbbiamo rilevato un accesso al tuo account da un nuovo dispositivo %2$s\n\nDispositivo: %3$s\nPosizione: %4$s\n\nSe non sei stato tu, puoi andare su Impostazioni - Privacy e Sicurezza - Termina tutte le sessioni.\n\nGrazie,\nil team di Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s ha aggiornato la foto del profilo</string>
     <string name="Reply">Rispondi</string>
     <string name="ReplyToGroup">Rispondi a %1$s</string>
@@ -277,7 +277,15 @@
     <string name="NotificationsPriorityLow">Bassa</string>
     <string name="NotificationsPriorityHigh">Alta</string>
     <string name="NotificationsPriorityMax">Massima</string>
+    <string name="RepeatNotificationsNever">Mai</string>
     <string name="RepeatNotifications">Ripeti Notifiche</string>
+    <string name="PhoneNumberHelp">Puoi cambiare il tuo numero di telefono qui. Il tuo account e tutti i tuoi dati cloud — messaggi, file, contatti, etc. saranno spostati sul nuovo numero.\n\n<![CDATA[<b>Importante:</b>]]> a tutti i tuoi contatti di Telegram verrà aggiunto il tuo <![CDATA[<b>nuovo numero</b>]]> ai contatti, purché abbiano il tuo vecchio numero e tu non li abbia bloccati su Telegram.</string>
+    <string name="PhoneNumberAlert">Tutti i tuoi contatti Telegram avranno il tuo nuovo numero tra i loro contatti, purché abbiano il tuo vecchio numero e tu non li abbia bloccati su Telegram.</string>
+    <string name="PhoneNumberChange">CAMBIA NUMERO</string>
+    <string name="ChangePhoneNewNumber">Nuovo numero</string>
+    <string name="ChangePhoneHelp">Invieremo un SMS con un codice di conferma al tuo nuovo numero.</string>
+    <string name="ChangePhoneNumberOccupied">Il numero %1$s è già connesso a un account Telegram. Per favore elimina quell\'account prima di migrare ad un nuovo numero.</string>
+    <string name="NotificationsOther">Altro</string>
     <!--media view-->
     <string name="NoMedia">Nessun media condiviso</string>
     <!--map view-->
@@ -354,21 +362,21 @@
     <string name="Set">Imposta</string>
     <string name="OK">OK</string>
     <!--messages-->
-    <string name="ActionKickUser">un1 ha rimosso un2</string>
+    <string name="ActionKickUser">un1 ha espulso un2</string>
     <string name="ActionLeftUser">un1 ha lasciato il gruppo</string>
     <string name="ActionAddUser">un1 ha aggiunto un2</string>
     <string name="ActionRemovedPhoto">un1 ha rimosso la foto del gruppo</string>
     <string name="ActionChangedPhoto">un1 ha cambiato la foto del gruppo</string>
     <string name="ActionChangedTitle">un1 ha cambiato il nome del gruppo in un2</string>
     <string name="ActionCreateGroup">un1 ha creato il gruppo</string>
-    <string name="ActionYouKickUser">Hai rimosso un2</string>
+    <string name="ActionYouKickUser">Hai espulso un2</string>
     <string name="ActionYouLeftUser">Hai lasciato il gruppo</string>
     <string name="ActionYouAddUser">Hai aggiunto un2</string>
     <string name="ActionYouRemovedPhoto">Hai rimosso la foto del gruppo</string>
     <string name="ActionYouChangedPhoto">Hai cambiato la foto del gruppo</string>
     <string name="ActionYouChangedTitle">Hai cambiato il nome del gruppo in un2</string>
     <string name="ActionYouCreateGroup">Hai creato il gruppo</string>
-    <string name="ActionKickUserYou">un1 ti ha rimosso</string>
+    <string name="ActionKickUserYou">un1 ti ha espulso</string>
     <string name="ActionAddUserYou">un1 ti ha aggiunto</string>
     <string name="UnsuppotedMedia">Questo messaggio non è supportato sulla tua versione di Telegram. Aggiorna l\'applicazione per visualizzarlo: http://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
@@ -378,8 +386,8 @@
     <string name="AttachDocument">File</string>
     <string name="AttachAudio">Audio</string>
     <string name="FromYou">Tu</string>
-    <string name="ActionTakeScreenshootYou">Hai catturato la schermata!</string>
-    <string name="ActionTakeScreenshoot">un1 ha catturato la schermata!</string>
+    <string name="ActionTakeScreenshootYou">Hai fatto uno screenshot!</string>
+    <string name="ActionTakeScreenshoot">un1 ha fatto uno screenshot!</string>
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Numero di telefono non valido</string>
     <string name="CodeExpired">Codice scaduto, effettua di nuovo l\'accesso</string>

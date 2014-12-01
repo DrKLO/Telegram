@@ -3,7 +3,7 @@
     android:layout_height="102dp"
     android:layout_width="100dp">
 
-    <org.telegram.ui.Views.BackupImageView
+    <org.telegram.ui.Components.BackupImageView
         android:layout_height="100dp"
         android:layout_width="100dp"
         android:id="@+id/image"

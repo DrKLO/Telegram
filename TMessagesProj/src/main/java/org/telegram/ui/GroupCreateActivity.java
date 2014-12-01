@@ -41,6 +41,7 @@ import android.widget.TextView;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
@@ -53,7 +54,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Cells.UserCell;
-import org.telegram.ui.Views.SectionsListView;
+import org.telegram.ui.Components.SectionsListView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -514,7 +515,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     }
 
     private XImageSpan createAndPutChipForUser(TLRPC.User user) {
-        LayoutInflater lf = (LayoutInflater)ApplicationLoader.applicationContext.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
+        LayoutInflater lf = (LayoutInflater) ApplicationLoader.applicationContext.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
         View textView = lf.inflate(R.layout.group_create_bubble, null);
         TextView text = (TextView)textView.findViewById(R.id.bubble_text_view);
         String name = ContactsController.formatName(user.first_name, user.last_name);

@@ -34,6 +34,7 @@ import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
@@ -84,7 +85,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                 user = UserConfig.getCurrentUser();
             }
 
-            fragmentView = new LinearLayout(inflater.getContext());
+            fragmentView = new LinearLayout(getParentActivity());
             fragmentView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             ((LinearLayout) fragmentView).setOrientation(LinearLayout.VERTICAL);
             fragmentView.setOnTouchListener(new View.OnTouchListener() {
@@ -94,7 +95,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                 }
             });
 
-            firstNameField = new EditText(inflater.getContext());
+            firstNameField = new EditText(getParentActivity());
             firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             firstNameField.setHintTextColor(0xff979797);
             firstNameField.setTextColor(0xff212121);
@@ -132,7 +133,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                 firstNameField.setSelection(firstNameField.length());
             }
 
-            checkTextView = new TextView(inflater.getContext());
+            checkTextView = new TextView(getParentActivity());
             checkTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             checkTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             ((LinearLayout) fragmentView).addView(checkTextView);
@@ -145,7 +146,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             layoutParams.rightMargin = AndroidUtilities.dp(24);
             checkTextView.setLayoutParams(layoutParams);
 
-            TextView helpTextView = new TextView(inflater.getContext());
+            TextView helpTextView = new TextView(getParentActivity());
             helpTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             helpTextView.setTextColor(0xff6d6d72);
             helpTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);

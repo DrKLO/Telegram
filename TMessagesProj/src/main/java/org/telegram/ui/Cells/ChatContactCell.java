@@ -28,7 +28,7 @@ import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
-import org.telegram.ui.Views.AvatarDrawable;
+import org.telegram.ui.Components.AvatarDrawable;
 
 public class ChatContactCell extends ChatBaseCell {
 

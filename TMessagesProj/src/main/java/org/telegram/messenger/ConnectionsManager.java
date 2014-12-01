@@ -21,7 +21,6 @@ import org.telegram.android.ContactsController;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
-import org.telegram.ui.ApplicationLoader;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -418,7 +417,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                         pushSessionId = Utilities.random.nextLong();
                     }
                     if (currentDatacenterId == 0) {
-                        currentDatacenterId = 1;
+                        currentDatacenterId = 2;
                     }
                     saveSession();
                 }
@@ -432,12 +431,12 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             if (isTestBackend == 0) {
                 Datacenter datacenter = new Datacenter();
                 datacenter.datacenterId = 1;
-                datacenter.addAddressAndPort("173.240.5.1", 443);
+                datacenter.addAddressAndPort("149.154.175.50", 443);
                 datacenters.put(datacenter.datacenterId, datacenter);
 
                 datacenter = new Datacenter();
                 datacenter.datacenterId = 2;
-                datacenter.addAddressAndPort("149.154.167.50", 443);
+                datacenter.addAddressAndPort("149.154.167.51", 443);
                 datacenters.put(datacenter.datacenterId, datacenter);
 
                 datacenter = new Datacenter();
@@ -447,7 +446,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
                 datacenter = new Datacenter();
                 datacenter.datacenterId = 4;
-                datacenter.addAddressAndPort("149.154.167.90", 443);
+                datacenter.addAddressAndPort("149.154.167.91", 443);
                 datacenters.put(datacenter.datacenterId, datacenter);
 
                 datacenter = new Datacenter();
@@ -473,7 +472,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         } else if (datacenters.size() == 1) {
             Datacenter datacenter = new Datacenter();
             datacenter.datacenterId = 2;
-            datacenter.addAddressAndPort("149.154.167.50", 443);
+            datacenter.addAddressAndPort("149.154.167.51", 443);
             datacenters.put(datacenter.datacenterId, datacenter);
 
             datacenter = new Datacenter();
@@ -483,12 +482,12 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
             datacenter = new Datacenter();
             datacenter.datacenterId = 4;
-            datacenter.addAddressAndPort("31.210.235.12", 443);
+            datacenter.addAddressAndPort("149.154.167.91", 443);
             datacenters.put(datacenter.datacenterId, datacenter);
 
             datacenter = new Datacenter();
             datacenter.datacenterId = 5;
-            datacenter.addAddressAndPort("116.51.22.2", 443);
+            datacenter.addAddressAndPort("149.154.171.5", 443);
             datacenters.put(datacenter.datacenterId, datacenter);
         }
     }
@@ -1113,13 +1112,13 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
                 request.retryCount++;
 
-                if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0) {
+                if (!request.salt && (request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0) {
                     int retryMax = 10;
                     if ((request.flags & RPCRequest.RPCRequestClassForceDownload) == 0) {
                         if (request.wait) {
                             retryMax = 1;
                         } else {
-                            retryMax = 3;
+                            retryMax = 6;
                         }
                     }
                     if (request.retryCount >= retryMax) {
@@ -2244,6 +2243,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     }
                     if (request.respondsToMessageId(resultMid)) {
                         request.retryCount = 0;
+                        request.salt = true;
+                        break;
                     }
                 }
             }
@@ -2568,7 +2569,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 if (message == null) {
                     FileLog.e("tmessages", "***** Error parsing message: " + constructor);
                 } else {
-                    FileLog.e("tmessages", "received object " + message);
+                    FileLog.d("tmessages", "received object " + message);
                     processMessage(message, messageId, messageSeqNo, messageServerSalt, connection, 0, 0);
                     connection.addProcessedMessageId(messageId);
 

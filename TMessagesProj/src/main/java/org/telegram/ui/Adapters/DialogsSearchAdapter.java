@@ -10,6 +10,7 @@ package org.telegram.ui.Adapters;
 
 import android.content.Context;
 import android.text.Html;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -36,10 +37,15 @@ import org.telegram.ui.Cells.LoadingCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
+
     private Context mContext;
     private Timer searchTimer;
     private ArrayList<TLObject> searchResult = new ArrayList<TLObject>();
@@ -53,6 +59,12 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
     private boolean messagesSearchEndReached;
     private String lastMessagesSearchString;
     private int lastSearchId = 0;
+
+    private class DialogSearchResult {
+        public TLObject object;
+        public int date;
+        public CharSequence name;
+    }
 
     public static interface MessagesActivitySearchAdapterDelegate {
         public abstract void searchStateChanged(boolean searching);
@@ -143,19 +155,211 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
             @Override
             public void run() {
                 try {
-                    FileLog.e("tmessages", "trigger search");
-                    ArrayList<TLRPC.User> encUsers = new ArrayList<TLRPC.User>();
                     String q = query.trim().toLowerCase();
                     if (q.length() == 0) {
                         lastSearchId = -1;
                         updateSearchResults(new ArrayList<TLObject>(), new ArrayList<CharSequence>(), new ArrayList<TLRPC.User>(), lastSearchId);
                         return;
                     }
+
+                    ArrayList<Integer> usersToLoad = new ArrayList<Integer>();
+                    ArrayList<Integer> chatsToLoad = new ArrayList<Integer>();
+                    ArrayList<Integer> encryptedToLoad = new ArrayList<Integer>();
+                    ArrayList<TLRPC.User> encUsers = new ArrayList<TLRPC.User>();
+                    int resultCount = 0;
+
+                    HashMap<Long, DialogSearchResult> dialogsResult = new HashMap<Long, DialogSearchResult>();
+                    SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT did, date FROM dialogs ORDER BY date DESC LIMIT 200"));
+                    while (cursor.next()) {
+                        long id = cursor.longValue(0);
+                        DialogSearchResult dialogSearchResult = new DialogSearchResult();
+                        dialogSearchResult.date = cursor.intValue(1);
+                        dialogsResult.put(id, dialogSearchResult);
+
+                        int lower_id = (int)id;
+                        int high_id = (int)(id >> 32);
+                        if (lower_id != 0) {
+                            if (high_id == 1) {
+                                if (!serverOnly && !chatsToLoad.contains(lower_id)) {
+                                    chatsToLoad.add(lower_id);
+                                }
+                            } else {
+                                if (lower_id > 0) {
+                                    if (!usersToLoad.contains(lower_id)) {
+                                        usersToLoad.add(lower_id);
+                                    }
+                                } else {
+                                    if (!chatsToLoad.contains(-lower_id)) {
+                                        chatsToLoad.add(-lower_id);
+                                    }
+                                }
+                            }
+                        } else if (!serverOnly) {
+                            if (!encryptedToLoad.contains(high_id)) {
+                                encryptedToLoad.add(high_id);
+                            }
+                        }
+                    }
+                    cursor.dispose();
+
+                    if (!usersToLoad.isEmpty()) {
+                        cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, status, name FROM users WHERE uid IN(%s)", TextUtils.join(",", usersToLoad)));
+                        while (cursor.next()) {
+                            String name = cursor.stringValue(2);
+                            String username = null;
+                            int usernamePos = name.lastIndexOf(";;;");
+                            if (usernamePos != -1) {
+                                username = name.substring(usernamePos + 3);
+                            }
+                            int found = 0;
+                            if (name.startsWith(q) || name.contains(" " + q)) {
+                                found = 1;
+                            } else if (username != null && username.startsWith(q)) {
+                                found = 2;
+                            }
+                            if (found != 0) {
+                                ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
+                                if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
+                                    TLRPC.User user = (TLRPC.User) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                                    if (user.id != UserConfig.getClientUserId()) {
+                                        DialogSearchResult dialogSearchResult = dialogsResult.get((long)user.id);
+                                        if (user.status != null) {
+                                            user.status.expires = cursor.intValue(1);
+                                        }
+                                        if (found == 1) {
+                                            dialogSearchResult.name = Utilities.generateSearchName(user.first_name, user.last_name, q);
+                                        } else {
+                                            dialogSearchResult.name = Utilities.generateSearchName("@" + user.username, null, "@" + q);
+                                        }
+                                        dialogSearchResult.object = user;
+                                        resultCount++;
+                                    }
+                                }
+                                MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
+                            }
+                        }
+                        cursor.dispose();
+                    }
+
+                    if (!chatsToLoad.isEmpty()) {
+                        cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, name FROM chats WHERE uid IN(%s)", TextUtils.join(",", chatsToLoad)));
+                        while (cursor.next()) {
+                            String name = cursor.stringValue(1);
+                            String[] args = name.split(" ");
+                            if (name.startsWith(q) || name.contains(" " + q)) {
+                                ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
+                                if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
+                                    TLRPC.Chat chat = (TLRPC.Chat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                                    long dialog_id;
+                                    if (chat.id > 0) {
+                                        dialog_id = -chat.id;
+                                    } else {
+                                        dialog_id = AndroidUtilities.makeBroadcastId(chat.id);
+                                    }
+                                    DialogSearchResult dialogSearchResult = dialogsResult.get(dialog_id);
+                                    dialogSearchResult.name = Utilities.generateSearchName(chat.title, null, q);
+                                    dialogSearchResult.object = chat;
+                                    resultCount++;
+                                }
+                                MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
+                            }
+                        }
+                        cursor.dispose();
+                    }
+
+                    if (!encryptedToLoad.isEmpty()) {
+                        cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT q.data, u.name, q.user, q.g, q.authkey, q.ttl, u.data, u.status, q.layer, q.seq_in, q.seq_out, q.use_count, q.exchange_id, q.key_date, q.fprint, q.fauthkey, q.khash FROM enc_chats as q INNER JOIN users as u ON q.user = u.uid WHERE q.uid IN(%s)", TextUtils.join(",", encryptedToLoad)));
+                        while (cursor.next()) {
+                            String name = cursor.stringValue(1);
+
+                            String username = null;
+                            int usernamePos = name.lastIndexOf(";;;");
+                            if (usernamePos != -1) {
+                                username = name.substring(usernamePos + 2);
+                            }
+                            int found = 0;
+                            if (name.startsWith(q) || name.contains(" " + q)) {
+                                found = 1;
+                            } else if (username != null && username.startsWith(q)) {
+                                found = 2;
+                            }
+
+                            if (found != 0) {
+                                ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
+                                ByteBufferDesc data2 = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(6));
+                                if (data != null && cursor.byteBufferValue(0, data.buffer) != 0 && cursor.byteBufferValue(6, data2.buffer) != 0) {
+                                    TLRPC.EncryptedChat chat = (TLRPC.EncryptedChat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                                    DialogSearchResult dialogSearchResult = dialogsResult.get((long)chat.id << 32);
+
+                                    chat.user_id = cursor.intValue(2);
+                                    chat.a_or_b = cursor.byteArrayValue(3);
+                                    chat.auth_key = cursor.byteArrayValue(4);
+                                    chat.ttl = cursor.intValue(5);
+                                    chat.layer = cursor.intValue(8);
+                                    chat.seq_in = cursor.intValue(9);
+                                    chat.seq_out = cursor.intValue(10);
+                                    int use_count = cursor.intValue(11);
+                                    chat.key_use_count_in = (short)(use_count >> 16);
+                                    chat.key_use_count_out = (short)(use_count);
+                                    chat.exchange_id = cursor.longValue(12);
+                                    chat.key_create_date = cursor.intValue(13);
+                                    chat.future_key_fingerprint = cursor.longValue(14);
+                                    chat.future_auth_key = cursor.byteArrayValue(15);
+                                    chat.key_hash = cursor.byteArrayValue(16);
+
+                                    TLRPC.User user = (TLRPC.User)TLClassStore.Instance().TLdeserialize(data2, data2.readInt32());
+                                    if (user.status != null) {
+                                        user.status.expires = cursor.intValue(7);
+                                    }
+                                    if (found == 1) {
+                                        dialogSearchResult.name = Html.fromHtml("<font color=\"#00a60e\">" + ContactsController.formatName(user.first_name, user.last_name) + "</font>");
+                                    } else {
+                                        dialogSearchResult.name = Utilities.generateSearchName("@" + user.username, null, "@" + q);
+                                    }
+                                    dialogSearchResult.object = chat;
+                                    encUsers.add(user);
+                                    resultCount++;
+                                }
+                                MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
+                                MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data2);
+                            }
+                        }
+                        cursor.dispose();
+                    }
+
+                    ArrayList<DialogSearchResult> searchResults = new ArrayList<DialogSearchResult>(resultCount);
+                    for (DialogSearchResult dialogSearchResult : dialogsResult.values()) {
+                        if (dialogSearchResult.object != null && dialogSearchResult.name != null) {
+                            searchResults.add(dialogSearchResult);
+                        }
+                    }
+
+                    Collections.sort(searchResults, new Comparator<DialogSearchResult>() {
+                        @Override
+                        public int compare(DialogSearchResult lhs, DialogSearchResult rhs) {
+                            if (lhs.date < rhs.date) {
+                                return 1;
+                            } else if (lhs.date > rhs.date) {
+                                return -1;
+                            }
+                            return 0;
+                        }
+                    });
+
                     ArrayList<TLObject> resultArray = new ArrayList<TLObject>();
                     ArrayList<CharSequence> resultArrayNames = new ArrayList<CharSequence>();
 
-                    SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT u.data, u.status, u.name FROM users as u INNER JOIN contacts as c ON u.uid = c.uid");
+                    for (DialogSearchResult dialogSearchResult : searchResults) {
+                        resultArray.add(dialogSearchResult.object);
+                        resultArrayNames.add(dialogSearchResult.name);
+                    }
+
+                    cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT u.data, u.status, u.name, u.uid FROM users as u INNER JOIN contacts as c ON u.uid = c.uid");
                     while (cursor.next()) {
+                        int uid = cursor.intValue(3);
+                        if (dialogsResult.containsKey((long)uid)) {
+                            continue;
+                        }
                         String name = cursor.stringValue(2);
                         String username = null;
                         int usernamePos = name.lastIndexOf(";;;");
@@ -189,73 +393,6 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                     }
                     cursor.dispose();
 
-                    if (!serverOnly) {
-                        cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT q.data, u.name, q.user, q.g, q.authkey, q.ttl, u.data, u.status, q.layer, q.seq_in, q.seq_out FROM enc_chats as q INNER JOIN dialogs as d ON (q.uid << 32) = d.did INNER JOIN users as u ON q.user = u.uid");
-                        while (cursor.next()) {
-                            String name = cursor.stringValue(1);
-
-                            String username = null;
-                            int usernamePos = name.lastIndexOf(";;;");
-                            if (usernamePos != -1) {
-                                username = name.substring(usernamePos + 2);
-                            }
-                            int found = 0;
-                            if (name.startsWith(q) || name.contains(" " + q)) {
-                                found = 1;
-                            } else if (username != null && username.startsWith(q)) {
-                                found = 2;
-                            }
-
-                            if (found != 0) {
-                                ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
-                                ByteBufferDesc data2 = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(6));
-                                if (data != null && cursor.byteBufferValue(0, data.buffer) != 0 && cursor.byteBufferValue(6, data2.buffer) != 0) {
-                                    TLRPC.EncryptedChat chat = (TLRPC.EncryptedChat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                                    chat.user_id = cursor.intValue(2);
-                                    chat.a_or_b = cursor.byteArrayValue(3);
-                                    chat.auth_key = cursor.byteArrayValue(4);
-                                    chat.ttl = cursor.intValue(5);
-                                    chat.layer = cursor.intValue(8);
-                                    chat.seq_in = cursor.intValue(9);
-                                    chat.seq_out = cursor.intValue(10);
-
-                                    TLRPC.User user = (TLRPC.User)TLClassStore.Instance().TLdeserialize(data2, data2.readInt32());
-                                    if (user.status != null) {
-                                        user.status.expires = cursor.intValue(7);
-                                    }
-                                    if (found == 1) {
-                                        resultArrayNames.add(Html.fromHtml("<font color=\"#00a60e\">" + ContactsController.formatName(user.first_name, user.last_name) + "</font>"));
-                                    } else {
-                                        resultArrayNames.add(Utilities.generateSearchName("@" + user.username, null, "@" + q));
-                                    }
-                                    resultArray.add(chat);
-                                    encUsers.add(user);
-                                }
-                                MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
-                                MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data2);
-                            }
-                        }
-                        cursor.dispose();
-                    }
-
-                    cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT data, name FROM chats");
-                    while (cursor.next()) {
-                        String name = cursor.stringValue(1);
-                        String[] args = name.split(" ");
-                        if (name.startsWith(q) || name.contains(" " + q)) {
-                            ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
-                            if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
-                                TLRPC.Chat chat = (TLRPC.Chat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                                if (serverOnly && chat.id < 0) {
-                                    continue;
-                                }
-                                resultArrayNames.add(Utilities.generateSearchName(chat.title, null, q));
-                                resultArray.add(chat);
-                            }
-                            MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
-                        }
-                    }
-                    cursor.dispose();
                     updateSearchResults(resultArray, resultArrayNames, encUsers, searchId);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);

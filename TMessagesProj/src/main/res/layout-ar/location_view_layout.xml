@@ -19,7 +19,7 @@
         android:background="@drawable/location_panel"
         android:id="@+id/location_bottom_view">
 
-        <org.telegram.ui.Views.BackupImageView
+        <org.telegram.ui.Components.BackupImageView
             android:layout_width="64dp"
             android:layout_height="64dp"
             android:id="@+id/location_avatar_view"

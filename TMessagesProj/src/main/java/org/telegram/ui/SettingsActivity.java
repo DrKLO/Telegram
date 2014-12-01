@@ -42,6 +42,7 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.MediaController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.FileLoader;
@@ -70,11 +71,11 @@ import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.Views.AvatarDrawable;
-import org.telegram.ui.Views.AvatarUpdater;
-import org.telegram.ui.Views.BackupImageView;
+import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.AvatarUpdater;
+import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Views.NumberPicker;
+import org.telegram.ui.Components.NumberPicker;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -585,6 +586,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         showAlertDialog(builder);
                     } else if (i == usernameRow) {
                         presentFragment(new ChangeUsernameActivity());
+                    } else if (i == numberRow) {
+                        presentFragment(new ChangePhoneHelpActivity());
                     }
                 }
             });
@@ -986,7 +989,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public boolean isEnabled(int i) {
-            return i == textSizeRow || i == enableAnimationsRow || i == notificationRow || i == backgroundRow ||
+            return i == textSizeRow || i == enableAnimationsRow || i == notificationRow || i == backgroundRow || i == numberRow ||
                     i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == privacyRow || i == wifiDownloadRow ||
                     i == mobileDownloadRow || i == clearLogsRow || i == roamingDownloadRow || i == languageRow || i == usernameRow ||
                     i == switchBackendButtonRow || i == telegramFaqRow || i == contactsSortRow || i == contactsReimportRow || i == saveToGalleryRow;

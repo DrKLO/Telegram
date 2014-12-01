@@ -25,9 +25,9 @@ import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.android.MessageObject;
 import org.telegram.android.ImageReceiver;
-import org.telegram.ui.Views.AvatarDrawable;
-import org.telegram.ui.Views.ProgressView;
-import org.telegram.ui.Views.SeekBar;
+import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.ProgressView;
+import org.telegram.ui.Components.SeekBar;
 
 import java.io.File;
 

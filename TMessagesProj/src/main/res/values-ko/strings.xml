@@ -277,7 +277,15 @@
     <string name="NotificationsPriorityLow">낮음</string>
     <string name="NotificationsPriorityHigh">높음</string>
     <string name="NotificationsPriorityMax">최우선</string>
-    <string name="RepeatNotifications">Repeat Notifications</string>
+    <string name="RepeatNotificationsNever">사용 안 함</string>
+    <string name="RepeatNotifications">알림 반복</string>
+    <string name="PhoneNumberHelp">텔레그램 가입 번호를 여기서 변경할 수 있습니다. 계정 및 클라우드에 저장된 메시지나 사진/동영상, 대화상대 등이 새 번호로 이동됩니다.\n\n<![CDATA[<b>주의:</b>]]> 회원님의 옛 전화번호를 알고 있으며 회원님이 차단한 대화상대가 아니라면, 텔레그램 대화상대 모두의 연락처에 회원님의 <![CDATA[<b>새 전화번호</b>]]>가 추가됩니다.</string>
+    <string name="PhoneNumberAlert">회원님의 옛 전화번호를 알고 있으며 회원님이 차단한 대화상대가 아니라면, 텔레그램 대화상대 모두의 연락처에 회원님의 새 전화번호가 추가됩니다.</string>
+    <string name="PhoneNumberChange">번호 변경</string>
+    <string name="ChangePhoneNewNumber">새 번호</string>
+    <string name="ChangePhoneHelp">인증코드 메시지를 새 번호로 전송하겠습니다.</string>
+    <string name="ChangePhoneNumberOccupied">The number %1$s is already connected to a Telegram account. Please delete that account before migrating to the new number.</string>
+    <string name="NotificationsOther">기타</string>
     <!--media view-->
     <string name="NoMedia">공유한 미디어가 없습니다</string>
     <!--map view-->

@@ -18,8 +18,8 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
-import org.telegram.ui.Views.FrameLayoutFixed;
-import org.telegram.ui.Views.Switch;
+import org.telegram.ui.Components.FrameLayoutFixed;
+import org.telegram.ui.Components.Switch;
 
 public class TextCheckCell extends FrameLayoutFixed {
 

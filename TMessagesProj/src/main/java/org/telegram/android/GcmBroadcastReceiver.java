@@ -16,7 +16,7 @@ import android.content.Intent;
 import org.json.JSONObject;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.ui.ApplicationLoader;
+import org.telegram.messenger.ApplicationLoader;
 
 public class GcmBroadcastReceiver extends BroadcastReceiver {
 

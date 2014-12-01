@@ -35,7 +35,9 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesStorage;
+import org.telegram.android.SecretChatHelper;
 import org.telegram.android.SendMessagesHelper;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.ContactsController;
@@ -57,11 +59,11 @@ import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.Views.AvatarDrawable;
-import org.telegram.ui.Views.AvatarUpdater;
-import org.telegram.ui.Views.BackupImageView;
+import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.AvatarUpdater;
+import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Views.IdenticonDrawable;
+import org.telegram.ui.Components.IdenticonDrawable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -459,7 +461,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
                                 creatingChat = true;
-                                MessagesController.getInstance().startSecretChat(getParentActivity(), MessagesController.getInstance().getUser(user_id));
+                                SecretChatHelper.getInstance().startSecretChat(getParentActivity(), MessagesController.getInstance().getUser(user_id));
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -484,7 +486,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                     }
                                 } else if (i == 1) {
                                     if(Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.HONEYCOMB) {
-                                        android.text.ClipboardManager clipboard = (android.text.ClipboardManager)ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                                        android.text.ClipboardManager clipboard = (android.text.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
                                         clipboard.setText("+" + user.phone);
                                     } else {
                                         android.content.ClipboardManager clipboard = (android.content.ClipboardManager)ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
@@ -765,6 +767,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (user_id != 0) {
                 if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0 || (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
                     updateProfileData();
+                }
+                if ((mask & MessagesController.UPDATE_MASK_PHONE) != 0) {
+                    if (listView != null) {
+                        listView.invalidateViews();
+                    }
                 }
             } else if (chat_id != 0) {
                 if ((mask & MessagesController.UPDATE_MASK_CHAT_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_CHAT_NAME) != 0 || (mask & MessagesController.UPDATE_MASK_CHAT_MEMBERS) != 0 || (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
@@ -1283,7 +1290,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 } else if (i == settingsKeyRow) {
                     IdenticonDrawable identiconDrawable = new IdenticonDrawable();
                     TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat((int)(dialog_id >> 32));
-                    identiconDrawable.setBytes(encryptedChat.auth_key);
+                    identiconDrawable.setEncryptedChat(encryptedChat);
                     textCell.setTextAndValueDrawable(LocaleController.getString("EncryptionKey", R.string.EncryptionKey), identiconDrawable);
                 }
             } else if (type == 4) {

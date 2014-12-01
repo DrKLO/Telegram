@@ -137,7 +137,7 @@
     <string name="NotificationGroupKickYou">%1$s hat dich aus der Gruppe %2$s entfernt</string>
     <string name="NotificationGroupLeftMember">%1$s hat die Gruppe %2$s verlassen</string>
     <string name="NotificationContactJoined">%1$s benutzt jetzt Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nWir haben eine Anmeldung von einem neuen Gerät am %2$s festgestellt.\n\nGerät: %3$s\nStandort: %4$s\n\nWenn du das nicht selbst gewesen bist, melde alle anderen Sitzungen in den Telegram Einstellungen unverzüglich ab.\n\nMit freundlichen Grüßen,\nDas Telegram Team</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nWir haben eine Anmeldung von einem neuen Gerät am %2$s festgestellt.\n\nGerät: %3$s\nStandort: %4$s\n\nWenn du das nicht selbst gewesen bist, melde alle anderen Sitzungen in den Telegram Einstellungen unverzüglich ab.\n\nMit freundlichen Grüßen,\nDein Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s hat das Profilbild geändert</string>
     <string name="Reply">Beantworten</string>
     <string name="ReplyToGroup">%1$s antworten</string>
@@ -276,8 +276,16 @@
     <string name="NotificationsPriorityDefault">Standard</string>
     <string name="NotificationsPriorityLow">Niedrig</string>
     <string name="NotificationsPriorityHigh">Hoch</string>
-    <string name="NotificationsPriorityMax">Max</string>
-    <string name="RepeatNotifications">Wiederholen Benachrichtigungen</string>
+    <string name="NotificationsPriorityMax">Max.</string>
+    <string name="RepeatNotificationsNever">Niemals</string>
+    <string name="RepeatNotifications">Erneut benachrichtigen</string>
+    <string name="PhoneNumberHelp">Du kannst deine Telefonnummer hier ändern. Dein Konto und alle Daten in der Telegram-Cloud, also Nachrichten, Medien, Kontakte, etc. werden auf das neue Konto übertragen.\n\n<![CDATA[<b>Wichtig:</b>]]> Alle deine Kontakte erhalten deine  <![CDATA[<b>neue Nummer</b>]]> ihrem Telefonbuch hinzugefügt, sofern sie deine alte Nummer gespeichert hatten und du sie nicht blockiert hattest.</string>
+    <string name="PhoneNumberAlert">Deinen Kontakten wird deine neue Nummer ihrem Telefonbuch hinzugefügt, sofern sie deine alte Nummer gespeichert hatten und du sie nicht blockiert hattest.</string>
+    <string name="PhoneNumberChange">NUMMER ÄNDERN</string>
+    <string name="ChangePhoneNewNumber">Neue Nummer</string>
+    <string name="ChangePhoneHelp">Der Bestätigungscode kommt per SMS an deine neue Nummer.</string>
+    <string name="ChangePhoneNumberOccupied">Die Telefonnummer %1$s ist bereits ein Telegram Konto. Bitte lösche es, bevor du mit der Übertragung auf das neue Konto startest.</string>
+    <string name="NotificationsOther">Sonstige</string>
     <!--media view-->
     <string name="NoMedia">Noch keine geteilten Medien vorhanden</string>
     <!--map view-->

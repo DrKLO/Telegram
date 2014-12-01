@@ -9,7 +9,9 @@
 package org.telegram.ui;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.ContentResolver;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
@@ -39,12 +41,17 @@ import android.widget.Toast;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.ContactsController;
+import org.telegram.android.MessagesController;
+import org.telegram.android.MessagesStorage;
 import org.telegram.android.SendMessagesHelper;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.RPCRequest;
+import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -352,11 +359,16 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 FileLog.e("tmessages", e);
             }
         } else {
+            boolean allowOpen = false;
             if (AndroidUtilities.isTablet()) {
-                drawerLayoutContainer.setAllowOpenDrawer(actionBarLayout.fragmentsStack.size() <= 1 && layersActionBarLayout.fragmentsStack.isEmpty());
+                allowOpen = actionBarLayout.fragmentsStack.size() <= 1 && layersActionBarLayout.fragmentsStack.isEmpty();
             } else {
-                drawerLayoutContainer.setAllowOpenDrawer(actionBarLayout.fragmentsStack.size() <= 1);
+                allowOpen = actionBarLayout.fragmentsStack.size() <= 1;
             }
+            if (actionBarLayout.fragmentsStack.size() == 1 && actionBarLayout.fragmentsStack.get(0) instanceof LoginActivity) {
+                allowOpen = false;
+            }
+            drawerLayoutContainer.setAllowOpenDrawer(allowOpen);
         }
 
         handleIntent(getIntent(), false, savedInstanceState != null);
@@ -381,7 +393,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         documentsUrisArray = null;
         contactsToSend = null;
 
-        if ((intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0) {
+        if (UserConfig.isClientActivated() && (intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0) {
             if (intent != null && intent.getAction() != null && !restore) {
                 if (Intent.ACTION_SEND.equals(intent.getAction())) {
                     boolean error = false;
@@ -567,39 +579,112 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         Toast.makeText(this, "Unsupported content", Toast.LENGTH_SHORT).show();
                     }
                 } else if (Intent.ACTION_VIEW.equals(intent.getAction())) {
-                    try {
-                        Cursor cursor = getContentResolver().query(intent.getData(), null, null, null, null);
-                        if (cursor != null) {
-                            if (cursor.moveToFirst()) {
-                                int userId = cursor.getInt(cursor.getColumnIndex("DATA4"));
-                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
-                                push_user_id = userId;
+                    Uri data = intent.getData();
+                    if (data != null) {
+                        String username = null;
+                        String scheme = data.getScheme();
+                        if (scheme != null) {
+                            if ((scheme.equals("http") || scheme.equals("https"))) {
+                                String host = data.getHost();
+                                if (host.equals("telegram.me")) {
+                                    String path = data.getPath();
+                                    if (path != null && path.length() >= 6) {
+                                        username = path.substring(1);
+                                    }
+                                }
+                            } else if (scheme.equals("tg")) {
+                                String url = data.toString();
+                                if (url.startsWith("tg:resolve") || url.startsWith("tg://resolve")) {
+                                    url = url.replace("tg:resolve", "tg://telegram.org").replace("tg://resolve", "tg://telegram.org");
+                                    data = Uri.parse(url);
+                                    username = data.getQueryParameter("domain");
+                                }
                             }
-                            cursor.close();
                         }
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
+                        if (username != null) {
+                            final ProgressDialog progressDialog = new ProgressDialog(this);
+                            progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
+                            progressDialog.setCanceledOnTouchOutside(false);
+                            progressDialog.setCancelable(false);
+
+                            TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
+                            req.username = username;
+                            final long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                                @Override
+                                public void run(final TLObject response, final TLRPC.TL_error error) {
+                                    AndroidUtilities.runOnUIThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            if (!LaunchActivity.this.isFinishing()) {
+                                                try {
+                                                    progressDialog.dismiss();
+                                                } catch (Exception e) {
+                                                    FileLog.e("tmessages", e);
+                                                }
+                                                if (error == null && actionBarLayout != null) {
+                                                    TLRPC.User user = (TLRPC.User) response;
+                                                    MessagesController.getInstance().putUser(user, false);
+                                                    ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+                                                    users.add(user);
+                                                    MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);
+                                                    Bundle args = new Bundle();
+                                                    args.putInt("user_id", user.id);
+                                                    ChatActivity fragment = new ChatActivity(args);
+                                                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                                                    actionBarLayout.presentFragment(fragment, false, true, true);
+                                                }
+                                            }
+                                        }
+                                    });
+                                }
+                            });
+
+                            progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    ConnectionsManager.getInstance().cancelRpc(reqId, true);
+                                    try {
+                                        dialog.dismiss();
+                                    } catch (Exception e) {
+                                        FileLog.e("tmessages", e);
+                                    }
+                                }
+                            });
+                            progressDialog.show();
+                        } else {
+                            try {
+                                Cursor cursor = getContentResolver().query(intent.getData(), null, null, null, null);
+                                if (cursor != null) {
+                                    if (cursor.moveToFirst()) {
+                                        int userId = cursor.getInt(cursor.getColumnIndex("DATA4"));
+                                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                                        push_user_id = userId;
+                                    }
+                                    cursor.close();
+                                }
+                            } catch (Exception e) {
+                                FileLog.e("tmessages", e);
+                            }
+                        }
                     }
                 } else if (intent.getAction().equals("org.telegram.messenger.OPEN_ACCOUNT")) {
                     open_settings = 1;
-                }
-            }
-
-            if (intent.getAction() != null && intent.getAction().startsWith("com.tmessages.openchat") && !restore) {
-                int chatId = intent.getIntExtra("chatId", 0);
-                int userId = intent.getIntExtra("userId", 0);
-                int encId = intent.getIntExtra("encId", 0);
-                if (chatId != 0) {
-                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
-                    push_chat_id = chatId;
-                } else if (userId != 0) {
-                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
-                    push_user_id = userId;
-                } else if (encId != 0) {
-                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
-                    push_enc_id = encId;
-                } else {
-                    showDialogsList = true;
+                } else if (intent.getAction().startsWith("com.tmessages.openchat")) {
+                    int chatId = intent.getIntExtra("chatId", 0);
+                    int userId = intent.getIntExtra("userId", 0);
+                    int encId = intent.getIntExtra("encId", 0);
+                    if (chatId != 0) {
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                        push_chat_id = chatId;
+                    } else if (userId != 0) {
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                        push_user_id = userId;
+                    } else if (encId != 0) {
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                        push_enc_id = encId;
+                    } else {
+                        showDialogsList = true;
+                    }
                 }
             }
         }
@@ -635,8 +720,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
             pushOpened = false;
             isNew = false;
-        }
-        if (videoPath != null || photoPathsArray != null || sendingText != null || documentsPathsArray != null || contactsToSend != null || documentsUrisArray != null) {
+        } else if (videoPath != null || photoPathsArray != null || sendingText != null || documentsPathsArray != null || contactsToSend != null || documentsUrisArray != null) {
             if (!AndroidUtilities.isTablet()) {
                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
             }
@@ -657,8 +741,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 rightActionBarLayout.showLastFragment();
             }
             drawerLayoutContainer.setAllowOpenDrawer(false);
-        }
-        if (open_settings != 0) {
+        } else if (open_settings != 0) {
             actionBarLayout.presentFragment(new SettingsActivity(), false, true, true);
             drawerLayoutContainer.setAllowOpenDrawer(false);
             if (AndroidUtilities.isTablet()) {

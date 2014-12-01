@@ -277,7 +277,15 @@
     <string name="NotificationsPriorityLow">Low</string>
     <string name="NotificationsPriorityHigh">High</string>
     <string name="NotificationsPriorityMax">Max</string>
+    <string name="RepeatNotificationsNever">Never</string>
     <string name="RepeatNotifications">Repeat Notifications</string>
+    <string name="PhoneNumberHelp">You can change your Telegram number here. Your account and all your cloud data — messages, media, contacts, etc. will be moved to the new number.\n\n<![CDATA[<b>Important:</b>]]> all your Telegram contacts will get your <![CDATA[<b>new number</b>]]> added to their address book, provided they had your old number and you haven\'t blocked them in Telegram.</string>
+    <string name="PhoneNumberAlert">All your Telegram contacts will get your new number added to their address book, provided they had your old number and you haven\'t blocked them in Telegram.</string>
+    <string name="PhoneNumberChange">CHANGE NUMBER</string>
+    <string name="ChangePhoneNewNumber">New number</string>
+    <string name="ChangePhoneHelp">We will send an SMS with a confirmation code to your new number.</string>
+    <string name="ChangePhoneNumberOccupied">The number %1$s is already connected to a Telegram account. Please delete that account before migrating to the new number.</string>
+    <string name="NotificationsOther">Other</string>
     <!--media view-->
     <string name="NoMedia">No shared media yet</string>
     <!--map view-->

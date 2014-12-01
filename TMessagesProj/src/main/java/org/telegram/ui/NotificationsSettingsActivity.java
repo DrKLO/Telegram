@@ -31,6 +31,7 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.android.NotificationsController;
 import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
@@ -46,7 +47,7 @@ import org.telegram.ui.Cells.TextColorCell;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Views.ColorPickerView;
+import org.telegram.ui.Components.ColorPickerView;
 
 public class NotificationsSettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private ListView listView;
@@ -660,7 +661,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 } else if (i == eventsSectionRow) {
                     ((HeaderCell) view).setText(LocaleController.getString("Events", R.string.Events));
                 } else if (i == otherSectionRow) {
-                    ((HeaderCell) view).setText(LocaleController.getString("PhoneOther", R.string.PhoneOther));
+                    ((HeaderCell) view).setText(LocaleController.getString("NotificationsOther", R.string.NotificationsOther));
                 } else if (i == resetSectionRow) {
                     ((HeaderCell) view).setText(LocaleController.getString("Reset", R.string.Reset));
                 }
@@ -761,7 +762,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     int minutes = preferences.getInt("repeat_messages", 60);
                     String value;
                     if (minutes == 0) {
-                        value = LocaleController.getString("ShortMessageLifetimeForever", R.string.ShortMessageLifetimeForever);
+                        value = LocaleController.getString("RepeatNotificationsNever", R.string.RepeatNotificationsNever);
                     } else if (minutes < 60) {
                         value = LocaleController.formatPluralString("Minutes", minutes);
                     } else {

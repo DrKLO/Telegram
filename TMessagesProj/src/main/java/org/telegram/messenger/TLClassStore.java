@@ -359,6 +359,13 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_inputPhotoCrop.constructor, TLRPC.TL_inputPhotoCrop.class);
         classStore.put(TLRPC.TL_messages_dialogs.constructor, TLRPC.TL_messages_dialogs.class);
         classStore.put(TLRPC.TL_messages_dialogsSlice.constructor, TLRPC.TL_messages_dialogsSlice.class);
+        classStore.put(TLRPC.TL_account_sentChangePhoneCode.constructor, TLRPC.TL_account_sentChangePhoneCode.class);
+        classStore.put(TLRPC.TL_updateUserPhone.constructor, TLRPC.TL_updateUserPhone.class);
+        classStore.put(TLRPC.TL_decryptedMessageActionRequestKey.constructor, TLRPC.TL_decryptedMessageActionRequestKey.class);
+        classStore.put(TLRPC.TL_decryptedMessageActionAcceptKey.constructor, TLRPC.TL_decryptedMessageActionAcceptKey.class);
+        classStore.put(TLRPC.TL_decryptedMessageActionCommitKey.constructor, TLRPC.TL_decryptedMessageActionCommitKey.class);
+        classStore.put(TLRPC.TL_decryptedMessageActionAbortKey.constructor, TLRPC.TL_decryptedMessageActionAbortKey.class);
+        classStore.put(TLRPC.TL_decryptedMessageActionNoop.constructor, TLRPC.TL_decryptedMessageActionNoop.class);
 
         classStore.put(TLRPC.TL_msg_container.constructor, TLRPC.TL_msg_container.class);
         classStore.put(TLRPC.TL_fileEncryptedLocation.constructor, TLRPC.TL_fileEncryptedLocation.class);

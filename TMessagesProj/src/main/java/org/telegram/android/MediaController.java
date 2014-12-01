@@ -52,9 +52,9 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ApplicationLoader;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.ui.Cells.ChatMediaCell;
-import org.telegram.ui.Views.GifDrawable;
+import org.telegram.ui.Components.GifDrawable;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -809,7 +809,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             }
         }
         if (send) {
-            SendMessagesHelper.getInstance().sendScreenshotMessage(lastSecretChat, lastSecretChatVisibleMessages, null);
+            SecretChatHelper.getInstance().sendScreenshotMessage(lastSecretChat, lastSecretChatVisibleMessages, null);
         }
     }
 

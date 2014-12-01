@@ -106,7 +106,7 @@
     <string name="SaveToDownloads">Salvar em downloads</string>
     <string name="ApplyLocalizationFile">Aplicar arquivo de localização</string>
     <string name="UnsupportedAttachment">Anexo não suportado</string>
-    <string name="SetTimer">Tempo de autodestruição</string>
+    <string name="SetTimer">Definir timer de autodestruição</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s estabeleceu o tempo de autodestruição para %2$s </string>
     <string name="MessageLifetimeChangedOutgoing">Você estabeleceu o tempo de autodestruição para %1$s</string>
@@ -137,7 +137,7 @@
     <string name="NotificationGroupKickYou">%1$s removeu você do grupo %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s saiu do grupo %2$s</string>
     <string name="NotificationContactJoined">%1$s entrou para o Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nNós detectamos um login na sua conta de um novo dispositivo %2$s\n\nDispositivo: %3$s\nLocalização: %4$s\nSe não foi você, você pode ir em Configurações - Terminar todas as sessões.\n\nAtenciosamente,\nTime do Telegram</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nDetectamos um acesso à sua conta de um novo dispositivo em %2$s\n\nDispositivo: %3$s\nLocalização: %4$s\n\nCaso não tenha sido você, vá em Configurações – Privacidade e Segurança – Terminar todas as outras sessões.\n\nObrigado,\nEquipe Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s atualizou a foto do perfil</string>
     <string name="Reply">Responder</string>
     <string name="ReplyToGroup">Responder para %1$s</string>
@@ -157,7 +157,7 @@
     <string name="Lately">visto recentemente</string>
     <string name="WithinAWeek">visto na última semana</string>
     <string name="WithinAMonth">visto no último mês</string>
-    <string name="ALongTimeAgo">visto há muito tempo atrás</string>
+    <string name="ALongTimeAgo">visto há muito tempo</string>
     <string name="NewMessageTitle">Nova Mensagem</string>
     <!--group create view-->
     <string name="SendMessageTo">Enviar mensagem para...</string>
@@ -272,12 +272,20 @@
     <string name="NoMediaAutoDownload">Sem mídia</string>
     <string name="SaveToGallerySettings">Salvar na galeria</string>
     <string name="EditName">Editar nome</string>
-    <string name="NotificationsPriority">Priority</string>
-    <string name="NotificationsPriorityDefault">Default</string>
-    <string name="NotificationsPriorityLow">Low</string>
-    <string name="NotificationsPriorityHigh">High</string>
-    <string name="NotificationsPriorityMax">Max</string>
-    <string name="RepeatNotifications">Repeat Notifications</string>
+    <string name="NotificationsPriority">Prioridade</string>
+    <string name="NotificationsPriorityDefault">Padrão</string>
+    <string name="NotificationsPriorityLow">Baixa</string>
+    <string name="NotificationsPriorityHigh">Alta</string>
+    <string name="NotificationsPriorityMax">Máxima</string>
+    <string name="RepeatNotificationsNever">Nunca</string>
+    <string name="RepeatNotifications">Repetir Notificações</string>
+    <string name="PhoneNumberHelp">Você pode trocar seu número do Telegram aqui. Sua conta e todos os seus dados — mensagens, mídia, contatos, etc. serão movidos para o novo número.\n\n<![CDATA[<b>Importante:</b>]]> todos os contatos do Telegram terão seu <![CDATA[<b>novo número</b>]]> adicionado às suas lista de contatos, desde que eles tenham seu antigo número e você não os tenha bloqueado no Telegram.</string>
+    <string name="PhoneNumberAlert">Todos os contatos do Telegram terão seu novo número adicionado às suas listas de contatos, desde que eles tenham seu antigo número e você não os tenha bloqueado no Telegram.</string>
+    <string name="PhoneNumberChange">TROCAR NÚMERO</string>
+    <string name="ChangePhoneNewNumber">Novo número</string>
+    <string name="ChangePhoneHelp">Vamos enviar uma SMS com um código de confirmação para o seu novo número.</string>
+    <string name="ChangePhoneNumberOccupied">O número %1$s já possui uma conta do Telegram. Por favor, delete esta conta antes de migrar para o novo número.</string>
+    <string name="NotificationsOther">Outro</string>
     <!--media view-->
     <string name="NoMedia">Ainda não há mídia compartilhada</string>
     <!--map view-->
@@ -316,7 +324,7 @@
     <string name="LastSeenHelp">Alterar quem pode ver o seu Último Acesso.</string>
     <string name="LastSeenTitle">Quem pode ver o seu Último Acesso?</string>
     <string name="AddExceptions">Adicionar exceções</string>
-    <string name="CustomHelp">Importante: você não será capaz de ver quando foi o Último Acesso para as pessoas com quem você não compartilha quando foi seu Último Acesso. Você visualizará a última vez visto aproximada. (recentemente, dentro de uma semana, dentro de um mês).</string>
+    <string name="CustomHelp">Importante: você não será capaz de ver quando foi o Último Acesso das pessoas com quem você não compartilha quando foi seu Último Acesso. Você visualizará o Último acesso aproximado (recentemente, dentro de uma semana, dentro de um mês).</string>
     <string name="AlwaysShareWith">Sempre Mostrar Para</string>
     <string name="NeverShareWith">Nunca Mostrar Para</string>
     <string name="CustomShareSettingsHelp">Estas configurações irão substituir os valores anteriores.</string>

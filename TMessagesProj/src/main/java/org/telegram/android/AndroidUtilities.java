@@ -20,6 +20,9 @@ import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Environment;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.util.StateSet;
 import android.view.Display;
 import android.view.Surface;
@@ -35,12 +38,14 @@ import android.widget.TextView;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
-import org.telegram.ui.ApplicationLoader;
-import org.telegram.ui.Views.NumberPicker;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.ui.Components.NumberPicker;
+import org.telegram.ui.Components.TypefaceSpan;
 
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Hashtable;
 
 public class AndroidUtilities {
@@ -389,7 +394,7 @@ public class AndroidUtilities {
                     encryptedChat.ttl = 60 * 60 * 24 * 7;
                 }
                 if (oldValue != encryptedChat.ttl) {
-                    SendMessagesHelper.getInstance().sendTTLMessage(encryptedChat, null);
+                    SecretChatHelper.getInstance().sendTTLMessage(encryptedChat, null);
                     MessagesStorage.getInstance().updateEncryptedChatTTL(encryptedChat);
                 }
             }
@@ -501,5 +506,22 @@ public class AndroidUtilities {
                 drawable.jumpToCurrentState();
             }
         }
+    }
+
+    public static Spannable replaceBold(String str) {
+        int start;
+        ArrayList<Integer> bolds = new ArrayList<Integer>();
+        while ((start = str.indexOf("<b>")) != -1) {
+            int end = str.indexOf("</b>") - 3;
+            str = str.replaceFirst("<b>", "").replaceFirst("</b>", "");
+            bolds.add(start);
+            bolds.add(end);
+        }
+        SpannableStringBuilder stringBuilder = new SpannableStringBuilder(str);
+        for (int a = 0; a < bolds.size() / 2; a++) {
+            TypefaceSpan span = new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            stringBuilder.setSpan(span, bolds.get(a * 2), bolds.get(a * 2 + 1), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+        }
+        return stringBuilder;
     }
 }

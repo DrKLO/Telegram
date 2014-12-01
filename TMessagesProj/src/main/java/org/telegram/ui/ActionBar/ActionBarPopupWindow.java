@@ -11,10 +11,12 @@
 package org.telegram.ui.ActionBar;
 
 import android.content.Context;
+import android.os.Build;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
+import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 
@@ -23,6 +25,7 @@ import org.telegram.messenger.FileLog;
 import java.lang.reflect.Field;
 
 public class ActionBarPopupWindow extends PopupWindow {
+
     private static final Field superListenerField;
     static {
         Field f = null;
@@ -130,6 +133,15 @@ public class ActionBarPopupWindow extends PopupWindow {
                 superListenerField.set(this, NOP);
             } catch (Exception e) {
                 mSuperScrollListener = null;
+            }
+        }
+        if (Build.VERSION.SDK_INT >= 21) {
+            try {
+                Field field = PopupWindow.class.getDeclaredField("mWindowLayoutType");
+                field.setAccessible(true);
+                field.set(this, WindowManager.LayoutParams.TYPE_SYSTEM_ERROR);
+            } catch (Exception e) {
+                /* ignored */
             }
         }
     }

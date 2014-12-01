@@ -25,7 +25,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.ui.Views.URLSpanNoUnderline;
+import org.telegram.ui.Components.URLSpanNoUnderline;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -452,6 +452,60 @@ public class MessageObject {
         return "";
     }
 
+    private boolean containsUrls(String message) {
+        if (message == null || message.length() < 3 || message.length() > 1024 * 20) {
+            return false;
+        }
+
+        boolean containsSomething = false;
+
+        int length = message.length();
+
+        int digitsInRow = 0;
+        int schemeSequence = 0;
+        int dotSequence = 0;
+
+        char lastChar = 0;
+
+        for (int i = 0; i < length; i++) {
+            char c = message.charAt(i);
+
+            if (c >= '0' && c <= '9') {
+                digitsInRow++;
+                if (digitsInRow >= 6) {
+                    return true;
+                }
+                schemeSequence = 0;
+                dotSequence = 0;
+            } else if (c == ':') {
+                if (schemeSequence == 0) {
+                    schemeSequence = 1;
+                } else {
+                    schemeSequence = 0;
+                }
+            } else if (c == '/') {
+                if (schemeSequence == 2) {
+                    return true;
+                }
+                if (schemeSequence == 1) {
+                    schemeSequence++;
+                } else {
+                    schemeSequence = 0;
+                }
+            } else if (c == '.') {
+                if (dotSequence == 0 && lastChar != ' ') {
+                    dotSequence++;
+                } else {
+                    dotSequence = 0;
+                }
+            } else if (c != ' ' && lastChar == '.' && dotSequence == 1) {
+                return true;
+            }
+            lastChar = c;
+        }
+        return false;
+    }
+
     private void generateLayout() {
         if (type != 0 || messageOwner.to_id == null || messageText == null || messageText.length() == 0) {
             return;
@@ -459,11 +513,11 @@ public class MessageObject {
 
         textLayoutBlocks = new ArrayList<TextLayoutBlock>();
 
-        if (messageText instanceof Spannable) {
-            if (messageOwner.message != null && messageOwner.message.contains(".") && (messageOwner.message.contains(".com") || messageOwner.message.contains("http") || messageOwner.message.contains(".ru") || messageOwner.message.contains(".org") || messageOwner.message.contains(".net"))) {
-                Linkify.addLinks((Spannable)messageText, Linkify.WEB_URLS);
-            } else if (messageText.length() < 100) {
-                Linkify.addLinks((Spannable)messageText, Linkify.WEB_URLS | Linkify.EMAIL_ADDRESSES | Linkify.PHONE_NUMBERS);
+        if (messageText instanceof Spannable && containsUrls(messageOwner.message)) {
+            if (messageOwner.message.length() < 100) {
+                Linkify.addLinks((Spannable) messageText, Linkify.WEB_URLS | Linkify.PHONE_NUMBERS);
+            } else {
+                Linkify.addLinks((Spannable) messageText, Linkify.WEB_URLS);
             }
         }
 
@@ -576,10 +630,7 @@ public class MessageObject {
                     }
 
                     if (lineWidth > maxWidth + 100) {
-                        int start = block.textLayout.getLineStart(n);
-                        int end = block.textLayout.getLineEnd(n);
-                        CharSequence text = block.textLayout.getText().subSequence(start, end);
-                        continue;
+                        lineWidth = maxWidth;
                     }
 
                     try {

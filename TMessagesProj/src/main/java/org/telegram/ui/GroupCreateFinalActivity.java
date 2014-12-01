@@ -42,11 +42,11 @@ import org.telegram.ui.Cells.GreySectionCell;
 import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.Views.AvatarDrawable;
-import org.telegram.ui.Views.AvatarUpdater;
-import org.telegram.ui.Views.BackupImageView;
+import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.AvatarUpdater;
+import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Views.FrameLayoutFixed;
+import org.telegram.ui.Components.FrameLayoutFixed;
 
 import java.util.ArrayList;
 import java.util.concurrent.Semaphore;

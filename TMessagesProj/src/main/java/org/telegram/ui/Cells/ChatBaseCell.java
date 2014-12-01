@@ -28,7 +28,7 @@ import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.android.MessageObject;
 import org.telegram.android.ImageReceiver;
-import org.telegram.ui.Views.AvatarDrawable;
+import org.telegram.ui.Components.AvatarDrawable;
 
 public class ChatBaseCell extends BaseCell {
 
@@ -482,7 +482,7 @@ public class ChatBaseCell extends BaseCell {
         if (drawName && nameLayout != null) {
             canvas.save();
             canvas.translate(currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(19) - nameOffsetX, AndroidUtilities.dp(10));
-            namePaint.setColor(AvatarDrawable.getColorForId(currentUser.id));
+            namePaint.setColor(AvatarDrawable.getNameColorForId(currentUser.id));
             nameLayout.draw(canvas);
             canvas.restore();
         }

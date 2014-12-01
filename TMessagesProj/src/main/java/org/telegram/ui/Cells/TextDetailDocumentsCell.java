@@ -18,8 +18,8 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
-import org.telegram.ui.Views.BackupImageView;
-import org.telegram.ui.Views.CheckBox;
+import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.CheckBox;
 
 public class TextDetailDocumentsCell extends FrameLayout {
 

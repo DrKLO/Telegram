@@ -1,10 +1,10 @@
-<org.telegram.ui.Views.SizeNotifierRelativeLayout
+<org.telegram.ui.Components.SizeNotifierRelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:id="@+id/chat_layout">
 
-    <org.telegram.ui.Views.FrameLayoutFixed
+    <org.telegram.ui.Components.FrameLayoutFixed
         android:layout_height="fill_parent"
         android:layout_width="fill_parent"
         android:paddingBottom="48dp"
@@ -27,9 +27,9 @@
             layout="@layout/encrypted_chat_placeholder"
             android:layout_gravity="center"/>
 
-    </org.telegram.ui.Views.FrameLayoutFixed>
+    </org.telegram.ui.Components.FrameLayoutFixed>
 
-    <org.telegram.ui.Views.LayoutListView
+    <org.telegram.ui.Components.LayoutListView
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:id="@+id/chat_list_view"
@@ -87,7 +87,7 @@
         android:background="@drawable/compose_panel"
         android:orientation="horizontal">
 
-        <org.telegram.ui.Views.FrameLayoutFixed
+        <org.telegram.ui.Components.FrameLayoutFixed
             android:layout_height="wrap_content"
             android:layout_width="0dp"
             android:layout_weight="1">
@@ -131,7 +131,7 @@
                 android:enabled="false"
                 android:layout_gravity="bottom|right"/>
 
-            <org.telegram.ui.Views.FrameLayoutFixed
+            <org.telegram.ui.Components.FrameLayoutFixed
                 android:layout_height="48dp"
                 android:layout_width="fill_parent"
                 android:layout_marginTop="2dp"
@@ -193,9 +193,9 @@
 
                 </LinearLayout>
 
-            </org.telegram.ui.Views.FrameLayoutFixed>
+            </org.telegram.ui.Components.FrameLayoutFixed>
 
-        </org.telegram.ui.Views.FrameLayoutFixed>
+        </org.telegram.ui.Components.FrameLayoutFixed>
 
         <FrameLayout
             android:layout_width="48dp"
@@ -275,4 +275,4 @@
         android:layout_marginBottom="4dp"
         android:id="@+id/pagedown_button"/>
 
-</org.telegram.ui.Views.SizeNotifierRelativeLayout>
+</org.telegram.ui.Components.SizeNotifierRelativeLayout>

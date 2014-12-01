@@ -11,8 +11,6 @@ package org.telegram.messenger;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-import org.telegram.ui.ApplicationLoader;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;

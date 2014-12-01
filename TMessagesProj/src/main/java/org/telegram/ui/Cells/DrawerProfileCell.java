@@ -19,8 +19,8 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
 import org.telegram.messenger.TLRPC;
-import org.telegram.ui.Views.AvatarDrawable;
-import org.telegram.ui.Views.BackupImageView;
+import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.BackupImageView;
 
 public class DrawerProfileCell extends FrameLayout {
 

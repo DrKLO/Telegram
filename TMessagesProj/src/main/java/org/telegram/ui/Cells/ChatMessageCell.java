@@ -147,10 +147,10 @@ public class ChatMessageCell extends ChatBaseCell {
                 }
             } else {
                 if (isChat && !messageObject.isOut()) {
-                    maxWidth = AndroidUtilities.displaySize.x - AndroidUtilities.dp(122);
+                    maxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(122);
                     drawName = true;
                 } else {
-                    maxWidth = AndroidUtilities.displaySize.x - AndroidUtilities.dp(80);
+                    maxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(80);
                     drawName = false;
                 }
             }

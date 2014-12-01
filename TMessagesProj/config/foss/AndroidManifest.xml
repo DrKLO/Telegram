@@ -8,7 +8,7 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/AppName"
         android:theme="@style/Theme.TMessages.Start"
-        android:name="org.telegram.ui.ApplicationLoader"
+        android:name=".ApplicationLoader"
         android:hardwareAccelerated="true"
         android:largeHeap="true">
 

@@ -48,6 +48,7 @@ import android.widget.TextView;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
 import org.telegram.android.MessagesStorage;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -67,7 +68,7 @@ import org.telegram.ui.AnimationCompat.ViewProxy;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.Views.ClippingImageView;
+import org.telegram.ui.Components.ClippingImageView;
 import org.telegram.android.ImageReceiver;
 
 import java.io.File;
@@ -692,6 +693,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
         ActionBarMenu menu = actionBar.createMenu();
         menuItem = menu.addItem(0, R.drawable.ic_ab_other);
+        menuItem.setNeedOffset(false);
         menuItem.addSubItem(gallery_menu_save, LocaleController.getString("SaveToGallery", R.string.SaveToGallery), 0);
         menuItem.addSubItem(gallery_menu_showall, LocaleController.getString("ShowAllMedia", R.string.ShowAllMedia), 0);
 
@@ -927,7 +929,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         layoutParams.height = AndroidUtilities.dp(46);
         layoutParams.gravity = Gravity.RIGHT;
         layoutParams.rightMargin = AndroidUtilities.dp(10);
-        WindowManager manager = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
+        WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
         int rotation = manager.getDefaultDisplay().getRotation();
         if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
             layoutParams.topMargin = AndroidUtilities.dp(48);

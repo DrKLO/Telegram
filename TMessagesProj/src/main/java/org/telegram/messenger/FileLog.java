@@ -12,7 +12,6 @@ import android.net.Uri;
 import android.util.Log;
 
 import org.telegram.android.time.FastDateFormat;
-import org.telegram.ui.ApplicationLoader;
 
 import java.io.File;
 import java.io.FileOutputStream;

@@ -37,6 +37,7 @@ import org.telegram.android.MediaController;
 import org.telegram.android.MessagesController;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.NotificationsController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -47,15 +48,16 @@ import org.telegram.android.MessageObject;
 import org.telegram.android.PhotoObject;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.Views.AvatarDrawable;
-import org.telegram.ui.Views.BackupImageView;
-import org.telegram.ui.Views.ChatActivityEnterView;
-import org.telegram.ui.Views.FrameLayoutFixed;
-import org.telegram.ui.Views.PopupAudioView;
-import org.telegram.ui.Views.TypingDotsDrawable;
+import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.ChatActivityEnterView;
+import org.telegram.ui.Components.FrameLayoutFixed;
+import org.telegram.ui.Components.PopupAudioView;
+import org.telegram.ui.Components.TypingDotsDrawable;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Locale;
 
 public class PopupNotificationActivity extends Activity implements NotificationCenter.NotificationCenterDelegate {
 
@@ -282,7 +284,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
         chatActivityEnterView.setContainerView(this, findViewById(R.id.chat_layout));
 
-        PowerManager pm = (PowerManager)ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
+        PowerManager pm = (PowerManager) ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
         wakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "screen");
         wakeLock.setReferenceCounted(false);
 
@@ -490,7 +492,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
         ViewGroup view = null;
         MessageObject messageObject = NotificationsController.getInstance().popupMessages.get(num);
-        if (messageObject.type == 1) {
+        if (messageObject.type == 1 || messageObject.type == 4) {
             if (imageViews.size() > 0) {
                 view = imageViews.get(0);
                 imageViews.remove(0);
@@ -510,34 +512,45 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             TextView messageText = (TextView)view.findViewById(R.id.message_text);
             BackupImageView imageView = (BackupImageView) view.findViewById(R.id.message_image);
             imageView.imageReceiver.setAspectFit(true);
-            PhotoObject currentPhotoObject = PhotoObject.getClosestImageWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
-            boolean photoSet = false;
-            if (currentPhotoObject != null) {
-                boolean photoExist = true;
-                if (messageObject.type == 1) {
-                    File cacheFile = FileLoader.getPathToMessage(messageObject.messageOwner);
-                    if (!cacheFile.exists()) {
-                        photoExist = false;
+
+            if (messageObject.type == 1) {
+                PhotoObject currentPhotoObject = PhotoObject.getClosestImageWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
+                boolean photoSet = false;
+                if (currentPhotoObject != null) {
+                    boolean photoExist = true;
+                    if (messageObject.type == 1) {
+                        File cacheFile = FileLoader.getPathToMessage(messageObject.messageOwner);
+                        if (!cacheFile.exists()) {
+                            photoExist = false;
+                        }
                     }
-                }
-                if (photoExist || MediaController.getInstance().canDownloadMedia(MediaController.AUTODOWNLOAD_MASK_PHOTO)) {
-                    imageView.setImage(currentPhotoObject.photoOwner.location, "100_100", messageObject.imagePreview, currentPhotoObject.photoOwner.size);
-                    photoSet = true;
-                } else {
-                    if (messageObject.imagePreview != null) {
-                        imageView.setImageBitmap(messageObject.imagePreview);
+                    if (photoExist || MediaController.getInstance().canDownloadMedia(MediaController.AUTODOWNLOAD_MASK_PHOTO)) {
+                        imageView.setImage(currentPhotoObject.photoOwner.location, "100_100", messageObject.imagePreview, currentPhotoObject.photoOwner.size);
                         photoSet = true;
+                    } else {
+                        if (messageObject.imagePreview != null) {
+                            imageView.setImageBitmap(messageObject.imagePreview);
+                            photoSet = true;
+                        }
                     }
                 }
-            }
-            if (!photoSet) {
-                imageView.setVisibility(View.GONE);
-                messageText.setVisibility(View.VISIBLE);
-                messageText.setTextSize(TypedValue.COMPLEX_UNIT_SP, MessagesController.getInstance().fontSize);
-                messageText.setText(messageObject.messageText);
-            } else {
-                imageView.setVisibility(View.VISIBLE);
+                if (!photoSet) {
+                    imageView.setVisibility(View.GONE);
+                    messageText.setVisibility(View.VISIBLE);
+                    messageText.setTextSize(TypedValue.COMPLEX_UNIT_SP, MessagesController.getInstance().fontSize);
+                    messageText.setText(messageObject.messageText);
+                } else {
+                    imageView.setVisibility(View.VISIBLE);
+                    messageText.setVisibility(View.GONE);
+                }
+            } else if (messageObject.type == 4) {
                 messageText.setVisibility(View.GONE);
+                messageText.setText(messageObject.messageText);
+                imageView.setVisibility(View.VISIBLE);
+                double lat = messageObject.messageOwner.media.geo.lat;
+                double lon = messageObject.messageOwner.media.geo._long;
+                String currentUrl = String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=13&size=100x100&maptype=roadmap&scale=%d&markers=color:red|size:big|%f,%f&sensor=false", lat, lon, Math.min(2, (int)Math.ceil(AndroidUtilities.density)), lat, lon);
+                imageView.setImage(currentUrl, null, null);
             }
         } else if (messageObject.type == 2) {
             PopupAudioView cell = null;
@@ -585,6 +598,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 });
             }
             TextView messageText = (TextView)view.findViewById(R.id.message_text);
+            messageText.setTag(301);
             messageText.setTextSize(TypedValue.COMPLEX_UNIT_SP, MessagesController.getInstance().fontSize);
             messageText.setText(messageObject.messageText);
         }
@@ -1006,7 +1020,12 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 int count = messageContainer.getChildCount();
                 for (int a = 0; a < count; a++) {
                     View view = messageContainer.getChildAt(a);
-                    view.invalidate();
+                    if ((Integer)view.getTag() == 1) {
+                        TextView textView = (TextView)view.findViewWithTag(301);
+                        if (textView != null) {
+                            textView.invalidate();
+                        }
+                    }
                 }
             }
         } else if (id == NotificationCenter.contactsDidLoaded) {

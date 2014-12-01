@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:layout_gravity="center">
 
-    <org.telegram.ui.Views.ColorPickerView
+    <org.telegram.ui.Components.ColorPickerView
         android:id="@+id/color_picker"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

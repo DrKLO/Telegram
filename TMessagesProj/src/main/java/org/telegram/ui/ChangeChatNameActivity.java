@@ -26,6 +26,7 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
@@ -79,7 +80,7 @@ public class ChangeChatNameActivity extends BaseFragment {
 
             TLRPC.Chat currentChat = MessagesController.getInstance().getChat(chat_id);
 
-            fragmentView = new LinearLayout(inflater.getContext());
+            fragmentView = new LinearLayout(getParentActivity());
             fragmentView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             ((LinearLayout) fragmentView).setOrientation(LinearLayout.VERTICAL);
             fragmentView.setOnTouchListener(new View.OnTouchListener() {
@@ -89,7 +90,7 @@ public class ChangeChatNameActivity extends BaseFragment {
                 }
             });
 
-            firstNameField = new EditText(inflater.getContext());
+            firstNameField = new EditText(getParentActivity());
             firstNameField.setText(currentChat.title);
             firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             firstNameField.setHintTextColor(0xff979797);
