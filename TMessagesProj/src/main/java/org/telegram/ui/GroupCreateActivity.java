@@ -9,7 +9,6 @@
 package org.telegram.ui;
 
 import android.app.Activity;
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -18,49 +17,55 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.TextWatcher;
 import android.text.style.ImageSpan;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.EditText;
-import android.widget.ImageView;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.ConnectionsManager;
 import org.telegram.android.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
-import org.telegram.ui.Views.ActionBar.ActionBarMenu;
-import org.telegram.ui.Views.BackupImageView;
-import org.telegram.ui.Views.ActionBar.BaseFragment;
-import org.telegram.ui.Views.PinnedHeaderListView;
-import org.telegram.ui.Views.SectionedBaseAdapter;
-import org.telegram.ui.Views.SettingsSectionLayout;
+import org.telegram.ui.Adapters.ContactsAdapter;
+import org.telegram.ui.Adapters.ContactsSearchAdapter;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.Components.SectionsListView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class GroupCreateActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
-    public static class XImageSpan extends ImageSpan {
+    public static interface GroupCreateActivityDelegate {
+        public abstract void didSelectUsers(ArrayList<Integer> ids);
+    }
+
+    private class XImageSpan extends ImageSpan {
         public int uid;
 
         public XImageSpan(Drawable d, int verticalAlignment) {
@@ -74,7 +79,6 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             }
 
             int sz = super.getSize(paint, text, start, end, fm);
-
             int offset = AndroidUtilities.dp(6);
             int w = (fm.bottom - fm.top) / 2;
             fm.top = -w - offset;
@@ -82,30 +86,29 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             fm.ascent = -w - offset;
             fm.leading = 0;
             fm.descent = w - offset;
-
             return sz;
         }
     }
 
-    private SectionedBaseAdapter listViewAdapter;
-    private PinnedHeaderListView listView;
+    private ContactsAdapter listViewAdapter;
     private TextView emptyTextView;
     private EditText userSelectEditText;
+    private SectionsListView listView;
+    private ContactsSearchAdapter searchListViewAdapter;
+
+    private GroupCreateActivityDelegate delegate;
+
+    private int beforeChangeIndex;
+    private int maxCount = 200;
     private boolean ignoreChange = false;
     private boolean isBroadcast = false;
-    private int maxCount = 200;
-
-    private HashMap<Integer, XImageSpan> selectedContacts =  new HashMap<Integer, XImageSpan>();
-    private ArrayList<XImageSpan> allSpans = new ArrayList<XImageSpan>();
-
+    private boolean isAlwaysShare = false;
+    private boolean isNeverShare = false;
     private boolean searchWas;
     private boolean searching;
-    private Timer searchTimer;
-    public ArrayList<TLRPC.User> searchResult;
-    public ArrayList<CharSequence> searchResultNames;
-
     private CharSequence changeString;
-    private int beforeChangeIndex;
+    private HashMap<Integer, XImageSpan> selectedContacts = new HashMap<Integer, XImageSpan>();
+    private ArrayList<XImageSpan> allSpans = new ArrayList<XImageSpan>();
 
     private final static int done_button = 1;
 
@@ -116,7 +119,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     public GroupCreateActivity(Bundle args) {
         super(args);
         isBroadcast = args.getBoolean("broadcast", false);
-        maxCount = !isBroadcast ? MessagesController.getInstance().maxGroupCount : MessagesController.getInstance().maxBroadcastCount;
+        isAlwaysShare = args.getBoolean("isAlwaysShare", false);
+        isNeverShare = args.getBoolean("isNeverShare", false);
+        maxCount = !isBroadcast ? MessagesController.getInstance().maxGroupCount - 1 : MessagesController.getInstance().maxBroadcastCount;
     }
 
     @Override
@@ -138,24 +143,37 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
-            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
-            if (isBroadcast) {
-                actionBarLayer.setTitle(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList));
-            } else {
-                actionBarLayer.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
-            }
-            actionBarLayer.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
+            searching = false;
+            searchWas = false;
 
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setAllowOverlayTitle(true);
+            if (isAlwaysShare) {
+                actionBar.setTitle(LocaleController.getString("AlwaysShareWithTitle", R.string.AlwaysShareWithTitle));
+            } else if (isNeverShare) {
+                actionBar.setTitle(LocaleController.getString("NeverShareWithTitle", R.string.NeverShareWithTitle));
+            } else {
+                actionBar.setTitle(isBroadcast ? LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList) : LocaleController.getString("NewGroup", R.string.NewGroup));
+                actionBar.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
+            }
+
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
                         finishFragment();
                     } else if (id == done_button) {
-                        if (!selectedContacts.isEmpty()) {
-                            ArrayList<Integer> result = new ArrayList<Integer>();
-                            result.addAll(selectedContacts.keySet());
+                        if (selectedContacts.isEmpty()) {
+                            return;
+                        }
+                        ArrayList<Integer> result = new ArrayList<Integer>();
+                        result.addAll(selectedContacts.keySet());
+                        if (isAlwaysShare || isNeverShare) {
+                            if (delegate != null) {
+                                delegate.didSelectUsers(result);
+                            }
+                            finishFragment();
+                        } else {
                             Bundle args = new Bundle();
                             args.putIntegerArrayList("result", result);
                             args.putBoolean("broadcast", isBroadcast);
@@ -164,27 +182,58 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     }
                 }
             });
+            ActionBarMenu menu = actionBar.createMenu();
+            menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
-            ActionBarMenu menu = actionBarLayer.createMenu();
-            View doneItem = menu.addItemResource(done_button, R.layout.group_create_done_layout);
-            TextView doneTextView = (TextView)doneItem.findViewById(R.id.done_button);
-            doneTextView.setText(LocaleController.getString("Next", R.string.Next));
+            searchListViewAdapter = new ContactsSearchAdapter(getParentActivity(), null, false);
+            searchListViewAdapter.setCheckedMap(selectedContacts);
+            searchListViewAdapter.setUseUserCell(true);
+            listViewAdapter = new ContactsAdapter(getParentActivity(), true, false, null);
+            listViewAdapter.setCheckedMap(selectedContacts);
 
-            searching = false;
-            searchWas = false;
+            fragmentView = new LinearLayout(getParentActivity());
+            LinearLayout linearLayout = (LinearLayout) fragmentView;
+            linearLayout.setOrientation(LinearLayout.VERTICAL);
 
-            fragmentView = inflater.inflate(R.layout.group_create_layout, container, false);
+            FrameLayout frameLayout = new FrameLayout(getParentActivity());
+            linearLayout.addView(frameLayout);
+            LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) frameLayout.getLayoutParams();
+            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.TOP;
+            frameLayout.setLayoutParams(layoutParams);
 
-            emptyTextView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
-            emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
-            emptyTextView.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    return true;
-                }
-            });
-            userSelectEditText = (EditText)fragmentView.findViewById(R.id.bubble_input_text);
-            userSelectEditText.setHint(LocaleController.getString("SendMessageTo", R.string.SendMessageTo));
+            userSelectEditText = new EditText(getParentActivity());
+            userSelectEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            userSelectEditText.setHintTextColor(0xff979797);
+            userSelectEditText.setTextColor(0xff212121);
+            userSelectEditText.setInputType(InputType.TYPE_TEXT_VARIATION_FILTER | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+            userSelectEditText.setMinimumHeight(AndroidUtilities.dp(54));
+            userSelectEditText.setSingleLine(false);
+            userSelectEditText.setLines(2);
+            userSelectEditText.setMaxLines(2);
+            userSelectEditText.setVerticalScrollBarEnabled(true);
+            userSelectEditText.setHorizontalScrollBarEnabled(false);
+            userSelectEditText.setPadding(0, 0, 0, 0);
+            userSelectEditText.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+            userSelectEditText.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+            AndroidUtilities.clearCursorDrawable(userSelectEditText);
+            frameLayout.addView(userSelectEditText);
+            FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) userSelectEditText.getLayoutParams();
+            layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams1.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams1.leftMargin = AndroidUtilities.dp(10);
+            layoutParams1.rightMargin = AndroidUtilities.dp(10);
+            layoutParams1.gravity = Gravity.TOP;
+            userSelectEditText.setLayoutParams(layoutParams1);
+
+            if (isAlwaysShare) {
+                userSelectEditText.setHint(LocaleController.getString("AlwaysShareWithPlaceholder", R.string.AlwaysShareWithPlaceholder));
+            } else if (isNeverShare) {
+                userSelectEditText.setHint(LocaleController.getString("NeverShareWithPlaceholder", R.string.NeverShareWithPlaceholder));
+            } else {
+                userSelectEditText.setHint(LocaleController.getString("SendMessageTo", R.string.SendMessageTo));
+            }
             if (Build.VERSION.SDK_INT >= 11) {
                 userSelectEditText.setTextIsSelectable(false);
             }
@@ -226,7 +275,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                         selectedContacts.remove(sp.uid);
                                     }
                                 }
-                                actionBarLayer.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
+                                if (!isAlwaysShare && !isNeverShare) {
+                                    actionBar.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
+                                }
                                 listView.invalidateViews();
                             } else {
                                 search = true;
@@ -237,52 +288,126 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         if (search) {
                             String text = userSelectEditText.getText().toString().replace("<", "");
                             if (text.length() != 0) {
-                                searchDialogs(text);
                                 searching = true;
                                 searchWas = true;
-                                emptyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
-                                listViewAdapter.notifyDataSetChanged();
+                                if (listView != null) {
+                                    listView.setAdapter(searchListViewAdapter);
+                                    searchListViewAdapter.notifyDataSetChanged();
+                                    if(android.os.Build.VERSION.SDK_INT >= 11) {
+                                        listView.setFastScrollAlwaysVisible(false);
+                                    }
+                                    listView.setFastScrollEnabled(false);
+                                    listView.setVerticalScrollBarEnabled(true);
+                                }
+                                if (emptyTextView != null) {
+                                    emptyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+                                }
+                                searchListViewAdapter.searchDialogs(text);
                             } else {
-                                searchResult = null;
-                                searchResultNames = null;
+                                searchListViewAdapter.searchDialogs(null);
                                 searching = false;
                                 searchWas = false;
-                                emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+                                ViewGroup group = (ViewGroup) listView.getParent();
+                                listView.setAdapter(listViewAdapter);
                                 listViewAdapter.notifyDataSetChanged();
+                                if (android.os.Build.VERSION.SDK_INT >= 11) {
+                                    listView.setFastScrollAlwaysVisible(true);
+                                }
+                                listView.setFastScrollEnabled(true);
+                                listView.setVerticalScrollBarEnabled(false);
+                                emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
                             }
                         }
                     }
                 }
             });
 
-            listView = (PinnedHeaderListView)fragmentView.findViewById(R.id.listView);
-            listView.setEmptyView(emptyTextView);
-            listView.setVerticalScrollBarEnabled(false);
+            LinearLayout emptyTextLayout = new LinearLayout(getParentActivity());
+            emptyTextLayout.setVisibility(View.INVISIBLE);
+            emptyTextLayout.setOrientation(LinearLayout.VERTICAL);
+            linearLayout.addView(emptyTextLayout);
+            layoutParams = (LinearLayout.LayoutParams) emptyTextLayout.getLayoutParams();
+            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            emptyTextLayout.setLayoutParams(layoutParams);
+            emptyTextLayout.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    return true;
+                }
+            });
 
-            listView.setAdapter(listViewAdapter = new ListAdapter(getParentActivity()));
+            emptyTextView = new TextView(getParentActivity());
+            emptyTextView.setTextColor(0xff808080);
+            emptyTextView.setTextSize(20);
+            emptyTextView.setGravity(Gravity.CENTER);
+            emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+            emptyTextLayout.addView(emptyTextView);
+            layoutParams = (LinearLayout.LayoutParams) emptyTextView.getLayoutParams();
+            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.weight = 0.5f;
+            emptyTextView.setLayoutParams(layoutParams);
+
+            FrameLayout frameLayout2 = new FrameLayout(getParentActivity());
+            emptyTextLayout.addView(frameLayout2);
+            layoutParams = (LinearLayout.LayoutParams) frameLayout2.getLayoutParams();
+            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.weight = 0.5f;
+            frameLayout2.setLayoutParams(layoutParams);
+
+            listView = new SectionsListView(getParentActivity());
+            listView.setEmptyView(emptyTextLayout);
+            listView.setVerticalScrollBarEnabled(false);
+            listView.setDivider(null);
+            listView.setDividerHeight(0);
+            listView.setFastScrollEnabled(true);
+            listView.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_OVERLAY);
+            listView.setAdapter(listViewAdapter);
+            if (Build.VERSION.SDK_INT >= 11) {
+                listView.setFastScrollAlwaysVisible(true);
+                listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
+            }
+            linearLayout.addView(listView);
+            layoutParams = (LinearLayout.LayoutParams) listView.getLayoutParams();
+            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
+            listView.setLayoutParams(layoutParams);
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    TLRPC.User user;
-                    int section = listViewAdapter.getSectionForPosition(i);
-                    int row = listViewAdapter.getPositionInSectionForPosition(i);
+                    TLRPC.User user = null;
                     if (searching && searchWas) {
-                        user = searchResult.get(row);
+                        user = searchListViewAdapter.getItem(i);
                     } else {
-                        ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
-                        user = MessagesController.getInstance().getUser(arr.get(row).user_id);
-                        listView.invalidateViews();
+                        int section = listViewAdapter.getSectionForPosition(i);
+                        int row = listViewAdapter.getPositionInSectionForPosition(i);
+                        if (row < 0 || section < 0) {
+                            return;
+                        }
+                        user = (TLRPC.User) listViewAdapter.getItem(section, row);
                     }
+                    if (user == null) {
+                        return;
+                    }
+
+                    boolean check = true;
                     if (selectedContacts.containsKey(user.id)) {
-                        XImageSpan span = selectedContacts.get(user.id);
-                        selectedContacts.remove(user.id);
-                        SpannableStringBuilder text = new SpannableStringBuilder(userSelectEditText.getText());
-                        text.delete(text.getSpanStart(span), text.getSpanEnd(span));
-                        allSpans.remove(span);
-                        ignoreChange = true;
-                        userSelectEditText.setText(text);
-                        userSelectEditText.setSelection(text.length());
-                        ignoreChange = false;
+                        check = false;
+                        try {
+                            XImageSpan span = selectedContacts.get(user.id);
+                            selectedContacts.remove(user.id);
+                            SpannableStringBuilder text = new SpannableStringBuilder(userSelectEditText.getText());
+                            text.delete(text.getSpanStart(span), text.getSpanEnd(span));
+                            allSpans.remove(span);
+                            ignoreChange = true;
+                            userSelectEditText.setText(text);
+                            userSelectEditText.setSelection(text.length());
+                            ignoreChange = false;
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
                     } else {
                         if (selectedContacts.size() == maxCount) {
                             return;
@@ -292,12 +417,10 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         span.uid = user.id;
                         ignoreChange = false;
                     }
-                    actionBarLayer.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
+                    if (!isAlwaysShare && !isNeverShare) {
+                        actionBar.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
+                    }
                     if (searching || searchWas) {
-                        searching = false;
-                        searchWas = false;
-                        emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
-
                         ignoreChange = true;
                         SpannableStringBuilder ssb = new SpannableStringBuilder("");
                         for (ImageSpan sp : allSpans) {
@@ -308,23 +431,41 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         userSelectEditText.setSelection(ssb.length());
                         ignoreChange = false;
 
+                        searchListViewAdapter.searchDialogs(null);
+                        searching = false;
+                        searchWas = false;
+                        ViewGroup group = (ViewGroup) listView.getParent();
+                        listView.setAdapter(listViewAdapter);
                         listViewAdapter.notifyDataSetChanged();
+                        if (android.os.Build.VERSION.SDK_INT >= 11) {
+                            listView.setFastScrollAlwaysVisible(true);
+                        }
+                        listView.setFastScrollEnabled(true);
+                        listView.setVerticalScrollBarEnabled(false);
+                        emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
                     } else {
-                        listView.invalidateViews();
+                        if (view instanceof UserCell) {
+                            ((UserCell) view).setChecked(check, true);
+                        }
                     }
                 }
             });
-
             listView.setOnScrollListener(new AbsListView.OnScrollListener() {
                 @Override
                 public void onScrollStateChanged(AbsListView absListView, int i) {
                     if (i == SCROLL_STATE_TOUCH_SCROLL) {
                         AndroidUtilities.hideKeyboard(userSelectEditText);
                     }
+                    if (listViewAdapter != null) {
+                        listViewAdapter.setIsScrolling(i != SCROLL_STATE_IDLE);
+                    }
                 }
 
                 @Override
                 public void onScroll(AbsListView absListView, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                    if (absListView.isFastScrollEnabled()) {
+                        AndroidUtilities.clearDrawableAnimation(absListView);
+                    }
                 }
             });
         } else {
@@ -336,8 +477,45 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         return fragmentView;
     }
 
-    public XImageSpan createAndPutChipForUser(TLRPC.User user) {
-        LayoutInflater lf = (LayoutInflater)ApplicationLoader.applicationContext.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
+    @Override
+    public void didReceivedNotification(int id, Object... args) {
+        if (id == NotificationCenter.contactsDidLoaded) {
+            if (listViewAdapter != null) {
+                listViewAdapter.notifyDataSetChanged();
+            }
+        } else if (id == NotificationCenter.updateInterfaces) {
+            int mask = (Integer)args[0];
+            if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0 || (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
+                updateVisibleRows(mask);
+            }
+        } else if (id == NotificationCenter.chatDidCreated) {
+            AndroidUtilities.runOnUIThread(new Runnable() {
+                @Override
+                public void run() {
+                    removeSelfFromStack();
+                }
+            });
+        }
+    }
+
+    private void updateVisibleRows(int mask) {
+        if (listView != null) {
+            int count = listView.getChildCount();
+            for (int a = 0; a < count; a++) {
+                View child = listView.getChildAt(a);
+                if (child instanceof UserCell) {
+                    ((UserCell) child).update(mask);
+                }
+            }
+        }
+    }
+
+    public void setDelegate(GroupCreateActivityDelegate delegate) {
+        this.delegate = delegate;
+    }
+
+    private XImageSpan createAndPutChipForUser(TLRPC.User user) {
+        LayoutInflater lf = (LayoutInflater) ApplicationLoader.applicationContext.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
         View textView = lf.inflate(R.layout.group_create_bubble, null);
         TextView text = (TextView)textView.findViewById(R.id.bubble_text_view);
         String name = ContactsController.formatName(user.first_name, user.last_name);
@@ -372,253 +550,5 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         userSelectEditText.setText(ssb);
         userSelectEditText.setSelection(ssb.length());
         return span;
-    }
-
-    public void searchDialogs(final String query) {
-        if (query == null) {
-            searchResult = null;
-            searchResultNames = null;
-        } else {
-            try {
-                if (searchTimer != null) {
-                    searchTimer.cancel();
-                }
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
-            }
-            searchTimer = new Timer();
-            searchTimer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    try {
-                        searchTimer.cancel();
-                        searchTimer = null;
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                    processSearch(query);
-                }
-            }, 100, 300);
-        }
-    }
-
-    private void processSearch(final String query) {
-        AndroidUtilities.RunOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<TLRPC.TL_contact>();
-                contactsCopy.addAll(ContactsController.getInstance().contacts);
-                Utilities.searchQueue.postRunnable(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (query.length() == 0) {
-                            updateSearchResults(new ArrayList<TLRPC.User>(), new ArrayList<CharSequence>());
-                            return;
-                        }
-                        long time = System.currentTimeMillis();
-                        ArrayList<TLRPC.User> resultArray = new ArrayList<TLRPC.User>();
-                        ArrayList<CharSequence> resultArrayNames = new ArrayList<CharSequence>();
-                        String q = query.toLowerCase();
-
-                        for (TLRPC.TL_contact contact : contactsCopy) {
-                            TLRPC.User user = MessagesController.getInstance().getUser(contact.user_id);
-                            if (user.first_name.toLowerCase().startsWith(q) || user.last_name.toLowerCase().startsWith(q)) {
-                                if (user.id == UserConfig.getClientUserId()) {
-                                    continue;
-                                }
-                                resultArrayNames.add(Utilities.generateSearchName(user.first_name, user.last_name, q));
-                                resultArray.add(user);
-                            }
-                        }
-
-                        updateSearchResults(resultArray, resultArrayNames);
-                    }
-                });
-            }
-        });
-    }
-
-    private void updateSearchResults(final ArrayList<TLRPC.User> users, final ArrayList<CharSequence> names) {
-        AndroidUtilities.RunOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                searchResult = users;
-                searchResultNames = names;
-                listViewAdapter.notifyDataSetChanged();
-            }
-        });
-    }
-
-    @Override
-    public void didReceivedNotification(int id, Object... args) {
-        if (id == NotificationCenter.contactsDidLoaded) {
-            if (listViewAdapter != null) {
-                listViewAdapter.notifyDataSetChanged();
-            }
-        } else if (id == NotificationCenter.updateInterfaces) {
-            int mask = (Integer)args[0];
-            if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0 || (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
-                if (listView != null) {
-                    listView.invalidateViews();
-                }
-            }
-        } else if (id == NotificationCenter.chatDidCreated) {
-            AndroidUtilities.RunOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    removeSelfFromStack();
-                }
-            });
-        }
-    }
-
-    private class ListAdapter extends SectionedBaseAdapter {
-        private Context mContext;
-
-        public ListAdapter(Context context) {
-            mContext = context;
-        }
-
-        @Override
-        public Object getItem(int section, int position) {
-            return null;
-        }
-
-        @Override
-        public long getItemId(int section, int position) {
-            return 0;
-        }
-
-        @Override
-        public int getSectionCount() {
-            if (searching && searchWas) {
-                return searchResult == null || searchResult.isEmpty() ? 0 : 1;
-            }
-            return ContactsController.getInstance().sortedUsersSectionsArray.size();
-        }
-
-        @Override
-        public int getCountForSection(int section) {
-            if (searching && searchWas) {
-                return searchResult == null ? 0 : searchResult.size();
-            }
-            ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
-            return arr.size();
-        }
-
-        @Override
-        public View getItemView(int section, int position, View convertView, ViewGroup parent) {
-            TLRPC.User user;
-            int size;
-
-            if (searchWas && searching) {
-                user = MessagesController.getInstance().getUser(searchResult.get(position).id);
-                size = searchResult.size();
-            } else {
-                ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
-                user = MessagesController.getInstance().getUser(arr.get(position).user_id);
-                size = arr.size();
-            }
-
-            if (convertView == null) {
-                LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                convertView = li.inflate(R.layout.group_create_row_layout, parent, false);
-            }
-            ContactListRowHolder holder = (ContactListRowHolder)convertView.getTag();
-            if (holder == null) {
-                holder = new ContactListRowHolder(convertView);
-                convertView.setTag(holder);
-            }
-
-            ImageView checkButton = (ImageView)convertView.findViewById(R.id.settings_row_check_button);
-            if (selectedContacts.containsKey(user.id)) {
-                checkButton.setImageResource(R.drawable.btn_check_on_holo_light);
-            } else {
-                checkButton.setImageResource(R.drawable.btn_check_off_holo_light);
-            }
-
-            View divider = convertView.findViewById(R.id.settings_row_divider);
-            if (position == size - 1) {
-                divider.setVisibility(View.INVISIBLE);
-            } else {
-                divider.setVisibility(View.VISIBLE);
-            }
-
-            if (searchWas && searching) {
-                holder.nameTextView.setText(searchResultNames.get(position));
-            } else {
-                String name = ContactsController.formatName(user.first_name, user.last_name);
-                if (name.length() == 0) {
-                    if (user.phone != null && user.phone.length() != 0) {
-                        name = PhoneFormat.getInstance().format("+" + user.phone);
-                    } else {
-                        name = LocaleController.getString("HiddenName", R.string.HiddenName);
-                    }
-                }
-                holder.nameTextView.setText(name);
-            }
-
-            TLRPC.FileLocation photo = null;
-            if (user.photo != null) {
-                photo = user.photo.photo_small;
-            }
-            int placeHolderId = AndroidUtilities.getUserAvatarForId(user.id);
-            holder.avatarImage.setImage(photo, "50_50", placeHolderId);
-
-            holder.messageTextView.setText(LocaleController.formatUserStatus(user));
-            if (user.status != null && user.status.expires > ConnectionsManager.getInstance().getCurrentTime()) {
-                holder.messageTextView.setTextColor(0xff357aa8);
-            } else {
-                holder.messageTextView.setTextColor(0xff808080);
-            }
-
-            return convertView;
-        }
-
-        @Override
-        public int getItemViewType(int section, int position) {
-            return 0;
-        }
-
-        @Override
-        public int getItemViewTypeCount() {
-            return 1;
-        }
-
-        @Override
-        public int getSectionHeaderViewType(int section) {
-            return 0;
-        }
-
-        @Override
-        public int getSectionHeaderViewTypeCount() {
-            return 1;
-        }
-
-        @Override
-        public View getSectionHeaderView(int section, View convertView, ViewGroup parent) {
-            if (convertView == null) {
-                convertView = new SettingsSectionLayout(mContext);
-                convertView.setBackgroundColor(0xffffffff);
-            }
-            if (searching && searchWas) {
-                ((SettingsSectionLayout) convertView).setText(LocaleController.getString("AllContacts", R.string.AllContacts));
-            } else {
-                ((SettingsSectionLayout) convertView).setText(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
-            }
-            return convertView;
-        }
-    }
-
-    public static class ContactListRowHolder {
-        public BackupImageView avatarImage;
-        public TextView messageTextView;
-        public TextView nameTextView;
-
-        public ContactListRowHolder(View view) {
-            messageTextView = (TextView)view.findViewById(R.id.messages_list_row_message);
-            nameTextView = (TextView)view.findViewById(R.id.messages_list_row_name);
-            avatarImage = (BackupImageView)view.findViewById(R.id.messages_list_row_avatar);
-        }
     }
 }

@@ -139,7 +139,7 @@ public class ImageReceiver {
         if (roundRadius != 0) {
             bitmapShader = new BitmapShader(bitmap.getBitmap(), Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
             roundPaint.setShader(bitmapShader);
-            bitmapRect.set(0, 0, bitmap.getIntrinsicWidth(), bitmap.getIntrinsicHeight());
+            bitmapRect.set(0, 0, bitmap.getBitmap().getWidth(), bitmap.getBitmap().getHeight());
         }
         if (parentView != null) {
             parentView.invalidate();
@@ -225,11 +225,13 @@ public class ImageReceiver {
             if (bitmapDrawable != null) {
                 if (bitmapShader != null) {
                     drawRegion.set(imageX, imageY, imageX + imageW, imageY + imageH);
-                    roundRect.set(imageX, imageY, imageX + imageW, imageY + imageH);
-                    shaderMatrix.reset();
-                    shaderMatrix.setScale(1.5f, 1.5f);
-                    bitmapShader.setLocalMatrix(shaderMatrix);
-                    canvas.drawRoundRect(roundRect, roundRadius, roundRadius, roundPaint);
+                    if (isVisible) {
+                        roundRect.set(drawRegion);
+                        shaderMatrix.reset();
+                        shaderMatrix.setRectToRect(bitmapRect, roundRect, Matrix.ScaleToFit.FILL);
+                        bitmapShader.setLocalMatrix(shaderMatrix);
+                        canvas.drawRoundRect(roundRect, roundRadius, roundRadius, roundPaint);
+                    }
                 } else {
                     int bitmapW = bitmapDrawable.getIntrinsicWidth();
                     int bitmapH = bitmapDrawable.getIntrinsicHeight();
@@ -412,15 +414,21 @@ public class ImageReceiver {
     public void setRoundRadius(int value) {
         roundRadius = value;
         if (roundRadius != 0) {
-            roundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            roundRect = new RectF();
-            shaderMatrix = new Matrix();
-            bitmapRect = new RectF();
+            if (roundPaint == null) {
+                roundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                roundRect = new RectF();
+                shaderMatrix = new Matrix();
+                bitmapRect = new RectF();
+            }
         } else {
             roundPaint = null;
             roundRect = null;
             shaderMatrix = null;
             bitmapRect = null;
         }
+    }
+
+    public int getRoundRadius() {
+        return roundRadius;
     }
 }

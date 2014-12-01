@@ -12,22 +12,24 @@ import android.content.Context;
 import android.os.Bundle;
 import android.text.Html;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
-import org.telegram.ui.Views.ActionBar.BaseFragment;
-import org.telegram.ui.Views.IdenticonView;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.IdenticonDrawable;
 
 public class IdenticonActivity extends BaseFragment {
     private int chat_id;
@@ -45,12 +47,11 @@ public class IdenticonActivity extends BaseFragment {
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
-            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
-            actionBarLayer.setTitle(LocaleController.getString("EncryptionKey", R.string.EncryptionKey));
-            actionBarLayer.setTitleIcon(R.drawable.ic_lock_white, AndroidUtilities.dp(4));
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setAllowOverlayTitle(true);
+            actionBar.setTitle(LocaleController.getString("EncryptionKey", R.string.EncryptionKey));
 
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
@@ -60,14 +61,23 @@ public class IdenticonActivity extends BaseFragment {
             });
 
             fragmentView = inflater.inflate(R.layout.identicon_layout, container, false);
-            IdenticonView identiconView = (IdenticonView) fragmentView.findViewById(R.id.identicon_view);
+            ImageView identiconView = (ImageView) fragmentView.findViewById(R.id.identicon_view);
             TextView textView = (TextView)fragmentView.findViewById(R.id.identicon_text);
             TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat(chat_id);
             if (encryptedChat != null) {
-                identiconView.setBytes(encryptedChat.auth_key);
+                IdenticonDrawable drawable = new IdenticonDrawable();
+                identiconView.setImageDrawable(drawable);
+                drawable.setEncryptedChat(encryptedChat);
                 TLRPC.User user = MessagesController.getInstance().getUser(encryptedChat.user_id);
                 textView.setText(Html.fromHtml(LocaleController.formatString("EncryptionKeyDescription", R.string.EncryptionKeyDescription, user.first_name, user.first_name)));
             }
+
+            fragmentView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    return true;
+                }
+            });
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
             if (parent != null) {
@@ -101,7 +111,7 @@ public class IdenticonActivity extends BaseFragment {
                     return true;
                 }
                 LinearLayout layout = (LinearLayout)fragmentView;
-                WindowManager manager = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+                WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
                 int rotation = manager.getDefaultDisplay().getRotation();
 
                 if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {

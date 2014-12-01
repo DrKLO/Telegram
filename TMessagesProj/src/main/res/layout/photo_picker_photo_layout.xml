@@ -4,7 +4,7 @@
     android:layout_height="100dp"
     android:layout_gravity="top">
 
-    <org.telegram.ui.Views.BackupImageView
+    <org.telegram.ui.Components.BackupImageView
         android:id="@+id/media_photo_image"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"/>

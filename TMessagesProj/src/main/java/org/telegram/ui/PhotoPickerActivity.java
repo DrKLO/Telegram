@@ -28,14 +28,15 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MediaController;
 import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessageObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
-import org.telegram.ui.Views.ActionBar.ActionBarMenu;
-import org.telegram.ui.Views.ActionBar.BaseFragment;
-import org.telegram.ui.Views.BackupImageView;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.BackupImageView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -84,18 +85,17 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setBackgroundColor(0xff333333);
-            actionBarLayer.setItemsBackground(R.drawable.bar_selector_picker);
-            actionBarLayer.setDisplayUseLogoEnabled(true, R.drawable.gallery);
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.photo_back);
-            actionBarLayer.setTitle(LocaleController.getString("Gallery", R.string.Gallery));
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setBackgroundColor(0xff333333);
+            actionBar.setItemsBackground(R.drawable.bar_selector_picker);
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setTitle(LocaleController.getString("Gallery", R.string.Gallery));
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
                         if (selectedAlbum != null) {
                             selectedAlbum = null;
-                            actionBarLayer.setTitle(LocaleController.getString("Gallery", R.string.Gallery));
+                            actionBar.setTitle(LocaleController.getString("Gallery", R.string.Gallery));
                             fixLayoutInternal();
                         } else {
                             if (Build.VERSION.SDK_INT < 11) {
@@ -114,8 +114,8 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 }
             });
 
-            ActionBarMenu menu = actionBarLayer.createMenu();
-            menu.addItem(1, R.drawable.ic_ab_other_white2);
+            ActionBarMenu menu = actionBar.createMenu();
+            menu.addItem(1, R.drawable.ic_ab_other);
 
             fragmentView = inflater.inflate(R.layout.photo_picker_layout, container, false);
 
@@ -146,9 +146,12 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             });
 
             cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
+            cancelButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             doneButtonTextView = (TextView)doneButton.findViewById(R.id.done_button_text);
             doneButtonTextView.setText(LocaleController.getString("Send", R.string.Send).toUpperCase());
+            doneButtonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             doneButtonBadgeTextView = (TextView)doneButton.findViewById(R.id.done_button_badge);
+            doneButtonBadgeTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
             listView.setAdapter(listAdapter = new ListAdapter(getParentActivity()));
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -159,7 +162,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                             return;
                         }
                         selectedAlbum = albumsSorted.get(i);
-                        actionBarLayer.setTitle(selectedAlbum.bucketName);
+                        actionBar.setTitle(selectedAlbum.bucketName);
                         fixLayoutInternal();
                     } else {
                         if (i < 0 || i >= selectedAlbum.photos.size()) {
@@ -232,7 +235,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     public boolean onBackPressed() {
         if (selectedAlbum != null) {
             selectedAlbum = null;
-            actionBarLayer.setTitle(LocaleController.getString("Gallery", R.string.Gallery));
+            actionBar.setTitle(LocaleController.getString("Gallery", R.string.Gallery));
             fixLayoutInternal();
             return false;
         }
@@ -399,7 +402,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             return;
         }
         int position = listView.getFirstVisiblePosition();
-        WindowManager manager = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
+        WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
         int rotation = manager.getDefaultDisplay().getRotation();
 
         int columnsCount = 2;
@@ -515,7 +518,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 MediaController.AlbumEntry albumEntry = albumsSorted.get(i);
                 BackupImageView imageView = (BackupImageView)view.findViewById(R.id.media_photo_image);
                 if (albumEntry.coverPhoto != null && albumEntry.coverPhoto.path != null) {
-                    imageView.setImage("thumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, R.drawable.nophotos);
+                    imageView.setImage("thumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, mContext.getResources().getDrawable(R.drawable.nophotos));
                 } else {
                     imageView.setImageResource(R.drawable.nophotos);
                 }
@@ -557,7 +560,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 imageView.setTag(i);
                 view.setTag(i);
                 if (photoEntry.path != null) {
-                    imageView.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, null, R.drawable.nophotos);
+                    imageView.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, null, mContext.getResources().getDrawable(R.drawable.nophotos));
                 } else {
                     imageView.setImageResource(R.drawable.nophotos);
                 }

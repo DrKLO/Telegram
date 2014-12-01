@@ -10,7 +10,6 @@
         android:id="@+id/background_image"/>
 
     <ProgressBar
-        android:background="#99000000"
         android:layout_width="60dp"
         android:layout_height="60dp"
         android:layout_gravity="center"
@@ -19,7 +18,7 @@
         android:visibility="visible"
         android:layout_marginBottom="52dp"/>
 
-    <org.telegram.ui.Views.HorizontalListView
+    <org.telegram.ui.Components.HorizontalListView
         android:layout_width="fill_parent"
         android:layout_height="102dp"
         android:layout_gravity="bottom"

@@ -16,7 +16,7 @@ import android.content.Intent;
 import org.json.JSONObject;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.ui.ApplicationLoader;
+import org.telegram.messenger.ApplicationLoader;
 
 public class GcmBroadcastReceiver extends BroadcastReceiver {
 
@@ -27,7 +27,7 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
         FileLog.d("tmessages", "GCM received intent: " + intent);
 
         if (intent.getAction().equals("com.google.android.c2dm.intent.RECEIVE")) {
-            AndroidUtilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     ApplicationLoader.postInitApplication();

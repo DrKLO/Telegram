@@ -31,7 +31,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ApplicationLoader;
+import org.telegram.messenger.ApplicationLoader;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -307,7 +307,7 @@ public class ImageLoader {
         }
 
         private void onPostExecute(final BitmapDrawable bitmapDrawable) {
-            AndroidUtilities.RunOnUIThread(new Runnable() {
+            AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
                     if (bitmapDrawable != null && memCache.get(cacheImage.key) == null) {
@@ -518,7 +518,7 @@ public class ImageLoader {
                 if (lastProgressUpdateTime == 0 || lastProgressUpdateTime < currentTime - 500) {
                     lastProgressUpdateTime = currentTime;
 
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.FileUploadProgressChanged, location, progress, isEncrypted);
@@ -549,7 +549,7 @@ public class ImageLoader {
 
             @Override
             public void fileDidLoaded(final String location, final File finalFile, final File tempFile) {
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if (location != null) {
@@ -567,7 +567,7 @@ public class ImageLoader {
 
             @Override
             public void fileDidFailedLoad(final String location, final int state) {
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         ImageLoader.this.fileDidFailedLoad(location);
@@ -581,7 +581,7 @@ public class ImageLoader {
                 long currentTime = System.currentTimeMillis();
                 if (lastProgressUpdateTime == 0 || lastProgressUpdateTime < currentTime - 500) {
                     lastProgressUpdateTime = currentTime;
-                    AndroidUtilities.RunOnUIThread(new Runnable() {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.FileLoadProgressChanged, location, progress);
@@ -601,7 +601,7 @@ public class ImageLoader {
                     }
                 };
                 if (Intent.ACTION_MEDIA_UNMOUNTED.equals(intent.getAction())) {
-                    AndroidUtilities.RunOnUIThread(r, 1000);
+                    AndroidUtilities.runOnUIThread(r, 1000);
                 } else {
                     r.run();
                 }
@@ -816,7 +816,7 @@ public class ImageLoader {
     }
 
     public void replaceImageInCache(final String oldKey, final String newKey) {
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 ArrayList<String> arr = memCache.getFilterKeys(oldKey);
@@ -1117,9 +1117,9 @@ public class ImageLoader {
         return b;
     }
 
-    private static TLRPC.PhotoSize scaleAndSaveImageInternal(Bitmap bitmap, int w, int h, float photoW, float photoH, float scaleFactor, int quality, boolean cache) throws Exception {
+    private static TLRPC.PhotoSize scaleAndSaveImageInternal(Bitmap bitmap, int w, int h, float photoW, float photoH, float scaleFactor, int quality, boolean cache, boolean scaleAnyway) throws Exception {
         Bitmap scaledBitmap = null;
-        if (scaleFactor > 1) {
+        if (scaleFactor > 1 || scaleAnyway) {
             scaledBitmap = Bitmap.createScaledBitmap(bitmap, w, h, true);
         } else {
             scaledBitmap = bitmap;
@@ -1171,6 +1171,10 @@ public class ImageLoader {
     }
 
     public static TLRPC.PhotoSize scaleAndSaveImage(Bitmap bitmap, float maxWidth, float maxHeight, int quality, boolean cache) {
+        return scaleAndSaveImage(bitmap, maxWidth, maxHeight, quality, cache, 0, 0);
+    }
+
+    public static TLRPC.PhotoSize scaleAndSaveImage(Bitmap bitmap, float maxWidth, float maxHeight, int quality, boolean cache, int minWidth, int minHeight) {
         if (bitmap == null) {
             return null;
         }
@@ -1179,7 +1183,12 @@ public class ImageLoader {
         if (photoW == 0 || photoH == 0) {
             return null;
         }
+        boolean scaleAnyway = false;
         float scaleFactor = Math.max(photoW / maxWidth, photoH / maxHeight);
+        if (scaleFactor < 1 && minWidth != 0 && minHeight != 0) {
+            scaleFactor = Math.max(photoW / minWidth, photoH / minHeight);
+            scaleAnyway = true;
+        }
         int w = (int)(photoW / scaleFactor);
         int h = (int)(photoH / scaleFactor);
         if (h == 0 || w == 0) {
@@ -1187,13 +1196,13 @@ public class ImageLoader {
         }
 
         try {
-            return scaleAndSaveImageInternal(bitmap, w, h, photoW, photoH, scaleFactor, quality, cache);
+            return scaleAndSaveImageInternal(bitmap, w, h, photoW, photoH, scaleFactor, quality, cache, scaleAnyway);
         } catch (Throwable e) {
             FileLog.e("tmessages", e);
             ImageLoader.getInstance().clearMemory();
             System.gc();
             try {
-                return scaleAndSaveImageInternal(bitmap, w, h, photoW, photoH, scaleFactor, quality, cache);
+                return scaleAndSaveImageInternal(bitmap, w, h, photoW, photoH, scaleFactor, quality, cache, scaleAnyway);
             } catch (Throwable e2) {
                 FileLog.e("tmessages", e2);
                 return null;

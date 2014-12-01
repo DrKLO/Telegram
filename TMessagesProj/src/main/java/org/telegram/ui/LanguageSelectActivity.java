@@ -11,6 +11,7 @@ package org.telegram.ui;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -18,6 +19,8 @@ import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -27,10 +30,11 @@ import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
-import org.telegram.ui.Views.ActionBar.ActionBarMenu;
-import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.Cells.TextSettingsCell;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.BaseFragment;
 
 import java.util.ArrayList;
 import java.util.Timer;
@@ -50,11 +54,14 @@ public class LanguageSelectActivity extends BaseFragment {
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
-            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
-            actionBarLayer.setTitle(LocaleController.getString("Language", R.string.Language));
+            searching = false;
+            searchWas = false;
 
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setAllowOverlayTitle(true);
+            actionBar.setTitle(LocaleController.getString("Language", R.string.Language));
+
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
@@ -63,7 +70,7 @@ public class LanguageSelectActivity extends BaseFragment {
                 }
             });
 
-            ActionBarMenu menu = actionBarLayer.createMenu();
+            ActionBarMenu menu = actionBar.createMenu();
             menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
                 @Override
                 public void onSearchExpand() {
@@ -88,34 +95,64 @@ public class LanguageSelectActivity extends BaseFragment {
                     if (text.length() != 0) {
                         searchWas = true;
                         if (listView != null) {
-                            listView.setPadding(AndroidUtilities.dp(16), listView.getPaddingTop(), AndroidUtilities.dp(16), listView.getPaddingBottom());
                             listView.setAdapter(searchListViewAdapter);
-                            if(android.os.Build.VERSION.SDK_INT >= 11) {
-                                listView.setFastScrollAlwaysVisible(false);
-                            }
-                            listView.setFastScrollEnabled(false);
-                            listView.setVerticalScrollBarEnabled(true);
-                        }
-                        if (emptyTextView != null) {
-                            emptyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
                         }
                     }
                 }
             });
 
-            fragmentView = inflater.inflate(R.layout.language_select_layout, container, false);
             listAdapter = new ListAdapter(getParentActivity());
-            listView = (ListView)fragmentView.findViewById(R.id.listView);
-            listView.setAdapter(listAdapter);
-            emptyTextView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
-            listView.setEmptyView(emptyTextView);
-            emptyTextView.setOnTouchListener(new View.OnTouchListener() {
+            searchListViewAdapter = new SearchAdapter(getParentActivity());
+
+            fragmentView = new FrameLayout(getParentActivity());
+
+            LinearLayout emptyTextLayout = new LinearLayout(getParentActivity());
+            emptyTextLayout.setVisibility(View.INVISIBLE);
+            emptyTextLayout.setOrientation(LinearLayout.VERTICAL);
+            ((FrameLayout) fragmentView).addView(emptyTextLayout);
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) emptyTextLayout.getLayoutParams();
+            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.gravity = Gravity.TOP;
+            emptyTextLayout.setLayoutParams(layoutParams);
+            emptyTextLayout.setOnTouchListener(new View.OnTouchListener() {
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
                     return true;
                 }
             });
-            searchListViewAdapter = new SearchAdapter(getParentActivity());
+
+            emptyTextView = new TextView(getParentActivity());
+            emptyTextView.setTextColor(0xff808080);
+            emptyTextView.setTextSize(20);
+            emptyTextView.setGravity(Gravity.CENTER);
+            emptyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+            emptyTextLayout.addView(emptyTextView);
+            LinearLayout.LayoutParams layoutParams1 = (LinearLayout.LayoutParams) emptyTextView.getLayoutParams();
+            layoutParams1.width = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams1.height = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams1.weight = 0.5f;
+            emptyTextView.setLayoutParams(layoutParams1);
+
+            FrameLayout frameLayout = new FrameLayout(getParentActivity());
+            emptyTextLayout.addView(frameLayout);
+            layoutParams1 = (LinearLayout.LayoutParams) frameLayout.getLayoutParams();
+            layoutParams1.width = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams1.height = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams1.weight = 0.5f;
+            frameLayout.setLayoutParams(layoutParams1);
+
+            listView = new ListView(getParentActivity());
+            listView.setEmptyView(emptyTextLayout);
+            listView.setVerticalScrollBarEnabled(false);
+            listView.setDivider(null);
+            listView.setDividerHeight(0);
+            listView.setAdapter(listAdapter);
+            ((FrameLayout) fragmentView).addView(listView);
+            layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
+            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            listView.setLayoutParams(layoutParams);
 
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
@@ -192,9 +229,6 @@ public class LanguageSelectActivity extends BaseFragment {
                 public void onScroll(AbsListView absListView, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
                 }
             });
-
-            searching = false;
-            searchWas = false;
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
             if (parent != null) {
@@ -264,7 +298,7 @@ public class LanguageSelectActivity extends BaseFragment {
     }
 
     private void updateSearchResults(final ArrayList<LocaleController.LocaleInfo> arrCounties) {
-        AndroidUtilities.RunOnUIThread(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
                 searchResult = arrCounties;
@@ -316,19 +350,11 @@ public class LanguageSelectActivity extends BaseFragment {
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
             if (view == null) {
-                LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                view = li.inflate(R.layout.settings_row_button_layout, viewGroup, false);
+                view = new TextSettingsCell(mContext);
             }
-            TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
-            View divider = view.findViewById(R.id.settings_row_divider);
 
             LocaleController.LocaleInfo c = searchResult.get(i);
-            textView.setText(c.name);
-            if (i == searchResult.size() - 1) {
-                divider.setVisibility(View.GONE);
-            } else {
-                divider.setVisibility(View.VISIBLE);
-            }
+            ((TextSettingsCell) view).setText(c.name, i != searchResult.size() - 1);
 
             return view;
         }
@@ -392,19 +418,11 @@ public class LanguageSelectActivity extends BaseFragment {
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
             if (view == null) {
-                LayoutInflater li = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                view = li.inflate(R.layout.settings_row_button_layout, viewGroup, false);
+                view = new TextSettingsCell(mContext);
             }
-            TextView textView = (TextView)view.findViewById(R.id.settings_row_text);
-            View divider = view.findViewById(R.id.settings_row_divider);
 
             LocaleController.LocaleInfo localeInfo = LocaleController.getInstance().sortedLanguages.get(i);
-            textView.setText(localeInfo.name);
-            if (i == LocaleController.getInstance().sortedLanguages.size() - 1) {
-                divider.setVisibility(View.GONE);
-            } else {
-                divider.setVisibility(View.VISIBLE);
-            }
+            ((TextSettingsCell) view).setText(localeInfo.name, i != LocaleController.getInstance().sortedLanguages.size() - 1);
 
             return view;
         }

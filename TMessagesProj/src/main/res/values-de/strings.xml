@@ -9,7 +9,7 @@
     <string name="LanguageCode">de</string>
     <!--signin view-->
     <string name="YourPhone">Dein Telefon</string>
-    <string name="StartText">Bitte Landeskennzahl und\nTelefonnummer bestätigen.</string>
+    <string name="StartText">Bitte bestätige deine Landesvorwahl und deine Telefonnummer.</string>
     <string name="ChooseCountry">Wähle ein Land</string>
     <string name="WrongCountry">Falsche Landesvorwahl</string>
     <!--code enter view-->
@@ -28,9 +28,6 @@
     <string name="LastName">Nachname (optional)</string>
     <string name="CancelRegistration">Registrierung abbrechen</string>
     <!--chats view-->
-    <string name="Chats">Chats</string>
-    <string name="Search">Suche</string>
-    <string name="NewMessages">Neue Nachrichten</string>
     <string name="Settings">Einstellungen</string>
     <string name="Contacts">Kontakte</string>
     <string name="NewGroup">Neue Gruppe</string>
@@ -41,20 +38,21 @@
     <string name="WaitingForNetwork">Warte auf Netzwerk...</string>
     <string name="Connecting">Verbinde…</string>
     <string name="Updating">Aktualisiere…</string>
-    <string name="NewSecretChat">Neuer geheimer Chat</string>
+    <string name="NewSecretChat">Neuer Geheimer Chat</string>
     <string name="AwaitingEncryption">Warte, bis %s online geht…</string>
-    <string name="EncryptionRejected">Geheimen Chat abgelehnt</string>
+    <string name="EncryptionRejected">Geheimen Chat abgebrochen</string>
     <string name="EncryptionProcessing">Tausche Schlüssel aus…</string>
     <string name="EncryptedChatStartedOutgoing">%s ist deinem geheimen Chat beigetreten.</string>
     <string name="EncryptedChatStartedIncoming">Du bist dem geheimen Chat beigetreten.</string>
     <string name="ClearHistory">Verlauf löschen</string>
     <string name="DeleteChat">Löschen und beenden</string>
-    <string name="HiddenName">Versteckter Name</string>
+    <string name="DeleteChatUser">Chat löschen</string>
+    <string name="HiddenName">Gelöschtes Konto</string>
     <string name="SelectChat">Chat auswählen</string>
     <string name="PhotoTip">Tippen und Halten</string>
     <string name="CompatibilityChat">%1$s benutzt eine ältere Version von Telegram, sodass Fotos in Geheimen Chats im Kompatibilitätsmodus angezeigt werden.\n\nSobald %2$s Telegram aktualisiert, werden Fotos mit Timern von 1 Minute und kürzer per \"Tippen und Halten\" angezeigt. Du wirst benachrichtigt, sobald dein Chatpartner ein Bildschirmfoto macht.</string>
+    <string name="SearchMessages">NACHRICHTEN</string>
     <!--broadcasts-->
-    <string name="BroadcastList">Broadcast Liste</string>
     <string name="NewBroadcastList">Neue Broadcast Liste</string>
     <string name="EnterListName">Listenname</string>
     <string name="YouCreatedBroadcastList">Du hast eine Broadcast Liste erstellt</string>
@@ -73,10 +71,10 @@
     <string name="ExternalStorage">Externer Speicher</string>
     <string name="SystemRoot">Systemverzeichnis</string>
     <string name="SdCard">SD-Karte</string>
+    <string name="Folder">Ordner</string>
     <!--chat view-->
     <string name="Invisible">unsichtbar</string>
     <string name="Typing">schreibt…</string>
-    <string name="Attach">Anhängen</string>
     <string name="IsTyping">schreibt...</string>
     <string name="AreTyping">tippen…</string>
     <string name="GotAQuestion">Hast du eine Frage\nzu Telegram?</string>
@@ -86,18 +84,13 @@
     <string name="ChatVideo">Video</string>
     <string name="ChatDocument">Datei</string>
     <string name="NoMessages">Noch keine Nachrichten…</string>
-    <string name="ViewPhoto">Foto anzeigen</string>
-    <string name="ViewLocation">Standort anzeigen</string>
-    <string name="ViewVideo">Video abspielen</string>
     <string name="ForwardedMessage">Weitergeleitete Nachricht</string>
     <string name="From">Von</string>
     <string name="NoRecent">Keine aktuellen</string>
     <string name="Message">Nachricht</string>
-    <string name="TypeMessage">Nachricht verfassen</string>
-    <string name="DOWNLOAD">Download</string>
-    <string name="Selected">Ausgewählt: %d</string>
-    <string name="ShareMyContactInfo">MEINE TELEFONNUMMER TEILEN</string>
-    <string name="AddToContacts">ZU KONTAKTEN HINZUFÜGEN</string>
+    <string name="TypeMessage">Nachricht</string>
+    <string name="ShareMyContactInfo">Meine Telefonnummer teilen</string>
+    <string name="AddToContacts">Zu Kontakten hinzufügen</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s hat dich zu einem\nEnde-zu-Ende verschlüsselten\nGeheimen Chat eingeladen.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">Du hast %s zu einem\nEnde-zu-Ende verschlüsselten\nGeheimen Chat eingeladen.</string>
     <string name="EncryptedDescriptionTitle">Geheime Chats in Kürze:</string>
@@ -113,9 +106,8 @@
     <string name="SaveToDownloads">In Downloads speichern</string>
     <string name="ApplyLocalizationFile">Sprachdatei benutzen</string>
     <string name="UnsupportedAttachment">Nicht unterstützte Datei</string>
+    <string name="SetTimer">Wähle einen Selbstzerstörungs-Timer</string>
     <!--notification-->
-    <string name="EncryptedChatRequested">Geheimen Chat angefordert</string>
-    <string name="EncryptedChatAccepted">Geheimen Chat angenommen</string>
     <string name="MessageLifetimeChanged">%1$s hat den Selbstzerstörungs-Timer auf %2$s gesetzt</string>
     <string name="MessageLifetimeChangedOutgoing">Du hast den Selbstzerstörungs-Timer auf %1$s gesetzt</string>
     <string name="MessageLifetimeRemoved">%1$s hat den Selbstzerstörungs-Timer deaktivert</string>
@@ -145,7 +137,7 @@
     <string name="NotificationGroupKickYou">%1$s hat dich aus der Gruppe %2$s entfernt</string>
     <string name="NotificationGroupLeftMember">%1$s hat die Gruppe %2$s verlassen</string>
     <string name="NotificationContactJoined">%1$s benutzt jetzt Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nWir haben eine Anmeldung von einem neuen Gerät am %2$s festgestellt.\n\nGerät: %3$s\nStandort: %4$s\n\nWenn du das nicht selbst gewesen bist, melde alle anderen Sitzungen in den Telegram Einstellungen unverzüglich ab.\n\nMit freundlichen Grüßen,\nDas Telegram Team</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nWir haben eine Anmeldung von einem neuen Gerät am %2$s festgestellt.\n\nGerät: %3$s\nStandort: %4$s\n\nWenn du das nicht selbst gewesen bist, melde alle anderen Sitzungen in den Telegram Einstellungen unverzüglich ab.\n\nMit freundlichen Grüßen,\nDein Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s hat das Profilbild geändert</string>
     <string name="Reply">Beantworten</string>
     <string name="ReplyToGroup">%1$s antworten</string>
@@ -158,23 +150,23 @@
     <string name="TodayAt">heute um</string>
     <string name="YesterdayAt">gestern um</string>
     <string name="Online">online</string>
-    <string name="Offline">offline</string>
     <string name="LastSeen">zul. online</string>
     <string name="LastSeenDate">zul. online</string>
     <string name="InviteFriends">Freunde einladen</string>
     <string name="GlobalSearch">GLOBALE SUCHE</string>
+    <string name="Lately">zuletzt kürzlich gesehen</string>
+    <string name="WithinAWeek">diese Woche gesehen</string>
+    <string name="WithinAMonth">diesen Monat gesehen</string>
+    <string name="ALongTimeAgo">vor langer Zeit gesehen</string>
+    <string name="NewMessageTitle">Neue Nachricht</string>
     <!--group create view-->
     <string name="SendMessageTo">Sende Nachricht an…</string>
     <string name="EnterGroupNamePlaceholder">Gruppenname</string>
     <string name="GroupName">Gruppenname</string>
-    <string name="AllContacts">ALLE KONTAKTE</string>
     <string name="MembersCount">%1$d/%2$d Mitglieder</string>
     <!--group info view-->
-    <string name="EnterGroupNameTitle">GRUPPENNAMEN EINGEBEN</string>
     <string name="SharedMedia">Geteilte Medien</string>
-    <string name="GroupInfo">Gruppeninfo</string>
-    <string name="SHAREDMEDIA">GETEILTE MEDIEN</string>
-    <string name="SETTINGS">EINSTELLUNGEN</string>
+    <string name="SETTINGS">Einstellungen</string>
     <string name="AddMember">Mitglied hinzufügen</string>
     <string name="DeleteAndExit">Gruppe löschen und verlassen</string>
     <string name="Notifications">Mitteilungen</string>
@@ -182,25 +174,23 @@
     <!--contact info view-->
     <string name="ShareContact">Teilen</string>
     <string name="AddContact">Hinzufügen</string>
+    <string name="AddContactTitle">Kontakt hinzufügen</string>
     <string name="BlockContact">Blockieren</string>
     <string name="EditContact">Bearbeiten</string>
     <string name="DeleteContact">Löschen</string>
-    <string name="PhoneHome">FESTNETZ</string>
-    <string name="PhoneMobile">MOBIL</string>
-    <string name="PhoneWork">ARBEIT</string>
-    <string name="PhoneOther">SONSTIGES</string>
-    <string name="PhoneMain">HAUPTNUMMER</string>
-    <string name="ContactInfo">Kontaktdaten</string>
-    <string name="PHONE">TELEFON</string>
+    <string name="PhoneHome">Festnetz</string>
+    <string name="PhoneMobile">Mobil</string>
+    <string name="PhoneWork">Arbeit</string>
+    <string name="PhoneOther">Sonstiges</string>
+    <string name="PhoneMain">Hauptnummer</string>
     <string name="StartEncryptedChat">Geheimen Chat starten</string>
     <string name="CreateEncryptedChatError">Es ist ein Fehler aufgetreten.</string>
-    <string name="SecretTitle">Geheimer Chat</string>
     <string name="EncryptionKey">Geheimer Schlüssel</string>
     <string name="MessageLifetime">Selbstzerstörungs-Timer</string>
     <string name="ShortMessageLifetimeForever">Aus</string>
     <string name="EncryptionKeyDescription">Das ist eine Darstellung des Schlüssels für den Geheimen Chat mit <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Wenn dieses Bild auf <![CDATA[<b>]]>%2$s\s<![CDATA[</b>]]>s Telefon genau so aussieht, ist euer Chat zu 200%% sicher.<![CDATA[<br><br>]]>Erfahre mehr auf telegram.org</string>
     <string name="NumberUnknown">Unbekannt</string>
-    <string name="Info">INFO</string>
+    <string name="Info">Info</string>
     <string name="Phone">Telefon</string>
     <!--usernames-->
     <string name="Username">Benutzername</string>
@@ -210,7 +200,7 @@
     <string name="UsernameInvalidShort">Ein Benutzername benötigt mindestens 5 Zeichen.</string>
     <string name="UsernameInvalidLong">Ein Benutzername darf maximal 32 Zeichen haben.</string>
     <string name="UsernameInvalidStartNumber">Benutzernamen dürfen leider nicht mit einer Zahl anfangen.</string>
-    <string name="UsernameHelp">Wähle einen Benutzernamen, wenn du von anderen bei<![CDATA[<b>]]>Telegram<![CDATA[</b>]]>gefunden werden willst — ohne, dass sie deine Nummer kennen müssen.<![CDATA[<br><br>]]>Erlaubt sind <![CDATA[<b>]]>a-z<![CDATA[<b>]]>, <![CDATA[<b>]]>0-9<![CDATA[<b>]]> und Unterstriche. Die Mindestlänge beträgt <![CDATA[<b>]]>5<![CDATA[<b>]]> Zeichen.</string>
+    <string name="UsernameHelp">Wähle einen Benutzernamen, wenn du von anderen bei <![CDATA[<b>]]>Telegram<![CDATA[</b>]]> gefunden werden willst — ohne, dass sie deine Nummer kennen müssen.<![CDATA[<br><br>]]>Erlaubt sind <![CDATA[<b>]]>a-z<![CDATA[<b>]]>, <![CDATA[<b>]]>0-9<![CDATA[<b>]]> und Unterstriche. Die Mindestlänge beträgt <![CDATA[<b>]]>5<![CDATA[<b>]]> Zeichen.</string>
     <string name="UsernameChecking">Prüfe Benutzername...</string>
     <string name="UsernameAvailable">%1$s ist verfügbar.</string>
     <string name="UsernameEmpty">Keiner</string>
@@ -223,32 +213,30 @@
     <string name="Unblock">Freigeben</string>
     <string name="UnblockText">Gedrückt halten um freizugeben.</string>
     <string name="NoBlocked">Keine blockierten Benutzer</string>
-    <string name="MessageNotifications">NACHRICHTEN</string>
+    <string name="MessageNotifications">Nachrichten</string>
     <string name="Alert">Benachrichtigung</string>
     <string name="MessagePreview">Vorschau</string>
-    <string name="GroupNotifications">GRUPPEN</string>
+    <string name="GroupNotifications">Gruppen</string>
     <string name="Sound">Nachrichtenton auswählen</string>
-    <string name="InAppNotifications">IN-APP</string>
+    <string name="InAppNotifications">In-App </string>
     <string name="InAppSounds">In-App-Töne</string>
     <string name="InAppVibrate">In-App-Vibration</string>
     <string name="Vibrate">Vibrieren</string>
     <string name="InAppPreview">In-App-Vorschau</string>
-    <string name="Reset">ZURÜCKSETZEN</string>
+    <string name="Reset">Zurücksetzen</string>
     <string name="ResetAllNotifications">Mitteilungseinstellungen zurücksetzen</string>
     <string name="UndoAllCustom">Setzt alle benutzerdefinierten Einstellungen für Mitteilungen zurück</string>
     <string name="NotificationsAndSounds">Mitteilungen und Töne</string>
     <string name="BlockedUsers">Blockierte Benutzer</string>
-    <string name="SaveIncomingPhotos">Speichere eingehende Bilder</string>
     <string name="LogOut">Abmelden</string>
-    <string name="YourFirstNameAndLastName">DEIN VOR- UND NACHNAME</string>
     <string name="NoSound">Kein Ton</string>
     <string name="Default">Standard</string>
-    <string name="Support">SUPPORT</string>
+    <string name="Support">Support</string>
     <string name="ChatBackground">Chat-Hintergrundbild</string>
-    <string name="MessagesSettings">NACHRICHTEN</string>
+    <string name="MessagesSettings">Nachrichten</string>
     <string name="SendByEnter">Mit Enter senden</string>
     <string name="TerminateAllSessions">Alle anderen Sitzungen beenden</string>
-    <string name="Events">EREIGNISSE</string>
+    <string name="Events">Ereignisse</string>
     <string name="ContactJoined">Kontakt ist Telegram beigetreten</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Sprache</string>
@@ -264,7 +252,6 @@
     <string name="NotificationsServiceDisableInfo">Sofern Google Play Dienste ausreichend für deine Mitteilungen sind, kannst du unseren Mitteilungsdienst abschalten. Wir empfehlen allerdings, unseren Dienst dauerhaft aktiviert zu lassen, um über neue Nachrichten in Echtzeit informiert zu werden.</string>
     <string name="SortBy">sortiert nach</string>
     <string name="ImportContacts">Kontakte importieren</string>
-    <string name="WiFiOnly">Nur über W-LAN</string>
     <string name="SortFirstName">Vorname</string>
     <string name="SortLastName">Nachname</string>
     <string name="LedColor">LED-Farbe</string>
@@ -278,17 +265,30 @@
     <string name="Long">Lang</string>
     <string name="SystemDefault">Systemvorgabe</string>
     <string name="SettingsDefault">Telegramvorgabe</string>
-    <string name="AutomaticMediaDownload">AUTOMATISCHER MEDIENDOWNLOAD</string>
+    <string name="AutomaticMediaDownload">Automatischer Mediendownload</string>
     <string name="WhenUsingMobileData">über Mobilfunk</string>
     <string name="WhenConnectedOnWiFi">über W-LAN</string>
     <string name="WhenRoaming">bei Roaming</string>
     <string name="NoMediaAutoDownload">kein automatischer Download</string>
     <string name="SaveToGallerySettings">In der Galerie speichern</string>
+    <string name="EditName">Name bearbeiten</string>
+    <string name="NotificationsPriority">Priorität</string>
+    <string name="NotificationsPriorityDefault">Standard</string>
+    <string name="NotificationsPriorityLow">Niedrig</string>
+    <string name="NotificationsPriorityHigh">Hoch</string>
+    <string name="NotificationsPriorityMax">Max.</string>
+    <string name="RepeatNotificationsNever">Niemals</string>
+    <string name="RepeatNotifications">Erneut benachrichtigen</string>
+    <string name="PhoneNumberHelp">Du kannst deine Telefonnummer hier ändern. Dein Konto und alle Daten in der Telegram-Cloud, also Nachrichten, Medien, Kontakte, etc. werden auf das neue Konto übertragen.\n\n<![CDATA[<b>Wichtig:</b>]]> Alle deine Kontakte erhalten deine  <![CDATA[<b>neue Nummer</b>]]> ihrem Telefonbuch hinzugefügt, sofern sie deine alte Nummer gespeichert hatten und du sie nicht blockiert hattest.</string>
+    <string name="PhoneNumberAlert">Deinen Kontakten wird deine neue Nummer ihrem Telefonbuch hinzugefügt, sofern sie deine alte Nummer gespeichert hatten und du sie nicht blockiert hattest.</string>
+    <string name="PhoneNumberChange">NUMMER ÄNDERN</string>
+    <string name="ChangePhoneNewNumber">Neue Nummer</string>
+    <string name="ChangePhoneHelp">Der Bestätigungscode kommt per SMS an deine neue Nummer.</string>
+    <string name="ChangePhoneNumberOccupied">Die Telefonnummer %1$s ist bereits ein Telegram Konto. Bitte lösche es, bevor du mit der Übertragung auf das neue Konto startest.</string>
+    <string name="NotificationsOther">Sonstige</string>
     <!--media view-->
     <string name="NoMedia">Noch keine geteilten Medien vorhanden</string>
-    <string name="CancelDownload">Download abbrechen</string>
     <!--map view-->
-    <string name="MyLocation">Mein Standort</string>
     <string name="Map">Karte</string>
     <string name="Satellite">Satellit</string>
     <string name="Hybrid">Hybrid</string>
@@ -303,6 +303,39 @@
     <string name="Gallery">Galerie</string>
     <string name="AllPhotos">Alle Fotos</string>
     <string name="NoPhotos">Noch keine Fotos</string>
+    <string name="PleaseDownload">Medien bitte zuerst herunterladen</string>
+    <!--privacy settings-->
+    <string name="PrivacySettings">Privatsphäre und Sicherheit</string>
+    <string name="PrivacyTitle">Privatsphäre</string>
+    <string name="PrivacyLastSeen">Zuletzt gesehen</string>
+    <string name="LastSeenEverybody">Jeder</string>
+    <string name="LastSeenContacts">Meine Kontakte</string>
+    <string name="LastSeenNobody">Niemand</string>
+    <string name="LastSeenEverybodyMinus">Jeder (-%1$d)</string>
+    <string name="LastSeenContactsPlus">Meine Kontakte (+%1$d)</string>
+    <string name="LastSeenContactsMinus">Meine Kontakte (-%1$d)</string>
+    <string name="LastSeenContactsMinusPlus">Meine Kontakte (-%1$d, +%2$d)</string>
+    <string name="LastSeenNobodyPlus">Niemand (+%1$d)</string>
+    <string name="SecurityTitle">Sicherheit</string>
+    <string name="DeleteAccountTitle">Automatische Kontolöschung</string>
+    <string name="DeleteAccountIfAwayFor">Wenn inaktiv für</string>
+    <string name="DeleteAccountHelp">Wenn du dich innerhalb dieser Zeit nicht anmeldest, wird dein Konto mit allen Nachrichten, Gruppen und Kontakten gelöscht.</string>
+    <string name="DeleteAccountNowConfirmation">Dein Konto löschen?</string>
+    <string name="LastSeenHelp">Bearbeite wer deinen Online Status sieht.</string>
+    <string name="LastSeenTitle">Wer kann deinen Online Status sehen?</string>
+    <string name="AddExceptions">Ausnahmen hinzufügen</string>
+    <string name="CustomHelp">Wichtig: Du kannst den \"zuletzt gesehen\" Status nur von Personen sehen, mit denen du auch deinen teilst. Ansonsten wird die ungefähre Zeit angezeigt (kürzlich, innerhalb einer Woche, innerhalb eines Monats).</string>
+    <string name="AlwaysShareWith">Immer teilen mit</string>
+    <string name="NeverShareWith">Niemals teilen mit</string>
+    <string name="CustomShareSettingsHelp">Hier kannst du Kontakte hinzufügen, für die eine Ausnahme gemacht werden soll.</string>
+    <string name="AlwaysShareWithTitle">Immer teilen</string>
+    <string name="AlwaysShareWithPlaceholder">Immer teilen mit...</string>
+    <string name="NeverShareWithTitle">Niemals teilen</string>
+    <string name="NeverShareWithPlaceholder">Niemals teilen mit...</string>
+    <string name="EmpryUsersPlaceholder">Hinzufügen</string>
+    <string name="PrivacyFloodControlError">Du hast zu oft probiert, deine Einstellungen zu ändern; bitte warte kurz.</string>
+    <string name="ClearOtherSessionsHelp">Alle Geräte außer diesem werden abgemeldet.</string>
+    <string name="RemoveFromListText">Auf Nutzer tippen und halten um zu löschen.</string>
     <!--edit video view-->
     <string name="EditVideo">Video bearbeiten</string>
     <string name="OriginalVideo">Originalvideo</string>
@@ -326,7 +359,6 @@
     <string name="FromCamera">Von der Kamera</string>
     <string name="FromGalley">Aus der Galerie</string>
     <string name="DeletePhoto">Foto löschen</string>
-    <string name="OpenPhoto">Foto öffnen</string>
     <string name="Set">Wählen</string>
     <string name="OK">OK</string>
     <!--messages-->
@@ -369,12 +401,10 @@
     <string name="NoHandleAppInstalled">Du hast keine Applikationen, die den Dateityp \'%1$s\' öffnen könnten. Bitte installiere eine entsprechende Anwendung um fortzufahren.</string>
     <string name="InviteUser">Dieser Benutzer hat noch kein Telegram. Möchtest du ihn einladen?</string>
     <string name="AreYouSure">Bist du sicher?</string>
-    <string name="AddContactQ">Kontakt hinzufügen?</string>
     <string name="AddToTheGroup">%1$s zur Gruppe hinzufügen?\n\nAnzahl der letzten Nachrichten für die Weiterleitung:</string>
     <string name="ForwardMessagesTo">Nachrichten an %1$s weiterleiten?</string>
-    <string name="DeleteChatQuestion">Diesen Chat löschen?</string>
     <string name="SendMessagesTo">Nachricht an %1$s senden?</string>
-    <string name="AreYouSureLogout">Möchtest du dich wirklich abmelden?</string>
+    <string name="AreYouSureLogout">Wirklich abmelden?\n\nDu kannst Telegram von all deinen Geräten gleichzeitig nutzen.\n\nWichtig: Abmelden löscht deine Geheimen Chats.</string>
     <string name="AreYouSureSessions">Sicher, dass du alle anderen Geräte abmelden möchtest?</string>
     <string name="AreYouSureDeleteAndExit">Diese Gruppe wirklich löschen und verlassen?</string>
     <string name="AreYouSureDeleteThisChat">Möchtest du wirklich diesen Chat löschen?</string>
@@ -383,10 +413,12 @@
     <string name="AreYouSureUnblockContact">Blockierung für diesen Kontakt wirklich aufheben?</string>
     <string name="AreYouSureDeleteContact">Diesen Kontakt wirklich löschen?</string>
     <string name="AreYouSureSecretChat">Geheimen Chat starten?</string>
-    <string name="ForwardFromMyName">mit meinem Namen weiterleiten</string>
+    <string name="AreYouSureRegistration">Bist du dir sicher, dass du die Registrierung abbrechen willst?</string>
+    <string name="AreYouSureClearHistory">Möchtest du wirklich den Verlauf löschen?</string>
+    <string name="AreYouSureDeleteMessages">Sicher, dass du %1$s löschen willst?</string>
     <string name="SendMessagesToGroup">Nachricht an %1$s senden?</string>
     <string name="ForwardMessagesToGroup">Weiterleiten an %1$s?</string>
-    <string name="FeatureUnavailable">Sorry, this feature is currently not available in your country.</string>
+    <string name="FeatureUnavailable">Verzeihung, diese Funktion ist derzeit in deinem Land nicht verfügbar.</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Schnell</string>
@@ -470,6 +502,24 @@
     <string name="Weeks_few">%1$d Wochen</string>
     <string name="Weeks_many">%1$d Wochen</string>
     <string name="Weeks_other">%1$d Wochen</string>
+    <string name="Months_zero">%1$d Monate</string>
+    <string name="Months_one">%1$d Monat</string>
+    <string name="Months_two">%1$d Monate</string>
+    <string name="Months_few">%1$d Monate</string>
+    <string name="Months_many">%1$d Monate</string>
+    <string name="Months_other">%1$d Monate</string>
+    <string name="Years_zero">%1$d Jahre</string>
+    <string name="Years_one">%1$d Jahr</string>
+    <string name="Years_two">%1$d Jahre</string>
+    <string name="Years_few">%1$d Jahre</string>
+    <string name="Years_many">%1$d Jahre</string>
+    <string name="Years_other">%1$d Jahre</string>
+    <string name="Users_zero">%1$d Nutzer</string>
+    <string name="Users_one">%1$d Nutzer</string>
+    <string name="Users_two">%1$d Nutzer</string>
+    <string name="Users_few">%1$d Nutzer</string>
+    <string name="Users_many">%1$d Nutzer</string>
+    <string name="Users_other">%1$d Nutzer</string>
     <!--date formatters-->
     <string name="formatterMonth">dd MMM</string>
     <string name="formatterYear">dd.MM.yy</string>

@@ -14,21 +14,14 @@
         android:paddingLeft="3dp"
         android:layout_width="0.0dip"
         android:layout_height="fill_parent"
-        android:layout_weight="1.0"
-        android:textStyle="bold"/>
-
-    <View
-        android:layout_gravity="center_vertical"
-        android:background="#5c5c5c"
-        android:layout_width="1px"
-        android:layout_height="28dp" />
+        android:layout_weight="1.0"/>
 
     <FrameLayout
         android:id="@+id/done_button"
         android:background="@drawable/bar_selector_picker"
         android:paddingRight="3dp"
         android:clickable="true"
-        android:layout_width="0.0dip"
+        android:layout_width="0dp"
         android:layout_height="fill_parent"
         android:layout_weight="1.0">
 
@@ -45,11 +38,12 @@
                 android:background="@drawable/photobadge"
                 android:layout_gravity="center"
                 android:layout_width="wrap_content"
-                android:layout_height="19dp"
+                android:layout_height="23dp"
+                android:minWidth="23dp"
                 android:id="@+id/done_button_badge"
-                android:paddingLeft="6dp"
-                android:paddingRight="6dp"
-                android:textStyle="bold"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:paddingBottom="1dp"
                 android:layout_marginRight="10dp"/>
 
             <TextView
@@ -60,7 +54,7 @@
                 android:layout_height="wrap_content"
                 android:id="@+id/done_button_text"
                 android:drawablePadding="8dp"
-                android:textStyle="bold"/>
+                android:layout_gravity="center_vertical"/>
 
         </LinearLayout>
 

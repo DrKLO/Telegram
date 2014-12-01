@@ -3,7 +3,8 @@
     android:layout_height="match_parent"
     android:layout_gravity="top">
 
-    <GridView android:id="@+id/media_grid"
+    <GridView
+        android:id="@+id/media_grid"
         android:paddingLeft="2dp"
         android:paddingRight="2dp"
         android:paddingBottom="2dp"
@@ -19,11 +20,12 @@
         android:listSelector="@drawable/list_selector"
         android:layout_gravity="top"/>
 
-    <TextView android:layout_width="match_parent"
+    <TextView
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:textColor="#808080"
         android:gravity="center"
-        android:textSize="24dp"
+        android:textSize="20dp"
         android:id="@+id/searchEmptyView"
         android:visibility="gone"/>
 
@@ -33,12 +35,12 @@
         android:layout_height="fill_parent"
         android:gravity="center"
         android:orientation="vertical"
-        android:visibility="gone" >
+        android:visibility="gone">
 
         <ProgressBar
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" >
-        </ProgressBar>
+            android:layout_height="wrap_content"/>
+
     </LinearLayout>
 
 </FrameLayout>

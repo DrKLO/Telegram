@@ -43,14 +43,15 @@ import com.googlecode.mp4parser.util.Path;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MediaController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
-import org.telegram.ui.Views.ActionBar.ActionBarMenu;
-import org.telegram.ui.Views.ActionBar.BaseFragment;
-import org.telegram.ui.Views.VideoSeekBarView;
-import org.telegram.ui.Views.VideoTimelineView;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.VideoSeekBarView;
+import org.telegram.ui.Components.VideoTimelineView;
 
 import java.io.File;
 import java.util.List;
@@ -89,8 +90,8 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
     private float videoDuration = 0;
     private long startTime = 0;
     private long endTime = 0;
-    private int audioFramesSize = 0;
-    private int videoFramesSize = 0;
+    private long audioFramesSize = 0;
+    private long videoFramesSize = 0;
     private int estimatedSize = 0;
     private long esimatedDuration = 0;
     private long originalSize = 0;
@@ -116,7 +117,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                 if (!playerCheck) {
                     break;
                 }
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if (videoPlayer != null && videoPlayer.isPlaying()) {
@@ -172,7 +173,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
         videoPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mp) {
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         onPlayComplete();
@@ -184,7 +185,9 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             @Override
             public void onPrepared(MediaPlayer mp) {
                 playerPrepared = true;
-                videoPlayer.seekTo((int) (videoTimelineView.getLeftProgress() * videoDuration));
+                if (videoTimelineView != null && videoPlayer != null) {
+                    videoPlayer.seekTo((int) (videoTimelineView.getLeftProgress() * videoDuration));
+                }
             }
         });
         try {
@@ -220,11 +223,11 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setBackgroundColor(0xff333333);
-            actionBarLayer.setItemsBackground(R.drawable.bar_selector_white);
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.photo_back);
-            actionBarLayer.setTitle(LocaleController.getString("EditVideo", R.string.EditVideo));
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setBackgroundColor(0xff333333);
+            actionBar.setItemsBackground(R.drawable.bar_selector_white);
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setTitle(LocaleController.getString("EditVideo", R.string.EditVideo));
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
@@ -253,11 +256,8 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                 }
             });
 
-            ActionBarMenu menu = actionBarLayer.createMenu();
-            View doneItem = menu.addItemResource(1, R.layout.group_create_done_layout);
-
-            TextView doneTextView = (TextView) doneItem.findViewById(R.id.done_button);
-            doneTextView.setText(LocaleController.getString("Done", R.string.Done).toUpperCase());
+            ActionBarMenu menu = actionBar.createMenu();
+            menu.addItemWithWidth(1, R.drawable.ic_done, AndroidUtilities.dp(56));
 
             fragmentView = inflater.inflate(R.layout.video_editor_layout, container, false);
             originalSizeTextView = (TextView) fragmentView.findViewById(R.id.original_size);
@@ -292,7 +292,9 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                                 name.equals("OMX.ST.VFM.H264Enc") ||
                                 name.equals("OMX.Exynos.avc.enc") ||
                                 name.equals("OMX.MARVELL.VIDEO.HW.CODA7542ENCODER") ||
-                                name.equals("OMX.MARVELL.VIDEO.H264ENCODER")) {
+                                name.equals("OMX.MARVELL.VIDEO.H264ENCODER") ||
+                                name.equals("OMX.k3.video.encoder.avc") || //fix this later
+                                name.equals("OMX.TI.DUCATI1.VIDEO.H264E")) { //fix this later
                             compressVideo.setVisibility(View.GONE);
                         } else {
                             if (MediaController.selectColorFormat(codecInfo, MediaController.MIME_TYPE) == 0) {
@@ -533,11 +535,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
         if (AndroidUtilities.isTablet()) {
             viewHeight = AndroidUtilities.dp(472);
         } else {
-            if (!AndroidUtilities.isTablet() && getParentActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                viewHeight = AndroidUtilities.displaySize.y - AndroidUtilities.statusBarHeight - AndroidUtilities.dp(40);
-            } else {
-                viewHeight = AndroidUtilities.displaySize.y - AndroidUtilities.statusBarHeight - AndroidUtilities.dp(48);
-            }
+            viewHeight = AndroidUtilities.displaySize.y - AndroidUtilities.statusBarHeight - AndroidUtilities.getCurrentActionBarHeight();
         }
 
         int width = 0;
@@ -721,8 +719,8 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
 
             for (Box box : boxes) {
                 TrackBox trackBox = (TrackBox)box;
-                int sampleSizes = 0;
-                int trackBitrate = 0;
+                long sampleSizes = 0;
+                long trackBitrate = 0;
                 try {
                     MediaBox mediaBox = trackBox.getMediaBox();
                     MediaHeaderBox mediaHeaderBox = mediaBox.getMediaHeaderBox();
@@ -738,7 +736,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                 TrackHeaderBox headerBox = trackBox.getTrackHeaderBox();
                 if (headerBox.getWidth() != 0 && headerBox.getHeight() != 0) {
                     trackHeaderBox = headerBox;
-                    bitrate = trackBitrate / 100000 * 100000;
+                    bitrate = (int)(trackBitrate / 100000 * 100000);
                     if (bitrate > 900000) {
                         bitrate = 900000;
                     }
@@ -768,7 +766,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                 resultHeight *= scale;
                 if (bitrate != 0) {
                     bitrate *= Math.max(0.5f, scale);
-                    videoFramesSize = (int)(bitrate / 8 * videoDuration);
+                    videoFramesSize = (long)(bitrate / 8 * videoDuration);
                 }
             }
 

@@ -24,11 +24,11 @@ public class BaseContactsSearchAdapter extends BaseFragmentAdapter {
     protected String lastFoundUsername = null;
 
     public void queryServerSearch(final String query) {
+        if (reqId != 0) {
+            ConnectionsManager.getInstance().cancelRpc(reqId, true);
+            reqId = 0;
+        }
         if (query == null || query.length() < 5) {
-            if (reqId != 0) {
-                ConnectionsManager.getInstance().cancelRpc(reqId, true);
-                reqId = 0;
-            }
             globalSearch.clear();
             lastReqId = 0;
             notifyDataSetChanged();
@@ -41,7 +41,7 @@ public class BaseContactsSearchAdapter extends BaseFragmentAdapter {
         reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(final TLObject response, final TLRPC.TL_error error) {
-                AndroidUtilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if (currentReqId == lastReqId) {

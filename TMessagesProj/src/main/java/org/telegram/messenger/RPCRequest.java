@@ -37,6 +37,7 @@ public class RPCRequest {
     int serverFailureCount;
     int flags;
     boolean wait = false;
+    boolean salt = false;
     protected int retryCount = 0;
     protected int lastResendTime = 0;
     protected boolean completed = false;

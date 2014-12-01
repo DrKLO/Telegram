@@ -26,6 +26,7 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessageObject;
@@ -33,14 +34,15 @@ import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
-import org.telegram.ui.Views.BackupImageView;
-import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.ActionBar.BaseFragment;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class MediaActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, PhotoViewer.PhotoViewerProvider {
+
     private GridView listView;
     private ListAdapter listAdapter;
     private ArrayList<MessageObject> messages = new ArrayList<MessageObject>();
@@ -87,10 +89,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
-            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
-            actionBarLayer.setTitle(LocaleController.getString("SharedMedia", R.string.SharedMedia));
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setAllowOverlayTitle(true);
+            actionBar.setTitle(LocaleController.getString("SharedMedia", R.string.SharedMedia));
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
@@ -121,6 +123,9 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                    if (i < 0 || i >= messages.size()) {
+                        return;
+                    }
                     PhotoViewer.getInstance().setParentActivity(getParentActivity());
                     PhotoViewer.getInstance().openPhoto(messages, i, MediaActivity.this);
                 }
@@ -330,7 +335,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
                 @Override
                 public boolean onPreDraw() {
-                    WindowManager manager = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
+                    WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
                     int rotation = manager.getDefaultDisplay().getRotation();
 
                     if (AndroidUtilities.isTablet()) {
@@ -421,7 +426,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         imageView.setImageBitmap(message.imagePreview);
                     } else {
                         TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(message.messageOwner.media.photo.sizes, 80);
-                        imageView.setImage(photoSize.location, null, R.drawable.photo_placeholder_in);
+                        imageView.setImage(photoSize.location, null, mContext.getResources().getDrawable(R.drawable.photo_placeholder_in));
                     }
                 } else {
                     imageView.setImageResource(R.drawable.photo_placeholder_in);
@@ -450,7 +455,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     if (message.imagePreview != null) {
                         imageView.setImageBitmap(message.imagePreview);
                     } else {
-                        imageView.setImage(message.messageOwner.media.video.thumb.location, null, R.drawable.photo_placeholder_in);
+                        imageView.setImage(message.messageOwner.media.video.thumb.location, null, mContext.getResources().getDrawable(R.drawable.photo_placeholder_in));
                     }
                     textView.setVisibility(View.VISIBLE);
                 } else {

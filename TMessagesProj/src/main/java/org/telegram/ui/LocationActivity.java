@@ -29,6 +29,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
@@ -36,11 +37,12 @@ import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.ui.Views.ActionBar.ActionBarLayer;
-import org.telegram.ui.Views.ActionBar.ActionBarMenu;
-import org.telegram.ui.Views.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.Views.BackupImageView;
-import org.telegram.ui.Views.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.ActionBar.BaseFragment;
 
 import java.util.List;
 
@@ -91,15 +93,15 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            actionBarLayer.setDisplayHomeAsUpEnabled(true, R.drawable.ic_ab_back);
-            actionBarLayer.setBackOverlay(R.layout.updating_state_layout);
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setAllowOverlayTitle(true);
             if (messageObject != null) {
-                actionBarLayer.setTitle(LocaleController.getString("ChatLocation", R.string.ChatLocation));
+                actionBar.setTitle(LocaleController.getString("ChatLocation", R.string.ChatLocation));
             } else {
-                actionBarLayer.setTitle(LocaleController.getString("ShareLocation", R.string.ShareLocation));
+                actionBar.setTitle(LocaleController.getString("ShareLocation", R.string.ShareLocation));
             }
 
-            actionBarLayer.setActionBarMenuOnItemClick(new ActionBarLayer.ActionBarMenuOnItemClick() {
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
@@ -128,7 +130,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 }
             });
 
-            ActionBarMenu menu = actionBarLayer.createMenu();
+            ActionBarMenu menu = actionBar.createMenu();
             menu.addItem(map_to_my_location, R.drawable.ic_ab_location);
 
             ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
@@ -145,13 +147,15 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             avatarImageView = (BackupImageView)fragmentView.findViewById(R.id.location_avatar_view);
             if (avatarImageView != null) {
                 avatarImageView.processDetach = false;
+                avatarImageView.imageReceiver.setRoundRadius(AndroidUtilities.dp(32));
             }
             nameTextView = (TextView)fragmentView.findViewById(R.id.location_name_label);
             distanceTextView = (TextView)fragmentView.findViewById(R.id.location_distance_label);
             View bottomView = fragmentView.findViewById(R.id.location_bottom_view);
             TextView sendButton = (TextView) fragmentView.findViewById(R.id.location_send_button);
             if (sendButton != null) {
-                sendButton.setText(LocaleController.getString("SendLocation", R.string.SendLocation));
+                sendButton.setText(LocaleController.getString("SendLocation", R.string.SendLocation).toUpperCase());
+                sendButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             }
 
             mapView = (MapView)fragmentView.findViewById(R.id.map_view);
@@ -226,19 +230,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 }
 
                 if (messageObject != null) {
-                    int fromId = messageObject.messageOwner.from_id;
-                    if (messageObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
-                        fromId = messageObject.messageOwner.fwd_from_id;
-                    }
-                    TLRPC.User user = MessagesController.getInstance().getUser(fromId);
-                    if (user != null) {
-                        TLRPC.FileLocation photo = null;
-                        if (user.photo != null) {
-                            photo = user.photo.photo_small;
-                        }
-                        avatarImageView.setImage(photo, "50_50", AndroidUtilities.getUserAvatarForId(user.id));
-                        nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
-                    }
+                    updateUserData();
                     userLocation = new Location("network");
                     userLocation.setLatitude(messageObject.messageOwner.media.geo.lat);
                     userLocation.setLongitude(messageObject.messageOwner.media.geo._long);
@@ -285,7 +277,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 if (user.photo != null) {
                     photo = user.photo.photo_small;
                 }
-                avatarImageView.setImage(photo, null, AndroidUtilities.getUserAvatarForId(user.id));
+                avatarImageView.setImage(photo, null, new AvatarDrawable(user));
                 nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
             }
         }

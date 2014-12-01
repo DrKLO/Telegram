@@ -3,7 +3,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:0.13.+'
+        classpath 'com.android.tools.build:gradle:0.14.0'
     }
 }
 apply plugin: 'com.android.application'
@@ -17,7 +17,7 @@ tasks.withType(JavaCompile) {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:20.0.+'
+    compile 'com.android.support:support-v4:21.0.+'
     compile 'com.google.android.gms:play-services:3.2.+'
     compile 'net.hockeyapp.android:HockeySDK:3.0.2'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
@@ -25,7 +25,7 @@ dependencies {
 
 android {
     compileSdkVersion 21
-    buildToolsVersion '21.0.2'
+    buildToolsVersion '21.1.1'
 
     signingConfigs {
         debug {
@@ -43,19 +43,19 @@ android {
     buildTypes {
         debug {
             debuggable true
-            jniDebugBuild false
+            jniDebuggable true
             signingConfig signingConfigs.debug
         }
 
         release {
             debuggable false
-            jniDebugBuild false
+            jniDebuggable false
             signingConfig signingConfigs.release
         }
 
         foss {
             debuggable false
-            jniDebugBuild false
+            jniDebuggable false
             signingConfig signingConfigs.release
         }
     }
@@ -65,22 +65,22 @@ android {
         jni.srcDirs = [] //disable automatic ndk-build call
     }
 
-    sourceSets {
-        debug {
-            manifest.srcFile 'config/debug/AndroidManifest.xml'
-        }
-        release {
-            manifest.srcFile 'config/release/AndroidManifest.xml'
-        }
-        foss {
-            manifest.srcFile 'config/foss/AndroidManifest.xml'
-        }
+    sourceSets.debug {
+        manifest.srcFile 'config/debug/AndroidManifest.xml'
+    }
+
+    sourceSets.release {
+        manifest.srcFile 'config/release/AndroidManifest.xml'
+    }
+
+    sourceSets.foss {
+        manifest.srcFile 'config/foss/AndroidManifest.xml'
     }
 
     defaultConfig {
         minSdkVersion 8
-        targetSdkVersion 19
-        versionCode 374
-        versionName "1.9.6"
+        targetSdkVersion 21
+        versionCode 403
+        versionName "2.1.0"
     }
 }

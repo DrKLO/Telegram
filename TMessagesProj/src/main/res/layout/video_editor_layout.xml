@@ -33,7 +33,7 @@
         android:layout_height="wrap_content"
         android:id="@+id/control_layout">
 
-        <org.telegram.ui.Views.VideoSeekBarView
+        <org.telegram.ui.Components.VideoSeekBarView
             android:layout_height="36dp"
             android:layout_width="match_parent"
             android:id="@+id/video_seekbar"
@@ -41,7 +41,7 @@
             android:layout_marginLeft="8dp"
             android:layout_marginRight="8dp"/>
 
-        <org.telegram.ui.Views.VideoTimelineView
+        <org.telegram.ui.Components.VideoTimelineView
             android:layout_width="match_parent"
             android:layout_height="74dp"
             android:layout_marginTop="36dp"

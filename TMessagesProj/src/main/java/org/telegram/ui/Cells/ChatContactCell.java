@@ -28,6 +28,7 @@ import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
+import org.telegram.ui.Components.AvatarDrawable;
 
 public class ChatContactCell extends ChatBaseCell {
 
@@ -42,6 +43,7 @@ public class ChatContactCell extends ChatBaseCell {
     private static Drawable addContactDrawableOut;
 
     private ImageReceiver avatarImage;
+    private AvatarDrawable avatarDrawable;
 
     private StaticLayout nameLayout;
     private StaticLayout phoneLayout;
@@ -64,12 +66,14 @@ public class ChatContactCell extends ChatBaseCell {
 
             phonePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             phonePaint.setTextSize(AndroidUtilities.dp(15));
-            phonePaint.setColor(0xff000000);
+            phonePaint.setColor(0xff212121);
 
             addContactDrawableIn = getResources().getDrawable(R.drawable.addcontact_blue);
             addContactDrawableOut = getResources().getDrawable(R.drawable.addcontact_green);
         }
         avatarImage = new ImageReceiver(this);
+        avatarImage.setRoundRadius(AndroidUtilities.dp(21));
+        avatarDrawable = new AvatarDrawable();
     }
 
     public void setContactDelegate(ChatContactCellDelegate delegate) {
@@ -183,11 +187,15 @@ public class ChatContactCell extends ChatBaseCell {
             if (contactUser != null) {
                 if (contactUser.photo != null) {
                     currentPhoto = contactUser.photo.photo_small;
+                } else {
+                    currentPhoto = null;
                 }
-                avatarImage.setImage(currentPhoto, "50_50", getResources().getDrawable(AndroidUtilities.getUserAvatarForId(uid)), false);
+                avatarDrawable.setInfo(contactUser);
             } else {
-                avatarImage.setImage(null, "50_50", getResources().getDrawable(AndroidUtilities.getUserAvatarForId(uid)), false);
+                currentPhoto = null;
+                avatarDrawable.setInfo(uid, null, null, false);
             }
+            avatarImage.setImage(currentPhoto, "50_50", avatarDrawable, false);
 
             String currentNameString = ContactsController.formatName(messageObject.messageOwner.media.first_name, messageObject.messageOwner.media.last_name);
             int nameWidth = Math.min((int) Math.ceil(namePaint.measureText(currentNameString)), maxWidth);
@@ -265,7 +273,7 @@ public class ChatContactCell extends ChatBaseCell {
         if (nameLayout != null) {
             canvas.save();
             canvas.translate(avatarImage.getImageX() + avatarImage.getImageWidth() + AndroidUtilities.dp(9), AndroidUtilities.dp(10));
-            namePaint.setColor(AndroidUtilities.getColorForId(currentMessageObject.messageOwner.media.user_id));
+            namePaint.setColor(AvatarDrawable.getColorForId(currentMessageObject.messageOwner.media.user_id));
             nameLayout.draw(canvas);
             canvas.restore();
         }

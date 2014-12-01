@@ -18,6 +18,7 @@ import org.telegram.messenger.Utilities;
 import java.util.ArrayList;
 
 public class PhotoObject {
+
     public TLRPC.PhotoSize photoOwner;
     public Bitmap image;
 

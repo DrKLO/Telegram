@@ -11,8 +11,7 @@ package org.telegram.messenger;
 import android.net.Uri;
 import android.util.Log;
 
-import org.telegram.android.FastDateFormat;
-import org.telegram.ui.ApplicationLoader;
+import org.telegram.android.time.FastDateFormat;
 
 import java.io.File;
 import java.io.FileOutputStream;

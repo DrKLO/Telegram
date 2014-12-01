@@ -11,8 +11,6 @@ package org.telegram.messenger;
 import android.app.Activity;
 import android.content.SharedPreferences;
 
-import org.telegram.ui.ApplicationLoader;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.math.BigInteger;

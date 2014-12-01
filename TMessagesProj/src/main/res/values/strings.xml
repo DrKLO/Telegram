@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!--Translated by Telegram Team, corrected by Florian Keller-->
+
 
 <resources>
     <string name="AppName">Telegram</string>
@@ -9,7 +9,7 @@
     <string name="LanguageCode">en</string>
     <!--signin view-->
     <string name="YourPhone">Your phone</string>
-    <string name="StartText">Please confirm your country code\nand enter your phone number.</string>
+    <string name="StartText">Please confirm your country code and enter your phone number.</string>
     <string name="ChooseCountry">Choose a country</string>
     <string name="WrongCountry">Wrong country code</string>
     <!--code enter view-->
@@ -28,16 +28,13 @@
     <string name="LastName">Last name (optional)</string>
     <string name="CancelRegistration">Cancel registration</string>
     <!--chats view-->
-    <string name="Chats">Chats</string>
-    <string name="Search">Search</string>
-    <string name="NewMessages">New messages</string>
     <string name="Settings">Settings</string>
     <string name="Contacts">Contacts</string>
     <string name="NewGroup">New Group</string>
     <string name="Yesterday">yesterday</string>
     <string name="NoResult">No results</string>
     <string name="NoChats">No chats yet...</string>
-    <string name="NoChatsHelp">Start messaging by pressing the\ncompose button in the top right corner\nor tap the menu button for more options.</string>
+    <string name="NoChatsHelp">Start messaging by pressing the\nnew message button in the bottom right corner\nor tap the menu button for more options.</string>
     <string name="WaitingForNetwork">Waiting for network...</string>
     <string name="Connecting">Connecting...</string>
     <string name="Updating">Updating...</string>
@@ -47,18 +44,19 @@
     <string name="EncryptionProcessing">Exchanging encryption keys...</string>
     <string name="EncryptedChatStartedOutgoing">%s joined your secret chat.</string>
     <string name="EncryptedChatStartedIncoming">You joined the secret chat.</string>
-    <string name="ClearHistory">Clear History</string>
+    <string name="ClearHistory">Clear history</string>
     <string name="DeleteChat">Delete and exit</string>
-    <string name="HiddenName">Hidden Name</string>
+    <string name="DeleteChatUser">Delete chat</string>
+    <string name="HiddenName">Deleted Account</string>
     <string name="SelectChat">Select Chat</string>
     <string name="PhotoTip">Tap and hold to view</string>
     <string name="CompatibilityChat">%1$s is using an older version of Telegram, so secret photos will be shown in compatibility mode.\n\nOnce %2$s updates Telegram, photos with timers for 1 minute or less will start working in \'Tap and hold to view\' mode, and you will be notified whenever the other party takes a screenshot.</string>
+    <string name="SearchMessages">MESSAGES</string>
     <!--broadcasts-->
-    <string name="BroadcastList">Broadcast List</string>
     <string name="NewBroadcastList">New Broadcast List</string>
     <string name="EnterListName">Enter list name</string>
     <string name="YouCreatedBroadcastList">You created a broadcast list</string>
-    <string name="AddRecipient">Add Recipient</string>
+    <string name="AddRecipient">Add recipient</string>
     <string name="KickFromBroadcast">Remove from broadcast list</string>
     <!--documents view-->
     <string name="SelectFile">Select File</string>
@@ -73,10 +71,10 @@
     <string name="ExternalStorage">External Storage</string>
     <string name="SystemRoot">System Root</string>
     <string name="SdCard">SD Card</string>
+    <string name="Folder">Folder</string>
     <!--chat view-->
     <string name="Invisible">invisible</string>
     <string name="Typing">typing...</string>
-    <string name="Attach">Attach</string>
     <string name="IsTyping">is typing...</string>
     <string name="AreTyping">are typing...</string>
     <string name="GotAQuestion">Got a question\nabout Telegram?</string>
@@ -86,18 +84,13 @@
     <string name="ChatVideo">Video</string>
     <string name="ChatDocument">Document</string>
     <string name="NoMessages">No messages here yet...</string>
-    <string name="ViewPhoto">View Photo</string>
-    <string name="ViewLocation">View Location</string>
-    <string name="ViewVideo">Play Video</string>
     <string name="ForwardedMessage">Forwarded message</string>
     <string name="From">From</string>
     <string name="NoRecent">No recent</string>
     <string name="Message">Message</string>
-    <string name="TypeMessage">Type message</string>
-    <string name="DOWNLOAD">Download</string>
-    <string name="Selected">Selected: %d</string>
-    <string name="ShareMyContactInfo">SHARE MY CONTACT INFO</string>
-    <string name="AddToContacts">ADD TO CONTACTS</string>
+    <string name="TypeMessage">Message</string>
+    <string name="ShareMyContactInfo">Share my contact</string>
+    <string name="AddToContacts">Add to contacts</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s invited you to join a secret chat.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">You have invited %s to join a secret chat.</string>
     <string name="EncryptedDescriptionTitle">Secret chats:</string>
@@ -113,9 +106,8 @@
     <string name="SaveToDownloads">Save to downloads</string>
     <string name="ApplyLocalizationFile">Apply localization file</string>
     <string name="UnsupportedAttachment">Unsupported attachment</string>
+    <string name="SetTimer">Set self-destruct timer</string>
     <!--notification-->
-    <string name="EncryptedChatRequested">Secret chat requested</string>
-    <string name="EncryptedChatAccepted">Secret chat started</string>
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
     <string name="MessageLifetimeRemoved">%1$s disabled the self-destruct timer</string>
@@ -145,7 +137,7 @@
     <string name="NotificationGroupKickYou">%1$s removed you from the group %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s has left the group %2$s</string>
     <string name="NotificationContactJoined">%1$s joined Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nWe detected a login into your account from a new device on %2$s\n\nDevice: %3$s\nLocation: %4$s\n\nIf this wasn\'t you, you can go to Settings - Terminate all sessions.\n\nSincerely,\nThe Telegram Team</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nWe detected a login into your account from a new device on %2$s\n\nDevice: %3$s\nLocation: %4$s\n\nIf this wasn\'t you, you can go to Settings - Privacy and Security - Terminate all other sessions.\n\nSincerely,\nThe Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s updated profile photo</string>
     <string name="Reply">Reply</string>
     <string name="ReplyToGroup">Reply to %1$s</string>
@@ -158,23 +150,23 @@
     <string name="TodayAt">today at</string>
     <string name="YesterdayAt">yesterday at</string>
     <string name="Online">online</string>
-    <string name="Offline">offline</string>
     <string name="LastSeen">last seen</string>
     <string name="LastSeenDate">last seen</string>
     <string name="InviteFriends">Invite Friends</string>
     <string name="GlobalSearch">GLOBAL SEARCH</string>
+    <string name="Lately">last seen recently</string>
+    <string name="WithinAWeek">last seen within a week</string>
+    <string name="WithinAMonth">last seen within a month</string>
+    <string name="ALongTimeAgo">last seen a long time ago</string>
+    <string name="NewMessageTitle">New Message</string>
     <!--group create view-->
     <string name="SendMessageTo">Send message to...</string>
     <string name="EnterGroupNamePlaceholder">Enter group name</string>
     <string name="GroupName">Group name</string>
-    <string name="AllContacts">ALL CONTACTS</string>
     <string name="MembersCount">%1$d/%2$d members</string>
     <!--group info view-->
-    <string name="EnterGroupNameTitle">ENTER GROUP NAME</string>
     <string name="SharedMedia">Shared Media</string>
-    <string name="GroupInfo">Group Info</string>
-    <string name="SHAREDMEDIA">SHARED MEDIA</string>
-    <string name="SETTINGS">SETTINGS</string>
+    <string name="SETTINGS">Settings</string>
     <string name="AddMember">Add member</string>
     <string name="DeleteAndExit">Delete and leave group</string>
     <string name="Notifications">Notifications</string>
@@ -182,25 +174,23 @@
     <!--contact info view-->
     <string name="ShareContact">Share</string>
     <string name="AddContact">Add</string>
+    <string name="AddContactTitle">Add contact</string>
     <string name="BlockContact">Block</string>
     <string name="EditContact">Edit</string>
     <string name="DeleteContact">Delete</string>
-    <string name="PhoneHome">HOME</string>
-    <string name="PhoneMobile">MOBILE</string>
-    <string name="PhoneWork">WORK</string>
-    <string name="PhoneOther">OTHER</string>
-    <string name="PhoneMain">MAIN</string>
-    <string name="ContactInfo">Contact Info</string>
-    <string name="PHONE">PHONE</string>
+    <string name="PhoneHome">Home</string>
+    <string name="PhoneMobile">Mobile</string>
+    <string name="PhoneWork">Work</string>
+    <string name="PhoneOther">Other</string>
+    <string name="PhoneMain">Main</string>
     <string name="StartEncryptedChat">Start Secret Chat</string>
     <string name="CreateEncryptedChatError">An error occurred.</string>
-    <string name="SecretTitle">Secret Chat</string>
     <string name="EncryptionKey">Encryption Key</string>
     <string name="MessageLifetime">Self-Destruct Timer</string>
     <string name="ShortMessageLifetimeForever">Off</string>
     <string name="EncryptionKeyDescription">This image is a visualization of the encryption key for this secret chat with <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>If this image looks the same on <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> phone, your chat is 200%% secure.<![CDATA[<br><br>]]>Learn more at telegram.org</string>
     <string name="NumberUnknown">Unknown</string>
-    <string name="Info">INFO</string>
+    <string name="Info">Info</string>
     <string name="Phone">Phone</string>
     <!--usernames-->
     <string name="Username">Username</string>
@@ -223,32 +213,30 @@
     <string name="Unblock">Unblock</string>
     <string name="UnblockText">Tap and hold on user to unblock.</string>
     <string name="NoBlocked">No blocked users yet</string>
-    <string name="MessageNotifications">MESSAGE NOTIFICATIONS</string>
+    <string name="MessageNotifications">Message notifications</string>
     <string name="Alert">Alert</string>
     <string name="MessagePreview">Message Preview</string>
-    <string name="GroupNotifications">GROUP NOTIFICATIONS</string>
+    <string name="GroupNotifications">Group notifications</string>
     <string name="Sound">Sound</string>
-    <string name="InAppNotifications">IN-APP NOTIFICATIONS</string>
+    <string name="InAppNotifications">In-app notifications</string>
     <string name="InAppSounds">In-App Sounds</string>
     <string name="InAppVibrate">In-App Vibrate</string>
     <string name="Vibrate">Vibrate</string>
     <string name="InAppPreview">In-App Preview</string>
-    <string name="Reset">RESET</string>
+    <string name="Reset">Reset</string>
     <string name="ResetAllNotifications">Reset All Notifications</string>
     <string name="UndoAllCustom">Undo all custom notification settings for all your contacts and groups</string>
     <string name="NotificationsAndSounds">Notifications and Sounds</string>
     <string name="BlockedUsers">Blocked Users</string>
-    <string name="SaveIncomingPhotos">Save Incoming Photos</string>
-    <string name="LogOut">Log Out</string>
-    <string name="YourFirstNameAndLastName">YOUR FIRST AND LAST NAME</string>
+    <string name="LogOut">Log out</string>
     <string name="NoSound">No sound</string>
     <string name="Default">Default</string>
-    <string name="Support">SUPPORT</string>
+    <string name="Support">Support</string>
     <string name="ChatBackground">Chat Background</string>
-    <string name="MessagesSettings">MESSAGES</string>
+    <string name="MessagesSettings">Messages</string>
     <string name="SendByEnter">Send by Enter</string>
     <string name="TerminateAllSessions">Terminate All Other Sessions</string>
-    <string name="Events">EVENTS</string>
+    <string name="Events">Events</string>
     <string name="ContactJoined">Contact joined Telegram</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Language</string>
@@ -264,7 +252,6 @@
     <string name="NotificationsServiceDisableInfo">If Google Play Services are enough for you to receive notifications, you can disable Notifications Service. However we recommend you to leave it enabled to keep app running in background and receive instant notifications.</string>
     <string name="SortBy">Sort By</string>
     <string name="ImportContacts">Import Contacts</string>
-    <string name="WiFiOnly">Via WiFi only</string>
     <string name="SortFirstName">First name</string>
     <string name="SortLastName">Last name</string>
     <string name="LedColor">LED Color</string>
@@ -278,17 +265,30 @@
     <string name="Long">Long</string>
     <string name="SystemDefault">System default</string>
     <string name="SettingsDefault">Settings default</string>
-    <string name="AutomaticMediaDownload">AUTOMATIC MEDIA DOWNLOAD</string>
+    <string name="AutomaticMediaDownload">Automatic media download</string>
     <string name="WhenUsingMobileData">When using mobile data</string>
     <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
     <string name="WhenRoaming">When roaming</string>
     <string name="NoMediaAutoDownload">No media</string>
     <string name="SaveToGallerySettings">Save to gallery</string>
+    <string name="EditName">Edit name</string>
+    <string name="NotificationsPriority">Priority</string>
+    <string name="NotificationsPriorityDefault">Default</string>
+    <string name="NotificationsPriorityLow">Low</string>
+    <string name="NotificationsPriorityHigh">High</string>
+    <string name="NotificationsPriorityMax">Max</string>
+    <string name="RepeatNotificationsNever">Never</string>
+    <string name="RepeatNotifications">Repeat Notifications</string>
+    <string name="PhoneNumberHelp">You can change your Telegram number here. Your account and all your cloud data — messages, media, contacts, etc. will be moved to the new number.\n\n<![CDATA[<b>Important:</b>]]> all your Telegram contacts will get your <![CDATA[<b>new number</b>]]> added to their address book, provided they had your old number and you haven\'t blocked them in Telegram.</string>
+    <string name="PhoneNumberAlert">All your Telegram contacts will get your new number added to their address book, provided they had your old number and you haven\'t blocked them in Telegram.</string>
+    <string name="PhoneNumberChange">CHANGE NUMBER</string>
+    <string name="ChangePhoneNewNumber">New number</string>
+    <string name="ChangePhoneHelp">We will send an SMS with a confirmation code to your new number.</string>
+    <string name="ChangePhoneNumberOccupied">The number %1$s is already connected to a Telegram account. Please delete that account before migrating to the new number.</string>
+    <string name="NotificationsOther">Other</string>
     <!--media view-->
     <string name="NoMedia">No shared media yet</string>
-    <string name="CancelDownload">Cancel Download</string>
     <!--map view-->
-    <string name="MyLocation">My location</string>
     <string name="Map">Map</string>
     <string name="Satellite">Satellite</string>
     <string name="Hybrid">Hybrid</string>
@@ -303,6 +303,39 @@
     <string name="Gallery">Gallery</string>
     <string name="AllPhotos">All Photos</string>
     <string name="NoPhotos">No photos yet</string>
+    <string name="PleaseDownload">Please download media first</string>
+    <!--privacy settings-->
+    <string name="PrivacySettings">Privacy and Security</string>
+    <string name="PrivacyTitle">Privacy</string>
+    <string name="PrivacyLastSeen">Last Seen</string>
+    <string name="LastSeenEverybody">Everybody</string>
+    <string name="LastSeenContacts">My Contacts</string>
+    <string name="LastSeenNobody">Nobody</string>
+    <string name="LastSeenEverybodyMinus">Everybody (-%1$d)</string>
+    <string name="LastSeenContactsPlus">My Contacts (+%1$d)</string>
+    <string name="LastSeenContactsMinus">My Contacts (-%1$d)</string>
+    <string name="LastSeenContactsMinusPlus">My Contacts (-%1$d, +%2$d)</string>
+    <string name="LastSeenNobodyPlus">Nobody (+%1$d)</string>
+    <string name="SecurityTitle">Security</string>
+    <string name="DeleteAccountTitle">Account self-destructs</string>
+    <string name="DeleteAccountIfAwayFor">If you\'re away for</string>
+    <string name="DeleteAccountHelp">If you do not log in at least once within this period, your account will be deleted along with all groups, messages and contacts.</string>
+    <string name="DeleteAccountNowConfirmation">Delete your account?</string>
+    <string name="LastSeenHelp">Change who can see your Last Seen time.</string>
+    <string name="LastSeenTitle">Who can see your Last Seen time?</string>
+    <string name="AddExceptions">Add exceptions</string>
+    <string name="CustomHelp">Important: you won\'t be able to see Last Seen times for people with whom you don\'t share your Last Seen time. Approximate last seen will be shown instead (recently, within a week, within a month).</string>
+    <string name="AlwaysShareWith">Always Share With</string>
+    <string name="NeverShareWith">Never Share With</string>
+    <string name="CustomShareSettingsHelp">These settings will override the values above.</string>
+    <string name="AlwaysShareWithTitle">Always Share</string>
+    <string name="AlwaysShareWithPlaceholder">Always share with users...</string>
+    <string name="NeverShareWithTitle">Never Share</string>
+    <string name="NeverShareWithPlaceholder">Never share with users...</string>
+    <string name="EmpryUsersPlaceholder">Add Users</string>
+    <string name="PrivacyFloodControlError">Sorry, too many requests. Unable to change privacy settings now, please wait.</string>
+    <string name="ClearOtherSessionsHelp">Logs out all devices except for this one.</string>
+    <string name="RemoveFromListText">Tap and hold on user to delete.</string>
     <!--edit video view-->
     <string name="EditVideo">Edit Video</string>
     <string name="OriginalVideo">Original Video</string>
@@ -326,7 +359,6 @@
     <string name="FromCamera">From camera</string>
     <string name="FromGalley">From gallery</string>
     <string name="DeletePhoto">Delete photo</string>
-    <string name="OpenPhoto">Open photo</string>
     <string name="Set">Set</string>
     <string name="OK">OK</string>
     <!--messages-->
@@ -369,12 +401,10 @@
     <string name="NoHandleAppInstalled">You don\'t have applications that can handle the file type \'%1$s\', please install one to continue</string>
     <string name="InviteUser">This user does not have Telegram yet, send an invitation?</string>
     <string name="AreYouSure">Are you sure?</string>
-    <string name="AddContactQ">Add contact?</string>
     <string name="AddToTheGroup">Add %1$s to the group?\n\nNumber of last messages to forward:</string>
     <string name="ForwardMessagesTo">Forward messages to %1$s?</string>
-    <string name="DeleteChatQuestion">Delete this chat?</string>
     <string name="SendMessagesTo">Send messages to %1$s?</string>
-    <string name="AreYouSureLogout">Are you sure you want to log out?</string>
+    <string name="AreYouSureLogout">Are you sure you want to log out?\n\nNote that you can seamlessly use Telegram on all your devices at once.\n\nRemember, logging out kills all your Secret Chats.</string>
     <string name="AreYouSureSessions">Are you sure you want to terminate all other sessions?</string>
     <string name="AreYouSureDeleteAndExit">Are you sure you want to delete and leave the group?</string>
     <string name="AreYouSureDeleteThisChat">Are you sure you want to delete this chat?</string>
@@ -383,7 +413,9 @@
     <string name="AreYouSureUnblockContact">Are you sure you want to unblock this contact?</string>
     <string name="AreYouSureDeleteContact">Are you sure you want to delete this contact?</string>
     <string name="AreYouSureSecretChat">Are you sure you want to start a secret chat?</string>
-    <string name="ForwardFromMyName">forward from my name</string>
+    <string name="AreYouSureRegistration">Are you sure you want to cancel registration?</string>
+    <string name="AreYouSureClearHistory">Are you sure you want to clear history?</string>
+    <string name="AreYouSureDeleteMessages">Are you sure you want to delete %1$s?</string>
     <string name="SendMessagesToGroup">Send messages to %1$s?</string>
     <string name="ForwardMessagesToGroup">Forward messages to %1$s?</string>
     <string name="FeatureUnavailable">Sorry, this feature is currently not available in your country.</string>
@@ -470,6 +502,24 @@
     <string name="Weeks_few">%1$d weeks</string>
     <string name="Weeks_many">%1$d weeks</string>
     <string name="Weeks_other">%1$d weeks</string>
+    <string name="Months_zero">%1$d months</string>
+    <string name="Months_one">%1$d month</string>
+    <string name="Months_two">%1$d months</string>
+    <string name="Months_few">%1$d months</string>
+    <string name="Months_many">%1$d months</string>
+    <string name="Months_other">%1$d months</string>
+    <string name="Years_zero">%1$d years</string>
+    <string name="Years_one">%1$d year</string>
+    <string name="Years_two">%1$d years</string>
+    <string name="Years_few">%1$d years</string>
+    <string name="Years_many">%1$d years</string>
+    <string name="Years_other">%1$d years</string>
+    <string name="Users_zero">%1$d users</string>
+    <string name="Users_one">%1$d user</string>
+    <string name="Users_two">%1$d users</string>
+    <string name="Users_few">%1$d users</string>
+    <string name="Users_many">%1$d users</string>
+    <string name="Users_other">%1$d users</string>
     <!--date formatters-->
     <string name="formatterMonth">MMM dd</string>
     <string name="formatterYear">dd.MM.yy</string>

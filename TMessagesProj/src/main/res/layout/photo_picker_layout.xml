@@ -30,7 +30,7 @@
         android:layout_height="match_parent"
         android:textColor="#808080"
         android:gravity="center"
-        android:textSize="24dp"
+        android:textSize="20dp"
         android:id="@+id/searchEmptyView"
         android:visibility="gone"
         android:layout_marginBottom="48dp"/>

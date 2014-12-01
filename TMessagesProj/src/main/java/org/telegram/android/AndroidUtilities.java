@@ -15,28 +15,38 @@ import android.content.DialogInterface;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Environment;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.util.StateSet;
 import android.view.Display;
 import android.view.Surface;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AbsListView;
+import android.widget.EdgeEffect;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.UserConfig;
-import org.telegram.ui.ApplicationLoader;
-import org.telegram.ui.Views.NumberPicker;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.ui.Components.NumberPicker;
+import org.telegram.ui.Components.TypefaceSpan;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Hashtable;
-import java.util.Locale;
 
 public class AndroidUtilities {
 
@@ -50,37 +60,6 @@ public class AndroidUtilities {
     public static Point displaySize = new Point();
     public static Integer photoSize = null;
     private static Boolean isTablet = null;
-
-    public static int[] arrColors = {0xffee4928, 0xff41a903, 0xffe09602, 0xff0f94ed, 0xff8f3bf7, 0xfffc4380, 0xff00a1c4, 0xffeb7002};
-    public static int[] arrUsersAvatars = {
-            R.drawable.user_red,
-            R.drawable.user_green,
-            R.drawable.user_yellow,
-            R.drawable.user_blue,
-            R.drawable.user_violet,
-            R.drawable.user_pink,
-            R.drawable.user_aqua,
-            R.drawable.user_orange};
-
-    public static int[] arrGroupsAvatars = {
-            R.drawable.group_red,
-            R.drawable.group_green,
-            R.drawable.group_yellow,
-            R.drawable.group_blue,
-            R.drawable.group_violet,
-            R.drawable.group_pink,
-            R.drawable.group_aqua,
-            R.drawable.group_orange};
-
-    public static int[] arrBroadcastAvatars = {
-            R.drawable.broadcast_red,
-            R.drawable.broadcast_green,
-            R.drawable.broadcast_yellow,
-            R.drawable.broadcast_blue,
-            R.drawable.broadcast_violet,
-            R.drawable.broadcast_pink,
-            R.drawable.broadcast_aqua,
-            R.drawable.broadcast_orange};
 
     static {
         density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
@@ -97,24 +76,22 @@ public class AndroidUtilities {
             if (manager != null && manager.getDefaultDisplay() != null) {
                 int rotation = manager.getDefaultDisplay().getRotation();
                 int orientation = activity.getResources().getConfiguration().orientation;
+                int SCREEN_ORIENTATION_REVERSE_LANDSCAPE = 8;
+                int SCREEN_ORIENTATION_REVERSE_PORTRAIT = 9;
+                if (Build.VERSION.SDK_INT < 9) {
+                    SCREEN_ORIENTATION_REVERSE_LANDSCAPE = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                    SCREEN_ORIENTATION_REVERSE_PORTRAIT = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+                }
 
                 if (rotation == Surface.ROTATION_270) {
                     if (orientation == Configuration.ORIENTATION_PORTRAIT) {
                         activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
                     } else {
-                        if (Build.VERSION.SDK_INT >= 9) {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                        } else {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                        }
+                        activity.setRequestedOrientation(SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
                     }
                 } else if (rotation == Surface.ROTATION_90) {
                     if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-                        if (Build.VERSION.SDK_INT >= 9) {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
-                        } else {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                        }
+                        activity.setRequestedOrientation(SCREEN_ORIENTATION_REVERSE_PORTRAIT);
                     } else {
                         activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
                     }
@@ -126,17 +103,9 @@ public class AndroidUtilities {
                     }
                 } else {
                     if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                        if (Build.VERSION.SDK_INT >= 9) {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                        } else {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                        }
+                        activity.setRequestedOrientation(SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
                     } else {
-                        if (Build.VERSION.SDK_INT >= 9) {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
-                        } else {
-                            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                        }
+                        activity.setRequestedOrientation(SCREEN_ORIENTATION_REVERSE_PORTRAIT);
                     }
                 }
             }
@@ -239,11 +208,7 @@ public class AndroidUtilities {
         return new File("");
     }
 
-    public static int dp(int value) {
-        return (int)(Math.max(1, density * value));
-    }
-
-    public static int dpf(float value) {
+    public static int dp(float value) {
         return (int)Math.ceil(density * value);
     }
 
@@ -290,11 +255,11 @@ public class AndroidUtilities {
         return layer & 0x0000ffff | (version << 16);
     }
 
-    public static void RunOnUIThread(Runnable runnable) {
-        RunOnUIThread(runnable, 0);
+    public static void runOnUIThread(Runnable runnable) {
+        runOnUIThread(runnable, 0);
     }
 
-    public static void RunOnUIThread(Runnable runnable, long delay) {
+    public static void runOnUIThread(Runnable runnable, long delay) {
         if (delay == 0) {
             ApplicationLoader.applicationHandler.post(runnable);
         } else {
@@ -302,7 +267,7 @@ public class AndroidUtilities {
         }
     }
 
-    public static void CancelRunOnUIThread(Runnable runnable) {
+    public static void cancelRunOnUIThread(Runnable runnable) {
         ApplicationLoader.applicationHandler.removeCallbacks(runnable);
     }
 
@@ -335,58 +300,6 @@ public class AndroidUtilities {
             }
             return Math.min(smallSide, maxSide - leftSide);
         }
-    }
-
-    public static int getColorIndex(int id) {
-        int[] arr;
-        if (id >= 0) {
-            arr = arrUsersAvatars;
-        } else {
-            arr = arrGroupsAvatars;
-        }
-        try {
-            String str;
-            if (id >= 0) {
-                str = String.format(Locale.US, "%d%d", id, UserConfig.getClientUserId());
-            } else {
-                str = String.format(Locale.US, "%d", id);
-            }
-            if (str.length() > 15) {
-                str = str.substring(0, 15);
-            }
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-            byte[] digest = md.digest(str.getBytes());
-            int b = digest[Math.abs(id % 16)];
-            if (b < 0) {
-                b += 256;
-            }
-            return Math.abs(b) % arr.length;
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
-        return id % arr.length;
-    }
-
-    public static int getColorForId(int id) {
-        if (id / 1000 == 333) {
-            return 0xff0f94ed;
-        }
-        return arrColors[getColorIndex(id)];
-    }
-
-    public static int getUserAvatarForId(int id) {
-        if (id / 1000 == 333 || id / 1000 == 777) {
-            return R.drawable.telegram_avatar;
-        }
-        return arrUsersAvatars[getColorIndex(id)];
-    }
-
-    public static int getGroupAvatarForId(int id) {
-        return arrGroupsAvatars[getColorIndex(-Math.abs(id))];
-    }
-
-    public static int getBroadcastAvatarForId(int id) {
-        return arrBroadcastAvatars[getColorIndex(-Math.abs(id))];
     }
 
     public static int getPhotoSize() {
@@ -438,7 +351,7 @@ public class AndroidUtilities {
         } else if (encryptedChat.ttl == 60 * 60 * 24 * 7) {
             numberPicker.setValue(20);
         } else if (encryptedChat.ttl == 0) {
-            numberPicker.setValue(5);
+            numberPicker.setValue(0);
         }
         numberPicker.setFormatter(new NumberPicker.Formatter() {
             @Override
@@ -481,7 +394,7 @@ public class AndroidUtilities {
                     encryptedChat.ttl = 60 * 60 * 24 * 7;
                 }
                 if (oldValue != encryptedChat.ttl) {
-                    SendMessagesHelper.getInstance().sendTTLMessage(encryptedChat, null);
+                    SecretChatHelper.getInstance().sendTTLMessage(encryptedChat, null);
                     MessagesStorage.getInstance().updateEncryptedChatTTL(encryptedChat);
                 }
             }
@@ -500,5 +413,115 @@ public class AndroidUtilities {
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
+    }
+
+    public static int getViewInset(View view) {
+        if (view == null || Build.VERSION.SDK_INT < 21) {
+            return 0;
+        }
+        try {
+            Field mAttachInfoField = View.class.getDeclaredField("mAttachInfo");
+            mAttachInfoField.setAccessible(true);
+            Object mAttachInfo = mAttachInfoField.get(view);
+            if (mAttachInfo != null) {
+                Field mStableInsetsField = mAttachInfo.getClass().getDeclaredField("mStableInsets");
+                mStableInsetsField.setAccessible(true);
+                Rect insets = (Rect)mStableInsetsField.get(mAttachInfo);
+                return insets.bottom;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return 0;
+    }
+
+    public static int getCurrentActionBarHeight() {
+        if (isTablet()) {
+            return dp(64);
+        } else if (ApplicationLoader.applicationContext.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            return dp(48);
+        } else {
+            return dp(56);
+        }
+    }
+
+    public static Point getRealScreenSize() {
+        Point size = new Point();
+        try {
+            WindowManager windowManager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                windowManager.getDefaultDisplay().getRealSize(size);
+            } else {
+                try {
+                    Method mGetRawW = Display.class.getMethod("getRawWidth");
+                    Method mGetRawH = Display.class.getMethod("getRawHeight");
+                    size.set((Integer) mGetRawW.invoke(windowManager.getDefaultDisplay()), (Integer) mGetRawH.invoke(windowManager.getDefaultDisplay()));
+                } catch (Exception e) {
+                    size.set(windowManager.getDefaultDisplay().getWidth(), windowManager.getDefaultDisplay().getHeight());
+                    FileLog.e("tmessages", e);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return size;
+    }
+
+    public static void setListViewEdgeEffectColor(AbsListView listView, int color) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            try {
+                Field field = AbsListView.class.getDeclaredField("mEdgeGlowTop");
+                field.setAccessible(true);
+                EdgeEffect mEdgeGlowTop = (EdgeEffect) field.get(listView);
+                if (mEdgeGlowTop != null) {
+                    mEdgeGlowTop.setColor(color);
+                }
+
+                field = AbsListView.class.getDeclaredField("mEdgeGlowBottom");
+                field.setAccessible(true);
+                EdgeEffect mEdgeGlowBottom = (EdgeEffect) field.get(listView);
+                if (mEdgeGlowBottom != null) {
+                    mEdgeGlowBottom.setColor(color);
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+        }
+    }
+
+    public static void clearDrawableAnimation(View view) {
+        if (Build.VERSION.SDK_INT < 21 || view == null) {
+            return;
+        }
+        Drawable drawable = null;
+        if (view instanceof ListView) {
+            drawable = ((ListView) view).getSelector();
+            if (drawable != null) {
+                drawable.setState(StateSet.NOTHING);
+            }
+        } else {
+            drawable = view.getBackground();
+            if (drawable != null) {
+                drawable.setState(StateSet.NOTHING);
+                drawable.jumpToCurrentState();
+            }
+        }
+    }
+
+    public static Spannable replaceBold(String str) {
+        int start;
+        ArrayList<Integer> bolds = new ArrayList<Integer>();
+        while ((start = str.indexOf("<b>")) != -1) {
+            int end = str.indexOf("</b>") - 3;
+            str = str.replaceFirst("<b>", "").replaceFirst("</b>", "");
+            bolds.add(start);
+            bolds.add(end);
+        }
+        SpannableStringBuilder stringBuilder = new SpannableStringBuilder(str);
+        for (int a = 0; a < bolds.size() / 2; a++) {
+            TypefaceSpan span = new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            stringBuilder.setSpan(span, bolds.get(a * 2), bolds.get(a * 2 + 1), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+        }
+        return stringBuilder;
     }
 }
