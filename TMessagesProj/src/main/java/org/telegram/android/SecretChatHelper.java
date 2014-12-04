@@ -650,6 +650,7 @@ public class SecretChatHelper {
         if (req == null || chat.auth_key == null || chat instanceof TLRPC.TL_encryptedChatRequested || chat instanceof TLRPC.TL_encryptedChatWaiting) {
             return;
         }
+        SendMessagesHelper.getInstance().putToSendingMessages(newMsgObj);
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -797,6 +798,7 @@ public class SecretChatHelper {
                                                 if (newMsgObj.media instanceof TLRPC.TL_messageMediaVideo) {
                                                     SendMessagesHelper.getInstance().stopVideoService(attachPath);
                                                 }
+                                                SendMessagesHelper.getInstance().removeFromSendingMessages(newMsgObj.id);
                                             }
                                         });
                                     }
@@ -812,6 +814,7 @@ public class SecretChatHelper {
                                         if (newMsgObj.media instanceof TLRPC.TL_messageMediaVideo) {
                                             SendMessagesHelper.getInstance().stopVideoService(newMsgObj.attachPath);
                                         }
+                                        SendMessagesHelper.getInstance().removeFromSendingMessages(newMsgObj.id);
                                     }
                                 });
                             }
@@ -1174,8 +1177,8 @@ public class SecretChatHelper {
                         if (serviceMessage.action.key_fingerprint == fingerprint) {
                             chat.future_auth_key = authKey;
                             chat.future_key_fingerprint = fingerprint;
-
                             MessagesStorage.getInstance().updateEncryptedChat(chat);
+                            sendCommitKeyMessage(chat, null);
                         } else {
                             chat.future_auth_key = new byte[256];
                             chat.future_key_fingerprint = 0;
@@ -1183,8 +1186,6 @@ public class SecretChatHelper {
                             MessagesStorage.getInstance().updateEncryptedChat(chat);
                             sendAbortKeyMessage(chat, null, serviceMessage.action.exchange_id);
                         }
-
-                        sendCommitKeyMessage(chat, null);
                     } else {
                         chat.future_auth_key = new byte[256];
                         chat.future_key_fingerprint = 0;

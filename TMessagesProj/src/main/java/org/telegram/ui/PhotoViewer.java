@@ -1744,7 +1744,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.userPhotosLoaded);
         ConnectionsManager.getInstance().cancelRpcsForClassGuid(classGuid);
 
-        isVisible = false;
         isActionBarVisible = false;
 
         if (velocityTracker != null) {
@@ -1922,6 +1921,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     private void onPhotoClosed(PlaceProviderObject object) {
+        isVisible = false;
         disableShowCheck = true;
         currentMessageObject = null;
         currentFileLocation = null;
@@ -1935,9 +1935,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         centerImage.setImageBitmap((Bitmap)null);
         leftImage.setImageBitmap((Bitmap)null);
         rightImage.setImageBitmap((Bitmap)null);
-        if (object != null) {
-            object.imageReceiver.setVisible(true, true);
-        }
         containerView.post(new Runnable() {
             @Override
             public void run() {
@@ -1957,6 +1954,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
         placeProvider = null;
         disableShowCheck = false;
+        if (object != null) {
+            object.imageReceiver.setVisible(true, true);
+        }
     }
 
     public boolean isVisible() {

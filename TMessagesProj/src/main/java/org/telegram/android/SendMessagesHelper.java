@@ -38,6 +38,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
     private TLRPC.ChatParticipants currentChatInfo = null;
     private HashMap<String, ArrayList<DelayedMessage>> delayedMessages = new HashMap<String, ArrayList<DelayedMessage>>();
     private HashMap<Integer, MessageObject> unsentMessages = new HashMap<Integer, MessageObject>();
+    private HashMap<Integer, TLRPC.Message> sendingMessages = new HashMap<Integer, TLRPC.Message>();
 
     private class DelayedMessage {
         public TLObject sendRequest;
@@ -77,6 +78,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
     public void cleanUp() {
         delayedMessages.clear();
         unsentMessages.clear();
+        sendingMessages.clear();
         currentChatInfo = null;
     }
 
@@ -309,6 +311,16 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
 
             } else if (messageObject.messageOwner.action.encryptedAction instanceof TLRPC.TL_decryptedMessageActionResend) {
 
+            } else if (messageObject.messageOwner.action.encryptedAction instanceof TLRPC.TL_decryptedMessageActionCommitKey) {
+                SecretChatHelper.getInstance().sendCommitKeyMessage(encryptedChat, messageObject.messageOwner);
+            } else if (messageObject.messageOwner.action.encryptedAction instanceof TLRPC.TL_decryptedMessageActionAbortKey) {
+                SecretChatHelper.getInstance().sendAbortKeyMessage(encryptedChat, messageObject.messageOwner, 0);
+            } else if (messageObject.messageOwner.action.encryptedAction instanceof TLRPC.TL_decryptedMessageActionRequestKey) {
+                SecretChatHelper.getInstance().sendRequestKeyMessage(encryptedChat, messageObject.messageOwner);
+            } else if (messageObject.messageOwner.action.encryptedAction instanceof TLRPC.TL_decryptedMessageActionAcceptKey) {
+                SecretChatHelper.getInstance().sendAcceptKeyMessage(encryptedChat, messageObject.messageOwner);
+            } else if (messageObject.messageOwner.action.encryptedAction instanceof TLRPC.TL_decryptedMessageActionNoop) {
+                SecretChatHelper.getInstance().sendNoopMessage(encryptedChat, messageObject.messageOwner);
             }
             return true;
         }
@@ -1072,7 +1084,20 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         });
     }
 
+    protected void putToSendingMessages(TLRPC.Message message) {
+        sendingMessages.put(message.id, message);
+    }
+
+    protected void removeFromSendingMessages(int mid) {
+        sendingMessages.remove(mid);
+    }
+
+    public boolean isSendingMessage(int mid) {
+        return sendingMessages.containsKey(mid);
+    }
+
     private void performSendMessageRequest(final TLObject req, final TLRPC.Message newMsgObj, final String originalPath) {
+        putToSendingMessages(newMsgObj);
         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
@@ -1131,6 +1156,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                     }
                                     NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageReceivedByServer, oldId, (isBroadcast ? oldId : newMsgObj.id), newMsgObj);
                                     processSentMessage(oldId);
+                                    removeFromSendingMessages(oldId);
                                 }
                             });
                             if (newMsgObj.media instanceof TLRPC.TL_messageMediaVideo) {
@@ -1149,6 +1175,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                             if (newMsgObj.media instanceof TLRPC.TL_messageMediaVideo) {
                                 stopVideoService(newMsgObj.attachPath);
                             }
+                            removeFromSendingMessages(newMsgObj.id);
                         }
                     });
                 }

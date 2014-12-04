@@ -614,6 +614,11 @@ public class ActionBarLayout extends FrameLayout {
                     public void onAnimationEnd(Object animation) {
                         onAnimationEndCheck(false);
                     }
+
+                    @Override
+                    public void onAnimationCancel(Object animation) {
+                        onAnimationEndCheck(false);
+                    }
                 });
                 currentAnimation.start();
             } else {
@@ -636,6 +641,11 @@ public class ActionBarLayout extends FrameLayout {
                 currentAnimation.addListener(new AnimatorListenerAdapterProxy() {
                     @Override
                     public void onAnimationEnd(Object animation) {
+                        onAnimationEndCheck(false);
+                    }
+
+                    @Override
+                    public void onAnimationCancel(Object animation) {
                         onAnimationEndCheck(false);
                     }
                 });
@@ -747,6 +757,11 @@ public class ActionBarLayout extends FrameLayout {
                     public void onAnimationEnd(Object animation) {
                         onAnimationEndCheck(false);
                     }
+
+                    @Override
+                    public void onAnimationCancel(Object animation) {
+                        onAnimationEndCheck(false);
+                    }
                 });
                 currentAnimation.start();
             }
@@ -782,6 +797,11 @@ public class ActionBarLayout extends FrameLayout {
                 currentAnimation.addListener(new AnimatorListenerAdapterProxy() {
                     @Override
                     public void onAnimationEnd(Object animation) {
+                        onAnimationEndCheck(false);
+                    }
+
+                    @Override
+                    public void onAnimationCancel(Object animation) {
                         onAnimationEndCheck(false);
                     }
                 });

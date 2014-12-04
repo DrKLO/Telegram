@@ -80,7 +80,7 @@ android {
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 21
-        versionCode 403
-        versionName "2.1.0"
+        versionCode 405
+        versionName "2.1.1"
     }
 }

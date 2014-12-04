@@ -25,6 +25,7 @@ import android.view.SoundEffectConstants;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ImageLoader;
 import org.telegram.android.LocaleController;
+import org.telegram.android.SendMessagesHelper;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.android.MediaController;
@@ -335,6 +336,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     private void didPressedButton(boolean animated) {
         if (buttonState == 0) {
             cancelLoading = false;
+            radialProgress.setProgress(0, false);
             if (currentMessageObject.type == 1) {
                 if (currentMessageObject.imagePreview != null) {
                     photoImage.setImage(currentPhotoObject.photoOwner.location, currentPhotoFilter, new BitmapDrawable(currentMessageObject.imagePreview), currentPhotoObject.photoOwner.size, false);
@@ -675,6 +677,9 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 buttonState = 1;
                 radialProgress.setBackground(getDrawableForCurrentState(), true, animated);
                 Float progress = FileLoader.getInstance().getFileProgress(currentMessageObject.messageOwner.attachPath);
+                if (progress == null && SendMessagesHelper.getInstance().isSendingMessage(currentMessageObject.messageOwner.id)) {
+                    progress = 1.0f;
+                }
                 radialProgress.setProgress(progress != null ? progress : 0, false);
                 invalidate();
             }
@@ -702,8 +707,8 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     Float progress = FileLoader.getInstance().getFileProgress(fileName);
                     setProgress = progress != null ? progress : 0;
                 }
-                radialProgress.setBackground(getDrawableForCurrentState(), progressVisible, animated);
                 radialProgress.setProgress(setProgress, false);
+                radialProgress.setBackground(getDrawableForCurrentState(), progressVisible, animated);
                 invalidate();
             } else {
                 MediaController.getInstance().removeLoadingFileObserver(this);
@@ -925,7 +930,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     public void onProgressDownload(String fileName, float progress) {
         radialProgress.setProgress(progress, true);
         if (buttonState != 1) {
-            updateButtonState(true);
+            updateButtonState(false);
         }
     }
 

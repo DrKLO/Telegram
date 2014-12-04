@@ -585,7 +585,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         String scheme = data.getScheme();
                         if (scheme != null) {
                             if ((scheme.equals("http") || scheme.equals("https"))) {
-                                String host = data.getHost();
+                                String host = data.getHost().toLowerCase();
                                 if (host.equals("telegram.me")) {
                                     String path = data.getPath();
                                     if (path != null && path.length() >= 6) {
@@ -593,7 +593,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                     }
                                 }
                             } else if (scheme.equals("tg")) {
-                                String url = data.toString();
+                                String url = data.toString().toLowerCase();
                                 if (url.startsWith("tg:resolve") || url.startsWith("tg://resolve")) {
                                     url = url.replace("tg:resolve", "tg://telegram.org").replace("tg://resolve", "tg://telegram.org");
                                     data = Uri.parse(url);
@@ -730,7 +730,13 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             args.putString("selectAlertStringGroup", LocaleController.getString("SendMessagesToGroup", R.string.SendMessagesToGroup));
             MessagesActivity fragment = new MessagesActivity(args);
             fragment.setDelegate(this);
-            actionBarLayout.presentFragment(fragment, false, true, true);
+            boolean removeLast = false;
+            if (AndroidUtilities.isTablet()) {
+                removeLast = layersActionBarLayout.fragmentsStack.size() > 0 && layersActionBarLayout.fragmentsStack.get(layersActionBarLayout.fragmentsStack.size() - 1) instanceof MessagesActivity;
+            } else {
+                removeLast = actionBarLayout.fragmentsStack.size() > 1 && actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1) instanceof MessagesActivity;
+            }
+            actionBarLayout.presentFragment(fragment, removeLast, true, true);
             pushOpened = true;
             if (PhotoViewer.getInstance().isVisible()) {
                 PhotoViewer.getInstance().closePhoto(false);
