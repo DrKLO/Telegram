@@ -21,7 +21,7 @@ dependencies {
     compile 'com.android.support:appcompat-v7:21.0.2'
     compile 'com.google.android.gms:play-services:6.1.71'
     compile 'net.hockeyapp.android:HockeySDK:3.0.1'
-    compile project(':aniways')
+    compile project(':Aniways')
 }
 
 android {
