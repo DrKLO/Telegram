@@ -45,7 +45,7 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     private int totalVisibleBlocksCount = 0;
     private long clickDownEventTIme = -1;
     private AniwaysDynamicImageSpansContainer mDynamicImageSpansContainer;
-    private HashSet<AniwaysMessageListViewItemWrapperLayout.IOnTextChanged> mSetTextListeners = new HashSet<AniwaysMessageListViewItemWrapperLayout.IOnTextChanged>();
+    private HashSet<AniwaysMessageListViewItemWrapperLayout.OnSetTextListener> mSetTextListeners = new HashSet<AniwaysMessageListViewItemWrapperLayout.OnSetTextListener>();
 
     public ChatMessageCell(Context context, boolean isChat) {
         super(context, isChat);
@@ -224,8 +224,8 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
         this.mDynamicImageSpansContainer.onSetText(this.getText(), oldText);
         // Call liteners
         if(mSetTextListeners != null){
-            for(AniwaysMessageListViewItemWrapperLayout.IOnTextChanged listener : mSetTextListeners){
-                listener.onTextChanged(this.getText());
+            for(AniwaysMessageListViewItemWrapperLayout.OnSetTextListener listener : mSetTextListeners){
+                listener.onSetText(this.getText());
             }
         }
     }
@@ -411,14 +411,14 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     }
 
     @Override
-    public void registerSetTextListener(AniwaysMessageListViewItemWrapperLayout.IOnTextChanged textChangedListener) {
+    public void registerSetTextListener(AniwaysMessageListViewItemWrapperLayout.OnSetTextListener textChangedListener) {
         this.mSetTextListeners.add(textChangedListener);
-        textChangedListener.onTextChanged(getText());
+        textChangedListener.onSetText(getText());
 
     }
 
     @Override
-    public void unregisterSetTextListener(AniwaysMessageListViewItemWrapperLayout.IOnTextChanged listener) {
+    public void unregisterSetTextListener(AniwaysMessageListViewItemWrapperLayout.OnSetTextListener listener) {
         this.mSetTextListeners.remove(listener);
 
     }

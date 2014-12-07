@@ -64,7 +64,7 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
     private static Drawable countDrawable;
     private static Drawable groupDrawable;
     private final AniwaysIconInfoDisplayer mIconInfoDisplayer;
-    private HashSet<AniwaysMessageListViewItemWrapperLayout.IOnTextChanged> mSetTextListeners = new HashSet<AniwaysMessageListViewItemWrapperLayout.IOnTextChanged>();
+    private HashSet<AniwaysMessageListViewItemWrapperLayout.OnSetTextListener> mSetTextListeners = new HashSet<AniwaysMessageListViewItemWrapperLayout.OnSetTextListener>();
 
     private TLRPC.TL_dialog currentDialog;
     private ImageReceiver avatarImage;
@@ -388,13 +388,13 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
     }
 
     @Override
-    public void registerSetTextListener(AniwaysMessageListViewItemWrapperLayout.IOnTextChanged textChangedListener) {
+    public void registerSetTextListener(AniwaysMessageListViewItemWrapperLayout.OnSetTextListener textChangedListener) {
         this.mSetTextListeners.add(textChangedListener);
 
     }
 
     @Override
-    public void unregisterSetTextListener(AniwaysMessageListViewItemWrapperLayout.IOnTextChanged listener) {
+    public void unregisterSetTextListener(AniwaysMessageListViewItemWrapperLayout.OnSetTextListener listener) {
         this.mSetTextListeners.remove(listener);
 
     }
@@ -774,8 +774,8 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
             mLoadingImageSpansContainer.onSetText(this.getText(), oldText);
             // Call liteners
             if(mSetTextListeners != null){
-                for(AniwaysMessageListViewItemWrapperLayout.IOnTextChanged listener : mSetTextListeners){
-                    listener.onTextChanged(this.getText());
+                for(AniwaysMessageListViewItemWrapperLayout.OnSetTextListener listener : mSetTextListeners){
+                    listener.onSetText(this.getText());
                 }
             }
 
