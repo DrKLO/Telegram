@@ -19,6 +19,7 @@ import android.view.View;
 
 import com.aniways.AniwaysDynamicImageSpansContainer;
 import com.aniways.AniwaysIconInfoDisplayer;
+import com.aniways.AniwaysMessageListViewItemWrapperLayout;
 import com.aniways.IAniwaysIconInfoSpan;
 import com.aniways.IAniwaysTextContainer;
 import com.aniways.IIconInfoDisplayer;
@@ -28,6 +29,8 @@ import com.aniways.volley.toolbox.IResponseListener;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
 import org.telegram.objects.MessageObject;
+
+import java.util.HashSet;
 
 public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContainer {
 
@@ -42,6 +45,7 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     private int totalVisibleBlocksCount = 0;
     private long clickDownEventTIme = -1;
     private AniwaysDynamicImageSpansContainer mDynamicImageSpansContainer;
+    private HashSet<AniwaysMessageListViewItemWrapperLayout.IOnTextChanged> mSetTextListeners = new HashSet<AniwaysMessageListViewItemWrapperLayout.IOnTextChanged>();
 
     public ChatMessageCell(Context context, boolean isChat) {
         super(context, isChat);
@@ -218,6 +222,12 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
             }
         }
         this.mDynamicImageSpansContainer.onSetText(this.getText(), oldText);
+        // Call liteners
+        if(mSetTextListeners != null){
+            for(AniwaysMessageListViewItemWrapperLayout.IOnTextChanged listener : mSetTextListeners){
+                listener.onTextChanged(this.getText());
+            }
+        }
     }
 
     @Override
@@ -398,6 +408,19 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
         this.mDynamicImageSpansContainer.onDetachFromWindowCalled();
 
         super.onDetachedFromWindow();
+    }
+
+    @Override
+    public void registerSetTextListener(AniwaysMessageListViewItemWrapperLayout.IOnTextChanged textChangedListener) {
+        this.mSetTextListeners.add(textChangedListener);
+        textChangedListener.onTextChanged(getText());
+
+    }
+
+    @Override
+    public void unregisterSetTextListener(AniwaysMessageListViewItemWrapperLayout.IOnTextChanged listener) {
+        this.mSetTextListeners.remove(listener);
+
     }
 
 }

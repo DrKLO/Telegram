@@ -31,6 +31,7 @@ import org.telegram.messenger.MessagesController;
 
 import com.aniways.AniwaysLoadingImageSpan;
 import com.aniways.AniwaysDynamicImageSpansContainer;
+import com.aniways.AniwaysMessageListViewItemWrapperLayout;
 import com.aniways.IAniwaysTextContainer;
 import com.aniways.IIconInfoDisplayer;
 import com.aniways.Log;
@@ -43,6 +44,7 @@ import org.telegram.objects.MessageObject;
 import org.telegram.ui.Views.ImageReceiver;
 
 import java.lang.ref.WeakReference;
+import java.util.HashSet;
 
 public class DialogCell extends BaseCell implements IAniwaysTextContainer {
     private static final String TAG = "DialogCell";
@@ -62,6 +64,7 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
     private static Drawable countDrawable;
     private static Drawable groupDrawable;
     private final AniwaysIconInfoDisplayer mIconInfoDisplayer;
+    private HashSet<AniwaysMessageListViewItemWrapperLayout.IOnTextChanged> mSetTextListeners = new HashSet<AniwaysMessageListViewItemWrapperLayout.IOnTextChanged>();
 
     private TLRPC.TL_dialog currentDialog;
     private ImageReceiver avatarImage;
@@ -381,6 +384,18 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
 
     @Override
     public void onErrorLoadingImage() {
+
+    }
+
+    @Override
+    public void registerSetTextListener(AniwaysMessageListViewItemWrapperLayout.IOnTextChanged textChangedListener) {
+        this.mSetTextListeners.add(textChangedListener);
+
+    }
+
+    @Override
+    public void unregisterSetTextListener(AniwaysMessageListViewItemWrapperLayout.IOnTextChanged listener) {
+        this.mSetTextListeners.remove(listener);
 
     }
 
@@ -757,6 +772,12 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
             Spannable oldText = this.getText();
             messageLayout = new StaticLayout(messageStringFinal, currentMessagePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             mLoadingImageSpansContainer.onSetText(this.getText(), oldText);
+            // Call liteners
+            if(mSetTextListeners != null){
+                for(AniwaysMessageListViewItemWrapperLayout.IOnTextChanged listener : mSetTextListeners){
+                    listener.onTextChanged(this.getText());
+                }
+            }
 
             double widthpx = 0;
             float left = 0;

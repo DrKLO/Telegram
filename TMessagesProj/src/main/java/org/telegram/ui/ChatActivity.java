@@ -68,6 +68,7 @@ import android.widget.TextView;
 
 import com.aniways.Aniways;
 import com.aniways.AniwaysEditText;
+import com.aniways.AniwaysMessageListViewItemWrapperLayout;
 import com.aniways.AniwaysTextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
@@ -586,6 +587,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                     }
                     for (int a = 0; a < visibleItemCount; a++) {
                         View view = absListView.getChildAt(a);
+                        if (view instanceof AniwaysMessageListViewItemWrapperLayout) {
+                            view = ((AniwaysMessageListViewItemWrapperLayout)view).getChildAt(0);
+                        }
                         if (view instanceof ChatMessageCell) {
                             ChatMessageCell messageCell = (ChatMessageCell)view;
                             messageCell.getLocalVisibleRect(scrollRect);
@@ -3478,6 +3482,9 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 view.setBackgroundColor(0);
             }
 
+            AniwaysMessageListViewItemWrapperLayout wrapper = new AniwaysMessageListViewItemWrapperLayout(mContext);
+            ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+
             if (view instanceof ChatBaseCell) {
                 ((ChatBaseCell)view).setMessageObject(message);
                 ((ChatBaseCell)view).setCheckPressed(!disableSelection, disableSelection && selected);
@@ -3495,7 +3502,13 @@ public class ChatActivity extends BaseFragment implements SizeNotifierRelativeLa
                 holder.update();
             }
 
+            if (view instanceof ChatMessageCell) {
+                //wrapper.setLayoutParams(layoutParams);
+                wrapper.addView(view);
+                return wrapper;
+            }
             return view;
+
         }
 
         @Override
