@@ -220,7 +220,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 processRowSelect(view);
                 return;
             }
-            createMenu(view, true);
         }
     };
 
