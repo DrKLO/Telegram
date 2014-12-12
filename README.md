@@ -22,7 +22,7 @@ MTproto protocol manuals: http://core.telegram.org/mtproto
 
 ### Usage
 
-**Beware of using the dev branch and uploading it to any markets, in many cases it not will work as expected**.
+**Beware of using the dev branch and uploading it to any markets. In many cases, it will not work as expected**.
 
 First of all, take a look at **src/main/java/org/telegram/messenger/BuildVars.java** and fill it with correct values.
 Import the root folder into your IDE (tested on Android Studio), then run project.
