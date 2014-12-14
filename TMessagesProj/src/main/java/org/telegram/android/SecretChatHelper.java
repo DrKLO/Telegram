@@ -1176,6 +1176,7 @@ public class SecretChatHelper {
                             chat.future_key_fingerprint = fingerprint;
 
                             MessagesStorage.getInstance().updateEncryptedChat(chat);
+                            sendCommitKeyMessage(chat, null);
                         } else {
                             chat.future_auth_key = new byte[256];
                             chat.future_key_fingerprint = 0;
@@ -1183,8 +1184,6 @@ public class SecretChatHelper {
                             MessagesStorage.getInstance().updateEncryptedChat(chat);
                             sendAbortKeyMessage(chat, null, serviceMessage.action.exchange_id);
                         }
-
-                        sendCommitKeyMessage(chat, null);
                     } else {
                         chat.future_auth_key = new byte[256];
                         chat.future_key_fingerprint = 0;
