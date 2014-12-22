@@ -48,6 +48,8 @@ import org.telegram.messenger.NotificationCenter;
 
 import com.aniways.Log;
 import com.aniways.anigram.messenger.R;
+import com.aniways.settings.AniwaysSettingsActivity;
+
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -71,6 +73,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int settingsSectionRow;
     private int textSizeRow;
     private int enableAnimationsRow;
+    private int aniwaysSettingsRow;
     private int notificationRow;
     private int blockedRow;
     private int backgroundRow;
@@ -161,6 +164,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         settingsSectionRow = rowCount++;
         enableAnimationsRow = rowCount++;
         languageRow = rowCount++;
+        aniwaysSettingsRow = rowCount++;
         notificationRow = rowCount++;
         blockedRow = rowCount++;
         backgroundRow = rowCount++;
@@ -236,6 +240,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         if (listView != null) {
                             listView.invalidateViews();
                         }
+                    } else if (i == aniwaysSettingsRow) {
+                        Intent aniwaysIntent = new Intent(parentActivity, AniwaysSettingsActivity.class);
+                        parentActivity.startActivity(aniwaysIntent);
                     } else if (i == notificationRow) {
                         ((LaunchActivity)parentActivity).presentFragment(new SettingsNotificationsActivity(), "settings_notifications", false);
                     } else if (i == blockedRow) {
@@ -573,7 +580,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public boolean isEnabled(int i) {
-            return i == textSizeRow || i == enableAnimationsRow || i == blockedRow || i == notificationRow || i == backgroundRow ||
+            return i == textSizeRow || i == enableAnimationsRow || i == blockedRow || i == aniwaysSettingsRow || i == notificationRow || i == backgroundRow ||
                     i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == terminateSessionsRow || i == photoDownloadPrivateRow ||
                     i == photoDownloadChatRow || i == clearLogsRow || i == audioDownloadChatRow || i == audioDownloadPrivateRow || i == languageRow ||
                     i == switchBackendButtonRow;
@@ -761,6 +768,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         textView.setText("Unknown");
                     }
                     divider.setVisibility(View.INVISIBLE);
+                } else if (i == aniwaysSettingsRow) {
+                    textView.setText(LocaleController.getString("AniwaysSettings", R.string.AniwaysSettings));
+                    divider.setVisibility(View.VISIBLE);
                 } else if (i == notificationRow) {
                     textView.setText(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds));
                     divider.setVisibility(View.VISIBLE);

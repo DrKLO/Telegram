@@ -235,6 +235,7 @@
     <string name="Reset">RESET</string>
     <string name="ResetAllNotifications">Reset All Notifications</string>
     <string name="UndoAllCustom">Undo all custom notification settings for all your contacts and groups</string>
+    <string name="AniwaysSettings">Smarticons</string>
     <string name="NotificationsAndSounds">Notifications and Sounds</string>
     <string name="BlockedUsers">Blocked Users</string>
     <string name="SaveIncomingPhotos">Save Incoming Photos</string>
