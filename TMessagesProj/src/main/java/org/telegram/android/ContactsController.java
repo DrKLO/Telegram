@@ -21,11 +21,12 @@ import android.provider.BaseColumns;
 import android.provider.ContactsContract;
 import android.util.SparseArray;
 
+import com.aniways.anigram.messenger.R;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
@@ -179,7 +180,7 @@ public class ContactsController {
 
     public void checkAppAccount() {
         AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
-        Account[] accounts = am.getAccountsByType("org.telegram.account");
+        Account[] accounts = am.getAccountsByType("com.aniways.anigram.messenger.account");
         boolean recreateAccount = false;
         if (UserConfig.isClientActivated()) {
             if (accounts.length == 1) {
@@ -204,7 +205,7 @@ public class ContactsController {
             }
             if (UserConfig.isClientActivated()) {
                 try {
-                    currentAccount = new Account(UserConfig.getCurrentUser().phone, "org.telegram.account");
+                    currentAccount = new Account(UserConfig.getCurrentUser().phone, "com.aniways.anigram.messenger.account");
                     am.addAccountExplicitly(currentAccount, "", null);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -471,12 +472,12 @@ public class ContactsController {
                 /*if (schedule) {
                     try {
                         AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
-                        Account[] accounts = am.getAccountsByType("org.telegram.account");
+                        Account[] accounts = am.getAccountsByType("com.aniways.anigram.messenger.account");
                         boolean recreateAccount = false;
                         if (UserConfig.isClientActivated()) {
                             if (accounts.length != 1) {
                                 FileLog.e("tmessages", "detected account deletion!");
-                                currentAccount = new Account(UserConfig.getCurrentUser().phone, "org.telegram.account");
+                                currentAccount = new Account(UserConfig.getCurrentUser().phone, "com.aniways.anigram.messenger.account");
                                 am.addAccountExplicitly(currentAccount, "", null);
                                 AndroidUtilities.runOnUIThread(new Runnable() {
                                     @Override

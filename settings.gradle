@@ -1,1 +1,1 @@
-include ':TMessagesProj'
+include ':TMessagesProj', ':Aniways'

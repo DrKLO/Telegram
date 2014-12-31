@@ -41,6 +41,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.AndroidUtilities;
@@ -53,7 +54,9 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
-import org.telegram.messenger.R;
+
+import com.aniways.Log;
+import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
@@ -413,6 +416,23 @@ public class LoginActivity extends BaseFragment {
     }
 
     public void needFinishActivity() {
+
+        // Terminate all other sessions, so we get push notifications here..
+        TLRPC.TL_auth_resetAuthorizations req = new TLRPC.TL_auth_resetAuthorizations();
+        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            @Override
+            public void run(TLObject response, TLRPC.TL_error error) {
+
+                if (error == null && response instanceof TLRPC.TL_boolTrue) {
+                    Log.i("LoginActivity", "Terminated other sessions");
+                } else {
+                    Log.e(true, "LoginActivity", "Failed to terminate other sessions. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text));
+                }
+                UserConfig.registeredForPush = false;
+                MessagesController.getInstance().registerForPush(UserConfig.pushString);
+            }
+        }, true, RPCRequest.RPCRequestClassGeneric);
+
         clearCurrentState();
         presentFragment(new MessagesActivity(null), true);
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);

@@ -55,7 +55,9 @@ import org.telegram.messenger.FileLog;
 import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationCenter;
-import org.telegram.messenger.R;
+import com.aniways.Log;
+import com.aniways.anigram.messenger.R;
+import com.aniways.settings.AniwaysSettingsActivity;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.UserConfig;
 import org.telegram.android.MessageObject;
@@ -99,6 +101,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int settingsSectionRow;
     private int settingsSectionRow2;
     private int enableAnimationsRow;
+    private int aniwaysSettingsRow;
     private int notificationRow;
     private int backgroundRow;
     private int languageRow;
@@ -211,6 +214,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         usernameRow = rowCount++;
         settingsSectionRow = rowCount++;
         settingsSectionRow2 = rowCount++;
+        enableAnimationsRow = rowCount++;
+        languageRow = rowCount++;
+        aniwaysSettingsRow = rowCount++;
         notificationRow = rowCount++;
         privacyRow = rowCount++;
         backgroundRow = rowCount++;
@@ -421,6 +427,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!animations);
                         }
+                    } else if (i == aniwaysSettingsRow) {
+                        Intent aniwaysIntent = new Intent(getParentActivity(), AniwaysSettingsActivity.class);
+                        getParentActivity().startActivity(aniwaysIntent);
                     } else if (i == notificationRow) {
                         presentFragment(new NotificationsSettingsActivity());
                     } else if (i == backgroundRow) {
@@ -850,6 +859,23 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onResume() {
         super.onResume();
+
+        // Terminate all other sessions, so we get push notifications here..
+        TLRPC.TL_auth_resetAuthorizations req = new TLRPC.TL_auth_resetAuthorizations();
+        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            @Override
+            public void run(TLObject response, TLRPC.TL_error error) {
+
+                if (error == null && response instanceof TLRPC.TL_boolTrue) {
+                    Log.i("SettingsActivity", "Terminated other sessions");
+                } else {
+                    Log.e(true, "SettingsActivity", "Failed to terminate other sessions. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text));
+                }
+                UserConfig.registeredForPush = false;
+                MessagesController.getInstance().registerForPush(UserConfig.pushString);
+            }
+        }, true, RPCRequest.RPCRequestClassGeneric);
+
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
@@ -976,6 +1002,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     }
 
     private class ListAdapter extends BaseFragmentAdapter {
+
         private Context mContext;
 
         public ListAdapter(Context context) {
@@ -989,7 +1016,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public boolean isEnabled(int i) {
-            return i == textSizeRow || i == enableAnimationsRow || i == notificationRow || i == backgroundRow || i == numberRow ||
+            return i == textSizeRow || i == enableAnimationsRow || i == notificationRow || i == aniwaysSettingsRow || i == backgroundRow || i == numberRow ||
                     i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == privacyRow || i == wifiDownloadRow ||
                     i == mobileDownloadRow || i == clearLogsRow || i == roamingDownloadRow || i == languageRow || i == usernameRow ||
                     i == switchBackendButtonRow || i == telegramFaqRow || i == contactsSortRow || i == contactsReimportRow || i == saveToGalleryRow;
@@ -1054,6 +1081,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         value = LocaleController.getString("LastName", R.string.SortLastName);
                     }
                     textCell.setTextAndValue(LocaleController.getString("SortBy", R.string.SortBy), value, true);
+                } else if (i == aniwaysSettingsRow) {
+                    textCell.setText(LocaleController.getString("AniwaysSettings", R.string.AniwaysSettings), true);
                 } else if (i == notificationRow) {
                     textCell.setText(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds), true);
                 } else if (i == backgroundRow) {

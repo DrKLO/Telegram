@@ -15,7 +15,7 @@ import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 
 public class SeekBar {
 

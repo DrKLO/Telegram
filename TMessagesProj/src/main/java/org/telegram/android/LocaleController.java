@@ -21,7 +21,7 @@ import android.util.Xml;
 import org.telegram.android.time.FastDateFormat;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.ApplicationLoader;

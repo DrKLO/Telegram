@@ -27,6 +27,7 @@ import android.util.Base64;
 import net.hockeyapp.android.CrashManager;
 import net.hockeyapp.android.CrashManagerListener;
 import net.hockeyapp.android.UpdateManager;
+import com.aniways.anigram.messenger.R;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

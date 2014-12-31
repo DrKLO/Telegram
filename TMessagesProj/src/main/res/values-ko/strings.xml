@@ -146,7 +146,7 @@
     <!--contacts view-->
     <string name="SelectContact">대화상대 선택</string>
     <string name="NoContacts">대화상대가 없습니다</string>
-    <string name="InviteText">텔레그램으로 초대합니다! http://telegram.org/dl2</string>
+    <string name="InviteText">텔레그램으로 초대합니다! http://aniways.com/anygram/dl2</string>
     <string name="TodayAt">오늘</string>
     <string name="YesterdayAt">어제</string>
     <string name="Online">온라인</string>

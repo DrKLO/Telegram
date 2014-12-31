@@ -9,3 +9,4 @@ local.properties
 gradle.properties
 
 TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+aniways/

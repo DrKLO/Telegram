@@ -3,7 +3,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:0.14.0'
+        classpath 'com.android.tools.build:gradle:1.0.0'
     }
 }
 apply plugin: 'com.android.application'
@@ -17,15 +17,24 @@ tasks.withType(JavaCompile) {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:21.0.+'
-    compile 'com.google.android.gms:play-services:3.2.+'
+    compile 'com.android.support:support-v4:21.0.2'
+    compile 'com.android.support:appcompat-v7:21.0.2'
+    compile 'com.google.android.gms:play-services:6.1.71'
     compile 'net.hockeyapp.android:HockeySDK:3.0.2'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
+    compile project(':Aniways')
 }
 
 android {
     compileSdkVersion 21
     buildToolsVersion '21.1.1'
+
+    lintOptions {
+        checkReleaseBuilds false
+        // Or, if you prefer, you can continue to check for errors in release builds,
+        // but continue the build even when errors are found:
+        abortOnError false
+    }
 
     signingConfigs {
         debug {
@@ -33,7 +42,7 @@ android {
         }
 
         release {
-            storeFile file("config/release.keystore")
+            //storeFile file("config/release.keystore")
             storePassword RELEASE_STORE_PASSWORD
             keyAlias RELEASE_KEY_ALIAS
             keyPassword RELEASE_KEY_PASSWORD
@@ -44,15 +53,17 @@ android {
         debug {
             debuggable true
             jniDebuggable true
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
             signingConfig signingConfigs.debug
         }
-
         release {
             debuggable false
             jniDebuggable false
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
             signingConfig signingConfigs.release
         }
-
         foss {
             debuggable false
             jniDebuggable false
@@ -78,9 +89,11 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 8
+        minSdkVersion 9
         targetSdkVersion 21
-        versionCode 403
-        versionName "2.1.0"
+        renderscriptTargetApi 21
+        renderscriptSupportModeEnabled true
+        versionCode 240
+        versionName "1.6.0"
     }
 }

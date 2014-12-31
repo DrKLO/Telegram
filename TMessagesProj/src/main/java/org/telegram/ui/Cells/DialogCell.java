@@ -11,14 +11,19 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.text.Html;
 import android.text.Layout;
+import android.text.Spannable;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.view.View;
 
 import org.telegram.android.AndroidUtilities;
+import com.aniways.Aniways;
+import com.aniways.AniwaysIconInfoDisplayer;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessageObject;
@@ -27,13 +32,23 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.android.ContactsController;
 import org.telegram.android.Emoji;
 import org.telegram.android.MessagesController;
-import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.android.ImageReceiver;
 import org.telegram.ui.Components.AvatarDrawable;
 
-public class DialogCell extends BaseCell {
+import com.aniways.AniwaysLoadingImageSpan;
+import com.aniways.AniwaysDynamicImageSpansContainer;
+import com.aniways.AniwaysMessageListViewItemWrapperLayout;
+import com.aniways.IAniwaysTextContainer;
+import com.aniways.IIconInfoDisplayer;
+import com.aniways.Log;
+import com.aniways.anigram.messenger.R;
+import com.aniways.volley.toolbox.IResponseListener;
 
+import java.util.HashSet;
+
+public class DialogCell extends BaseCell implements IAniwaysTextContainer {
+    private static final String TAG = "DialogCell";
     private static TextPaint namePaint;
     private static TextPaint nameEncryptedPaint;
     private static TextPaint nameUnknownPaint;
@@ -59,6 +74,8 @@ public class DialogCell extends BaseCell {
     private int unreadCount;
     private boolean lastUnreadState;
     private MessageObject message;
+    private AniwaysIconInfoDisplayer mIconInfoDisplayer;
+    private HashSet<AniwaysMessageListViewItemWrapperLayout.OnSetTextListener> mSetTextListeners = new HashSet<AniwaysMessageListViewItemWrapperLayout.OnSetTextListener>();
 
     private ImageReceiver avatarImage;
     private AvatarDrawable avatarDrawable;
@@ -67,6 +84,7 @@ public class DialogCell extends BaseCell {
     private TLRPC.Chat chat = null;
     private TLRPC.EncryptedChat encryptedChat = null;
     private CharSequence lastPrintString = null;
+    private AniwaysDynamicImageSpansContainer mDynamicImageSpansContainer;
 
     public boolean useSeparator = false;
 
@@ -156,6 +174,7 @@ public class DialogCell extends BaseCell {
 
     public DialogCell(Context context) {
         super(context);
+        mDynamicImageSpansContainer = new AniwaysDynamicImageSpansContainer(this);
         init();
         avatarImage = new ImageReceiver(this);
         avatarImage.setRoundRadius(AndroidUtilities.dp(26));
@@ -170,6 +189,7 @@ public class DialogCell extends BaseCell {
         unreadCount = unread;
         lastUnreadState = messageObject != null && messageObject.isUnread();
         update(0);
+        //this.mLoadingImageSpansContainer.onSetText(this.getText(), oldText);
     }
 
     public long getDialogId() {
@@ -178,6 +198,7 @@ public class DialogCell extends BaseCell {
 
     @Override
     protected void onDetachedFromWindow() {
+        this.mDynamicImageSpansContainer.onDetachFromWindowCalled();
         super.onDetachedFromWindow();
         if (avatarImage != null) {
             avatarImage.clearImage();
@@ -195,6 +216,9 @@ public class DialogCell extends BaseCell {
             super.onLayout(changed, left, top, right, bottom);
             return;
         }
+
+        this.mDynamicImageSpansContainer.onLayoutCalled();
+
         if (changed) {
             buildLayout();
         }
@@ -731,5 +755,77 @@ public class DialogCell extends BaseCell {
         }
 
         avatarImage.draw(canvas);
+    }
+
+    @Override
+    public Spannable getText() {
+        if(message == null){
+            return null;
+        }
+        return (Spannable) this.message.getAniwaysDecodedMessageTextBigIcons(this);
+    }
+
+    /** Return the point (in pixels) of the received char position as it is displayed
+     * relative to the upper left corner of the widget, or lower left if fromTop == false.
+     * It accounts for scroll position and paddings
+     * !! Be careful, it can return null!!
+     **/
+    @Override
+    public Point getPointOfPositionInText(int position, boolean fromTop) {
+        return null;
+    }
+
+    @Override
+    public View getView() {
+        return this;
+    }
+
+    @Override
+    public AniwaysDynamicImageSpansContainer getDynamicImageSpansContainer() {
+        return this.mDynamicImageSpansContainer;
+    }
+
+    @Override
+    public void removeTextWatchers() {
+
+    }
+
+    @Override
+    public void addBackTheTextWatchers() {
+        //TODO: temp!!
+        //setDialog(currentDialog);
+        message.generateLayout(this);
+        //setMessageObject(currentMessageObject, true);
+    }
+
+    @Override
+    public void onLoadedImageSuccessfuly() {
+        Log.i("AniwaysDialogCell", "Successfully loaded image");
+        //setDialog(currentDialog);
+
+        message.generateLayout(DialogCell.this);
+        //setMessageObject(message, true);
+    }
+
+    @Override
+    public void onErrorLoadingImage() {
+
+    }
+
+    @Override
+    public void registerSetTextListener(AniwaysMessageListViewItemWrapperLayout.OnSetTextListener textChangedListener) {
+        this.mSetTextListeners.add(textChangedListener);
+
+    }
+
+    @Override
+    public void unregisterSetTextListener(AniwaysMessageListViewItemWrapperLayout.OnSetTextListener listener) {
+        this.mSetTextListeners.remove(listener);
+
+    }
+
+    @Override
+    public IIconInfoDisplayer getIconInfoDisplayer() {
+        return mIconInfoDisplayer;
     }
 }

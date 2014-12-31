@@ -3,7 +3,7 @@
 <!--https://www.transifex.com/projects/p/telegram/language/pt_PT/members/-->
 
 <resources>
-    <string name="AppName">Telegram</string>
+    <string name="AppName">Telegram Aniways</string>
     <string name="LanguageName">Português (Portugal)</string>
     <string name="LanguageNameInEnglish">Portuguese (Portugal)</string>
     <string name="LanguageCode">pt_PT</string>
@@ -146,7 +146,7 @@
     <!--contacts view-->
     <string name="SelectContact">Selecionar Contato</string>
     <string name="NoContacts">Ainda não há contatos</string>
-    <string name="InviteText">Ei, vamos mudar para o Telegram: http://telegram.org/dl2</string>
+    <string name="InviteText">Ei, vamos mudar para o Telegram Aniways: http://aniways.com/anygram/dl2</string>
     <string name="TodayAt">hoje às</string>
     <string name="YesterdayAt">ontem às</string>
     <string name="Online">online</string>

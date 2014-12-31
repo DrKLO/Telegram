@@ -28,7 +28,7 @@ import org.telegram.android.LocaleController;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.android.MediaController;
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.android.MessageObject;
 import org.telegram.android.PhotoObject;

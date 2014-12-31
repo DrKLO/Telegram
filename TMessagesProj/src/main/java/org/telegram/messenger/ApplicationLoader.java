@@ -25,6 +25,8 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.PowerManager;
 
+import com.aniways.Aniways;
+import com.aniways.Utils;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
@@ -116,6 +118,8 @@ public class ApplicationLoader extends Application {
 
         applicationContext = getApplicationContext();
         NativeLoader.initNativeLibs(ApplicationLoader.applicationContext);
+
+        Aniways.init(this);
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
 

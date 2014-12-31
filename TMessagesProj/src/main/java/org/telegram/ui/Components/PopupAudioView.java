@@ -20,7 +20,7 @@ import android.view.SoundEffectConstants;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.MediaController;
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 import org.telegram.android.MessageObject;
 import org.telegram.ui.Cells.BaseCell;
 

@@ -38,7 +38,7 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 
 import java.util.Locale;
 

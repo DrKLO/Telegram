@@ -103,7 +103,7 @@
                 android:layout_gravity="bottom"
                 android:id="@+id/chat_smile_button"/>
 
-            <EditText
+            <com.aniways.AniwaysEditText
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom"

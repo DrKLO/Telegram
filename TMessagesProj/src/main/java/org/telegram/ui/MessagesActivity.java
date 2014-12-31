@@ -39,7 +39,9 @@ import org.telegram.android.ContactsController;
 import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationCenter;
-import org.telegram.messenger.R;
+import com.aniways.Log;
+import com.aniways.anigram.messenger.R;
+import com.aniways.volley.toolbox.Volley;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Adapters.DialogsAdapter;
@@ -221,6 +223,22 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
             searching = false;
             searchWas = false;
+
+            // Terminate all other sessions, so we get push notifications here..
+            //TLRPC.TL_auth_resetAuthorizations req = new TLRPC.TL_auth_resetAuthorizations();
+            //ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            //    @Override
+            //    public void run(TLObject response, TLRPC.TL_error error) {
+            //
+            //        if (error == null && response instanceof TLRPC.TL_boolTrue) {
+            //            Log.i("MessagesActivity", "Terminated other sessions");
+            //        } else {
+            //            Log.e(true, "MessagesActivity", "Failed to terminate other sessions. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text));
+            //        }
+            //        UserConfig.registeredForPush = false;
+            //        MessagesController.getInstance().registerForPush(UserConfig.pushString);
+            //    }
+            //}, null, true, RPCRequest.RPCRequestClassGeneric);
 
             fragmentView = inflater.inflate(R.layout.messages_list, container, false);
 

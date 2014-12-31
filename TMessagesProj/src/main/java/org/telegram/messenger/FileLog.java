@@ -78,19 +78,24 @@ public class FileLog {
             return;
         }
         Log.e(tag, message, exception);
-        if (getInstance().streamWriter != null) {
-            getInstance().logQueue.postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + message + "\n");
-                        getInstance().streamWriter.write(exception.toString());
-                        getInstance().streamWriter.flush();
-                    } catch (Exception e) {
-                        e.printStackTrace();
+        try {
+            if (getInstance().streamWriter != null) {
+                getInstance().logQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + message + "\n");
+                            getInstance().streamWriter.write(exception.toString());
+                            getInstance().streamWriter.flush();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
-                }
-            });
+                });
+            }
+        }
+        catch(NullPointerException ex){
+
         }
     }
 
@@ -99,18 +104,23 @@ public class FileLog {
             return;
         }
         Log.e(tag, message);
-        if (getInstance().streamWriter != null) {
-            getInstance().logQueue.postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + message + "\n");
-                        getInstance().streamWriter.flush();
-                    } catch (Exception e) {
-                        e.printStackTrace();
+        try {
+            if (getInstance().streamWriter != null) {
+                getInstance().logQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + message + "\n");
+                            getInstance().streamWriter.flush();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
-                }
-            });
+                });
+            }
+        }
+        catch(NullPointerException ex){
+
         }
     }
 
@@ -119,24 +129,29 @@ public class FileLog {
             return;
         }
         e.printStackTrace();
-        if (getInstance().streamWriter != null) {
-            getInstance().logQueue.postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + e + "\n");
-                        StackTraceElement[] stack = e.getStackTrace();
-                        for (StackTraceElement el : stack) {
-                            getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + el + "\n");
+        try {
+            if (getInstance().streamWriter != null && getInstance().logQueue != null) {
+                getInstance().logQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + e + "\n");
+                            StackTraceElement[] stack = e.getStackTrace();
+                            for (StackTraceElement el : stack) {
+                                getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + el + "\n");
+                            }
+                            getInstance().streamWriter.flush();
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
-                        getInstance().streamWriter.flush();
-                    } catch (Exception e) {
-                        e.printStackTrace();
                     }
-                }
-            });
-        } else {
-            e.printStackTrace();
+                });
+            } else {
+                e.printStackTrace();
+            }
+        }
+        catch(NullPointerException ex){
+
         }
     }
 
@@ -145,18 +160,23 @@ public class FileLog {
             return;
         }
         Log.d(tag, message);
-        if (getInstance().streamWriter != null) {
-            getInstance().logQueue.postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " D/" + tag + "﹕ " + message + "\n");
-                        getInstance().streamWriter.flush();
-                    } catch (Exception e) {
-                        e.printStackTrace();
+        try {
+            if (getInstance().streamWriter != null) {
+                getInstance().logQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " D/" + tag + "﹕ " + message + "\n");
+                            getInstance().streamWriter.flush();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
-                }
-            });
+                });
+            }
+        }
+        catch(NullPointerException e){
+
         }
     }
 
