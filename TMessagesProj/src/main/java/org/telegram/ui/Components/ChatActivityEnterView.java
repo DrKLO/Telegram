@@ -41,6 +41,9 @@ import org.telegram.android.SendMessagesHelper;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.NotificationCenter;
+
+import com.aniways.Aniways;
+import com.aniways.AniwaysEditText;
 import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
@@ -62,7 +65,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
     private EditText messsageEditText;
     private ImageButton sendButton;
     private ImageView emojiButton;
-    private EmojiView emojiView;
+    //private EmojiView emojiView;
     private TextView recordTimeText;
     private ImageButton audioSendButton;
     private View recordPanel;
@@ -127,7 +130,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         if (sizeNotifierRelativeLayout != null) {
             sizeNotifierRelativeLayout.delegate = null;
         }
-        removeEmojiWindow();
+        //removeEmojiWindow();
     }
 
     public void setContainerView(Activity activity, View containerView) {
@@ -161,22 +164,27 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         TextView textView = (TextView) containerView.findViewById(R.id.slideToCancelTextView);
         textView.setText(LocaleController.getString("SlideToCancel", R.string.SlideToCancel));
 
+        Aniways.makeButtonAniwaysEmoticonsButton(emojiButton, (ViewGroup) sizeNotifierRelativeLayout, (AniwaysEditText) messsageEditText, null, true);
+
+        /*
         emojiButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 showEmojiPopup(!showingEmoji);
             }
         });
+        */
 
         messsageEditText.setOnKeyListener(new View.OnKeyListener() {
             @Override
             public boolean onKey(View view, int i, KeyEvent keyEvent) {
-                if (i == 4 && !keyboardVisible && showingEmoji) {
-                    if (keyEvent.getAction() == 1) {
-                        showEmojiPopup(false);
-                    }
-                    return true;
-                } else if (i == KeyEvent.KEYCODE_ENTER && sendByEnter && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
+                //if (i == 4 && !keyboardVisible && showingEmoji) {
+                //    if (keyEvent.getAction() == 1) {
+                //        showEmojiPopup(false);
+                //    }
+                //    return true;
+                //} else
+                if (i == KeyEvent.KEYCODE_ENTER && sendByEnter && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
                     sendMessage();
                     return true;
                 }
@@ -184,6 +192,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             }
         });
 
+        /*
         messsageEditText.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -192,6 +201,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 }
             }
         });
+        */
 
         messsageEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -306,6 +316,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 if (sendByEnter && editable.length() > 0 && editable.charAt(editable.length() - 1) == '\n') {
                     sendMessage();
                 }
+                /*
                 int i = 0;
                 ImageSpan[] arrayOfImageSpan = editable.getSpans(0, editable.length(), ImageSpan.class);
                 int j = arrayOfImageSpan.length;
@@ -317,6 +328,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                     editable.removeSpan(arrayOfImageSpan[i]);
                     i++;
                 }
+                */
             }
         });
 
@@ -324,7 +336,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
     }
 
     private void sendMessage() {
-        if (processSendingText(messsageEditText.getText().toString())) {
+        if (processSendingText(Aniways.encodeMessage(messsageEditText.getText()))) {
             messsageEditText.setText("");
             lastTypingTimeSend = 0;
             if (delegate != null) {
@@ -608,6 +620,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         }
     }
 
+    /*
     private void showEmojiPopup(boolean show) {
         showingEmoji = show;
         if (show) {
@@ -717,11 +730,14 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             FileLog.e("tmessages", e);
         }
     }
+       */
 
     public void hideEmojiPopup() {
-        if (showingEmoji) {
-            showEmojiPopup(false);
-        }
+
+        //TODO: relay this to the Aniways emoji popup somehow..
+        //if (showingEmoji) {
+        //    showEmojiPopup(false);
+        //}
     }
 
     public void setDelegate(ChatActivityEnterViewDelegate delegate) {
@@ -801,6 +817,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
 
     @Override
     public void onSizeChanged(int height) {
+        /*
         Rect localRect = new Rect();
         parentActivity.getWindow().getDecorView().getWindowVisibleDisplayFrame(localRect);
 
@@ -852,15 +869,17 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         } else if (!keyboardVisible && keyboardVisible != oldValue && showingEmoji) {
             showEmojiPopup(false);
         }
+        */
     }
 
     @Override
     public void didReceivedNotification(int id, Object... args) {
-        if (id == NotificationCenter.emojiDidLoaded) {
-            if (emojiView != null) {
-                emojiView.invalidateViews();
-            }
-        } else if (id == NotificationCenter.recordProgressChanged) {
+        //if (id == NotificationCenter.emojiDidLoaded) {
+            //if (emojiView != null) {
+            //    emojiView.invalidateViews();
+            //}
+        //} else
+        if (id == NotificationCenter.recordProgressChanged) {
             Long time = (Long) args[0] / 1000;
             String str = String.format("%02d:%02d", time / 60, time % 60);
             if (lastTimeString == null || !lastTimeString.equals(str)) {

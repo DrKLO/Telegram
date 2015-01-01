@@ -46,7 +46,8 @@ public class MessageObject {
     public static final int MESSAGE_SEND_STATE_SENT = 0;
     public static final int MESSAGE_SEND_STATE_SEND_ERROR = 2;
 
-    private Editable mDecodedMessageCache;
+    private Editable mDecodedMessageBigIconsCache;
+    private Editable mDecodedMessageSmallIconsCache;
 
     public TLRPC.Message messageOwner;
     public CharSequence messageText;
@@ -368,9 +369,9 @@ public class MessageObject {
             return this.messageText;
         }
 
-        if(mDecodedMessageCache == null){
+        if(mDecodedMessageBigIconsCache == null){
             try {
-                mDecodedMessageCache = Aniways.decodeMessage(this.messageText, new AniwaysIconInfoDisplayer(), textContainer, false);
+                mDecodedMessageBigIconsCache = Aniways.decodeMessage(this.messageText, new AniwaysIconInfoDisplayer(), textContainer, false);
             }
             catch(AniwaysNotInitializedException ex){
                 Log.e(true, TAG, "Caught aniways not initialized exception", ex);
@@ -378,7 +379,25 @@ public class MessageObject {
             }
         }
 
-        return mDecodedMessageCache;
+        return mDecodedMessageBigIconsCache;
+    }
+
+    public CharSequence getAniwaysDecodedMessageTextSmallIcons(IAniwaysTextContainer textContainer){
+        if(textContainer == null){
+            return this.messageText;
+        }
+
+        if(mDecodedMessageSmallIconsCache == null){
+            try {
+                mDecodedMessageSmallIconsCache = Aniways.decodeMessage(this.messageText, new AniwaysIconInfoDisplayer(), textContainer, true);
+            }
+            catch(AniwaysNotInitializedException ex){
+                Log.e(true, TAG, "Caught aniways not initialized exception", ex);
+                return this.messageText;
+            }
+        }
+
+        return mDecodedMessageSmallIconsCache;
     }
 
 

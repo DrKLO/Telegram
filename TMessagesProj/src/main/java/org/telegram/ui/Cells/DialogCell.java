@@ -175,6 +175,7 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
     public DialogCell(Context context) {
         super(context);
         mDynamicImageSpansContainer = new AniwaysDynamicImageSpansContainer(this);
+        mIconInfoDisplayer = new AniwaysIconInfoDisplayer();
         init();
         avatarImage = new ImageReceiver(this);
         avatarImage.setRoundRadius(AndroidUtilities.dp(26));
@@ -349,15 +350,15 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
                         checkMessage = false;
                         if (message.messageOwner.media != null && !(message.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
                             currentMessagePaint = messagePrintingPaint;
-                            messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#4d83b3>%s:</font> <font color=#4d83b3>%s</font>", name, message.messageText)), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
+                            messageString = Html.fromHtml(String.format("<font color=#4d83b3>%s:</font> <font color=#4d83b3>%s</font>", name, message.messageText));
                         } else {
                             if (message.messageOwner.message != null) {
                                 String mess = message.messageOwner.message;
-                                if (mess.length() > 150) {
-                                    mess = mess.substring(0, 150);
-                                }
+                                //if (mess.length() > 150) {
+                                //    mess = mess.substring(0, 150);
+                                //}
                                 mess = mess.replace("\n", " ");
-                                messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#4d83b3>%s:</font> <font color=#808080>%s</font>", name, mess.replace("<", "&lt;").replace(">", "&gt;"))), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
+                                messageString = Html.fromHtml(String.format("<font color=#4d83b3>%s:</font> <font color=#808080>%s</font>", name, mess.replace("<", "&lt;").replace(">", "&gt;")));
                             }
                         }
                     } else {
@@ -535,18 +536,31 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
                 messageString = "";
             }
             String mess = messageString.toString();
-            if (mess.length() > 150) {
-                mess = mess.substring(0, 150);
-            }
+            //if (mess.length() > 150) {
+            //    mess = mess.substring(0, 150);
+            //}
             mess = mess.replace("\n", " ");
-            messageString = Emoji.replaceEmoji(mess, messagePaint.getFontMetricsInt(), AndroidUtilities.dp(17));
+            //messageString = Emoji.replaceEmoji(mess, messagePaint.getFontMetricsInt(), AndroidUtilities.dp(17));
+            messageString = mess;
         }
         messageWidth = Math.max(AndroidUtilities.dp(12), messageWidth);
-        CharSequence messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
+        //CharSequence messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
+        Spannable oldText = this.getText();
+        //CharSequence messageStringFinal = Aniways.decodeMessage(messageString, this.mIconInfoDisplayer, this, true);
+        CharSequence messageStringFinal = message.getAniwaysDecodedMessageTextSmallIcons(this);
         try {
             messageLayout = new StaticLayout(messageStringFinal, currentMessagePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         } catch (Exception e) {
             FileLog.e("tmessages", e);
+        }
+
+        this.getDynamicImageSpansContainer().onSetText(this.getText(), oldText);
+
+        // Call liteners
+        if(mSetTextListeners != null){
+            for(AniwaysMessageListViewItemWrapperLayout.OnSetTextListener listener : mSetTextListeners){
+                listener.onSetText(this.getText());
+            }
         }
 
         double widthpx = 0;
@@ -762,7 +776,7 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
         if(message == null){
             return null;
         }
-        return (Spannable) this.message.getAniwaysDecodedMessageTextBigIcons(this);
+        return (Spannable) this.message.getAniwaysDecodedMessageTextSmallIcons(this);
     }
 
     /** Return the point (in pixels) of the received char position as it is displayed
@@ -792,19 +806,15 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
 
     @Override
     public void addBackTheTextWatchers() {
-        //TODO: temp!!
-        //setDialog(currentDialog);
         message.generateLayout(this);
-        //setMessageObject(currentMessageObject, true);
+        setDialog(currentDialogId, message, allowPrintStrings, lastMessageDate, unreadCount);
     }
 
     @Override
     public void onLoadedImageSuccessfuly() {
         Log.i("AniwaysDialogCell", "Successfully loaded image");
-        //setDialog(currentDialog);
-
-        message.generateLayout(DialogCell.this);
-        //setMessageObject(message, true);
+        message.generateLayout(this);
+        setDialog(currentDialogId, message, allowPrintStrings, lastMessageDate, unreadCount);
     }
 
     @Override
@@ -815,6 +825,7 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
     @Override
     public void registerSetTextListener(AniwaysMessageListViewItemWrapperLayout.OnSetTextListener textChangedListener) {
         this.mSetTextListeners.add(textChangedListener);
+        textChangedListener.onSetText(getText());
 
     }
 
