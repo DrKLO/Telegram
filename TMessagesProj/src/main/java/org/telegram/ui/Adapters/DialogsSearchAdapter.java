@@ -48,9 +48,9 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
 
     private Context mContext;
     private Timer searchTimer;
-    private ArrayList<TLObject> searchResult = new ArrayList<TLObject>();
-    private ArrayList<CharSequence> searchResultNames = new ArrayList<CharSequence>();
-    private ArrayList<MessageObject> searchResultMessages = new ArrayList<MessageObject>();
+    private ArrayList<TLObject> searchResult = new ArrayList<>();
+    private ArrayList<CharSequence> searchResultNames = new ArrayList<>();
+    private ArrayList<MessageObject> searchResultMessages = new ArrayList<>();
     private String lastSearchText;
     private long reqId = 0;
     private int lastReqId;
@@ -162,13 +162,13 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                         return;
                     }
 
-                    ArrayList<Integer> usersToLoad = new ArrayList<Integer>();
-                    ArrayList<Integer> chatsToLoad = new ArrayList<Integer>();
-                    ArrayList<Integer> encryptedToLoad = new ArrayList<Integer>();
-                    ArrayList<TLRPC.User> encUsers = new ArrayList<TLRPC.User>();
+                    ArrayList<Integer> usersToLoad = new ArrayList<>();
+                    ArrayList<Integer> chatsToLoad = new ArrayList<>();
+                    ArrayList<Integer> encryptedToLoad = new ArrayList<>();
+                    ArrayList<TLRPC.User> encUsers = new ArrayList<>();
                     int resultCount = 0;
 
-                    HashMap<Long, DialogSearchResult> dialogsResult = new HashMap<Long, DialogSearchResult>();
+                    HashMap<Long, DialogSearchResult> dialogsResult = new HashMap<>();
                     SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT did, date FROM dialogs ORDER BY date DESC LIMIT 200"));
                     while (cursor.next()) {
                         long id = cursor.longValue(0);
@@ -327,7 +327,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                         cursor.dispose();
                     }
 
-                    ArrayList<DialogSearchResult> searchResults = new ArrayList<DialogSearchResult>(resultCount);
+                    ArrayList<DialogSearchResult> searchResults = new ArrayList<>(resultCount);
                     for (DialogSearchResult dialogSearchResult : dialogsResult.values()) {
                         if (dialogSearchResult.object != null && dialogSearchResult.name != null) {
                             searchResults.add(dialogSearchResult);
@@ -346,8 +346,8 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                         }
                     });
 
-                    ArrayList<TLObject> resultArray = new ArrayList<TLObject>();
-                    ArrayList<CharSequence> resultArrayNames = new ArrayList<CharSequence>();
+                    ArrayList<TLObject> resultArray = new ArrayList<>();
+                    ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
 
                     for (DialogSearchResult dialogSearchResult : searchResults) {
                         resultArray.add(dialogSearchResult.object);
@@ -579,8 +579,12 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                     }
                 }
             } else if (i > searchResult.size() && user != null && user.username != null) {
+                String foundUserName = lastFoundUsername;
+                if (foundUserName.startsWith("@")) {
+                    foundUserName = foundUserName.substring(1);
+                }
                 try {
-                    username = Html.fromHtml(String.format("<font color=\"#4d83b3\">@%s</font>%s", user.username.substring(0, lastFoundUsername.length()), user.username.substring(lastFoundUsername.length())));
+                    username = Html.fromHtml(String.format("<font color=\"#4d83b3\">@%s</font>%s", user.username.substring(0, foundUserName.length()), user.username.substring(foundUserName.length())));
                 } catch (Exception e) {
                     username = user.username;
                     FileLog.e("tmessages", e);

@@ -21,9 +21,9 @@ public abstract class BaseSectionsAdapter extends BaseFragmentAdapter {
     private int count;
 
     private void cleanupCache() {
-        sectionCache = new SparseArray<Integer>();
-        sectionPositionCache = new SparseArray<Integer>();
-        sectionCountCache = new SparseArray<Integer>();
+        sectionCache = new SparseArray<>();
+        sectionPositionCache = new SparseArray<>();
+        sectionCountCache = new SparseArray<>();
         count = -1;
         sectionCount = -1;
     }

@@ -52,6 +52,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     private int lastSeenDetailRow;
     private int securitySectionRow;
     private int terminateSessionsRow;
+    private int passwordRow;
     private int terminateSessionsDetailRow;
     private int deleteAccountSectionRow;
     private int deleteAccountRow;
@@ -75,6 +76,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         deleteAccountSectionRow = rowCount++;
         deleteAccountRow = rowCount++;
         deleteAccountDetailRow = rowCount++;
+        passwordRow = -1;
 
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.privacyRulesUpdated);
 
@@ -223,6 +225,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         showAlertDialog(builder);
                     } else if (i == lastSeenRow) {
                         presentFragment(new LastSeenActivity());
+                    } else if (i == passwordRow) {
+                        presentFragment(new AccountPasswordActivity(0));
                     }
                 }
             });
@@ -315,7 +319,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
 
         @Override
         public boolean isEnabled(int i) {
-            return i == blockedRow || i == terminateSessionsRow || i == lastSeenRow && !ContactsController.getInstance().getLoadingLastSeenInfo() || i == deleteAccountRow && !ContactsController.getInstance().getLoadingDeleteInfo();
+            return i == passwordRow || i == blockedRow || i == terminateSessionsRow || i == lastSeenRow && !ContactsController.getInstance().getLoadingLastSeenInfo() || i == deleteAccountRow && !ContactsController.getInstance().getLoadingDeleteInfo();
         }
 
         @Override
@@ -351,7 +355,9 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     textCell.setText(LocaleController.getString("BlockedUsers", R.string.BlockedUsers), true);
                 } else if (i == terminateSessionsRow) {
                     textCell.setText(LocaleController.getString("TerminateAllSessions", R.string.TerminateAllSessions), false);
-                }  else if (i == lastSeenRow) {
+                } else if (i == passwordRow) {
+                    textCell.setText(LocaleController.getString("Password", R.string.Password), true);
+                } else if (i == lastSeenRow) {
                     String value;
                     if (ContactsController.getInstance().getLoadingLastSeenInfo()) {
                         value = LocaleController.getString("Loading", R.string.Loading);
@@ -378,7 +384,6 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
             } else if (type == 1) {
                 if (view == null) {
                     view = new TextInfoPrivacyCell(mContext);
-                    view.setBackgroundColor(0xffffffff);
                 }
                 if (i == deleteAccountDetailRow) {
                     ((TextInfoPrivacyCell) view).setText(LocaleController.getString("DeleteAccountHelp", R.string.DeleteAccountHelp));
@@ -408,7 +413,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
 
         @Override
         public int getItemViewType(int i) {
-            if (i == lastSeenRow || i == blockedRow || i == deleteAccountRow || i == terminateSessionsRow) {
+            if (i == lastSeenRow || i == blockedRow || i == deleteAccountRow || i == terminateSessionsRow || i == passwordRow) {
                 return 0;
             } else if (i == deleteAccountDetailRow || i == lastSeenDetailRow || i == terminateSessionsDetailRow) {
                 return 1;

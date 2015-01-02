@@ -72,9 +72,9 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     private ViewGroup centerView;
     private ViewGroup leftView;
     private ViewGroup rightView;
-    private ArrayList<ViewGroup> textViews = new ArrayList<ViewGroup>();
-    private ArrayList<ViewGroup> imageViews = new ArrayList<ViewGroup>();
-    private ArrayList<ViewGroup> audioViews = new ArrayList<ViewGroup>();
+    private ArrayList<ViewGroup> textViews = new ArrayList<>();
+    private ArrayList<ViewGroup> imageViews = new ArrayList<>();
+    private ArrayList<ViewGroup> audioViews = new ArrayList<>();
     private VelocityTracker velocityTracker = null;
     private TypingDotsDrawable typingDotsDrawable;
 
@@ -175,6 +175,11 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
 
             @Override
+            public void onTextChanged(CharSequence text) {
+
+            }
+
+            @Override
             public void needSendTyping() {
                 if (currentMessageObject != null) {
                     MessagesController.getInstance().sendTyping(currentMessageObject.getDialogId(), classGuid);
@@ -188,6 +193,11 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
             @Override
             public void onAttachButtonShow() {
+
+            }
+
+            @Override
+            public void onWindowSizeChanged(int size) {
 
             }
         });

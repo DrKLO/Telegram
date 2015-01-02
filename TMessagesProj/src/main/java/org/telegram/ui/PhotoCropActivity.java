@@ -332,7 +332,7 @@ public class PhotoCropActivity extends BaseFragment {
         if (fragmentView == null) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setAllowOverlayTitle(true);
-            actionBar.setTitle(LocaleController.getString("AddContact", R.string.AddContact));
+            actionBar.setTitle(LocaleController.getString("CropImage", R.string.CropImage));
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {

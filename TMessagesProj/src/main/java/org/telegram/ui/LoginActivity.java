@@ -414,8 +414,12 @@ public class LoginActivity extends BaseFragment {
 
     public void needFinishActivity() {
         clearCurrentState();
-        presentFragment(new MessagesActivity(null), true);
-        NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
+        if (UserConfig.isWaitingForPasswordEnter()) {
+            presentFragment(new AccountPasswordActivity(1), true);
+        } else {
+            presentFragment(new MessagesActivity(null), true);
+            NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
+        }
     }
 
     public class PhoneView extends SlideView implements AdapterView.OnItemSelectedListener {
@@ -426,9 +430,9 @@ public class LoginActivity extends BaseFragment {
 
         private int countryState = 0;
 
-        private ArrayList<String> countriesArray = new ArrayList<String>();
-        private HashMap<String, String> countriesMap = new HashMap<String, String>();
-        private HashMap<String, String> codesMap = new HashMap<String, String>();
+        private ArrayList<String> countriesArray = new ArrayList<>();
+        private HashMap<String, String> countriesMap = new HashMap<>();
+        private HashMap<String, String> codesMap = new HashMap<>();
 
         private boolean ignoreSelection = false;
         private boolean ignoreOnTextChange = false;
@@ -670,7 +674,7 @@ public class LoginActivity extends BaseFragment {
             layoutParams.gravity = Gravity.LEFT;
             textView.setLayoutParams(layoutParams);
 
-            HashMap<String, String> languageMap = new HashMap<String, String>();
+            HashMap<String, String> languageMap = new HashMap<>();
             try {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(getResources().getAssets().open("countries.txt")));
                 String line;
@@ -1226,7 +1230,7 @@ public class LoginActivity extends BaseFragment {
                                 UserConfig.setCurrentUser(res.user);
                                 UserConfig.saveConfig(true);
                                 MessagesStorage.getInstance().cleanUp(true);
-                                ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+                                ArrayList<TLRPC.User> users = new ArrayList<>();
                                 users.add(res.user);
                                 MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
                                 MessagesController.getInstance().putUser(res.user, false);
@@ -1243,6 +1247,10 @@ public class LoginActivity extends BaseFragment {
                                     params.putString("phoneHash", phoneHash);
                                     params.putString("code", req.phone_code);
                                     setPage(2, true, params, false);
+                                    destroyTimer();
+                                    destroyCodeTimer();
+                                } else if (error.text.contains("SESSION_PASSWORD_NEEDED")) {
+                                    needFinishActivity();
                                     destroyTimer();
                                     destroyCodeTimer();
                                 } else {
@@ -1524,7 +1532,7 @@ public class LoginActivity extends BaseFragment {
                                 UserConfig.setCurrentUser(user);
                                 UserConfig.saveConfig(true);
                                 MessagesStorage.getInstance().cleanUp(true);
-                                ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+                                ArrayList<TLRPC.User> users = new ArrayList<>();
                                 users.add(user);
                                 MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
                                 //MessagesController.getInstance().uploadAndApplyUserAvatar(avatarPhotoBig);

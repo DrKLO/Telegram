@@ -10,6 +10,7 @@ package org.telegram.ui;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -45,8 +46,8 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
     private GridView listView;
     private ListAdapter listAdapter;
-    private ArrayList<MessageObject> messages = new ArrayList<MessageObject>();
-    private HashMap<Integer, MessageObject> messagesDict = new HashMap<Integer, MessageObject>();
+    private ArrayList<MessageObject> messages = new ArrayList<>();
+    private HashMap<Integer, MessageObject> messagesDict = new HashMap<>();
     private long dialog_id;
     private int totalCount = 0;
     private int itemWidth = 100;
@@ -305,6 +306,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
         }
+        return null;
+    }
+
+    @Override
+    public Bitmap getThumbForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
         return null;
     }
 

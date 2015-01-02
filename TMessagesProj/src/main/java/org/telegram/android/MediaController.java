@@ -20,6 +20,10 @@ import android.database.ContentObserver;
 import android.database.Cursor;
 import android.graphics.BitmapFactory;
 import android.graphics.Point;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
@@ -69,7 +73,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Semaphore;
 
-public class MediaController implements NotificationCenter.NotificationCenterDelegate {
+public class MediaController implements NotificationCenter.NotificationCenterDelegate, SensorEventListener {
 
     private native int startRecord(String path);
     private native int writeFrame(ByteBuffer frame, int len);
@@ -117,7 +121,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         public int bucketId;
         public String bucketName;
         public PhotoEntry coverPhoto;
-        public ArrayList<PhotoEntry> photos = new ArrayList<PhotoEntry>();
+        public ArrayList<PhotoEntry> photos = new ArrayList<>();
 
         public AlbumEntry(int bucketId, String bucketName, PhotoEntry coverPhoto) {
             this.bucketId = bucketId;
@@ -146,6 +150,19 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         }
     }
 
+    public static class SearchImage {
+        public int uid;
+        public String id;
+        public String imageUrl;
+        public String thumbUrl;
+        public String localUrl;
+        public int width;
+        public int height;
+        public int size;
+        public int type;
+        public int date;
+    }
+
     public final static String MIME_TYPE = "video/avc";
     private final static int PROCESSOR_TYPE_OTHER = 0;
     private final static int PROCESSOR_TYPE_QCOM = 1;
@@ -155,7 +172,11 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private final static int PROCESSOR_TYPE_TI = 5;
     private final Object videoConvertSync = new Object();
 
-    private ArrayList<MessageObject> videoConvertQueue = new ArrayList<MessageObject>();
+    private SensorManager sensorManager;
+    private Sensor proximitySensor;
+    private boolean ignoreProximity;
+
+    private ArrayList<MessageObject> videoConvertQueue = new ArrayList<>();
     private final Object videoQueueSync = new Object();
     private boolean cancelCurrentVideoConversion = false;
     private boolean videoConvertFirstWrite = true;
@@ -168,19 +189,19 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     public int wifiDownloadMask = 0;
     public int roamingDownloadMask = 0;
     private int lastCheckMask = 0;
-    private ArrayList<DownloadObject> photoDownloadQueue = new ArrayList<DownloadObject>();
-    private ArrayList<DownloadObject> audioDownloadQueue = new ArrayList<DownloadObject>();
-    private ArrayList<DownloadObject> documentDownloadQueue = new ArrayList<DownloadObject>();
-    private ArrayList<DownloadObject> videoDownloadQueue = new ArrayList<DownloadObject>();
-    private HashMap<String, DownloadObject> downloadQueueKeys = new HashMap<String, DownloadObject>();
+    private ArrayList<DownloadObject> photoDownloadQueue = new ArrayList<>();
+    private ArrayList<DownloadObject> audioDownloadQueue = new ArrayList<>();
+    private ArrayList<DownloadObject> documentDownloadQueue = new ArrayList<>();
+    private ArrayList<DownloadObject> videoDownloadQueue = new ArrayList<>();
+    private HashMap<String, DownloadObject> downloadQueueKeys = new HashMap<>();
 
     private boolean saveToGallery = true;
 
-    private HashMap<String, ArrayList<WeakReference<FileDownloadProgressListener>>> loadingFileObservers = new HashMap<String, ArrayList<WeakReference<FileDownloadProgressListener>>>();
-    private HashMap<Integer, String> observersByTag = new HashMap<Integer, String>();
+    private HashMap<String, ArrayList<WeakReference<FileDownloadProgressListener>>> loadingFileObservers = new HashMap<>();
+    private HashMap<Integer, String> observersByTag = new HashMap<>();
     private boolean listenerInProgress = false;
-    private HashMap<String, FileDownloadProgressListener> addLaterArray = new HashMap<String, FileDownloadProgressListener>();
-    private ArrayList<FileDownloadProgressListener> deleteLaterArray = new ArrayList<FileDownloadProgressListener>();
+    private HashMap<String, FileDownloadProgressListener> addLaterArray = new HashMap<>();
+    private ArrayList<FileDownloadProgressListener> deleteLaterArray = new ArrayList<>();
     private int lastTag = 0;
 
     private GifDrawable currentGifDrawable;
@@ -199,6 +220,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private int ignoreFirstProgress = 0;
     private Timer progressTimer = null;
     private final Object progressTimerSync = new Object();
+    private boolean useFrontSpeaker;
 
     private AudioRecord audioRecorder = null;
     private TLRPC.TL_audio recordingAudio = null;
@@ -208,14 +230,14 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private long recordDialogId;
     private DispatchQueue fileDecodingQueue;
     private DispatchQueue playerQueue;
-    private ArrayList<AudioBuffer> usedPlayerBuffers = new ArrayList<AudioBuffer>();
-    private ArrayList<AudioBuffer> freePlayerBuffers = new ArrayList<AudioBuffer>();
+    private ArrayList<AudioBuffer> usedPlayerBuffers = new ArrayList<>();
+    private ArrayList<AudioBuffer> freePlayerBuffers = new ArrayList<>();
     private final Object playerSync = new Object();
     private final Object playerObjectSync = new Object();
 
     private final Object sync = new Object();
 
-    private ArrayList<ByteBuffer> recordBuffers = new ArrayList<ByteBuffer>();
+    private ArrayList<ByteBuffer> recordBuffers = new ArrayList<>();
     private ByteBuffer fileBuffer;
     private int recordBufferSize;
     private boolean sendAfterDone;
@@ -375,6 +397,12 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             for (int a = 0; a < 3; a++) {
                 freePlayerBuffers.add(new AudioBuffer(playerBufferSize));
             }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        try {
+            sensorManager = (SensorManager) ApplicationLoader.applicationContext.getSystemService(Context.SENSOR_SERVICE);
+            proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
@@ -643,7 +671,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             } else if (downloadObject.object instanceof TLRPC.Video) {
                 FileLoader.getInstance().loadFile((TLRPC.Video)downloadObject.object, false);
             } else if (downloadObject.object instanceof TLRPC.Document) {
-                FileLoader.getInstance().loadFile((TLRPC.Document)downloadObject.object, false);
+                FileLoader.getInstance().loadFile((TLRPC.Document)downloadObject.object, false, false);
             } else {
                 added = false;
             }
@@ -739,7 +767,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             Point size = AndroidUtilities.getRealScreenSize();
 
             Cursor cursor = ApplicationLoader.applicationContext.getContentResolver().query(uri, mediaProjections, null, null, "date_added DESC LIMIT 1");
-            final ArrayList<Long> screenshotDates = new ArrayList<Long>();
+            final ArrayList<Long> screenshotDates = new ArrayList<>();
             if (cursor != null) {
                 while (cursor.moveToNext()) {
                     String val = "";
@@ -833,10 +861,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
         ArrayList<WeakReference<FileDownloadProgressListener>> arrayList = loadingFileObservers.get(fileName);
         if (arrayList == null) {
-            arrayList = new ArrayList<WeakReference<FileDownloadProgressListener>>();
+            arrayList = new ArrayList<>();
             loadingFileObservers.put(fileName, arrayList);
         }
-        arrayList.add(new WeakReference<FileDownloadProgressListener>(observer));
+        arrayList.add(new WeakReference<>(observer));
 
         observersByTag.put(observer.getObserverTag(), fileName);
     }
@@ -1065,7 +1093,57 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         });
     }
 
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (audioTrackPlayer == null && audioPlayer == null || isPaused || (useFrontSpeaker == (event.values[0] == 0))) {
+            return;
+        }
+        ignoreProximity = true;
+        useFrontSpeaker = event.values[0] == 0;
+        NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioRouteChanged, useFrontSpeaker);
+        MessageObject currentMessageObject = playingMessageObject;
+        float progress = playingMessageObject.audioProgress;
+        clenupPlayer(false);
+        currentMessageObject.audioProgress = progress;
+        playAudio(currentMessageObject);
+        ignoreProximity = false;
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    }
+
+    private void stopProximitySensor() {
+        if (ignoreProximity) {
+            return;
+        }
+        try {
+            useFrontSpeaker = false;
+            NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioRouteChanged, useFrontSpeaker);
+            if (sensorManager != null && proximitySensor != null) {
+                sensorManager.unregisterListener(this);
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
+    private void startProximitySensor() {
+        if (ignoreProximity) {
+            return;
+        }
+        try {
+            if (sensorManager != null && proximitySensor != null) {
+                sensorManager.registerListener(this, proximitySensor, SensorManager.SENSOR_DELAY_NORMAL);
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
     private void clenupPlayer(boolean notify) {
+        stopProximitySensor();
         if (audioPlayer != null || audioTrackPlayer != null) {
             if (audioPlayer != null) {
                 try {
@@ -1195,7 +1273,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     }
                     currentTotalPcmDuration = getTotalPcmDuration();
 
-                    audioTrackPlayer = new AudioTrack(AudioManager.STREAM_MUSIC, 48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT, playerBufferSize, AudioTrack.MODE_STREAM);
+                    audioTrackPlayer = new AudioTrack(useFrontSpeaker ? AudioManager.STREAM_VOICE_CALL : AudioManager.STREAM_MUSIC, 48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT, playerBufferSize, AudioTrack.MODE_STREAM);
                     audioTrackPlayer.setStereoVolume(1.0f, 1.0f);
                     audioTrackPlayer.setPlaybackPositionUpdateListener(new AudioTrack.OnPlaybackPositionUpdateListener() {
                         @Override
@@ -1210,6 +1288,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     });
                     audioTrackPlayer.play();
                     startProgressTimer();
+                    startProximitySensor();
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                     if (audioTrackPlayer != null) {
@@ -1224,7 +1303,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         } else {
             try {
                 audioPlayer = new MediaPlayer();
-                audioPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+                audioPlayer.setAudioStreamType(useFrontSpeaker ? AudioManager.STREAM_VOICE_CALL : AudioManager.STREAM_MUSIC);
                 audioPlayer.setDataSource(cacheFile.getAbsolutePath());
                 audioPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                     @Override
@@ -1235,6 +1314,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 audioPlayer.prepare();
                 audioPlayer.start();
                 startProgressTimer();
+                startProximitySensor();
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
                 if (audioPlayer != null) {
@@ -1288,6 +1368,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     }
 
     public void stopAudio() {
+        stopProximitySensor();
         if (audioTrackPlayer == null && audioPlayer == null || playingMessageObject == null) {
             return;
         }
@@ -1320,6 +1401,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     }
 
     public boolean pauseAudio(MessageObject messageObject) {
+        stopProximitySensor();
         if (audioTrackPlayer == null && audioPlayer == null || messageObject == null || playingMessageObject == null || playingMessageObject != null && playingMessageObject.messageOwner.id != messageObject.messageOwner.id) {
             return false;
         }
@@ -1339,6 +1421,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     }
 
     public boolean resumeAudio(MessageObject messageObject) {
+        startProximitySensor();
         if (audioTrackPlayer == null && audioPlayer == null || messageObject == null || playingMessageObject == null || playingMessageObject != null && playingMessageObject.messageOwner.id != messageObject.messageOwner.id) {
             return false;
         }
@@ -1706,6 +1789,44 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         }
     }
 
+    public static boolean isWebp(Uri uri) {
+        ParcelFileDescriptor parcelFD = null;
+        FileInputStream input = null;
+        try {
+            parcelFD = ApplicationLoader.applicationContext.getContentResolver().openFileDescriptor(uri, "r");
+            input = new FileInputStream(parcelFD.getFileDescriptor());
+            if (input.getChannel().size() > 12) {
+                byte[] header = new byte[12];
+                input.read(header, 0, 12);
+                String str = new String(header);
+                if (str != null) {
+                    str = str.toLowerCase();
+                    if (str.startsWith("riff") && str.endsWith("webp")){
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        } finally {
+            try {
+                if (parcelFD != null) {
+                    parcelFD.close();
+                }
+            } catch (Exception e2) {
+                FileLog.e("tmessages", e2);
+            }
+            try {
+                if (input != null) {
+                    input.close();
+                }
+            } catch (Exception e2) {
+                FileLog.e("tmessages", e2);
+            }
+        }
+        return false;
+    }
+
     public static boolean isGif(Uri uri) {
         ParcelFileDescriptor parcelFD = null;
         FileInputStream input = null;
@@ -1828,8 +1949,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         new Thread(new Runnable() {
             @Override
             public void run() {
-                final ArrayList<AlbumEntry> albumsSorted = new ArrayList<AlbumEntry>();
-                HashMap<Integer, AlbumEntry> albums = new HashMap<Integer, AlbumEntry>();
+                final ArrayList<AlbumEntry> albumsSorted = new ArrayList<>();
+                HashMap<Integer, AlbumEntry> albums = new HashMap<>();
                 AlbumEntry allPhotosAlbum = null;
                 String cameraFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath() + "/" + "Camera/";
                 Integer cameraAlbumId = null;
@@ -2177,9 +2298,14 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             }
         }
 
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("videoconvert", Activity.MODE_PRIVATE);
+        boolean isPreviousOk = preferences.getBoolean("isPreviousOk", true);
+        preferences.edit().putBoolean("isPreviousOk", false).commit();
+
         File inputFile = new File(videoPath);
-        if (!inputFile.canRead()) {
+        if (!inputFile.canRead() || !isPreviousOk) {
             didWriteData(messageObject, cacheFile, true, true);
+            preferences.edit().putBoolean("isPreviousOk", true).commit();
             return false;
         }
 
@@ -2557,9 +2683,11 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 FileLog.e("tmessages", "time = " + (System.currentTimeMillis() - time));
             }
         } else {
+            preferences.edit().putBoolean("isPreviousOk", true).commit();
             didWriteData(messageObject, cacheFile, true, true);
             return false;
         }
+        preferences.edit().putBoolean("isPreviousOk", true).commit();
         didWriteData(messageObject, cacheFile, true, error);
         return true;
     }

@@ -15,6 +15,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -58,7 +59,7 @@ public class Utilities {
     public static Pattern pattern = Pattern.compile("[0-9]+");
     public static SecureRandom random = new SecureRandom();
 
-    public static ArrayList<String> goodPrimes = new ArrayList<String>();
+    public static ArrayList<String> goodPrimes = new ArrayList<>();
 
     public static class TPFactorizedValue {
         public long p, q;
@@ -108,6 +109,8 @@ public class Utilities {
     public native static long doPQNative(long _what);
     public native static void loadBitmap(String path, Bitmap bitmap, int scale, int width, int height, int stride);
     public native static void blurBitmap(Object bitmap, int radius);
+    public native static Bitmap loadWebpImage(ByteBuffer buffer, int len, BitmapFactory.Options options);
+    public native static Bitmap loadBpgImage(ByteBuffer buffer, int len, BitmapFactory.Options options);
     public native static int convertVideoFrame(ByteBuffer src, ByteBuffer dest, int destFormat, int width, int height, int padding, int swap);
     private native static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, int offset, int length);
 
@@ -314,6 +317,17 @@ public class Utilities {
 
     public static byte[] computeSHA1(byte[] convertme) {
         return computeSHA1(convertme, 0, convertme.length);
+    }
+
+    public static byte[] computeSHA256(byte[] convertme, int offset, int len) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            md.update(convertme, offset, len);
+            return md.digest();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return null;
     }
 
     public static byte[] encryptWithRSA(BigInteger[] key, byte[] data) {
@@ -534,12 +548,16 @@ public class Utilities {
                     final String type = split[0];
 
                     Uri contentUri = null;
-                    if ("image".equals(type)) {
-                        contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-                    } else if ("video".equals(type)) {
-                        contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
-                    } else if ("audio".equals(type)) {
-                        contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+                    switch (type) {
+                        case "image":
+                            contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+                            break;
+                        case "video":
+                            contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+                            break;
+                        case "audio":
+                            contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+                            break;
                     }
 
                     final String selection = "_id=?";

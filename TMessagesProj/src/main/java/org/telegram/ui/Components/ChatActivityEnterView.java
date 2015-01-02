@@ -12,6 +12,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Rect;
+import android.media.AudioManager;
 import android.os.Build;
 import android.os.PowerManager;
 import android.text.Editable;
@@ -58,8 +59,10 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
     public static interface ChatActivityEnterViewDelegate {
         public abstract void onMessageSend();
         public abstract void needSendTyping();
+        public abstract void onTextChanged(CharSequence text);
         public abstract void onAttachButtonHidden();
         public abstract void onAttachButtonShow();
+        public abstract void onWindowSizeChanged(int size);
     }
 
     private EditText messsageEditText;
@@ -104,6 +107,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioDidSent);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.hideEmojiKeyboard);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioRouteChanged);
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         sendByEnter = preferences.getBoolean("send_by_enter", false);
     }
@@ -117,6 +121,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioDidSent);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.emojiDidLoaded);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.hideEmojiKeyboard);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioRouteChanged);
         if (mWakeLock != null) {
             try {
                 mWakeLock.release();
@@ -284,6 +289,10 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
                 String message = getTrimmedString(charSequence.toString());
                 checkSendButton(true);
+
+                if (delegate != null) {
+                    delegate.onTextChanged(charSequence);
+                }
 
                 if (message.length() != 0 && lastTypingTimeSend < System.currentTimeMillis() - 5000 && !ignoreTextChange) {
                     int currentTime = ConnectionsManager.getInstance().getCurrentTime();
@@ -677,6 +686,9 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 if (sizeNotifierRelativeLayout != null) {
                     sizeNotifierRelativeLayout.setPadding(0, 0, 0, currentHeight);
                     emojiButton.setImageResource(R.drawable.ic_msg_panel_hide);
+                    if (delegate != null) {
+                        delegate.onWindowSizeChanged(sizeNotifierRelativeLayout.getHeight() - sizeNotifierRelativeLayout.getPaddingBottom());
+                    }
                 }
                 return;
             }
@@ -694,6 +706,9 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 public void run() {
                     if (sizeNotifierRelativeLayout != null) {
                         sizeNotifierRelativeLayout.setPadding(0, 0, 0, 0);
+                        if (delegate != null) {
+                            delegate.onWindowSizeChanged(sizeNotifierRelativeLayout.getHeight() - sizeNotifierRelativeLayout.getPaddingBottom());
+                        }
                     }
                 }
             });
@@ -776,8 +791,8 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         attachButton.addView(view);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) view.getLayoutParams();
         layoutParams.gravity = Gravity.CENTER;
-        layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.width = AndroidUtilities.dp(48);
+        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
         view.setLayoutParams(layoutParams);
     }
 
@@ -821,6 +836,9 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                             if (sizeNotifierRelativeLayout != null) {
                                 sizeNotifierRelativeLayout.setPadding(0, 0, 0, layoutParams.height);
                                 sizeNotifierRelativeLayout.requestLayout();
+                                if (delegate != null) {
+                                    delegate.onWindowSizeChanged(sizeNotifierRelativeLayout.getHeight() - sizeNotifierRelativeLayout.getPaddingBottom());
+                                }
                             }
                         }
                     });
@@ -834,6 +852,9 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             showEmojiPopup(false);
         } else if (!keyboardVisible && keyboardVisible != oldValue && emojiPopup != null && emojiPopup.isShowing()) {
             showEmojiPopup(false);
+        }
+        if (delegate != null) {
+            delegate.onWindowSizeChanged(sizeNotifierRelativeLayout.getHeight() - sizeNotifierRelativeLayout.getPaddingBottom());
         }
     }
 
@@ -871,6 +892,11 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             }
         } else if (id == NotificationCenter.hideEmojiKeyboard) {
             hideEmojiPopup();
+        } else if (id == NotificationCenter.audioRouteChanged) {
+            if (parentActivity != null) {
+                boolean frontSpeaker = (Boolean) args[0];
+                parentActivity.setVolumeControlStream(frontSpeaker ? AudioManager.STREAM_VOICE_CALL : AudioManager.USE_DEFAULT_STREAM_TYPE);
+            }
         }
     }
 }

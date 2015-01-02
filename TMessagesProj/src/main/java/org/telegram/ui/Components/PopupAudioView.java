@@ -18,6 +18,7 @@ import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.android.ImageLoader;
 import org.telegram.android.MediaController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.R;
@@ -304,7 +305,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
                 progressView.setProgress(0);
             } else {
                 buttonState = 3;
-                Float progress = FileLoader.getInstance().getFileProgress(fileName);
+                Float progress = ImageLoader.getInstance().getFileProgress(fileName);
                 if (progress != null) {
                     progressView.setProgress(progress);
                 } else {

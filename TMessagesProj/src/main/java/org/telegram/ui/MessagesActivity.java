@@ -110,6 +110,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         }
         if (!dialogsLoaded) {
             MessagesController.getInstance().loadDialogs(0, 0, 100, true);
+            ContactsController.getInstance().checkInviteText();
             dialogsLoaded = true;
         }
         return true;
@@ -132,7 +133,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
             ActionBarMenu menu = actionBar.createMenu();
-            menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+            ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
                 @Override
                 public void onSearchExpand() {
                     searching = true;
@@ -197,6 +198,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     }
                 }
             });
+            item.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
             if (onlySelect) {
                 actionBar.setBackButtonImage(R.drawable.ic_ab_back);
                 actionBar.setTitle(LocaleController.getString("SelectChat", R.string.SelectChat));
@@ -317,7 +319,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                         if (obj instanceof TLRPC.User) {
                             dialog_id = ((TLRPC.User) obj).id;
                             if (dialogsSearchAdapter.isGlobalSearch(i)) {
-                                ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+                                ArrayList<TLRPC.User> users = new ArrayList<>();
                                 users.add((TLRPC.User)obj);
                                 MessagesController.getInstance().putUsers(users, false);
                                 MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);

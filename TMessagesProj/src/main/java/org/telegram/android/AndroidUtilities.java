@@ -50,7 +50,7 @@ import java.util.Hashtable;
 
 public class AndroidUtilities {
 
-    private static final Hashtable<String, Typeface> typefaceCache = new Hashtable<String, Typeface>();
+    private static final Hashtable<String, Typeface> typefaceCache = new Hashtable<>();
     private static int prevOrientation = -10;
     private static boolean waitingForSms = false;
     private static final Object smsLock = new Object();
@@ -187,7 +187,13 @@ public class AndroidUtilities {
     }
 
     public static File getCacheDir() {
-        if (Environment.getExternalStorageState() == null || Environment.getExternalStorageState().startsWith(Environment.MEDIA_MOUNTED)) {
+        String state = null;
+        try {
+            state = Environment.getExternalStorageState();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        if (state == null || state.startsWith(Environment.MEDIA_MOUNTED)) {
             try {
                 File file = ApplicationLoader.applicationContext.getExternalCacheDir();
                 if (file != null) {
@@ -510,7 +516,7 @@ public class AndroidUtilities {
 
     public static Spannable replaceBold(String str) {
         int start;
-        ArrayList<Integer> bolds = new ArrayList<Integer>();
+        ArrayList<Integer> bolds = new ArrayList<>();
         while ((start = str.indexOf("<b>")) != -1) {
             int end = str.indexOf("</b>") - 3;
             str = str.replaceFirst("<b>", "").replaceFirst("</b>", "");

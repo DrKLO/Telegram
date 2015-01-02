@@ -39,7 +39,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Adapters.BaseSectionsAdapter;
 import org.telegram.ui.Adapters.ContactsAdapter;
 import org.telegram.ui.Adapters.ContactsSearchAdapter;
@@ -141,7 +140,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             });
 
             ActionBarMenu menu = actionBar.createMenu();
-            menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+            ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
                 @Override
                 public void onSearchExpand() {
                     searching = true;
@@ -187,6 +186,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     searchListViewAdapter.searchDialogs(text);
                 }
             });
+            item.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
 
             searchListViewAdapter = new ContactsSearchAdapter(getParentActivity(), ignoreUsers, allowUsernameSearch);
             listViewAdapter = new ContactsAdapter(getParentActivity(), onlyUsers, needPhonebook, ignoreUsers);
@@ -252,11 +252,11 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                     if (searching && searchWas) {
                         TLRPC.User user = searchListViewAdapter.getItem(i);
-                        if (user == null || user.id == UserConfig.getClientUserId()) {
+                        if (user == null) {
                             return;
                         }
                         if (searchListViewAdapter.isGlobalSearch(i)) {
-                            ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+                            ArrayList<TLRPC.User> users = new ArrayList<>();
                             users.add(user);
                             MessagesController.getInstance().putUsers(users, false);
                             MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);
@@ -314,9 +314,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
                             if (item instanceof TLRPC.User) {
                                 TLRPC.User user = (TLRPC.User) item;
-                                if (user.id == UserConfig.getClientUserId()) {
-                                    return;
-                                }
                                 if (returnAsResult) {
                                     if (ignoreUsers != null && ignoreUsers.containsKey(user.id)) {
                                         return;

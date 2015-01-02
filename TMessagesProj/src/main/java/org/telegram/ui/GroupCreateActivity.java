@@ -99,7 +99,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private GroupCreateActivityDelegate delegate;
 
     private int beforeChangeIndex;
-    private int maxCount = 200;
+    private int maxCount = 199;
     private boolean ignoreChange = false;
     private boolean isBroadcast = false;
     private boolean isAlwaysShare = false;
@@ -107,8 +107,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private boolean searchWas;
     private boolean searching;
     private CharSequence changeString;
-    private HashMap<Integer, XImageSpan> selectedContacts = new HashMap<Integer, XImageSpan>();
-    private ArrayList<XImageSpan> allSpans = new ArrayList<XImageSpan>();
+    private HashMap<Integer, XImageSpan> selectedContacts = new HashMap<>();
+    private ArrayList<XImageSpan> allSpans = new ArrayList<>();
 
     private final static int done_button = 1;
 
@@ -121,7 +121,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         isBroadcast = args.getBoolean("broadcast", false);
         isAlwaysShare = args.getBoolean("isAlwaysShare", false);
         isNeverShare = args.getBoolean("isNeverShare", false);
-        maxCount = !isBroadcast ? MessagesController.getInstance().maxGroupCount - 1 : MessagesController.getInstance().maxBroadcastCount;
+        maxCount = !isBroadcast ? (MessagesController.getInstance().maxGroupCount - 1) : MessagesController.getInstance().maxBroadcastCount;
     }
 
     @Override
@@ -166,7 +166,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         if (selectedContacts.isEmpty()) {
                             return;
                         }
-                        ArrayList<Integer> result = new ArrayList<Integer>();
+                        ArrayList<Integer> result = new ArrayList<>();
                         result.addAll(selectedContacts.keySet());
                         if (isAlwaysShare || isNeverShare) {
                             if (delegate != null) {

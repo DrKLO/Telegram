@@ -112,7 +112,7 @@ public class UserCell extends FrameLayout {
         layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL;
         imageView.setLayoutParams(layoutParams);
 
-        checkBox = new CheckBox(context);
+        checkBox = new CheckBox(context, R.drawable.round_check2);
         checkBox.setVisibility(GONE);
         addView(checkBox);
         layoutParams = (LayoutParams) checkBox.getLayoutParams();

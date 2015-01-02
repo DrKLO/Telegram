@@ -34,7 +34,7 @@
     <string name="Yesterday">gestern</string>
     <string name="NoResult">Keine Ergebnisse</string>
     <string name="NoChats">Noch keine Chats…</string>
-    <string name="NoChatsHelp">Tippe rechts oben für deine erste\nChatnachricht, oder auf den Menüknopf\num die restlichen Optionen zu öffnen.</string>
+    <string name="NoChatsHelp">Tippe unten auf den Sift für deine erste\nChatnachricht oder auf den Menüknopf\num die restlichen Optionen zu öffnen.</string>
     <string name="WaitingForNetwork">Warte auf Netzwerk...</string>
     <string name="Connecting">Verbinde…</string>
     <string name="Updating">Aktualisiere…</string>
@@ -52,6 +52,7 @@
     <string name="PhotoTip">Tippen und Halten</string>
     <string name="CompatibilityChat">%1$s benutzt eine ältere Version von Telegram, sodass Fotos in Geheimen Chats im Kompatibilitätsmodus angezeigt werden.\n\nSobald %2$s Telegram aktualisiert, werden Fotos mit Timern von 1 Minute und kürzer per \"Tippen und Halten\" angezeigt. Du wirst benachrichtigt, sobald dein Chatpartner ein Bildschirmfoto macht.</string>
     <string name="SearchMessages">NACHRICHTEN</string>
+    <string name="Search">Suche</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Neue Broadcast Liste</string>
     <string name="EnterListName">Listenname</string>
@@ -106,7 +107,8 @@
     <string name="SaveToDownloads">In Downloads speichern</string>
     <string name="ApplyLocalizationFile">Sprachdatei benutzen</string>
     <string name="UnsupportedAttachment">Nicht unterstützte Datei</string>
-    <string name="SetTimer">Wähle einen Selbstzerstörungs-Timer</string>
+    <string name="SetTimer">Selbstzerstörungs-Timer setzen</string>
+    <string name="ServiceNotifications">Servicemeldungen</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s hat den Selbstzerstörungs-Timer auf %2$s gesetzt</string>
     <string name="MessageLifetimeChangedOutgoing">Du hast den Selbstzerstörungs-Timer auf %1$s gesetzt</string>
@@ -121,6 +123,7 @@
     <string name="NotificationMessageMap">%1$s hat dir einen Standort gesendet</string>
     <string name="NotificationMessageDocument">%1$s hat dir eine Datei gesendet</string>
     <string name="NotificationMessageAudio">%1$s hat dir eine Audio-Datei gesendet</string>
+    <string name="NotificationMessageSticker">%1$s hat dir einen Sticker gesendet</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s hat eine Nachricht an die Gruppe %2$s gesendet</string>
     <string name="NotificationMessageGroupPhoto">%1$s hat ein Foto an die Gruppe %2$s gesendet</string>
@@ -129,6 +132,7 @@
     <string name="NotificationMessageGroupMap">%1$s hat einen Standort an die Gruppe %2$s gesendet</string>
     <string name="NotificationMessageGroupDocument">%1$s hat eine Datei an die Gruppe %2$s gesendet</string>
     <string name="NotificationMessageGroupAudio">%1$s hat eine Audio-Datei an die Gruppe %2$s gesendet</string>
+    <string name="NotificationMessageGroupSticker">%1$s hat einen Sticker an die Gruppe %2$s gesendet</string>
     <string name="NotificationInvitedToGroup">%1$s hat dich in die Gruppe %2$s eingeladen</string>
     <string name="NotificationEditedGroupName">%1$s hat den Namen der Gruppe %2$s geändert</string>
     <string name="NotificationEditedGroupPhoto">%1$s hat das Bild der Gruppe %2$s geändert</string>
@@ -146,7 +150,7 @@
     <!--contacts view-->
     <string name="SelectContact">Kontakt auswählen</string>
     <string name="NoContacts">Noch keine Kontakte</string>
-    <string name="InviteText">Hey, lass uns zu Telegram wechseln: http://telegram.org/dl2</string>
+    <string name="InviteText">Hey, komm auch zu Telegram: https://telegram.org/dl</string>
     <string name="TodayAt">heute um</string>
     <string name="YesterdayAt">gestern um</string>
     <string name="Online">online</string>
@@ -155,8 +159,8 @@
     <string name="InviteFriends">Freunde einladen</string>
     <string name="GlobalSearch">GLOBALE SUCHE</string>
     <string name="Lately">zuletzt kürzlich gesehen</string>
-    <string name="WithinAWeek">diese Woche gesehen</string>
-    <string name="WithinAMonth">diesen Monat gesehen</string>
+    <string name="WithinAWeek">innerhalb einer Woche</string>
+    <string name="WithinAMonth">innerhalb eines Monats</string>
     <string name="ALongTimeAgo">vor langer Zeit gesehen</string>
     <string name="NewMessageTitle">Neue Nachricht</string>
     <!--group create view-->
@@ -200,7 +204,7 @@
     <string name="UsernameInvalidShort">Ein Benutzername benötigt mindestens 5 Zeichen.</string>
     <string name="UsernameInvalidLong">Ein Benutzername darf maximal 32 Zeichen haben.</string>
     <string name="UsernameInvalidStartNumber">Benutzernamen dürfen leider nicht mit einer Zahl anfangen.</string>
-    <string name="UsernameHelp">Wähle einen Benutzernamen, wenn du von anderen bei <![CDATA[<b>]]>Telegram<![CDATA[</b>]]> gefunden werden willst — ohne, dass sie deine Nummer kennen müssen.<![CDATA[<br><br>]]>Erlaubt sind <![CDATA[<b>]]>a-z<![CDATA[<b>]]>, <![CDATA[<b>]]>0-9<![CDATA[<b>]]> und Unterstriche. Die Mindestlänge beträgt <![CDATA[<b>]]>5<![CDATA[<b>]]> Zeichen.</string>
+    <string name="UsernameHelp">Wähle einen für jeden sichtbaren Benutzernamen, wenn du von anderen bei <![CDATA[<b>]]>Telegram<![CDATA[</b>]]> gefunden werden willst — ohne, dass sie deine Nummer kennen müssen.<![CDATA[<br><br>]]>Erlaubt sind <![CDATA[<b>]]>a-z<![CDATA[<b>]]>, <![CDATA[<b>]]>0-9<![CDATA[<b>]]> und Unterstriche. Die Mindestlänge beträgt <![CDATA[<b>]]>5<![CDATA[<b>]]> Zeichen.</string>
     <string name="UsernameChecking">Prüfe Benutzername...</string>
     <string name="UsernameAvailable">%1$s ist verfügbar.</string>
     <string name="UsernameEmpty">Keiner</string>
@@ -304,6 +308,37 @@
     <string name="AllPhotos">Alle Fotos</string>
     <string name="NoPhotos">Noch keine Fotos</string>
     <string name="PleaseDownload">Medien bitte zuerst herunterladen</string>
+    <string name="NoRecentPhotos">Suchverlauf</string>
+    <string name="NoRecentGIFs">Suchverlauf</string>
+    <string name="SearchImages">BILDERSUCHE</string>
+    <string name="SearchGifs">GIF-SUCHE</string>
+    <string name="SearchImagesTitle">Suche Bilder</string>
+    <string name="SearchGifsTitle">Suche GIFs</string>
+    <string name="CropImage">Bild zuschneiden</string>
+    <!--password view-->
+    <string name="Password">Password</string>
+    <string name="ChangePassword">Change password</string>
+    <string name="OldPassword">Old password</string>
+    <string name="EnterOldPassword">Enter old password</string>
+    <string name="NewPassword">New password</string>
+    <string name="EnterNewPassword">Enter new password</string>
+    <string name="VerifyNewPassword">Verify new password</string>
+    <string name="EnterYourPassword">Enter your password</string>
+    <string name="PasswordHint">Hint</string>
+    <string name="EnterHint">Enter hint</string>
+    <string name="PasswordImportant">Important: you will lose all your chats, messages and media in the case of a forgotten password.</string>
+    <string name="PasswordDoNotMatch">Passwords do not match</string>
+    <string name="PasswordOldIncorrect">Incorrect old password</string>
+    <string name="PasswordIncorrect">Incorrect password</string>
+    <string name="PasswordNewIncorrect">Incorrect new password</string>
+    <string name="HintIncorrect">Hint shouldn\'t contain password</string>
+    <string name="EnterPassword">Enter password</string>
+    <string name="DeleteAccountImportant">Important: you will lose all your chats, messages and media.</string>
+    <string name="PasswordDeleteAccountTitle">Delete account</string>
+    <string name="PasswordDeleteAccount">Delete my account</string>
+    <string name="PasswordHintDetail">Hint: %1$s</string>
+    <string name="AreYouSureDeleteAccount">Are you sure you want to delete your account?</string>
+    <string name="AreYouSureDeleteAccount2">We deeply clarify you that you will lose all your chats, messages and media. Are you really sure?</string>
     <!--privacy settings-->
     <string name="PrivacySettings">Privatsphäre und Sicherheit</string>
     <string name="PrivacyTitle">Privatsphäre</string>
@@ -384,6 +419,7 @@
     <string name="AttachLocation">Standort</string>
     <string name="AttachContact">Kontakt</string>
     <string name="AttachDocument">Datei</string>
+    <string name="AttachSticker">Sticker</string>
     <string name="AttachAudio">Audio</string>
     <string name="FromYou">Du</string>
     <string name="ActionTakeScreenshootYou">Du hast ein Bildschirmfoto gemacht!</string>

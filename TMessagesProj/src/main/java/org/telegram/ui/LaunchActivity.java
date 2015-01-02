@@ -77,9 +77,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     private ArrayList<String> documentsOriginalPathsArray;
     private ArrayList<TLRPC.User> contactsToSend;
     private int currentConnectionState;
-    private static ArrayList<BaseFragment> mainFragmentsStack = new ArrayList<BaseFragment>();
-    private static ArrayList<BaseFragment> layerFragmentsStack = new ArrayList<BaseFragment>();
-    private static ArrayList<BaseFragment> rightFragmentsStack = new ArrayList<BaseFragment>();
+    private static ArrayList<BaseFragment> mainFragmentsStack = new ArrayList<>();
+    private static ArrayList<BaseFragment> layerFragmentsStack = new ArrayList<>();
+    private static ArrayList<BaseFragment> rightFragmentsStack = new ArrayList<>();
 
     private ActionBarLayout actionBarLayout;
     private ActionBarLayout layersActionBarLayout;
@@ -96,7 +96,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     protected void onCreate(Bundle savedInstanceState) {
         ApplicationLoader.postInitApplication();
 
-        if (!UserConfig.isClientActivated()) {
+        if (!UserConfig.isClientActivated() && !UserConfig.isWaitingForPasswordEnter()) {
             Intent intent = getIntent();
             if (intent != null && intent.getAction() != null && (Intent.ACTION_SEND.equals(intent.getAction()) || intent.getAction().equals(Intent.ACTION_SEND_MULTIPLE))) {
                 super.onCreate(savedInstanceState);
@@ -308,14 +308,20 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.mainUserInfoChanged);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeOtherAppActivities);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.didUpdatedConnectionState);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.needPasswordEnter);
 
         if (actionBarLayout.fragmentsStack.isEmpty()) {
-            if (!UserConfig.isClientActivated()) {
+            if (!UserConfig.isClientActivated() && !UserConfig.isWaitingForPasswordEnter()) {
                 actionBarLayout.addFragmentToStack(new LoginActivity());
                 drawerLayoutContainer.setAllowOpenDrawer(false);
             } else {
-                actionBarLayout.addFragmentToStack(new MessagesActivity(null));
-                drawerLayoutContainer.setAllowOpenDrawer(true);
+                if (UserConfig.isWaitingForPasswordEnter()) {
+                    actionBarLayout.addFragmentToStack(new AccountPasswordActivity(1));
+                    drawerLayoutContainer.setAllowOpenDrawer(false);
+                } else {
+                    actionBarLayout.addFragmentToStack(new MessagesActivity(null));
+                    drawerLayoutContainer.setAllowOpenDrawer(true);
+                }
             }
 
             try {
@@ -323,35 +329,43 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     String fragmentName = savedInstanceState.getString("fragment");
                     if (fragmentName != null) {
                         Bundle args = savedInstanceState.getBundle("args");
-                        if (fragmentName.equals("chat")) {
-                            if (args != null) {
-                                ChatActivity chat = new ChatActivity(args);
-                                if (actionBarLayout.addFragmentToStack(chat)) {
-                                    chat.restoreSelfArgs(savedInstanceState);
+                        switch (fragmentName) {
+                            case "chat":
+                                if (args != null) {
+                                    ChatActivity chat = new ChatActivity(args);
+                                    if (actionBarLayout.addFragmentToStack(chat)) {
+                                        chat.restoreSelfArgs(savedInstanceState);
+                                    }
                                 }
+                                break;
+                            case "settings": {
+                                SettingsActivity settings = new SettingsActivity();
+                                actionBarLayout.addFragmentToStack(settings);
+                                settings.restoreSelfArgs(savedInstanceState);
+                                break;
                             }
-                        } else if (fragmentName.equals("settings")) {
-                            SettingsActivity settings = new SettingsActivity();
-                            actionBarLayout.addFragmentToStack(settings);
-                            settings.restoreSelfArgs(savedInstanceState);
-                        } else if (fragmentName.equals("group")) {
-                            if (args != null) {
-                                GroupCreateFinalActivity group = new GroupCreateFinalActivity(args);
-                                if (actionBarLayout.addFragmentToStack(group)) {
-                                    group.restoreSelfArgs(savedInstanceState);
+                            case "group":
+                                if (args != null) {
+                                    GroupCreateFinalActivity group = new GroupCreateFinalActivity(args);
+                                    if (actionBarLayout.addFragmentToStack(group)) {
+                                        group.restoreSelfArgs(savedInstanceState);
+                                    }
                                 }
-                            }
-                        } else if (fragmentName.equals("chat_profile")) {
-                            if (args != null) {
-                                ProfileActivity profile = new ProfileActivity(args);
-                                if (actionBarLayout.addFragmentToStack(profile)) {
-                                    profile.restoreSelfArgs(savedInstanceState);
+                                break;
+                            case "chat_profile":
+                                if (args != null) {
+                                    ProfileActivity profile = new ProfileActivity(args);
+                                    if (actionBarLayout.addFragmentToStack(profile)) {
+                                        profile.restoreSelfArgs(savedInstanceState);
+                                    }
                                 }
+                                break;
+                            case "wallpapers": {
+                                WallpapersActivity settings = new WallpapersActivity();
+                                actionBarLayout.addFragmentToStack(settings);
+                                settings.restoreSelfArgs(savedInstanceState);
+                                break;
                             }
-                        } else if (fragmentName.equals("wallpapers")) {
-                            WallpapersActivity settings = new WallpapersActivity();
-                            actionBarLayout.addFragmentToStack(settings);
-                            settings.restoreSelfArgs(savedInstanceState);
                         }
                     }
                 }
@@ -365,7 +379,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             } else {
                 allowOpen = actionBarLayout.fragmentsStack.size() <= 1;
             }
-            if (actionBarLayout.fragmentsStack.size() == 1 && actionBarLayout.fragmentsStack.get(0) instanceof LoginActivity) {
+            if (actionBarLayout.fragmentsStack.size() == 1 && (actionBarLayout.fragmentsStack.get(0) instanceof LoginActivity || actionBarLayout.fragmentsStack.get(0) instanceof AccountPasswordActivity)) {
                 allowOpen = false;
             }
             drawerLayoutContainer.setAllowOpenDrawer(allowOpen);
@@ -393,13 +407,16 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         documentsUrisArray = null;
         contactsToSend = null;
 
-        if (UserConfig.isClientActivated() && (intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0) {
+        if (UserConfig.isClientActivated() && !UserConfig.isWaitingForPasswordEnter() && (intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0) {
             if (intent != null && intent.getAction() != null && !restore) {
                 if (Intent.ACTION_SEND.equals(intent.getAction())) {
                     boolean error = false;
                     String type = intent.getType();
-                    if (type != null && type.equals("text/plain") && intent.getStringExtra(Intent.EXTRA_TEXT) != null) {
+                    if (type != null && (type.equals("text/plain") || type.equals("message/rfc822")) && (intent.getStringExtra(Intent.EXTRA_TEXT) != null || intent.getCharSequenceExtra(Intent.EXTRA_TEXT) != null)) {
                         String text = intent.getStringExtra(Intent.EXTRA_TEXT);
+                        if (text == null) {
+                            text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT).toString();
+                        }
                         String subject = intent.getStringExtra(Intent.EXTRA_SUBJECT);
 
                         if (text != null && text.length() != 0) {
@@ -420,7 +437,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                 String name = null;
                                 String nameEncoding = null;
                                 String nameCharset = null;
-                                ArrayList<String> phones = new ArrayList<String>();
+                                ArrayList<String> phones = new ArrayList<>();
                                 BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
                                 String line = null;
                                 while ((line = bufferedReader.readLine()) != null) {
@@ -467,7 +484,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                     }
                                 }
                                 if (name != null && !phones.isEmpty()) {
-                                    contactsToSend = new ArrayList<TLRPC.User>();
+                                    contactsToSend = new ArrayList<>();
                                     for (String phone : phones) {
                                         TLRPC.User user = new TLRPC.TL_userContact();
                                         user.phone = phone;
@@ -486,43 +503,44 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         }
                     } else {
                         Parcelable parcelable = intent.getParcelableExtra(Intent.EXTRA_STREAM);
-                        if (parcelable == null) {
-                            return;
-                        }
-                        String path = null;
-                        if (!(parcelable instanceof Uri)) {
-                            parcelable = Uri.parse(parcelable.toString());
-                        }
-                        Uri uri = (Uri) parcelable;
-                        if (uri != null && type != null && type.startsWith("image/")) {
-                            String tempPath = Utilities.getPath(uri);
-                            if (photoPathsArray == null) {
-                                photoPathsArray = new ArrayList<Uri>();
+                        if (parcelable != null) {
+                            String path = null;
+                            if (!(parcelable instanceof Uri)) {
+                                parcelable = Uri.parse(parcelable.toString());
                             }
-                            photoPathsArray.add(uri);
-                        } else {
-                            path = Utilities.getPath(uri);
-                            if (path != null) {
-                                if (path.startsWith("file:")) {
-                                    path = path.replace("file://", "");
+                            Uri uri = (Uri) parcelable;
+                            if (uri != null && type != null && type.startsWith("image/")) {
+                                String tempPath = Utilities.getPath(uri);
+                                if (photoPathsArray == null) {
+                                    photoPathsArray = new ArrayList<>();
                                 }
-                                if (type != null && type.startsWith("video/")) {
-                                    videoPath = path;
-                                } else {
-                                    if (documentsPathsArray == null) {
-                                        documentsPathsArray = new ArrayList<String>();
-                                        documentsOriginalPathsArray = new ArrayList<String>();
-                                    }
-                                    documentsPathsArray.add(path);
-                                    documentsOriginalPathsArray.add(uri.toString());
-                                }
+                                photoPathsArray.add(uri);
                             } else {
-                                if (documentsUrisArray == null) {
-                                    documentsUrisArray = new ArrayList<Uri>();
+                                path = Utilities.getPath(uri);
+                                if (path != null) {
+                                    if (path.startsWith("file:")) {
+                                        path = path.replace("file://", "");
+                                    }
+                                    if (type != null && type.startsWith("video/")) {
+                                        videoPath = path;
+                                    } else {
+                                        if (documentsPathsArray == null) {
+                                            documentsPathsArray = new ArrayList<>();
+                                            documentsOriginalPathsArray = new ArrayList<>();
+                                        }
+                                        documentsPathsArray.add(path);
+                                        documentsOriginalPathsArray.add(uri.toString());
+                                    }
+                                } else {
+                                    if (documentsUrisArray == null) {
+                                        documentsUrisArray = new ArrayList<>();
+                                    }
+                                    documentsUrisArray.add(uri);
+                                    documentsMimeType = type;
                                 }
-                                documentsUrisArray.add(uri);
-                                documentsMimeType = type;
                             }
+                        } else {
+                            error = true;
                         }
                         if (error) {
                             Toast.makeText(this, "Unsupported content", Toast.LENGTH_SHORT).show();
@@ -541,7 +559,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                     }
                                     Uri uri = (Uri) parcelable;
                                     if (photoPathsArray == null) {
-                                        photoPathsArray = new ArrayList<Uri>();
+                                        photoPathsArray = new ArrayList<>();
                                     }
                                     photoPathsArray.add(uri);
                                 }
@@ -560,8 +578,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                             path = path.replace("file://", "");
                                         }
                                         if (documentsPathsArray == null) {
-                                            documentsPathsArray = new ArrayList<String>();
-                                            documentsOriginalPathsArray = new ArrayList<String>();
+                                            documentsPathsArray = new ArrayList<>();
+                                            documentsOriginalPathsArray = new ArrayList<>();
                                         }
                                         documentsPathsArray.add(path);
                                         documentsOriginalPathsArray.add(originalPath);
@@ -624,7 +642,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                                 if (error == null && actionBarLayout != null) {
                                                     TLRPC.User user = (TLRPC.User) response;
                                                     MessagesController.getInstance().putUser(user, false);
-                                                    ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+                                                    ArrayList<TLRPC.User> users = new ArrayList<>();
                                                     users.add(user);
                                                     MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);
                                                     Bundle args = new Bundle();
@@ -758,25 +776,35 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
         if (!pushOpened && !isNew) {
             if (AndroidUtilities.isTablet()) {
-                if (UserConfig.isClientActivated()) {
-                    if (actionBarLayout.fragmentsStack.isEmpty()) {
-                        actionBarLayout.addFragmentToStack(new MessagesActivity(null));
-                        drawerLayoutContainer.setAllowOpenDrawer(true);
-                    }
-                } else {
+                if (!UserConfig.isClientActivated() && !UserConfig.isWaitingForPasswordEnter()) {
                     if (layersActionBarLayout.fragmentsStack.isEmpty()) {
                         layersActionBarLayout.addFragmentToStack(new LoginActivity());
                         drawerLayoutContainer.setAllowOpenDrawer(false);
                     }
+                } else {
+                    if (actionBarLayout.fragmentsStack.isEmpty()) {
+                        if (UserConfig.isWaitingForPasswordEnter()) {
+                            layersActionBarLayout.addFragmentToStack(new AccountPasswordActivity(1));
+                            drawerLayoutContainer.setAllowOpenDrawer(false);
+                        } else {
+                            actionBarLayout.addFragmentToStack(new MessagesActivity(null));
+                            drawerLayoutContainer.setAllowOpenDrawer(true);
+                        }
+                    }
                 }
             } else {
                 if (actionBarLayout.fragmentsStack.isEmpty()) {
-                    if (!UserConfig.isClientActivated()) {
+                    if (!UserConfig.isClientActivated() && !UserConfig.isWaitingForPasswordEnter()) {
                         actionBarLayout.addFragmentToStack(new LoginActivity());
                         drawerLayoutContainer.setAllowOpenDrawer(false);
                     } else {
-                        actionBarLayout.addFragmentToStack(new MessagesActivity(null));
-                        drawerLayoutContainer.setAllowOpenDrawer(true);
+                        if (UserConfig.isWaitingForPasswordEnter()) {
+                            actionBarLayout.addFragmentToStack(new AccountPasswordActivity(1));
+                            drawerLayoutContainer.setAllowOpenDrawer(false);
+                        } else {
+                            actionBarLayout.addFragmentToStack(new MessagesActivity(null));
+                            drawerLayoutContainer.setAllowOpenDrawer(true);
+                        }
                     }
                 }
             }
@@ -878,6 +906,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.mainUserInfoChanged);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeOtherAppActivities);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didUpdatedConnectionState);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.needPasswordEnter);
     }
 
     public void presentFragment(BaseFragment fragment) {
@@ -1073,6 +1102,28 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
         } else if (id == NotificationCenter.mainUserInfoChanged) {
             drawerLayoutAdapter.notifyDataSetChanged();
+        } else if (id == NotificationCenter.needPasswordEnter) {
+            if (AndroidUtilities.isTablet()) {
+                for (int a = 0; a < layersActionBarLayout.fragmentsStack.size() - 1; a++) {
+                    layersActionBarLayout.removeFragmentFromStack(layersActionBarLayout.fragmentsStack.get(0));
+                    a--;
+                }
+                for (int a = 0; a < actionBarLayout.fragmentsStack.size() - 1; a++) {
+                    actionBarLayout.removeFragmentFromStack(actionBarLayout.fragmentsStack.get(0));
+                    a--;
+                }
+                rightActionBarLayout.closeLastFragment(false);
+                actionBarLayout.closeLastFragment(false);
+                layersActionBarLayout.presentFragment(new AccountPasswordActivity(1), false, true, true);
+                drawerLayoutContainer.setAllowOpenDrawer(false);
+            } else {
+                for (int a = 0; a < actionBarLayout.fragmentsStack.size() - 1; a++) {
+                    actionBarLayout.removeFragmentFromStack(actionBarLayout.fragmentsStack.get(0));
+                    a--;
+                }
+                actionBarLayout.presentFragment(new AccountPasswordActivity(1), true);
+                drawerLayoutContainer.setAllowOpenDrawer(false);
+            }
         }
     }
 
@@ -1222,7 +1273,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     public boolean needPresentFragment(BaseFragment fragment, boolean removeLast, boolean forceWithoutAnimation, ActionBarLayout layout) {
         if (AndroidUtilities.isTablet()) {
-            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity) && layersActionBarLayout.getVisibility() != View.VISIBLE);
+            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof AccountPasswordActivity) && !(fragment instanceof LoginActivity) && layersActionBarLayout.getVisibility() != View.VISIBLE);
             if (fragment instanceof MessagesActivity) {
                 MessagesActivity messagesActivity = (MessagesActivity)fragment;
                 if (messagesActivity.getDelegate() == null && layout != actionBarLayout) {
@@ -1287,7 +1338,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             } else if (layout != layersActionBarLayout) {
                 layersActionBarLayout.setVisibility(View.VISIBLE);
                 drawerLayoutContainer.setAllowOpenDrawer(false);
-                if (fragment instanceof LoginActivity) {
+                if (fragment instanceof LoginActivity || fragment instanceof AccountPasswordActivity) {
                     backgroundTablet.setVisibility(View.VISIBLE);
                     shadowTabletSide.setVisibility(View.GONE);
                     shadowTablet.setBackgroundColor(0x00000000);
@@ -1299,7 +1350,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
             return true;
         } else {
-            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity));
+            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity) && !(fragment instanceof AccountPasswordActivity));
             return true;
         }
     }
@@ -1307,7 +1358,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     public boolean needAddFragmentToStack(BaseFragment fragment, ActionBarLayout layout) {
         if (AndroidUtilities.isTablet()) {
-            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity) && layersActionBarLayout.getVisibility() != View.VISIBLE);
+            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity) && !(fragment instanceof AccountPasswordActivity) && layersActionBarLayout.getVisibility() != View.VISIBLE);
             if (fragment instanceof MessagesActivity) {
                 MessagesActivity messagesActivity = (MessagesActivity)fragment;
                 if (messagesActivity.getDelegate() == null && layout != actionBarLayout) {
@@ -1352,7 +1403,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             } else if (layout != layersActionBarLayout) {
                 layersActionBarLayout.setVisibility(View.VISIBLE);
                 drawerLayoutContainer.setAllowOpenDrawer(false);
-                if (fragment instanceof LoginActivity) {
+                if (fragment instanceof LoginActivity || fragment instanceof AccountPasswordActivity) {
                     backgroundTablet.setVisibility(View.VISIBLE);
                     shadowTabletSide.setVisibility(View.GONE);
                     shadowTablet.setBackgroundColor(0x00000000);
@@ -1364,7 +1415,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
             return true;
         } else {
-            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity));
+            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity) && !(fragment instanceof AccountPasswordActivity));
             return true;
         }
     }

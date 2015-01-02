@@ -13,6 +13,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -173,7 +174,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             NotificationCenter.getInstance().addObserver(this, NotificationCenter.chatInfoDidLoaded);
             NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeChats);
 
-            sortedUsers = new ArrayList<Integer>();
+            sortedUsers = new ArrayList<>();
             updateOnlineCount();
             if (chat_id > 0) {
                 MessagesController.getInstance().getMediaCount(-chat_id, classGuid, true);
@@ -283,7 +284,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
-                                ArrayList<TLRPC.User> arrayList = new ArrayList<TLRPC.User>();
+                                ArrayList<TLRPC.User> arrayList = new ArrayList<>();
                                 arrayList.add(user);
                                 ContactsController.getInstance().deleteContact(arrayList);
                             }
@@ -307,7 +308,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             }
                         });
                         if (info != null) {
-                            HashMap<Integer, TLRPC.User> users = new HashMap<Integer, TLRPC.User>();
+                            HashMap<Integer, TLRPC.User> users = new HashMap<>();
                             for (TLRPC.TL_chatParticipant p : info.participants) {
                                 users.put(p.user_id, null);
                             }
@@ -900,6 +901,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     @Override
+    public Bitmap getThumbForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+        return null;
+    }
+
+    @Override
     public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) { }
 
     @Override
@@ -939,49 +945,54 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             i++;
         }
 
-        Collections.sort(sortedUsers, new Comparator<Integer>() {
-            @Override
-            public int compare(Integer lhs, Integer rhs) {
-                TLRPC.User user1 = MessagesController.getInstance().getUser(info.participants.get(rhs).user_id);
-                TLRPC.User user2 = MessagesController.getInstance().getUser(info.participants.get(lhs).user_id);
-                int status1 = 0;
-                int status2 = 0;
-                if (user1 != null && user1.status != null) {
-                    if (user1.id == UserConfig.getClientUserId()) {
-                        status1 = ConnectionsManager.getInstance().getCurrentTime() + 50000;
-                    } else {
-                        status1 = user1.status.expires;
+        try {
+            Collections.sort(sortedUsers, new Comparator<Integer>() {
+                @Override
+                public int compare(Integer lhs, Integer rhs) {
+                    TLRPC.User user1 = MessagesController.getInstance().getUser(info.participants.get(rhs).user_id);
+                    TLRPC.User user2 = MessagesController.getInstance().getUser(info.participants.get(lhs).user_id);
+                    int status1 = 0;
+                    int status2 = 0;
+                    if (user1 != null && user1.status != null) {
+                        if (user1.id == UserConfig.getClientUserId()) {
+                            status1 = ConnectionsManager.getInstance().getCurrentTime() + 50000;
+                        } else {
+                            status1 = user1.status.expires;
+                        }
                     }
-                }
-                if (user2 != null && user2.status != null) {
-                    if (user2.id == UserConfig.getClientUserId()) {
-                        status2 = ConnectionsManager.getInstance().getCurrentTime() + 50000;
-                    } else {
-                        status2 = user2.status.expires;
+                    if (user2 != null && user2.status != null) {
+                        if (user2.id == UserConfig.getClientUserId()) {
+                            status2 = ConnectionsManager.getInstance().getCurrentTime() + 50000;
+                        } else {
+                            status2 = user2.status.expires;
+                        }
                     }
-                }
-                if (status1 > 0 && status2 > 0) {
-                    if (status1 > status2) {
-                        return 1;
-                    } else if (status1 < status2) {
+                    if (status1 > 0 && status2 > 0) {
+                        if (status1 > status2) {
+                            return 1;
+                        } else if (status1 < status2) {
+                            return -1;
+                        }
+                        return 0;
+                    } else if (status1 < 0 && status2 < 0) {
+                        if (status1 > status2) {
+                            return 1;
+                        } else if (status1 < status2) {
+                            return -1;
+                        }
+                        return 0;
+                    } else if (status1 < 0 && status2 > 0 || status1 == 0 && status2 != 0) {
                         return -1;
+                    } else if (status2 < 0 && status1 > 0 || status2 == 0 && status1 != 0) {
+                        return 1;
                     }
                     return 0;
-                } else if (status1 < 0 && status2 < 0) {
-                    if (status1 > status2) {
-                        return 1;
-                    } else if (status1 < status2) {
-                        return -1;
-                    }
-                    return 0;
-                } else if (status1 < 0 && status2 > 0 || status1 == 0 && status2 != 0) {
-                    return -1;
-                } else if (status2 < 0 && status1 > 0 || status2 == 0 && status1 != 0) {
-                    return 1;
                 }
-                return 0;
-            }
-        });
+            });
+        } catch (Exception e) {
+            FileLog.e("tmessages", e); //TODO find crash
+        }
+
 
         if (listView != null) {
             listView.invalidateViews();

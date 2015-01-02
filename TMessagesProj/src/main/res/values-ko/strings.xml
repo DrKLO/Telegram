@@ -52,6 +52,7 @@
     <string name="PhotoTip">꾹 눌러서 보기</string>
     <string name="CompatibilityChat">%1$s님의 텔레그램 버전이 낮아 비밀 사진을 호환성 모드로 표시합니다.\n\n%2$s님이 텔레그램을 업데이트하고 나면, 자동삭제 시간이 1분 이하인 사진은 \"탭하고 누르고 있어야 보임\" 상태가 되며, 상대방이 화면을 캡처할 때 마다 알림을 받습니다.</string>
     <string name="SearchMessages">메시지</string>
+    <string name="Search">검색</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">새 단체 메시지 리스트</string>
     <string name="EnterListName">리스트 이름을 입력하세요</string>
@@ -107,6 +108,7 @@
     <string name="ApplyLocalizationFile">언어 파일 적용</string>
     <string name="UnsupportedAttachment">지원하지 않는 형식입니다</string>
     <string name="SetTimer">자동삭제 타이머 설정</string>
+    <string name="ServiceNotifications">서비스 알림</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s님이 자동삭제를 %2$s 후로 설정했습니다</string>
     <string name="MessageLifetimeChangedOutgoing">자동삭제를 %1$s 후로 설정했습니다</string>
@@ -121,6 +123,7 @@
     <string name="NotificationMessageMap">%1$s님이 위치를 보냈습니다</string>
     <string name="NotificationMessageDocument">%1$s님이 문서를 보냈습니다</string>
     <string name="NotificationMessageAudio">%1$s님이 음성메시지를 보냈습니다</string>
+    <string name="NotificationMessageSticker">%1$s님이 스티커를 보냈습니다</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s님이 %2$s 그룹에 메시지를 보냈습니다</string>
     <string name="NotificationMessageGroupPhoto">%1$s님이 %2$s 그룹에 사진을 보냈습니다</string>
@@ -129,6 +132,7 @@
     <string name="NotificationMessageGroupMap">%1$s님이 %2$s 그룹에 위치를 보냈습니다</string>
     <string name="NotificationMessageGroupDocument">%1$s님이 %2$s 그룹에 문서를 보냈습니다</string>
     <string name="NotificationMessageGroupAudio">%1$s님이 %2$s 그룹에 음성메시지를 보냈습니다</string>
+    <string name="NotificationMessageGroupSticker">%1$s님이 %2$s 그룹에 스티커를 보냈습니다</string>
     <string name="NotificationInvitedToGroup">%1$s님이 %2$s 그룹에 초대했습니다</string>
     <string name="NotificationEditedGroupName">%1$s님이 그룹 이름을 %2$s 그룹으로 변경했습니다</string>
     <string name="NotificationEditedGroupPhoto">%1$s님이 %2$s 그룹 사진을 변경했습니다</string>
@@ -146,7 +150,7 @@
     <!--contacts view-->
     <string name="SelectContact">대화상대 선택</string>
     <string name="NoContacts">대화상대가 없습니다</string>
-    <string name="InviteText">텔레그램으로 초대합니다! http://telegram.org/dl2</string>
+    <string name="InviteText">Telegram을 사용해 보세요!: https://telegram.org/dl</string>
     <string name="TodayAt">오늘</string>
     <string name="YesterdayAt">어제</string>
     <string name="Online">온라인</string>
@@ -284,7 +288,7 @@
     <string name="PhoneNumberChange">번호 변경</string>
     <string name="ChangePhoneNewNumber">새 번호</string>
     <string name="ChangePhoneHelp">인증코드 메시지를 새 번호로 전송하겠습니다.</string>
-    <string name="ChangePhoneNumberOccupied">The number %1$s is already connected to a Telegram account. Please delete that account before migrating to the new number.</string>
+    <string name="ChangePhoneNumberOccupied">그 번호는 이미 텔레그램 계정에 연결되어 있습니다. 새 번호로 이동하기 전에 %1$s 계정에서 탈퇴해 주세요.</string>
     <string name="NotificationsOther">기타</string>
     <!--media view-->
     <string name="NoMedia">공유한 미디어가 없습니다</string>
@@ -304,6 +308,37 @@
     <string name="AllPhotos">모든 사진</string>
     <string name="NoPhotos">사진이 없습니다.</string>
     <string name="PleaseDownload">사진/동영상을 먼저 다운로드하세요</string>
+    <string name="NoRecentPhotos">최근 사진 없음</string>
+    <string name="NoRecentGIFs">최근에 검색한 GIF</string>
+    <string name="SearchImages">웹 검색</string>
+    <string name="SearchGifs">GIF 검색</string>
+    <string name="SearchImagesTitle">웹 검색</string>
+    <string name="SearchGifsTitle">GIF 검색</string>
+    <string name="CropImage">사진 자르기</string>
+    <!--password view-->
+    <string name="Password">Password</string>
+    <string name="ChangePassword">Change password</string>
+    <string name="OldPassword">Old password</string>
+    <string name="EnterOldPassword">Enter old password</string>
+    <string name="NewPassword">New password</string>
+    <string name="EnterNewPassword">Enter new password</string>
+    <string name="VerifyNewPassword">Verify new password</string>
+    <string name="EnterYourPassword">Enter your password</string>
+    <string name="PasswordHint">Hint</string>
+    <string name="EnterHint">Enter hint</string>
+    <string name="PasswordImportant">Important: you will lose all your chats, messages and media in the case of a forgotten password.</string>
+    <string name="PasswordDoNotMatch">Passwords do not match</string>
+    <string name="PasswordOldIncorrect">Incorrect old password</string>
+    <string name="PasswordIncorrect">Incorrect password</string>
+    <string name="PasswordNewIncorrect">Incorrect new password</string>
+    <string name="HintIncorrect">Hint shouldn\'t contain password</string>
+    <string name="EnterPassword">Enter password</string>
+    <string name="DeleteAccountImportant">Important: you will lose all your chats, messages and media.</string>
+    <string name="PasswordDeleteAccountTitle">Delete account</string>
+    <string name="PasswordDeleteAccount">Delete my account</string>
+    <string name="PasswordHintDetail">Hint: %1$s</string>
+    <string name="AreYouSureDeleteAccount">Are you sure you want to delete your account?</string>
+    <string name="AreYouSureDeleteAccount2">We deeply clarify you that you will lose all your chats, messages and media. Are you really sure?</string>
     <!--privacy settings-->
     <string name="PrivacySettings">개인정보 및 보안</string>
     <string name="PrivacyTitle">개인정보</string>
@@ -384,6 +419,7 @@
     <string name="AttachLocation">위치</string>
     <string name="AttachContact">연락처</string>
     <string name="AttachDocument">문서</string>
+    <string name="AttachSticker">스티커</string>
     <string name="AttachAudio">음성메시지</string>
     <string name="FromYou">나</string>
     <string name="ActionTakeScreenshootYou">화면을 캡처했습니다!</string>

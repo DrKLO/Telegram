@@ -46,13 +46,13 @@ public class NotificationsController {
 
     public static final String EXTRA_VOICE_REPLY = "extra_voice_reply";
 
-    private ArrayList<MessageObject> pushMessages = new ArrayList<MessageObject>();
-    private HashMap<Integer, MessageObject> pushMessagesDict = new HashMap<Integer, MessageObject>();
+    private ArrayList<MessageObject> pushMessages = new ArrayList<>();
+    private HashMap<Integer, MessageObject> pushMessagesDict = new HashMap<>();
     private NotificationManagerCompat notificationManager = null;
-    private HashMap<Long, Integer> pushDialogs = new HashMap<Long, Integer>();
-    private HashMap<Long, Integer> wearNoticationsIds = new HashMap<Long, Integer>();
+    private HashMap<Long, Integer> pushDialogs = new HashMap<>();
+    private HashMap<Long, Integer> wearNoticationsIds = new HashMap<>();
     private int wearNotificationId = 10000;
-    public ArrayList<MessageObject> popupMessages = new ArrayList<MessageObject>();
+    public ArrayList<MessageObject> popupMessages = new ArrayList<>();
     private long openned_dialog_id = 0;
     private int total_unread_count = 0;
     private int personal_count = 0;
@@ -160,7 +160,11 @@ public class NotificationsController {
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaGeo) {
                             msg = LocaleController.formatString("NotificationMessageMap", R.string.NotificationMessageMap, ContactsController.formatName(user.first_name, user.last_name));
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
-                            msg = LocaleController.formatString("NotificationMessageDocument", R.string.NotificationMessageDocument, ContactsController.formatName(user.first_name, user.last_name));
+                            if (messageObject.isSticker()) {
+                                msg = LocaleController.formatString("NotificationMessageSticker", R.string.NotificationMessageSticker, ContactsController.formatName(user.first_name, user.last_name));
+                            } else {
+                                msg = LocaleController.formatString("NotificationMessageDocument", R.string.NotificationMessageDocument, ContactsController.formatName(user.first_name, user.last_name));
+                            }
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaAudio) {
                             msg = LocaleController.formatString("NotificationMessageAudio", R.string.NotificationMessageAudio, ContactsController.formatName(user.first_name, user.last_name));
                         }
@@ -217,7 +221,11 @@ public class NotificationsController {
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaGeo) {
                             msg = LocaleController.formatString("NotificationMessageGroupMap", R.string.NotificationMessageGroupMap, ContactsController.formatName(user.first_name, user.last_name), chat.title);
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
-                            msg = LocaleController.formatString("NotificationMessageGroupDocument", R.string.NotificationMessageGroupDocument, ContactsController.formatName(user.first_name, user.last_name), chat.title);
+                            if (messageObject.isSticker()) {
+                                msg = LocaleController.formatString("NotificationMessageGroupSticker", R.string.NotificationMessageGroupSticker, ContactsController.formatName(user.first_name, user.last_name), chat.title);
+                            } else {
+                                msg = LocaleController.formatString("NotificationMessageGroupDocument", R.string.NotificationMessageGroupDocument, ContactsController.formatName(user.first_name, user.last_name), chat.title);
+                            }
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaAudio) {
                             msg = LocaleController.formatString("NotificationMessageGroupAudio", R.string.NotificationMessageGroupAudio, ContactsController.formatName(user.first_name, user.last_name), chat.title);
                         }
@@ -414,7 +422,8 @@ public class NotificationsController {
                     .setNumber(total_unread_count)
                     .setContentIntent(contentIntent)
                     .setGroup("messages")
-                    .setGroupSummary(true);
+                    .setGroupSummary(true)
+                    .setColor(0xff2ca5e0);
 
             if (priority == 0) {
                 mBuilder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
@@ -537,8 +546,8 @@ public class NotificationsController {
         if (Build.VERSION.SDK_INT < 19) {
             return;
         }
-        ArrayList<Long> sortedDialogs = new ArrayList<Long>();
-        HashMap<Long, ArrayList<MessageObject>> messagesByDialogs = new HashMap<Long, ArrayList<MessageObject>>();
+        ArrayList<Long> sortedDialogs = new ArrayList<>();
+        HashMap<Long, ArrayList<MessageObject>> messagesByDialogs = new HashMap<>();
         for (MessageObject messageObject : pushMessages) {
             long dialog_id = messageObject.getDialogId();
             if ((int)dialog_id == 0) {
@@ -547,14 +556,14 @@ public class NotificationsController {
 
             ArrayList<MessageObject> arrayList = messagesByDialogs.get(dialog_id);
             if (arrayList == null) {
-                arrayList = new ArrayList<MessageObject>();
+                arrayList = new ArrayList<>();
                 messagesByDialogs.put(dialog_id, arrayList);
                 sortedDialogs.add(0, dialog_id);
             }
             arrayList.add(messageObject);
         }
 
-        HashMap<Long, Integer> oldIds = new HashMap<Long, Integer>();
+        HashMap<Long, Integer> oldIds = new HashMap<>();
         oldIds.putAll(wearNoticationsIds);
         wearNoticationsIds.clear();
 
@@ -666,7 +675,7 @@ public class NotificationsController {
         try {
             final Intent i = new Intent("com.getpebble.action.SEND_NOTIFICATION");
 
-            final HashMap<String, String> data = new HashMap<String, String>();
+            final HashMap<String, String> data = new HashMap<>();
             data.put("title", LocaleController.getString("AppName", R.string.AppName));
             data.put("body", message);
             final JSONObject jsonData = new JSONObject(data);
@@ -742,7 +751,7 @@ public class NotificationsController {
         boolean added = false;
 
         int oldCount = popupMessages.size();
-        HashMap<Long, Boolean> settingsCache = new HashMap<Long, Boolean>();
+        HashMap<Long, Boolean> settingsCache = new HashMap<>();
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
         int popup = 0;
 
@@ -853,7 +862,7 @@ public class NotificationsController {
         total_unread_count = 0;
         personal_count = 0;
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
-        HashMap<Long, Boolean> settingsCache = new HashMap<Long, Boolean>();
+        HashMap<Long, Boolean> settingsCache = new HashMap<>();
 
         for (HashMap.Entry<Long, Integer> entry : dialogs.entrySet()) {
             long dialog_id = entry.getKey();

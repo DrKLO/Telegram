@@ -77,7 +77,7 @@ public class CountrySelectActivity extends BaseFragment {
             });
 
             ActionBarMenu menu = actionBar.createMenu();
-            menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+            ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
                 @Override
                 public void onSearchExpand() {
                     searching = true;
@@ -119,6 +119,7 @@ public class CountrySelectActivity extends BaseFragment {
                     }
                 }
             });
+            item.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
 
             searching = false;
             searchWas = false;
