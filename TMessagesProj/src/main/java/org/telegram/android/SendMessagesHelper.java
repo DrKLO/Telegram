@@ -1342,7 +1342,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     continue;
                 }
                 for (TLRPC.PhotoSize size2 : newMsg.media.photo.sizes) {
-                    if (size2.location.volume_id == Integer.MIN_VALUE && size.type.equals(size2.type) || size.w == size2.w && size.h == size2.h) {
+                    if (size2.location != null && size2.location.volume_id == Integer.MIN_VALUE && size.type.equals(size2.type) || size.w == size2.w && size.h == size2.h) {
                         String fileName = size2.location.volume_id + "_" + size2.location.local_id;
                         String fileName2 = size.location.volume_id + "_" + size.location.local_id;
                         if (fileName.equals(fileName2)) {
@@ -1371,7 +1371,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
 
             TLRPC.PhotoSize size2 = newMsg.media.video.thumb;
             TLRPC.PhotoSize size = sentMessage.media.video.thumb;
-            if (size2.location.volume_id == Integer.MIN_VALUE && size2.location != null && size.location != null && !(size instanceof TLRPC.TL_photoSizeEmpty) && !(size2 instanceof TLRPC.TL_photoSizeEmpty)) {
+            if (size2.location != null && size2.location.volume_id == Integer.MIN_VALUE && size.location != null && !(size instanceof TLRPC.TL_photoSizeEmpty) && !(size2 instanceof TLRPC.TL_photoSizeEmpty)) {
                 String fileName = size2.location.volume_id + "_" + size2.location.local_id;
                 String fileName2 = size.location.volume_id + "_" + size.location.local_id;
                 if (!fileName.equals(fileName2)) {
@@ -1402,7 +1402,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
 
             TLRPC.PhotoSize size2 = newMsg.media.document.thumb;
             TLRPC.PhotoSize size = sentMessage.media.document.thumb;
-            if (size2.location.volume_id == Integer.MIN_VALUE && size2.location != null && size.location != null && !(size instanceof TLRPC.TL_photoSizeEmpty) && !(size2 instanceof TLRPC.TL_photoSizeEmpty)) {
+            if (size2.location != null && size2.location.volume_id == Integer.MIN_VALUE && size.location != null && !(size instanceof TLRPC.TL_photoSizeEmpty) && !(size2 instanceof TLRPC.TL_photoSizeEmpty)) {
                 String fileName = size2.location.volume_id + "_" + size2.location.local_id;
                 String fileName2 = size.location.volume_id + "_" + size.location.local_id;
                 if (!fileName.equals(fileName2)) {
