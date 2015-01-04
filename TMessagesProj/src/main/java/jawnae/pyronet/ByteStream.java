@@ -18,38 +18,29 @@
 
 package jawnae.pyronet;
 
+import org.telegram.messenger.BuffersStorage;
+import org.telegram.messenger.ByteBufferDesc;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.List;
 
 public class ByteStream {
-    private final List<ByteBuffer> queue;
+    private final ArrayList<ByteBufferDesc> queue;
 
     public ByteStream() {
-        // the queue is expected to be relatively small, and iterated often.
-        // hence removing the first element will be fast, even when using an
-        // ArrayList
-        this.queue = new ArrayList<ByteBuffer>();
+        this.queue = new ArrayList<ByteBufferDesc>();
     }
 
-    /**
-     * Appends the ByteBuffer instance to the ByteStream. The bytes are not
-     * copied, so do not modify the contents of the ByteBuffer.
-     */
-
-    public void append(ByteBuffer buf) {
-        if (buf == null)
+    public void append(ByteBufferDesc buf) {
+        if (buf == null) {
             throw new NullPointerException();
+        }
         this.queue.add(buf);
     }
 
-    /**
-     * Returns whether there are any bytes pending in this stream
-     */
-
     public boolean hasData() {
         int size = this.queue.size();
-        for (ByteBuffer aQueue : this.queue) {
+        for (ByteBufferDesc aQueue : this.queue) {
             if (aQueue.hasRemaining()) {
                 return true;
             }
@@ -57,29 +48,13 @@ public class ByteStream {
         return false;
     }
 
-    public int getByteCount() {
-        int size = this.queue.size();
-
-        int sum = 0;
-        for (ByteBuffer aQueue : this.queue) {
-            sum += aQueue.remaining();
-        }
-        return sum;
-    }
-
-    /**
-     * Fills the specified buffer with as much bytes as possible. When N bytes
-     * are read, the buffer position will be increased by N
-     */
-
     public void get(ByteBuffer dst) {
         if (dst == null) {
             throw new NullPointerException();
         }
 
-        for (ByteBuffer data: this.queue) {
-            // data pos/lim must not be modified
-            data = data.slice();
+        for (ByteBufferDesc bufferDesc : this.queue) {
+            ByteBuffer data = bufferDesc.buffer.slice();
 
             if (data.remaining() > dst.remaining()) {
                 data.limit(dst.remaining());
@@ -95,48 +70,25 @@ public class ByteStream {
         }
     }
 
-    /**
-     * Discards the specified amount of bytes from the stream.
-     * 
-     * @throws PyroException
-     *             if it failed to discard the specified number of bytes
-     */
-
     public void discard(int count) {
         int original = count;
 
         while (count > 0) {
-            // peek at the first buffer
-            ByteBuffer data = this.queue.get(0);
+            ByteBufferDesc data = this.queue.get(0);
 
-            if (count < data.remaining()) {
-                // discarding less bytes than remaining in buffer
+            if (count < data.buffer.remaining()) {
                 data.position(data.position() + count);
                 count = 0;
                 break;
             }
 
-            // discard the first buffer
             this.queue.remove(0);
-            count -= data.remaining();
+            BuffersStorage.getInstance().reuseFreeBuffer(data);
+            count -= data.buffer.remaining();
         }
 
         if (count != 0) {
-            // apparantly we cannot discard the amount of bytes
-            // the user demanded, this is a bug in other code
-            throw new PyroException("discarded " + (original - count) + "/"
-                    + original + " bytes");
+            throw new PyroException("discarded " + (original - count) + "/" + original + " bytes");
         }
     }
-
-    public byte read() {
-        ByteBuffer data = this.queue.get(0);
-        byte result = data.get();
-        if (!data.hasRemaining()) {
-            // discard the first buffer
-            this.queue.remove(0);
-        }
-        return result;
-    }
-
 }

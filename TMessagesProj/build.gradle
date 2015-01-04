@@ -3,7 +3,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:1.0.0-rc4'
+        classpath 'com.android.tools.build:gradle:1.0.0'
     }
 }
 apply plugin: 'com.android.application'
@@ -20,13 +20,14 @@ dependencies {
     compile 'com.android.support:support-v4:21.0.2'
     compile 'com.android.support:appcompat-v7:21.0.2'
     compile 'com.google.android.gms:play-services:6.1.71'
-    compile 'net.hockeyapp.android:HockeySDK:3.0.1'
+    compile 'net.hockeyapp.android:HockeySDK:3.0.2'
+    compile 'com.googlecode.mp4parser:isoparser:1.0.+'
     compile project(':Aniways')
 }
 
 android {
     compileSdkVersion 21
-    buildToolsVersion '20'
+    buildToolsVersion '21.1.1'
 
     lintOptions {
         checkReleaseBuilds false
@@ -51,18 +52,21 @@ android {
     buildTypes {
         debug {
             debuggable true
+            jniDebuggable true
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
             signingConfig signingConfigs.debug
         }
         release {
             debuggable false
+            jniDebuggable false
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
             signingConfig signingConfigs.release
         }
         foss {
             debuggable false
+            jniDebuggable false
             signingConfig signingConfigs.release
         }
     }
@@ -72,24 +76,24 @@ android {
         jni.srcDirs = [] //disable automatic ndk-build call
     }
 
-    sourceSets {
-        debug {
-            manifest.srcFile 'config/debug/AndroidManifest.xml'
-        }
-        release {
-            manifest.srcFile 'config/release/AndroidManifest.xml'
-        }
-        foss {
-            manifest.srcFile 'config/foss/AndroidManifest.xml'
-        }
+    sourceSets.debug {
+        manifest.srcFile 'config/debug/AndroidManifest.xml'
+    }
+
+    sourceSets.release {
+        manifest.srcFile 'config/release/AndroidManifest.xml'
+    }
+
+    sourceSets.foss {
+        manifest.srcFile 'config/foss/AndroidManifest.xml'
     }
 
     defaultConfig {
         minSdkVersion 9
-        targetSdkVersion 19
+        targetSdkVersion 21
         renderscriptTargetApi 21
         renderscriptSupportModeEnabled true
-        versionCode 239
-        versionName "1.5.70"
+        versionCode 240
+        versionName "1.6.0"
     }
 }

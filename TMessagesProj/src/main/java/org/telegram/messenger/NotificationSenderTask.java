@@ -6,7 +6,8 @@ import android.os.Handler;
 import com.aniways.Log;
 import com.aniways.Utils;
 
-import org.telegram.ui.ApplicationLoader;
+import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 
 import java.util.concurrent.RejectedExecutionException;
 
@@ -28,7 +29,7 @@ public class NotificationSenderTask extends AsyncTask<String, String, String> {
             final String messageText = isAttachment ? params[4] + " received from " + senderName : senderName + " says " + params[4];
 
             if (user_id != 0) {
-                Utilities.RunOnUIThread(new Runnable() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         if(Utils.isAndroidVersionAtLeast(11)){
@@ -52,7 +53,7 @@ public class NotificationSenderTask extends AsyncTask<String, String, String> {
                                 return;
                             }
                             for (final TLRPC.TL_chatParticipant cp : participants.participants) {
-                                Utilities.RunOnUIThread(new Runnable(){
+                                AndroidUtilities.runOnUIThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         try {
@@ -61,8 +62,7 @@ public class NotificationSenderTask extends AsyncTask<String, String, String> {
                                             } else {
                                                 new RequestTask().execute(NOTIFICATION_URL, String.valueOf(cp.user_id), messageText);
                                             }
-                                        }
-                                        catch(RejectedExecutionException ex){
+                                        } catch (RejectedExecutionException ex) {
                                             Log.e(true, "NotificationSenderTask", "Caught rejected execution exception while trying to start the Request task. Number of participants: " + participants.participants.size(), ex);
                                         }
                                     }
@@ -71,7 +71,7 @@ public class NotificationSenderTask extends AsyncTask<String, String, String> {
                         }
 
                     }
-                }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassCanCompress);
+                }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassCanCompress);
             }
         } catch (Exception e){
 

@@ -12,21 +12,22 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Base64;
 
-import org.telegram.ui.ApplicationLoader;
+import org.telegram.android.MessagesStorage;
 
 import java.io.File;
 
 public class UserConfig {
-    public static TLRPC.User currentUser;
-    public static int clientUserId = 0;
-    public static boolean clientActivated = false;
+    private static TLRPC.User currentUser;
     public static boolean registeredForPush = false;
+    public static boolean registeredForInternalPush = false;
     public static String pushString = "";
     public static int lastSendMessageId = -210000;
     public static int lastLocalId = -210000;
+    public static int lastBroadcastId = -1;
     public static String contactsHash = "";
     public static String importHash = "";
-    private final static Integer sync = 1;
+    public static boolean blockedUsersLoaded = false;
+    private final static Object sync = new Object();
     public static boolean saveIncomingPhotos = false;
     public static int contactsVersion = 1;
 
@@ -56,12 +57,13 @@ public class UserConfig {
                 editor.putString("importHash", importHash);
                 editor.putBoolean("saveIncomingPhotos", saveIncomingPhotos);
                 editor.putInt("contactsVersion", contactsVersion);
+                editor.putInt("lastBroadcastId", lastBroadcastId);
+                editor.putBoolean("registeredForInternalPush", registeredForInternalPush);
+                editor.putBoolean("blockedUsersLoaded", blockedUsersLoaded);
                 if (currentUser != null) {
                     if (withFile) {
                         SerializedData data = new SerializedData();
                         currentUser.serializeToStream(data);
-                        clientUserId = currentUser.id;
-                        clientActivated = true;
                         String userString = Base64.encodeToString(data.toByteArray(), Base64.DEFAULT);
                         editor.putString("user", userString);
                     }
@@ -78,6 +80,30 @@ public class UserConfig {
         }
     }
 
+    public static boolean isClientActivated() {
+        synchronized (sync) {
+            return currentUser != null;
+        }
+    }
+
+    public static int getClientUserId() {
+        synchronized (sync) {
+            return currentUser != null ? currentUser.id : 0;
+        }
+    }
+
+    public static TLRPC.User getCurrentUser() {
+        synchronized (sync) {
+            return currentUser;
+        }
+    }
+
+    public static void setCurrentUser(TLRPC.User user) {
+        synchronized (sync) {
+            currentUser = user;
+        }
+    }
+
     public static void loadConfig() {
         synchronized (sync) {
             final File configFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "user.dat");
@@ -88,8 +114,6 @@ public class UserConfig {
                     if (ver == 1) {
                         int constructor = data.readInt32();
                         currentUser = (TLRPC.TL_userSelf)TLClassStore.Instance().TLdeserialize(data, constructor);
-                        clientUserId = currentUser.id;
-                        clientActivated = true;
                         MessagesStorage.lastDateValue = data.readInt32();
                         MessagesStorage.lastPtsValue = data.readInt32();
                         MessagesStorage.lastSeqValue = data.readInt32();
@@ -117,8 +141,6 @@ public class UserConfig {
                     } else if (ver == 2) {
                         int constructor = data.readInt32();
                         currentUser = (TLRPC.TL_userSelf)TLClassStore.Instance().TLdeserialize(data, constructor);
-                        clientUserId = currentUser.id;
-                        clientActivated = true;
 
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
                         registeredForPush = preferences.getBoolean("registeredForPush", false);
@@ -155,36 +177,33 @@ public class UserConfig {
                 importHash = preferences.getString("importHash", "");
                 saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
                 contactsVersion = preferences.getInt("contactsVersion", 0);
+                lastBroadcastId = preferences.getInt("lastBroadcastId", -1);
+                registeredForInternalPush = preferences.getBoolean("registeredForInternalPush", false);
+                blockedUsersLoaded = preferences.getBoolean("blockedUsersLoaded", false);
                 String user = preferences.getString("user", null);
                 if (user != null) {
                     byte[] userBytes = Base64.decode(user, Base64.DEFAULT);
                     if (userBytes != null) {
                         SerializedData data = new SerializedData(userBytes);
                         currentUser = (TLRPC.TL_userSelf)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                        clientUserId = currentUser.id;
-                        clientActivated = true;
                     }
-                }
-                if (currentUser == null) {
-                    clientActivated = false;
-                    clientUserId = 0;
                 }
             }
         }
     }
 
     public static void clearConfig() {
-        clientUserId = 0;
-        clientActivated = false;
         currentUser = null;
+        registeredForInternalPush = false;
         registeredForPush = false;
         contactsHash = "";
         importHash = "";
         lastLocalId = -210000;
         lastSendMessageId = -210000;
         contactsVersion = 1;
+        lastBroadcastId = -1;
         saveIncomingPhotos = false;
+        blockedUsersLoaded = false;
         saveConfig(true);
-        MessagesController.getInstance().deleteAllAppAccounts();
     }
 }

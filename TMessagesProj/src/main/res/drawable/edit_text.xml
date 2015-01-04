@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="true" android:state_focused="true" android:drawable="@drawable/search_dark_activated" />
+    <item android:state_focused="true" android:drawable="@drawable/search_dark_activated" />
+    <item android:drawable="@drawable/search_dark" />
+</selector>

@@ -10,6 +10,8 @@ package org.telegram.SQLite;
 
 import org.telegram.messenger.FileLog;
 
+import java.nio.ByteBuffer;
+
 public class SQLitePreparedStatement {
 	private boolean isFinalized = false;
 	private int sqliteStatementHandle;
@@ -26,35 +28,34 @@ public class SQLitePreparedStatement {
 		sqliteStatementHandle = prepare(db.getSQLiteHandle(), sql);
 	}
 
-	public SQLiteCursor query(Object[] args) throws SQLiteException {
-		if (args == null || args.length != queryArgsCount) {
-			throw new IllegalArgumentException();
-		}
 
-		checkFinalized();
+    public SQLiteCursor query(Object[] args) throws SQLiteException {
+        if (args == null || args.length != queryArgsCount) {
+            throw new IllegalArgumentException();
+        }
 
-		reset(sqliteStatementHandle);
+        checkFinalized();
 
-		int i = 1;
-		for (Object obj : args) {
-			if (obj == null) {
-				bindNull(sqliteStatementHandle, i);
-			} else if (obj instanceof Integer) {
-				bindInt(sqliteStatementHandle, i, (Integer)obj);
-			} else if (obj instanceof Double) {
-				bindDouble(sqliteStatementHandle, i, (Double)obj);
-			} else if (obj instanceof String) {
-				bindString(sqliteStatementHandle, i, (String)obj);
-			} else if (obj instanceof byte[]) {
-				bindByteArray(sqliteStatementHandle, i, (byte[])obj);
-			} else {
-				throw new IllegalArgumentException();
-			}
-			i++;
-		}
+        reset(sqliteStatementHandle);
 
-		return new SQLiteCursor(this);
-	}
+        int i = 1;
+        for (Object obj : args) {
+            if (obj == null) {
+                bindNull(sqliteStatementHandle, i);
+            } else if (obj instanceof Integer) {
+                bindInt(sqliteStatementHandle, i, (Integer)obj);
+            } else if (obj instanceof Double) {
+                bindDouble(sqliteStatementHandle, i, (Double)obj);
+            } else if (obj instanceof String) {
+                bindString(sqliteStatementHandle, i, (String)obj);
+            } else {
+                throw new IllegalArgumentException();
+            }
+            i++;
+        }
+
+        return new SQLiteCursor(this);
+    }
 
     public int step() throws SQLiteException {
         return step(sqliteStatementHandle);
@@ -102,8 +103,8 @@ public class SQLitePreparedStatement {
         bindDouble(sqliteStatementHandle, index, value);
     }
 
-    public void bindByteArray(int index, byte[] value) throws SQLiteException {
-        bindByteArray(sqliteStatementHandle, index, value);
+    public void bindByteBuffer(int index, ByteBuffer value) throws SQLiteException {
+        bindByteBuffer(sqliteStatementHandle, index, value, value.limit());
     }
 
     public void bindString(int index, String value) throws SQLiteException {
@@ -114,7 +115,7 @@ public class SQLitePreparedStatement {
         bindLong(sqliteStatementHandle, index, value);
     }
 
-	native void bindByteArray(int statementHandle, int index, byte[] value) throws SQLiteException;
+	native void bindByteBuffer(int statementHandle, int index, ByteBuffer value, int length) throws SQLiteException;
 	native void bindString(int statementHandle, int index, String value) throws SQLiteException;
 	native void bindInt(int statementHandle, int index, int value) throws SQLiteException;
     native void bindLong(int statementHandle, int index, long value) throws SQLiteException;

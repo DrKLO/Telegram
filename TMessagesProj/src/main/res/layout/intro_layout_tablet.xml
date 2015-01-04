@@ -1,0 +1,23 @@
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="@drawable/cats"
+        android:scaleType="centerCrop"/>
+
+    <FrameLayout
+        android:layout_width="498dp"
+        android:layout_height="528dp"
+        android:layout_gravity="center"
+        android:background="@drawable/btnshadow">
+
+        <include layout="@layout/intro_layout"/>
+
+    </FrameLayout>
+
+
+</FrameLayout>

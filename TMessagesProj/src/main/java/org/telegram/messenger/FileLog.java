@@ -11,7 +11,7 @@ package org.telegram.messenger;
 import android.net.Uri;
 import android.util.Log;
 
-import org.telegram.ui.ApplicationLoader;
+import org.telegram.android.time.FastDateFormat;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -44,26 +44,30 @@ public class FileLog {
             return;
         }
         dateFormat = FastDateFormat.getInstance("dd_MM_yyyy_HH_mm_ss", Locale.US);
-        File sdCard = ApplicationLoader.applicationContext.getExternalFilesDir(null);
-        if (sdCard == null) {
-            return;
-        }
-        File dir = new File(sdCard.getAbsolutePath() + "/logs");
-        if (dir == null) {
-            return;
-        }
-        dir.mkdirs();
-        currentFile = new File(dir, dateFormat.format(System.currentTimeMillis()) + ".txt");
-        if (currentFile == null) {
-            return;
+        try {
+            File sdCard = ApplicationLoader.applicationContext.getExternalFilesDir(null);
+            if (sdCard == null) {
+                return;
+            }
+            File dir = new File(sdCard.getAbsolutePath() + "/logs");
+            if (dir == null) {
+                return;
+            }
+            dir.mkdirs();
+            currentFile = new File(dir, dateFormat.format(System.currentTimeMillis()) + ".txt");
+            if (currentFile == null) {
+                return;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         try {
+            logQueue = new DispatchQueue("logQueue");
             currentFile.createNewFile();
             FileOutputStream stream = new FileOutputStream(currentFile);
             streamWriter = new OutputStreamWriter(stream);
             streamWriter.write("-----start log " + dateFormat.format(System.currentTimeMillis()) + "-----\n");
             streamWriter.flush();
-            logQueue = new DispatchQueue("logQueue");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -120,7 +124,7 @@ public class FileLog {
         }
     }
 
-    public static void e(final String tag, final Exception e) {
+    public static void e(final String tag, final Throwable e) {
         if (!BuildVars.DEBUG_VERSION) {
             return;
         }

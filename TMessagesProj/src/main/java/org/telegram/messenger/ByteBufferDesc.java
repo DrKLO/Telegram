@@ -25,6 +25,11 @@ public class ByteBufferDesc extends AbsSerializedData {
         justCalc = calculate;
     }
 
+    public ByteBufferDesc(byte[] bytes) {
+        buffer = ByteBuffer.wrap(bytes);
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+    }
+
     public int position() {
         return buffer.position();
     }
@@ -78,7 +83,7 @@ public class ByteBufferDesc extends AbsSerializedData {
             if (!justCalc) {
                 buffer.putLong(x);
             } else {
-                len += 4;
+                len += 8;
             }
         } catch(Exception e) {
             FileLog.e("tmessages", "write int64 error");
@@ -227,6 +232,54 @@ public class ByteBufferDesc extends AbsSerializedData {
         }
     }
 
+    public void writeByteBuffer(ByteBufferDesc b) {
+        try {
+            int l = b.limit();
+            if (l <= 253) {
+                if (!justCalc) {
+                    buffer.put((byte) l);
+                } else {
+                    len += 1;
+                }
+            } else {
+                if (!justCalc) {
+                    buffer.put((byte) 254);
+                    buffer.put((byte) l);
+                    buffer.put((byte) (l >> 8));
+                    buffer.put((byte) (l >> 16));
+                } else {
+                    len += 4;
+                }
+            }
+            if (!justCalc) {
+                b.rewind();
+                buffer.put(b.buffer);
+            } else {
+                len += l;
+            }
+            int i = l <= 253 ? 1 : 4;
+            while((l + i) % 4 != 0) {
+                if (!justCalc) {
+                    buffer.put((byte) 0);
+                } else {
+                    len += 1;
+                }
+                i++;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
+    public void writeRaw(ByteBufferDesc b) {
+        if (justCalc) {
+            len += b.limit();
+        } else {
+            b.rewind();
+            buffer.put(b.buffer);
+        }
+    }
+
     public int readInt32() {
         return readInt32(null);
     }
@@ -349,11 +402,13 @@ public class ByteBufferDesc extends AbsSerializedData {
                 sl = 4;
             }
             ByteBufferDesc b = BuffersStorage.getInstance().getFreeBuffer(l);
-            int old = buffer.limit();
-            buffer.limit(buffer.position() + l);
-            b.buffer.put(buffer);
-            buffer.limit(old);
-            b.buffer.position(0);
+            if (b != null) {
+                int old = buffer.limit();
+                buffer.limit(buffer.position() + l);
+                b.buffer.put(buffer);
+                buffer.limit(old);
+                b.buffer.position(0);
+            }
             int i = sl;
             while((l + i) % 4 != 0) {
                 buffer.get();

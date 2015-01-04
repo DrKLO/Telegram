@@ -1,0 +1,25 @@
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_gravity="top"
+    android:id="@+id/text_container"
+    android:padding="10dp"
+    android:background="@drawable/list_selector">
+
+    <org.telegram.ui.Components.BackupImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/message_image"
+        android:layout_gravity="center"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="16dp"
+        android:textColor="#ff000000"
+        android:id="@+id/message_text"
+        android:gravity="center"
+        android:layout_gravity="center"/>
+
+</FrameLayout>

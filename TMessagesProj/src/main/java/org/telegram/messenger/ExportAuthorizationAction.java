@@ -54,7 +54,7 @@ public class ExportAuthorizationAction extends Action {
                     }
                 }
             }
-        }, null, true, RPCRequest.RPCRequestClassGeneric);
+        });
     }
 
     void beginImport() {
@@ -85,6 +85,6 @@ public class ExportAuthorizationAction extends Action {
                     }
                 }
             }
-        }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassEnableUnauthorized, datacenter.datacenterId);
+        }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassEnableUnauthorized | RPCRequest.RPCRequestClassWithoutLogin, datacenter.datacenterId);
     }
 }

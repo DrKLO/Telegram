@@ -10,28 +10,33 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.support.v7.app.ActionBar;
 import android.text.Html;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.LocaleController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.MessagesController;
+import org.telegram.android.MessagesController;
 import com.aniways.anigram.messenger.R;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.Views.BaseFragment;
-import org.telegram.ui.Views.IdenticonView;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.IdenticonDrawable;
 
 public class IdenticonActivity extends BaseFragment {
     private int chat_id;
+
+    public IdenticonActivity(Bundle args) {
+        super(args);
+    }
 
     @Override
     public boolean onFragmentCreate() {
@@ -40,28 +45,39 @@ public class IdenticonActivity extends BaseFragment {
     }
 
     @Override
-    public void onFragmentDestroy() {
-        super.onFragmentDestroy();
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setAllowOverlayTitle(true);
+            actionBar.setTitle(LocaleController.getString("EncryptionKey", R.string.EncryptionKey));
+
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1) {
+                        finishFragment();
+                    }
+                }
+            });
+
             fragmentView = inflater.inflate(R.layout.identicon_layout, container, false);
-            IdenticonView identiconView = (IdenticonView) fragmentView.findViewById(R.id.identicon_view);
+            ImageView identiconView = (ImageView) fragmentView.findViewById(R.id.identicon_view);
             TextView textView = (TextView)fragmentView.findViewById(R.id.identicon_text);
-            TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().encryptedChats.get(chat_id);
+            TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat(chat_id);
             if (encryptedChat != null) {
-                identiconView.setBytes(encryptedChat.auth_key);
-                TLRPC.User user = MessagesController.getInstance().users.get(encryptedChat.user_id);
+                IdenticonDrawable drawable = new IdenticonDrawable();
+                identiconView.setImageDrawable(drawable);
+                drawable.setEncryptedChat(encryptedChat);
+                TLRPC.User user = MessagesController.getInstance().getUser(encryptedChat.user_id);
                 textView.setText(Html.fromHtml(LocaleController.formatString("EncryptionKeyDescription", R.string.EncryptionKeyDescription, user.first_name, user.first_name)));
             }
+
+            fragmentView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    return true;
+                }
+            });
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
             if (parent != null) {
@@ -69,32 +85,6 @@ public class IdenticonActivity extends BaseFragment {
             }
         }
         return fragmentView;
-    }
-
-    @Override
-    public void applySelfActionBar() {
-        if (parentActivity == null) {
-            return;
-        }
-        ActionBar actionBar = parentActivity.getSupportActionBar();
-        actionBar.setDisplayShowTitleEnabled(true);
-        actionBar.setDisplayShowHomeEnabled(false);
-        actionBar.setDisplayHomeAsUpEnabled(true);
-        actionBar.setDisplayUseLogoEnabled(false);
-        actionBar.setDisplayShowCustomEnabled(false);
-        actionBar.setSubtitle(null);
-        actionBar.setCustomView(null);
-        actionBar.setTitle(LocaleController.getString("EncryptionKey", R.string.EncryptionKey));
-
-        TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
-        if (title == null) {
-            final int subtitleId = parentActivity.getResources().getIdentifier("action_bar_title", "id", "android");
-            title = (TextView)parentActivity.findViewById(subtitleId);
-        }
-        if (title != null) {
-            title.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock_white, 0, 0, 0);
-            title.setCompoundDrawablePadding(Utilities.dp(4));
-        }
     }
 
     @Override
@@ -106,61 +96,33 @@ public class IdenticonActivity extends BaseFragment {
     @Override
     public void onResume() {
         super.onResume();
-        if (isFinish) {
-            return;
-        }
-        if (getActivity() == null) {
-            return;
-        }
-        ((LaunchActivity)parentActivity).showActionBar();
-        ((LaunchActivity)parentActivity).updateActionBar();
         fixLayout();
     }
 
     private void fixLayout() {
-        final View v = getView();
-        if (v != null) {
-            ViewTreeObserver obs = v.getViewTreeObserver();
-            obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    LinearLayout layout = (LinearLayout)fragmentView;
-                    WindowManager manager = (WindowManager)parentActivity.getSystemService(Context.WINDOW_SERVICE);
-                    int rotation = manager.getDefaultDisplay().getRotation();
-
-                    if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
-                        layout.setOrientation(LinearLayout.HORIZONTAL);
-                    } else {
-                        layout.setOrientation(LinearLayout.VERTICAL);
-                    }
-
-                    v.setPadding(v.getPaddingLeft(), 0, v.getPaddingRight(), v.getPaddingBottom());
-                    v.getViewTreeObserver().removeOnPreDrawListener(this);
-
-                    TextView title = (TextView)parentActivity.findViewById(R.id.action_bar_title);
-                    if (title == null) {
-                        final int subtitleId = ApplicationLoader.applicationContext.getResources().getIdentifier("action_bar_title", "id", "android");
-                        title = (TextView)parentActivity.findViewById(subtitleId);
-                    }
-                    if (title != null) {
-                        title.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock_white, 0, 0, 0);
-                        title.setCompoundDrawablePadding(Utilities.dp(4));
-                    }
-
-                    return false;
+        ViewTreeObserver obs = fragmentView.getViewTreeObserver();
+        obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                if (fragmentView != null) {
+                    fragmentView.getViewTreeObserver().removeOnPreDrawListener(this);
                 }
-            });
-        }
-    }
+                if (getParentActivity() == null || fragmentView == null) {
+                    return true;
+                }
+                LinearLayout layout = (LinearLayout)fragmentView;
+                WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+                int rotation = manager.getDefaultDisplay().getRotation();
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int itemId = item.getItemId();
-        switch (itemId) {
-            case android.R.id.home:
-                finishFragment();
-                break;
-        }
-        return true;
+                if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
+                    layout.setOrientation(LinearLayout.HORIZONTAL);
+                } else {
+                    layout.setOrientation(LinearLayout.VERTICAL);
+                }
+
+                fragmentView.setPadding(fragmentView.getPaddingLeft(), 0, fragmentView.getPaddingRight(), fragmentView.getPaddingBottom());
+                return false;
+            }
+        });
     }
 }

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    android:installLocation="auto"
     package="com.aniways.anigram.messenger">
 
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
@@ -22,17 +23,16 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/AppName"
         android:theme="@style/Theme.TMessages.Start"
-        android:name="org.telegram.ui.ApplicationLoader"
+        android:name="org.telegram.messenger.ApplicationLoader"
         android:hardwareAccelerated="true"
         android:largeHeap="true">
 
         <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyCTNmNqbWovP9ETcAob98YlrfOQEAC0CJ4" />
-        <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
 
         <activity android:name="net.hockeyapp.android.UpdateActivity" />
 
         <receiver
-            android:name="org.telegram.messenger.GcmBroadcastReceiver"
+            android:name="org.telegram.android.GcmBroadcastReceiver"
             android:permission="com.google.android.c2dm.permission.SEND" >
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
@@ -42,8 +42,6 @@
         </receiver>
 
         <uses-library android:name="com.google.android.maps" android:required="false"/>
-
-        <service android:name="org.telegram.messenger.AwakeService"/>
 
     </application>
 

@@ -9,15 +9,11 @@
 package org.telegram.SQLite;
 
 import org.telegram.messenger.FileLog;
-import org.telegram.ui.ApplicationLoader;
-
-import java.util.HashMap;
-import java.util.Map;
+import org.telegram.messenger.ApplicationLoader;
 
 public class SQLiteDatabase {
 	private final int sqliteHandle;
 
-	private final Map<String, SQLitePreparedStatement> preparedMap;
 	private boolean isOpen = false;
     private boolean inTransaction = false;
 
@@ -28,7 +24,6 @@ public class SQLiteDatabase {
 	public SQLiteDatabase(String fileName) throws SQLiteException {
 		sqliteHandle = opendb(fileName, ApplicationLoader.applicationContext.getFilesDir().getPath());
 		isOpen = true;
-		preparedMap = new HashMap<String, SQLitePreparedStatement>();
 	}
 
 	public boolean tableExists(String tableName) throws SQLiteException {
@@ -37,23 +32,13 @@ public class SQLiteDatabase {
 		return executeInt(s, tableName) != null;
 	}
 
-	public void execute(String sql, Object... args) throws SQLiteException {
-		checkOpened();
-		SQLiteCursor cursor = query(sql, args);
-		try {
-			cursor.next();
-		} finally {
-			cursor.dispose();
-		}
-	}
-
-    public SQLitePreparedStatement executeFast(String sql) throws SQLiteException{
+    public SQLitePreparedStatement executeFast(String sql) throws SQLiteException {
         return new SQLitePreparedStatement(this, sql, true);
     }
 
 	public Integer executeInt(String sql, Object... args) throws SQLiteException {
 		checkOpened();
-		SQLiteCursor cursor = query(sql, args);
+		SQLiteCursor cursor = queryFinalized(sql, args);
 		try {
 			if (!cursor.next()) {
 				return null;
@@ -64,41 +49,6 @@ public class SQLiteDatabase {
 		}
 	}
 
-	public int executeIntOrThrow(String sql, Object... args) throws SQLiteException, SQLiteNoRowException {
-		checkOpened();
-		Integer val = executeInt(sql, args);
-		if (val != null) {
-			return val;
-		}
-
-		throw new SQLiteNoRowException();
-	}
-
-	public String executeString(String sql, Object... args) throws SQLiteException {
-		checkOpened();
-		SQLiteCursor cursor = query(sql, args);
-		try {
-			if (!cursor.next()) {
-				return null;
-			}
-			return cursor.stringValue(0);
-		} finally {
-			cursor.dispose();
-		}
-	}
-
-	public SQLiteCursor query(String sql, Object... args) throws SQLiteException {
-		checkOpened();
-		SQLitePreparedStatement stmt = preparedMap.get(sql);
-
-		if (stmt == null) {
-			stmt = new SQLitePreparedStatement(this, sql, false);
-			preparedMap.put(sql, stmt);
-		}
-
-		return stmt.query(args);
-	}
-
 	public SQLiteCursor queryFinalized(String sql, Object... args) throws SQLiteException {
 		checkOpened();
 		return new SQLitePreparedStatement(this, sql, true).query(args);
@@ -107,9 +57,7 @@ public class SQLiteDatabase {
 	public void close() {
 		if (isOpen) {
 			try {
-				for (SQLitePreparedStatement stmt : preparedMap.values()) {
-					stmt.finalizeQuery();
-				}
+                commitTransaction();
 				closedb(sqliteHandle);
 			} catch (SQLiteException e) {
                 FileLog.e("tmessages", e.getMessage(), e);
@@ -139,6 +87,9 @@ public class SQLiteDatabase {
     }
 
     public void commitTransaction() {
+        if (!inTransaction) {
+            return;
+        }
         inTransaction = false;
         commitTransaction(sqliteHandle);
     }

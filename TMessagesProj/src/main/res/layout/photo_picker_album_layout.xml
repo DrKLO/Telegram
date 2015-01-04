@@ -1,0 +1,46 @@
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="100dp"
+    android:layout_height="100dp"
+    android:layout_gravity="top">
+
+    <org.telegram.ui.Components.BackupImageView
+        android:id="@+id/media_photo_image"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"/>
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="28dp"
+        android:layout_gravity="bottom"
+        android:orientation="horizontal"
+        android:background="#7f000000">
+
+        <TextView
+            android:layout_height="fill_parent"
+            android:layout_width="0dp"
+            android:id="@+id/album_name"
+            android:textSize="13dp"
+            android:gravity="center_vertical"
+            android:textColor="#ffffffff"
+            android:layout_weight="1"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:layout_marginLeft="8dp"/>
+
+        <TextView
+            android:layout_height="fill_parent"
+            android:layout_width="wrap_content"
+            android:id="@+id/album_count"
+            android:textSize="13dp"
+            android:gravity="center_vertical"
+            android:textColor="#ffaaaaaa"
+            android:singleLine="true"
+            android:maxLines="1"
+            android:layout_marginLeft="4dp"
+            android:layout_marginRight="4dp"/>
+
+    </LinearLayout>
+
+</FrameLayout>

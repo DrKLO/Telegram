@@ -18,6 +18,8 @@
 
 package jawnae.pyronet;
 
+import org.telegram.messenger.ByteBufferDesc;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.ConnectException;
@@ -167,12 +169,6 @@ public class PyroClient {
         this.doEagerWrite = enabled;
     }
 
-    //
-
-    public void writeCopy(ByteBuffer data) throws PyroException {
-        this.write(this.selector.copy(data));
-    }
-
     /**
      * Will enqueue the bytes to send them<br>
      * 1. when the selector is ready to write, if eagerWrite is disabled
@@ -185,7 +181,7 @@ public class PyroClient {
      *             when shutdown() has been called.
      */
 
-    public void write(ByteBuffer data) throws PyroException {
+    public void write(ByteBufferDesc data) throws PyroException {
         this.selector.checkThread();
 
         if (!this.key.isValid()) {

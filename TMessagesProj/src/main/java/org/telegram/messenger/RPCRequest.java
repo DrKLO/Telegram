@@ -14,9 +14,6 @@ public class RPCRequest {
     public interface RPCRequestDelegate {
         void run(TLObject response, TLRPC.TL_error error);
     }
-    public interface RPCProgressDelegate {
-        void progress(int length, int progress);
-    }
     public interface RPCQuickAckDelegate {
         void quickAck();
     }
@@ -27,6 +24,10 @@ public class RPCRequest {
     public static int RPCRequestClassEnableUnauthorized = 8;
     public static int RPCRequestClassFailOnServerErrors = 16;
     public static int RPCRequestClassCanCompress = 32;
+    public static int RPCRequestClassPush = 64;
+    public static int RPCRequestClassWithoutLogin = 128;
+    public static int RPCRequestClassTryDifferentDc = 256;
+    public static int RPCRequestClassForceDownload = 512;
 
     static int RPCRequestClassTransportMask = (RPCRequestClassGeneric | RPCRequestClassDownloadMedia | RPCRequestClassUploadMedia);
 
@@ -35,14 +36,17 @@ public class RPCRequest {
 
     int serverFailureCount;
     int flags;
-    public int retryCount = 0;
+    boolean wait = false;
+    boolean salt = false;
+    protected int retryCount = 0;
+    protected int lastResendTime = 0;
+    protected boolean completed = false;
 
     TLObject rawRequest;
     TLObject rpcRequest;
     int serializedLength;
 
     RPCRequestDelegate completionBlock;
-    RPCProgressDelegate progressBlock;
     RPCQuickAckDelegate quickAckBlock;
 
     boolean requiresCompletion;

@@ -26,9 +26,9 @@ import com.aniways.IIconInfoDisplayer;
 import com.aniways.Log;
 import com.aniways.volley.toolbox.IResponseListener;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.Utilities;
-import org.telegram.objects.MessageObject;
+import org.telegram.android.MessageObject;
 
 import java.util.HashSet;
 
@@ -47,8 +47,8 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     private AniwaysDynamicImageSpansContainer mDynamicImageSpansContainer;
     private HashSet<AniwaysMessageListViewItemWrapperLayout.OnSetTextListener> mSetTextListeners = new HashSet<AniwaysMessageListViewItemWrapperLayout.OnSetTextListener>();
 
-    public ChatMessageCell(Context context, boolean isChat) {
-        super(context, isChat);
+    public ChatMessageCell(Context context) {
+        super(context);
         drawForwardedName = true;
         mDynamicImageSpansContainer = new AniwaysDynamicImageSpansContainer(this);
         mIconInfoDisplayer = new AniwaysIconInfoDisplayer();
@@ -64,58 +64,62 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
                     y -= textY;
                     int blockNum = Math.max(0, y / currentMessageObject.blockHeight);
                     if (blockNum < currentMessageObject.textLayoutBlocks.size()) {
-                        MessageObject.TextLayoutBlock block = currentMessageObject.textLayoutBlocks.get(blockNum);
-                        x -= textX - (int)Math.ceil(block.textXOffset);
-                        y -= block.textYOffset;
-                        final int line = block.textLayout.getLineForVertical(y);
-                        final int off = block.textLayout.getOffsetForHorizontal(line, x) + block.charactersOffset;
+                        try {
+                            MessageObject.TextLayoutBlock block = currentMessageObject.textLayoutBlocks.get(blockNum);
+                            x -= textX - (int)Math.ceil(block.textXOffset);
+                            y -= block.textYOffset;
+                            final int line = block.textLayout.getLineForVertical(y);
+                            final int off = block.textLayout.getOffsetForHorizontal(line, x) + block.charactersOffset;
 
-                        final float left = block.textLayout.getLineLeft(line);
-                        if (left <= x && left + block.textLayout.getLineWidth(line) >= x) {
-                            Spannable buffer = (Spannable)currentMessageObject.getAniwaysDecodedMessageTextBigIcons(this);
-                            ClickableSpan[] link = buffer.getSpans(off, off, ClickableSpan.class);
-                            IAniwaysIconInfoSpan[] iconInfos = buffer.getSpans(off, off, IAniwaysIconInfoSpan.class);
+                            final float left = block.textLayout.getLineLeft(line);
+                            if (left <= x && left + block.textLayout.getLineWidth(line) >= x) {
+                                Spannable buffer = (Spannable)currentMessageObject.getAniwaysDecodedMessageTextBigIcons(this);
+                                ClickableSpan[] link = buffer.getSpans(off, off, ClickableSpan.class);
+                                IAniwaysIconInfoSpan[] iconInfos = buffer.getSpans(off, off, IAniwaysIconInfoSpan.class);
 
-                            if (link.length != 0) {
-                                if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                                    pressedLink = link[0];
-                                    return true;
-                                } else {
-                                    if (link[0] == pressedLink) {
-                                        try {
-                                            pressedLink.onClick(this);
-                                        } catch (Exception e) {
-                                            FileLog.e("tmessages", e);
-                                        }
+                                if (link.length != 0) {
+                                    if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                                        pressedLink = link[0];
                                         return true;
+                                    } else {
+                                        if (link[0] == pressedLink) {
+                                            try {
+                                                pressedLink.onClick(this);
+                                            } catch (Exception e) {
+                                                FileLog.e("tmessages", e);
+                                            }
+                                            return true;
+                                        }
                                     }
+                                } else {
+                                    pressedLink = null;
+                                }
+                                if (iconInfos.length != 0) {
+                                    if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                                        clickDownEventTIme = event.getEventTime();
+                                        pressedIcon = iconInfos[0];
+                                        return true;
+                                    } else {
+                                        if (iconInfos[0] == pressedIcon) {
+                                            try {
+                                                pressedIcon.onClick(this, clickDownEventTIme);
+                                            } catch (Exception e) {
+                                                FileLog.e("tmessages", e);
+                                            }
+                                            return true;
+                                        }
+                                    }
+                                } else {
+                                    pressedIcon = null;
                                 }
                             } else {
                                 pressedLink = null;
-                            }
-
-                            if (iconInfos.length != 0) {
-                                if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                                    clickDownEventTIme = event.getEventTime();
-                                    pressedIcon = iconInfos[0];
-                                    return true;
-                                } else {
-                                    if (iconInfos[0] == pressedIcon) {
-                                        try {
-                                            pressedIcon.onClick(this, clickDownEventTIme);
-                                        } catch (Exception e) {
-                                            FileLog.e("tmessages", e);
-                                        }
-                                        return true;
-                                    }
-                                }
-                            } else {
                                 pressedIcon = null;
                             }
-
-                        } else {
+                        } catch (Exception e) {
                             pressedLink = null;
                             pressedIcon = null;
+                            FileLog.e("tmessages", e);
                         }
                     } else {
                         pressedLink = null;
@@ -187,11 +191,23 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
             pressedLink = null;
             pressedIcon = null;
             int maxWidth;
-            if (chat) {
-                maxWidth = Utilities.displaySize.x - Utilities.dp(122);
-                drawName = true;
+
+            if (AndroidUtilities.isTablet()) {
+                if (isChat && !messageObject.isOut()) {
+                    maxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(122);
+                    drawName = true;
+                } else {
+                    maxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(80);
+                    drawName = false;
+                }
             } else {
-                maxWidth = Utilities.displaySize.x - Utilities.dp(80);
+                if (isChat && !messageObject.isOut()) {
+                    maxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(122);
+                    drawName = true;
+                } else {
+                    maxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(80);
+                    drawName = false;
+                }
             }
 
             backgroundWidth = maxWidth;
@@ -199,25 +215,25 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
             super.setMessageObject(messageObject);
 
             backgroundWidth = messageObject.textWidth;
-            totalHeight = messageObject.textHeight + Utilities.dpf(19.5f) + namesOffset;
+            totalHeight = messageObject.textHeight + AndroidUtilities.dp(19.5f) + namesOffset;
 
             int maxChildWidth = Math.max(backgroundWidth, nameWidth);
             maxChildWidth = Math.max(maxChildWidth, forwardedNameWidth);
 
-            int timeMore = timeWidth + Utilities.dp(6);
-            if (messageObject.messageOwner.out) {
-                timeMore += Utilities.dpf(20.5f);
+            int timeMore = timeWidth + AndroidUtilities.dp(6);
+            if (messageObject.isOut()) {
+                timeMore += AndroidUtilities.dp(20.5f);
             }
 
             if (maxWidth - messageObject.lastLineWidth < timeMore) {
-                totalHeight += Utilities.dp(14);
-                backgroundWidth = Math.max(maxChildWidth, messageObject.lastLineWidth) + Utilities.dp(29);
+                totalHeight += AndroidUtilities.dp(14);
+                backgroundWidth = Math.max(maxChildWidth, messageObject.lastLineWidth) + AndroidUtilities.dp(29);
             } else {
                 int diff = maxChildWidth - messageObject.lastLineWidth;
                 if (diff >= 0 && diff <= timeMore) {
-                    backgroundWidth = maxChildWidth + timeMore - diff + Utilities.dp(29);
+                    backgroundWidth = maxChildWidth + timeMore - diff + AndroidUtilities.dp(29);
                 } else {
-                    backgroundWidth = Math.max(maxChildWidth, messageObject.lastLineWidth + timeMore) + Utilities.dp(29);
+                    backgroundWidth = Math.max(maxChildWidth, messageObject.lastLineWidth + timeMore) + AndroidUtilities.dp(29);
                 }
             }
         }
@@ -238,15 +254,13 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
-
         this.mDynamicImageSpansContainer.onLayoutCalled();
-
-        if (currentMessageObject.messageOwner.out) {
-            textX = layoutWidth - backgroundWidth + Utilities.dp(10);
-            textY = Utilities.dp(10) + namesOffset;
+        if (currentMessageObject.isOut()) {
+            textX = layoutWidth - backgroundWidth + AndroidUtilities.dp(10);
+            textY = AndroidUtilities.dp(10) + namesOffset;
         } else {
-            textX = Utilities.dp(19) + (chat ? Utilities.dp(52) : 0);
-            textY = Utilities.dp(10) + namesOffset;
+            textX = AndroidUtilities.dp(19) + (isChat ? AndroidUtilities.dp(52) : 0);
+            textY = AndroidUtilities.dp(10) + namesOffset;
         }
     }
 
@@ -257,12 +271,12 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
             return;
         }
 
-        if (currentMessageObject.messageOwner.out) {
-            textX = layoutWidth - backgroundWidth + Utilities.dp(10);
-            textY = Utilities.dp(10) + namesOffset;
+        if (currentMessageObject.isOut()) {
+            textX = layoutWidth - backgroundWidth + AndroidUtilities.dp(10);
+            textY = AndroidUtilities.dp(10) + namesOffset;
         } else {
-            textX = Utilities.dp(19) + (chat ? Utilities.dp(52) : 0);
-            textY = Utilities.dp(10) + namesOffset;
+            textX = AndroidUtilities.dp(19) + (isChat ? AndroidUtilities.dp(52) : 0);
+            textY = AndroidUtilities.dp(10) + namesOffset;
         }
 
         for (int a = firstVisibleBlockNum; a <= lastVisibleBlockNum; a++) {

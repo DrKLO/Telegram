@@ -12,28 +12,24 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Point;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v7.app.ActionBar;
 import android.util.AttributeSet;
-import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.FrameLayout;
-import android.widget.TextView;
 
-import org.telegram.messenger.FileLoader;
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.ImageLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
+import org.telegram.android.LocaleController;
 import com.aniways.anigram.messenger.R;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.Views.BaseFragment;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.BaseFragment;
 
 import java.io.File;
 
@@ -73,7 +69,7 @@ public class PhotoCropActivity extends BaseFragment {
         private void init() {
             rectPaint = new Paint();
             rectPaint.setColor(0xfffafafa);
-            rectPaint.setStrokeWidth(Utilities.dp(2));
+            rectPaint.setStrokeWidth(AndroidUtilities.dp(2));
             rectPaint.setStyle(Paint.Style.STROKE);
             circlePaint = new Paint();
             circlePaint.setColor(0x7fffffff);
@@ -86,7 +82,7 @@ public class PhotoCropActivity extends BaseFragment {
                 public boolean onTouch(View view, MotionEvent motionEvent) {
                     float x = motionEvent.getX();
                     float y = motionEvent.getY();
-                    int cornerSide = Utilities.dp(14);
+                    int cornerSide = AndroidUtilities.dp(14);
                     if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
                         if (rectX - cornerSide < x && rectX + cornerSide > x && rectY - cornerSide < y && rectY + cornerSide > y) {
                             draggingState = 1;
@@ -100,6 +96,9 @@ public class PhotoCropActivity extends BaseFragment {
                             draggingState = 5;
                         } else {
                             draggingState = 0;
+                        }
+                        if (draggingState != 0) {
+                            PhotoCropView.this.requestDisallowInterceptTouchEvent(true);
                         }
                         oldX = x;
                         oldY = y;
@@ -182,7 +181,7 @@ public class PhotoCropActivity extends BaseFragment {
         }
 
         private void updateBitmapSize() {
-            if (viewWidth == 0 || viewHeight == 0) {
+            if (viewWidth == 0 || viewHeight == 0 || imageToCrop == null) {
                 return;
             }
             float percX = (rectX - bitmapX) / bitmapWidth;
@@ -243,12 +242,12 @@ public class PhotoCropActivity extends BaseFragment {
             }
             try {
                 return Bitmap.createBitmap(imageToCrop, x, y, size, size);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 FileLog.e("tmessags", e);
                 System.gc();
                 try {
                     return Bitmap.createBitmap(imageToCrop, x, y, size, size);
-                } catch (Exception e2) {
+                } catch (Throwable e2) {
                     FileLog.e("tmessages", e2);
                 }
             }
@@ -268,7 +267,7 @@ public class PhotoCropActivity extends BaseFragment {
 
             canvas.drawRect(rectX, rectY, rectX + rectSize, rectY + rectSize, rectPaint);
 
-            int side = Utilities.dp(7);
+            int side = AndroidUtilities.dp(7);
             canvas.drawRect(rectX - side, rectY - side, rectX + side, rectY + side, circlePaint);
             canvas.drawRect(rectX + rectSize - side, rectY - side, rectX + rectSize + side, rectY + side, circlePaint);
             canvas.drawRect(rectX - side, rectY + rectSize - side, rectX + side, rectY + rectSize + side, circlePaint);
@@ -278,14 +277,20 @@ public class PhotoCropActivity extends BaseFragment {
 
     private Bitmap imageToCrop;
     private BitmapDrawable drawable;
-    public PhotoCropActivityDelegate delegate = null;
+    private PhotoCropActivityDelegate delegate = null;
     private PhotoCropView view;
     private boolean sameBitmap = false;
     private boolean doneButtonPressed = false;
 
+    private final static int done_button = 1;
+
+    public PhotoCropActivity(Bundle args) {
+        super(args);
+    }
+
     @Override
     public boolean onFragmentCreate() {
-        super.onFragmentCreate();
+        swipeBackEnabled = false;
         String photoPath = getArguments().getString("photoPath");
         Uri photoUri = getArguments().getParcelable("photoUri");
         if (photoPath == null && photoUri == null) {
@@ -297,19 +302,18 @@ public class PhotoCropActivity extends BaseFragment {
                 return false;
             }
         }
-        Point displaySize = new Point();
-        Display display = ((WindowManager)ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
-        if(android.os.Build.VERSION.SDK_INT < 13) {
-            displaySize.set(display.getWidth(), display.getHeight());
+        int size = 0;
+        if (AndroidUtilities.isTablet()) {
+            size = AndroidUtilities.dp(520);
         } else {
-            display.getSize(displaySize);
+            size = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
         }
-        int size = Math.max(displaySize.x, displaySize.y);
-        imageToCrop = FileLoader.loadBitmap(photoPath, photoUri, size, size);
+        imageToCrop = ImageLoader.loadBitmap(photoPath, photoUri, size, size);
         if (imageToCrop == null) {
             return false;
         }
         drawable = new BitmapDrawable(imageToCrop);
+        super.onFragmentCreate();
         return true;
     }
 
@@ -324,14 +328,34 @@ public class PhotoCropActivity extends BaseFragment {
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
-            fragmentView = view = new PhotoCropView(this.getActivity());
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setAllowOverlayTitle(true);
+            actionBar.setTitle(LocaleController.getString("AddContact", R.string.AddContact));
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1) {
+                        finishFragment();
+                    } else if (id == done_button) {
+                        if (delegate != null && !doneButtonPressed) {
+                            Bitmap bitmap = view.getBitmap();
+                            if (bitmap == imageToCrop) {
+                                sameBitmap = true;
+                            }
+                            delegate.didFinishCrop(bitmap);
+                            doneButtonPressed = true;
+                        }
+                        finishFragment();
+                    }
+                }
+            });
+
+            ActionBarMenu menu = actionBar.createMenu();
+            menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+
+            fragmentView = view = new PhotoCropView(getParentActivity());
             fragmentView.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
@@ -342,57 +366,7 @@ public class PhotoCropActivity extends BaseFragment {
         return fragmentView;
     }
 
-    @Override
-    public boolean canApplyUpdateStatus() {
-        return false;
-    }
-
-    @Override
-    public void applySelfActionBar() {
-        if (parentActivity == null) {
-            return;
-        }
-        ActionBar actionBar = parentActivity.getSupportActionBar();
-        actionBar.setDisplayShowCustomEnabled(true);
-        actionBar.setDisplayShowHomeEnabled(false);
-        actionBar.setDisplayShowTitleEnabled(false);
-        actionBar.setDisplayHomeAsUpEnabled(false);
-
-        actionBar.setCustomView(R.layout.settings_do_action_layout);
-        Button cancelButton = (Button)actionBar.getCustomView().findViewById(R.id.cancel_button);
-        cancelButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                finishFragment();
-            }
-        });
-        View doneButton = actionBar.getCustomView().findViewById(R.id.done_button);
-        doneButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (delegate != null && !doneButtonPressed) {
-                    Bitmap bitmap = view.getBitmap();
-                    if (bitmap == imageToCrop) {
-                        sameBitmap = true;
-                    }
-                    delegate.didFinishCrop(bitmap);
-                    doneButtonPressed = true;
-                }
-                finishFragment();
-            }
-        });
-
-        cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel));
-        TextView textView = (TextView)doneButton.findViewById(R.id.done_button_text);
-        textView.setText(LocaleController.getString("Done", R.string.Done));
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (getActivity() == null) {
-            return;
-        }
-        ((LaunchActivity)parentActivity).updateActionBar();
+    public void setDelegate(PhotoCropActivityDelegate delegate) {
+        this.delegate = delegate;
     }
 }

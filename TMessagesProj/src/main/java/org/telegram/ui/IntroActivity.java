@@ -8,26 +8,30 @@
 
 package org.telegram.ui;
 
+import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.support.v7.app.ActionBarActivity;
 import android.text.Html;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.telegram.messenger.LocaleController;
-
-import com.aniways.Aniways;
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.LocaleController;
 import com.aniways.anigram.messenger.R;
+import com.aniways.Aniways;
+import org.telegram.messenger.Utilities;
 
-public class IntroActivity extends ActionBarActivity {
+public class IntroActivity extends Activity {
     private ViewPager viewPager;
     private ImageView topImage1;
     private ImageView topImage2;
@@ -41,9 +45,16 @@ public class IntroActivity extends ActionBarActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        setTheme(R.style.Theme_TMessages);
         super.onCreate(savedInstanceState);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-        setContentView(R.layout.intro_layout);
+        if (AndroidUtilities.isTablet()) {
+            setContentView(R.layout.intro_layout_tablet);
+        } else {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            setContentView(R.layout.intro_layout);
+        }
 
         if (LocaleController.isRTL) {
             icons = new int[] {
@@ -195,15 +206,14 @@ public class IntroActivity extends ActionBarActivity {
                     return;
                 }
                 startPressed = true;
-                Intent intent2 = new Intent(IntroActivity.this, LoginActivity.class);
+                Intent intent2 = new Intent(IntroActivity.this, LaunchActivity.class);
+                intent2.putExtra("fromIntro", true);
                 startActivity(intent2);
                 finish();
             }
         });
 
         justCreated = true;
-
-        getSupportActionBar().hide();
     }
 
     @Override
@@ -219,6 +229,8 @@ public class IntroActivity extends ActionBarActivity {
             }
             justCreated = false;
         }
+        Utilities.checkForCrashes(this);
+        Utilities.checkForUpdates(this);
     }
 
     private class IntroAdapter extends PagerAdapter {
@@ -279,6 +291,13 @@ public class IntroActivity extends ActionBarActivity {
 
         @Override
         public void startUpdate(View arg0) {
+        }
+
+        @Override
+        public void unregisterDataSetObserver(DataSetObserver observer) {
+            if (observer != null) {
+                super.unregisterDataSetObserver(observer);
+            }
         }
     }
 }

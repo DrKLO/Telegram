@@ -11,8 +11,6 @@ package org.telegram.messenger;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-import org.telegram.ui.ApplicationLoader;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -25,11 +23,8 @@ public class Datacenter {
     public ArrayList<String> addresses = new ArrayList<String>();
     public HashMap<String, Integer> ports = new HashMap<String, Integer>();
     public int[] defaultPorts =   new int[] {-1, 80, -1, 443, -1, 443, -1, 80, -1, 443, -1};
-    public int[] defaultPorts14 = new int[] {-1, 14, -1, 443, -1, 14,  -1, 80, -1, 14,  -1};
+    public int[] defaultPorts8888 = new int[] {-1, 8888, -1, 443, -1, 8888,  -1, 80, -1, 8888,  -1};
     public boolean authorized;
-    public long authSessionId;
-    public long authDownloadSessionId;
-    public long authUploadSessionId;
     public byte[] authKey;
     public long authKeyId;
     public int lastInitVersion = 0;
@@ -38,8 +33,9 @@ public class Datacenter {
     private volatile int currentAddressNum = 0;
 
     public TcpConnection connection;
-    public TcpConnection downloadConnection;
-    public TcpConnection uploadConnection;
+    private TcpConnection downloadConnection;
+    private TcpConnection uploadConnection;
+    public TcpConnection pushConnection;
 
     private ArrayList<ServerSalt> authServerSaltSet = new ArrayList<ServerSalt>();
 
@@ -136,8 +132,8 @@ public class Datacenter {
 
         int[] portsArray = defaultPorts;
 
-        if (overridePort == 14) {
-            portsArray = defaultPorts14;
+        if (overridePort == 8888) {
+            portsArray = defaultPorts8888;
         }
 
         if (currentPortNum >= defaultPorts.length) {
@@ -320,5 +316,77 @@ public class Datacenter {
             }
         }
         return false;
+    }
+
+    public void suspendConnections() {
+        if (connection != null) {
+            connection.suspendConnection(true);
+        }
+        if (uploadConnection != null) {
+            uploadConnection.suspendConnection(true);
+        }
+        if (downloadConnection != null) {
+            downloadConnection.suspendConnection(true);
+        }
+    }
+
+    public void getSessions(ArrayList<Long> sessions) {
+        if (connection != null) {
+            sessions.add(connection.getSissionId());
+        }
+        if (uploadConnection != null) {
+            sessions.add(uploadConnection.getSissionId());
+        }
+        if (downloadConnection != null) {
+            sessions.add(downloadConnection.getSissionId());
+        }
+    }
+
+    public void recreateSessions() {
+        if (connection != null) {
+            connection.recreateSession();
+        }
+        if (uploadConnection != null) {
+            uploadConnection.recreateSession();
+        }
+        if (downloadConnection != null) {
+            downloadConnection.recreateSession();
+        }
+    }
+
+    public TcpConnection getDownloadConnection(TcpConnection.TcpConnectionDelegate delegate) {
+        if (authKey != null) {
+            if (downloadConnection == null) {
+                downloadConnection = new TcpConnection(datacenterId);
+                downloadConnection.delegate = delegate;
+                downloadConnection.transportRequestClass = RPCRequest.RPCRequestClassDownloadMedia;
+            }
+            downloadConnection.connect();
+        }
+        return downloadConnection;
+    }
+
+    public TcpConnection getUploadConnection(TcpConnection.TcpConnectionDelegate delegate) {
+        if (authKey != null) {
+            if (uploadConnection == null) {
+                uploadConnection = new TcpConnection(datacenterId);
+                uploadConnection.delegate = delegate;
+                uploadConnection.transportRequestClass = RPCRequest.RPCRequestClassUploadMedia;
+            }
+            uploadConnection.connect();
+        }
+        return uploadConnection;
+    }
+
+    public TcpConnection getGenericConnection(TcpConnection.TcpConnectionDelegate delegate) {
+        if (authKey != null) {
+            if (connection == null) {
+                connection = new TcpConnection(datacenterId);
+                connection.delegate = delegate;
+                connection.transportRequestClass = RPCRequest.RPCRequestClassGeneric;
+            }
+            connection.connect();
+        }
+        return connection;
     }
 }
