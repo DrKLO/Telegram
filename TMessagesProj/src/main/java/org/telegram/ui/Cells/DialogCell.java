@@ -547,7 +547,17 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
         //CharSequence messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
         Spannable oldText = this.getText();
         //CharSequence messageStringFinal = Aniways.decodeMessage(messageString, this.mIconInfoDisplayer, this, true);
-        CharSequence messageStringFinal = message.getAniwaysDecodedMessageTextSmallIcons(this);
+        CharSequence messageStringFinal;
+
+        if (message != null)
+        {
+            messageStringFinal = message.getAniwaysDecodedMessageTextSmallIcons(this);
+        }
+        else
+        {
+            messageStringFinal = Aniways.decodeMessage(messageString, this.mIconInfoDisplayer, this, true);
+        }
+
         try {
             messageLayout = new StaticLayout(messageStringFinal, currentMessagePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         } catch (Exception e) {
