@@ -93,7 +93,7 @@ android {
         targetSdkVersion 21
         renderscriptTargetApi 21
         renderscriptSupportModeEnabled true
-        versionCode 240
-        versionName "1.6.0"
+        versionCode 241
+        versionName "1.6.1"
     }
 }
