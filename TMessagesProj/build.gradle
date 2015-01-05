@@ -6,6 +6,13 @@ buildscript {
         classpath 'com.android.tools.build:gradle:1.0.0'
     }
 }
+
+allprojects {
+    repositories {
+        mavenCentral()
+    }
+}
+
 apply plugin: 'com.android.application'
 
 repositories {
@@ -93,7 +100,7 @@ android {
         targetSdkVersion 21
         renderscriptTargetApi 21
         renderscriptSupportModeEnabled true
-        versionCode 241
-        versionName "1.6.1"
+        versionCode 242
+        versionName "1.6.2"
     }
 }
