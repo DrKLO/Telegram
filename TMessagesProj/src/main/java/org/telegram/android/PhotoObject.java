@@ -15,6 +15,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.Utilities;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 public class PhotoObject {
@@ -32,7 +33,13 @@ public class PhotoObject {
             opts.outWidth = photo.w;
             opts.outHeight = photo.h;
             try {
-                image = BitmapFactory.decodeByteArray(photoOwner.bytes, 0, photoOwner.bytes.length, opts);
+                if (photo.location.ext != null) {
+                    ByteBuffer buffer = ByteBuffer.allocateDirect(photo.bytes.length);
+                    buffer.put(photo.bytes);
+                    image = Utilities.loadWebpImage(buffer, buffer.limit(), null);
+                } else {
+                    image = BitmapFactory.decodeByteArray(photoOwner.bytes, 0, photoOwner.bytes.length, opts);
+                }
                 if (image != null) {
                     if (preview == 2) {
                         if (secret) {
@@ -40,7 +47,11 @@ public class PhotoObject {
                             Utilities.blurBitmap(image, 7);
                             Utilities.blurBitmap(image, 7);
                         } else {
-                            Utilities.blurBitmap(image, 3);
+                            if (photo.location.ext != null) {
+                                Utilities.blurBitmap(image, 1);
+                            } else {
+                                Utilities.blurBitmap(image, 3);
+                            }
                         }
                     }
                     if (ImageLoader.getInstance().runtimeHack != null) {

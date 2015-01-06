@@ -17,9 +17,9 @@ public class ConnectionContext extends PyroClientAdapter {
     public static final boolean isDebugSession = false;
     private long sessionId;
 
-    private ArrayList<Long> processedMessageIds = new ArrayList<Long>();
-    private ArrayList<Long> messagesIdsForConfirmation = new ArrayList<Long>();
-    private ArrayList<Long> processedSessionChanges = new ArrayList<Long>();
+    private ArrayList<Long> processedMessageIds = new ArrayList<>();
+    private ArrayList<Long> messagesIdsForConfirmation = new ArrayList<>();
+    private ArrayList<Long> processedSessionChanges = new ArrayList<>();
     private int nextSeqNo = 0;
 
     public ConnectionContext() {
@@ -85,7 +85,7 @@ public class ConnectionContext extends PyroClientAdapter {
 
         if (!messagesIdsForConfirmation.isEmpty()) {
             TLRPC.TL_msgs_ack msgAck = new TLRPC.TL_msgs_ack();
-            msgAck.msg_ids = new ArrayList<Long>();
+            msgAck.msg_ids = new ArrayList<>();
             msgAck.msg_ids.addAll(messagesIdsForConfirmation);
 
             ByteBufferDesc os = new ByteBufferDesc(true);

@@ -20,8 +20,8 @@ public class Datacenter {
     private static final int DATA_VERSION = 4;
 
     public int datacenterId;
-    public ArrayList<String> addresses = new ArrayList<String>();
-    public HashMap<String, Integer> ports = new HashMap<String, Integer>();
+    public ArrayList<String> addresses = new ArrayList<>();
+    public HashMap<String, Integer> ports = new HashMap<>();
     public int[] defaultPorts =   new int[] {-1, 80, -1, 443, -1, 443, -1, 80, -1, 443, -1};
     public int[] defaultPorts8888 = new int[] {-1, 8888, -1, 443, -1, 8888,  -1, 80, -1, 8888,  -1};
     public boolean authorized;
@@ -37,10 +37,10 @@ public class Datacenter {
     private TcpConnection uploadConnection;
     public TcpConnection pushConnection;
 
-    private ArrayList<ServerSalt> authServerSaltSet = new ArrayList<ServerSalt>();
+    private ArrayList<ServerSalt> authServerSaltSet = new ArrayList<>();
 
     public Datacenter() {
-        authServerSaltSet = new ArrayList<ServerSalt>();
+        authServerSaltSet = new ArrayList<>();
     }
 
     public Datacenter(SerializedData data, int version) {
@@ -66,7 +66,7 @@ public class Datacenter {
                 salt.validUntil = data.readInt32();
                 salt.value = data.readInt64();
                 if (authServerSaltSet == null) {
-                    authServerSaltSet = new ArrayList<ServerSalt>();
+                    authServerSaltSet = new ArrayList<>();
                 }
                 authServerSaltSet.add(salt);
             }
@@ -104,7 +104,7 @@ public class Datacenter {
                     salt.validUntil = data.readInt32();
                     salt.value = data.readInt64();
                     if (authServerSaltSet == null) {
-                        authServerSaltSet = new ArrayList<ServerSalt>();
+                        authServerSaltSet = new ArrayList<>();
                     }
                     authServerSaltSet.add(salt);
                 }
@@ -281,7 +281,7 @@ public class Datacenter {
         if (salts == null) {
             return;
         }
-        ArrayList<Long> existingSalts = new ArrayList<Long>(authServerSaltSet.size());
+        ArrayList<Long> existingSalts = new ArrayList<>(authServerSaltSet.size());
 
         for (ServerSalt salt : authServerSaltSet) {
             existingSalts.add(salt.value);

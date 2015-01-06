@@ -13,6 +13,8 @@ import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
@@ -20,15 +22,17 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
+import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
 
 public class ImageReceiver {
-    private TLRPC.FileLocation last_path = null;
+    private TLObject last_path = null;
     private String last_httpUrl = null;
     private String last_filter = null;
     private Drawable last_placeholder = null;
+    private TLRPC.FileLocation last_placeholderLocation = null;
     private int last_size = 0;
     private String currentPath = null;
     private boolean isPlaceholder = false;
@@ -47,6 +51,9 @@ public class ImageReceiver {
     private RectF roundRect = null;
     private RectF bitmapRect = null;
     private Matrix shaderMatrix = null;
+    private int alpha = 255;
+    private boolean isPressed;
+    private boolean disableRecycle;
 
     public ImageReceiver() {
 
@@ -56,20 +63,20 @@ public class ImageReceiver {
         parentView = view;
     }
 
-    public void setImage(TLRPC.FileLocation path, String filter, Drawable placeholder, boolean cacheOnly) {
-        setImage(path, null, filter, placeholder, 0, cacheOnly);
+    public void setImage(TLObject path, String filter, Drawable placeholder, boolean cacheOnly) {
+        setImage(path, null, filter, placeholder, null, 0, cacheOnly);
     }
 
-    public void setImage(TLRPC.FileLocation path, String filter, Drawable placeholder, int size, boolean cacheOnly) {
-        setImage(path, null, filter, placeholder, size, cacheOnly);
+    public void setImage(TLObject path, String filter, Drawable placeholder, int size, boolean cacheOnly) {
+        setImage(path, null, filter, placeholder, null, size, cacheOnly);
     }
 
-    public void setImage(String path, String filter, Drawable placeholder) {
-        setImage(null, path, filter, placeholder, 0, true);
+    public void setImage(String path, String filter, Drawable placeholder, int size) {
+        setImage(null, path, filter, placeholder, null, size, true);
     }
 
-    public void setImage(TLRPC.FileLocation fileLocation, String httpUrl, String filter, Drawable placeholder, int size, boolean cacheOnly) {
-        if ((fileLocation == null && httpUrl == null) || (fileLocation != null && !(fileLocation instanceof TLRPC.TL_fileLocation) && !(fileLocation instanceof TLRPC.TL_fileEncryptedLocation))) {
+    public void setImage(TLObject fileLocation, String httpUrl, String filter, Drawable placeholder, TLRPC.FileLocation placeholderLocation, int size, boolean cacheOnly) {
+        if ((fileLocation == null && httpUrl == null) || (fileLocation != null && !(fileLocation instanceof TLRPC.TL_fileLocation) && !(fileLocation instanceof TLRPC.TL_fileEncryptedLocation) && !(fileLocation instanceof TLRPC.TL_document))) {
             recycleBitmap(null);
             currentPath = null;
             isPlaceholder = true;
@@ -79,6 +86,7 @@ public class ImageReceiver {
             lastCacheOnly = false;
             bitmapShader = null;
             last_placeholder = placeholder;
+            last_placeholderLocation = placeholderLocation;
             last_size = 0;
             currentImage = null;
             ImageLoader.getInstance().cancelLoadingForImageView(this);
@@ -87,18 +95,26 @@ public class ImageReceiver {
             }
             return;
         }
-        String key;
+        String key = null;
         if (fileLocation != null) {
-            key = fileLocation.volume_id + "_" + fileLocation.local_id;
+            if (fileLocation instanceof TLRPC.FileLocation) {
+                TLRPC.FileLocation location = (TLRPC.FileLocation) fileLocation;
+                key = location.volume_id + "_" + location.local_id;
+            } else if (fileLocation instanceof TLRPC.Document) {
+                TLRPC.Document location = (TLRPC.Document) fileLocation;
+                key = location.dc_id + "_" + location.id;
+            }
         } else {
             key = Utilities.MD5(httpUrl);
         }
         if (filter != null) {
             key += "@" + filter;
         }
+        boolean sameFile = false;
         BitmapDrawable img = null;
         if (currentPath != null) {
             if (currentPath.equals(key)) {
+                sameFile = true;
                 if (currentImage != null) {
                     return;
                 } else {
@@ -114,12 +130,28 @@ public class ImageReceiver {
         last_path = fileLocation;
         last_httpUrl = httpUrl;
         last_filter = filter;
-        last_placeholder = placeholder;
+        if (!sameFile) {
+            last_placeholder = placeholder;
+            last_placeholderLocation = placeholderLocation;
+        }
         last_size = size;
         lastCacheOnly = cacheOnly;
         bitmapShader = null;
         if (img == null) {
             isPlaceholder = true;
+            if (!sameFile && last_placeholderLocation != null && last_placeholder == null) {
+                last_placeholder = ImageLoader.getInstance().getImageFromMemory(last_placeholderLocation, null, null, null);
+                if (last_placeholder != null) {
+                    try {
+                        Bitmap bitmap = ((BitmapDrawable) last_placeholder).getBitmap();
+                        bitmap = bitmap.copy(bitmap.getConfig(), true);
+                        Utilities.blurBitmap(bitmap, 1);
+                        last_placeholder = new BitmapDrawable(bitmap);
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                }
+            }
             ImageLoader.getInstance().loadImage(fileLocation, httpUrl, this, size, cacheOnly);
             if (parentView != null) {
                 parentView.invalidate();
@@ -146,26 +178,20 @@ public class ImageReceiver {
         }
     }
 
+    public void setPressed(boolean value) {
+        isPressed = value;
+    }
+
+    public boolean getPressed() {
+        return isPressed;
+    }
+
     public void setImageBitmap(Bitmap bitmap) {
-        ImageLoader.getInstance().cancelLoadingForImageView(this);
-        recycleBitmap(null);
-        if (bitmap != null) {
-            last_placeholder = new BitmapDrawable(null, bitmap);
-        } else {
-            last_placeholder = null;
-        }
-        isPlaceholder = true;
-        currentPath = null;
-        last_path = null;
-        last_httpUrl = null;
-        last_filter = null;
-        currentImage = null;
-        bitmapShader = null;
-        last_size = 0;
-        lastCacheOnly = false;
-        if (parentView != null) {
-            parentView.invalidate();
-        }
+        setImageBitmap(bitmap != null ? new BitmapDrawable(null, bitmap) : null);
+    }
+
+    public void setDisableRecycle(boolean value) {
+        disableRecycle = value;
     }
 
     public void setImageBitmap(Drawable bitmap) {
@@ -173,6 +199,7 @@ public class ImageReceiver {
         recycleBitmap(null);
         last_placeholder = bitmap;
         isPlaceholder = true;
+        last_placeholderLocation = null;
         currentPath = null;
         currentImage = null;
         last_path = null;
@@ -191,7 +218,7 @@ public class ImageReceiver {
     }
 
     private void recycleBitmap(BitmapDrawable newBitmap) {
-        if (currentImage == null || isPlaceholder) {
+        if (currentImage == null || isPlaceholder || disableRecycle) {
             return;
         }
         if (currentImage instanceof BitmapDrawable) {
@@ -223,6 +250,15 @@ public class ImageReceiver {
                 bitmapDrawable = last_placeholder;
             }
             if (bitmapDrawable != null) {
+                Paint paint = ((BitmapDrawable) bitmapDrawable).getPaint();
+                boolean hasFilter = paint != null && paint.getColorFilter() != null;
+                if (hasFilter && !isPressed) {
+                    bitmapDrawable.setColorFilter(null);
+                    hasFilter = false;
+                } else if (!hasFilter && isPressed) {
+                    bitmapDrawable.setColorFilter(new PorterDuffColorFilter(0xffdddddd, PorterDuff.Mode.MULTIPLY));
+                    hasFilter = true;
+                }
                 if (bitmapShader != null) {
                     drawRegion.set(imageX, imageY, imageX + imageW, imageY + imageH);
                     if (isVisible) {
@@ -246,13 +282,14 @@ public class ImageReceiver {
                         drawRegion.set(imageX + (imageW - bitmapW) / 2, imageY + (imageH - bitmapH) / 2, imageX + (imageW + bitmapW) / 2, imageY + (imageH + bitmapH) / 2);
                         bitmapDrawable.setBounds(drawRegion);
                         try {
+                            bitmapDrawable.setAlpha(alpha);
                             bitmapDrawable.draw(canvas);
                         } catch (Exception e) {
                             if (currentPath != null) {
                                 ImageLoader.getInstance().removeImage(currentPath);
                                 currentPath = null;
                             }
-                            setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size, lastCacheOnly);
+                            setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_placeholderLocation, last_size, lastCacheOnly);
                             FileLog.e("tmessages", e);
                         }
                         canvas.restore();
@@ -271,13 +308,14 @@ public class ImageReceiver {
                             bitmapDrawable.setBounds(drawRegion);
                             if (isVisible) {
                                 try {
+                                    bitmapDrawable.setAlpha(alpha);
                                     bitmapDrawable.draw(canvas);
                                 } catch (Exception e) {
                                     if (currentPath != null) {
                                         ImageLoader.getInstance().removeImage(currentPath);
                                         currentPath = null;
                                     }
-                                    setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size, lastCacheOnly);
+                                    setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_placeholderLocation, last_size, lastCacheOnly);
                                     FileLog.e("tmessages", e);
                                 }
                             }
@@ -288,13 +326,14 @@ public class ImageReceiver {
                             bitmapDrawable.setBounds(drawRegion);
                             if (isVisible) {
                                 try {
+                                    bitmapDrawable.setAlpha(alpha);
                                     bitmapDrawable.draw(canvas);
                                 } catch (Exception e) {
                                     if (currentPath != null) {
                                         ImageLoader.getInstance().removeImage(currentPath);
                                         currentPath = null;
                                     }
-                                    setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size, lastCacheOnly);
+                                    setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_placeholderLocation, last_size, lastCacheOnly);
                                     FileLog.e("tmessages", e);
                                 }
                             }
@@ -307,13 +346,14 @@ public class ImageReceiver {
                 last_placeholder.setBounds(drawRegion);
                 if (isVisible) {
                     try {
+                        last_placeholder.setAlpha(alpha);
                         last_placeholder.draw(canvas);
                     } catch (Exception e) {
                         if (currentPath != null) {
                             ImageLoader.getInstance().removeImage(currentPath);
                             currentPath = null;
                         }
-                        setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_size, lastCacheOnly);
+                        setImage(last_path, last_httpUrl, last_filter, last_placeholder, last_placeholderLocation, last_size, lastCacheOnly);
                         FileLog.e("tmessages", e);
                     }
                 }
@@ -346,6 +386,10 @@ public class ImageReceiver {
 
     public boolean getVisible() {
         return isVisible;
+    }
+
+    public void setAlpha(float value) {
+        alpha = (int)(value * 255.0f);
     }
 
     public boolean hasImage() {

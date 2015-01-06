@@ -34,8 +34,8 @@ import java.util.TimerTask;
 public class ContactsSearchAdapter extends BaseContactsSearchAdapter {
     private Context mContext;
     private HashMap<Integer, TLRPC.User> ignoreUsers;
-    private ArrayList<TLRPC.User> searchResult = new ArrayList<TLRPC.User>();
-    private ArrayList<CharSequence> searchResultNames = new ArrayList<CharSequence>();
+    private ArrayList<TLRPC.User> searchResult = new ArrayList<>();
+    private ArrayList<CharSequence> searchResultNames = new ArrayList<>();
     private HashMap<Integer, ?> checkedMap;
     private Timer searchTimer;
     private boolean allowUsernameSearch;
@@ -94,7 +94,7 @@ public class ContactsSearchAdapter extends BaseContactsSearchAdapter {
                 if (allowUsernameSearch) {
                     queryServerSearch(query);
                 }
-                final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<TLRPC.TL_contact>();
+                final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<>();
                 contactsCopy.addAll(ContactsController.getInstance().contacts);
                 Utilities.searchQueue.postRunnable(new Runnable() {
                     @Override
@@ -105,8 +105,8 @@ public class ContactsSearchAdapter extends BaseContactsSearchAdapter {
                             return;
                         }
                         long time = System.currentTimeMillis();
-                        ArrayList<TLRPC.User> resultArray = new ArrayList<TLRPC.User>();
-                        ArrayList<CharSequence> resultArrayNames = new ArrayList<CharSequence>();
+                        ArrayList<TLRPC.User> resultArray = new ArrayList<>();
+                        ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
 
                         for (TLRPC.TL_contact contact : contactsCopy) {
                             TLRPC.User user = MessagesController.getInstance().getUser(contact.user_id);
@@ -236,8 +236,12 @@ public class ContactsSearchAdapter extends BaseContactsSearchAdapter {
                         }
                     }
                 } else if (i > searchResult.size() && user.username != null) {
+                    String foundUserName = lastFoundUsername;
+                    if (foundUserName.startsWith("@")) {
+                        foundUserName = foundUserName.substring(1);
+                    }
                     try {
-                        username = Html.fromHtml(String.format("<font color=\"#4d83b3\">@%s</font>%s", user.username.substring(0, lastFoundUsername.length()), user.username.substring(lastFoundUsername.length())));
+                        username = Html.fromHtml(String.format("<font color=\"#4d83b3\">@%s</font>%s", user.username.substring(0, foundUserName.length()), user.username.substring(foundUserName.length())));
                     } catch (Exception e) {
                         username = user.username;
                         FileLog.e("tmessages", e);
