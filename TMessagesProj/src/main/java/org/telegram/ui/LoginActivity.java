@@ -437,8 +437,12 @@ public class LoginActivity extends BaseFragment {
         }, true, RPCRequest.RPCRequestClassGeneric);
 
         clearCurrentState();
-        presentFragment(new MessagesActivity(null), true);
-        NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
+        if (UserConfig.isWaitingForPasswordEnter()) {
+            presentFragment(new AccountPasswordActivity(1), true);
+        } else {
+            presentFragment(new MessagesActivity(null), true);
+            NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
+        }
     }
 
     public class PhoneView extends SlideView implements AdapterView.OnItemSelectedListener {
@@ -450,9 +454,9 @@ public class LoginActivity extends BaseFragment {
 
         private int countryState = 0;
 
-        private ArrayList<String> countriesArray = new ArrayList<String>();
-        private HashMap<String, String> countriesMap = new HashMap<String, String>();
-        private HashMap<String, String> codesMap = new HashMap<String, String>();
+        private ArrayList<String> countriesArray = new ArrayList<>();
+        private HashMap<String, String> countriesMap = new HashMap<>();
+        private HashMap<String, String> codesMap = new HashMap<>();
 
         private boolean ignoreSelection = false;
         private boolean ignoreOnTextChange = false;
@@ -694,7 +698,7 @@ public class LoginActivity extends BaseFragment {
             layoutParams.gravity = Gravity.LEFT;
             textView.setLayoutParams(layoutParams);
 
-            HashMap<String, String> languageMap = new HashMap<String, String>();
+            HashMap<String, String> languageMap = new HashMap<>();
             try {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(getResources().getAssets().open("countries.txt")));
                 String line;
@@ -1294,7 +1298,7 @@ public class LoginActivity extends BaseFragment {
                                     UserConfig.setCurrentUser(res.user);
                                     UserConfig.saveConfig(true);
                                     MessagesStorage.getInstance().cleanUp(true);
-                                    ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+                                    ArrayList<TLRPC.User> users = new ArrayList<>();
                                     users.add(res.user);
                                     MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
                                     MessagesController.getInstance().putUser(res.user, false);
@@ -1313,26 +1317,40 @@ public class LoginActivity extends BaseFragment {
                                         setPage(2, true, params, false);
                                         destroyTimer();
                                         destroyCodeTimer();
+                                    } else if (error.text.contains("SESSION_PASSWORD_NEEDED")) {
+                                        needFinishActivity();
+                                        destroyTimer();
+                                        destroyCodeTimer();
                                     } else {
-                                        createTimer();
-                                        if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                                            needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
-                                        } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                                            needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
-                                        } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                                            needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
-                                        } else if (error.text.startsWith("FLOOD_WAIT")) {
-                                            needShowAlert(LocaleController.getString("FloodWait", R.string.FloodWait));
+                                        lastError = error.text;
+
+                                        if (error.text.contains("PHONE_NUMBER_UNOCCUPIED") && registered == null) {
+                                            Bundle params = new Bundle();
+                                            params.putString("phoneFormated", requestPhone);
+                                            params.putString("phoneHash", phoneHash);
+                                            params.putString("code", req.phone_code);
+                                            setPage(2, true, params, false);
+                                            destroyTimer();
+                                            destroyCodeTimer();
                                         } else {
-                                            needShowAlert(error.text);
+                                            createTimer();
+                                            if (error.text.contains("PHONE_NUMBER_INVALID")) {
+                                                needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
+                                            } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
+                                                needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
+                                            } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                                                needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
+                                            } else if (error.text.startsWith("FLOOD_WAIT")) {
+                                                needShowAlert(LocaleController.getString("FloodWait", R.string.FloodWait));
+                                            } else {
+                                                needShowAlert(error.text);
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            catch(Throwable ex) {
+                            } catch (Throwable ex) {
                                 Log.e(true, TAG, "Caught exception in phone reg", ex);
-                            }
-                            finally {
+                            } finally {
                                 requestInprogress = false;
                             }
                         }
@@ -1636,7 +1654,7 @@ public class LoginActivity extends BaseFragment {
                                     UserConfig.setCurrentUser(user);
                                     UserConfig.saveConfig(true);
                                     MessagesStorage.getInstance().cleanUp(true);
-                                    ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+                                    ArrayList<TLRPC.User> users = new ArrayList<>();
                                     users.add(user);
                                     MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
                                     //MessagesController.getInstance().uploadAndApplyUserAvatar(avatarPhotoBig);
@@ -1657,14 +1675,24 @@ public class LoginActivity extends BaseFragment {
                                     } else if (error.text.contains("LASTNAME_INVALID")) {
                                         needShowAlert(LocaleController.getString("InvalidLastName", R.string.InvalidLastName));
                                     } else {
-                                        needShowAlert(error.text);
+                                        if (error.text.contains("PHONE_NUMBER_INVALID")) {
+                                            needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
+                                        } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
+                                            needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
+                                        } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                                            needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
+                                        } else if (error.text.contains("FIRSTNAME_INVALID")) {
+                                            needShowAlert(LocaleController.getString("InvalidFirstName", R.string.InvalidFirstName));
+                                        } else if (error.text.contains("LASTNAME_INVALID")) {
+                                            needShowAlert(LocaleController.getString("InvalidLastName", R.string.InvalidLastName));
+                                        } else {
+                                            needShowAlert(error.text);
+                                        }
                                     }
                                 }
-                            }
-                            catch(Throwable ex) {
+                            } catch (Throwable ex) {
                                 Log.e(true, TAG, "Caught exception in phone reg", ex);
-                            }
-                            finally {
+                            } finally {
                                 requestInprogress = false;
                             }
                         }

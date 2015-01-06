@@ -3,7 +3,78 @@
 #include <setjmp.h>
 #include <libjpeg/jpeglib.h>
 #include <android/bitmap.h>
+#include <libwebp/webp/decode.h>
+#include <libwebp/webp/encode.h>
 #include "utils.h"
+#include "image.h"
+
+jclass jclass_NullPointerException;
+jclass jclass_RuntimeException;
+
+jclass jclass_Options;
+jfieldID jclass_Options_inJustDecodeBounds;
+jfieldID jclass_Options_outHeight;
+jfieldID jclass_Options_outWidth;
+
+jclass jclass_Bitmap;
+jmethodID jclass_Bitmap_createBitmap;
+jclass jclass_Config;
+jfieldID jclass_Config_ARGB_8888;
+
+jclass createGlobarRef(JNIEnv *env, jclass class) {
+    if (class) {
+        return (*env)->NewGlobalRef(env, class);
+    }
+    return 0;
+}
+
+jint imageOnJNILoad(JavaVM *vm, void *reserved, JNIEnv *env) {
+    jclass_NullPointerException = createGlobarRef(env, (*env)->FindClass(env, "java/lang/NullPointerException"));
+    if (jclass_NullPointerException == 0) {
+        return -1;
+    }
+    jclass_RuntimeException = createGlobarRef(env, (*env)->FindClass(env, "java/lang/RuntimeException"));
+    if (jclass_RuntimeException == 0) {
+        return -1;
+    }
+    
+    jclass_Options = createGlobarRef(env, (*env)->FindClass(env, "android/graphics/BitmapFactory$Options"));
+    if (jclass_Options == 0) {
+        return -1;
+    }
+    jclass_Options_inJustDecodeBounds = (*env)->GetFieldID(env, jclass_Options, "inJustDecodeBounds", "Z");
+    if (jclass_Options_inJustDecodeBounds == 0) {
+        return -1;
+    }
+    jclass_Options_outHeight = (*env)->GetFieldID(env, jclass_Options, "outHeight", "I");
+    if (jclass_Options_outHeight == 0) {
+        return -1;
+    }
+    jclass_Options_outWidth = (*env)->GetFieldID(env, jclass_Options, "outWidth", "I");
+    if (jclass_Options_outWidth == 0) {
+        return -1;
+    }
+    
+    jclass_Bitmap = createGlobarRef(env, (*env)->FindClass(env, "android/graphics/Bitmap"));
+    if (jclass_Bitmap == 0) {
+        return -1;
+    }
+    jclass_Bitmap_createBitmap = (*env)->GetStaticMethodID(env, jclass_Bitmap, "createBitmap", "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
+    if (jclass_Bitmap_createBitmap == 0) {
+        return -1;
+    }
+    
+    jclass_Config = createGlobarRef(env, (*env)->FindClass(env, "android/graphics/Bitmap$Config"));
+    if (jclass_Config == 0) {
+        return -1;
+    }
+    jclass_Config_ARGB_8888 = (*env)->GetStaticFieldID(env, jclass_Config, "ARGB_8888", "Landroid/graphics/Bitmap$Config;");
+    if (jclass_Config_ARGB_8888 == 0) {
+        return -1;
+    }
+    
+    return JNI_VERSION_1_6;
+}
 
 static inline uint64_t get_colors (const uint8_t *p) {
     return p[0] + (p[1] << 16) + ((uint64_t)p[2] << 32);
@@ -17,7 +88,7 @@ static void fastBlurMore(int imageWidth, int imageHeight, int imageStride, void 
     const int r1 = radius + 1;
     const int div = radius * 2 + 1;
     
-    if (radius > 15 || div >= w || div >= h || w * h > 90 * 90 || imageStride > imageWidth * 4) {
+    if (radius > 15 || div >= w || div >= h || w * h > 128 * 128 || imageStride > imageWidth * 4) {
         return;
     }
     
@@ -105,8 +176,20 @@ static void fastBlur(int imageWidth, int imageHeight, int imageStride, void *pix
     const int stride = imageStride;
     const int r1 = radius + 1;
     const int div = radius * 2 + 1;
+    int shift;
+    if (radius == 1) {
+        shift = 2;
+    } else if (radius == 3) {
+        shift = 4;
+    } else if (radius == 7) {
+        shift = 6;
+    } else if (radius == 15) {
+        shift = 8;
+    } else {
+        return;
+    }
     
-    if (radius > 15 || div >= w || div >= h || w * h > 90 * 90 || imageStride > imageWidth * 4) {
+    if (radius > 15 || div >= w || div >= h || w * h > 128 * 128 || imageStride > imageWidth * 4) {
         return;
     }
     
@@ -133,7 +216,7 @@ static void fastBlur(int imageWidth, int imageHeight, int imageStride, void *pix
         x = 0;
         
         #define update(start, middle, end)  \
-                rgb[y * w + x] = (rgbsum >> 4) & 0x00FF00FF00FF00FFLL; \
+                rgb[y * w + x] = (rgbsum >> shift) & 0x00FF00FF00FF00FFLL; \
                 rgballsum += get_colors (&pix[yw + (start) * 4]) - 2 * get_colors (&pix[yw + (middle) * 4]) + get_colors (&pix[yw + (end) * 4]); \
                 rgbsum += rgballsum;        \
                 x++;                        \
@@ -166,7 +249,7 @@ static void fastBlur(int imageWidth, int imageHeight, int imageStride, void *pix
         int yi = x * 4;
         
         #define update(start, middle, end)  \
-                int64_t res = rgbsum >> 4;   \
+                int64_t res = rgbsum >> shift;   \
                 pix[yi] = res;              \
                 pix[yi + 1] = res >> 16;    \
                 pix[yi + 2] = res >> 32;    \
@@ -312,4 +395,63 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_loadBitmap(JNIEnv *env, jcl
     } else {
         throwException(env, "AndroidBitmap_getInfo() failed ! error=%d", i);
     }
+}
+
+JNIEXPORT jobject Java_org_telegram_messenger_Utilities_loadWebpImage(JNIEnv *env, jclass class, jobject buffer, int len, jobject options) {
+    if (!buffer) {
+        (*env)->ThrowNew(env, jclass_NullPointerException, "Input buffer can not be null");
+        return 0;
+    }
+    
+    jbyte *inputBuffer = (*env)->GetDirectBufferAddress(env, buffer);
+    
+    int bitmapWidth = 0;
+    int bitmapHeight = 0;
+    if (!WebPGetInfo((uint8_t*)inputBuffer, len, &bitmapWidth, &bitmapHeight)) {
+        (*env)->ThrowNew(env, jclass_RuntimeException, "Invalid WebP format");
+        return 0;
+    }
+    
+    if (options && (*env)->GetBooleanField(env, options, jclass_Options_inJustDecodeBounds) == JNI_TRUE) {
+        (*env)->SetIntField(env, options, jclass_Options_outWidth, bitmapWidth);
+        (*env)->SetIntField(env, options, jclass_Options_outHeight, bitmapHeight);
+        return 0;
+    }
+
+    jobject value__ARGB_8888 = (*env)->GetStaticObjectField(env, jclass_Config, jclass_Config_ARGB_8888);
+    jobject outputBitmap = (*env)->CallStaticObjectMethod(env, jclass_Bitmap, jclass_Bitmap_createBitmap, (jint)bitmapWidth, (jint)bitmapHeight, value__ARGB_8888);
+    if (!outputBitmap) {
+        (*env)->ThrowNew(env, jclass_RuntimeException, "Failed to allocate Bitmap");
+        return 0;
+    }
+    outputBitmap = (*env)->NewLocalRef(env, outputBitmap);
+    
+    AndroidBitmapInfo bitmapInfo;
+    if (AndroidBitmap_getInfo(env, outputBitmap, &bitmapInfo) != ANDROID_BITMAP_RESUT_SUCCESS) {
+        (*env)->DeleteLocalRef(env, outputBitmap);
+        (*env)->ThrowNew(env, jclass_RuntimeException, "Failed to get Bitmap information");
+        return 0;
+    }
+    
+    void *bitmapPixels = 0;
+    if (AndroidBitmap_lockPixels(env, outputBitmap, &bitmapPixels) != ANDROID_BITMAP_RESUT_SUCCESS) {
+        (*env)->DeleteLocalRef(env, outputBitmap);
+        (*env)->ThrowNew(env, jclass_RuntimeException, "Failed to lock Bitmap pixels");
+        return 0;
+    }
+    
+    if (!WebPDecodeRGBAInto((uint8_t*)inputBuffer, len, (uint8_t*)bitmapPixels, bitmapInfo.height * bitmapInfo.stride, bitmapInfo.stride)) {
+        AndroidBitmap_unlockPixels(env, outputBitmap);
+        (*env)->DeleteLocalRef(env, outputBitmap);
+        (*env)->ThrowNew(env, jclass_RuntimeException, "Failed to unlock Bitmap pixels");
+        return 0;
+    }
+    
+    if (AndroidBitmap_unlockPixels(env, outputBitmap) != ANDROID_BITMAP_RESUT_SUCCESS) {
+        (*env)->DeleteLocalRef(env, outputBitmap);
+        (*env)->ThrowNew(env, jclass_RuntimeException, "Failed to unlock Bitmap pixels");
+        return 0;
+    }
+    
+    return outputBitmap;
 }

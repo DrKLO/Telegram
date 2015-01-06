@@ -131,6 +131,10 @@ public class RadialProgress {
         currentDrawable = drawable;
     }
 
+    public float getAlpha() {
+        return previousDrawable != null || currentDrawable != null ? animatedAlphaValue : 0.0f;
+    }
+
     public void onDraw(Canvas canvas) {
         if (previousDrawable != null) {
             previousDrawable.setAlpha((int)(255 * animatedAlphaValue));

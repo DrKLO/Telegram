@@ -30,6 +30,7 @@ public class UserConfig {
     private final static Object sync = new Object();
     public static boolean saveIncomingPhotos = false;
     public static int contactsVersion = 1;
+    public static boolean waitingForPasswordEnter = false;
 
     public static int getNewMessageId() {
         int id;
@@ -60,6 +61,7 @@ public class UserConfig {
                 editor.putInt("lastBroadcastId", lastBroadcastId);
                 editor.putBoolean("registeredForInternalPush", registeredForInternalPush);
                 editor.putBoolean("blockedUsersLoaded", blockedUsersLoaded);
+                editor.putBoolean("waitingForPasswordEnter", waitingForPasswordEnter);
                 if (currentUser != null) {
                     if (withFile) {
                         SerializedData data = new SerializedData();
@@ -83,6 +85,18 @@ public class UserConfig {
     public static boolean isClientActivated() {
         synchronized (sync) {
             return currentUser != null;
+        }
+    }
+
+    public static boolean isWaitingForPasswordEnter() {
+        synchronized (sync) {
+            return waitingForPasswordEnter;
+        }
+    }
+
+    public static void setWaitingForPasswordEnter(boolean value) {
+        synchronized (sync) {
+            waitingForPasswordEnter = value;
         }
     }
 
@@ -180,6 +194,7 @@ public class UserConfig {
                 lastBroadcastId = preferences.getInt("lastBroadcastId", -1);
                 registeredForInternalPush = preferences.getBoolean("registeredForInternalPush", false);
                 blockedUsersLoaded = preferences.getBoolean("blockedUsersLoaded", false);
+                waitingForPasswordEnter = preferences.getBoolean("waitingForPasswordEnter", false);
                 String user = preferences.getString("user", null);
                 if (user != null) {
                     byte[] userBytes = Base64.decode(user, Base64.DEFAULT);
@@ -196,6 +211,7 @@ public class UserConfig {
         currentUser = null;
         registeredForInternalPush = false;
         registeredForPush = false;
+        waitingForPasswordEnter = false;
         contactsHash = "";
         importHash = "";
         lastLocalId = -210000;

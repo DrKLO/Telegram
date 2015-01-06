@@ -371,7 +371,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                             } catch (Exception e) {
                                 FileLog.e("tmessages", e);
                             }
-                            ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+                            ArrayList<TLRPC.User> users = new ArrayList<>();
                             users.add(user);
                             MessagesController.getInstance().putUsers(users, false);
                             MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);

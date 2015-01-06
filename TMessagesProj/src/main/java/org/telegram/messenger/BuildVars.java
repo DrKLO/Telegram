@@ -9,7 +9,7 @@
 package org.telegram.messenger;
 
 public class BuildVars {
-    public static boolean DEBUG_VERSION = true;
+    public static boolean DEBUG_VERSION = false;
     public static int APP_ID = 16282;
     //public static int APP_ID = 2458;
     public static String APP_HASH = "ebfaa22710b9372b4679b8e81d5bf264";
@@ -17,6 +17,6 @@ public class BuildVars {
     public static String HOCKEY_APP_HASH = "your-hockeyapp-api-key-here";
     //public static String GCM_SENDER_ID = "760348033672";
     public static String GCM_SENDER_ID = "181164171592";
-
     public static String SEND_LOGS_EMAIL = "shaiber3@gmail.com";
+    public static String BING_SEARCH_KEY = "Lc1qVtHS3sP47gnXcE6pVbihRRWEx1UoarUvQwgAAW4="; //obtain your own KEY at https://www.bing.com/dev/en-us/dev-center
 }
