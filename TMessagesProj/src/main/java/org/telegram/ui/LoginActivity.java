@@ -446,7 +446,7 @@ public class LoginActivity extends BaseFragment {
     }
 
     public class PhoneView extends SlideView implements AdapterView.OnItemSelectedListener {
-        private static final String TAG = "AniwaysPhoneView";
+        private static final String TAG = "AniwaysPhoneView"; //This is the one that matters!
         private boolean requestInprogress = false;
         private EditText codeField;
         private EditText phoneField;
