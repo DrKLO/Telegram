@@ -60,6 +60,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     private ArrayList<Integer> loadingFullChats = new ArrayList<>();
     private ArrayList<Integer> loadedFullChats = new ArrayList<>();
 
+    private ArrayList<Integer> reloadingMessages = new ArrayList<>();
+
     private boolean gettingNewDeleteTask = false;
     private int currentDeletingTaskTime = 0;
     private ArrayList<Integer> currentDeletingTaskMids = null;
@@ -314,6 +316,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         loadedFullUsers.clear();
         loadingFullUsers.clear();
         loadedFullUsers.clear();
+        reloadingMessages.clear();
 
         updatesStartWaitTime = 0;
         currentDeletingTaskTime = 0;
@@ -546,6 +549,47 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             }
         });
         ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
+    }
+
+    private void reloadMessages(final ArrayList<Integer> mids, final long dialog_id) {
+        final TLRPC.TL_messages_getMessages req = new TLRPC.TL_messages_getMessages();
+        for (Integer mid : mids) {
+            if (reloadingMessages.contains(mid)) {
+                continue;
+            }
+            req.id.add(mid);
+        }
+        if (req.id.isEmpty()) {
+            return;
+        }
+        reloadingMessages.addAll(req.id);
+        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            @Override
+            public void run(TLObject response, TLRPC.TL_error error) {
+                if (error == null) {
+                    TLRPC.messages_Messages messagesRes = (TLRPC.messages_Messages) response;
+                    MessagesStorage.getInstance().putMessages(messagesRes, dialog_id);
+
+                    final ArrayList<MessageObject> objects = new ArrayList<>();
+                    ArrayList<Integer> messagesToReload = null;
+                    for (TLRPC.Message message : messagesRes.messages) {
+                        message.dialog_id = dialog_id;
+                        final HashMap<Integer, TLRPC.User> usersLocal = new HashMap<>();
+                        for (TLRPC.User u : messagesRes.users) {
+                            usersLocal.put(u.id, u);
+                        }
+                        objects.add(new MessageObject(message, usersLocal, 2));
+                    }
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.replaceMessagesObjects, dialog_id, objects);
+                        }
+                    });
+                }
+                reloadingMessages.removeAll(req.id);
+            }
+        });
     }
 
     protected void processNewDifferenceParams(int seq, int pts, int date) {
@@ -1443,9 +1487,21 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     usersLocal.put(u.id, u);
                 }
                 final ArrayList<MessageObject> objects = new ArrayList<>();
+                ArrayList<Integer> messagesToReload = null;
                 for (TLRPC.Message message : messagesRes.messages) {
                     message.dialog_id = dialog_id;
                     objects.add(new MessageObject(message, usersLocal, 2));
+                    if (isCache && message.media instanceof TLRPC.TL_messageMediaUnsupported) {
+                        if (message.media.bytes.length == 0 || message.media.bytes.length == 1 && message.media.bytes[0] < TLRPC.LAYER) {
+                            if (messagesToReload == null) {
+                                messagesToReload = new ArrayList<>();
+                            }
+                            messagesToReload.add(message.id);
+                        }
+                    }
+                }
+                if (messagesToReload != null) {
+                    reloadMessages(messagesToReload, dialog_id);
                 }
                 AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override

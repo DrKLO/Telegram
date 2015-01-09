@@ -1350,9 +1350,13 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             fileDecodingQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
-                    if (playingMessageObject != null && playingMessageObject.audioProgress != 0) {
-                        lastPlayPcm = (long)(currentTotalPcmDuration * playingMessageObject.audioProgress);
-                        seekOpusFile(playingMessageObject.audioProgress);
+                    try {
+                        if (playingMessageObject != null && playingMessageObject.audioProgress != 0) {
+                            lastPlayPcm = (long)(currentTotalPcmDuration * playingMessageObject.audioProgress);
+                            seekOpusFile(playingMessageObject.audioProgress);
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
                     }
                     synchronized (playerSync) {
                         freePlayerBuffers.addAll(usedPlayerBuffers);

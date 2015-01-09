@@ -123,7 +123,7 @@
     <string name="NotificationMessageMap">%1$s قام بإرسال موقع لك</string>
     <string name="NotificationMessageDocument">%1$s قام بإرسال مستند لك</string>
     <string name="NotificationMessageAudio">%1$s قام بإرسال مقطع صوتي لك</string>
-    <string name="NotificationMessageSticker">%1$s sent you an sticker</string>
+    <string name="NotificationMessageSticker">%1$s قام بإرسال ملصق</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s  قام بإرسال رسالة للمجموعة %2$s</string>
     <string name="NotificationMessageGroupPhoto">%1$s قام بإرسال صورة للمجموعة %2$s</string>
@@ -132,7 +132,7 @@
     <string name="NotificationMessageGroupMap">%1$s قام بإرسال موقع للمجموعة %2$s</string>
     <string name="NotificationMessageGroupDocument">%1$s قام بإرسال مستند للمجموعة %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s قام بإرسال مقطع صوتي للمجموعة %2$s</string>
-    <string name="NotificationMessageGroupSticker">%1$s sent an sticker to the group %2$s</string>
+    <string name="NotificationMessageGroupSticker">%1$s قام بإرسال ملصق للمجموعة %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s قام بدعوتك للمجموعة %2$s</string>
     <string name="NotificationEditedGroupName">%1$s قام بتعديل اسم المجموعة %2$s</string>
     <string name="NotificationEditedGroupPhoto">%1$s قام بتغيير صورة المجموعة %2$s</string>
@@ -309,7 +309,7 @@
     <string name="NoPhotos">لا توجد صور حتى الآن</string>
     <string name="PleaseDownload">فضلًا، قم بتنزيل الوسائط أولًا</string>
     <string name="NoRecentPhotos">لا توجد صور حديثة</string>
-    <string name="NoRecentGIFs">لا توجد صور حديثة</string>
+    <string name="NoRecentGIFs">لا يوجد صور متحركة حديثة</string>
     <string name="SearchImages">البحث على الإنترنت</string>
     <string name="SearchGifs">البحث عن صور متحركة</string>
     <string name="SearchImagesTitle">البحث على الإنترنت</string>
@@ -419,7 +419,7 @@
     <string name="AttachLocation">موقع</string>
     <string name="AttachContact">جهة اتصال</string>
     <string name="AttachDocument">مستند</string>
-    <string name="AttachSticker">Sticker</string>
+    <string name="AttachSticker">ملصق</string>
     <string name="AttachAudio">مقطع صوتي</string>
     <string name="FromYou">أنت</string>
     <string name="ActionTakeScreenshootYou">أنت أخذت لقطة للشاشة !</string>

@@ -123,7 +123,7 @@
     <string name="NotificationMessageMap">%1$s sent you a location</string>
     <string name="NotificationMessageDocument">%1$s sent you a document</string>
     <string name="NotificationMessageAudio">%1$s sent you an audio</string>
-    <string name="NotificationMessageSticker">%1$s sent you an sticker</string>
+    <string name="NotificationMessageSticker">%1$s sent you a sticker</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s sent a message to the group %2$s</string>
     <string name="NotificationMessageGroupPhoto">%1$s sent a photo to the group %2$s</string>
@@ -132,7 +132,7 @@
     <string name="NotificationMessageGroupMap">%1$s sent a location to the group %2$s</string>
     <string name="NotificationMessageGroupDocument">%1$s sent a document to the group %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s sent an audio to the group %2$s</string>
-    <string name="NotificationMessageGroupSticker">%1$s sent an sticker to the group %2$s</string>
+    <string name="NotificationMessageGroupSticker">%1$s sent a sticker to the group %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s invited you to the group %2$s</string>
     <string name="NotificationEditedGroupName">%1$s edited the group\'s %2$s name</string>
     <string name="NotificationEditedGroupPhoto">%1$s edited the group\'s %2$s photo</string>

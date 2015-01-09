@@ -38,7 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class SecretChatHelper {
 
-    public static final int CURRENT_SECRET_CHAT_LAYER = 20;
+    public static final int CURRENT_SECRET_CHAT_LAYER = 23;
 
     private ArrayList<Integer> sendingNotifyLayer = new ArrayList<>();
     private HashMap<Integer, ArrayList<TLRPC.TL_decryptedMessageHolder>> secretHolesQueue = new HashMap<>();
