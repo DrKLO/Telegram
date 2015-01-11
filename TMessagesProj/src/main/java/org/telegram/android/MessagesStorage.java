@@ -2734,6 +2734,8 @@ public class MessagesStorage {
 
             int downloadMediaMask = 0;
             for (TLRPC.Message message : messages) {
+                fixUnsupportedMedia(message);
+
                 long dialog_id = message.dialog_id;
                 if (dialog_id == 0) {
                     if (message.to_id.chat_id != 0) {
@@ -3499,6 +3501,15 @@ public class MessagesStorage {
         }
     }
 
+    private void fixUnsupportedMedia(TLRPC.Message message) {
+        if (message != null && message.media instanceof TLRPC.TL_messageMediaUnsupported && message.media.bytes != null) {
+            if (message.media.bytes.length == 0) {
+                message.media.bytes = new byte[1];
+                message.media.bytes[0] = TLRPC.LAYER;
+            }
+        }
+    }
+
     public void putMessages(final TLRPC.messages_Messages messages, final long dialog_id) {
         if (messages.messages.isEmpty()) {
             return;
@@ -3512,6 +3523,7 @@ public class MessagesStorage {
                         SQLitePreparedStatement state = database.executeFast("REPLACE INTO messages VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
                         SQLitePreparedStatement state2 = database.executeFast("REPLACE INTO media VALUES(?, ?, ?, ?)");
                         for (TLRPC.Message message : messages.messages) {
+                            fixUnsupportedMedia(message);
                             state.requery();
                             ByteBufferDesc data = buffersStorage.getFreeBuffer(message.getObjectSize());
                             message.serializeToStream(data);
@@ -3680,6 +3692,7 @@ public class MessagesStorage {
                                 uid = -dialog.peer.chat_id;
                             }
                             TLRPC.Message message = new_dialogMessage.get(dialog.top_message);
+                            fixUnsupportedMedia(message);
                             ByteBufferDesc data = buffersStorage.getFreeBuffer(message.getObjectSize());
                             message.serializeToStream(data);
 

@@ -210,15 +210,17 @@ public class StickersAdapter extends RecyclerView.Adapter implements Notificatio
                     }
                     final HashMap<String, ArrayList<TLRPC.Document>> result = new HashMap<>();
                     for (TLRPC.TL_stickerPack stickerPack : res.packs) {
-                        ArrayList<TLRPC.Document> arrayList = result.get(stickerPack.emoticon);
-                        for (Long id : stickerPack.documents) {
-                            TLRPC.Document document = documents.get(id);
-                            if (document != null) {
-                                if (arrayList == null) {
-                                    arrayList = new ArrayList<>();
-                                    result.put(stickerPack.emoticon, arrayList);
+                        if (stickerPack != null && stickerPack.emoticon != null) {
+                            ArrayList<TLRPC.Document> arrayList = result.get(stickerPack.emoticon);
+                            for (Long id : stickerPack.documents) {
+                                TLRPC.Document document = documents.get(id);
+                                if (document != null) {
+                                    if (arrayList == null) {
+                                        arrayList = new ArrayList<>();
+                                        result.put(stickerPack.emoticon, arrayList);
+                                    }
+                                    arrayList.add(document);
                                 }
-                                arrayList.add(document);
                             }
                         }
                     }
