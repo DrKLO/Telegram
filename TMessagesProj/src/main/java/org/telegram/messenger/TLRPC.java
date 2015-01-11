@@ -14,8 +14,9 @@ import java.util.Locale;
 @SuppressWarnings("unchecked")
 public class TLRPC {
 
-    public static int MESSAGE_FLAG_UNREAD = 1;
-    public static int MESSAGE_FLAG_OUT = 2;
+    public static final int MESSAGE_FLAG_UNREAD = 1;
+    public static final int MESSAGE_FLAG_OUT = 2;
+    public static final int LAYER = 22;
 
     public static class ChatPhoto extends TLObject {
         public FileLocation photo_small;
@@ -10831,7 +10832,7 @@ public class TLRPC {
     public static class invokeWithLayer extends TLObject {
         public static int constructor = 0xda9b0d0d;
 
-        public int layer = 22;
+        public int layer = LAYER;
         public TLObject query;
 
         public void serializeToStream(AbsSerializedData stream) {
