@@ -117,6 +117,7 @@
                 android:gravity="bottom"
                 android:layout_marginLeft="52dp"
                 android:layout_marginRight="2dp"
+                android:layout_marginTop="2dp"
                 android:background="@null"
                 android:paddingBottom="12dp"
                 android:paddingTop="11dp"
