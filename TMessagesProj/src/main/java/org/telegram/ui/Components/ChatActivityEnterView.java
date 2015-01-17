@@ -34,6 +34,7 @@ import android.widget.ImageView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 
+import org.json.JSONObject;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.Emoji;
 import org.telegram.android.LocaleController;
@@ -46,6 +47,7 @@ import org.telegram.android.NotificationCenter;
 
 import com.aniways.Aniways;
 import com.aniways.AniwaysEditText;
+import com.aniways.Log;
 import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
@@ -56,8 +58,14 @@ import org.telegram.ui.AnimationCompat.ViewProxy;
 import org.telegram.messenger.ApplicationLoader;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+
+import aniways.com.google.gson.JsonObject;
 
 public class ChatActivityEnterView implements NotificationCenter.NotificationCenterDelegate, SizeNotifierRelativeLayout.SizeNotifierRelativeLayoutDelegate {
+
+    private static final String TAG = "AniwaysChatActivityEnterView";
 
     public static interface ChatActivityEnterViewDelegate {
         public abstract void onMessageSend();
@@ -138,6 +146,8 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         }
     }
 
+    LinkedHashMap<String, MediaController.SearchImage> mContentuallySelectedGiphys = new LinkedHashMap<String, MediaController.SearchImage>();
+
     public void setContainerView(Activity activity, View containerView) {
         parentActivity = activity;
 
@@ -170,6 +180,39 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         textView.setText(LocaleController.getString("SlideToCancel", R.string.SlideToCancel));
 
         Aniways.makeButtonAniwaysEmoticonsButton(emojiButton, (ViewGroup) sizeNotifierRelativeLayout, (AniwaysEditText) messsageEditText, null, true);
+        ((AniwaysEditText) messsageEditText).registerContentSelectedListener(new AniwaysEditText.onContentSelectedListener() {
+            @Override
+            public void onGiphySelected(AniwaysEditText.onContentSelectedListener.GiphySelectedData data, int position) {
+                try {
+                    String id = data.id;
+                    JSONObject object = data.jsonEntry; //result.getJSONObject(a);
+                    //String id = object.getString("id");
+                    if (mContentuallySelectedGiphys.containsKey(id)) {
+                        // Remove to put it in the end
+                        mContentuallySelectedGiphys.remove(id);
+                    }
+                    JSONObject images = object.getJSONObject("images");
+                    JSONObject thumb = images.getJSONObject("downsized_still");
+                    JSONObject original = images.getJSONObject("original");
+                    MediaController.SearchImage bingImage = new MediaController.SearchImage();
+                    bingImage.id = id;
+                    bingImage.width = original.getInt("width");
+                    bingImage.height = original.getInt("height");
+                    bingImage.size = original.getInt("size");
+                    bingImage.imageUrl = original.getString("url");
+                    bingImage.thumbUrl = thumb.getString("url");
+                    bingImage.type = 1;
+                    mContentuallySelectedGiphys.put(id, bingImage);
+                } catch (Exception e) {
+                    Log.e(true, TAG, "Error in handling a selected Giphy", e);
+                }
+            }
+
+            @Override
+            public void onGiphyRemoved(GiphySelectedData data, int position) {
+
+            }
+        });
 
         /*
         emojiButton.setOnClickListener(new View.OnClickListener() {
@@ -353,6 +396,9 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 delegate.onMessageSend();
             }
         }
+
+        // Send all the Animated Gifs
+        SendMessagesHelper.prepareSendingPhotosSearch(new ArrayList<MediaController.SearchImage>(this.mContentuallySelectedGiphys.values()), dialog_id);
     }
 
     public boolean processSendingText(String text) {
