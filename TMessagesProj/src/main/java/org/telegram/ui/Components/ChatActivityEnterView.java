@@ -184,8 +184,8 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             @Override
             public void onGiphySelected(AniwaysEditText.onContentSelectedListener.GiphySelectedData data, int position) {
                 try {
-                    String id = data.id;
                     JSONObject object = data.jsonEntry; //result.getJSONObject(a);
+                    String id = object.getString("id");
                     //String id = object.getString("id");
                     if (mContentuallySelectedGiphys.containsKey(id)) {
                         // Remove to put it in the end
@@ -399,6 +399,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
 
         // Send all the Animated Gifs
         SendMessagesHelper.prepareSendingPhotosSearch(new ArrayList<MediaController.SearchImage>(this.mContentuallySelectedGiphys.values()), dialog_id);
+        mContentuallySelectedGiphys.clear();
     }
 
     public boolean processSendingText(String text) {
