@@ -49,6 +49,8 @@
     <integer name="aniways_animatedGifInSuggestionPopupSize">60</integer>
 
     <integer name="aniways_bigIconSize">120</integer>
+
+    <string name="AW_Client_aniways_giphy_api_key">3rgXBEggeqCmmuI0nK</string>
     
     <!-- Whether to use smaller icons in the 'icons on demand' popup and have 3 rows and 6 columns 
     	 instead of the default 2 rows and 4 columns.
