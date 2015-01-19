@@ -212,7 +212,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             public void onGiphyRemoved(GiphySelectedData data, int position) {
 
             }
-        });
+        }, true);
 
         /*
         emojiButton.setOnClickListener(new View.OnClickListener() {
