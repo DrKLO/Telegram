@@ -182,7 +182,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         Aniways.makeButtonAniwaysEmoticonsButton(emojiButton, (ViewGroup) sizeNotifierRelativeLayout, (AniwaysEditText) messsageEditText, null, true);
         ((AniwaysEditText) messsageEditText).registerContentSelectedListener(new AniwaysEditText.onContentSelectedListener() {
             @Override
-            public void onGiphySelected(AniwaysEditText.onContentSelectedListener.GiphySelectedData data, int position) {
+            public void onGiphySelected(AniwaysEditText.onContentSelectedListener.GiphySelectedData data) {
                 try {
                     JSONObject object = data.jsonEntry; //result.getJSONObject(a);
                     String id = object.getString("id");
@@ -209,7 +209,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             }
 
             @Override
-            public void onGiphyRemoved(GiphySelectedData data, int position) {
+            public void onGiphyRemoved(GiphySelectedData data) {
 
             }
         }, true);
