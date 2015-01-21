@@ -839,6 +839,13 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         return null;
     }
 
+    public Editable getFieldEditableText() {
+        if (messsageEditText != null && messsageEditText.length() > 0) {
+            return messsageEditText.getText();
+        }
+        return null;
+    }
+
     public boolean isEmojiPopupShowing() {
         return emojiPopup != null && emojiPopup.isShowing();
     }

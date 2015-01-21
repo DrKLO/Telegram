@@ -25,6 +25,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.v7.widget.LinearLayoutManager;
+import android.text.Editable;
 import android.text.Html;
 import android.text.TextUtils;
 import android.util.SparseArray;
@@ -45,6 +46,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.aniways.Aniways;
 import com.aniways.anigram.messenger.R;
 
 import org.telegram.android.AndroidUtilities;
@@ -2871,11 +2873,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         paused = true;
         NotificationsController.getInstance().setOpennedDialogId(0);
 
-        String text = chatActivityEnterView.getFieldText();
+        Editable text = chatActivityEnterView.getFieldEditableText();
         if (text != null) {
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
             SharedPreferences.Editor editor = preferences.edit();
-            editor.putString("dialog_" + dialog_id, text);
+            editor.putString("dialog_" + dialog_id, Aniways.serializeMessage(text));
             editor.commit();
         }
 
