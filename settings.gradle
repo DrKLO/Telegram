@@ -1,1 +1,2 @@
-include ':TMessagesProj', ':Aniways'
+include ':TMessagesProj', ':Android-SDK'
+project(':Android-SDK').projectDir = new File('../Android-SDK')
