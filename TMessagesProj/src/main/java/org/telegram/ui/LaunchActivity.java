@@ -1293,6 +1293,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
             if (fragment instanceof ChatActivity) {
                 if (!tabletFullSize && layout == rightActionBarLayout || tabletFullSize && layout == actionBarLayout) {
+                    boolean result = !(tabletFullSize && layout == actionBarLayout && actionBarLayout.fragmentsStack.size() == 1);
                     if (!layersActionBarLayout.fragmentsStack.isEmpty()) {
                         for (int a = 0; a < layersActionBarLayout.fragmentsStack.size() - 1; a++) {
                             layersActionBarLayout.removeFragmentFromStack(layersActionBarLayout.fragmentsStack.get(0));
@@ -1300,7 +1301,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         }
                         layersActionBarLayout.closeLastFragment(!forceWithoutAnimation);
                     }
-                    return true;
+                    if (!result) {
+                        actionBarLayout.presentFragment(fragment, false, forceWithoutAnimation, false);
+                    }
+                    return result;
                 } else if (!tabletFullSize && layout != rightActionBarLayout) {
                     rightActionBarLayout.setVisibility(View.VISIBLE);
                     backgroundTablet.setVisibility(View.GONE);
