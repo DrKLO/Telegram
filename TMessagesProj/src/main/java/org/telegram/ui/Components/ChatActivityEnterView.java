@@ -155,6 +155,9 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         sizeNotifierRelativeLayout.delegate = this;
 
         messsageEditText = (EditText) containerView.findViewById(R.id.chat_text_edit);
+        if(!(messsageEditText instanceof AniwaysEditText)){
+            Log.w(true, TAG, "Edit text is not Aniways Edit TExt-1");
+        }
         messsageEditText.setHint(LocaleController.getString("TypeMessage", R.string.TypeMessage));
 
         attachButton = (FrameLayout) containerView.findViewById(R.id.chat_attach_button);
@@ -179,40 +182,46 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         TextView textView = (TextView) containerView.findViewById(R.id.slideToCancelTextView);
         textView.setText(LocaleController.getString("SlideToCancel", R.string.SlideToCancel));
 
-        Aniways.makeButtonAniwaysEmoticonsButton(emojiButton, (ViewGroup) sizeNotifierRelativeLayout, (AniwaysEditText) messsageEditText, null, true);
-        ((AniwaysEditText) messsageEditText).registerContentSelectedListener(new AniwaysEditText.onContentSelectedListener() {
-            @Override
-            public void onGiphySelected(AniwaysEditText.onContentSelectedListener.GiphySelectedData data) {
-                try {
-                    JSONObject object = data.jsonEntry; //result.getJSONObject(a);
-                    String id = object.getString("id");
-                    //String id = object.getString("id");
-                    if (mContentuallySelectedGiphys.containsKey(id)) {
-                        // Remove to put it in the end
-                        mContentuallySelectedGiphys.remove(id);
+        //TODO: find out why sometimes it is not
+        if(messsageEditText instanceof AniwaysEditText) {
+            Aniways.makeButtonAniwaysEmoticonsButton(emojiButton, (ViewGroup) sizeNotifierRelativeLayout, (AniwaysEditText) messsageEditText, null, true);
+            ((AniwaysEditText) messsageEditText).registerContentSelectedListener(new AniwaysEditText.onContentSelectedListener() {
+                @Override
+                public void onGiphySelected(AniwaysEditText.onContentSelectedListener.GiphySelectedData data) {
+                    try {
+                        JSONObject object = data.jsonEntry; //result.getJSONObject(a);
+                        String id = object.getString("id");
+                        //String id = object.getString("id");
+                        if (mContentuallySelectedGiphys.containsKey(id)) {
+                            // Remove to put it in the end
+                            mContentuallySelectedGiphys.remove(id);
+                        }
+                        JSONObject images = object.getJSONObject("images");
+                        JSONObject thumb = images.getJSONObject("downsized_still");
+                        JSONObject original = images.getJSONObject("original");
+                        MediaController.SearchImage bingImage = new MediaController.SearchImage();
+                        bingImage.id = id;
+                        bingImage.width = original.getInt("width");
+                        bingImage.height = original.getInt("height");
+                        bingImage.size = original.getInt("size");
+                        bingImage.imageUrl = original.getString("url");
+                        bingImage.thumbUrl = thumb.getString("url");
+                        bingImage.type = 1;
+                        mContentuallySelectedGiphys.put(id, bingImage);
+                    } catch (Exception e) {
+                        Log.e(true, TAG, "Error in handling a selected Giphy", e);
                     }
-                    JSONObject images = object.getJSONObject("images");
-                    JSONObject thumb = images.getJSONObject("downsized_still");
-                    JSONObject original = images.getJSONObject("original");
-                    MediaController.SearchImage bingImage = new MediaController.SearchImage();
-                    bingImage.id = id;
-                    bingImage.width = original.getInt("width");
-                    bingImage.height = original.getInt("height");
-                    bingImage.size = original.getInt("size");
-                    bingImage.imageUrl = original.getString("url");
-                    bingImage.thumbUrl = thumb.getString("url");
-                    bingImage.type = 1;
-                    mContentuallySelectedGiphys.put(id, bingImage);
-                } catch (Exception e) {
-                    Log.e(true, TAG, "Error in handling a selected Giphy", e);
                 }
-            }
 
-            @Override
-            public void onGiphyRemoved(GiphySelectedData data) {
+                @Override
+                public void onGiphyRemoved(GiphySelectedData data) {
 
-            }
-        }, true);
+                }
+            }, true);
+        }
+        else{
+            Log.w(true, TAG, "Edit text is not Aniways Edit TExt");
+        }
 
         /*
         emojiButton.setOnClickListener(new View.OnClickListener() {
