@@ -31,6 +31,7 @@ import com.aniways.AniwaysNotInitializedException;
 import com.aniways.IAniwaysTextContainer;
 import com.aniways.Log;
 import com.aniways.anigram.messenger.R;
+
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 
@@ -67,6 +68,25 @@ public class MessageObject {
     public int textWidth;
     public int textHeight;
     public int blockHeight = Integer.MAX_VALUE;
+    public Boolean isAniwaysSticker = null;
+    private String aniwaysStickerAttachPath;
+
+    public boolean isAniwaysSticker() {
+        if(isAniwaysSticker != null){
+            return isAniwaysSticker;
+        }
+
+        isAniwaysSticker = false;
+        String url = Aniways.getAniwaysStickerUrl(this.messageText);
+        if(url == null){
+            return isAniwaysSticker;
+        }
+
+        this.messageOwner.attachPath = url;
+        aniwaysStickerAttachPath = this.messageOwner.attachPath;
+        isAniwaysSticker = true;
+        return isAniwaysSticker;
+    }
 
     public static class TextLayoutBlock {
         public StaticLayout textLayout;
@@ -332,7 +352,8 @@ public class MessageObject {
                         type = 8;
                     } else if (message.media.document.mime_type.equals("image/webp") && isSticker()) {
                         type = 13;
-                    } else {
+                    }
+                    else {
                         type = 9;
                     }
                 } else {
@@ -359,6 +380,12 @@ public class MessageObject {
                 contentType = 4;
                 type = 10;
             }
+        }
+
+        if(type == 0 && contentType == 0 && isAniwaysSticker()){
+            type = 13;
+            contentType = 1;
+            this.messageOwner.attachPath = aniwaysStickerAttachPath;
         }
 
         Calendar rightNow = new GregorianCalendar();

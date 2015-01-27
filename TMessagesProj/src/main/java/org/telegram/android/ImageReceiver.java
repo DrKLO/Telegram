@@ -22,10 +22,19 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
+import com.aniways.data.AniwaysPrivateConfig;
+import com.aniways.volley.VolleyError;
+import com.aniways.volley.toolbox.Volley;
+
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Cells.ChatMediaCell;
+
+import java.io.IOException;
+
+import pl.droidsonroids.gif.GifDrawable;
 
 public class ImageReceiver {
     private TLObject last_path = null;
@@ -36,7 +45,7 @@ public class ImageReceiver {
     private int last_size = 0;
     private String currentPath = null;
     private boolean isPlaceholder = false;
-    private Drawable currentImage = null;
+    public Drawable currentImage = null;
     private Integer tag = null;
     private View parentView = null;
     private int imageX = 0, imageY = 0, imageW = 0, imageH = 0;
@@ -76,89 +85,7 @@ public class ImageReceiver {
     }
 
     public void setImage(TLObject fileLocation, String httpUrl, String filter, Drawable placeholder, TLRPC.FileLocation placeholderLocation, int size, boolean cacheOnly) {
-        if ((fileLocation == null && httpUrl == null) || (fileLocation != null && !(fileLocation instanceof TLRPC.TL_fileLocation) && !(fileLocation instanceof TLRPC.TL_fileEncryptedLocation) && !(fileLocation instanceof TLRPC.TL_document))) {
-            recycleBitmap(null);
-            currentPath = null;
-            isPlaceholder = true;
-            last_path = null;
-            last_httpUrl = null;
-            last_filter = null;
-            lastCacheOnly = false;
-            bitmapShader = null;
-            last_placeholder = placeholder;
-            last_placeholderLocation = placeholderLocation;
-            last_size = 0;
-            currentImage = null;
-            ImageLoader.getInstance().cancelLoadingForImageView(this);
-            if (parentView != null) {
-                parentView.invalidate();
-            }
-            return;
-        }
-        String key = null;
-        if (fileLocation != null) {
-            if (fileLocation instanceof TLRPC.FileLocation) {
-                TLRPC.FileLocation location = (TLRPC.FileLocation) fileLocation;
-                key = location.volume_id + "_" + location.local_id;
-            } else if (fileLocation instanceof TLRPC.Document) {
-                TLRPC.Document location = (TLRPC.Document) fileLocation;
-                key = location.dc_id + "_" + location.id;
-            }
-        } else {
-            key = Utilities.MD5(httpUrl);
-        }
-        if (filter != null) {
-            key += "@" + filter;
-        }
-        boolean sameFile = false;
-        BitmapDrawable img = null;
-        if (currentPath != null) {
-            if (currentPath.equals(key)) {
-                sameFile = true;
-                if (currentImage != null) {
-                    return;
-                } else {
-                    img = ImageLoader.getInstance().getImageFromMemory(fileLocation, httpUrl, filter, this);
-                }
-            } else {
-                img = ImageLoader.getInstance().getImageFromMemory(fileLocation, httpUrl, filter, this);
-                recycleBitmap(img);
-            }
-        }
-        img = ImageLoader.getInstance().getImageFromMemory(fileLocation, httpUrl, filter, this);
-        currentPath = key;
-        last_path = fileLocation;
-        last_httpUrl = httpUrl;
-        last_filter = filter;
-        if (!sameFile) {
-            last_placeholder = placeholder;
-            last_placeholderLocation = placeholderLocation;
-        }
-        last_size = size;
-        lastCacheOnly = cacheOnly;
-        bitmapShader = null;
-        if (img == null) {
-            isPlaceholder = true;
-            if (!sameFile && last_placeholderLocation != null && last_placeholder == null) {
-                last_placeholder = ImageLoader.getInstance().getImageFromMemory(last_placeholderLocation, null, null, null);
-                if (last_placeholder != null) {
-                    try {
-                        Bitmap bitmap = ((BitmapDrawable) last_placeholder).getBitmap();
-                        bitmap = bitmap.copy(bitmap.getConfig(), true);
-                        Utilities.blurBitmap(bitmap, 1);
-                        last_placeholder = new BitmapDrawable(bitmap);
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                }
-            }
-            ImageLoader.getInstance().loadImage(fileLocation, httpUrl, this, size, cacheOnly);
-            if (parentView != null) {
-                parentView.invalidate();
-            }
-        } else {
-            setImageBitmap(img, currentPath);
-        }
+        setImage(fileLocation, httpUrl, filter, placeholder, placeholderLocation, size, cacheOnly, null);
     }
 
     public void setImageBitmap(BitmapDrawable bitmap, String imgKey) {
@@ -245,18 +172,24 @@ public class ImageReceiver {
 
     public boolean draw(Canvas canvas) {
         try {
-            Drawable bitmapDrawable = currentImage;
-            if (forcePreview || bitmapDrawable == null && last_placeholder != null && last_placeholder instanceof BitmapDrawable) {
-                bitmapDrawable = last_placeholder;
+            Drawable drawable = currentImage;
+            if (forcePreview || drawable == null && last_placeholder != null && last_placeholder instanceof BitmapDrawable) {
+                drawable = last_placeholder;
             }
-            if (bitmapDrawable != null) {
-                Paint paint = ((BitmapDrawable) bitmapDrawable).getPaint();
+            if (drawable != null) {
+                Paint paint = null;
+                if(drawable instanceof GifDrawable) {
+                    paint = ((GifDrawable) drawable).getPaint();
+                }
+                else {
+                    paint = ((BitmapDrawable) drawable).getPaint();
+                }
                 boolean hasFilter = paint != null && paint.getColorFilter() != null;
                 if (hasFilter && !isPressed) {
-                    bitmapDrawable.setColorFilter(null);
+                    drawable.setColorFilter(null);
                     hasFilter = false;
                 } else if (!hasFilter && isPressed) {
-                    bitmapDrawable.setColorFilter(new PorterDuffColorFilter(0xffdddddd, PorterDuff.Mode.MULTIPLY));
+                    drawable.setColorFilter(new PorterDuffColorFilter(0xffdddddd, PorterDuff.Mode.MULTIPLY));
                     hasFilter = true;
                 }
                 if (bitmapShader != null) {
@@ -269,8 +202,8 @@ public class ImageReceiver {
                         canvas.drawRoundRect(roundRect, roundRadius, roundRadius, roundPaint);
                     }
                 } else {
-                    int bitmapW = bitmapDrawable.getIntrinsicWidth();
-                    int bitmapH = bitmapDrawable.getIntrinsicHeight();
+                    int bitmapW = drawable.getIntrinsicWidth();
+                    int bitmapH = drawable.getIntrinsicHeight();
                     float scaleW = bitmapW / (float) imageW;
                     float scaleH = bitmapH / (float) imageH;
 
@@ -280,10 +213,10 @@ public class ImageReceiver {
                         bitmapW /= scale;
                         bitmapH /= scale;
                         drawRegion.set(imageX + (imageW - bitmapW) / 2, imageY + (imageH - bitmapH) / 2, imageX + (imageW + bitmapW) / 2, imageY + (imageH + bitmapH) / 2);
-                        bitmapDrawable.setBounds(drawRegion);
+                        drawable.setBounds(drawRegion);
                         try {
-                            bitmapDrawable.setAlpha(alpha);
-                            bitmapDrawable.draw(canvas);
+                            drawable.setAlpha(alpha);
+                            drawable.draw(canvas);
                         } catch (Exception e) {
                             if (currentPath != null) {
                                 ImageLoader.getInstance().removeImage(currentPath);
@@ -305,11 +238,11 @@ public class ImageReceiver {
                                 bitmapH /= scaleW;
                                 drawRegion.set(imageX, imageY - (bitmapH - imageH) / 2, imageX + imageW, imageY + (bitmapH + imageH) / 2);
                             }
-                            bitmapDrawable.setBounds(drawRegion);
+                            drawable.setBounds(drawRegion);
                             if (isVisible) {
                                 try {
-                                    bitmapDrawable.setAlpha(alpha);
-                                    bitmapDrawable.draw(canvas);
+                                    drawable.setAlpha(alpha);
+                                    drawable.draw(canvas);
                                 } catch (Exception e) {
                                     if (currentPath != null) {
                                         ImageLoader.getInstance().removeImage(currentPath);
@@ -323,11 +256,11 @@ public class ImageReceiver {
                             canvas.restore();
                         } else {
                             drawRegion.set(imageX, imageY, imageX + imageW, imageY + imageH);
-                            bitmapDrawable.setBounds(drawRegion);
+                            drawable.setBounds(drawRegion);
                             if (isVisible) {
                                 try {
-                                    bitmapDrawable.setAlpha(alpha);
-                                    bitmapDrawable.draw(canvas);
+                                    drawable.setAlpha(alpha);
+                                    drawable.draw(canvas);
                                 } catch (Exception e) {
                                     if (currentPath != null) {
                                         ImageLoader.getInstance().removeImage(currentPath);
@@ -474,5 +407,163 @@ public class ImageReceiver {
 
     public int getRoundRadius() {
         return roundRadius;
+    }
+
+    public void setImage(TLObject fileLocation, String httpUrl, String filter, Drawable placeholder, TLRPC.FileLocation placeholderLocation, int size, boolean cacheOnly, final ChatMediaCell chatMediaCell) {
+        if ((fileLocation == null && httpUrl == null) || (fileLocation != null && !(fileLocation instanceof TLRPC.TL_fileLocation) && !(fileLocation instanceof TLRPC.TL_fileEncryptedLocation) && !(fileLocation instanceof TLRPC.TL_document))) {
+            recycleBitmap(null);
+            currentPath = null;
+            isPlaceholder = true;
+            last_path = null;
+            last_httpUrl = null;
+            last_filter = null;
+            lastCacheOnly = false;
+            bitmapShader = null;
+            last_placeholder = placeholder;
+            last_placeholderLocation = placeholderLocation;
+            last_size = 0;
+            currentImage = null;
+            ImageLoader.getInstance().cancelLoadingForImageView(this);
+            if (parentView != null) {
+                parentView.invalidate();
+            }
+            return;
+        }
+        String key = null;
+        if (fileLocation != null) {
+            if (fileLocation instanceof TLRPC.FileLocation) {
+                TLRPC.FileLocation location = (TLRPC.FileLocation) fileLocation;
+                key = location.volume_id + "_" + location.local_id;
+            } else if (fileLocation instanceof TLRPC.Document) {
+                TLRPC.Document location = (TLRPC.Document) fileLocation;
+                key = location.dc_id + "_" + location.id;
+            }
+        } else {
+            key = Utilities.MD5(httpUrl);
+        }
+        if (filter != null) {
+            key += "@" + filter;
+        }
+        boolean sameFile = false;
+        BitmapDrawable img = null;
+        if (currentPath != null) {
+            if (currentPath.equals(key)) {
+                sameFile = true;
+                if (currentImage != null) {
+                    return;
+                } else {
+                    img = ImageLoader.getInstance().getImageFromMemory(fileLocation, httpUrl, filter, this);
+                }
+            } else {
+                img = ImageLoader.getInstance().getImageFromMemory(fileLocation, httpUrl, filter, this);
+                recycleBitmap(img);
+            }
+        }
+        byte[] data = null;
+        GifDrawable gif = null;
+        if(httpUrl != null && httpUrl.endsWith(".gif")) {
+            data = (byte[])Volley.getImageLoader().getCached(httpUrl, AniwaysPrivateConfig.getInstance().bigIconWidth, AniwaysPrivateConfig.getInstance().bigIconHeight, httpUrl);
+            if(data != null){
+                try {
+                    gif = new GifDrawable(data);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        else {
+            img = ImageLoader.getInstance().getImageFromMemory(fileLocation, httpUrl, filter, this);
+        }
+        currentPath = key;
+        last_path = fileLocation;
+        last_httpUrl = httpUrl;
+        last_filter = filter;
+        if (!sameFile) {
+            last_placeholder = placeholder;
+            last_placeholderLocation = placeholderLocation;
+        }
+        last_size = size;
+        lastCacheOnly = cacheOnly;
+        bitmapShader = null;
+        if(httpUrl != null && httpUrl.endsWith(".gif")) {
+            if(gif == null){
+                Volley.getImageLoader().get(httpUrl, new com.aniways.volley.toolbox.ImageLoader.ImageListener() {
+                    @Override
+                    public void onResponse(com.aniways.volley.toolbox.ImageLoader.ImageContainer response, boolean isImmediate) {
+                        byte[] data = (byte[])response.getRawData();
+                        if(data != null){
+                            try {
+                                //TODO: make the reference to the chatMediaCell weak..
+                                //gif.parentView = new WeakReference<View>(chatMediaCell);
+                                GifDrawable gif = new GifDrawable(data);
+                                currentImage = gif;
+                                //TODO: need to know when to saver this link to no leak memory and tax CPU with endless animation
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        else{
+                            //TODO: Log
+                        }
+                    }
+
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        //TODO: log
+                    }
+                });
+
+                isPlaceholder = true;
+                if (!sameFile && last_placeholderLocation != null && last_placeholder == null) {
+                    last_placeholder = ImageLoader.getInstance().getImageFromMemory(last_placeholderLocation, null, null, null);
+                    if (last_placeholder != null) {
+                        try {
+                            Bitmap bitmap = ((BitmapDrawable) last_placeholder).getBitmap();
+                            bitmap = bitmap.copy(bitmap.getConfig(), true);
+                            Utilities.blurBitmap(bitmap, 1);
+                            last_placeholder = new BitmapDrawable(bitmap);
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
+                    }
+                }
+                //ImageLoader.getInstance().loadImage(fileLocation, httpUrl, this, size, cacheOnly);
+                if (parentView != null) {
+                    parentView.invalidate();
+                }
+            }
+            else{
+                //TODO: need to know when to saver this link to no leak memory and tax CPU with endless animation
+                //TODO: make the reference to the chatMediaCell weak..
+                //gif.parentView = new WeakReference<View>(chatMediaCell);
+
+
+                currentImage = gif;
+            }
+        }
+        else {
+            if (img == null) {
+                isPlaceholder = true;
+                if (!sameFile && last_placeholderLocation != null && last_placeholder == null) {
+                    last_placeholder = ImageLoader.getInstance().getImageFromMemory(last_placeholderLocation, null, null, null);
+                    if (last_placeholder != null) {
+                        try {
+                            Bitmap bitmap = ((BitmapDrawable) last_placeholder).getBitmap();
+                            bitmap = bitmap.copy(bitmap.getConfig(), true);
+                            Utilities.blurBitmap(bitmap, 1);
+                            last_placeholder = new BitmapDrawable(bitmap);
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
+                    }
+                }
+                ImageLoader.getInstance().loadImage(fileLocation, httpUrl, this, size, cacheOnly);
+                if (parentView != null) {
+                    parentView.invalidate();
+                }
+            } else {
+                setImageBitmap(img, currentPath);
+            }
+        }
     }
 }

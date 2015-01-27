@@ -15,6 +15,8 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -30,6 +32,8 @@ import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.android.MediaController;
 import com.aniways.anigram.messenger.R;
+import com.aniways.data.AniwaysPrivateConfig;
+
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.Utilities;
 import org.telegram.android.MessageObject;
@@ -157,6 +161,14 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
+
+        if(photoImage != null && photoImage.currentImage != null && photoImage.currentImage instanceof pl.droidsonroids.gif.GifDrawable) {
+            photoImage.currentImage.setCallback(null);
+            pl.droidsonroids.gif.GifDrawable gif = (pl.droidsonroids.gif.GifDrawable)photoImage.currentImage;
+            gif.stop();
+            gif.recycle();
+        }
+
         if (photoImage != null) {
             photoImage.clearImage();
             currentPhotoObject = null;
@@ -526,11 +538,18 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 photoImage.setImage(currentUrl, null, null, 0);
             } else if (messageObject.type == 13) {
                 drawBackground = false;
-                for (TLRPC.DocumentAttribute attribute : messageObject.messageOwner.media.document.attributes) {
-                    if (attribute instanceof TLRPC.TL_documentAttributeImageSize) {
-                        photoWidth = attribute.w;
-                        photoHeight = attribute.h;
-                        break;
+                if(messageObject.isAniwaysSticker()) {
+                    photoWidth = AniwaysPrivateConfig.getInstance().bigIconWidth;
+                    photoHeight = AniwaysPrivateConfig.getInstance().bigIconHeight;
+                    photoImage.setAspectFit(true);
+                }
+                else{
+                    for (TLRPC.DocumentAttribute attribute : messageObject.messageOwner.media.document.attributes) {
+                        if (attribute instanceof TLRPC.TL_documentAttributeImageSize) {
+                            photoWidth = attribute.w;
+                            photoHeight = attribute.h;
+                            break;
+                        }
                     }
                 }
                 float maxWidth;
@@ -556,6 +575,14 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                                 messageObject.imagePreview != null ? new BitmapDrawable(messageObject.imagePreview) : null,
                                 null,
                                 currentMessageObject.messageOwner.media.document.size, true);
+                    }
+                    else if(messageObject.isAniwaysSticker()) {
+                        photoImage.setImage(null, currentMessageObject.messageOwner.attachPath,
+                                String.format(Locale.US, "%d_%d", photoWidth, photoHeight),
+                                messageObject.imagePreview != null ? new BitmapDrawable(messageObject.imagePreview) : null,
+                                null,
+                                6556, true, this); //TODO: Get better size estimation
+
                     }
                 } else if (currentMessageObject.messageOwner.media.document.id != 0) {
                     photoImage.setImage(currentMessageObject.messageOwner.media.document, null,
@@ -831,6 +858,28 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         }
     }
 
+    Drawable.Callback aniwaysGifCallback = new Drawable.Callback() {
+        ChatMediaCell chatMediaCell = ChatMediaCell.this;
+        Handler mHandler = new Handler(Looper.getMainLooper());
+
+        @Override
+        public void invalidateDrawable(Drawable who) {
+            if(chatMediaCell != null){
+                chatMediaCell.invalidate();
+            }
+        }
+
+        @Override
+        public void scheduleDrawable(Drawable who, Runnable what, long when) {
+            mHandler.postAtTime(what, who, when);
+        }
+
+        @Override
+        public void unscheduleDrawable(Drawable who, Runnable what) {
+            mHandler.removeCallbacks(what, who);
+        }
+    };
+
     @Override
     protected void onAfterBackgroundDraw(Canvas canvas) {
         boolean imageDrawn = false;
@@ -842,6 +891,11 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         } else {
             photoImage.setPressed(isPressed() && isCheckPressed || !isCheckPressed && isPressed);
             photoImage.setVisible(!PhotoViewer.getInstance().isShowingImage(currentMessageObject), false);
+            if (photoImage.currentImage instanceof pl.droidsonroids.gif.GifDrawable){
+                if(photoImage.currentImage.getCallback() != aniwaysGifCallback) {
+                    photoImage.currentImage.setCallback(aniwaysGifCallback);
+                }
+            }
             imageDrawn = photoImage.draw(canvas);
             drawTime = photoImage.getVisible();
         }
