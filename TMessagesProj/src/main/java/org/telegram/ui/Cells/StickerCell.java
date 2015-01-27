@@ -70,5 +70,8 @@ public class StickerCell extends FrameLayoutFixed {
             setBackgroundResource(R.drawable.stickers_back_all);
             setPadding(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(3), 0);
         }
+        if (getBackground() != null) {
+            getBackground().setAlpha(230);
+        }
     }
 }
