@@ -27,6 +27,8 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+
+import com.aniways.AniwaysTextView;
 import com.aniways.anigram.messenger.R;
 import com.aniways.Aniways;
 import org.telegram.messenger.Utilities;
@@ -243,7 +245,9 @@ public class IntroActivity extends Activity {
         public Object instantiateItem(ViewGroup container, int position) {
             View view = View.inflate(container.getContext(), R.layout.intro_view_layout, null);
             TextView headerTextView = (TextView)view.findViewById(R.id.header_text);
-            TextView messageTextView = (TextView)view.findViewById(R.id.message_text);
+            AniwaysTextView messageTextView = (AniwaysTextView)view.findViewById(R.id.message_text);
+            messageTextView.setUseSmallIcons(true);
+            messageTextView.setIconsClickable(false);
             container.addView(view, 0);
 
             headerTextView.setText(getString(titles[position]));

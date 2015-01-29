@@ -25,12 +25,20 @@ import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.app.RemoteInput;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.widget.RemoteViews;
+import android.widget.RemoteViewsService;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
+
+import com.aniways.Aniways;
 import com.aniways.anigram.messenger.R;
+import com.aniways.data.AniwaysStatics;
+
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.ApplicationLoader;
@@ -96,7 +104,7 @@ public class NotificationsController {
         openned_dialog_id = dialog_id;
     }
 
-    private String getStringForMessage(MessageObject messageObject, boolean shortMessage) {
+    private CharSequence getStringForMessage(MessageObject messageObject, boolean shortMessage) {
         long dialog_id = messageObject.messageOwner.dialog_id;
         int chat_id = messageObject.messageOwner.to_id.chat_id;
         int user_id = messageObject.messageOwner.to_id.user_id;
@@ -126,7 +134,7 @@ public class NotificationsController {
             }
         }
 
-        String msg = null;
+        CharSequence msg = null;
         if ((int)dialog_id != 0) {
             if (chat_id == 0 && user_id != 0) {
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
@@ -203,7 +211,7 @@ public class NotificationsController {
                                 msg = LocaleController.formatString("NotificationGroupKickMember", R.string.NotificationGroupKickMember, ContactsController.formatName(user.first_name, user.last_name), chat.title, ContactsController.formatName(u2.first_name, u2.last_name));
                             }
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionChatCreate) {
-                            msg = messageObject.messageText.toString();
+                            msg = messageObject.messageText;
                         }
                     } else {
                         if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty) {
@@ -237,6 +245,7 @@ public class NotificationsController {
         } else {
             msg = LocaleController.getString("YouHaveNewMessage", R.string.YouHaveNewMessage);
         }
+        msg = Aniways.getOriginalString(AniwaysStatics.getApplicationContext(), Aniways.decodeMessage(msg, null, null, true));
         return msg;
     }
 
@@ -441,10 +450,10 @@ public class NotificationsController {
             bundle.putString(NotificationCompat.EXTRA_PEOPLE, );
             mBuilder.setExtras()*/
 
-            String lastMessage = null;
-            String lastMessageFull = null;
+            CharSequence lastMessage = null;
+            CharSequence lastMessageFull = null;
             if (pushMessages.size() == 1) {
-                String message = lastMessageFull = getStringForMessage(pushMessages.get(0), false);
+                CharSequence message = lastMessageFull = getStringForMessage(pushMessages.get(0), false);
                 //lastMessage = getStringForMessage(pushMessages.get(0), true);
                 lastMessage = lastMessageFull;
                 if (message == null) {
@@ -452,9 +461,10 @@ public class NotificationsController {
                 }
                 if (replace) {
                     if (chat != null) {
-                        message = message.replace(" @ " + name, "");
+                        message = TextUtils.replace(message, new String[] {" @ " + name}, new String[] {""});
                     } else {
-                        message = message.replace(name + ": ", "").replace(name + " ", "");
+                        message = TextUtils.replace(message, new String[] {name + ": "}, new String[] {""});
+                        message = TextUtils.replace(message, new String[]{name + " "}, new String[]{""});
                     }
                 }
                 mBuilder.setContentText(message);
@@ -465,7 +475,7 @@ public class NotificationsController {
                 inboxStyle.setBigContentTitle(name);
                 int count = Math.min(10, pushMessages.size());
                 for (int i = 0; i < count; i++) {
-                    String message = getStringForMessage(pushMessages.get(i), false);
+                    CharSequence message = getStringForMessage(pushMessages.get(i), false);
                     if (message == null) {
                         continue;
                     }
@@ -477,9 +487,10 @@ public class NotificationsController {
                     if (pushDialogs.size() == 1) {
                         if (replace) {
                             if (chat != null) {
-                                message = message.replace(" @ " + name, "");
+                                message = TextUtils.replace(message, new String[] {" @ " + name}, new String[] {""});
                             } else {
-                                message = message.replace(name + ": ", "").replace(name + " ", "");
+                                message = TextUtils.replace(message, new String[] {name + ": "}, new String[] {""});
+                                message = TextUtils.replace(message, new String[]{name + " "}, new String[]{""});
                             }
                         }
                     }
@@ -499,7 +510,8 @@ public class NotificationsController {
             if (!notifyDisabled) {
                 if (ApplicationLoader.mainInterfacePaused || inAppPreview) {
                     if (lastMessage.length() > 100) {
-                        lastMessage = lastMessage.substring(0, 100).replace("\n", " ").trim() + "...";
+                        lastMessage = TextUtils.replace(lastMessage.subSequence(0, 100), new String[] {"\n"} , new String[] {" "});
+                        lastMessage = TextUtils.concat(lastMessage, "...");
                     }
                     mBuilder.setTicker(lastMessage);
                 }
@@ -530,10 +542,9 @@ public class NotificationsController {
             } else {
                 mBuilder.setVibrate(new long[]{0, 0});
             }
-
             notificationManager.notify(1, mBuilder.build());
             if (preferences.getBoolean("EnablePebbleNotifications", false)) {
-                sendAlertToPebble(lastMessageFull);
+                sendAlertToPebble(lastMessageFull.toString());
             }
             showWearNotifications(notifyAboutLast);
             scheduleNotificationRepeat();
@@ -612,14 +623,15 @@ public class NotificationsController {
 
             String text = "";
             for (MessageObject messageObject : messageObjects) {
-                String message = getStringForMessage(messageObject, false);
+                CharSequence message = getStringForMessage(messageObject, false);
                 if (message == null) {
                     continue;
                 }
                 if (chat != null) {
-                    message = message.replace(" @ " + name, "");
+                    message = TextUtils.replace(message, new String[] {" @ " + name}, new String[] {""});
                 } else {
-                    message = message.replace(name + ": ", "").replace(name + " ", "");
+                    message = TextUtils.replace(message, new String[] {name + ": "}, new String[] {""});
+                    message = TextUtils.replace(message, new String[] {name + " "}, new String[] {""});
                 }
                 if (text.length() > 0) {
                     text += "\n\n";
