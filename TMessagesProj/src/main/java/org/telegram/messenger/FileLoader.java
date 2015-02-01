@@ -23,7 +23,7 @@ public class FileLoader {
         public abstract void fileUploadProgressChanged(String location, float progress, boolean isEncrypted);
         public abstract void fileDidUploaded(String location, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile);
         public abstract void fileDidFailedUpload(String location, boolean isEncrypted);
-        public abstract void fileDidLoaded(String location, File finalFile, File tempFile);
+        public abstract void fileDidLoaded(String location, File finalFile, int type);
         public abstract void fileDidFailedLoad(String location, int state);
         public abstract void fileLoadProgressChanged(String location, float progress);
     }
@@ -395,53 +395,50 @@ public class FileLoader {
 
                 File tempDir = getDirectory(MEDIA_DIR_CACHE);
                 File storeDir = tempDir;
+                int type = MEDIA_DIR_CACHE;
 
                 if (video != null) {
                     operation = new FileLoadOperation(video);
-                    if (!cacheOnly) {
-                        storeDir = getDirectory(MEDIA_DIR_VIDEO);
-                    }
+                    type = MEDIA_DIR_VIDEO;
                 } else if (location != null) {
                     operation = new FileLoadOperation(location, locationSize);
-                    if (!cacheOnly) {
-                        storeDir = getDirectory(MEDIA_DIR_IMAGE);
-                    }
+                    type = MEDIA_DIR_IMAGE;
                 } else if (document != null) {
                     operation = new FileLoadOperation(document);
-                    if (!cacheOnly) {
-                        storeDir = getDirectory(MEDIA_DIR_DOCUMENT);
-                    }
+                    type = MEDIA_DIR_DOCUMENT;
                 } else if (audio != null) {
                     operation = new FileLoadOperation(audio);
-                    if (!cacheOnly) {
-                        storeDir = getDirectory(MEDIA_DIR_AUDIO);
-                    }
+                    type = MEDIA_DIR_AUDIO;
+                }
+                if (!cacheOnly) {
+                    storeDir = getDirectory(type);
                 }
                 operation.setPaths(storeDir, tempDir);
 
-                final String arg1 = fileName;
+                final String finalFileName = fileName;
+                final int finalType = type;
                 loadOperationPaths.put(fileName, operation);
                 operation.setDelegate(new FileLoadOperation.FileLoadOperationDelegate() {
                     @Override
-                    public void didFinishLoadingFile(FileLoadOperation operation, File finalFile, File tempFile) {
+                    public void didFinishLoadingFile(FileLoadOperation operation, File finalFile) {
                         if (delegate != null) {
-                            delegate.fileDidLoaded(arg1, finalFile, tempFile);
+                            delegate.fileDidLoaded(finalFileName, finalFile, finalType);
                         }
-                        checkDownloadQueue(audio, location, arg1);
+                        checkDownloadQueue(audio, location, finalFileName);
                     }
 
                     @Override
                     public void didFailedLoadingFile(FileLoadOperation operation, int canceled) {
-                        checkDownloadQueue(audio, location, arg1);
+                        checkDownloadQueue(audio, location, finalFileName);
                         if (delegate != null) {
-                            delegate.fileDidFailedLoad(arg1, canceled);
+                            delegate.fileDidFailedLoad(finalFileName, canceled);
                         }
                     }
 
                     @Override
                     public void didChangedLoadProgress(FileLoadOperation operation, float progress) {
                         if (delegate != null) {
-                            delegate.fileLoadProgressChanged(arg1, progress);
+                            delegate.fileLoadProgressChanged(finalFileName, progress);
                         }
                     }
                 });
@@ -641,7 +638,7 @@ public class FileLoader {
                 continue;
             }
             int currentSide = obj.w >= obj.h ? obj.w : obj.h;
-            if (closestObject == null || closestObject instanceof TLRPC.TL_photoCachedSize || currentSide <= side && lastSide < currentSide) {
+            if (closestObject == null || obj instanceof TLRPC.TL_photoCachedSize || currentSide <= side && lastSide < currentSide) {
                 closestObject = obj;
                 lastSide = currentSide;
             }

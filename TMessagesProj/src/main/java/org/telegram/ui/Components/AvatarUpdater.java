@@ -29,7 +29,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 
 import java.io.File;
 
-public class AvatarUpdater implements NotificationCenter.NotificationCenterDelegate, PhotoCropActivity.PhotoCropActivityDelegate {
+public class AvatarUpdater implements NotificationCenter.NotificationCenterDelegate, PhotoCropActivity.PhotoEditActivityDelegate {
     public String currentPicturePath;
     private TLRPC.PhotoSize smallPhoto;
     private TLRPC.PhotoSize bigPhoto;
@@ -94,7 +94,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
             activity.presentFragment(photoCropActivity);
         } catch (Exception e) {
             FileLog.e("tmessages", e);
-            Bitmap bitmap = ImageLoader.loadBitmap(path, uri, 800, 800);
+            Bitmap bitmap = ImageLoader.loadBitmap(path, uri, 800, 800, true);
             processBitmap(bitmap);
         }
     }
@@ -137,7 +137,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
     }
 
     @Override
-    public void didFinishCrop(Bitmap bitmap) {
+    public void didFinishEdit(Bitmap bitmap, Bundle args) {
         processBitmap(bitmap);
     }
 

@@ -34,7 +34,7 @@
     <string name="Yesterday">gisteren</string>
     <string name="NoResult">Geen resultaten</string>
     <string name="NoChats">Nog geen chats</string>
-    <string name="NoChatsHelp">Begin een gesprek door op de\nopstellen-knop rechtsboven te drukken\nof druk op de menu knop voor meer opties.</string>
+    <string name="NoChatsHelp">Begin een gesprek door op de\nopstelknop rechtsonder te drukken\nof druk op de menuknop voor meer opties.</string>
     <string name="WaitingForNetwork">Wachten op netwerk</string>
     <string name="Connecting">Verbinden</string>
     <string name="Updating">Bijwerken</string>
@@ -53,6 +53,10 @@
     <string name="CompatibilityChat">%1$s gebruikt een oudere versie van Telegram, dus worden geheime foto\'s weergegeven in de compatibiliteitsmodus.\n\nZodra %2$s Telegram updatet werken foto\'s met timers voor 1 minuut of minder in de \'Druk en houd ingedrukt\'-modus en krijg je een bericht wanneer de andere partij een schermafdruk maakt.</string>
     <string name="SearchMessages">BERICHTEN</string>
     <string name="Search">Zoeken</string>
+    <string name="MuteNotifications">Meldingen stil</string>
+    <string name="MuteFor">%1$s stil</string>
+    <string name="UnmuteNotifications">Stil uitschakelen</string>
+    <string name="WillUnmuteIn">Over %1$s</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nieuwe verzendlijst</string>
     <string name="EnterListName">Naam van lijst</string>
@@ -73,6 +77,7 @@
     <string name="SystemRoot">Systeemmap</string>
     <string name="SdCard">SD-kaart</string>
     <string name="Folder">Map</string>
+    <string name="GalleryInfo">Om bestanden ongecomprimeerd te versturen</string>
     <!--chat view-->
     <string name="Invisible">onzichtbaar</string>
     <string name="Typing">aan het typen</string>
@@ -105,6 +110,7 @@
     <string name="DeleteThisChat">Chat verwijderen</string>
     <string name="SlideToCancel">SLEEP OM TE ANNULEREN</string>
     <string name="SaveToDownloads">Opslaan in Downloads</string>
+    <string name="ShareFile">Delen</string>
     <string name="ApplyLocalizationFile">Vertaling toepassen</string>
     <string name="UnsupportedAttachment">Bestandstype niet ondersteund</string>
     <string name="SetTimer">Zelfvernietigingstimer instellen</string>
@@ -151,7 +157,7 @@
     <string name="SelectContact">Contact kiezen</string>
     <string name="NoContacts">Nog geen contacten</string>
     <string name="InviteText">Hey, zullen we overstappen op Telegram: https://telegram.org/dl</string>
-    <string name="TodayAt">vandaag om</string>
+    <string name="TodayAt">om</string>
     <string name="YesterdayAt">gisteren om</string>
     <string name="Online">online</string>
     <string name="LastSeen">gezien</string>
@@ -291,7 +297,9 @@
     <string name="ChangePhoneNumberOccupied">Aan telefoonnummer %1$s is al een Telegram-account gekoppeld. Verwijder het account om te kunnen migreren naar het nieuwe nummer.</string>
     <string name="NotificationsOther">Overig</string>
     <!--media view-->
-    <string name="NoMedia">Nog geen media gedeeld</string>
+    <string name="NoMedia">Deel foto\'s en video\'s in deze chat om ze op al je apparaten te kunnen benaderen.</string>
+    <string name="DocumentsTitle">Bestanden</string>
+    <string name="NoSharedFiles">Deel bestanden en documenten in deze chat om ze op al je apparaten te kunnen benaderen.</string>
     <!--map view-->
     <string name="Map">Kaart</string>
     <string name="Satellite">Satelliet</string>
@@ -315,6 +323,7 @@
     <string name="SearchImagesTitle">Online zoeken</string>
     <string name="SearchGifsTitle">GIF\'s zoeken</string>
     <string name="CropImage">Foto bijsnijden</string>
+    <string name="EditImage">Foto bewerken</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -502,6 +511,12 @@
     <string name="messages_few">%1$d berichten</string>
     <string name="messages_many">%1$d berichten</string>
     <string name="messages_other">%1$d berichten</string>
+    <string name="files_zero">geen bestanden</string>
+    <string name="files_one">%1$d bestand</string>
+    <string name="files_two">%1$d bestanden</string>
+    <string name="files_few">%1$d bestanden</string>
+    <string name="files_many">%1$d bestanden</string>
+    <string name="files_other">%1$d bestanden</string>
     <string name="FromContacts_zero">van geen enkel contact</string>
     <string name="FromContacts_one">van %1$d contacten</string>
     <string name="FromContacts_two">van %1$d contacten</string>

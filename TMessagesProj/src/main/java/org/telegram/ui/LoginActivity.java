@@ -843,7 +843,7 @@ public class LoginActivity extends BaseFragment {
                                         needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
                                     } else if (error.text.startsWith("FLOOD_WAIT")) {
                                         needShowAlert(LocaleController.getString("FloodWait", R.string.FloodWait));
-                                    } else {
+                                    } else if (error.code != -1000) {
                                         needShowAlert(error.text);
                                     }
                                 }

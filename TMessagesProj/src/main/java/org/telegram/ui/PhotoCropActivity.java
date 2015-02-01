@@ -35,8 +35,8 @@ import java.io.File;
 
 public class PhotoCropActivity extends BaseFragment {
 
-    public interface PhotoCropActivityDelegate {
-        public abstract void didFinishCrop(Bitmap bitmap);
+    public interface PhotoEditActivityDelegate {
+        public abstract void didFinishEdit(Bitmap bitmap, Bundle args);
     }
 
     private class PhotoCropView extends FrameLayout {
@@ -44,12 +44,14 @@ public class PhotoCropActivity extends BaseFragment {
         Paint rectPaint = null;
         Paint circlePaint = null;
         Paint halfPaint = null;
-        float rectSize = 600;
+        float rectSizeX = 600;
+        float rectSizeY = 600;
         float rectX = -1, rectY = -1;
         int draggingState = 0;
         float oldX = 0, oldY = 0;
         int bitmapWidth, bitmapHeight, bitmapX, bitmapY;
         int viewWidth, viewHeight;
+        boolean freeform;
 
         public PhotoCropView(Context context) {
             super(context);
@@ -68,14 +70,14 @@ public class PhotoCropActivity extends BaseFragment {
 
         private void init() {
             rectPaint = new Paint();
-            rectPaint.setColor(0xfffafafa);
+            rectPaint.setColor(0x3ffafafa);
             rectPaint.setStrokeWidth(AndroidUtilities.dp(2));
             rectPaint.setStyle(Paint.Style.STROKE);
             circlePaint = new Paint();
-            circlePaint.setColor(0x7fffffff);
+            circlePaint.setColor(0xffffffff);
             halfPaint = new Paint();
-            halfPaint.setColor(0x3f000000);
-            setBackgroundColor(0xff000000);
+            halfPaint.setColor(0xc8000000);
+            setBackgroundColor(0xff333333);
 
             setOnTouchListener(new OnTouchListener() {
                 @Override
@@ -86,13 +88,13 @@ public class PhotoCropActivity extends BaseFragment {
                     if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
                         if (rectX - cornerSide < x && rectX + cornerSide > x && rectY - cornerSide < y && rectY + cornerSide > y) {
                             draggingState = 1;
-                        } else if (rectX - cornerSide + rectSize < x && rectX + cornerSide + rectSize > x && rectY - cornerSide < y && rectY + cornerSide > y) {
+                        } else if (rectX - cornerSide + rectSizeX < x && rectX + cornerSide + rectSizeX > x && rectY - cornerSide < y && rectY + cornerSide > y) {
                             draggingState = 2;
-                        } else if (rectX - cornerSide < x && rectX + cornerSide > x && rectY - cornerSide + rectSize < y && rectY + cornerSide + rectSize > y) {
+                        } else if (rectX - cornerSide < x && rectX + cornerSide > x && rectY - cornerSide + rectSizeY < y && rectY + cornerSide + rectSizeY > y) {
                             draggingState = 3;
-                        } else if (rectX - cornerSide + rectSize < x && rectX + cornerSide + rectSize > x && rectY - cornerSide + rectSize < y && rectY + cornerSide + rectSize > y) {
+                        } else if (rectX - cornerSide + rectSizeX < x && rectX + cornerSide + rectSizeX > x && rectY - cornerSide + rectSizeY < y && rectY + cornerSide + rectSizeY > y) {
                             draggingState = 4;
-                        } else if (rectX < x && rectX + rectSize > x && rectY < y && rectY + rectSize > y) {
+                        } else if (rectX < x && rectX + rectSizeX > x && rectY < y && rectY + rectSizeY > y) {
                             draggingState = 5;
                         } else {
                             draggingState = 0;
@@ -113,61 +115,115 @@ public class PhotoCropActivity extends BaseFragment {
 
                             if (rectX < bitmapX) {
                                 rectX = bitmapX;
-                            } else if (rectX + rectSize > bitmapX + bitmapWidth) {
-                                rectX = bitmapX + bitmapWidth - rectSize;
+                            } else if (rectX + rectSizeX > bitmapX + bitmapWidth) {
+                                rectX = bitmapX + bitmapWidth - rectSizeX;
                             }
                             if (rectY < bitmapY) {
                                 rectY = bitmapY;
-                            } else if (rectY + rectSize > bitmapY + bitmapHeight) {
-                                rectY = bitmapY + bitmapHeight - rectSize;
+                            } else if (rectY + rectSizeY > bitmapY + bitmapHeight) {
+                                rectY = bitmapY + bitmapHeight - rectSizeY;
                             }
-                        } else if (draggingState == 1) {
-                            if (rectSize - diffX < 160) {
-                                diffX = rectSize - 160;
-                            }
-                            if (rectX + diffX < bitmapX) {
-                                diffX = bitmapX - rectX;
-                            }
-                            if (rectY + diffX < bitmapY) {
-                                diffX = bitmapY - rectY;
-                            }
-                            rectX += diffX;
-                            rectY += diffX;
-                            rectSize -= diffX;
-                        } else if (draggingState == 2) {
-                            if (rectSize + diffX < 160) {
-                                diffX = -(rectSize - 160);
-                            }
-                            if (rectX + rectSize + diffX > bitmapX + bitmapWidth) {
-                                diffX = bitmapX + bitmapWidth - rectX - rectSize;
-                            }
-                            if (rectY - diffX < bitmapY) {
-                                diffX = rectY - bitmapY;
-                            }
-                            rectY -= diffX;
-                            rectSize += diffX;
-                        } else if (draggingState == 3) {
-                            if (rectSize - diffX < 160) {
-                                diffX = rectSize - 160;
-                            }
-                            if (rectX + diffX < bitmapX) {
-                                diffX = bitmapX - rectX;
-                            }
-                            if (rectY + rectSize - diffX > bitmapY + bitmapHeight) {
-                                diffX = rectY + rectSize - bitmapY - bitmapHeight;
-                            }
-                            rectX += diffX;
-                            rectSize -= diffX;
-                        } else if (draggingState == 4) {
-                            if (rectX + rectSize + diffX > bitmapX + bitmapWidth) {
-                                diffX = bitmapX + bitmapWidth - rectX - rectSize;
-                            }
-                            if (rectY + rectSize + diffX > bitmapY + bitmapHeight) {
-                                diffX = bitmapY + bitmapHeight - rectY - rectSize;
-                            }
-                            rectSize += diffX;
-                            if (rectSize < 160) {
-                                rectSize = 160;
+                        } else {
+                            if (draggingState == 1) {
+                                if (rectSizeX - diffX < 160) {
+                                    diffX = rectSizeX - 160;
+                                }
+                                if (rectX + diffX < bitmapX) {
+                                    diffX = bitmapX - rectX;
+                                }
+                                if (!freeform) {
+                                    if (rectY + diffX < bitmapY) {
+                                        diffX = bitmapY - rectY;
+                                    }
+                                    rectX += diffX;
+                                    rectY += diffX;
+                                    rectSizeX -= diffX;
+                                    rectSizeY -= diffX;
+                                } else {
+                                    if (rectSizeY - diffY < 160) {
+                                        diffY = rectSizeY - 160;
+                                    }
+                                    if (rectY + diffY < bitmapY) {
+                                        diffY = bitmapY - rectY;
+                                    }
+                                    rectX += diffX;
+                                    rectY += diffY;
+                                    rectSizeX -= diffX;
+                                    rectSizeY -= diffY;
+                                }
+                            } else if (draggingState == 2) {
+                                if (rectSizeX + diffX < 160) {
+                                    diffX = -(rectSizeX - 160);
+                                }
+                                if (rectX + rectSizeX + diffX > bitmapX + bitmapWidth) {
+                                    diffX = bitmapX + bitmapWidth - rectX - rectSizeX;
+                                }
+                                if (!freeform) {
+                                    if (rectY - diffX < bitmapY) {
+                                        diffX = rectY - bitmapY;
+                                    }
+                                    rectY -= diffX;
+                                    rectSizeX += diffX;
+                                    rectSizeY += diffX;
+                                } else {
+                                    if (rectSizeY - diffY < 160) {
+                                        diffY = rectSizeY - 160;
+                                    }
+                                    if (rectY + diffY < bitmapY) {
+                                        diffY = bitmapY - rectY;
+                                    }
+                                    rectY += diffY;
+                                    rectSizeX += diffX;
+                                    rectSizeY -= diffY;
+                                }
+                            } else if (draggingState == 3) {
+                                if (rectSizeX - diffX < 160) {
+                                    diffX = rectSizeX - 160;
+                                }
+                                if (rectX + diffX < bitmapX) {
+                                    diffX = bitmapX - rectX;
+                                }
+                                if (!freeform) {
+                                    if (rectY + rectSizeX - diffX > bitmapY + bitmapHeight) {
+                                        diffX = rectY + rectSizeX - bitmapY - bitmapHeight;
+                                    }
+                                    rectX += diffX;
+                                    rectSizeX -= diffX;
+                                    rectSizeY -= diffX;
+                                } else {
+                                    if (rectY + rectSizeY + diffY > bitmapY + bitmapHeight) {
+                                        diffY = bitmapY + bitmapHeight - rectY - rectSizeY;
+                                    }
+                                    rectX += diffX;
+                                    rectSizeX -= diffX;
+                                    rectSizeY += diffY;
+                                    if (rectSizeY < 160) {
+                                        rectSizeY = 160;
+                                    }
+                                }
+                            } else if (draggingState == 4) {
+                                if (rectX + rectSizeX + diffX > bitmapX + bitmapWidth) {
+                                    diffX = bitmapX + bitmapWidth - rectX - rectSizeX;
+                                }
+                                if (!freeform) {
+                                    if (rectY + rectSizeX + diffX > bitmapY + bitmapHeight) {
+                                        diffX = bitmapY + bitmapHeight - rectY - rectSizeX;
+                                    }
+                                    rectSizeX += diffX;
+                                    rectSizeY += diffX;
+                                } else {
+                                    if (rectY + rectSizeY + diffY > bitmapY + bitmapHeight) {
+                                        diffY = bitmapY + bitmapHeight - rectY - rectSizeY;
+                                    }
+                                    rectSizeX += diffX;
+                                    rectSizeY += diffY;
+                                }
+                                if (rectSizeX < 160) {
+                                    rectSizeX = 160;
+                                }
+                                if (rectSizeY < 160) {
+                                    rectSizeY = 160;
+                                }
                             }
                         }
 
@@ -186,7 +242,8 @@ public class PhotoCropActivity extends BaseFragment {
             }
             float percX = (rectX - bitmapX) / bitmapWidth;
             float percY = (rectY - bitmapY) / bitmapHeight;
-            float percSize = rectSize / bitmapWidth;
+            float percSizeX = rectSizeX / bitmapWidth;
+            float percSizeY = rectSizeY / bitmapHeight;
             float w = imageToCrop.getWidth();
             float h = imageToCrop.getHeight();
             float scaleX = viewWidth / w;
@@ -198,23 +255,33 @@ public class PhotoCropActivity extends BaseFragment {
                 bitmapWidth = viewWidth;
                 bitmapHeight = (int)Math.ceil(h * scaleX);
             }
-            bitmapX = (viewWidth - bitmapWidth) / 2;
-            bitmapY = (viewHeight - bitmapHeight) / 2;
+            bitmapX = (viewWidth - bitmapWidth) / 2 + AndroidUtilities.dp(14);
+            bitmapY = (viewHeight - bitmapHeight) / 2 + AndroidUtilities.dp(14);
 
             if (rectX == -1 && rectY == -1) {
-                if (bitmapWidth > bitmapHeight) {
+                if (freeform) {
                     rectY = bitmapY;
-                    rectX = (viewWidth - bitmapHeight) / 2;
-                    rectSize = bitmapHeight;
-                } else {
                     rectX = bitmapX;
-                    rectY = (viewHeight - bitmapWidth) / 2;
-                    rectSize = bitmapWidth;
+                    rectSizeX = bitmapWidth;
+                    rectSizeY = bitmapHeight;
+                } else {
+                    if (bitmapWidth > bitmapHeight) {
+                        rectY = bitmapY;
+                        rectX = (viewWidth - bitmapHeight) / 2 + AndroidUtilities.dp(14);
+                        rectSizeX = bitmapHeight;
+                        rectSizeY = bitmapHeight;
+                    } else {
+                        rectX = bitmapX;
+                        rectY = (viewHeight - bitmapWidth) / 2 + AndroidUtilities.dp(14);
+                        rectSizeX = bitmapWidth;
+                        rectSizeY = bitmapWidth;
+                    }
                 }
             } else {
                 rectX = percX * bitmapWidth + bitmapX;
                 rectY = percY * bitmapHeight + bitmapY;
-                rectSize = percSize * bitmapWidth;
+                rectSizeX = percSizeX * bitmapWidth;
+                rectSizeY = percSizeY * bitmapHeight;
             }
             invalidate();
         }
@@ -222,31 +289,33 @@ public class PhotoCropActivity extends BaseFragment {
         @Override
         protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
             super.onLayout(changed, left, top, right, bottom);
-            viewWidth = right - left;
-            viewHeight = bottom - top;
+            viewWidth = right - left - AndroidUtilities.dp(28);
+            viewHeight = bottom - top - AndroidUtilities.dp(28);
             updateBitmapSize();
         }
 
         public Bitmap getBitmap() {
             float percX = (rectX - bitmapX) / bitmapWidth;
             float percY = (rectY - bitmapY) / bitmapHeight;
-            float percSize = rectSize / bitmapWidth;
+            float percSizeX = rectSizeX / bitmapWidth;
+            float percSizeY = rectSizeY / bitmapWidth;
             int x = (int)(percX * imageToCrop.getWidth());
             int y = (int)(percY * imageToCrop.getHeight());
-            int size = (int)(percSize * imageToCrop.getWidth());
-            if (x + size > imageToCrop.getWidth()) {
-                size = imageToCrop.getWidth() - x;
+            int sizeX = (int)(percSizeX * imageToCrop.getWidth());
+            int sizeY = (int)(percSizeY * imageToCrop.getWidth());
+            if (x + sizeX > imageToCrop.getWidth()) {
+                sizeX = imageToCrop.getWidth() - x;
             }
-            if (y + size > imageToCrop.getHeight()) {
-                size = imageToCrop.getHeight() - y;
+            if (y + sizeY > imageToCrop.getHeight()) {
+                sizeY = imageToCrop.getHeight() - y;
             }
             try {
-                return Bitmap.createBitmap(imageToCrop, x, y, size, size);
+                return Bitmap.createBitmap(imageToCrop, x, y, sizeX, sizeY);
             } catch (Throwable e) {
                 FileLog.e("tmessags", e);
                 System.gc();
                 try {
-                    return Bitmap.createBitmap(imageToCrop, x, y, size, size);
+                    return Bitmap.createBitmap(imageToCrop, x, y, sizeX, sizeY);
                 } catch (Throwable e2) {
                     FileLog.e("tmessages", e2);
                 }
@@ -261,26 +330,39 @@ public class PhotoCropActivity extends BaseFragment {
                 drawable.draw(canvas);
             }
             canvas.drawRect(bitmapX, bitmapY, bitmapX + bitmapWidth, rectY, halfPaint);
-            canvas.drawRect(bitmapX, rectY, rectX, rectY + rectSize, halfPaint);
-            canvas.drawRect(rectX + rectSize, rectY, bitmapX + bitmapWidth, rectY + rectSize, halfPaint);
-            canvas.drawRect(bitmapX, rectY + rectSize, bitmapX + bitmapWidth, bitmapY + bitmapHeight, halfPaint);
+            canvas.drawRect(bitmapX, rectY, rectX, rectY + rectSizeY, halfPaint);
+            canvas.drawRect(rectX + rectSizeX, rectY, bitmapX + bitmapWidth, rectY + rectSizeY, halfPaint);
+            canvas.drawRect(bitmapX, rectY + rectSizeY, bitmapX + bitmapWidth, bitmapY + bitmapHeight, halfPaint);
 
-            canvas.drawRect(rectX, rectY, rectX + rectSize, rectY + rectSize, rectPaint);
+            canvas.drawRect(rectX, rectY, rectX + rectSizeX, rectY + rectSizeY, rectPaint);
 
-            int side = AndroidUtilities.dp(7);
-            canvas.drawRect(rectX - side, rectY - side, rectX + side, rectY + side, circlePaint);
-            canvas.drawRect(rectX + rectSize - side, rectY - side, rectX + rectSize + side, rectY + side, circlePaint);
-            canvas.drawRect(rectX - side, rectY + rectSize - side, rectX + side, rectY + rectSize + side, circlePaint);
-            canvas.drawRect(rectX + rectSize - side, rectY + rectSize - side, rectX + rectSize + side, rectY + rectSize + side, circlePaint);
+            int side = AndroidUtilities.dp(1);
+            canvas.drawRect(rectX + side, rectY + side, rectX + side + AndroidUtilities.dp(20), rectY + side * 3, circlePaint);
+            canvas.drawRect(rectX + side, rectY + side, rectX + side * 3, rectY + side + AndroidUtilities.dp(20), circlePaint);
+
+            canvas.drawRect(rectX + rectSizeX - side - AndroidUtilities.dp(20), rectY + side, rectX + rectSizeX - side, rectY + side * 3, circlePaint);
+            canvas.drawRect(rectX + rectSizeX - side * 3, rectY + side, rectX + rectSizeX - side, rectY + side + AndroidUtilities.dp(20), circlePaint);
+
+            canvas.drawRect(rectX + side, rectY + rectSizeY - side - AndroidUtilities.dp(20), rectX + side * 3, rectY + rectSizeY - side, circlePaint);
+            canvas.drawRect(rectX + side, rectY + rectSizeY - side * 3, rectX + side + AndroidUtilities.dp(20), rectY + rectSizeY - side, circlePaint);
+
+            canvas.drawRect(rectX + rectSizeX - side - AndroidUtilities.dp(20), rectY + rectSizeY - side * 3, rectX + rectSizeX - side, rectY + rectSizeY - side, circlePaint);
+            canvas.drawRect(rectX + rectSizeX - side * 3, rectY + rectSizeY - side - AndroidUtilities.dp(20), rectX + rectSizeX - side, rectY + rectSizeY - side, circlePaint);
+
+            for (int a = 1; a < 3; a++) {
+                canvas.drawRect(rectX + rectSizeX / 3 * a, rectY + side, rectX + side + rectSizeX / 3 * a, rectY + rectSizeY - side, circlePaint);
+                canvas.drawRect(rectX + side, rectY + rectSizeY / 3 * a, rectX - side + rectSizeX, rectY + rectSizeY / 3 * a + side, circlePaint);
+            }
         }
     }
 
     private Bitmap imageToCrop;
     private BitmapDrawable drawable;
-    private PhotoCropActivityDelegate delegate = null;
+    private PhotoEditActivityDelegate delegate = null;
     private PhotoCropView view;
     private boolean sameBitmap = false;
     private boolean doneButtonPressed = false;
+    private String bitmapKey;
 
     private final static int done_button = 1;
 
@@ -288,29 +370,40 @@ public class PhotoCropActivity extends BaseFragment {
         super(args);
     }
 
+    public PhotoCropActivity(Bundle args, Bitmap bitmap, String key) {
+        super(args);
+        imageToCrop = bitmap;
+        bitmapKey = key;
+        if (imageToCrop != null && key != null) {
+            ImageLoader.getInstance().incrementUseCount(key);
+        }
+    }
+
     @Override
     public boolean onFragmentCreate() {
         swipeBackEnabled = false;
-        String photoPath = getArguments().getString("photoPath");
-        Uri photoUri = getArguments().getParcelable("photoUri");
-        if (photoPath == null && photoUri == null) {
-            return false;
-        }
-        if (photoPath != null) {
-            File f = new File(photoPath);
-            if (!f.exists()) {
+        if (imageToCrop == null) {
+            String photoPath = getArguments().getString("photoPath");
+            Uri photoUri = getArguments().getParcelable("photoUri");
+            if (photoPath == null && photoUri == null) {
                 return false;
             }
-        }
-        int size = 0;
-        if (AndroidUtilities.isTablet()) {
-            size = AndroidUtilities.dp(520);
-        } else {
-            size = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
-        }
-        imageToCrop = ImageLoader.loadBitmap(photoPath, photoUri, size, size);
-        if (imageToCrop == null) {
-            return false;
+            if (photoPath != null) {
+                File f = new File(photoPath);
+                if (!f.exists()) {
+                    return false;
+                }
+            }
+            int size = 0;
+            if (AndroidUtilities.isTablet()) {
+                size = AndroidUtilities.dp(520);
+            } else {
+                size = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+            }
+            imageToCrop = ImageLoader.loadBitmap(photoPath, photoUri, size, size, true);
+            if (imageToCrop == null) {
+                return false;
+            }
         }
         drawable = new BitmapDrawable(imageToCrop);
         super.onFragmentCreate();
@@ -321,7 +414,12 @@ public class PhotoCropActivity extends BaseFragment {
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
         drawable = null;
-        if (imageToCrop != null && !sameBitmap) {
+        if (bitmapKey != null) {
+            if (ImageLoader.getInstance().decrementUseCount(bitmapKey) && !ImageLoader.getInstance().isInCache(bitmapKey)) {
+                bitmapKey = null;
+            }
+        }
+        if (bitmapKey == null && imageToCrop != null && !sameBitmap) {
             imageToCrop.recycle();
             imageToCrop = null;
         }
@@ -330,6 +428,8 @@ public class PhotoCropActivity extends BaseFragment {
     @Override
     public View createView(LayoutInflater inflater, ViewGroup container) {
         if (fragmentView == null) {
+            actionBar.setBackgroundColor(0xff333333);
+            actionBar.setItemsBackground(R.drawable.bar_selector_picker);
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setAllowOverlayTitle(true);
             actionBar.setTitle(LocaleController.getString("CropImage", R.string.CropImage));
@@ -344,7 +444,7 @@ public class PhotoCropActivity extends BaseFragment {
                             if (bitmap == imageToCrop) {
                                 sameBitmap = true;
                             }
-                            delegate.didFinishCrop(bitmap);
+                            delegate.didFinishEdit(bitmap, getArguments());
                             doneButtonPressed = true;
                         }
                         finishFragment();
@@ -356,6 +456,7 @@ public class PhotoCropActivity extends BaseFragment {
             menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
             fragmentView = view = new PhotoCropView(getParentActivity());
+            ((PhotoCropView) fragmentView).freeform = getArguments().getBoolean("freeform", false);
             fragmentView.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
@@ -366,7 +467,7 @@ public class PhotoCropActivity extends BaseFragment {
         return fragmentView;
     }
 
-    public void setDelegate(PhotoCropActivityDelegate delegate) {
+    public void setDelegate(PhotoEditActivityDelegate delegate) {
         this.delegate = delegate;
     }
 }

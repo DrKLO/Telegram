@@ -32,11 +32,11 @@ public class AvatarDrawable extends Drawable {
     private static TextPaint namePaint;
     private static int[] arrColors = {0xffe56555, 0xfff28c48, 0xffeec764, 0xff76c84d, 0xff5fbed5, 0xff549cdd, 0xff8e85ee, 0xfff2749a};
     private static int[] arrColorsProfiles = {0xffd86f65, 0xfff69d61, 0xfffabb3c, 0xff67b35d, 0xff56a2bb, 0xff5c98cd, 0xff8c79d2, 0xfff37fa6};
-    private static int[] arrColorsProfilesBack = {0xffca6056, 0xfff18944, 0xfff2b02c, 0xff56a14c, 0xff4492ac, 0xff4c84b6, 0xff7d6ac4, 0xffe66b94};
-    private static int[] arrColorsProfilesText = {0xfff9cbc5, 0xfffdddc8, 0xfffce5bb, 0xffc0edba, 0xffb8e2f0, 0xffb3d7f7, 0xffcdc4ed, 0xfffed1e0};
-    private static int[] arrColorsNames = {0xffca5650, 0xffd87b29, 0xffc7a21c, 0xff50b232, 0xff42b1a8, 0xff4e92cc, 0xff4e92cc, 0xffdb5b9d};
-    private static int[] arrColorsButtons = {R.drawable.bar_selector_red, R.drawable.bar_selector_orange, R.drawable.bar_selector_yellow,
-            R.drawable.bar_selector_green, R.drawable.bar_selector_cyan, R.drawable.bar_selector_blue, R.drawable.bar_selector_violet, R.drawable.bar_selector_pink};
+    private static int[] arrColorsProfilesBack = {0xffca6056, 0xfff18944, 0xff7d6ac4, 0xff56a14c, 0xff4492ac, 0xff4c84b6, 0xff7d6ac4, 0xff4c84b6};
+    private static int[] arrColorsProfilesText = {0xfff9cbc5, 0xfffdddc8, 0xffcdc4ed, 0xffc0edba, 0xffb8e2f0, 0xffb3d7f7, 0xffcdc4ed, 0xffb3d7f7};
+    private static int[] arrColorsNames = {0xffca5650, 0xffd87b29, 0xff4e92cc, 0xff50b232, 0xff42b1a8, 0xff4e92cc, 0xff4e92cc, 0xff4e92cc};
+    private static int[] arrColorsButtons = {R.drawable.bar_selector_red, R.drawable.bar_selector_orange, R.drawable.bar_selector_violet,
+            R.drawable.bar_selector_green, R.drawable.bar_selector_cyan, R.drawable.bar_selector_blue, R.drawable.bar_selector_violet, R.drawable.bar_selector_blue};
 
 
 

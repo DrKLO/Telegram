@@ -276,7 +276,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         Intent intent = new Intent(Intent.ACTION_SEND);
                         intent.setType("text/plain");
                         intent.putExtra(Intent.EXTRA_TEXT, ContactsController.getInstance().getInviteText());
-                        startActivity(intent);
+                        startActivity(Intent.createChooser(intent, ""));
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
                     }
@@ -735,6 +735,14 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         } else if (showDialogsList) {
             if (!AndroidUtilities.isTablet()) {
                 actionBarLayout.removeAllFragments();
+            } else {
+                if (!layersActionBarLayout.fragmentsStack.isEmpty()) {
+                    for (int a = 0; a < layersActionBarLayout.fragmentsStack.size() - 1; a++) {
+                        layersActionBarLayout.removeFragmentFromStack(layersActionBarLayout.fragmentsStack.get(0));
+                        a--;
+                    }
+                    layersActionBarLayout.closeLastFragment(false);
+                }
             }
             pushOpened = false;
             isNew = false;

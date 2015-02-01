@@ -53,6 +53,10 @@
     <string name="CompatibilityChat">%1$s benutzt eine ältere Version von Telegram, sodass Fotos in Geheimen Chats im Kompatibilitätsmodus angezeigt werden.\n\nSobald %2$s Telegram aktualisiert, werden Fotos mit Timern von 1 Minute und kürzer per \"Tippen und Halten\" angezeigt. Du wirst benachrichtigt, sobald dein Chatpartner ein Bildschirmfoto macht.</string>
     <string name="SearchMessages">NACHRICHTEN</string>
     <string name="Search">Suche</string>
+    <string name="MuteNotifications">Stummschalten</string>
+    <string name="MuteFor">Stumm für %1$s</string>
+    <string name="UnmuteNotifications">Stumm aus</string>
+    <string name="WillUnmuteIn">In %1$s</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Neue Broadcast Liste</string>
     <string name="EnterListName">Listenname</string>
@@ -73,6 +77,7 @@
     <string name="SystemRoot">Systemverzeichnis</string>
     <string name="SdCard">SD-Karte</string>
     <string name="Folder">Ordner</string>
+    <string name="GalleryInfo">Bilder ohne Komprimierung senden</string>
     <!--chat view-->
     <string name="Invisible">unsichtbar</string>
     <string name="Typing">schreibt…</string>
@@ -105,6 +110,7 @@
     <string name="DeleteThisChat">Diesen Chat löschen</string>
     <string name="SlideToCancel">WISCHEN UM ABZUBRECHEN</string>
     <string name="SaveToDownloads">In Downloads speichern</string>
+    <string name="ShareFile">Teilen</string>
     <string name="ApplyLocalizationFile">Sprachdatei benutzen</string>
     <string name="UnsupportedAttachment">Nicht unterstützte Datei</string>
     <string name="SetTimer">Selbstzerstörungs-Timer setzen</string>
@@ -151,7 +157,7 @@
     <string name="SelectContact">Kontakt auswählen</string>
     <string name="NoContacts">Noch keine Kontakte</string>
     <string name="InviteText">Hey, komm auch zu Telegram: https://telegram.org/dl</string>
-    <string name="TodayAt">heute um</string>
+    <string name="TodayAt">um</string>
     <string name="YesterdayAt">gestern um</string>
     <string name="Online">online</string>
     <string name="LastSeen">zul. online</string>
@@ -270,9 +276,9 @@
     <string name="SystemDefault">Systemvorgabe</string>
     <string name="SettingsDefault">Telegramvorgabe</string>
     <string name="AutomaticMediaDownload">Automatischer Mediendownload</string>
-    <string name="WhenUsingMobileData">über Mobilfunk</string>
-    <string name="WhenConnectedOnWiFi">über W-LAN</string>
-    <string name="WhenRoaming">bei Roaming</string>
+    <string name="WhenUsingMobileData">Über Mobilfunk</string>
+    <string name="WhenConnectedOnWiFi">Über W-LAN</string>
+    <string name="WhenRoaming">Bei Roaming</string>
     <string name="NoMediaAutoDownload">kein automatischer Download</string>
     <string name="SaveToGallerySettings">In der Galerie speichern</string>
     <string name="EditName">Name bearbeiten</string>
@@ -291,7 +297,9 @@
     <string name="ChangePhoneNumberOccupied">Die Telefonnummer %1$s ist bereits ein Telegram Konto. Bitte lösche es, bevor du mit der Übertragung auf das neue Konto startest.</string>
     <string name="NotificationsOther">Sonstige</string>
     <!--media view-->
-    <string name="NoMedia">Noch keine geteilten Medien vorhanden</string>
+    <string name="NoMedia">Die hier geteilten Bilder und Videos kannst du von jedem deiner Geräte aufrufen.</string>
+    <string name="DocumentsTitle">Dateien</string>
+    <string name="NoSharedFiles">Die hier geteilten Bilder und Videos kannst du von jedem deiner Geräte aufrufen.</string>
     <!--map view-->
     <string name="Map">Karte</string>
     <string name="Satellite">Satellit</string>
@@ -315,6 +323,7 @@
     <string name="SearchImagesTitle">Suche Bilder</string>
     <string name="SearchGifsTitle">Suche GIFs</string>
     <string name="CropImage">Bild zuschneiden</string>
+    <string name="EditImage">Bild bearbeiten</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -502,6 +511,12 @@
     <string name="messages_few">%1$d Nachrichten</string>
     <string name="messages_many">%1$d Nachrichten</string>
     <string name="messages_other">%1$d Nachrichten</string>
+    <string name="files_zero">keine Dateien</string>
+    <string name="files_one">%1$d Datei</string>
+    <string name="files_two">%1$d Dateien</string>
+    <string name="files_few">%1$d Dateien</string>
+    <string name="files_many">%1$d Dateien</string>
+    <string name="files_other">%1$d Dateien</string>
     <string name="FromContacts_zero">von keinem Kontakt</string>
     <string name="FromContacts_one">von %1$d Kontakt</string>
     <string name="FromContacts_two">von %1$d Kontakten</string>

@@ -478,7 +478,7 @@ public class SecretChatHelper {
             reqSend.action.ttl_seconds = encryptedChat.ttl;
             message = createServiceSecretMessage(encryptedChat, reqSend.action);
 
-            MessageObject newMsgObj = new MessageObject(message, null);
+            MessageObject newMsgObj = new MessageObject(message, null, false);
             newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SENDING;
             ArrayList<MessageObject> objArr = new ArrayList<>();
             objArr.add(newMsgObj);
@@ -514,7 +514,7 @@ public class SecretChatHelper {
             reqSend.action.random_ids = random_ids;
             message = createServiceSecretMessage(encryptedChat, reqSend.action);
 
-            MessageObject newMsgObj = new MessageObject(message, null);
+            MessageObject newMsgObj = new MessageObject(message, null, false);
             newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SENDING;
             ArrayList<MessageObject> objArr = new ArrayList<>();
             objArr.add(newMsgObj);
@@ -547,7 +547,7 @@ public class SecretChatHelper {
                 arr.add(newMsg);
                 MessagesStorage.getInstance().putMessages(arr, false, true, false, 0);
 
-                MessagesStorage.getInstance().putSentFile(originalPath, newMsg.media.photo, 3);
+                //MessagesStorage.getInstance().putSentFile(originalPath, newMsg.media.photo, 3);
             } else if (newMsg.media instanceof TLRPC.TL_messageMediaVideo && newMsg.media.video != null) {
                 TLRPC.Video video = newMsg.media.video;
                 newMsg.media.video = new TLRPC.TL_videoEncrypted();
@@ -578,7 +578,7 @@ public class SecretChatHelper {
                 arr.add(newMsg);
                 MessagesStorage.getInstance().putMessages(arr, false, true, false, 0);
 
-                MessagesStorage.getInstance().putSentFile(originalPath, newMsg.media.video, 5);
+                //MessagesStorage.getInstance().putSentFile(originalPath, newMsg.media.video, 5);
             } else if (newMsg.media instanceof TLRPC.TL_messageMediaDocument && newMsg.media.document != null) {
                 TLRPC.Document document = newMsg.media.document;
                 newMsg.media.document = new TLRPC.TL_documentEncrypted();
@@ -605,7 +605,7 @@ public class SecretChatHelper {
                 arr.add(newMsg);
                 MessagesStorage.getInstance().putMessages(arr, false, true, false, 0);
 
-                MessagesStorage.getInstance().putSentFile(originalPath, newMsg.media.document, 4);
+                //MessagesStorage.getInstance().putSentFile(originalPath, newMsg.media.document, 4);
             } else if (newMsg.media instanceof TLRPC.TL_messageMediaAudio && newMsg.media.audio != null) {
                 TLRPC.Audio audio = newMsg.media.audio;
                 newMsg.media.audio = new TLRPC.TL_audioEncrypted();
@@ -656,7 +656,8 @@ public class SecretChatHelper {
                 TLObject toEncryptObject = null;
                 if (AndroidUtilities.getPeerLayerVersion(chat.layer) >= 17) {
                     TLRPC.TL_decryptedMessageLayer layer = new TLRPC.TL_decryptedMessageLayer();
-                    layer.layer = Math.min(17, AndroidUtilities.getPeerLayerVersion(chat.layer));
+                    int myLayer = Math.max(17, AndroidUtilities.getMyLayerVersion(chat.layer));
+                    layer.layer = Math.min(myLayer, AndroidUtilities.getPeerLayerVersion(chat.layer));
                     layer.message = req;
                     layer.random_bytes = new byte[Math.max(1, (int) Math.ceil(Utilities.random.nextDouble() * 16))];
                     Utilities.random.nextBytes(layer.random_bytes);
@@ -697,6 +698,7 @@ public class SecretChatHelper {
                 } else {
                     toEncryptObject = req;
                 }
+
 
                 int len = toEncryptObject.getObjectSize();
                 ByteBufferDesc toEncrypt = BuffersStorage.getInstance().getFreeBuffer(4 + len);

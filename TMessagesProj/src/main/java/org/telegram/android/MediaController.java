@@ -122,6 +122,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         public String bucketName;
         public PhotoEntry coverPhoto;
         public ArrayList<PhotoEntry> photos = new ArrayList<>();
+        public HashMap<Integer, PhotoEntry> photosByIds = new HashMap<>();
 
         public AlbumEntry(int bucketId, String bucketName, PhotoEntry coverPhoto) {
             this.bucketId = bucketId;
@@ -131,6 +132,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
         public void addPhoto(PhotoEntry photoEntry) {
             photos.add(photoEntry);
+            photosByIds.put(photoEntry.imageId, photoEntry);
         }
     }
 
@@ -140,6 +142,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         public long dateTaken;
         public String path;
         public int orientation;
+        public String thumbPath;
+        public String imagePath;
 
         public PhotoEntry(int bucketId, int imageId, long dateTaken, String path, int orientation) {
             this.bucketId = bucketId;
@@ -1095,11 +1099,11 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if (audioTrackPlayer == null && audioPlayer == null || isPaused || (useFrontSpeaker == (event.values[0] == 0))) {
+        if (proximitySensor != null && audioTrackPlayer == null && audioPlayer == null || isPaused || (useFrontSpeaker == (event.values[0] < proximitySensor.getMaximumRange() / 10))) {
             return;
         }
         ignoreProximity = true;
-        useFrontSpeaker = event.values[0] == 0;
+        useFrontSpeaker = event.values[0] < proximitySensor.getMaximumRange() / 10;
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioRouteChanged, useFrontSpeaker);
         MessageObject currentMessageObject = playingMessageObject;
         float progress = playingMessageObject.audioProgress;
@@ -2450,11 +2454,15 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                             decoder.start();
 
                             final int TIMEOUT_USEC = 2500;
-                            ByteBuffer[] decoderInputBuffers = decoder.getInputBuffers();
-                            ByteBuffer[] encoderOutputBuffers = encoder.getOutputBuffers();
+                            ByteBuffer[] decoderInputBuffers = null;
+                            ByteBuffer[] encoderOutputBuffers = null;
                             ByteBuffer[] encoderInputBuffers = null;
-                            if (Build.VERSION.SDK_INT < 18) {
-                                encoderInputBuffers = encoder.getInputBuffers();
+                            if (Build.VERSION.SDK_INT < 21) {
+                                decoderInputBuffers = decoder.getInputBuffers();
+                                encoderOutputBuffers = encoder.getOutputBuffers();
+                                if (Build.VERSION.SDK_INT < 18) {
+                                    encoderInputBuffers = encoder.getInputBuffers();
+                                }
                             }
 
                             checkConversionCanceled();
@@ -2467,7 +2475,12 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                                     if (index == videoIndex) {
                                         int inputBufIndex = decoder.dequeueInputBuffer(TIMEOUT_USEC);
                                         if (inputBufIndex >= 0) {
-                                            ByteBuffer inputBuf = decoderInputBuffers[inputBufIndex];
+                                            ByteBuffer inputBuf = null;
+                                            if (Build.VERSION.SDK_INT < 21) {
+                                                inputBuf = decoderInputBuffers[inputBufIndex];
+                                            } else {
+                                                inputBuf = decoder.getInputBuffer(inputBufIndex);
+                                            }
                                             int chunkSize = extractor.readSampleData(inputBuf, 0);
                                             if (chunkSize < 0) {
                                                 decoder.queueInputBuffer(inputBufIndex, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
@@ -2497,7 +2510,9 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                                     if (encoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
                                         encoderOutputAvailable = false;
                                     } else if (encoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
-                                        encoderOutputBuffers = encoder.getOutputBuffers();
+                                        if (Build.VERSION.SDK_INT < 21) {
+                                            encoderOutputBuffers = encoder.getOutputBuffers();
+                                        }
                                     } else if (encoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                                         MediaFormat newFormat = encoder.getOutputFormat();
                                         if (videoTrackIndex == -5) {
@@ -2506,7 +2521,12 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                                     } else if (encoderStatus < 0) {
                                         throw new RuntimeException("unexpected result from encoder.dequeueOutputBuffer: " + encoderStatus);
                                     } else {
-                                        ByteBuffer encodedData = encoderOutputBuffers[encoderStatus];
+                                        ByteBuffer encodedData = null;
+                                        if (Build.VERSION.SDK_INT < 21) {
+                                            encodedData = encoderOutputBuffers[encoderStatus];
+                                        } else {
+                                            encodedData = encoder.getOutputBuffer(encoderStatus);
+                                        }
                                         if (encodedData == null) {
                                             throw new RuntimeException("encoderOutputBuffer " + encoderStatus + " was null");
                                         }

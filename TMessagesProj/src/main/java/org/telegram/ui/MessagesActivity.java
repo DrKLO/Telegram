@@ -8,9 +8,12 @@
 
 package org.telegram.ui;
 
+import android.animation.ObjectAnimator;
+import android.animation.StateListAnimator;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.res.Configuration;
+import android.graphics.Outline;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -18,6 +21,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.AbsListView;
@@ -102,6 +106,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.contactsDidLoaded);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.appDidLogout);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.openedChatChanged);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.notificationsSettingsUpdated);
+
         if (getArguments() != null) {
             onlySelect = arguments.getBoolean("onlySelect", false);
             serverOnly = arguments.getBoolean("serverOnly", false);
@@ -126,6 +132,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.contactsDidLoaded);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.appDidLogout);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.openedChatChanged);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.notificationsSettingsUpdated);
         delegate = null;
     }
 
@@ -273,8 +280,21 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             textView = (TextView)fragmentView.findViewById(R.id.search_empty_text);
             textView.setText(LocaleController.getString("NoResult", R.string.NoResult));
 
-            floatingButton = (ImageView)fragmentView.findViewById(R.id.floating_button);
+            floatingButton = (ImageView) fragmentView.findViewById(R.id.floating_button);
             floatingButton.setVisibility(onlySelect ? View.GONE : View.VISIBLE);
+            floatingButton.setScaleType(ImageView.ScaleType.CENTER);
+            if (Build.VERSION.SDK_INT >= 21) {
+                StateListAnimator animator = new StateListAnimator();
+                animator.addState(new int[] {android.R.attr.state_pressed}, ObjectAnimator.ofFloat(floatingButton, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
+                animator.addState(new int[] {}, ObjectAnimator.ofFloat(floatingButton, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
+                floatingButton.setStateListAnimator(animator);
+                floatingButton.setOutlineProvider(new ViewOutlineProvider() {
+                    @Override
+                    public void getOutline(View view, Outline outline) {
+                        outline.setOval(0, 0, AndroidUtilities.dp(56), AndroidUtilities.dp(56));
+                    }
+                });
+            }
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)floatingButton.getLayoutParams();
             layoutParams.leftMargin = LocaleController.isRTL ? AndroidUtilities.dp(14) : 0;
             layoutParams.rightMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(14);
@@ -594,6 +614,10 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     dialogsAdapter.setOpenedDialogId(openedDialogId);
                 }
                 updateVisibleRows(MessagesController.UPDATE_MASK_SELECT_DIALOG);
+            }
+        } else if (id == NotificationCenter.notificationsSettingsUpdated) {
+            if (messagesListView != null) {
+                updateVisibleRows(0);
             }
         }
     }

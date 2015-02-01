@@ -289,7 +289,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                         Intent intent = new Intent(Intent.ACTION_SEND);
                                         intent.setType("text/plain");
                                         intent.putExtra(Intent.EXTRA_TEXT, ContactsController.getInstance().getInviteText());
-                                        getParentActivity().startActivity(intent);
+                                        getParentActivity().startActivity(Intent.createChooser(intent, ""));
                                     } catch (Exception e) {
                                         FileLog.e("tmessages", e);
                                     }

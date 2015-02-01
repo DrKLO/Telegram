@@ -281,7 +281,9 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         ArrayList<String> photos = new ArrayList<>();
         for (HashMap.Entry<Integer, MediaController.PhotoEntry> entry : selectedPhotos.entrySet()) {
             MediaController.PhotoEntry photoEntry = entry.getValue();
-            if (photoEntry.path != null) {
+            if (photoEntry.imagePath != null) {
+                photos.add(photoEntry.imagePath);
+            } else if (photoEntry.path != null) {
                 photos.add(photoEntry.path);
             }
         }

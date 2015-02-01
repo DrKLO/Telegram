@@ -30,14 +30,13 @@ import android.widget.ListView;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
+import org.telegram.android.NotificationsController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.RPCRequest;
-import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.TextColorCell;
@@ -162,18 +161,23 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                                 LocaleController.getString("Disabled", R.string.Disabled)
                         }, new DialogInterface.OnClickListener() {
                             @Override
-                            public void onClick(DialogInterface dialog, int which) {
+                            public void onClick(DialogInterface d, int which) {
                                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                                 SharedPreferences.Editor editor = preferences.edit();
                                 editor.putInt("notify2_" + dialog_id, which);
                                 MessagesStorage.getInstance().setDialogFlags(dialog_id, which == 2 ? 1 : 0);
                                 editor.commit();
+                                TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs_dict.get(dialog_id);
+                                if (dialog != null) {
+                                    dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
+                                    if (which == 2) {
+                                        dialog.notify_settings.mute_until = Integer.MAX_VALUE;
+                                    }
+                                }
                                 if (listView != null) {
                                     listView.invalidateViews();
                                 }
-                                if (i == settingsNotificationsRow) {
-                                    updateServerNotificationsSettings();
-                                }
+                                NotificationsController.updateServerNotificationsSettings(dialog_id);
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -298,45 +302,6 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
         return fragmentView;
     }
 
-    public void updateServerNotificationsSettings() {
-        if ((int)dialog_id == 0) {
-            return;
-        }
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-        TLRPC.TL_account_updateNotifySettings req = new TLRPC.TL_account_updateNotifySettings();
-        req.settings = new TLRPC.TL_inputPeerNotifySettings();
-        req.settings.sound = "default";
-        req.settings.events_mask = 0;
-        req.settings.mute_until = preferences.getInt("notify2_" + dialog_id, 0) != 2 ? 0 : Integer.MAX_VALUE;
-        req.settings.show_previews = preferences.getBoolean("preview_" + dialog_id, true);
-
-        req.peer = new TLRPC.TL_inputNotifyPeer();
-
-        if ((int)dialog_id < 0) {
-            ((TLRPC.TL_inputNotifyPeer)req.peer).peer = new TLRPC.TL_inputPeerChat();
-            ((TLRPC.TL_inputNotifyPeer)req.peer).peer.chat_id = -(int)dialog_id;
-        } else {
-            TLRPC.User user = MessagesController.getInstance().getUser((int)dialog_id);
-            if (user == null) {
-                return;
-            }
-            if (user instanceof TLRPC.TL_userForeign || user instanceof TLRPC.TL_userRequest) {
-                ((TLRPC.TL_inputNotifyPeer)req.peer).peer = new TLRPC.TL_inputPeerForeign();
-                ((TLRPC.TL_inputNotifyPeer)req.peer).peer.access_hash = user.access_hash;
-            } else {
-                ((TLRPC.TL_inputNotifyPeer)req.peer).peer = new TLRPC.TL_inputPeerContact();
-            }
-            ((TLRPC.TL_inputNotifyPeer)req.peer).peer.user_id = (int)dialog_id;
-        }
-
-        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
-            @Override
-            public void run(TLObject response, TLRPC.TL_error error) {
-
-            }
-        });
-    }
-
     @Override
     public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
         if (resultCode == Activity.RESULT_OK) {
@@ -451,6 +416,19 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         textCell.setTextAndValue(LocaleController.getString("Notifications", R.string.Notifications), LocaleController.getString("Enabled", R.string.Enabled), true);
                     } else if (value == 2) {
                         textCell.setTextAndValue(LocaleController.getString("Notifications", R.string.Notifications), LocaleController.getString("Disabled", R.string.Disabled), true);
+                    }  else if (value == 3) {
+                        int delta = preferences.getInt("notifyuntil_" + dialog_id, 0) - ConnectionsManager.getInstance().getCurrentTime();
+                        String val;
+                        if (delta <= 0) {
+                            val = LocaleController.getString("Enabled", R.string.Enabled);
+                        } else if (delta < 60 * 60) {
+                            val = LocaleController.formatString("WillUnmuteIn", R.string.WillUnmuteIn, LocaleController.formatPluralString("Minutes", delta / 60));
+                        } else if (delta < 60 * 60 * 24) {
+                            val = LocaleController.formatString("WillUnmuteIn", R.string.WillUnmuteIn, LocaleController.formatPluralString("Hours", (int) Math.ceil(delta / 60.0f / 60)));
+                        } else {
+                            val = LocaleController.formatString("WillUnmuteIn", R.string.WillUnmuteIn, LocaleController.formatPluralString("Days", (int) Math.ceil(delta / 60.0f / 60 / 24)));
+                        }
+                        textCell.setTextAndValue(LocaleController.getString("Notifications", R.string.Notifications), val, true);
                     }
                 } else if (i == settingsSoundRow) {
                     String value = preferences.getString("sound_" + dialog_id, LocaleController.getString("Default", R.string.Default));
