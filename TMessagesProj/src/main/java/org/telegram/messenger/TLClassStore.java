@@ -14,7 +14,7 @@ public class TLClassStore {
     private HashMap<Integer, Class> classStore;
 
     public TLClassStore () {
-        classStore = new HashMap<Integer, Class>();
+        classStore = new HashMap<>();
 
         classStore.put(TLRPC.TL_chatPhotoEmpty.constructor, TLRPC.TL_chatPhotoEmpty.class);
         classStore.put(TLRPC.TL_chatPhoto.constructor, TLRPC.TL_chatPhoto.class);
@@ -31,6 +31,12 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_auth_checkedPhone.constructor, TLRPC.TL_auth_checkedPhone.class);
         classStore.put(TLRPC.TL_msgs_ack.constructor, TLRPC.TL_msgs_ack.class);
         classStore.put(TLRPC.TL_messages_chatFull.constructor, TLRPC.TL_messages_chatFull.class);
+        classStore.put(TLRPC.TL_documentAttributeAnimated.constructor, TLRPC.TL_documentAttributeAnimated.class);
+        classStore.put(TLRPC.TL_documentAttributeAudio.constructor, TLRPC.TL_documentAttributeAudio.class);
+        classStore.put(TLRPC.TL_documentAttributeFilename.constructor, TLRPC.TL_documentAttributeFilename.class);
+        classStore.put(TLRPC.TL_documentAttributeVideo.constructor, TLRPC.TL_documentAttributeVideo.class);
+        classStore.put(TLRPC.TL_documentAttributeSticker.constructor, TLRPC.TL_documentAttributeSticker.class);
+        classStore.put(TLRPC.TL_documentAttributeImageSize.constructor, TLRPC.TL_documentAttributeImageSize.class);
         classStore.put(TLRPC.TL_rpc_result.constructor, TLRPC.TL_rpc_result.class);
         classStore.put(TLRPC.TL_contactStatus.constructor, TLRPC.TL_contactStatus.class);
         classStore.put(TLRPC.TL_auth_authorization.constructor, TLRPC.TL_auth_authorization.class);
@@ -258,6 +264,8 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_contacts_myLinkEmpty.constructor, TLRPC.TL_contacts_myLinkEmpty.class);
         classStore.put(TLRPC.TL_server_DH_inner_data.constructor, TLRPC.TL_server_DH_inner_data.class);
         classStore.put(TLRPC.TL_new_session_created.constructor, TLRPC.TL_new_session_created.class);
+        classStore.put(TLRPC.TL_account_password.constructor, TLRPC.TL_account_password.class);
+        classStore.put(TLRPC.TL_account_noPassword.constructor, TLRPC.TL_account_noPassword.class);
         classStore.put(TLRPC.TL_userProfilePhotoEmpty.constructor, TLRPC.TL_userProfilePhotoEmpty.class);
         classStore.put(TLRPC.TL_userProfilePhoto.constructor, TLRPC.TL_userProfilePhoto.class);
         classStore.put(TLRPC.TL_photo.constructor, TLRPC.TL_photo.class);
@@ -348,6 +356,9 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_inputPhoto.constructor, TLRPC.TL_inputPhoto.class);
         classStore.put(TLRPC.TL_importedContact.constructor, TLRPC.TL_importedContact.class);
         classStore.put(TLRPC.TL_accountDaysTTL.constructor, TLRPC.TL_accountDaysTTL.class);
+        classStore.put(TLRPC.TL_stickerPack.constructor, TLRPC.TL_stickerPack.class);
+        classStore.put(TLRPC.TL_messages_allStickers.constructor, TLRPC.TL_messages_allStickers.class);
+        classStore.put(TLRPC.TL_messages_allStickersNotModified.constructor, TLRPC.TL_messages_allStickersNotModified.class);
         classStore.put(TLRPC.TL_inputPeerContact.constructor, TLRPC.TL_inputPeerContact.class);
         classStore.put(TLRPC.TL_inputPeerChat.constructor, TLRPC.TL_inputPeerChat.class);
         classStore.put(TLRPC.TL_inputPeerEmpty.constructor, TLRPC.TL_inputPeerEmpty.class);
@@ -366,6 +377,7 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_decryptedMessageActionCommitKey.constructor, TLRPC.TL_decryptedMessageActionCommitKey.class);
         classStore.put(TLRPC.TL_decryptedMessageActionAbortKey.constructor, TLRPC.TL_decryptedMessageActionAbortKey.class);
         classStore.put(TLRPC.TL_decryptedMessageActionNoop.constructor, TLRPC.TL_decryptedMessageActionNoop.class);
+        classStore.put(TLRPC.TL_decryptedMessageMediaExternalDocument.constructor, TLRPC.TL_decryptedMessageMediaExternalDocument.class);
 
         classStore.put(TLRPC.TL_msg_container.constructor, TLRPC.TL_msg_container.class);
         classStore.put(TLRPC.TL_fileEncryptedLocation.constructor, TLRPC.TL_fileEncryptedLocation.class);
@@ -399,6 +411,8 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_userDeleted_old.constructor, TLRPC.TL_userDeleted_old.class);
         classStore.put(TLRPC.TL_messageEncryptedAction.constructor, TLRPC.TL_messageEncryptedAction.class);
         classStore.put(TLRPC.TL_decryptedMessageHolder.constructor, TLRPC.TL_decryptedMessageHolder.class);
+        classStore.put(TLRPC.TL_documentEncrypted_old.constructor, TLRPC.TL_documentEncrypted_old.class);
+        classStore.put(TLRPC.TL_document_old.constructor, TLRPC.TL_document_old.class);
     }
 
     static TLClassStore store = null;

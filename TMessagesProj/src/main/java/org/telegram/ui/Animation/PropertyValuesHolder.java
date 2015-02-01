@@ -149,11 +149,11 @@ public class PropertyValuesHolder implements Cloneable {
         if (valueType == null) {
             try {
                 returnVal = targetClass.getMethod(methodName);
-            } catch (NoSuchMethodException e) {
+            } catch (Throwable e) {
                 try {
                     returnVal = targetClass.getDeclaredMethod(methodName);
                     returnVal.setAccessible(true);
-                } catch (NoSuchMethodException e2) {
+                } catch (Throwable e2) {
                     e2.printStackTrace();
                 }
             }
@@ -176,13 +176,13 @@ public class PropertyValuesHolder implements Cloneable {
                     returnVal = targetClass.getMethod(methodName, args);
                     mValueType = typeVariant;
                     return returnVal;
-                } catch (NoSuchMethodException e) {
+                } catch (Throwable e) {
                     try {
                         returnVal = targetClass.getDeclaredMethod(methodName, args);
                         returnVal.setAccessible(true);
                         mValueType = typeVariant;
                         return returnVal;
-                    } catch (NoSuchMethodException e2) {
+                    } catch (Throwable e2) {
                         // Swallow the error and keep trying other variants
                     }
                 }
@@ -233,7 +233,7 @@ public class PropertyValuesHolder implements Cloneable {
                     }
                 }
                 return;
-            } catch (ClassCastException e) {
+            } catch (Throwable e) {
                 mProperty = null;
             }
         }
@@ -251,9 +251,7 @@ public class PropertyValuesHolder implements Cloneable {
                 }
                 try {
                     kf.setValue(mGetter.invoke(target));
-                } catch (InvocationTargetException e) {
-                    e.printStackTrace();
-                } catch (IllegalAccessException e) {
+                } catch (Throwable e) {
                     e.printStackTrace();
                 }
             }
@@ -274,9 +272,7 @@ public class PropertyValuesHolder implements Cloneable {
                 }
             }
             kf.setValue(mGetter.invoke(target));
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
     }
@@ -312,9 +308,7 @@ public class PropertyValuesHolder implements Cloneable {
             try {
                 mTmpValueArray[0] = getAnimatedValue();
                 mSetter.invoke(target, mTmpValueArray);
-            } catch (InvocationTargetException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
+            } catch (Throwable e) {
                 e.printStackTrace();
             }
         }
@@ -443,9 +437,7 @@ public class PropertyValuesHolder implements Cloneable {
                 try {
                     mTmpValueArray[0] = mIntAnimatedValue;
                     mSetter.invoke(target, mTmpValueArray);
-                } catch (InvocationTargetException e) {
-                    e.printStackTrace();
-                } catch (IllegalAccessException e) {
+                } catch (Throwable e) {
                     e.printStackTrace();
                 }
             }
@@ -537,9 +529,7 @@ public class PropertyValuesHolder implements Cloneable {
                 try {
                     mTmpValueArray[0] = mFloatAnimatedValue;
                     mSetter.invoke(target, mTmpValueArray);
-                } catch (InvocationTargetException e) {
-                    e.printStackTrace();
-                } catch (IllegalAccessException e) {
+                } catch (Throwable e) {
                     e.printStackTrace();
                 }
             }

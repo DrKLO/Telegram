@@ -40,7 +40,7 @@
             android:layout_marginTop="336dp"
             android:background="@drawable/regbtn_states"
             android:layout_gravity="center_horizontal"
-            android:textSize="18dp"
+            android:textSize="16dp"
             android:textColor="#ffffff"
             android:gravity="center"
             android:paddingLeft="20dp"

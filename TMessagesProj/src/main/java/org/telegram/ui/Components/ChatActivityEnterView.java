@@ -12,6 +12,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Rect;
+import android.media.AudioManager;
 import android.os.Build;
 import android.os.PowerManager;
 import android.text.Editable;
@@ -30,6 +31,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
@@ -50,17 +52,22 @@ import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.ui.AnimationCompat.ViewProxy;
 import org.telegram.messenger.ApplicationLoader;
 
+import java.lang.reflect.Field;
+
 public class ChatActivityEnterView implements NotificationCenter.NotificationCenterDelegate, SizeNotifierRelativeLayout.SizeNotifierRelativeLayoutDelegate {
 
     public static interface ChatActivityEnterViewDelegate {
         public abstract void onMessageSend();
         public abstract void needSendTyping();
+        public abstract void onTextChanged(CharSequence text);
         public abstract void onAttachButtonHidden();
         public abstract void onAttachButtonShow();
+        public abstract void onWindowSizeChanged(int size);
     }
 
     private EditText messsageEditText;
     private ImageButton sendButton;
+    private PopupWindow emojiPopup;
     private ImageView emojiButton;
     private EmojiView emojiView;
     private TextView recordTimeText;
@@ -75,9 +82,6 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
     private ObjectAnimatorProxy runningAnimationAudio;
     private int runningAnimationType;
     private int audioInterfaceState;
-
-    private WindowManager.LayoutParams windowLayoutParams;
-    private boolean showingEmoji;
 
     private int keyboardHeight;
     private int keyboardHeightLand;
@@ -103,6 +107,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioDidSent);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.hideEmojiKeyboard);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioRouteChanged);
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         sendByEnter = preferences.getBoolean("send_by_enter", false);
     }
@@ -116,6 +121,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioDidSent);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.emojiDidLoaded);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.hideEmojiKeyboard);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioRouteChanged);
         if (mWakeLock != null) {
             try {
                 mWakeLock.release();
@@ -127,7 +133,6 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         if (sizeNotifierRelativeLayout != null) {
             sizeNotifierRelativeLayout.delegate = null;
         }
-        removeEmojiWindow();
     }
 
     public void setContainerView(Activity activity, View containerView) {
@@ -164,14 +169,14 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         emojiButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                showEmojiPopup(!showingEmoji);
+                showEmojiPopup(emojiPopup == null || !emojiPopup.isShowing());
             }
         });
 
         messsageEditText.setOnKeyListener(new View.OnKeyListener() {
             @Override
             public boolean onKey(View view, int i, KeyEvent keyEvent) {
-                if (i == 4 && !keyboardVisible && showingEmoji) {
+                if (i == 4 && !keyboardVisible && emojiPopup != null && emojiPopup.isShowing()) {
                     if (keyEvent.getAction() == 1) {
                         showEmojiPopup(false);
                     }
@@ -187,7 +192,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         messsageEditText.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (showingEmoji) {
+                if (emojiPopup != null && emojiPopup.isShowing()) {
                     showEmojiPopup(false);
                 }
             }
@@ -284,6 +289,10 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
                 String message = getTrimmedString(charSequence.toString());
                 checkSendButton(true);
+
+                if (delegate != null) {
+                    delegate.onTextChanged(charSequence);
+                }
 
                 if (message.length() != 0 && lastTypingTimeSend < System.currentTimeMillis() - 5000 && !ignoreTextChange) {
                     int currentTime = ConnectionsManager.getInstance().getCurrentTime();
@@ -609,9 +618,8 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
     }
 
     private void showEmojiPopup(boolean show) {
-        showingEmoji = show;
         if (show) {
-            if (emojiView == null) {
+            if (emojiPopup == null) {
                 if (parentActivity == null) {
                     return;
                 }
@@ -636,16 +644,17 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                         }
                     }
                 });
+                emojiPopup = new PopupWindow(emojiView);
 
-                windowLayoutParams = new WindowManager.LayoutParams();
-                windowLayoutParams.gravity = Gravity.BOTTOM | Gravity.LEFT;
                 if (Build.VERSION.SDK_INT >= 21) {
-                    windowLayoutParams.type = WindowManager.LayoutParams.TYPE_SYSTEM_ERROR;
-                } else {
-                    windowLayoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_PANEL;
-                    windowLayoutParams.token = parentActivity.getWindow().getDecorView().getWindowToken();
+                    try {
+                        Field field = PopupWindow.class.getDeclaredField("mWindowLayoutType");
+                        field.setAccessible(true);
+                        field.set(emojiPopup, WindowManager.LayoutParams.TYPE_SYSTEM_ERROR);
+                    } catch (Exception e) {
+                        /* ignored */
+                    }
                 }
-                windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
             }
             int currentHeight;
             WindowManager wm = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
@@ -661,19 +670,13 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             } else {
                 currentHeight = keyboardHeight;
             }
-            windowLayoutParams.height = currentHeight;
-            windowLayoutParams.width = AndroidUtilities.displaySize.x;
-
-            try {
-                if (emojiView.getParent() != null) {
-                    wm.removeViewImmediate(emojiView);
-                }
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
+            emojiPopup.setHeight(View.MeasureSpec.makeMeasureSpec(currentHeight, View.MeasureSpec.EXACTLY));
+            if (sizeNotifierRelativeLayout != null) {
+                emojiPopup.setWidth(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, View.MeasureSpec.EXACTLY));
             }
 
             try {
-                wm.addView(emojiView, windowLayoutParams);
+                emojiPopup.showAtLocation(parentActivity.getWindow().getDecorView(), Gravity.BOTTOM | Gravity.LEFT, 0, 0);
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
                 return;
@@ -683,6 +686,9 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 if (sizeNotifierRelativeLayout != null) {
                     sizeNotifierRelativeLayout.setPadding(0, 0, 0, currentHeight);
                     emojiButton.setImageResource(R.drawable.ic_msg_panel_hide);
+                    if (delegate != null) {
+                        delegate.onWindowSizeChanged(sizeNotifierRelativeLayout.getHeight() - sizeNotifierRelativeLayout.getPaddingBottom());
+                    }
                 }
                 return;
             }
@@ -692,34 +698,25 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         if (emojiButton != null) {
             emojiButton.setImageResource(R.drawable.ic_msg_panel_smiles);
         }
-        removeEmojiWindow();
+        if (emojiPopup != null) {
+            emojiPopup.dismiss();
+        }
         if (sizeNotifierRelativeLayout != null) {
             sizeNotifierRelativeLayout.post(new Runnable() {
                 public void run() {
                     if (sizeNotifierRelativeLayout != null) {
                         sizeNotifierRelativeLayout.setPadding(0, 0, 0, 0);
+                        if (delegate != null) {
+                            delegate.onWindowSizeChanged(sizeNotifierRelativeLayout.getHeight() - sizeNotifierRelativeLayout.getPaddingBottom());
+                        }
                     }
                 }
             });
         }
     }
 
-    private void removeEmojiWindow() {
-        if (emojiView == null) {
-            return;
-        }
-        try {
-            if (emojiView.getParent() != null) {
-                WindowManager wm = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
-                wm.removeViewImmediate(emojiView);
-            }
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
-    }
-
     public void hideEmojiPopup() {
-        if (showingEmoji) {
+        if (emojiPopup != null && emojiPopup.isShowing()) {
             showEmojiPopup(false);
         }
     }
@@ -780,7 +777,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
     }
 
     public boolean isEmojiPopupShowing() {
-        return showingEmoji;
+        return emojiPopup != null && emojiPopup.isShowing();
     }
 
     public void addToAttachLayout(View view) {
@@ -794,8 +791,8 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         attachButton.addView(view);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) view.getLayoutParams();
         layoutParams.gravity = Gravity.CENTER;
-        layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.width = AndroidUtilities.dp(48);
+        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
         view.setLayoutParams(layoutParams);
     }
 
@@ -820,24 +817,28 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             }
         }
 
-        if (showingEmoji) {
+        if (emojiPopup != null && emojiPopup.isShowing()) {
             int newHeight = 0;
             if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
                 newHeight = keyboardHeightLand;
             } else {
                 newHeight = keyboardHeight;
             }
-            if (windowLayoutParams.width != AndroidUtilities.displaySize.x || windowLayoutParams.height != newHeight) {
-                windowLayoutParams.width = AndroidUtilities.displaySize.x;
-                windowLayoutParams.height = newHeight;
-                wm.updateViewLayout(emojiView, windowLayoutParams);
+            final WindowManager.LayoutParams layoutParams = (WindowManager.LayoutParams) emojiPopup.getContentView().getLayoutParams();
+            if (layoutParams.width != AndroidUtilities.displaySize.x || layoutParams.height != newHeight) {
+                layoutParams.width = AndroidUtilities.displaySize.x;
+                layoutParams.height = newHeight;
+                wm.updateViewLayout(emojiPopup.getContentView(), layoutParams);
                 if (!keyboardVisible) {
                     sizeNotifierRelativeLayout.post(new Runnable() {
                         @Override
                         public void run() {
                             if (sizeNotifierRelativeLayout != null) {
-                                sizeNotifierRelativeLayout.setPadding(0, 0, 0, windowLayoutParams.height);
+                                sizeNotifierRelativeLayout.setPadding(0, 0, 0, layoutParams.height);
                                 sizeNotifierRelativeLayout.requestLayout();
+                                if (delegate != null) {
+                                    delegate.onWindowSizeChanged(sizeNotifierRelativeLayout.getHeight() - sizeNotifierRelativeLayout.getPaddingBottom());
+                                }
                             }
                         }
                     });
@@ -849,8 +850,11 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         keyboardVisible = height > 0;
         if (keyboardVisible && sizeNotifierRelativeLayout.getPaddingBottom() > 0) {
             showEmojiPopup(false);
-        } else if (!keyboardVisible && keyboardVisible != oldValue && showingEmoji) {
+        } else if (!keyboardVisible && keyboardVisible != oldValue && emojiPopup != null && emojiPopup.isShowing()) {
             showEmojiPopup(false);
+        }
+        if (delegate != null) {
+            delegate.onWindowSizeChanged(sizeNotifierRelativeLayout.getHeight() - sizeNotifierRelativeLayout.getPaddingBottom());
         }
     }
 
@@ -888,6 +892,11 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             }
         } else if (id == NotificationCenter.hideEmojiKeyboard) {
             hideEmojiPopup();
+        } else if (id == NotificationCenter.audioRouteChanged) {
+            if (parentActivity != null) {
+                boolean frontSpeaker = (Boolean) args[0];
+                parentActivity.setVolumeControlStream(frontSpeaker ? AudioManager.STREAM_VOICE_CALL : AudioManager.USE_DEFAULT_STREAM_TYPE);
+            }
         }
     }
 }

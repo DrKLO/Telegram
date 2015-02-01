@@ -43,9 +43,10 @@ public class ChatBaseCell extends BaseCell {
     protected boolean isPressed = false;
     protected boolean forwardName = false;
     protected boolean media = false;
-    private boolean isCheckPressed = true;
+    protected boolean isCheckPressed = true;
     private boolean wasLayout = false;
     protected boolean isAvatarVisible = false;
+    protected boolean drawBackground = true;
     protected MessageObject currentMessageObject;
 
     private static Drawable backgroundDrawableIn;
@@ -475,7 +476,9 @@ public class ChatBaseCell extends BaseCell {
                 setDrawableBounds(currentBackgroundDrawable, (!media ? 0 : AndroidUtilities.dp(9)), AndroidUtilities.dp(1), backgroundWidth, layoutHeight - AndroidUtilities.dp(2));
             }
         }
-        currentBackgroundDrawable.draw(canvas);
+        if (drawBackground) {
+            currentBackgroundDrawable.draw(canvas);
+        }
 
         onAfterBackgroundDraw(canvas);
 

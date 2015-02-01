@@ -34,7 +34,7 @@
     <string name="Yesterday">ontem</string>
     <string name="NoResult">Nenhum resultado</string>
     <string name="NoChats">Ainda não há chats...</string>
-    <string name="NoChatsHelp">Comece a conversar pressionando o\nbotão \'Nova Mensagem\' no canto superior direito\nou vá para a seção \'Contatos\'.</string>
+    <string name="NoChatsHelp">Comece a conversar pressionando o\nbotão \'Nova Mensagem\' no canto inferior direito\nou vá para a seção \'Contatos\'.</string>
     <string name="WaitingForNetwork">Aguardando rede...</string>
     <string name="Connecting">Conectando...</string>
     <string name="Updating">Atualizando...</string>
@@ -52,12 +52,17 @@
     <string name="PhotoTip">Toque e segure para ver</string>
     <string name="CompatibilityChat">%1$s está usando uma versão mais antiga do Telegram, por isso fotos secretas serão mostradas em modo de compatibilidade.\n\nAssim que %2$s atualizar o Telegram, fotos com timers de 1 minuto ou menos passarão a funcionar no modo ‘Toque e segure para ver’, e você será notificado caso a outra pessoa salve a tela.</string>
     <string name="SearchMessages">MENSAGENS</string>
+    <string name="Search">Busca</string>
+    <string name="MuteNotifications">Silenciar notificações</string>
+    <string name="MuteFor">Silenciar por %1$s</string>
+    <string name="UnmuteNotifications">Restaurar Som</string>
+    <string name="WillUnmuteIn">Em %1$s</string>
     <!--broadcasts-->
-    <string name="NewBroadcastList">Nova Lista de Broadcast</string>
+    <string name="NewBroadcastList">Nova Lista de Transmissão</string>
     <string name="EnterListName">Digite o nome da lista</string>
-    <string name="YouCreatedBroadcastList">Você criou uma lista de broadcast</string>
+    <string name="YouCreatedBroadcastList">Você criou uma lista de transmissão</string>
     <string name="AddRecipient">Adicionar destinatário</string>
-    <string name="KickFromBroadcast">Remover da lista de broadcast</string>
+    <string name="KickFromBroadcast">Remover da lista de transmissão</string>
     <!--documents view-->
     <string name="SelectFile">Selecione um Arquivo</string>
     <string name="FreeOfTotal">Disponível %1$s de %2$s</string>
@@ -72,6 +77,7 @@
     <string name="SystemRoot">Administrador do Sistema</string>
     <string name="SdCard">Cartão SD</string>
     <string name="Folder">Pasta</string>
+    <string name="GalleryInfo">Para enviar imagens sem compressão</string>
     <!--chat view-->
     <string name="Invisible">invisível</string>
     <string name="Typing">escrevendo...</string>
@@ -82,7 +88,7 @@
     <string name="ChatGallery">Galeria</string>
     <string name="ChatLocation">Localização</string>
     <string name="ChatVideo">Vídeo</string>
-    <string name="ChatDocument">Documento</string>
+    <string name="ChatDocument">Arquivo</string>
     <string name="NoMessages">Ainda não há mensagens aqui...</string>
     <string name="ForwardedMessage">Mensagem encaminhada</string>
     <string name="From">De</string>
@@ -104,9 +110,11 @@
     <string name="DeleteThisChat">Apagar este chat</string>
     <string name="SlideToCancel">DESLIZE PARA CANCELAR</string>
     <string name="SaveToDownloads">Salvar em downloads</string>
+    <string name="ShareFile">Compartilhar</string>
     <string name="ApplyLocalizationFile">Aplicar arquivo de localização</string>
     <string name="UnsupportedAttachment">Anexo não suportado</string>
     <string name="SetTimer">Definir timer de autodestruição</string>
+    <string name="ServiceNotifications">Notificações de serviço</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s estabeleceu o tempo de autodestruição para %2$s </string>
     <string name="MessageLifetimeChangedOutgoing">Você estabeleceu o tempo de autodestruição para %1$s</string>
@@ -119,16 +127,18 @@
     <string name="NotificationMessageVideo">%1$s te enviou um vídeo</string>
     <string name="NotificationMessageContact">%1$s compartilhou um contato com você</string>
     <string name="NotificationMessageMap">%1$s enviou uma localização</string>
-    <string name="NotificationMessageDocument">%1$s te enviou um documento</string>
+    <string name="NotificationMessageDocument">%1$s lhe enviou um arquivo</string>
     <string name="NotificationMessageAudio">%1$s te enviou um áudio</string>
+    <string name="NotificationMessageSticker">%1$s lhe enviou um sticker</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s enviou uma mensagem para o grupo %2$s</string>
     <string name="NotificationMessageGroupPhoto">%1$s enviou uma foto para o grupo %2$s</string>
     <string name="NotificationMessageGroupVideo">%1$s enviou um vídeo para o grupo %2$s</string>
     <string name="NotificationMessageGroupContact">%1$s compartilhou um contato para o grupo %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s enviou uma localização para o grupo %2$s</string>
-    <string name="NotificationMessageGroupDocument">%1$s enviou um documento para o grupo %2$s</string>
+    <string name="NotificationMessageGroupDocument">%1$s enviou um arquivo para o grupo %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s enviou um áudio para o grupo %2$s</string>
+    <string name="NotificationMessageGroupSticker">%1$s enviou um sticker ao grupo %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s convidou você para o grupo %2$s</string>
     <string name="NotificationEditedGroupName">%1$s editou o nome do grupo %2$s</string>
     <string name="NotificationEditedGroupPhoto">%1$s editou a foto do grupo %2$s</string>
@@ -146,8 +156,8 @@
     <!--contacts view-->
     <string name="SelectContact">Selecionar Contato</string>
     <string name="NoContacts">Ainda não há contatos</string>
-    <string name="InviteText">Ei, vamos mudar para o Telegram: http://telegram.org/dl2</string>
-    <string name="TodayAt">hoje às</string>
+    <string name="InviteText">Ei, vamos mudar para o Telegram: https://telegram.org/dl</string>
+    <string name="TodayAt">às</string>
     <string name="YesterdayAt">ontem às</string>
     <string name="Online">online</string>
     <string name="LastSeen">visto</string>
@@ -209,7 +219,7 @@
     <string name="ResetNotificationsText">Restaurar todas as configurações de notificação</string>
     <string name="TextSize">Tamanho do texto nas mensagens</string>
     <string name="AskAQuestion">Fazer uma pergunta</string>
-    <string name="EnableAnimations">Permitir animações</string>
+    <string name="EnableAnimations">Permitir Animações</string>
     <string name="Unblock">Desbloquear</string>
     <string name="UnblockText">Toque e segure no usuário para desbloquear</string>
     <string name="NoBlocked">Nenhum usuário bloqueado</string>
@@ -232,7 +242,7 @@
     <string name="NoSound">Sem som</string>
     <string name="Default">Padrão</string>
     <string name="Support">Suporte</string>
-    <string name="ChatBackground">Papel de parede</string>
+    <string name="ChatBackground">Papel de Parede</string>
     <string name="MessagesSettings">Mensagens</string>
     <string name="SendByEnter">Enviar usando \'Enter\'</string>
     <string name="TerminateAllSessions">Terminar todas as outras sessões</string>
@@ -279,15 +289,17 @@
     <string name="NotificationsPriorityMax">Máxima</string>
     <string name="RepeatNotificationsNever">Nunca</string>
     <string name="RepeatNotifications">Repetir Notificações</string>
-    <string name="PhoneNumberHelp">Você pode trocar seu número do Telegram aqui. Sua conta e todos os seus dados — mensagens, mídia, contatos, etc. serão movidos para o novo número.\n\n<![CDATA[<b>Importante:</b>]]> todos os contatos do Telegram terão seu <![CDATA[<b>novo número</b>]]> adicionado às suas lista de contatos, desde que eles tenham seu antigo número e você não os tenha bloqueado no Telegram.</string>
-    <string name="PhoneNumberAlert">Todos os contatos do Telegram terão seu novo número adicionado às suas listas de contatos, desde que eles tenham seu antigo número e você não os tenha bloqueado no Telegram.</string>
-    <string name="PhoneNumberChange">TROCAR NÚMERO</string>
+    <string name="PhoneNumberHelp">Você pode alterar seu número do Telegram aqui. Sua conta e todos os seus dados — mensagens, mídia, contatos, etc. serão movidos para o novo número.\n\n<![CDATA[<b>Importante:</b>]]> todos os contatos do Telegram terão seu <![CDATA[<b>novo número</b>]]> adicionado às suas lista de contatos, desde que eles tenham seu número antigo e você não os tenha bloqueado no Telegram.</string>
+    <string name="PhoneNumberAlert">Todos os seus contatos do Telegram terão seu novo número adicionado às suas listas de contatos, desde que eles tenham seu antigo número e você não os tenha bloqueado no Telegram.</string>
+    <string name="PhoneNumberChange">ALTERAR NÚMERO</string>
     <string name="ChangePhoneNewNumber">Novo número</string>
     <string name="ChangePhoneHelp">Vamos enviar uma SMS com um código de confirmação para o seu novo número.</string>
     <string name="ChangePhoneNumberOccupied">O número %1$s já possui uma conta do Telegram. Por favor, delete esta conta antes de migrar para o novo número.</string>
     <string name="NotificationsOther">Outro</string>
     <!--media view-->
-    <string name="NoMedia">Ainda não há mídia compartilhada</string>
+    <string name="NoMedia">Compartilhar fotos e vídeos no chat e acessá-los em qualquer um de seus dispositivos.</string>
+    <string name="DocumentsTitle">Arquivos</string>
+    <string name="NoSharedFiles">Compartilhar arquivos e documentos no chat e acessá-los de qualquer um de seus dispositivos.</string>
     <!--map view-->
     <string name="Map">Mapa</string>
     <string name="Satellite">Satélite</string>
@@ -304,6 +316,38 @@
     <string name="AllPhotos">Todas as Fotos</string>
     <string name="NoPhotos">Ainda não há fotos</string>
     <string name="PleaseDownload">Baixar o vídeo primeiro</string>
+    <string name="NoRecentPhotos">Nenhuma foto recente</string>
+    <string name="NoRecentGIFs">Nenhum GIF recente</string>
+    <string name="SearchImages">PROCURAR NA INTERNET</string>
+    <string name="SearchGifs">PROCURAR GIFS</string>
+    <string name="SearchImagesTitle">Procurar na web</string>
+    <string name="SearchGifsTitle">Procurar GIFs</string>
+    <string name="CropImage">Recortar imagem</string>
+    <string name="EditImage">Editar imagem</string>
+    <!--password view-->
+    <string name="Password">Password</string>
+    <string name="ChangePassword">Change password</string>
+    <string name="OldPassword">Old password</string>
+    <string name="EnterOldPassword">Enter old password</string>
+    <string name="NewPassword">New password</string>
+    <string name="EnterNewPassword">Enter new password</string>
+    <string name="VerifyNewPassword">Verify new password</string>
+    <string name="EnterYourPassword">Enter your password</string>
+    <string name="PasswordHint">Hint</string>
+    <string name="EnterHint">Enter hint</string>
+    <string name="PasswordImportant">Important: you will lose all your chats, messages and media in the case of a forgotten password.</string>
+    <string name="PasswordDoNotMatch">Passwords do not match</string>
+    <string name="PasswordOldIncorrect">Incorrect old password</string>
+    <string name="PasswordIncorrect">Incorrect password</string>
+    <string name="PasswordNewIncorrect">Incorrect new password</string>
+    <string name="HintIncorrect">Hint shouldn\'t contain password</string>
+    <string name="EnterPassword">Enter password</string>
+    <string name="DeleteAccountImportant">Important: you will lose all your chats, messages and media.</string>
+    <string name="PasswordDeleteAccountTitle">Delete account</string>
+    <string name="PasswordDeleteAccount">Delete my account</string>
+    <string name="PasswordHintDetail">Hint: %1$s</string>
+    <string name="AreYouSureDeleteAccount">Are you sure you want to delete your account?</string>
+    <string name="AreYouSureDeleteAccount2">We deeply clarify you that you will lose all your chats, messages and media. Are you really sure?</string>
     <!--privacy settings-->
     <string name="PrivacySettings">Privacidade e Segurança</string>
     <string name="PrivacyTitle">Privacidade</string>
@@ -324,14 +368,14 @@
     <string name="LastSeenHelp">Alterar quem pode ver o seu Último Acesso.</string>
     <string name="LastSeenTitle">Quem pode ver o seu Último Acesso?</string>
     <string name="AddExceptions">Adicionar exceções</string>
-    <string name="CustomHelp">Importante: você não será capaz de ver quando foi o Último Acesso das pessoas com quem você não compartilha quando foi seu Último Acesso. Você visualizará o Último acesso aproximado (recentemente, dentro de uma semana, dentro de um mês).</string>
+    <string name="CustomHelp">Importante: você não poderá ver quando foi o Último Acesso das pessoas com quem você não compartilha o seu Último Acesso. Você visualizará o Último acesso aproximado (recentemente, dentro de uma semana, dentro de um mês).</string>
     <string name="AlwaysShareWith">Sempre Mostrar Para</string>
     <string name="NeverShareWith">Nunca Mostrar Para</string>
     <string name="CustomShareSettingsHelp">Estas configurações irão substituir os valores anteriores.</string>
     <string name="AlwaysShareWithTitle">Sempre Mostrar</string>
-    <string name="AlwaysShareWithPlaceholder">Sempre mostrar para usuários...</string>
+    <string name="AlwaysShareWithPlaceholder">Sempre compartilhar para os usuários...</string>
     <string name="NeverShareWithTitle">Nunca Mostrar</string>
-    <string name="NeverShareWithPlaceholder">Nunca mostrar para usuários...</string>
+    <string name="NeverShareWithPlaceholder">Nunca mostrar para os usuários...</string>
     <string name="EmpryUsersPlaceholder">Adicionar Usuários</string>
     <string name="PrivacyFloodControlError">Desculpe, muitas solicitações. Impossível alterar os ajustes de privacidade agora, por favor aguarde.</string>
     <string name="ClearOtherSessionsHelp">Sair de todos os dispositivos, exceto este.</string>
@@ -366,15 +410,15 @@
     <string name="ActionLeftUser">un1 saiu do grupo</string>
     <string name="ActionAddUser">un1 adicionou un2</string>
     <string name="ActionRemovedPhoto">un1 removeu foto do grupo</string>
-    <string name="ActionChangedPhoto">un1 mudou a foto do grupo</string>
-    <string name="ActionChangedTitle">un1 mudou o nome do grupo para un2</string>
+    <string name="ActionChangedPhoto">un1 alterou a foto do grupo</string>
+    <string name="ActionChangedTitle">un1 alterou o nome do grupo para un2</string>
     <string name="ActionCreateGroup">un1 criou o grupo</string>
     <string name="ActionYouKickUser">Você removeu un2</string>
     <string name="ActionYouLeftUser">Você saiu do grupo</string>
     <string name="ActionYouAddUser">Você adicionou un2</string>
     <string name="ActionYouRemovedPhoto">Você removeu a foto do grupo</string>
-    <string name="ActionYouChangedPhoto">Você mudou a foto do grupo</string>
-    <string name="ActionYouChangedTitle">Você mudou o nome do grupo para un2</string>
+    <string name="ActionYouChangedPhoto">Você alterou a foto do grupo</string>
+    <string name="ActionYouChangedTitle">Você alterou o nome do grupo para un2</string>
     <string name="ActionYouCreateGroup">Você criou o grupo</string>
     <string name="ActionKickUserYou">un1 removeu você</string>
     <string name="ActionAddUserYou">un1 adicionou você</string>
@@ -383,7 +427,8 @@
     <string name="AttachVideo">Vídeo</string>
     <string name="AttachLocation">Localização</string>
     <string name="AttachContact">Contato</string>
-    <string name="AttachDocument">Documento</string>
+    <string name="AttachDocument">Arquivo</string>
+    <string name="AttachSticker">Sticker</string>
     <string name="AttachAudio">Áudio</string>
     <string name="FromYou">Você</string>
     <string name="ActionTakeScreenshootYou">Você realizou uma captura da tela!</string>
@@ -466,6 +511,12 @@
     <string name="messages_few">%1$d mensagens</string>
     <string name="messages_many">%1$d mensagens</string>
     <string name="messages_other">%1$d mensagens</string>
+    <string name="files_zero">nenhum arquivo</string>
+    <string name="files_one">%1$d arquivo</string>
+    <string name="files_two">%1$d arquivos</string>
+    <string name="files_few">%1$d arquivos</string>
+    <string name="files_many">%1$d arquivos</string>
+    <string name="files_other">%1$d arquivos</string>
     <string name="FromContacts_zero">de nenhum contato</string>
     <string name="FromContacts_one">de %1$d contato</string>
     <string name="FromContacts_two">de %1$d contatos</string>

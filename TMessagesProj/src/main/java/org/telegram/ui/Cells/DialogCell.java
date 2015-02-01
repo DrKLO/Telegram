@@ -50,6 +50,7 @@ public class DialogCell extends BaseCell {
     private static Drawable countDrawable;
     private static Drawable groupDrawable;
     private static Drawable broadcastDrawable;
+    private static Drawable muteDrawable;
 
     private static Paint linePaint;
 
@@ -58,6 +59,7 @@ public class DialogCell extends BaseCell {
     private int lastMessageDate;
     private int unreadCount;
     private boolean lastUnreadState;
+    private boolean dialogMuted;
     private MessageObject message;
 
     private ImageReceiver avatarImage;
@@ -76,6 +78,7 @@ public class DialogCell extends BaseCell {
     private boolean drawNameLock;
     private boolean drawNameGroup;
     private boolean drawNameBroadcast;
+    private int nameMuteLeft;
     private int nameLockLeft;
     private int nameLockTop;
 
@@ -151,6 +154,7 @@ public class DialogCell extends BaseCell {
             countDrawable = getResources().getDrawable(R.drawable.dialogs_badge);
             groupDrawable = getResources().getDrawable(R.drawable.list_group);
             broadcastDrawable = getResources().getDrawable(R.drawable.list_broadcast);
+            muteDrawable = getResources().getDrawable(R.drawable.mute_grey);
         }
     }
 
@@ -162,12 +166,13 @@ public class DialogCell extends BaseCell {
         avatarDrawable = new AvatarDrawable();
     }
 
-    public void setDialog(long dialog_id, MessageObject messageObject, boolean usePrintStrings, int date, int unread) {
+    public void setDialog(long dialog_id, MessageObject messageObject, boolean usePrintStrings, int date, int unread, boolean muted) {
         currentDialogId = dialog_id;
         message = messageObject;
         allowPrintStrings = usePrintStrings;
         lastMessageDate = date;
         unreadCount = unread;
+        dialogMuted = muted;
         lastUnreadState = messageObject != null && messageObject.isUnread();
         update(0);
     }
@@ -463,6 +468,14 @@ public class DialogCell extends BaseCell {
             }
         }
 
+        if (dialogMuted) {
+            int w = AndroidUtilities.dp(6) + muteDrawable.getIntrinsicWidth();
+            nameWidth -= w;
+            if (LocaleController.isRTL) {
+                nameLeft += w;
+            }
+        }
+
         nameWidth = Math.max(AndroidUtilities.dp(12), nameWidth);
         CharSequence nameStringFinal = TextUtils.ellipsize(nameString.replace("\n", " "), currentNamePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
         try {
@@ -536,6 +549,9 @@ public class DialogCell extends BaseCell {
                         nameLeft += (nameWidth - widthpx);
                     }
                 }
+                if (dialogMuted) {
+                    nameMuteLeft = (nameLeft - AndroidUtilities.dp(6) - muteDrawable.getIntrinsicWidth());
+                }
             }
             if (messageLayout != null && messageLayout.getLineCount() > 0) {
                 left = messageLayout.getLineLeft(0);
@@ -554,6 +570,9 @@ public class DialogCell extends BaseCell {
                     if (widthpx < nameWidth) {
                         nameLeft -= (nameWidth - widthpx);
                     }
+                }
+                if (dialogMuted) {
+                    nameMuteLeft = (int) (nameLeft + left + AndroidUtilities.dp(6));
                 }
             }
             if (messageLayout != null && messageLayout.getLineCount() > 0) {
@@ -708,6 +727,11 @@ public class DialogCell extends BaseCell {
                 setDrawableBounds(checkDrawable, checkDrawLeft, checkDrawTop);
                 checkDrawable.draw(canvas);
             }
+        }
+
+        if (dialogMuted) {
+            setDrawableBounds(muteDrawable, nameMuteLeft, AndroidUtilities.dp(16.5f));
+            muteDrawable.draw(canvas);
         }
 
         if (drawError) {

@@ -112,7 +112,7 @@ public class DialogsAdapter extends BaseFragmentAdapter {
                 }
             }
             MessageObject message = MessagesController.getInstance().dialogMessage.get(dialog.top_message);
-            ((DialogCell) view).setDialog(dialog.id, message, true, dialog.last_message_date, dialog.unread_count);
+            ((DialogCell) view).setDialog(dialog.id, message, true, dialog.last_message_date, dialog.unread_count, MessagesController.getInstance().isDialogMuted(dialog.id));
         }
 
         return view;
