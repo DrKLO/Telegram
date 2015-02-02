@@ -245,7 +245,7 @@ public class NotificationsController {
         } else {
             msg = LocaleController.getString("YouHaveNewMessage", R.string.YouHaveNewMessage);
         }
-        msg = Aniways.getOriginalString(AniwaysStatics.getApplicationContext(), Aniways.decodeMessage(msg, null, null, true));
+        msg = Aniways.getDecodedMessageWithEmojiFallbacksForIcons(msg);
         return msg;
     }
 
