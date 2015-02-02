@@ -20,9 +20,13 @@ repositories {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:21.0.2'
-    compile 'com.android.support:appcompat-v7:21.0.2'
-    compile 'com.google.android.gms:play-services:6.1.71'
+    compile 'com.android.support:support-v4:21.0.3'
+    compile 'com.android.support:appcompat-v7:21.0.3'
+    compile 'com.google.android.gms:play-services-maps:6.5.87'
+    compile 'com.google.android.gms:play-services-location:6.5.87'
+    compile 'com.google.android.gms:play-services-identity:6.5.87'
+    compile 'com.google.android.gms:play-services-appstate:6.5.87'
+    compile 'com.google.android.gms:play-services-wearable:6.5.87'
     compile 'net.hockeyapp.android:HockeySDK:3.5.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
     compile 'com.android.support:recyclerview-v7:+'
@@ -102,7 +106,7 @@ android {
         targetSdkVersion 21
         renderscriptTargetApi 21
         renderscriptSupportModeEnabled true
-        versionCode 248
-        versionName "1.6.8"
+        versionCode 249
+        versionName "1.6.9"
     }
 }
