@@ -176,7 +176,19 @@ public class AvatarDrawable extends Drawable {
                 }
                 lastch = lastName.substring(a, a + 1);
             }
-            text += lastch;
+            text += "\u200C" + lastch;    // Adding a Zero-width non-joiner (U+200C) to prevent letters from joining when using languages such as Arabic.
+        } else { // if there is no last name (like group names) check if first name is two words
+            String lastch = null;
+            int a;
+            for (a = firstName.length() - 1; a >= 0; a--) {
+                if (lastch != null && firstName.charAt(a) == ' ') {
+                    break;
+                }
+                lastch = firstName.substring(a, a + 1);
+            }
+            if (a > 0) {    // Make sure it is not just single word and we are getting the same first letter
+                text += "\u200C" + lastch;
+            }
         }
         if (text.length() > 0) {
             text = text.toUpperCase();
