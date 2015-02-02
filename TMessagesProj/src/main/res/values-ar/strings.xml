@@ -53,6 +53,10 @@
     <string name="CompatibilityChat">%1$s يستخدم إصدار قديم من تيليجرام، لذلك، الصور السرية ستظهر في وضع الموافقة.\n\nعندما يقوم %2$s بتحديث تيليجرام، الصور التي بها عداد دقيقة أو أقل ستعمل بطريقة \"الاستمرار بالضغط للإستعراض\"، وسيتم إخبارك عندما يلتقط المستقبل صورة من شاشته.</string>
     <string name="SearchMessages">الرسائل</string>
     <string name="Search">بحث</string>
+    <string name="MuteNotifications">كتم الإشعارات</string>
+    <string name="MuteFor">ضعه على الصامت لمدة %1$s</string>
+    <string name="UnmuteNotifications">إزالة كتم الصوت</string>
+    <string name="WillUnmuteIn">خلال %1$s</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">رسالة جماعية جديدة</string>
     <string name="EnterListName">أدخل اسم القائمة</string>
@@ -73,6 +77,7 @@
     <string name="SystemRoot">جذر النظام</string>
     <string name="SdCard">بطاقة الذاكرة</string>
     <string name="Folder">مجلد</string>
+    <string name="GalleryInfo">أرسل الصورة بدون ضغطها</string>
     <!--chat view-->
     <string name="Invisible">مخفي</string>
     <string name="Typing">جاري الكتابة… </string>
@@ -83,7 +88,7 @@
     <string name="ChatGallery">صورة</string>
     <string name="ChatLocation"> موقع</string>
     <string name="ChatVideo">مقطع مرئي</string>
-    <string name="ChatDocument">مستند</string>
+    <string name="ChatDocument">ملف</string>
     <string name="NoMessages">...لا توجد رسائل بعد</string>
     <string name="ForwardedMessage">الرسالة المعاد توجيهها</string>
     <string name="From">من</string>
@@ -105,6 +110,7 @@
     <string name="DeleteThisChat">حذف هذه الدردشة</string>
     <string name="SlideToCancel">قم بالسحب للإلغاء</string>
     <string name="SaveToDownloads">حفظ في الجهاز</string>
+    <string name="ShareFile">مشاركة</string>
     <string name="ApplyLocalizationFile">تطبيق ملف التعريب</string>
     <string name="UnsupportedAttachment">المرفق غير مدعوم</string>
     <string name="SetTimer">عداد التدمير الذاتي</string>
@@ -121,7 +127,7 @@
     <string name="NotificationMessageVideo">%1$s قام بإرسال مقطع مرئي لك</string>
     <string name="NotificationMessageContact">%1$s قام بإرسال جهة اتصال لك</string>
     <string name="NotificationMessageMap">%1$s قام بإرسال موقع لك</string>
-    <string name="NotificationMessageDocument">%1$s قام بإرسال مستند لك</string>
+    <string name="NotificationMessageDocument">%1$s قام بإرسال ملف لك</string>
     <string name="NotificationMessageAudio">%1$s قام بإرسال مقطع صوتي لك</string>
     <string name="NotificationMessageSticker">%1$s قام بإرسال ملصق</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
@@ -130,7 +136,7 @@
     <string name="NotificationMessageGroupVideo">%1$s قام بإرسال مقطع مرئي للمجموعة %2$s</string>
     <string name="NotificationMessageGroupContact">%1$s قام بإرسال جهة اتصال للمجموعة %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s قام بإرسال موقع للمجموعة %2$s</string>
-    <string name="NotificationMessageGroupDocument">%1$s قام بإرسال مستند للمجموعة %2$s</string>
+    <string name="NotificationMessageGroupDocument">%1$s قام بإرسال ملف للمجموعة %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s قام بإرسال مقطع صوتي للمجموعة %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s قام بإرسال ملصق للمجموعة %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s قام بدعوتك للمجموعة %2$s</string>
@@ -151,7 +157,7 @@
     <string name="SelectContact">اختر جهة اتصال</string>
     <string name="NoContacts">لا توجد جهات اتصال بعد</string>
     <string name="InviteText">http://aniways.com/anygram/dl2 مرحبا! هيا نستخدم تيليجرام: </string>
-    <string name="TodayAt">اليوم الساعة</string>
+    <string name="TodayAt">في</string>
     <string name="YesterdayAt">أمس الساعة</string>
     <string name="Online">متصل</string>
     <string name="LastSeen">آخر ظهور</string>
@@ -291,7 +297,9 @@
     <string name="ChangePhoneNumberOccupied">الرقم %1$s لديه حساب تيليجرام مسبقًا. يرجى حذف هذا الحساب قبل محاولة تغيير رقمك.</string>
     <string name="NotificationsOther">آخر</string>
     <!--media view-->
-    <string name="NoMedia">لا توجد وسائط بعد</string>
+    <string name="NoMedia">شارك المقاطع المرئية والصور في هذه المحادثة لتستطيع الوصول إليها من أية جهاز من أجهزتك</string>
+    <string name="DocumentsTitle">ملفات</string>
+    <string name="NoSharedFiles">شارك الملفات والمستندات في هذه المحادثة لتستطيع الوصول إليها من أية جهاز من أجهزتك</string>
     <!--map view-->
     <string name="Map">الخريطة</string>
     <string name="Satellite">قمر صناعي</string>
@@ -315,6 +323,7 @@
     <string name="SearchImagesTitle">البحث على الإنترنت</string>
     <string name="SearchGifsTitle">البحث عن صور متحركة</string>
     <string name="CropImage">قص الصورة</string>
+    <string name="EditImage">تعديل الصورة</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -418,7 +427,7 @@
     <string name="AttachVideo">مقطع مرئي</string>
     <string name="AttachLocation">موقع</string>
     <string name="AttachContact">جهة اتصال</string>
-    <string name="AttachDocument">مستند</string>
+    <string name="AttachDocument">ملف</string>
     <string name="AttachSticker">ملصق</string>
     <string name="AttachAudio">مقطع صوتي</string>
     <string name="FromYou">أنت</string>
@@ -502,6 +511,12 @@
     <string name="messages_few">%1$d رسائل</string>
     <string name="messages_many">%1$d رسالة</string>
     <string name="messages_other">%1$d رسالة</string>
+    <string name="files_zero">لا يوجد ملفات</string>
+    <string name="files_one">%1$d ملف</string>
+    <string name="files_two">%1$d ملفان</string>
+    <string name="files_few">%1$d ملفات</string>
+    <string name="files_many">%1$d ملف</string>
+    <string name="files_other">%1$d ملف</string>
     <string name="FromContacts_zero">ليس من جهة اتصال</string>
     <string name="FromContacts_one">من %1$d جهة اتصال</string>
     <string name="FromContacts_two">من %1$d جهتان اتصال</string>

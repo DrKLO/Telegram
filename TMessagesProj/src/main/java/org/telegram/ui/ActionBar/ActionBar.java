@@ -48,6 +48,7 @@ public class ActionBar extends FrameLayout {
     private boolean allowOverlayTitle;
     private CharSequence lastTitle;
     private boolean showingOverlayTitle;
+    private boolean castShadows = true;
 
     protected boolean isSearchFieldVisible;
     protected int itemsBackgroundResourceId;
@@ -483,6 +484,14 @@ public class ActionBar extends FrameLayout {
         if (backButtonImageView != null) {
             backButtonImageView.setBackgroundResource(itemsBackgroundResourceId);
         }
+    }
+
+    public void setCastShadows(boolean value) {
+        castShadows = value;
+    }
+
+    public boolean getCastShadows() {
+        return castShadows;
     }
 
     @Override

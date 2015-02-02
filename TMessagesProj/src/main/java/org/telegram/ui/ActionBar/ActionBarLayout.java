@@ -68,8 +68,10 @@ public class ActionBarLayout extends FrameLayout {
                         continue;
                     }
                     if (view instanceof ActionBar && view.getVisibility() == VISIBLE) {
-                        actionBarHeight = view.getMeasuredHeight();
-                        wasActionBar = true;
+                        if (((ActionBar) view).getCastShadows()) {
+                            actionBarHeight = view.getMeasuredHeight();
+                            wasActionBar = true;
+                        }
                         break;
                     }
                 }
@@ -597,7 +599,7 @@ public class ActionBarLayout extends FrameLayout {
             if (useAlphaAnimations && fragmentsStack.size() == 1) {
                 presentFragmentInternalRemoveOld(removeLast, currentFragment);
 
-                ArrayList<Object> animators = new ArrayList<Object>();
+                ArrayList<Object> animators = new ArrayList<>();
                 animators.add(ObjectAnimatorProxy.ofFloat(this, "alpha", 0.0f, 1.0f));
                 if (backgroundView != null) {
                     backgroundView.setVisibility(VISIBLE);
@@ -783,7 +785,7 @@ public class ActionBarLayout extends FrameLayout {
                     }
                 };
 
-                ArrayList<Object> animators = new ArrayList<Object>();
+                ArrayList<Object> animators = new ArrayList<>();
                 animators.add(ObjectAnimatorProxy.ofFloat(this, "alpha", 1.0f, 0.0f));
                 if (backgroundView != null) {
                     animators.add(ObjectAnimatorProxy.ofFloat(backgroundView, "alpha", 1.0f, 0.0f));

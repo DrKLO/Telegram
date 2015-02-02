@@ -256,12 +256,12 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagesDeleted);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.didCreatedNewDeleteTask);
 
-        TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(messageObject.messageOwner.media.photo.sizes, AndroidUtilities.getPhotoSize());
+        TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
         int size = sizeFull.size;
         if (size == 0) {
             size = -1;
         }
-        BitmapDrawable drawable = ImageLoader.getInstance().getImageFromMemory(sizeFull.location, null, null, null);
+        BitmapDrawable drawable = ImageLoader.getInstance().getImageFromMemory(sizeFull.location, null, null);
         if (drawable == null) {
             File file = FileLoader.getPathToAttach(sizeFull);
             Bitmap bitmap = null;

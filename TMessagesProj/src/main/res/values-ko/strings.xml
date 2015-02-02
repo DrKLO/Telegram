@@ -53,6 +53,10 @@
     <string name="CompatibilityChat">%1$s님의 텔레그램 버전이 낮아 비밀 사진을 호환성 모드로 표시합니다.\n\n%2$s님이 텔레그램을 업데이트하고 나면, 자동삭제 시간이 1분 이하인 사진은 \"탭하고 누르고 있어야 보임\" 상태가 되며, 상대방이 화면을 캡처할 때 마다 알림을 받습니다.</string>
     <string name="SearchMessages">메시지</string>
     <string name="Search">검색</string>
+    <string name="MuteNotifications">알림 음소거</string>
+    <string name="MuteFor">%1$s 동안 음소거</string>
+    <string name="UnmuteNotifications">음소거 해제</string>
+    <string name="WillUnmuteIn">%1$s 후</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">새 단체 메시지 리스트</string>
     <string name="EnterListName">리스트 이름을 입력하세요</string>
@@ -73,6 +77,7 @@
     <string name="SystemRoot">시스템 루트</string>
     <string name="SdCard">SD 카드</string>
     <string name="Folder">폴더</string>
+    <string name="GalleryInfo">압축 없이 사진 보내기</string>
     <!--chat view-->
     <string name="Invisible">숨김</string>
     <string name="Typing">입력 중...</string>
@@ -83,7 +88,7 @@
     <string name="ChatGallery">앨범</string>
     <string name="ChatLocation">위치</string>
     <string name="ChatVideo">동영상</string>
-    <string name="ChatDocument">문서</string>
+    <string name="ChatDocument">파일</string>
     <string name="NoMessages">메시지가 없습니다...</string>
     <string name="ForwardedMessage">전달된 메시지</string>
     <string name="From">보낸 사람</string>
@@ -105,6 +110,7 @@
     <string name="DeleteThisChat">이 채팅방 삭제</string>
     <string name="SlideToCancel">밀어서 취소</string>
     <string name="SaveToDownloads">다운로드 폴더에 저장</string>
+    <string name="ShareFile">공유</string>
     <string name="ApplyLocalizationFile">언어 파일 적용</string>
     <string name="UnsupportedAttachment">지원하지 않는 형식입니다</string>
     <string name="SetTimer">자동삭제 타이머 설정</string>
@@ -121,7 +127,7 @@
     <string name="NotificationMessageVideo">%1$s님이 동영상을 보냈습니다</string>
     <string name="NotificationMessageContact">%1$s님이 연락처를 공유했습니다</string>
     <string name="NotificationMessageMap">%1$s님이 위치를 보냈습니다</string>
-    <string name="NotificationMessageDocument">%1$s님이 문서를 보냈습니다</string>
+    <string name="NotificationMessageDocument">%1$s님이 파일을 보냈습니다</string>
     <string name="NotificationMessageAudio">%1$s님이 음성메시지를 보냈습니다</string>
     <string name="NotificationMessageSticker">%1$s님이 스티커를 보냈습니다</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
@@ -130,7 +136,7 @@
     <string name="NotificationMessageGroupVideo">%1$s님이 %2$s 그룹에 동영상을 보냈습니다</string>
     <string name="NotificationMessageGroupContact">%1$s님이 %2$s 그룹에 연락처를 공유했습니다</string>
     <string name="NotificationMessageGroupMap">%1$s님이 %2$s 그룹에 위치를 보냈습니다</string>
-    <string name="NotificationMessageGroupDocument">%1$s님이 %2$s 그룹에 문서를 보냈습니다</string>
+    <string name="NotificationMessageGroupDocument">%1$s님이 %2$s 그룹에 파일을 보냈습니다</string>
     <string name="NotificationMessageGroupAudio">%1$s님이 %2$s 그룹에 음성메시지를 보냈습니다</string>
     <string name="NotificationMessageGroupSticker">%1$s님이 %2$s 그룹에 스티커를 보냈습니다</string>
     <string name="NotificationInvitedToGroup">%1$s님이 %2$s 그룹에 초대했습니다</string>
@@ -291,7 +297,9 @@
     <string name="ChangePhoneNumberOccupied">그 번호는 이미 텔레그램 계정에 연결되어 있습니다. 새 번호로 이동하기 전에 %1$s 계정에서 탈퇴해 주세요.</string>
     <string name="NotificationsOther">기타</string>
     <!--media view-->
-    <string name="NoMedia">공유한 미디어가 없습니다</string>
+    <string name="NoMedia">이 채팅방에서 사진이나 동영상을 공유하면 다른 기기에서도 보실 수 있습니다.</string>
+    <string name="DocumentsTitle">파일</string>
+    <string name="NoSharedFiles">이 채팅방에서 파일이나 문서를 공유하면 다른 기기에서도 보실 수 있습니다.</string>
     <!--map view-->
     <string name="Map">지도</string>
     <string name="Satellite">위성</string>
@@ -315,6 +323,7 @@
     <string name="SearchImagesTitle">웹 검색</string>
     <string name="SearchGifsTitle">GIF 검색</string>
     <string name="CropImage">사진 자르기</string>
+    <string name="EditImage">이미지 편집</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -344,12 +353,12 @@
     <string name="PrivacyTitle">개인정보</string>
     <string name="PrivacyLastSeen">마지막 접속</string>
     <string name="LastSeenEverybody">전체 공개</string>
-    <string name="LastSeenContacts">내 주소록</string>
+    <string name="LastSeenContacts">내 대화상대</string>
     <string name="LastSeenNobody">비공개</string>
     <string name="LastSeenEverybodyMinus">전체 공개 (-%1$d)</string>
-    <string name="LastSeenContactsPlus">내 주소록 (+%1$d)</string>
-    <string name="LastSeenContactsMinus">내 주소록 (-%1$d)</string>
-    <string name="LastSeenContactsMinusPlus">내 주소록 (-%1$d, +%2$d)</string>
+    <string name="LastSeenContactsPlus">내 대화상대 (+%1$d)</string>
+    <string name="LastSeenContactsMinus">내 대화상대 (-%1$d)</string>
+    <string name="LastSeenContactsMinusPlus">내 대화상대 (-%1$d, +%2$d)</string>
     <string name="LastSeenNobodyPlus">비공개 (+%1$d)</string>
     <string name="SecurityTitle">보안</string>
     <string name="DeleteAccountTitle">회원 탈퇴</string>
@@ -418,7 +427,7 @@
     <string name="AttachVideo">동영상</string>
     <string name="AttachLocation">위치</string>
     <string name="AttachContact">연락처</string>
-    <string name="AttachDocument">문서</string>
+    <string name="AttachDocument">파일</string>
     <string name="AttachSticker">스티커</string>
     <string name="AttachAudio">음성메시지</string>
     <string name="FromYou">나</string>
@@ -502,6 +511,12 @@
     <string name="messages_few">메시지 %1$d건</string>
     <string name="messages_many">메시지 %1$d건</string>
     <string name="messages_other">메시지 %1$d건</string>
+    <string name="files_zero">파일 없음</string>
+    <string name="files_one">파일 %1$d개</string>
+    <string name="files_two">파일 %1$d개</string>
+    <string name="files_few">파일 %1$d개</string>
+    <string name="files_many">파일 %1$d개</string>
+    <string name="files_other">파일 %1$d개</string>
     <string name="FromContacts_zero">보낸곳 없음 -</string>
     <string name="FromContacts_one">채팅방 %1$d개에서</string>
     <string name="FromContacts_two">채팅방 %1$d개에서</string>

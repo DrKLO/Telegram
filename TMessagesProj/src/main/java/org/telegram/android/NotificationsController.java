@@ -25,10 +25,7 @@ import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.app.RemoteInput;
-import android.text.Editable;
 import android.text.TextUtils;
-import android.widget.RemoteViews;
-import android.widget.RemoteViewsService;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -37,8 +34,9 @@ import org.telegram.messenger.FileLog;
 
 import com.aniways.Aniways;
 import com.aniways.anigram.messenger.R;
-import com.aniways.data.AniwaysStatics;
 
+import org.telegram.messenger.RPCRequest;
+import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.ApplicationLoader;
@@ -65,6 +63,7 @@ public class NotificationsController {
     private int total_unread_count = 0;
     private int personal_count = 0;
     private boolean notifyCheck = false;
+    private int lastOnlineFromOtherDevice = 0;
 
     private static volatile NotificationsController Instance = null;
     public static NotificationsController getInstance() {
@@ -265,6 +264,27 @@ public class NotificationsController {
         }
     }
 
+    private void scheduleNotificationDelay(boolean onlineReason) {
+        try {
+            FileLog.e("tmessages", "delay notification start");
+            AlarmManager alarm = (AlarmManager) ApplicationLoader.applicationContext.getSystemService(Context.ALARM_SERVICE);
+            PendingIntent pintent = PendingIntent.getService(ApplicationLoader.applicationContext, 0, new Intent(ApplicationLoader.applicationContext, NotificationDelay.class), 0);
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+            if (onlineReason) {
+                alarm.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 3 * 1000, pintent);
+            } else {
+                alarm.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 500, pintent);
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
+    protected void notificationDelayReached() {
+        FileLog.e("tmessages", "delay reached");
+        showOrUpdateNotification(true);
+    }
+
     protected void repeatNotificationMaybe() {
         int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
         if (hour >= 11 && hour <= 22) {
@@ -273,6 +293,15 @@ public class NotificationsController {
         } else {
             scheduleNotificationRepeat();
         }
+    }
+
+    public void setLastOnlineFromOtherDevice(final int time) {
+        AndroidUtilities.runOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                lastOnlineFromOtherDevice = time;
+            }
+        });
     }
 
     private void showOrUpdateNotification(boolean notifyAboutLast) {
@@ -316,6 +345,12 @@ public class NotificationsController {
 
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
             int notify_override = preferences.getInt("notify2_" + dialog_id, 0);
+            if (notify_override == 3) {
+                int mute_until = preferences.getInt("notifyuntil_" + dialog_id, 0);
+                if (mute_until >= ConnectionsManager.getInstance().getCurrentTime()) {
+                    notify_override = 2;
+                }
+            }
             if (!notifyAboutLast || notify_override == 2 || (!preferences.getBoolean("EnableAll", true) || chat_id != 0 && !preferences.getBoolean("EnableGroup", true)) && notify_override == 0) {
                 notifyDisabled = true;
             }
@@ -501,7 +536,7 @@ public class NotificationsController {
             }
 
             if (photoPath != null) {
-                BitmapDrawable img = ImageLoader.getInstance().getImageFromMemory(photoPath, null, "50_50", null);
+                BitmapDrawable img = ImageLoader.getInstance().getImageFromMemory(photoPath, null, "50_50");
                 if (img != null) {
                     mBuilder.setLargeIcon(img.getBitmap());
                 }
@@ -785,6 +820,12 @@ public class NotificationsController {
             popup = (int)dialog_id == 0 ? 0 : preferences.getInt(isChat ? "popupGroup" : "popupAll", 0);
             if (value == null) {
                 int notify_override = preferences.getInt("notify2_" + dialog_id, 0);
+                if (notify_override == 3) {
+                    int mute_until = preferences.getInt("notifyuntil_" + dialog_id, 0);
+                    if (mute_until >= ConnectionsManager.getInstance().getCurrentTime()) {
+                        notify_override = 2;
+                    }
+                }
                 value = !(notify_override == 2 || (!preferences.getBoolean("EnableAll", true) || isChat && !preferences.getBoolean("EnableGroup", true)) && notify_override == 0);
                 settingsCache.put(dialog_id, value);
             }
@@ -820,6 +861,12 @@ public class NotificationsController {
             long dialog_id = entry.getKey();
 
             int notify_override = preferences.getInt("notify2_" + dialog_id, 0);
+            if (notify_override == 3) {
+                int mute_until = preferences.getInt("notifyuntil_" + dialog_id, 0);
+                if (mute_until >= ConnectionsManager.getInstance().getCurrentTime()) {
+                    notify_override = 2;
+                }
+            }
             boolean canAddValue = !(notify_override == 2 || (!preferences.getBoolean("EnableAll", true) || ((int)dialog_id < 0) && !preferences.getBoolean("EnableGroup", true)) && notify_override == 0);
 
             Integer currentCount = pushDialogs.get(dialog_id);
@@ -854,6 +901,14 @@ public class NotificationsController {
                 pushDialogs.put(dialog_id, newCount);
             }
         }
+        /*if (old_unread_count != total_unread_count) { TODO
+            if (lastOnlineFromOtherDevice > ConnectionsManager.getInstance().getCurrentTime()) {
+                showOrUpdateNotification(false);
+                scheduleNotificationDelay(true);
+            } else {
+                showOrUpdateNotification(notifyCheck);
+            }
+        }*/
         if (old_unread_count != total_unread_count) {
             showOrUpdateNotification(notifyCheck);
         }
@@ -881,6 +936,12 @@ public class NotificationsController {
             Boolean value = settingsCache.get(dialog_id);
             if (value == null) {
                 int notify_override = preferences.getInt("notify2_" + dialog_id, 0);
+                if (notify_override == 3) {
+                    int mute_until = preferences.getInt("notifyuntil_" + dialog_id, 0);
+                    if (mute_until >= ConnectionsManager.getInstance().getCurrentTime()) {
+                        notify_override = 2;
+                    }
+                }
                 value = !(notify_override == 2 || (!preferences.getBoolean("EnableAll", true) || ((int) dialog_id < 0) && !preferences.getBoolean("EnableGroup", true)) && notify_override == 0);
                 settingsCache.put(dialog_id, value);
             }
@@ -896,7 +957,7 @@ public class NotificationsController {
                 if (pushMessagesDict.containsKey(message.id)) {
                     continue;
                 }
-                MessageObject messageObject = new MessageObject(message, null, 0);
+                MessageObject messageObject = new MessageObject(message, null, false);
                 if (isPersonalMessage(messageObject)) {
                     personal_count++;
                 }
@@ -904,6 +965,12 @@ public class NotificationsController {
                 Boolean value = settingsCache.get(dialog_id);
                 if (value == null) {
                     int notify_override = preferences.getInt("notify2_" + dialog_id, 0);
+                    if (notify_override == 3) {
+                        int mute_until = preferences.getInt("notifyuntil_" + dialog_id, 0);
+                        if (mute_until >= ConnectionsManager.getInstance().getCurrentTime()) {
+                            notify_override = 2;
+                        }
+                    }
                     value = !(notify_override == 2 || (!preferences.getBoolean("EnableAll", true) || ((int) dialog_id < 0) && !preferences.getBoolean("EnableGroup", true)) && notify_override == 0);
                     settingsCache.put(dialog_id, value);
                 }
@@ -968,5 +1035,50 @@ public class NotificationsController {
     private boolean isPersonalMessage(MessageObject messageObject) {
         return messageObject.messageOwner.to_id != null && messageObject.messageOwner.to_id.chat_id == 0
                 && (messageObject.messageOwner.action == null || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionEmpty);
+    }
+
+    public static void updateServerNotificationsSettings(long dialog_id) {
+        NotificationCenter.getInstance().postNotificationName(NotificationCenter.notificationsSettingsUpdated);
+        if ((int)dialog_id == 0) {
+            return;
+        }
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+        TLRPC.TL_account_updateNotifySettings req = new TLRPC.TL_account_updateNotifySettings();
+        req.settings = new TLRPC.TL_inputPeerNotifySettings();
+        req.settings.sound = "default";
+        req.settings.events_mask = 0;
+        int mute_type = preferences.getInt("notify2_" + dialog_id, 0);
+        if (mute_type == 3) {
+            req.settings.mute_until = preferences.getInt("notifyuntil_" + dialog_id, 0);
+        } else {
+            req.settings.mute_until = mute_type != 2 ? 0 : Integer.MAX_VALUE;
+        }
+        req.settings.show_previews = preferences.getBoolean("preview_" + dialog_id, true);
+
+        req.peer = new TLRPC.TL_inputNotifyPeer();
+
+        if ((int)dialog_id < 0) {
+            ((TLRPC.TL_inputNotifyPeer)req.peer).peer = new TLRPC.TL_inputPeerChat();
+            ((TLRPC.TL_inputNotifyPeer)req.peer).peer.chat_id = -(int)dialog_id;
+        } else {
+            TLRPC.User user = MessagesController.getInstance().getUser((int)dialog_id);
+            if (user == null) {
+                return;
+            }
+            if (user instanceof TLRPC.TL_userForeign || user instanceof TLRPC.TL_userRequest) {
+                ((TLRPC.TL_inputNotifyPeer)req.peer).peer = new TLRPC.TL_inputPeerForeign();
+                ((TLRPC.TL_inputNotifyPeer)req.peer).peer.access_hash = user.access_hash;
+            } else {
+                ((TLRPC.TL_inputNotifyPeer)req.peer).peer = new TLRPC.TL_inputPeerContact();
+            }
+            ((TLRPC.TL_inputNotifyPeer)req.peer).peer.user_id = (int)dialog_id;
+        }
+
+        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            @Override
+            public void run(TLObject response, TLRPC.TL_error error) {
+
+            }
+        });
     }
 }

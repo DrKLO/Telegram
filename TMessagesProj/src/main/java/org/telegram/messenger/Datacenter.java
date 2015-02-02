@@ -115,6 +115,16 @@ public class Datacenter {
         readCurrentAddressAndPortNum();
     }
 
+    public void switchTo443Port() {
+        for (int a = 0; a < addresses.size(); a++) {
+            if (ports.get(addresses.get(a)) == 443) {
+                currentAddressNum = a;
+                currentPortNum = 0;
+                break;
+            }
+        }
+    }
+
     public String getCurrentAddress() {
         if (addresses.isEmpty()) {
             return null;

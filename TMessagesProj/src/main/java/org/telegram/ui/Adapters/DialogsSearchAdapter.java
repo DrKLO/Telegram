@@ -134,7 +134,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                                     searchResultMessages.clear();
                                 }
                                 for (TLRPC.Message message : res.messages) {
-                                    searchResultMessages.add(new MessageObject(message, null, 0));
+                                    searchResultMessages.add(new MessageObject(message, null, false));
                                 }
                                 messagesSearchEndReached = res.messages.size() != 20;
                                 notifyDataSetChanged();
@@ -155,11 +155,20 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
             @Override
             public void run() {
                 try {
-                    String q = query.trim().toLowerCase();
-                    if (q.length() == 0) {
+                    String search1 = query.trim().toLowerCase();
+                    if (search1.length() == 0) {
                         lastSearchId = -1;
                         updateSearchResults(new ArrayList<TLObject>(), new ArrayList<CharSequence>(), new ArrayList<TLRPC.User>(), lastSearchId);
                         return;
+                    }
+                    String search2 = LocaleController.getInstance().getTranslitString(search1);
+                    if (search1.equals(search2) || search2.length() == 0) {
+                        search2 = null;
+                    }
+                    String search[] = new String[1 + (search2 != null ? 1 : 0)];
+                    search[0] = search1;
+                    if (search2 != null) {
+                        search[1] = search2;
                     }
 
                     ArrayList<Integer> usersToLoad = new ArrayList<>();
@@ -212,30 +221,33 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                                 username = name.substring(usernamePos + 3);
                             }
                             int found = 0;
-                            if (name.startsWith(q) || name.contains(" " + q)) {
-                                found = 1;
-                            } else if (username != null && username.startsWith(q)) {
-                                found = 2;
-                            }
-                            if (found != 0) {
-                                ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
-                                if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
-                                    TLRPC.User user = (TLRPC.User) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                                    if (user.id != UserConfig.getClientUserId()) {
-                                        DialogSearchResult dialogSearchResult = dialogsResult.get((long)user.id);
-                                        if (user.status != null) {
-                                            user.status.expires = cursor.intValue(1);
-                                        }
-                                        if (found == 1) {
-                                            dialogSearchResult.name = Utilities.generateSearchName(user.first_name, user.last_name, q);
-                                        } else {
-                                            dialogSearchResult.name = Utilities.generateSearchName("@" + user.username, null, "@" + q);
-                                        }
-                                        dialogSearchResult.object = user;
-                                        resultCount++;
-                                    }
+                            for (String q : search) {
+                                if (name.startsWith(q) || name.contains(" " + q)) {
+                                    found = 1;
+                                } else if (username != null && username.startsWith(q)) {
+                                    found = 2;
                                 }
-                                MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
+                                if (found != 0) {
+                                    ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
+                                    if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
+                                        TLRPC.User user = (TLRPC.User) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                                        if (user.id != UserConfig.getClientUserId()) {
+                                            DialogSearchResult dialogSearchResult = dialogsResult.get((long) user.id);
+                                            if (user.status != null) {
+                                                user.status.expires = cursor.intValue(1);
+                                            }
+                                            if (found == 1) {
+                                                dialogSearchResult.name = Utilities.generateSearchName(user.first_name, user.last_name, q);
+                                            } else {
+                                                dialogSearchResult.name = Utilities.generateSearchName("@" + user.username, null, "@" + q);
+                                            }
+                                            dialogSearchResult.object = user;
+                                            resultCount++;
+                                        }
+                                    }
+                                    MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
+                                    break;
+                                }
                             }
                         }
                         cursor.dispose();
@@ -245,23 +257,25 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                         cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, name FROM chats WHERE uid IN(%s)", TextUtils.join(",", chatsToLoad)));
                         while (cursor.next()) {
                             String name = cursor.stringValue(1);
-                            String[] args = name.split(" ");
-                            if (name.startsWith(q) || name.contains(" " + q)) {
-                                ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
-                                if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
-                                    TLRPC.Chat chat = (TLRPC.Chat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                                    long dialog_id;
-                                    if (chat.id > 0) {
-                                        dialog_id = -chat.id;
-                                    } else {
-                                        dialog_id = AndroidUtilities.makeBroadcastId(chat.id);
+                            for (String q : search) {
+                                if (name.startsWith(q) || name.contains(" " + q)) {
+                                    ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
+                                    if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
+                                        TLRPC.Chat chat = (TLRPC.Chat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                                        long dialog_id;
+                                        if (chat.id > 0) {
+                                            dialog_id = -chat.id;
+                                        } else {
+                                            dialog_id = AndroidUtilities.makeBroadcastId(chat.id);
+                                        }
+                                        DialogSearchResult dialogSearchResult = dialogsResult.get(dialog_id);
+                                        dialogSearchResult.name = Utilities.generateSearchName(chat.title, null, q);
+                                        dialogSearchResult.object = chat;
+                                        resultCount++;
                                     }
-                                    DialogSearchResult dialogSearchResult = dialogsResult.get(dialog_id);
-                                    dialogSearchResult.name = Utilities.generateSearchName(chat.title, null, q);
-                                    dialogSearchResult.object = chat;
-                                    resultCount++;
+                                    MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
+                                    break;
                                 }
-                                MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
                             }
                         }
                         cursor.dispose();
@@ -278,50 +292,53 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                                 username = name.substring(usernamePos + 2);
                             }
                             int found = 0;
-                            if (name.startsWith(q) || name.contains(" " + q)) {
-                                found = 1;
-                            } else if (username != null && username.startsWith(q)) {
-                                found = 2;
-                            }
-
-                            if (found != 0) {
-                                ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
-                                ByteBufferDesc data2 = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(6));
-                                if (data != null && cursor.byteBufferValue(0, data.buffer) != 0 && cursor.byteBufferValue(6, data2.buffer) != 0) {
-                                    TLRPC.EncryptedChat chat = (TLRPC.EncryptedChat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                                    DialogSearchResult dialogSearchResult = dialogsResult.get((long)chat.id << 32);
-
-                                    chat.user_id = cursor.intValue(2);
-                                    chat.a_or_b = cursor.byteArrayValue(3);
-                                    chat.auth_key = cursor.byteArrayValue(4);
-                                    chat.ttl = cursor.intValue(5);
-                                    chat.layer = cursor.intValue(8);
-                                    chat.seq_in = cursor.intValue(9);
-                                    chat.seq_out = cursor.intValue(10);
-                                    int use_count = cursor.intValue(11);
-                                    chat.key_use_count_in = (short)(use_count >> 16);
-                                    chat.key_use_count_out = (short)(use_count);
-                                    chat.exchange_id = cursor.longValue(12);
-                                    chat.key_create_date = cursor.intValue(13);
-                                    chat.future_key_fingerprint = cursor.longValue(14);
-                                    chat.future_auth_key = cursor.byteArrayValue(15);
-                                    chat.key_hash = cursor.byteArrayValue(16);
-
-                                    TLRPC.User user = (TLRPC.User)TLClassStore.Instance().TLdeserialize(data2, data2.readInt32());
-                                    if (user.status != null) {
-                                        user.status.expires = cursor.intValue(7);
-                                    }
-                                    if (found == 1) {
-                                        dialogSearchResult.name = Html.fromHtml("<font color=\"#00a60e\">" + ContactsController.formatName(user.first_name, user.last_name) + "</font>");
-                                    } else {
-                                        dialogSearchResult.name = Utilities.generateSearchName("@" + user.username, null, "@" + q);
-                                    }
-                                    dialogSearchResult.object = chat;
-                                    encUsers.add(user);
-                                    resultCount++;
+                            for (String q : search) {
+                                if (name.startsWith(q) || name.contains(" " + q)) {
+                                    found = 1;
+                                } else if (username != null && username.startsWith(q)) {
+                                    found = 2;
                                 }
-                                MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
-                                MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data2);
+
+                                if (found != 0) {
+                                    ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
+                                    ByteBufferDesc data2 = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(6));
+                                    if (data != null && cursor.byteBufferValue(0, data.buffer) != 0 && cursor.byteBufferValue(6, data2.buffer) != 0) {
+                                        TLRPC.EncryptedChat chat = (TLRPC.EncryptedChat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                                        DialogSearchResult dialogSearchResult = dialogsResult.get((long) chat.id << 32);
+
+                                        chat.user_id = cursor.intValue(2);
+                                        chat.a_or_b = cursor.byteArrayValue(3);
+                                        chat.auth_key = cursor.byteArrayValue(4);
+                                        chat.ttl = cursor.intValue(5);
+                                        chat.layer = cursor.intValue(8);
+                                        chat.seq_in = cursor.intValue(9);
+                                        chat.seq_out = cursor.intValue(10);
+                                        int use_count = cursor.intValue(11);
+                                        chat.key_use_count_in = (short) (use_count >> 16);
+                                        chat.key_use_count_out = (short) (use_count);
+                                        chat.exchange_id = cursor.longValue(12);
+                                        chat.key_create_date = cursor.intValue(13);
+                                        chat.future_key_fingerprint = cursor.longValue(14);
+                                        chat.future_auth_key = cursor.byteArrayValue(15);
+                                        chat.key_hash = cursor.byteArrayValue(16);
+
+                                        TLRPC.User user = (TLRPC.User) TLClassStore.Instance().TLdeserialize(data2, data2.readInt32());
+                                        if (user.status != null) {
+                                            user.status.expires = cursor.intValue(7);
+                                        }
+                                        if (found == 1) {
+                                            dialogSearchResult.name = Html.fromHtml("<font color=\"#00a60e\">" + ContactsController.formatName(user.first_name, user.last_name) + "</font>");
+                                        } else {
+                                            dialogSearchResult.name = Utilities.generateSearchName("@" + user.username, null, "@" + q);
+                                        }
+                                        dialogSearchResult.object = chat;
+                                        encUsers.add(user);
+                                        resultCount++;
+                                    }
+                                    MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
+                                    MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data2);
+                                    break;
+                                }
                             }
                         }
                         cursor.dispose();
@@ -367,28 +384,31 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                             username = name.substring(usernamePos + 3);
                         }
                         int found = 0;
-                        if (name.startsWith(q) || name.contains(" " + q)) {
-                            found = 1;
-                        } else if (username != null && username.startsWith(q)) {
-                            found = 2;
-                        }
-                        if (found != 0) {
-                            ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
-                            if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
-                                TLRPC.User user = (TLRPC.User) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                                if (user.id != UserConfig.getClientUserId()) {
-                                    if (user.status != null) {
-                                        user.status.expires = cursor.intValue(1);
-                                    }
-                                    if (found == 1) {
-                                        resultArrayNames.add(Utilities.generateSearchName(user.first_name, user.last_name, q));
-                                    } else {
-                                        resultArrayNames.add(Utilities.generateSearchName("@" + user.username, null, "@" + q));
-                                    }
-                                    resultArray.add(user);
-                                }
+                        for (String q : search) {
+                            if (name.startsWith(q) || name.contains(" " + q)) {
+                                found = 1;
+                            } else if (username != null && username.startsWith(q)) {
+                                found = 2;
                             }
-                            MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
+                            if (found != 0) {
+                                ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
+                                if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
+                                    TLRPC.User user = (TLRPC.User) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                                    if (user.id != UserConfig.getClientUserId()) {
+                                        if (user.status != null) {
+                                            user.status.expires = cursor.intValue(1);
+                                        }
+                                        if (found == 1) {
+                                            resultArrayNames.add(Utilities.generateSearchName(user.first_name, user.last_name, q));
+                                        } else {
+                                            resultArrayNames.add(Utilities.generateSearchName("@" + user.username, null, "@" + q));
+                                        }
+                                        resultArray.add(user);
+                                    }
+                                }
+                                MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
+                                break;
+                            }
                         }
                     }
                     cursor.dispose();
@@ -598,7 +618,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
             }
             ((DialogCell) view).useSeparator = (i != getCount() - 1);
             MessageObject messageObject = (MessageObject)getItem(i);
-            ((DialogCell) view).setDialog(messageObject.getDialogId(), messageObject, false, messageObject.messageOwner.date, 0);
+            ((DialogCell) view).setDialog(messageObject.getDialogId(), messageObject, false, messageObject.messageOwner.date, 0, false);
         } else if (type == 3) {
             if (view == null) {
                 view = new LoadingCell(mContext);

@@ -8,6 +8,8 @@
 
 package org.telegram.messenger;
 
+import com.aniways.anigram.messenger.BuildConfig;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
@@ -298,6 +300,9 @@ public class TcpConnection extends ConnectionContext {
                 if (client == null || client.isDisconnected()) {
                     if (canReuse) {
                         BuffersStorage.getInstance().reuseFreeBuffer(buff);
+                    }
+                    if (BuildConfig.DEBUG) {
+                        FileLog.e("tmessages", TcpConnection.this + " disconnected, don't send data");
                     }
                     return;
                 }

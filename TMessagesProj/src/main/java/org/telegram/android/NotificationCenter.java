@@ -52,6 +52,8 @@ public class NotificationCenter {
     public static final int httpFileDidLoaded = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;
 
+    public static final int messageThumbGenerated = totalEvents++;
+
     public static final int wallpapersDidLoaded = totalEvents++;
     public static final int closeOtherAppActivities = totalEvents++;
     public static final int didUpdatedConnectionState = totalEvents++;
@@ -70,16 +72,16 @@ public class NotificationCenter {
     public static final int FileNewChunkAvailable = totalEvents++;
     public static final int FilePreparingFailed = totalEvents++;
 
-    public final static int audioProgressDidChanged = totalEvents++;
-    public final static int audioDidReset = totalEvents++;
-    public final static int recordProgressChanged = totalEvents++;
-    public final static int recordStarted = totalEvents++;
-    public final static int recordStartError = totalEvents++;
-    public final static int recordStopped = totalEvents++;
-    public final static int screenshotTook = totalEvents++;
-    public final static int albumsDidLoaded = totalEvents++;
-    public final static int audioDidSent = totalEvents++;
-    public final static int audioDidStarted = totalEvents++;
+    public static final int audioProgressDidChanged = totalEvents++;
+    public static final int audioDidReset = totalEvents++;
+    public static final int recordProgressChanged = totalEvents++;
+    public static final int recordStarted = totalEvents++;
+    public static final int recordStartError = totalEvents++;
+    public static final int recordStopped = totalEvents++;
+    public static final int screenshotTook = totalEvents++;
+    public static final int albumsDidLoaded = totalEvents++;
+    public static final int audioDidSent = totalEvents++;
+    public static final int audioDidStarted = totalEvents++;
     public static final int audioRouteChanged = totalEvents++;
 
     final private HashMap<Integer, ArrayList<Object>> observers = new HashMap<>();

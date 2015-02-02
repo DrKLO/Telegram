@@ -53,6 +53,10 @@
     <string name="CompatibilityChat">%1$s sta usando una versione vecchia di Telegram, quindi le foto segrete verranno visualizzate in modalità di compatibilità.\n\nUna volta che %2$s avrà aggiornato Telegram, le foto con il timer minore di 1 minuto funzioneranno in modalità \'Tieni premuto per vedere\' , e verrai notificato ogni volta che l\'altro esegue uno screenshot.</string>
     <string name="SearchMessages">MESSAGGI</string>
     <string name="Search">Cerca</string>
+    <string name="MuteNotifications">Silenzia notifiche</string>
+    <string name="MuteFor">Silenzia per %1$s</string>
+    <string name="UnmuteNotifications">Suona</string>
+    <string name="WillUnmuteIn">Tra %1$s</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nuova lista broadcast</string>
     <string name="EnterListName">Immetti il nome della lista</string>
@@ -73,6 +77,7 @@
     <string name="SystemRoot">Root di sistema</string>
     <string name="SdCard">Scheda SD</string>
     <string name="Folder">Cartella</string>
+    <string name="GalleryInfo">Per inviare immagini senza compressione</string>
     <!--chat view-->
     <string name="Invisible">invisibile</string>
     <string name="Typing">sta scrivendo…</string>
@@ -105,6 +110,7 @@
     <string name="DeleteThisChat">Elimina questa chat</string>
     <string name="SlideToCancel">ANNULLA</string>
     <string name="SaveToDownloads">Salva in download</string>
+    <string name="ShareFile">Condividi</string>
     <string name="ApplyLocalizationFile">Applica file di localizzazione</string>
     <string name="UnsupportedAttachment">Allegato non supportato</string>
     <string name="SetTimer">Timer di autodistruzione</string>
@@ -151,7 +157,7 @@
     <string name="SelectContact">Seleziona contatto</string>
     <string name="NoContacts">Ancora nessun contatto</string>
     <string name="InviteText">Ehi, è il momento di passare a Telegram Aniways: http://aniways.com/anygram/dl2</string>
-    <string name="TodayAt">oggi alle</string>
+    <string name="TodayAt">alle</string>
     <string name="YesterdayAt">ieri alle</string>
     <string name="Online">in linea</string>
     <string name="LastSeen">ultimo accesso</string>
@@ -174,7 +180,7 @@
     <string name="AddMember">Aggiungi membro</string>
     <string name="DeleteAndExit">Elimina e lascia il gruppo</string>
     <string name="Notifications">Notifiche</string>
-    <string name="KickFromGroup">Rimuovi dal gruppo</string>
+    <string name="KickFromGroup">Espelli dal gruppo</string>
     <!--contact info view-->
     <string name="ShareContact">Condividi</string>
     <string name="AddContact">Aggiungi</string>
@@ -291,7 +297,9 @@
     <string name="ChangePhoneNumberOccupied">Il numero %1$s è già connesso a un account Telegram. Per favore elimina quell\'account prima di migrare ad un nuovo numero.</string>
     <string name="NotificationsOther">Altro</string>
     <!--media view-->
-    <string name="NoMedia">Nessun media condiviso</string>
+    <string name="NoMedia">Condividi foto e video in questa chat e accedi ad essi da ogni tuo dispositivo.</string>
+    <string name="DocumentsTitle">File</string>
+    <string name="NoSharedFiles">Condividi file e documenti in questa chat e accedi ad essi da ogni tuo dispositivo.</string>
     <!--map view-->
     <string name="Map">Mappa</string>
     <string name="Satellite">Satellite</string>
@@ -315,6 +323,7 @@
     <string name="SearchImagesTitle">Cerca su web</string>
     <string name="SearchGifsTitle">Cerca GIF</string>
     <string name="CropImage">Ritaglia immagine</string>
+    <string name="EditImage">Modifica immagine</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -440,7 +449,7 @@
     <string name="AddToTheGroup">Aggiungere %1$s al gruppo?\n\nNumero di messaggi recenti da inoltrare:</string>
     <string name="ForwardMessagesTo">Vuoi inoltrare i messaggi a %1$s?</string>
     <string name="SendMessagesTo">Inviare i messaggi a %1$s?</string>
-    <string name="AreYouSureLogout">Sei sicuro di volerti disconnettere?\n\nRicorda che puoi usare Telegram su tutti i tuoi device contemporaneamente.\n\nRicorda, disconnettersi elimina tutte le Chat Segrete.</string>
+    <string name="AreYouSureLogout">Sei sicuro di volerti disconnettere?\n\nRicorda che puoi usare Telegram su tutti i tuoi device insieme.\n\nRicorda, disconnettersi elimina tutte le Chat Segrete.</string>
     <string name="AreYouSureSessions">Chiudere tutte le altre sessioni?</string>
     <string name="AreYouSureDeleteAndExit">Eliminare il gruppo e uscire da esso?</string>
     <string name="AreYouSureDeleteThisChat">Eliminare questa chat?</string>
@@ -502,6 +511,12 @@
     <string name="messages_few">%1$d messaggi</string>
     <string name="messages_many">%1$d messaggi</string>
     <string name="messages_other">%1$d messaggi</string>
+    <string name="files_zero">nessun file</string>
+    <string name="files_one">%1$d file</string>
+    <string name="files_two">%1$d file</string>
+    <string name="files_few">%1$d file</string>
+    <string name="files_many">%1$d file</string>
+    <string name="files_other">%1$d file</string>
     <string name="FromContacts_zero">da nessun contatto</string>
     <string name="FromContacts_one">da %1$d contatto</string>
     <string name="FromContacts_two">da %1$d contatti</string>

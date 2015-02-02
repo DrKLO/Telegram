@@ -55,7 +55,7 @@ public class FileLoadOperation {
     private boolean isForceRequest = false;
 
     public static interface FileLoadOperationDelegate {
-        public abstract void didFinishLoadingFile(FileLoadOperation operation, File finalFile, File tempFile);
+        public abstract void didFinishLoadingFile(FileLoadOperation operation, File finalFile);
         public abstract void didFailedLoadingFile(FileLoadOperation operation, int state);
         public abstract void didChangedLoadProgress(FileLoadOperation operation, float progress);
     }
@@ -341,9 +341,11 @@ public class FileLoadOperation {
             cacheIvTemp.delete();
         }
         if (cacheFileTemp != null) {
-            cacheFileTemp.renameTo(cacheFileFinal);
+            if (!cacheFileTemp.renameTo(cacheFileFinal)) {
+                cacheFileFinal = cacheFileTemp;
+            }
         }
-        delegate.didFinishLoadingFile(FileLoadOperation.this, cacheFileFinal, cacheFileTemp);
+        delegate.didFinishLoadingFile(FileLoadOperation.this, cacheFileFinal);
     }
 
     private void processRequestResult(RequestInfo requestInfo, TLRPC.TL_error error) {
@@ -373,7 +375,8 @@ public class FileLoadOperation {
                     fiv.seek(0);
                     fiv.write(iv);
                 }
-                downloadedBytes += requestInfo.response.bytes.limit();
+                int currentBytesSize = requestInfo.response.bytes.limit();
+                downloadedBytes += currentBytesSize;
                 if (totalBytesCount > 0 && state == stateDownloading) {
                     delegate.didChangedLoadProgress(FileLoadOperation.this,  Math.min(1.0f, (float)downloadedBytes / (float)totalBytesCount));
                 }
@@ -390,10 +393,14 @@ public class FileLoadOperation {
                     }
                 }
 
-                if (totalBytesCount != downloadedBytes && downloadedBytes % downloadChunkSize == 0 || totalBytesCount > 0 && totalBytesCount > downloadedBytes) {
-                    startDownloadRequest();
-                } else {
+                if (currentBytesSize != downloadChunkSize) {
                     onFinishLoadingFile();
+                } else {
+                    if (totalBytesCount != downloadedBytes && downloadedBytes % downloadChunkSize == 0 || totalBytesCount > 0 && totalBytesCount > downloadedBytes) {
+                        startDownloadRequest();
+                    } else {
+                        onFinishLoadingFile();
+                    }
                 }
             } catch (Exception e) {
                 cleanup();
