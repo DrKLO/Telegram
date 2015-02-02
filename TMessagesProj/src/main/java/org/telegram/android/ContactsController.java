@@ -175,7 +175,7 @@ public class ContactsController {
     }
 
     public String getInviteText() {
-        return inviteText != null ? inviteText : LocaleController.getString("InviteText", R.string.InviteText);
+        return ApplicationLoader.applicationContext.getResources().getString(R.string.InviteText);
     }
 
     public void checkAppAccount() {

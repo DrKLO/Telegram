@@ -13,6 +13,7 @@ import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.text.TextUtils;
@@ -47,7 +48,6 @@ import com.aniways.AniwaysTextView;
 import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessageObject;
-import org.telegram.android.PhotoObject;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -528,7 +528,8 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             imageView.imageReceiver.setAspectFit(true);
 
             if (messageObject.type == 1) {
-                PhotoObject currentPhotoObject = PhotoObject.getClosestImageWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
+                TLRPC.PhotoSize currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
+                TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 100);
                 boolean photoSet = false;
                 if (currentPhotoObject != null) {
                     boolean photoExist = true;
@@ -539,11 +540,11 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                         }
                     }
                     if (photoExist || MediaController.getInstance().canDownloadMedia(MediaController.AUTODOWNLOAD_MASK_PHOTO)) {
-                        imageView.setImage(currentPhotoObject.photoOwner.location, "100_100", messageObject.imagePreview, currentPhotoObject.photoOwner.size);
+                        imageView.setImage(currentPhotoObject.location, "100_100", thumb.location, currentPhotoObject.size);
                         photoSet = true;
                     } else {
-                        if (messageObject.imagePreview != null) {
-                            imageView.setImageBitmap(messageObject.imagePreview);
+                        if (thumb != null) {
+                            imageView.setImage(thumb.location, null, (Drawable) null);
                             photoSet = true;
                         }
                     }

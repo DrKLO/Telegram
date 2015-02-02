@@ -18,6 +18,7 @@ import android.view.View;
 
 import org.telegram.android.ImageReceiver;
 import org.telegram.messenger.TLObject;
+import org.telegram.messenger.TLRPC;
 
 
 public class BackupImageView extends View {
@@ -43,34 +44,35 @@ public class BackupImageView extends View {
         imageReceiver = new ImageReceiver(this);
     }
 
-    public void setImage(TLObject path, String filter, Drawable placeholder) {
-        setImage(path, null, filter, placeholder, null, 0);
+    public void setImage(TLObject path, String filter, Drawable thumb) {
+        setImage(path, null, filter, thumb, null, null, null, 0);
     }
 
-    public void setImage(TLObject path, String filter, Bitmap placeholderBitmap) {
-        setImage(path, null, filter, null, placeholderBitmap, 0);
+    public void setImage(TLObject path, String filter, Bitmap thumb) {
+        setImage(path, null, filter, null, thumb, null, null, 0);
     }
 
-    public void setImage(TLObject path, String filter, Drawable placeholder, int size) {
-        setImage(path, null, filter, placeholder, null, size);
+    public void setImage(TLObject path, String filter, Drawable thumb, int size) {
+        setImage(path, null, filter, thumb, null, null, null, size);
     }
 
-    public void setImage(TLObject path, String filter, Bitmap placeholderBitmap, int size) {
-        setImage(path, null, filter, null, placeholderBitmap, size);
+    public void setImage(TLObject path, String filter, Bitmap thumb, int size) {
+        setImage(path, null, filter, null, thumb, null, null, size);
     }
 
-    public void setImage(String path, String filter, Drawable placeholder) {
-        setImage(null, path, filter, placeholder, null, 0);
+    public void setImage(TLObject path, String filter, TLRPC.FileLocation thumb, int size) {
+        setImage(path, null, filter, null, null, thumb, null, size);
     }
 
-    public void setImage(TLObject path, String httpUrl, String filter, Drawable placeholder, Bitmap placeholderBitmap, int size) {
-        Drawable placeholderDrawable = null;
-        if (placeholderBitmap != null) {
-            placeholderDrawable = new BitmapDrawable(null, placeholderBitmap);
-        } else if (placeholder != null) {
-            placeholderDrawable = placeholder;
+    public void setImage(String path, String filter, Drawable thumb) {
+        setImage(null, path, filter, thumb, null, null, null, 0);
+    }
+
+    public void setImage(TLObject path, String httpUrl, String filter, Drawable thumb, Bitmap thumbBitmap, TLRPC.FileLocation thumbLocation, String thumbFilter, int size) {
+        if (thumbBitmap != null) {
+            thumb = new BitmapDrawable(null, thumbBitmap);
         }
-        imageReceiver.setImage(path, httpUrl, filter, placeholderDrawable, null, size, false);
+        imageReceiver.setImage(path, httpUrl, filter, thumb, thumbLocation, thumbFilter, size, false);
     }
 
     public void setImageBitmap(Bitmap bitmap) {

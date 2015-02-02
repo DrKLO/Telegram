@@ -34,7 +34,7 @@
     <string name="Yesterday">ayer</string>
     <string name="NoResult">Sin resultados</string>
     <string name="NoChats">Aún sin chats...</string>
-    <string name="NoChatsHelp">Envía mensajes pulsando el botón para\nredactar, en la parte superior derecha,\no pulsa el botón menú para más opciones.</string>
+    <string name="NoChatsHelp">Envía mensajes pulsando el botón para\nredactar, en la parte inferior derecha,\no pulsa el botón menú para más opciones.</string>
     <string name="WaitingForNetwork">Esperando red...</string>
     <string name="Connecting">Conectando...</string>
     <string name="Updating">Actualizando...</string>
@@ -53,6 +53,10 @@
     <string name="CompatibilityChat">%1$s usa una versión antigua de Telegram, así que las fotos secretas serán mostradas en un modo de compatibilidad.\n\nCuando %2$s actualice Telegram, las fotos con autodestrucción de 1 minuto o menos funcionarán con el modo \'Mantén pulsado para ver\', y te notificaremos siempre que la otra parte haga una captura de pantalla.</string>
     <string name="SearchMessages">MENSAJES</string>
     <string name="Search">Buscar</string>
+    <string name="MuteNotifications">Silenciar notificaciones</string>
+    <string name="MuteFor">Silenciar %1$s</string>
+    <string name="UnmuteNotifications">No silenciar</string>
+    <string name="WillUnmuteIn">En %1$s</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nueva difusión</string>
     <string name="EnterListName">Nombre de la lista</string>
@@ -73,6 +77,7 @@
     <string name="SystemRoot">Raíz del Sistema</string>
     <string name="SdCard">Tarjeta SD</string>
     <string name="Folder">Carpeta</string>
+    <string name="GalleryInfo">Para enviar imágenes sin compresión</string>
     <!--chat view-->
     <string name="Invisible">invisible</string>
     <string name="Typing">escribiendo...</string>
@@ -105,6 +110,7 @@
     <string name="DeleteThisChat">Eliminar este chat</string>
     <string name="SlideToCancel">DESLIZA PARA CANCELAR</string>
     <string name="SaveToDownloads">Guardar en descargas</string>
+    <string name="ShareFile">Compartir</string>
     <string name="ApplyLocalizationFile">Aplicar traducción</string>
     <string name="UnsupportedAttachment">Adjunto no soportado</string>
     <string name="SetTimer">Establecer autodestrucción</string>
@@ -151,7 +157,7 @@
     <string name="SelectContact">Elegir contacto</string>
     <string name="NoContacts">Aún sin contactos</string>
     <string name="InviteText">Oye, cambiémonos a Telegram Aniways: http://aniways.com/anygram/dl2</string>
-    <string name="TodayAt">hoy a las</string>
+    <string name="TodayAt">a las</string>
     <string name="YesterdayAt">ayer a las</string>
     <string name="Online">en línea</string>
     <string name="LastSeen">últ. vez</string>
@@ -169,7 +175,7 @@
     <string name="GroupName">Nombre del grupo</string>
     <string name="MembersCount">%1$d/%2$d miembros</string>
     <!--group info view-->
-    <string name="SharedMedia">Fotos y vídeos</string>
+    <string name="SharedMedia">Multimedia compartida</string>
     <string name="SETTINGS">Ajustes</string>
     <string name="AddMember">Añadir miembro</string>
     <string name="DeleteAndExit">Eliminar y dejar el grupo</string>
@@ -291,7 +297,9 @@
     <string name="ChangePhoneNumberOccupied">El número %1$s ya está vinculado a una cuenta de Telegram. Por favor, elimina esa cuenta antes de migrar al nuevo número.</string>
     <string name="NotificationsOther">Otras</string>
     <!--media view-->
-    <string name="NoMedia">Aún no hay fotos ni vídeos</string>
+    <string name="NoMedia">Comparte fotos y vídeos en este chat y accede a ellos desde cualquier dispositivo.</string>
+    <string name="DocumentsTitle">Archivos</string>
+    <string name="NoSharedFiles">Comparte archivos en este chat y accede a ellos desde cualquier dispositivo.</string>
     <!--map view-->
     <string name="Map">Mapa</string>
     <string name="Satellite">Satélite</string>
@@ -306,7 +314,7 @@
     <string name="Of">%1$d de %2$d</string>
     <string name="Gallery">Galería</string>
     <string name="AllPhotos">Todas las fotos</string>
-    <string name="NoPhotos">Sin fotos aún</string>
+    <string name="NoPhotos">Aún sin fotos</string>
     <string name="PleaseDownload">Por favor, primero descarga la multimedia</string>
     <string name="NoRecentPhotos">No hay fotos recientes</string>
     <string name="NoRecentGIFs">No hay GIF recientes</string>
@@ -315,6 +323,7 @@
     <string name="SearchImagesTitle">Buscar foto</string>
     <string name="SearchGifsTitle">Buscar GIF</string>
     <string name="CropImage">Cortar imagen</string>
+    <string name="EditImage">Editar imagen</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -502,6 +511,12 @@
     <string name="messages_few">%1$d mensajes</string>
     <string name="messages_many">%1$d mensajes</string>
     <string name="messages_other">%1$d mensajes</string>
+    <string name="files_zero">sin archivos</string>
+    <string name="files_one">%1$d archivo</string>
+    <string name="files_two">%1$d archivos</string>
+    <string name="files_few">%1$d archivos</string>
+    <string name="files_many">%1$d archivos</string>
+    <string name="files_other">%1$d archivos</string>
     <string name="FromContacts_zero">unused</string>
     <string name="FromContacts_one">de %1$d contacto</string>
     <string name="FromContacts_two">de %1$d contactos</string>

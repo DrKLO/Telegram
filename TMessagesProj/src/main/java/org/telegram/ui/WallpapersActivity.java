@@ -225,7 +225,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                 Utilities.addMediaToGallery(currentPicturePath);
                 try {
                     Point screenSize = AndroidUtilities.getRealScreenSize();
-                    Bitmap bitmap = ImageLoader.loadBitmap(currentPicturePath, null, screenSize.x, screenSize.y);
+                    Bitmap bitmap = ImageLoader.loadBitmap(currentPicturePath, null, screenSize.x, screenSize.y, true);
                     File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
                     FileOutputStream stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
@@ -242,7 +242,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                 }
                 try {
                     Point screenSize = AndroidUtilities.getRealScreenSize();
-                    Bitmap bitmap = ImageLoader.loadBitmap(null, data.getData(), screenSize.x, screenSize.y);
+                    Bitmap bitmap = ImageLoader.loadBitmap(null, data.getData(), screenSize.x, screenSize.y, true);
                     File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
                     FileOutputStream stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);

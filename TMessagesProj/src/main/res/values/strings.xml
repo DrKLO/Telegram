@@ -53,6 +53,10 @@
     <string name="CompatibilityChat">%1$s is using an older version of Telegram, so secret photos will be shown in compatibility mode.\n\nOnce %2$s updates Telegram, photos with timers for 1 minute or less will start working in \'Tap and hold to view\' mode, and you will be notified whenever the other party takes a screenshot.</string>
     <string name="SearchMessages">MESSAGES</string>
     <string name="Search">Search</string>
+    <string name="MuteNotifications">Mute notifications</string>
+    <string name="MuteFor">Mute for %1$s</string>
+    <string name="UnmuteNotifications">Unmute</string>
+    <string name="WillUnmuteIn">In %1$s</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">New Broadcast List</string>
     <string name="EnterListName">Enter list name</string>
@@ -73,6 +77,7 @@
     <string name="SystemRoot">System Root</string>
     <string name="SdCard">SD Card</string>
     <string name="Folder">Folder</string>
+    <string name="GalleryInfo">To send images without compression</string>
     <!--chat view-->
     <string name="Invisible">invisible</string>
     <string name="Typing">typing...</string>
@@ -83,7 +88,7 @@
     <string name="ChatGallery">Gallery</string>
     <string name="ChatLocation">Location</string>
     <string name="ChatVideo">Video</string>
-    <string name="ChatDocument">Document</string>
+    <string name="ChatDocument">File</string>
     <string name="NoMessages">No messages here yet...</string>
     <string name="ForwardedMessage">Forwarded message</string>
     <string name="From">From</string>
@@ -105,6 +110,7 @@
     <string name="DeleteThisChat">Delete this chat</string>
     <string name="SlideToCancel">SLIDE TO CANCEL</string>
     <string name="SaveToDownloads">Save to downloads</string>
+    <string name="ShareFile">Share</string>
     <string name="ApplyLocalizationFile">Apply localization file</string>
     <string name="UnsupportedAttachment">Unsupported attachment</string>
     <string name="SetTimer">Set self-destruct timer</string>
@@ -121,7 +127,7 @@
     <string name="NotificationMessageVideo">%1$s sent you a video</string>
     <string name="NotificationMessageContact">%1$s shared a contact with you</string>
     <string name="NotificationMessageMap">%1$s sent you a location</string>
-    <string name="NotificationMessageDocument">%1$s sent you a document</string>
+    <string name="NotificationMessageDocument">%1$s sent you a file</string>
     <string name="NotificationMessageAudio">%1$s sent you an audio</string>
     <string name="NotificationMessageSticker">%1$s sent you a sticker</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
@@ -130,7 +136,7 @@
     <string name="NotificationMessageGroupVideo">%1$s sent a video to the group %2$s</string>
     <string name="NotificationMessageGroupContact">%1$s shared a contact in the group %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s sent a location to the group %2$s</string>
-    <string name="NotificationMessageGroupDocument">%1$s sent a document to the group %2$s</string>
+    <string name="NotificationMessageGroupDocument">%1$s sent a file to the group %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s sent an audio to the group %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s sent a sticker to the group %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s invited you to the group %2$s</string>
@@ -151,7 +157,7 @@
     <string name="SelectContact">Select Contact</string>
     <string name="NoContacts">No contacts yet</string>
     <string name="InviteText">Hey, let\'s switch to Telegram Aniways: http://aniways.com/anygram/dl2</string>
-    <string name="TodayAt">today at</string>
+    <string name="TodayAt">at</string>
     <string name="YesterdayAt">yesterday at</string>
     <string name="Online">online</string>
     <string name="LastSeen">last seen</string>
@@ -292,7 +298,9 @@
     <string name="ChangePhoneNumberOccupied">The number %1$s is already connected to a Telegram account. Please delete that account before migrating to the new number.</string>
     <string name="NotificationsOther">Other</string>
     <!--media view-->
-    <string name="NoMedia">No shared media yet</string>
+    <string name="NoMedia">Share photos and videos in this chat and access them on any of your devices.</string>
+    <string name="DocumentsTitle">Files</string>
+    <string name="NoSharedFiles">Share files and documents in this chat and access them on any of your devices.</string>
     <!--map view-->
     <string name="Map">Map</string>
     <string name="Satellite">Satellite</string>
@@ -316,6 +324,7 @@
     <string name="SearchImagesTitle">Search web</string>
     <string name="SearchGifsTitle">Search GIFs</string>
     <string name="CropImage">Crop image</string>
+    <string name="EditImage">Edit image</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -419,7 +428,7 @@
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Location</string>
     <string name="AttachContact">Contact</string>
-    <string name="AttachDocument">Document</string>
+    <string name="AttachDocument">File</string>
     <string name="AttachSticker">Sticker</string>
     <string name="AttachAudio">Audio</string>
     <string name="FromYou">You</string>
@@ -503,6 +512,12 @@
     <string name="messages_few">%1$d messages</string>
     <string name="messages_many">%1$d messages</string>
     <string name="messages_other">%1$d messages</string>
+    <string name="files_zero">no files</string>
+    <string name="files_one">%1$d file</string>
+    <string name="files_two">%1$d files</string>
+    <string name="files_few">%1$d files</string>
+    <string name="files_many">%1$d files</string>
+    <string name="files_other">%1$d files</string>
     <string name="FromContacts_zero">from no contacts</string>
     <string name="FromContacts_one">from %1$d contact</string>
     <string name="FromContacts_two">from %1$d contacts</string>

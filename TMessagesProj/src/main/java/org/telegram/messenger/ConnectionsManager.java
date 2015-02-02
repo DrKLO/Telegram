@@ -14,6 +14,7 @@ import android.content.pm.PackageInfo;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
+import android.os.PowerManager;
 import android.util.Base64;
 
 import org.telegram.android.AndroidUtilities;
@@ -80,6 +81,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     private boolean appPaused = true;
 
     private volatile long nextCallToken = 1;
+
+    private PowerManager.WakeLock wakeLock = null;
 
     private static volatile ConnectionsManager Instance = null;
     public static ConnectionsManager getInstance() {
@@ -213,6 +216,14 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         }
 
         Utilities.stageQueue.postRunnable(stageRunnable, 1000);
+
+        try {
+            PowerManager pm = (PowerManager)ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
+            wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "lock");
+            wakeLock.setReferenceCounted(false);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     public int getConnectionState() {
@@ -456,7 +467,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             } else {
                 Datacenter datacenter = new Datacenter();
                 datacenter.datacenterId = 1;
-                datacenter.addAddressAndPort("173.240.5.253", 443);
+                datacenter.addAddressAndPort("149.154.175.10", 443);
                 datacenters.put(datacenter.datacenterId, datacenter);
 
                 datacenter = new Datacenter();
@@ -566,25 +577,33 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
-                while (requestQueue.size() != 0) {
-                    RPCRequest request = requestQueue.get(0);
-                    requestQueue.remove(0);
+                for (int a = 0; a < requestQueue.size(); a++) {
+                    RPCRequest request = requestQueue.get(a);
+                    if ((request.flags & RPCRequest.RPCRequestClassWithoutLogin) != 0) {
+                        continue;
+                    }
+                    requestQueue.remove(a);
                     if (request.completionBlock != null) {
                         TLRPC.TL_error implicitError = new TLRPC.TL_error();
                         implicitError.code = -1000;
                         implicitError.text = "";
                         request.completionBlock.run(null, implicitError);
                     }
+                    a--;
                 }
-                while (runningRequests.size() != 0) {
-                    RPCRequest request = runningRequests.get(0);
-                    runningRequests.remove(0);
+                for (int a = 0; a < runningRequests.size(); a++) {
+                    RPCRequest request = runningRequests.get(a);
+                    if ((request.flags & RPCRequest.RPCRequestClassWithoutLogin) != 0) {
+                        continue;
+                    }
+                    runningRequests.remove(a);
                     if (request.completionBlock != null) {
                         TLRPC.TL_error implicitError = new TLRPC.TL_error();
                         implicitError.code = -1000;
                         implicitError.text = "";
                         request.completionBlock.run(null, implicitError);
                     }
+                    a--;
                 }
                 pingIdToDate.clear();
                 quickAckIdToRequestIds.clear();
@@ -2140,6 +2159,15 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                 } else {
                                     if (resultContainer.result instanceof TLRPC.updates_Difference) {
                                         pushMessagesReceived = true;
+                                        AndroidUtilities.runOnUIThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                if (wakeLock.isHeld()) {
+                                                    FileLog.e("tmessages", "release wakelock");
+                                                    wakeLock.release();
+                                                }
+                                            }
+                                        });
                                     }
                                     if (request.rawRequest instanceof TLRPC.TL_auth_checkPassword) {
                                         UserConfig.setWaitingForPasswordEnter(false);
@@ -2337,9 +2365,25 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 if (paused) {
                     pushMessagesReceived = false;
                 }
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        FileLog.e("tmessages", "acquire wakelock");
+                        wakeLock.acquire(20000);
+                    }
+                });
                 resumeNetworkInternal();
             } else {
                 pushMessagesReceived = true;
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (wakeLock.isHeld()) {
+                            FileLog.e("tmessages", "release wakelock");
+                            wakeLock.release();
+                        }
+                    }
+                });
                 MessagesController.getInstance().processUpdates((TLRPC.Updates) message, false);
             }
         } else {
@@ -2444,7 +2488,25 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 }
             });
         } else if ((connection.transportRequestClass & RPCRequest.RPCRequestClassPush) != 0) {
-            FileLog.e("tmessages", "call connection closed");
+            FileLog.e("tmessages", "push connection closed");
+            if (BuildVars.DEBUG_VERSION) {
+                try {
+                    ConnectivityManager cm = (ConnectivityManager)ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+                    NetworkInfo[] networkInfos = cm.getAllNetworkInfo();
+                    for (int a = 0; a < 2; a++) {
+                        if (a >= networkInfos.length) {
+                            break;
+                        }
+                        NetworkInfo info = networkInfos[a];
+                        FileLog.e("tmessages", "Network: " + info.getTypeName() + " status: " + info.getState() + " info: " + info.getExtraInfo() + " object: " + info.getDetailedState() + " other: " + info);
+                    }
+                    if (networkInfos.length == 0) {
+                        FileLog.e("tmessages", "no network available");
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", "NETWORK STATE GET ERROR", e);
+                }
+            }
             sendingPushPing = false;
             lastPushPingTime = System.currentTimeMillis() - 60000 * 3 + 4000;
         }
@@ -2456,7 +2518,10 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         if (datacenter.authKey != null) {
             if ((connection.transportRequestClass & RPCRequest.RPCRequestClassPush) != 0) {
                 sendingPushPing = false;
-                lastPushPingTime = System.currentTimeMillis() - 60000 * 3 + 4000;
+                //lastPushPingTime = System.currentTimeMillis() - 60000 * 3 + 4000; //TODO check this
+                //FileLog.e("tmessages", "schedule push ping in 4 seconds");
+                lastPushPingTime = System.currentTimeMillis();
+                generatePing(datacenter, true);
             } else {
                 if (paused && lastPauseTime != 0) {
                     lastPauseTime = System.currentTimeMillis();
@@ -2541,6 +2606,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         } else {
             if (datacenter.authKeyId == 0 || keyId != datacenter.authKeyId) {
                 FileLog.e("tmessages", "Error: invalid auth key id " + connection);
+                datacenter.switchTo443Port();
                 connection.suspendConnection(true);
                 connection.connect();
                 return;
@@ -2581,6 +2647,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
             if (!Utilities.arraysEquals(messageKey, 0, realMessageKeyFull, realMessageKeyFull.length - 16)) {
                 FileLog.e("tmessages", "***** Error: invalid message key");
+                datacenter.switchTo443Port();
                 connection.suspendConnection(true);
                 connection.connect();
                 return;
