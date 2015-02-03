@@ -205,7 +205,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                         bingImage.height = original.getInt("height");
                         bingImage.size = original.optInt("size");
                         if(bingImage.size == 0){
-                            bingImage.size = 220000;
+                            bingImage.size = data.size;
                         }
                         bingImage.imageUrl = original.getString("url");
                         bingImage.thumbUrl = thumb.getString("url");
