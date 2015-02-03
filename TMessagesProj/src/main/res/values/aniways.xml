@@ -35,7 +35,7 @@
     <integer name="aniways_animatedGifInSuggestionPopupSize">60</integer>
 
     <integer name="aniways_bigIconSize">120</integer>
-    <integer name="aniways_preInstalledEmojiSize">120</integer>
+    <integer name="aniways_preInstalledEmojiSize">160</integer>
     <integer name="aniways_preInstalledIconSize">160</integer>
     <integer name="aniways_preInstalledBigIconSize">120</integer>
     <integer name="aniways_preInstalledBannerSize">640</integer>
