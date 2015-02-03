@@ -14,6 +14,7 @@ import android.content.Context;
 import android.content.Intent;
 
 import com.aniways.Aniways;
+import com.aniways.Log;
 
 import org.json.JSONObject;
 import org.telegram.messenger.ConnectionsManager;
@@ -27,6 +28,7 @@ public class GcmBroadcastReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(final Context context, final Intent intent) {
         FileLog.d("tmessages", "GCM received intent: " + intent);
+        Log.i("AniwaysGcmBroadcastReceiver", "Received GCM intent: " + intent);
 
         if (intent.getAction().equals("com.google.android.c2dm.intent.RECEIVE")) {
             AndroidUtilities.runOnUIThread(new Runnable() {
