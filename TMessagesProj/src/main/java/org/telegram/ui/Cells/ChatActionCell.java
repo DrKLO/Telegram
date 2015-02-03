@@ -25,7 +25,7 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ImageReceiver;
 import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
-import org.telegram.android.PhotoObject;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
@@ -105,13 +105,9 @@ public class ChatActionCell extends BaseCell {
             if (currentMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
                 imageReceiver.setImage(currentMessageObject.messageOwner.action.newUserPhoto.photo_small, "50_50", avatarDrawable, false);
             } else {
-                PhotoObject photo = PhotoObject.getClosestImageWithSize(currentMessageObject.photoThumbs, AndroidUtilities.dp(64));
+                TLRPC.PhotoSize photo = FileLoader.getClosestPhotoSizeWithSize(currentMessageObject.photoThumbs, AndroidUtilities.dp(64));
                 if (photo != null) {
-                    if (photo.image != null) {
-                        imageReceiver.setImageBitmap(photo.image);
-                    } else {
-                        imageReceiver.setImage(photo.photoOwner.location, "50_50", avatarDrawable, false);
-                    }
+                    imageReceiver.setImage(photo.location, "50_50", avatarDrawable, false);
                 } else {
                     imageReceiver.setImageBitmap(avatarDrawable);
                 }

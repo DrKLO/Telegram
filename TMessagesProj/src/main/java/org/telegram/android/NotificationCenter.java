@@ -13,69 +13,81 @@ import java.util.HashMap;
 
 public class NotificationCenter {
 
-    public static final int didReceivedNewMessages = 1;
-    public static final int updateInterfaces = 3;
-    public static final int dialogsNeedReload = 4;
-    public static final int closeChats = 5;
-    public static final int messagesDeleted = 6;
-    public static final int messagesRead = 7;
-    public static final int messagesDidLoaded = 8;
-    public static final int messageReceivedByAck = 9;
-    public static final int messageReceivedByServer = 10;
-    public static final int messageSendError = 11;
-    public static final int contactsDidLoaded = 13;
-    public static final int chatDidCreated = 15;
-    public static final int chatDidFailCreate = 16;
-    public static final int chatInfoDidLoaded = 17;
-    public static final int mediaDidLoaded = 18;
-    public static final int mediaCountDidLoaded = 20;
-    public static final int encryptedChatUpdated = 21;
-    public static final int messagesReadedEncrypted = 22;
-    public static final int encryptedChatCreated = 23;
-    public static final int userPhotosLoaded = 24;
-    public static final int removeAllMessagesFromDialog = 25;
-    public static final int notificationsSettingsUpdated = 26;
-    public static final int pushMessagesUpdated = 27;
-    public static final int blockedUsersDidLoaded = 28;
-    public static final int openedChatChanged = 29;
-    public static final int hideEmojiKeyboard = 30;
-    public static final int stopEncodingService = 31;
-    public static final int didCreatedNewDeleteTask = 32;
-    public static final int mainUserInfoChanged = 33;
-    public static final int privacyRulesUpdated = 34;
+    private static int totalEvents = 1;
 
-    public static final int wallpapersDidLoaded = 171;
-    public static final int closeOtherAppActivities = 702;
-    public static final int didUpdatedConnectionState = 703;
-    public static final int didReceiveSmsCode = 998;
-    public static final int emojiDidLoaded = 999;
-    public static final int appDidLogout = 1234;
+    public static final int didReceivedNewMessages = totalEvents++;
+    public static final int updateInterfaces = totalEvents++;
+    public static final int dialogsNeedReload = totalEvents++;
+    public static final int closeChats = totalEvents++;
+    public static final int messagesDeleted = totalEvents++;
+    public static final int messagesRead = totalEvents++;
+    public static final int messagesDidLoaded = totalEvents++;
+    public static final int messageReceivedByAck = totalEvents++;
+    public static final int messageReceivedByServer = totalEvents++;
+    public static final int messageSendError = totalEvents++;
+    public static final int contactsDidLoaded = totalEvents++;
+    public static final int chatDidCreated = totalEvents++;
+    public static final int chatDidFailCreate = totalEvents++;
+    public static final int chatInfoDidLoaded = totalEvents++;
+    public static final int mediaDidLoaded = totalEvents++;
+    public static final int mediaCountDidLoaded = totalEvents++;
+    public static final int encryptedChatUpdated = totalEvents++;
+    public static final int messagesReadedEncrypted = totalEvents++;
+    public static final int encryptedChatCreated = totalEvents++;
+    public static final int userPhotosLoaded = totalEvents++;
+    public static final int removeAllMessagesFromDialog = totalEvents++;
+    public static final int notificationsSettingsUpdated = totalEvents++;
+    public static final int pushMessagesUpdated = totalEvents++;
+    public static final int blockedUsersDidLoaded = totalEvents++;
+    public static final int openedChatChanged = totalEvents++;
+    public static final int hideEmojiKeyboard = totalEvents++;
+    public static final int stopEncodingService = totalEvents++;
+    public static final int didCreatedNewDeleteTask = totalEvents++;
+    public static final int mainUserInfoChanged = totalEvents++;
+    public static final int privacyRulesUpdated = totalEvents++;
+    public static final int updateMessageMedia = totalEvents++;
+    public static final int recentImagesDidLoaded = totalEvents++;
+    public static final int replaceMessagesObjects = totalEvents++;
 
-    public static final int FileDidUpload = 10000;
-    public static final int FileDidFailUpload = 10001;
-    public static final int FileUploadProgressChanged = 10002;
-    public static final int FileLoadProgressChanged = 10003;
-    public static final int FileDidLoaded = 10004;
-    public static final int FileDidFailedLoad = 10005;
-    public static final int FilePreparingStarted = 10006;
-    public static final int FileNewChunkAvailable = 10007;
-    public static final int FilePreparingFailed = 10008;
+    public static final int httpFileDidLoaded = totalEvents++;
+    public static final int httpFileDidFailedLoad = totalEvents++;
 
-    public final static int audioProgressDidChanged = 50001;
-    public final static int audioDidReset = 50002;
-    public final static int recordProgressChanged = 50003;
-    public final static int recordStarted = 50004;
-    public final static int recordStartError = 50005;
-    public final static int recordStopped = 50006;
-    public final static int screenshotTook = 50007;
-    public final static int albumsDidLoaded = 50008;
-    public final static int audioDidSent = 50009;
-    public final static int audioDidStarted = 50010;
+    public static final int messageThumbGenerated = totalEvents++;
 
-    final private HashMap<Integer, ArrayList<Object>> observers = new HashMap<Integer, ArrayList<Object>>();
+    public static final int wallpapersDidLoaded = totalEvents++;
+    public static final int closeOtherAppActivities = totalEvents++;
+    public static final int didUpdatedConnectionState = totalEvents++;
+    public static final int didReceiveSmsCode = totalEvents++;
+    public static final int emojiDidLoaded = totalEvents++;
+    public static final int appDidLogout = totalEvents++;
+    public static final int needPasswordEnter = totalEvents++;
 
-    final private HashMap<Integer, Object> removeAfterBroadcast = new HashMap<Integer, Object>();
-    final private HashMap<Integer, Object> addAfterBroadcast = new HashMap<Integer, Object>();
+    public static final int FileDidUpload = totalEvents++;
+    public static final int FileDidFailUpload = totalEvents++;
+    public static final int FileUploadProgressChanged = totalEvents++;
+    public static final int FileLoadProgressChanged = totalEvents++;
+    public static final int FileDidLoaded = totalEvents++;
+    public static final int FileDidFailedLoad = totalEvents++;
+    public static final int FilePreparingStarted = totalEvents++;
+    public static final int FileNewChunkAvailable = totalEvents++;
+    public static final int FilePreparingFailed = totalEvents++;
+
+    public static final int audioProgressDidChanged = totalEvents++;
+    public static final int audioDidReset = totalEvents++;
+    public static final int recordProgressChanged = totalEvents++;
+    public static final int recordStarted = totalEvents++;
+    public static final int recordStartError = totalEvents++;
+    public static final int recordStopped = totalEvents++;
+    public static final int screenshotTook = totalEvents++;
+    public static final int albumsDidLoaded = totalEvents++;
+    public static final int audioDidSent = totalEvents++;
+    public static final int audioDidStarted = totalEvents++;
+    public static final int audioRouteChanged = totalEvents++;
+
+    final private HashMap<Integer, ArrayList<Object>> observers = new HashMap<>();
+
+    final private HashMap<Integer, Object> removeAfterBroadcast = new HashMap<>();
+    final private HashMap<Integer, Object> addAfterBroadcast = new HashMap<>();
 
     private int broadcasting = 0;
 
@@ -132,7 +144,7 @@ public class NotificationCenter {
             }
             ArrayList<Object> objects = observers.get(id);
             if (objects == null) {
-                observers.put(id, (objects = new ArrayList<Object>()));
+                observers.put(id, (objects = new ArrayList<>()));
             }
             if (objects.contains(observer)) {
                 return;

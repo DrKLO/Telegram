@@ -18,7 +18,7 @@ import java.util.ArrayList;
 
 public class BaseContactsSearchAdapter extends BaseFragmentAdapter {
 
-    protected ArrayList<TLRPC.User> globalSearch = new ArrayList<TLRPC.User>();
+    protected ArrayList<TLRPC.User> globalSearch = new ArrayList<>();
     private long reqId = 0;
     private int lastReqId;
     protected String lastFoundUsername = null;

@@ -16,7 +16,6 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Handler;
-import android.view.ActionMode;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -69,8 +68,10 @@ public class ActionBarLayout extends FrameLayout {
                         continue;
                     }
                     if (view instanceof ActionBar && view.getVisibility() == VISIBLE) {
-                        actionBarHeight = view.getMeasuredHeight();
-                        wasActionBar = true;
+                        if (((ActionBar) view).getCastShadows()) {
+                            actionBarHeight = view.getMeasuredHeight();
+                            wasActionBar = true;
+                        }
                         break;
                     }
                 }
@@ -598,7 +599,7 @@ public class ActionBarLayout extends FrameLayout {
             if (useAlphaAnimations && fragmentsStack.size() == 1) {
                 presentFragmentInternalRemoveOld(removeLast, currentFragment);
 
-                ArrayList<Object> animators = new ArrayList<Object>();
+                ArrayList<Object> animators = new ArrayList<>();
                 animators.add(ObjectAnimatorProxy.ofFloat(this, "alpha", 0.0f, 1.0f));
                 if (backgroundView != null) {
                     backgroundView.setVisibility(VISIBLE);
@@ -612,6 +613,11 @@ public class ActionBarLayout extends FrameLayout {
                 currentAnimation.addListener(new AnimatorListenerAdapterProxy() {
                     @Override
                     public void onAnimationEnd(Object animation) {
+                        onAnimationEndCheck(false);
+                    }
+
+                    @Override
+                    public void onAnimationCancel(Object animation) {
                         onAnimationEndCheck(false);
                     }
                 });
@@ -636,6 +642,11 @@ public class ActionBarLayout extends FrameLayout {
                 currentAnimation.addListener(new AnimatorListenerAdapterProxy() {
                     @Override
                     public void onAnimationEnd(Object animation) {
+                        onAnimationEndCheck(false);
+                    }
+
+                    @Override
+                    public void onAnimationCancel(Object animation) {
                         onAnimationEndCheck(false);
                     }
                 });
@@ -747,6 +758,11 @@ public class ActionBarLayout extends FrameLayout {
                     public void onAnimationEnd(Object animation) {
                         onAnimationEndCheck(false);
                     }
+
+                    @Override
+                    public void onAnimationCancel(Object animation) {
+                        onAnimationEndCheck(false);
+                    }
                 });
                 currentAnimation.start();
             }
@@ -769,7 +785,7 @@ public class ActionBarLayout extends FrameLayout {
                     }
                 };
 
-                ArrayList<Object> animators = new ArrayList<Object>();
+                ArrayList<Object> animators = new ArrayList<>();
                 animators.add(ObjectAnimatorProxy.ofFloat(this, "alpha", 1.0f, 0.0f));
                 if (backgroundView != null) {
                     animators.add(ObjectAnimatorProxy.ofFloat(backgroundView, "alpha", 1.0f, 0.0f));
@@ -782,6 +798,11 @@ public class ActionBarLayout extends FrameLayout {
                 currentAnimation.addListener(new AnimatorListenerAdapterProxy() {
                     @Override
                     public void onAnimationEnd(Object animation) {
+                        onAnimationEndCheck(false);
+                    }
+
+                    @Override
+                    public void onAnimationCancel(Object animation) {
                         onAnimationEndCheck(false);
                     }
                 });
@@ -857,14 +878,14 @@ public class ActionBarLayout extends FrameLayout {
         return super.onKeyUp(keyCode, event);
     }
 
-    public void onActionModeStarted(ActionMode mode) {
+    public void onActionModeStarted(Object mode) {
         if (currentActionBar != null) {
             currentActionBar.setVisibility(GONE);
         }
         inActionMode = true;
     }
 
-    public void onActionModeFinished(ActionMode mode) {
+    public void onActionModeFinished(Object mode) {
         if (currentActionBar != null) {
             currentActionBar.setVisibility(VISIBLE);
         }

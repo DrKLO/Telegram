@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * Static library version of {@link android.util.LruCache}. Used to write apps
@@ -41,8 +40,8 @@ public class LruCache {
             throw new IllegalArgumentException("maxSize <= 0");
         }
         this.maxSize = maxSize;
-        this.map = new LinkedHashMap<String, BitmapDrawable>(0, 0.75f, true);
-        this.mapFilters = new LinkedHashMap<String, ArrayList<String>>();
+        this.map = new LinkedHashMap<>(0, 0.75f, true);
+        this.mapFilters = new LinkedHashMap<>();
     }
 
     /**
@@ -69,7 +68,7 @@ public class LruCache {
     public ArrayList<String> getFilterKeys(String key) {
         ArrayList<String> arr = mapFilters.get(key);
         if (arr != null) {
-            return new ArrayList<String>(arr);
+            return new ArrayList<>(arr);
         }
         return null;
     }
@@ -98,14 +97,17 @@ public class LruCache {
         if (args.length > 1) {
             ArrayList<String> arr = mapFilters.get(args[0]);
             if (arr == null) {
-                arr = new ArrayList<String>();
+                arr = new ArrayList<>();
                 mapFilters.put(args[0], arr);
             }
-            arr.add(args[1]);
+            if (!arr.contains(args[1])) {
+                arr.add(args[1]);
+            }
         }
 
         if (previous != null) {
             entryRemoved(false, key, previous, value);
+            ImageLoader.getInstance().callGC();
         }
 
         trimToSize(maxSize, key);
@@ -137,15 +139,16 @@ public class LruCache {
                 if (args.length > 1) {
                     ArrayList<String> arr = mapFilters.get(args[0]);
                     if (arr != null) {
-                        arr.remove(key);
+                        arr.remove(args[1]);
                         if (arr.isEmpty()) {
-                            mapFilters.remove(args[1]);
+                            mapFilters.remove(args[0]);
                         }
                     }
                 }
 
                 entryRemoved(true, key, value, null);
             }
+            ImageLoader.getInstance().callGC();
         }
     }
 
@@ -172,14 +175,15 @@ public class LruCache {
             if (args.length > 1) {
                 ArrayList<String> arr = mapFilters.get(args[0]);
                 if (arr != null) {
-                    arr.remove(key);
+                    arr.remove(args[1]);
                     if (arr.isEmpty()) {
-                        mapFilters.remove(args[1]);
+                        mapFilters.remove(args[0]);
                     }
                 }
             }
 
             entryRemoved(false, key, previous, null);
+            ImageLoader.getInstance().callGC();
         }
 
         return previous;

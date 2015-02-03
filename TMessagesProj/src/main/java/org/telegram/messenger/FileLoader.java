@@ -23,7 +23,7 @@ public class FileLoader {
         public abstract void fileUploadProgressChanged(String location, float progress, boolean isEncrypted);
         public abstract void fileDidUploaded(String location, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile);
         public abstract void fileDidFailedUpload(String location, boolean isEncrypted);
-        public abstract void fileDidLoaded(String location, File finalFile, File tempFile);
+        public abstract void fileDidLoaded(String location, File finalFile, int type);
         public abstract void fileDidFailedLoad(String location, int state);
         public abstract void fileLoadProgressChanged(String location, float progress);
     }
@@ -37,16 +37,15 @@ public class FileLoader {
     private HashMap<Integer, File> mediaDirs = null;
     private volatile DispatchQueue fileLoaderQueue = new DispatchQueue("fileUploadQueue");
 
-    private LinkedList<FileUploadOperation> uploadOperationQueue = new LinkedList<FileUploadOperation>();
-    private LinkedList<FileUploadOperation> uploadSmallOperationQueue = new LinkedList<FileUploadOperation>();
-    private LinkedList<FileLoadOperation> loadOperationQueue = new LinkedList<FileLoadOperation>();
-    private LinkedList<FileLoadOperation> audioLoadOperationQueue = new LinkedList<FileLoadOperation>();
-    private LinkedList<FileLoadOperation> photoLoadOperationQueue = new LinkedList<FileLoadOperation>();
-    private ConcurrentHashMap<String, FileUploadOperation> uploadOperationPaths = new ConcurrentHashMap<String, FileUploadOperation>();
-    private ConcurrentHashMap<String, FileUploadOperation> uploadOperationPathsEnc = new ConcurrentHashMap<String, FileUploadOperation>();
-    private ConcurrentHashMap<String, FileLoadOperation> loadOperationPaths = new ConcurrentHashMap<String, FileLoadOperation>();
-    private ConcurrentHashMap<String, Float> fileProgresses = new ConcurrentHashMap<String, Float>();
-    private HashMap<String, Long> uploadSizes = new HashMap<String, Long>();
+    private LinkedList<FileUploadOperation> uploadOperationQueue = new LinkedList<>();
+    private LinkedList<FileUploadOperation> uploadSmallOperationQueue = new LinkedList<>();
+    private LinkedList<FileLoadOperation> loadOperationQueue = new LinkedList<>();
+    private LinkedList<FileLoadOperation> audioLoadOperationQueue = new LinkedList<>();
+    private LinkedList<FileLoadOperation> photoLoadOperationQueue = new LinkedList<>();
+    private ConcurrentHashMap<String, FileUploadOperation> uploadOperationPaths = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, FileUploadOperation> uploadOperationPathsEnc = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, FileLoadOperation> loadOperationPaths = new ConcurrentHashMap<>();
+    private HashMap<String, Long> uploadSizes = new HashMap<>();
 
     private FileLoaderDelegate delegate = null;
 
@@ -107,10 +106,6 @@ public class FileLoader {
                 }
             }
         });
-    }
-
-    public Float getFileProgress(String location) {
-        return fileProgresses.get(location);
     }
 
     public void checkUploadNewDataAvailable(final String location, final boolean encrypted, final long finalSize) {
@@ -196,12 +191,6 @@ public class FileLoader {
                                 if (delegate != null) {
                                     delegate.fileDidUploaded(location, inputFile, inputEncryptedFile);
                                 }
-                                Utilities.stageQueue.postRunnable(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        fileProgresses.remove(location);
-                                    }
-                                });
                             }
                         });
                     }
@@ -219,12 +208,6 @@ public class FileLoader {
                                 if (delegate != null) {
                                     delegate.fileDidFailedUpload(location, encrypted);
                                 }
-                                Utilities.stageQueue.postRunnable(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        fileProgresses.remove(location);
-                                    }
-                                });
                                 if (small) {
                                     currentUploadSmallOperationsCount--;
                                     if (currentUploadSmallOperationsCount < 1) {
@@ -250,9 +233,6 @@ public class FileLoader {
 
                     @Override
                     public void didChangedUploadProgress(FileUploadOperation operation, final float progress) {
-                        if (operation.state != 2) {
-                            fileProgresses.put(location, progress);
-                        }
                         if (delegate != null) {
                             delegate.fileUploadProgressChanged(location, progress, encrypted);
                         }
@@ -359,8 +339,8 @@ public class FileLoader {
         loadFile(null, null, null, photo.location, photo.size, false, cacheOnly || (photo != null && photo.size == 0 || photo.location.key != null));
     }
 
-    public void loadFile(TLRPC.Document document, boolean force) {
-        loadFile(null, document, null, null, 0, force, document != null && document.key != null);
+    public void loadFile(TLRPC.Document document, boolean force, boolean cacheOnly) {
+        loadFile(null, document, null, null, 0, force, cacheOnly || document != null && document.key != null);
     }
 
     public void loadFile(TLRPC.Audio audio, boolean force) {
@@ -415,54 +395,50 @@ public class FileLoader {
 
                 File tempDir = getDirectory(MEDIA_DIR_CACHE);
                 File storeDir = tempDir;
+                int type = MEDIA_DIR_CACHE;
 
                 if (video != null) {
                     operation = new FileLoadOperation(video);
-                    if (!cacheOnly) {
-                        storeDir = getDirectory(MEDIA_DIR_VIDEO);
-                    }
+                    type = MEDIA_DIR_VIDEO;
                 } else if (location != null) {
                     operation = new FileLoadOperation(location, locationSize);
-                    if (!cacheOnly) {
-                        storeDir = getDirectory(MEDIA_DIR_IMAGE);
-                    }
+                    type = MEDIA_DIR_IMAGE;
                 } else if (document != null) {
                     operation = new FileLoadOperation(document);
-                    if (!cacheOnly) {
-                        storeDir = getDirectory(MEDIA_DIR_DOCUMENT);
-                    }
+                    type = MEDIA_DIR_DOCUMENT;
                 } else if (audio != null) {
                     operation = new FileLoadOperation(audio);
-                    if (!cacheOnly) {
-                        storeDir = getDirectory(MEDIA_DIR_AUDIO);
-                    }
+                    type = MEDIA_DIR_AUDIO;
+                }
+                if (!cacheOnly) {
+                    storeDir = getDirectory(type);
                 }
                 operation.setPaths(storeDir, tempDir);
 
-                final String arg1 = fileName;
+                final String finalFileName = fileName;
+                final int finalType = type;
                 loadOperationPaths.put(fileName, operation);
                 operation.setDelegate(new FileLoadOperation.FileLoadOperationDelegate() {
                     @Override
-                    public void didFinishLoadingFile(FileLoadOperation operation, File finalFile, File tempFile) {
+                    public void didFinishLoadingFile(FileLoadOperation operation, File finalFile) {
                         if (delegate != null) {
-                            delegate.fileDidLoaded(arg1, finalFile, tempFile);
+                            delegate.fileDidLoaded(finalFileName, finalFile, finalType);
                         }
-                        checkDownloadQueue(audio, location, arg1);
+                        checkDownloadQueue(audio, location, finalFileName);
                     }
 
                     @Override
                     public void didFailedLoadingFile(FileLoadOperation operation, int canceled) {
-                        checkDownloadQueue(audio, location, arg1);
+                        checkDownloadQueue(audio, location, finalFileName);
                         if (delegate != null) {
-                            delegate.fileDidFailedLoad(arg1, canceled);
+                            delegate.fileDidFailedLoad(finalFileName, canceled);
                         }
                     }
 
                     @Override
                     public void didChangedLoadProgress(FileLoadOperation operation, float progress) {
-                        fileProgresses.put(arg1, progress);
                         if (delegate != null) {
-                            delegate.fileLoadProgressChanged(arg1, progress);
+                            delegate.fileLoadProgressChanged(finalFileName, progress);
                         }
                     }
                 });
@@ -553,7 +529,6 @@ public class FileLoader {
                 }
             }
         });
-        fileProgresses.remove(arg1);
     }
 
     public void setDelegate(FileLoaderDelegate delegate) {
@@ -663,12 +638,23 @@ public class FileLoader {
                 continue;
             }
             int currentSide = obj.w >= obj.h ? obj.w : obj.h;
-            if (closestObject == null || closestObject instanceof TLRPC.TL_photoCachedSize || currentSide <= side && lastSide < currentSide) {
+            if (closestObject == null || obj instanceof TLRPC.TL_photoCachedSize || currentSide <= side && lastSide < currentSide) {
                 closestObject = obj;
                 lastSide = currentSide;
             }
         }
         return closestObject;
+    }
+
+    public static String getDocumentFileName(TLRPC.Document document) {
+        if (document != null) {
+            for (TLRPC.DocumentAttribute documentAttribute : document.attributes) {
+                if (documentAttribute instanceof TLRPC.TL_documentAttributeFilename) {
+                    return documentAttribute.file_name;
+                }
+            }
+        }
+        return "";
     }
 
     public static String getAttachFileName(TLObject attach) {
@@ -677,7 +663,7 @@ public class FileLoader {
             return video.dc_id + "_" + video.id + ".mp4";
         } else if (attach instanceof TLRPC.Document) {
             TLRPC.Document document = (TLRPC.Document)attach;
-            String ext = document.file_name;
+            String ext = getDocumentFileName(document);
             int idx = -1;
             if (ext == null || (idx = ext.lastIndexOf(".")) == -1) {
                 ext = "";
@@ -694,13 +680,13 @@ public class FileLoader {
             if (photo.location == null) {
                 return "";
             }
-            return photo.location.volume_id + "_" + photo.location.local_id + ".jpg";
+            return photo.location.volume_id + "_" + photo.location.local_id + "." + (photo.location.ext != null ? photo.location.ext : "jpg");
         } else if (attach instanceof TLRPC.Audio) {
             TLRPC.Audio audio = (TLRPC.Audio)attach;
             return audio.dc_id + "_" + audio.id + ".ogg";
         } else if (attach instanceof TLRPC.FileLocation) {
             TLRPC.FileLocation location = (TLRPC.FileLocation)attach;
-            return location.volume_id + "_" + location.local_id + ".jpg";
+            return location.volume_id + "_" + location.local_id + "." + (location.ext != null ? location.ext : "jpg");
         }
         return "";
     }

@@ -14,7 +14,6 @@ import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import org.telegram.android.AndroidUtilities;
@@ -78,11 +77,10 @@ public class ActionBarMenu extends LinearLayout {
     public ActionBarMenuItem addItem(int id, int icon, int backgroundResource, Drawable drawable, int width) {
         ActionBarMenuItem menuItem = new ActionBarMenuItem(getContext(), this, backgroundResource);
         menuItem.setTag(id);
-        menuItem.setScaleType(ImageView.ScaleType.CENTER);
         if (drawable != null) {
-            menuItem.setImageDrawable(drawable);
+            menuItem.iconView.setImageDrawable(drawable);
         } else {
-            menuItem.setImageResource(icon);
+            menuItem.iconView.setImageResource(icon);
         }
         addView(menuItem);
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)menuItem.getLayoutParams();

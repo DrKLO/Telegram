@@ -32,7 +32,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.ApplicationLoader;
 
 public class Emoji {
-	private static HashMap<Long, DrawableInfo> rects = new HashMap<Long, DrawableInfo>();
+	private static HashMap<Long, DrawableInfo> rects = new HashMap<>();
 	private static int drawImgSize, bigImgSize;
 	private static boolean inited = false;
 	private static Paint placeholderPaint;
@@ -422,7 +422,7 @@ public class Emoji {
                     if (d != null) {
                         EmojiSpan span = new EmojiSpan(d, DynamicDrawableSpan.ALIGN_BOTTOM, size, fontMetrics);
                         emojiCount++;
-                        if (c>= 0xDDE6 && c <= 0xDDFA) {
+                        if (c >= 0xDDE6 && c <= 0xDDFA) {
                             s.setSpan(span, i - 3, i + 1, 0);
                         } else {
                             s.setSpan(span, i - 1, i + 1, 0);

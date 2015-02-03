@@ -51,7 +51,7 @@ public class ContactsController {
     public boolean contactsLoaded = false;
     private boolean contactsBookLoaded = false;
     private String lastContactsVersions = "";
-    private ArrayList<Integer> delayedContactsUpdate = new ArrayList<Integer>();
+    private ArrayList<Integer> delayedContactsUpdate = new ArrayList<>();
     private String inviteText;
     private boolean updatingInviteText = false;
 
@@ -62,10 +62,10 @@ public class ContactsController {
 
     public static class Contact {
         public int id;
-        public ArrayList<String> phones = new ArrayList<String>();
-        public ArrayList<String> phoneTypes = new ArrayList<String>();
-        public ArrayList<String> shortPhones = new ArrayList<String>();
-        public ArrayList<Integer> phoneDeleted = new ArrayList<Integer>();
+        public ArrayList<String> phones = new ArrayList<>();
+        public ArrayList<String> phoneTypes = new ArrayList<>();
+        public ArrayList<String> shortPhones = new ArrayList<>();
+        public ArrayList<Integer> phoneDeleted = new ArrayList<>();
         public String first_name;
         public String last_name;
     }
@@ -84,16 +84,16 @@ public class ContactsController {
         ContactsContract.CommonDataKinds.StructuredName.MIDDLE_NAME
     };
 
-    public HashMap<Integer, Contact> contactsBook = new HashMap<Integer, Contact>();
-    public HashMap<String, Contact> contactsBookSPhones = new HashMap<String, Contact>();
-    public ArrayList<Contact> phoneBookContacts = new ArrayList<Contact>();
+    public HashMap<Integer, Contact> contactsBook = new HashMap<>();
+    public HashMap<String, Contact> contactsBookSPhones = new HashMap<>();
+    public ArrayList<Contact> phoneBookContacts = new ArrayList<>();
 
-    public ArrayList<TLRPC.TL_contact> contacts = new ArrayList<TLRPC.TL_contact>();
-    public SparseArray<TLRPC.TL_contact> contactsDict = new SparseArray<TLRPC.TL_contact>();
-    public HashMap<String, ArrayList<TLRPC.TL_contact>> usersSectionsDict = new HashMap<String, ArrayList<TLRPC.TL_contact>>();
-    public ArrayList<String> sortedUsersSectionsArray = new ArrayList<String>();
+    public ArrayList<TLRPC.TL_contact> contacts = new ArrayList<>();
+    public SparseArray<TLRPC.TL_contact> contactsDict = new SparseArray<>();
+    public HashMap<String, ArrayList<TLRPC.TL_contact>> usersSectionsDict = new HashMap<>();
+    public ArrayList<String> sortedUsersSectionsArray = new ArrayList<>();
 
-    public HashMap<String, TLRPC.TL_contact> contactsByPhone = new HashMap<String, TLRPC.TL_contact>();
+    public HashMap<String, TLRPC.TL_contact> contactsByPhone = new HashMap<>();
 
     private static volatile ContactsController Instance = null;
     public static ContactsController getInstance() {
@@ -290,11 +290,11 @@ public class ContactsController {
     }
 
     private HashMap<Integer, Contact> readContactsFromPhoneBook() {
-        HashMap<Integer, Contact> contactsMap = new HashMap<Integer, Contact>();
+        HashMap<Integer, Contact> contactsMap = new HashMap<>();
         try {
             ContentResolver cr = ApplicationLoader.applicationContext.getContentResolver();
 
-            HashMap<String, Contact> shortContacts = new HashMap<String, Contact>();
+            HashMap<String, Contact> shortContacts = new HashMap<>();
             StringBuilder ids = new StringBuilder();
             Cursor pCur = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, projectionPhones, null, null, null);
             if (pCur != null) {
@@ -443,7 +443,7 @@ public class ContactsController {
     }
 
     public HashMap<Integer, Contact> getContactsCopy(HashMap<Integer, Contact> original) {
-        HashMap<Integer, Contact> ret = new HashMap<Integer, Contact>();
+        HashMap<Integer, Contact> ret = new HashMap<>();
         for (HashMap.Entry<Integer, Contact> entry : original.entrySet()) {
             Contact copyContact = new Contact();
             Contact originalContact = entry.getValue();
@@ -501,7 +501,7 @@ public class ContactsController {
                     }
                 }
 
-                HashMap<String, Contact> contactShortHashMap = new HashMap<String, Contact>();
+                HashMap<String, Contact> contactShortHashMap = new HashMap<>();
                 for (HashMap.Entry<Integer, Contact> entry : contactHashMap.entrySet()) {
                     Contact c = entry.getValue();
                     for (String sphone : c.shortPhones) {
@@ -939,7 +939,7 @@ public class ContactsController {
                         HashMap<String, TLRPC.TL_contact> contactsByPhonesDict = null;
 
                         if (!contactsBookLoaded) {
-                            contactsByPhonesDict = new HashMap<String, TLRPC.TL_contact>();
+                            contactsByPhonesDict = new HashMap<>();
                         }
 
                         final HashMap<String, TLRPC.TL_contact> contactsByPhonesDictFinal = contactsByPhonesDict;
@@ -968,7 +968,7 @@ public class ContactsController {
                             }
                             ArrayList<TLRPC.TL_contact> arr = sectionsDict.get(key);
                             if (arr == null) {
-                                arr = new ArrayList<TLRPC.TL_contact>();
+                                arr = new ArrayList<>();
                                 sectionsDict.put(key, arr);
                                 sortedSectionsArray.add(key);
                             }
