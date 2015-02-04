@@ -45,6 +45,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.android.NotificationCenter;
 
 import com.aniways.AniwaysTextView;
+import com.aniways.Log;
 import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessageObject;
@@ -521,9 +522,15 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 });
             }
 
-            AniwaysTextView messageText = (AniwaysTextView)view.findViewById(R.id.message_text);
-            messageText.setUseSmallIcons(true);
-            messageText.setIconsClickable(false);
+            TextView messageText = (TextView)view.findViewById(R.id.message_text);
+            if(messageText instanceof AniwaysTextView) {
+                AniwaysTextView aniwaysTextView = (AniwaysTextView)messageText;
+                aniwaysTextView.setUseSmallIcons(true);
+                aniwaysTextView.setIconsClickable(false);
+            }
+            else{
+                Log.w(true,"AniwaysPopupNotificationActivity","messageText is not AniwaysTextView");
+            }
             BackupImageView imageView = (BackupImageView) view.findViewById(R.id.message_image);
             imageView.imageReceiver.setAspectFit(true);
 
