@@ -758,7 +758,10 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
         if (messageLayout != null) {
             canvas.save();
             canvas.translate(messageLeft, messageTop);
-            messageLayout.draw(canvas);
+            try {
+                messageLayout.draw(canvas);
+            }
+            catch (IndexOutOfBoundsException ex){}
             canvas.restore();
         }
 
