@@ -31,6 +31,8 @@ import org.telegram.android.SendMessagesHelper;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.android.MediaController;
+
+import com.aniways.Utils;
 import com.aniways.anigram.messenger.R;
 import com.aniways.data.AniwaysPrivateConfig;
 
@@ -913,7 +915,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             photoImage.setPressed(isPressed() && isCheckPressed || !isCheckPressed && isPressed);
             photoImage.setVisible(!PhotoViewer.getInstance().isShowingImage(currentMessageObject), false);
             if (photoImage.currentImage instanceof pl.droidsonroids.gif.GifDrawable){
-                if(photoImage.currentImage.getCallback() != aniwaysGifCallback) {
+                if(!Utils.isAndroidVersionAtLeast(11) || photoImage.currentImage.getCallback() != aniwaysGifCallback) {
                     photoImage.currentImage.setCallback(aniwaysGifCallback);
                 }
             }
