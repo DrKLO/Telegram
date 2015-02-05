@@ -654,7 +654,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         }
         try {
             searching = true;
-            String url = String.format("https://api.giphy.com/v1/gifs/search?q=%s&offset=%d&limit=%d&api_key=141Wa2KDAfNfxu", URLEncoder.encode(query, "UTF-8"), offset, count);
+            String url = String.format(Locale.US, "https://api.giphy.com/v1/gifs/search?q=%s&offset=%d&limit=%d&api_key=141Wa2KDAfNfxu", URLEncoder.encode(query, "UTF-8"), offset, count);
             JsonObjectRequest jsonObjReq = new JsonObjectRequest(Request.Method.GET, url, null,
                     new Response.Listener<JSONObject>() {
                         @Override
