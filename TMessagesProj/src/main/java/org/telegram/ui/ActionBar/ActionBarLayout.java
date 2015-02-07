@@ -836,7 +836,7 @@ public class ActionBarLayout extends FrameLayout {
     public void removeAllFragments() {
         for (int a = 0; a < fragmentsStack.size(); a++) {
             removeFragmentFromStack(fragmentsStack.get(a));
-            a--;
+            //a--;
         }
     }
 
