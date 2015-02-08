@@ -81,6 +81,9 @@ public class FileLoader {
         try {
             if (!dir.isDirectory()) {
                 dir.mkdirs();
+            if (type == MEDIA_DIR_CACHE){
+            new File(dir, ".nomedia").createNewFile();
+            }
             }
         } catch (Exception e) {
             //don't promt
