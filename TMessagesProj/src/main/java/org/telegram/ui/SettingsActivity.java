@@ -985,6 +985,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
     private void updateUserData() {
         TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
+        if(user == null){
+            return;
+        }
         TLRPC.FileLocation photo = null;
         TLRPC.FileLocation photoBig = null;
         if (user.photo != null) {
