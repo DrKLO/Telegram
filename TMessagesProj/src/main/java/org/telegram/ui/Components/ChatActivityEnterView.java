@@ -60,6 +60,7 @@ import org.telegram.messenger.ApplicationLoader;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 import aniways.com.google.gson.JsonObject;
 
@@ -401,11 +402,16 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
     }
 
     private void sendMessage() {
-        if (processSendingText(Aniways.encodeMessage(messsageEditText.getText()))) {
-            messsageEditText.setText("");
-            lastTypingTimeSend = 0;
-            if (delegate != null) {
-                delegate.onMessageSend();
+        List<String> messages = Aniways.encodeMessage(messsageEditText.getText());
+        boolean firstProcessed = false;
+        for(String message : messages) {
+            if (processSendingText(message) && !firstProcessed) {
+                messsageEditText.setText("");
+                lastTypingTimeSend = 0;
+                if (delegate != null) {
+                    delegate.onMessageSend();
+                }
+                firstProcessed = true;
             }
         }
 
