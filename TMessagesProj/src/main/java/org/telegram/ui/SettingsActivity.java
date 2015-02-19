@@ -8,6 +8,8 @@
 
 package org.telegram.ui;
 
+import android.animation.ObjectAnimator;
+import android.animation.StateListAnimator;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -17,7 +19,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.Outline;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.Spannable;
@@ -30,6 +35,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
@@ -185,7 +191,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 user.photo.photo_small = smallSize.location;
                             }
                             MessagesStorage.getInstance().clearUserPhotos(user.id);
-                            ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+                            ArrayList<TLRPC.User> users = new ArrayList<>();
                             users.add(user);
                             MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);
                             AndroidUtilities.runOnUIThread(new Runnable() {
@@ -595,7 +601,21 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             frameLayout.addView(actionBar);
 
             writeButton = new ImageView(getParentActivity());
-            writeButton.setImageResource(R.drawable.floating_group_states);
+            writeButton.setBackgroundResource(R.drawable.floating_user_states);
+            writeButton.setImageResource(R.drawable.floating_camera);
+            writeButton.setScaleType(ImageView.ScaleType.CENTER);
+            if (Build.VERSION.SDK_INT >= 21) {
+                StateListAnimator animator = new StateListAnimator();
+                animator.addState(new int[] {android.R.attr.state_pressed}, ObjectAnimator.ofFloat(writeButton, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
+                animator.addState(new int[] {}, ObjectAnimator.ofFloat(writeButton, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
+                writeButton.setStateListAnimator(animator);
+                writeButton.setOutlineProvider(new ViewOutlineProvider() {
+                    @Override
+                    public void getOutline(View view, Outline outline) {
+                        outline.setOval(0, 0, AndroidUtilities.dp(56), AndroidUtilities.dp(56));
+                    }
+                });
+            }
             frameLayout.addView(writeButton);
             layoutParams = (FrameLayout.LayoutParams) writeButton.getLayoutParams();
             layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
@@ -713,6 +733,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
+    public Bitmap getThumbForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+        return null;
+    }
+
+    @Override
     public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) { }
 
     @Override
@@ -787,7 +812,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 } catch (Exception e) {
                                     FileLog.e("tmessages", e);
                                 }
-                                ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+                                ArrayList<TLRPC.User> users = new ArrayList<>();
                                 users.add(res.user);
                                 MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
                                 MessagesController.getInstance().putUser(res.user, false);
@@ -953,7 +978,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
     private void sendLogs() {
         try {
-            ArrayList<Uri> uris = new ArrayList<Uri>();
+            ArrayList<Uri> uris = new ArrayList<>();
             File sdCard = ApplicationLoader.applicationContext.getExternalFilesDir(null);
             File dir = new File (sdCard.getAbsolutePath() + "/logs");
             File[] files = dir.listFiles();

@@ -332,8 +332,8 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
     }
 
     private void checkPrivacy() {
-        currentPlus = new ArrayList<Integer>();
-        currentMinus = new ArrayList<Integer>();
+        currentPlus = new ArrayList<>();
+        currentMinus = new ArrayList<>();
         ArrayList<TLRPC.PrivacyRule> privacyRules = ContactsController.getInstance().getPrivacyRules();
         if (privacyRules.size() == 0) {
             currentType = 1;

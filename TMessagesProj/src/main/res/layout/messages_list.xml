@@ -83,7 +83,8 @@
     <ImageView
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
-        android:src="@drawable/floating_states"
+        android:background="@drawable/floating_states"
+        android:src="@drawable/floating_pencil"
         android:layout_gravity="bottom|right"
         android:layout_marginRight="14dp"
         android:layout_marginBottom="14dp"

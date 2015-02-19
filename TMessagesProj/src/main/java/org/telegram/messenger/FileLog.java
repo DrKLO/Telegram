@@ -160,6 +160,26 @@ public class FileLog {
         }
     }
 
+    public static void w(final String tag, final String message) {
+        if (!BuildVars.DEBUG_VERSION) {
+            return;
+        }
+        Log.w(tag, message);
+        if (getInstance().streamWriter != null) {
+            getInstance().logQueue.postRunnable(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " W/" + tag + ": " + message + "\n");
+                        getInstance().streamWriter.flush();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
+    }
+
     public static void cleanupLogs() {
         ArrayList<Uri> uris = new ArrayList<Uri>();
         File sdCard = ApplicationLoader.applicationContext.getExternalFilesDir(null);

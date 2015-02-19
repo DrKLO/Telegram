@@ -149,6 +149,7 @@
 
         <service android:name="org.telegram.android.NotificationsService" android:enabled="true"/>
         <service android:name="org.telegram.android.NotificationRepeat" android:exported="false"/>
+        <service android:name="org.telegram.android.NotificationDelay" android:exported="false"/>
         <service android:name="org.telegram.android.VideoEncodingService" android:enabled="true"/>
 
         <receiver android:name="org.telegram.android.AppStartReceiver" android:enabled="true">

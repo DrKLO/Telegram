@@ -8,11 +8,15 @@
 
 package org.telegram.ui;
 
+import android.animation.ObjectAnimator;
+import android.animation.StateListAnimator;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.Outline;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -23,6 +27,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
@@ -37,6 +42,7 @@ import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesStorage;
 import org.telegram.android.SecretChatHelper;
 import org.telegram.android.SendMessagesHelper;
+import org.telegram.android.query.SharedMediaQuery;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.TLRPC;
@@ -169,14 +175,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
             }
 
-
             NotificationCenter.getInstance().addObserver(this, NotificationCenter.chatInfoDidLoaded);
-            NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeChats);
 
-            sortedUsers = new ArrayList<Integer>();
+            sortedUsers = new ArrayList<>();
             updateOnlineCount();
             if (chat_id > 0) {
-                MessagesController.getInstance().getMediaCount(-chat_id, classGuid, true);
+                SharedMediaQuery.getMediaCount(-chat_id, SharedMediaQuery.MEDIA_PHOTOVIDEO, classGuid, true);
             }
 
             avatarUpdater = new AvatarUpdater();
@@ -195,6 +199,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.mediaCountDidLoaded);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeChats);
         updateRowsIds();
 
         return true;
@@ -205,6 +210,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         super.onFragmentDestroy();
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.mediaCountDidLoaded);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
         if (user_id != 0) {
             NotificationCenter.getInstance().removeObserver(this, NotificationCenter.contactsDidLoaded);
             NotificationCenter.getInstance().removeObserver(this, NotificationCenter.encryptedChatCreated);
@@ -213,7 +219,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             MessagesController.getInstance().cancelLoadFullUser(user_id);
         } else if (chat_id != 0) {
             NotificationCenter.getInstance().removeObserver(this, NotificationCenter.chatInfoDidLoaded);
-            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
             avatarUpdater.clear();
         }
     }
@@ -283,7 +288,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
-                                ArrayList<TLRPC.User> arrayList = new ArrayList<TLRPC.User>();
+                                ArrayList<TLRPC.User> arrayList = new ArrayList<>();
                                 arrayList.add(user);
                                 ContactsController.getInstance().deleteContact(arrayList);
                             }
@@ -307,7 +312,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             }
                         });
                         if (info != null) {
-                            HashMap<Integer, TLRPC.User> users = new HashMap<Integer, TLRPC.User>();
+                            HashMap<Integer, TLRPC.User> users = new HashMap<>();
                             for (TLRPC.TL_chatParticipant p : info.participants) {
                                 users.put(p.user_id, null);
                             }
@@ -546,21 +551,36 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 });
             }
             if (dialog_id != 0) {
-                MessagesController.getInstance().getMediaCount(dialog_id, classGuid, true);
+                SharedMediaQuery.getMediaCount(dialog_id, SharedMediaQuery.MEDIA_PHOTOVIDEO, classGuid, true);
             } else {
-                MessagesController.getInstance().getMediaCount(user_id, classGuid, true);
+                SharedMediaQuery.getMediaCount(user_id, SharedMediaQuery.MEDIA_PHOTOVIDEO, classGuid, true);
             }
 
             frameLayout.addView(actionBar);
 
             if (user_id != 0 || chat_id >= 0 && !currentChat.left) {
                 writeButton = new ImageView(getParentActivity());
+                writeButton.setBackgroundResource(R.drawable.floating_user_states);
+                writeButton.setScaleType(ImageView.ScaleType.CENTER);
                 if (user_id != 0) {
-                    writeButton.setImageResource(R.drawable.floating_user_states);
+                    writeButton.setImageResource(R.drawable.floating_message);
+                    writeButton.setPadding(0, AndroidUtilities.dp(3), 0, 0);
                 } else if (chat_id != 0) {
-                    writeButton.setImageResource(R.drawable.floating_group_states);
+                    writeButton.setImageResource(R.drawable.floating_camera);
                 }
                 frameLayout.addView(writeButton);
+                if (Build.VERSION.SDK_INT >= 21) {
+                    StateListAnimator animator = new StateListAnimator();
+                    animator.addState(new int[] {android.R.attr.state_pressed}, ObjectAnimator.ofFloat(writeButton, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
+                    animator.addState(new int[] {}, ObjectAnimator.ofFloat(writeButton, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
+                    writeButton.setStateListAnimator(animator);
+                    writeButton.setOutlineProvider(new ViewOutlineProvider() {
+                        @Override
+                        public void getOutline(View view, Outline outline) {
+                            outline.setOval(0, 0, AndroidUtilities.dp(56), AndroidUtilities.dp(56));
+                        }
+                    });
+                }
                 layoutParams = (FrameLayout.LayoutParams) writeButton.getLayoutParams();
                 layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
                 layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
@@ -579,6 +599,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             if (user == null || user instanceof TLRPC.TL_userEmpty) {
                                 return;
                             }
+                            NotificationCenter.getInstance().removeObserver(ProfileActivity.this, NotificationCenter.closeChats);
                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
                             Bundle args = new Bundle();
                             args.putInt("user_id", user_id);
@@ -813,6 +834,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
+                        NotificationCenter.getInstance().removeObserver(ProfileActivity.this, NotificationCenter.closeChats);
                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
                         TLRPC.EncryptedChat encryptedChat = (TLRPC.EncryptedChat) args[0];
                         Bundle args2 = new Bundle();
@@ -900,6 +922,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     @Override
+    public Bitmap getThumbForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+        return null;
+    }
+
+    @Override
     public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) { }
 
     @Override
@@ -939,49 +966,54 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             i++;
         }
 
-        Collections.sort(sortedUsers, new Comparator<Integer>() {
-            @Override
-            public int compare(Integer lhs, Integer rhs) {
-                TLRPC.User user1 = MessagesController.getInstance().getUser(info.participants.get(rhs).user_id);
-                TLRPC.User user2 = MessagesController.getInstance().getUser(info.participants.get(lhs).user_id);
-                int status1 = 0;
-                int status2 = 0;
-                if (user1 != null && user1.status != null) {
-                    if (user1.id == UserConfig.getClientUserId()) {
-                        status1 = ConnectionsManager.getInstance().getCurrentTime() + 50000;
-                    } else {
-                        status1 = user1.status.expires;
+        try {
+            Collections.sort(sortedUsers, new Comparator<Integer>() {
+                @Override
+                public int compare(Integer lhs, Integer rhs) {
+                    TLRPC.User user1 = MessagesController.getInstance().getUser(info.participants.get(rhs).user_id);
+                    TLRPC.User user2 = MessagesController.getInstance().getUser(info.participants.get(lhs).user_id);
+                    int status1 = 0;
+                    int status2 = 0;
+                    if (user1 != null && user1.status != null) {
+                        if (user1.id == UserConfig.getClientUserId()) {
+                            status1 = ConnectionsManager.getInstance().getCurrentTime() + 50000;
+                        } else {
+                            status1 = user1.status.expires;
+                        }
                     }
-                }
-                if (user2 != null && user2.status != null) {
-                    if (user2.id == UserConfig.getClientUserId()) {
-                        status2 = ConnectionsManager.getInstance().getCurrentTime() + 50000;
-                    } else {
-                        status2 = user2.status.expires;
+                    if (user2 != null && user2.status != null) {
+                        if (user2.id == UserConfig.getClientUserId()) {
+                            status2 = ConnectionsManager.getInstance().getCurrentTime() + 50000;
+                        } else {
+                            status2 = user2.status.expires;
+                        }
                     }
-                }
-                if (status1 > 0 && status2 > 0) {
-                    if (status1 > status2) {
-                        return 1;
-                    } else if (status1 < status2) {
+                    if (status1 > 0 && status2 > 0) {
+                        if (status1 > status2) {
+                            return 1;
+                        } else if (status1 < status2) {
+                            return -1;
+                        }
+                        return 0;
+                    } else if (status1 < 0 && status2 < 0) {
+                        if (status1 > status2) {
+                            return 1;
+                        } else if (status1 < status2) {
+                            return -1;
+                        }
+                        return 0;
+                    } else if (status1 < 0 && status2 > 0 || status1 == 0 && status2 != 0) {
                         return -1;
+                    } else if (status2 < 0 && status1 > 0 || status2 == 0 && status1 != 0) {
+                        return 1;
                     }
                     return 0;
-                } else if (status1 < 0 && status2 < 0) {
-                    if (status1 > status2) {
-                        return 1;
-                    } else if (status1 < status2) {
-                        return -1;
-                    }
-                    return 0;
-                } else if (status1 < 0 && status2 > 0 || status1 == 0 && status2 != 0) {
-                    return -1;
-                } else if (status2 < 0 && status1 > 0 || status2 == 0 && status1 != 0) {
-                    return 1;
                 }
-                return 0;
-            }
-        });
+            });
+        } catch (Exception e) {
+            FileLog.e("tmessages", e); //TODO find crash
+        }
+
 
         if (listView != null) {
             listView.invalidateViews();
@@ -1071,7 +1103,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             AvatarDrawable avatarDrawable = new AvatarDrawable(user);
             avatarImage.setImage(photo, "50_50", avatarDrawable);
 
-            nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
+            if (user instanceof TLRPC.TL_userDeleted) {
+                nameTextView.setText(LocaleController.getString("HiddenName", R.string.HiddenName));
+            } else {
+                nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
+            }
             onlineTextView.setText(LocaleController.formatUserStatus(user));
 
             avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
@@ -1155,6 +1191,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (dialog_id != 0) {
             Bundle args = new Bundle();
             args.putBoolean("scrollToTopOnResume", true);
+            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
             NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
             int lower_part = (int)dialog_id;
             if (lower_part != 0) {

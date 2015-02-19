@@ -8,7 +8,6 @@
 
 package org.telegram.android;
 
-import android.graphics.Bitmap;
 import android.graphics.Paint;
 import android.text.Layout;
 import android.text.Spannable;
@@ -42,12 +41,11 @@ public class MessageObject {
     public CharSequence messageText;
     public int type;
     public int contentType;
-    public ArrayList<PhotoObject> photoThumbs;
-    public Bitmap imagePreview;
     public String dateKey;
     public boolean deleted = false;
     public float audioProgress;
     public int audioProgressSec;
+    public ArrayList<TLRPC.PhotoSize> photoThumbs;
 
     private static TextPaint textPaint;
     public int lastLineWidth;
@@ -66,11 +64,7 @@ public class MessageObject {
 
     public ArrayList<TextLayoutBlock> textLayoutBlocks;
 
-    public MessageObject(TLRPC.Message message, AbstractMap<Integer, TLRPC.User> users) {
-        this(message, users, 1);
-    }
-
-    public MessageObject(TLRPC.Message message, AbstractMap<Integer, TLRPC.User> users, int preview) {
+    public MessageObject(TLRPC.Message message, AbstractMap<Integer, TLRPC.User> users, boolean generateLayout) {
         if (textPaint == null) {
             textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             textPaint.setColor(0xff000000);
@@ -283,7 +277,11 @@ public class MessageObject {
             } else if (message.media instanceof TLRPC.TL_messageMediaUnsupported) {
                 messageText = LocaleController.getString("UnsuppotedMedia", R.string.UnsuppotedMedia);
             } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
-                messageText = LocaleController.getString("AttachDocument", R.string.AttachDocument);
+                if (isSticker()) {
+                    messageText = LocaleController.getString("AttachSticker", R.string.AttachSticker);
+                } else {
+                    messageText = LocaleController.getString("AttachDocument", R.string.AttachDocument);
+                }
             } else if (message.media instanceof TLRPC.TL_messageMediaAudio) {
                 messageText = LocaleController.getString("AttachAudio", R.string.AttachAudio);
             }
@@ -310,8 +308,17 @@ public class MessageObject {
                 contentType = type = 0;
             } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaDocument) {
                 contentType = 1;
-                if (message.media.document.thumb != null && !(message.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty) && message.media.document.mime_type != null && message.media.document.mime_type.equals("image/gif")) {
-                    type = 8;
+                if (message.media.document.mime_type != null) {
+                    if (message.media.document.mime_type.equals("image/gif") && message.media.document.thumb != null && !(message.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty)) {
+                        type = 8;
+                    } else if (message.media.document.mime_type.equals("image/webp") && isSticker()) {
+                        type = 13;
+                        if (messageOwner.media.document.thumb != null && messageOwner.media.document.thumb.location != null) {
+                            messageOwner.media.document.thumb.location.ext = "webp";
+                        }
+                    } else {
+                        type = 9;
+                    }
                 } else {
                     type = 9;
                 }
@@ -345,37 +352,25 @@ public class MessageObject {
         int dateMonth = rightNow.get(Calendar.MONTH);
         dateKey = String.format("%d_%02d_%02d", dateYear, dateMonth, dateDay);
 
-        if (preview != 0) {
+        if (generateLayout) {
             generateLayout();
         }
-        generateThumbs(false, preview);
+        generateThumbs(false);
     }
 
-    public CharSequence replaceWithLink(CharSequence source, String param, TLRPC.User user) {
-        String name = ContactsController.formatName(user.first_name, user.last_name);
-        int start = TextUtils.indexOf(source, param);
-        URLSpanNoUnderline span = new URLSpanNoUnderline("" + user.id);
-        SpannableStringBuilder builder = new SpannableStringBuilder(TextUtils.replace(source, new String[]{param}, new String[]{name}));
-        builder.setSpan(span, start, start + name.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        return builder;
-    }
-
-    public void generateThumbs(boolean update, int preview) {
+    public void generateThumbs(boolean update) {
         if (messageOwner instanceof TLRPC.TL_messageService) {
             if (messageOwner.action instanceof TLRPC.TL_messageActionChatEditPhoto) {
                 if (!update) {
-                    photoThumbs = new ArrayList<PhotoObject>();
-                    for (TLRPC.PhotoSize size : messageOwner.action.photo.sizes) {
-                        photoThumbs.add(new PhotoObject(size, preview, isSecretMedia()));
-                    }
+                    photoThumbs = new ArrayList<>(messageOwner.action.photo.sizes);
                 } else if (photoThumbs != null && !photoThumbs.isEmpty()) {
-                    for (PhotoObject photoObject : photoThumbs) {
+                    for (TLRPC.PhotoSize photoObject : photoThumbs) {
                         for (TLRPC.PhotoSize size : messageOwner.action.photo.sizes) {
                             if (size instanceof TLRPC.TL_photoSizeEmpty) {
                                 continue;
                             }
-                            if (size.type.equals(photoObject.photoOwner.type)) {
-                                photoObject.photoOwner.location = size.location;
+                            if (size.type.equals(photoObject.type)) {
+                                photoObject.location = size.location;
                                 break;
                             }
                         }
@@ -385,22 +380,15 @@ public class MessageObject {
         } else if (messageOwner.media != null && !(messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
             if (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
                 if (!update) {
-                    photoThumbs = new ArrayList<PhotoObject>();
-                    for (TLRPC.PhotoSize size : messageOwner.media.photo.sizes) {
-                        PhotoObject obj = new PhotoObject(size, preview, isSecretMedia());
-                        photoThumbs.add(obj);
-                        if (imagePreview == null && obj.image != null) {
-                            imagePreview = obj.image;
-                        }
-                    }
+                    photoThumbs = new ArrayList<>(messageOwner.media.photo.sizes);
                 } else if (photoThumbs != null && !photoThumbs.isEmpty()) {
-                    for (PhotoObject photoObject : photoThumbs) {
+                    for (TLRPC.PhotoSize photoObject : photoThumbs) {
                         for (TLRPC.PhotoSize size : messageOwner.media.photo.sizes) {
                             if (size instanceof TLRPC.TL_photoSizeEmpty) {
                                 continue;
                             }
-                            if (size.type.equals(photoObject.photoOwner.type)) {
-                                photoObject.photoOwner.location = size.location;
+                            if (size.type.equals(photoObject.type)) {
+                                photoObject.location = size.location;
                                 break;
                             }
                         }
@@ -408,29 +396,33 @@ public class MessageObject {
                 }
             } else if (messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
                 if (!update) {
-                    photoThumbs = new ArrayList<PhotoObject>();
-                    PhotoObject obj = new PhotoObject(messageOwner.media.video.thumb, preview, isSecretMedia());
-                    photoThumbs.add(obj);
-                    if (imagePreview == null && obj.image != null) {
-                        imagePreview = obj.image;
-                    }
+                    photoThumbs = new ArrayList<>();
+                    photoThumbs.add(messageOwner.media.video.thumb);
                 } else if (photoThumbs != null && !photoThumbs.isEmpty() && messageOwner.media.video.thumb != null) {
-                    PhotoObject photoObject = photoThumbs.get(0);
-                    photoObject.photoOwner.location = messageOwner.media.video.thumb.location;
+                    TLRPC.PhotoSize photoObject = photoThumbs.get(0);
+                    photoObject.location = messageOwner.media.video.thumb.location;
                 }
-            } if (messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
+            } else if (messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
                 if (!(messageOwner.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty)) {
                     if (!update) {
-                        photoThumbs = new ArrayList<PhotoObject>();
-                        PhotoObject obj = new PhotoObject(messageOwner.media.document.thumb, preview, isSecretMedia());
-                        photoThumbs.add(obj);
+                        photoThumbs = new ArrayList<>();
+                        photoThumbs.add(messageOwner.media.document.thumb);
                     } else if (photoThumbs != null && !photoThumbs.isEmpty() && messageOwner.media.document.thumb != null) {
-                        PhotoObject photoObject = photoThumbs.get(0);
-                        photoObject.photoOwner.location = messageOwner.media.document.thumb.location;
+                        TLRPC.PhotoSize photoObject = photoThumbs.get(0);
+                        photoObject.location = messageOwner.media.document.thumb.location;
                     }
                 }
             }
         }
+    }
+
+    public CharSequence replaceWithLink(CharSequence source, String param, TLRPC.User user) {
+        String name = ContactsController.formatName(user.first_name, user.last_name);
+        int start = TextUtils.indexOf(source, param);
+        URLSpanNoUnderline span = new URLSpanNoUnderline("" + user.id);
+        SpannableStringBuilder builder = new SpannableStringBuilder(TextUtils.replace(source, new String[]{param}, new String[]{name}));
+        builder.setSpan(span, start, start + name.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return builder;
     }
 
     public String getFileName() {
@@ -452,12 +444,23 @@ public class MessageObject {
         return "";
     }
 
-    private boolean containsUrls(String message) {
+    public int getFileType() {
+        if (messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
+            return FileLoader.MEDIA_DIR_VIDEO;
+        } else if (messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
+            return FileLoader.MEDIA_DIR_DOCUMENT;
+        } else if (messageOwner.media instanceof TLRPC.TL_messageMediaAudio) {
+            return FileLoader.MEDIA_DIR_AUDIO;
+        } else if (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
+            return FileLoader.MEDIA_DIR_IMAGE;
+        }
+        return FileLoader.MEDIA_DIR_CACHE;
+    }
+
+    private boolean containsUrls(CharSequence message) {
         if (message == null || message.length() < 3 || message.length() > 1024 * 20) {
             return false;
         }
-
-        boolean containsSomething = false;
 
         int length = message.length();
 
@@ -477,7 +480,10 @@ public class MessageObject {
                 }
                 schemeSequence = 0;
                 dotSequence = 0;
-            } else if (c == ':') {
+            } else if (!(c != ' ' && digitsInRow > 0)) {
+                digitsInRow = 0;
+            }
+            if (c == ':') {
                 if (schemeSequence == 0) {
                     schemeSequence = 1;
                 } else {
@@ -500,6 +506,8 @@ public class MessageObject {
                 }
             } else if (c != ' ' && lastChar == '.' && dotSequence == 1) {
                 return true;
+            } else {
+                dotSequence = 0;
             }
             lastChar = c;
         }
@@ -511,10 +519,10 @@ public class MessageObject {
             return;
         }
 
-        textLayoutBlocks = new ArrayList<TextLayoutBlock>();
+        textLayoutBlocks = new ArrayList<>();
 
-        if (messageText instanceof Spannable && containsUrls(messageOwner.message)) {
-            if (messageOwner.message.length() < 100) {
+        if (messageText instanceof Spannable && containsUrls(messageText)) {
+            if (messageText.length() < 100) {
                 Linkify.addLinks((Spannable) messageText, Linkify.WEB_URLS | Linkify.PHONE_NUMBERS);
             } else {
                 Linkify.addLinks((Spannable) messageText, Linkify.WEB_URLS);
@@ -759,5 +767,27 @@ public class MessageObject {
             str = secondsLeft / 60 + "m";
         }
         return str;
+    }
+
+    public String getDocumentName() {
+        if (messageOwner.media != null && messageOwner.media.document != null) {
+            return FileLoader.getDocumentFileName(messageOwner.media.document);
+        }
+        return "";
+    }
+
+    public static boolean isStickerMessage(TLRPC.Message message) {
+        if (message.media != null && message.media.document != null) {
+            for (TLRPC.DocumentAttribute attribute : message.media.document.attributes) {
+                if (attribute instanceof TLRPC.TL_documentAttributeSticker) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean isSticker() {
+        return isStickerMessage(messageOwner);
     }
 }

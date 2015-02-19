@@ -37,8 +37,8 @@ public class CountryAdapter extends BaseSectionsAdapter {
     }
 
     private Context mContext;
-    private HashMap<String, ArrayList<Country>> countries = new HashMap<String, ArrayList<Country>>();
-    private ArrayList<String> sortedCountries = new ArrayList<String>();
+    private HashMap<String, ArrayList<Country>> countries = new HashMap<>();
+    private ArrayList<String> sortedCountries = new ArrayList<>();
 
     public CountryAdapter(Context context) {
         mContext = context;
@@ -56,7 +56,7 @@ public class CountryAdapter extends BaseSectionsAdapter {
                 String n = c.name.substring(0, 1).toUpperCase();
                 ArrayList<Country> arr = countries.get(n);
                 if (arr == null) {
-                    arr = new ArrayList<Country>();
+                    arr = new ArrayList<>();
                     countries.put(n, arr);
                     sortedCountries.add(n);
                 }
