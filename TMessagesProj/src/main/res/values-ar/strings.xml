@@ -177,7 +177,7 @@
     <string name="GroupName">اسم المجموعة</string>
     <string name="MembersCount">%1$d/%2$d عضو</string>
     <!--group info view-->
-    <string name="SharedMedia">عدد الوسائط المشتركة</string>
+    <string name="SharedMedia">الوسائط المشتركة</string>
     <string name="SETTINGS">الإعدادات</string>
     <string name="AddMember">إضافة مشترك</string>
     <string name="DeleteAndExit">مغادرة المجموعة وحذفها</string>
