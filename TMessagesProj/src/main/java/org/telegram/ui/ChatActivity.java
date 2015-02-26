@@ -1307,7 +1307,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             progressView.setLayoutParams(layoutParams3);
 
             ProgressBar progressBar = new ProgressBar(getParentActivity());
-            progressBar.setIndeterminateDrawable(getParentActivity().getResources().getDrawable(R.drawable.loading_animation));
+            try {
+                progressBar.setIndeterminateDrawable(getParentActivity().getResources().getDrawable(R.drawable.loading_animation));
+            } catch (Exception e) {
+                //don't promt
+            }
             progressBar.setIndeterminate(true);
             AndroidUtilities.setProgressBarAnimationDuration(progressBar, 1500);
             progressView.addView(progressBar);

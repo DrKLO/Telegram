@@ -1446,7 +1446,7 @@ public class PhotoFilterView extends FrameLayout {
     }
 
     public Bitmap getBitmap() {
-        return eglThread.getTexture();
+        return eglThread != null ? eglThread.getTexture() : null;
     }
 
     private void fixLayout(int viewWidth, int viewHeight) {

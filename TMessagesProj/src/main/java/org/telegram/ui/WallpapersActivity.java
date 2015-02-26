@@ -419,7 +419,9 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                             wallPapers.add((TLRPC.WallPaper)obj);
                             wallpappersByIds.put(((TLRPC.WallPaper)obj).id, (TLRPC.WallPaper)obj);
                         }
-                        listAdapter.notifyDataSetChanged();
+                        if (listAdapter != null) {
+                            listAdapter.notifyDataSetChanged();
+                        }
                         if (backgroundImage != null) {
                             processSelectedBackground();
                         }

@@ -854,7 +854,11 @@ public class ChatActivityEnterView extends LinearLayout implements NotificationC
             emojiButton.setImageResource(R.drawable.ic_msg_panel_smiles);
         }
         if (emojiPopup != null) {
-            emojiPopup.dismiss();
+            try {
+                emojiPopup.dismiss();
+            } catch (Exception e) {
+                //don't promt
+            }
         }
         if (sizeNotifierRelativeLayout != null) {
             sizeNotifierRelativeLayout.post(new Runnable() {

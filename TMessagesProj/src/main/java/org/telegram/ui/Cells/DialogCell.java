@@ -603,14 +603,19 @@ public class DialogCell extends BaseCell {
     public void checkCurrentDialogIndex() {
         TLRPC.TL_dialog dialog = null;
         if (isServerOnly) {
-            dialog = MessagesController.getInstance().dialogsServerOnly.get(index);
+            if (index < MessagesController.getInstance().dialogsServerOnly.size()) {
+                dialog = MessagesController.getInstance().dialogsServerOnly.get(index);
+            }
         } else {
-            dialog = MessagesController.getInstance().dialogs.get(index);
+            if (index < MessagesController.getInstance().dialogs.size()) {
+                dialog = MessagesController.getInstance().dialogs.get(index);
+            }
         }
-        boolean update = true;
-        if (currentDialogId != dialog.id || message != null && message.messageOwner.id != dialog.top_message || unreadCount != dialog.unread_count) {
-            currentDialogId = dialog.id;
-            update(0);
+        if (dialog != null) {
+            if (currentDialogId != dialog.id || message != null && message.messageOwner.id != dialog.top_message || unreadCount != dialog.unread_count) {
+                currentDialogId = dialog.id;
+                update(0);
+            }
         }
     }
 
